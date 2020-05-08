@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>ru.ibs.dtm</groupId>
+    <artifactId>parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>DTM Parent</name>
+
+    <modules>
+        <module>dtm-common</module>
+        <module>dtm-query-execution-plugin-api</module>
+        <module>plugins</module>
+        <module>dtm-query-execution-core</module>
+    </modules>
+
+    <properties>
+        <java.version>1.8</java.version>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <apache.avro.version>1.9.2</apache.avro.version>
+        <apache.kafka.version>2.4.0</apache.kafka.version>
+        <logback.version>1.2.3</logback.version>
+        <junit.version>5.4.1</junit.version>
+        <hamcrest.version>2.2</hamcrest.version>
+        <java.version>1.8</java.version>
+        <vertx.version>3.8.5</vertx.version>
+        <calcite.version>1.22.0</calcite.version>
+        <junit-jupiter-engine.version>5.4.0</junit-jupiter-engine.version>
+        <jooq.version>3.13.1</jooq.version>
+        <vertx.jooq.version>5.1.0</vertx.jooq.version>
+        <apache.commons.lang.version>3.10</apache.commons.lang.version>
+        <guava.version>28.2-jre</guava.version>
+        <spring.plugin.core.version>2.0.0.RELEASE</spring.plugin.core.version>
+        <tarantool.connector.version>1.9.4</tarantool.connector.version>
+        <commons.pool2.version>2.7.0</commons.pool2.version>
+        <pg.client.version>0.11.4</pg.client.version>
+    </properties>
+
+    <profiles>
+        <profile>
+            <id>dev</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <datasource.service.options.host>10.18.84.17</datasource.service.options.host>
+                <datasource.service.options.port>3306</datasource.service.options.port>
+                <datasource.service.options.database>dtmservice</datasource.service.options.database>
+                <datasource.service.options.user>dtmuser</datasource.service.options.user>
+                <datasource.service.options.password>Cat6Gmt7Ncr</datasource.service.options.password>
+            </properties>
+        </profile>
+        <profile>
+            <id>master</id>
+            <properties>
+                <datasource.service.options.host>database-1.dtm.local</datasource.service.options.host>
+                <datasource.service.options.port>3306</datasource.service.options.port>
+                <datasource.service.options.database>s_db_demo</datasource.service.options.database>
+                <datasource.service.options.user>s_demo</datasource.service.options.user>
+                <datasource.service.options.password>Coin2Excels3Funder</datasource.service.options.password>
+            </properties>
+        </profile>
+    </profiles>
+
+    <repositories>
+        <repository>
+            <id>maven-public</id>
+            <url>http://build.dtm.local:8081/repository/maven-dtm-public/</url>
+        </repository>
+    </repositories>
+
+    <distributionManagement>
+        <repository>
+            <id>maven-releases</id>
+            <url>http://build.dtm.local:8081/repository/maven-dtm-releases/</url>
+            <layout>default</layout>
+            <uniqueVersion>true</uniqueVersion>
+        </repository>
+
+        <snapshotRepository>
+            <id>maven-snapshots</id>
+            <url>http://build.dtm.local:8081/repository/maven-dtm-snapshots/</url>
+            <layout>default</layout>
+        </snapshotRepository>
+    </distributionManagement>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>2.2.4.RELEASE</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+</project>

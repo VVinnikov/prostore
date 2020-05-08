@@ -1,0 +1,7 @@
+databaseChangeLog:
+  - include:
+      file: db/changelog/serviceDb/04_2020/0001.sql
+  - include:
+      file: db/changelog/serviceDb/04_2020/0002.sql
+  - include:
+      file: db/changelog/serviceDb/04_2020/0003.sql

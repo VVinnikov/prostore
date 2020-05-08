@@ -1,0 +1,80 @@
+package ru.ibs.dtm.query.execution.plugin.adb.service.impl.dml;
+
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
+import ru.ibs.dtm.common.reader.QueryResult;
+import ru.ibs.dtm.query.execution.plugin.adb.dto.EnrichQueryRequest;
+import ru.ibs.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
+import ru.ibs.dtm.query.execution.plugin.adb.service.QueryEnrichmentService;
+import ru.ibs.dtm.query.execution.plugin.api.dto.LlrRequest;
+import ru.ibs.dtm.query.execution.plugin.api.service.LlrService;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+@Service("adbLlrService")
+@Slf4j
+public class AdbLlrService implements LlrService {
+
+  private final QueryEnrichmentService adbQueryEnrichmentService;
+  private final DatabaseExecutor adbDatabaseExecutor;
+  public static final String DATE_FORMAT_PATTERN = "yyyy-MM-dd";
+  public static final String DATETIME_FORMAT_PATTERN = DATE_FORMAT_PATTERN + " HH:mm:ss";
+
+  public AdbLlrService(QueryEnrichmentService adbQueryEnrichmentService,
+                       @Qualifier("adbQueryExecutor") DatabaseExecutor adbDatabaseExecutor) {
+    this.adbQueryEnrichmentService = adbQueryEnrichmentService;
+    this.adbDatabaseExecutor = adbDatabaseExecutor;
+  }
+
+  @Override
+  public void executeQuery(LlrRequest request, Handler<AsyncResult<QueryResult>> asyncHandler) {
+    EnrichQueryRequest enrichQueryRequest = EnrichQueryRequest.generate(request.getQueryRequest(), request.getSchema());
+    adbQueryEnrichmentService.enrich(enrichQueryRequest, sqlResult -> {
+      if (sqlResult.succeeded()) {
+        adbDatabaseExecutor.execute(sqlResult.result(), executeResult -> {
+
+          if (executeResult.succeeded()) {
+            JsonArray rowList = new JsonArray();
+            try {
+              executeResult.result().forEach(row -> {
+                JsonObject jsonRow = new JsonObject();
+                row.forEach((key, rowelement) -> {
+                  Object obj;
+                  if (rowelement instanceof LocalDateTime) {
+                    obj = ((LocalDateTime) rowelement).format(DateTimeFormatter.ofPattern(DATETIME_FORMAT_PATTERN));
+                  } else if (rowelement instanceof LocalDate) {
+                    obj = ((LocalDate) rowelement).format(DateTimeFormatter.ofPattern(DATE_FORMAT_PATTERN));
+                  } else {
+                    obj = rowelement;
+                  }
+                  jsonRow.put(key, obj);
+                });
+                rowList.add(jsonRow);
+              });
+            } catch (Exception ex) {
+              asyncHandler.handle(Future.failedFuture(ex));
+              return;
+            }
+            QueryResult queryResult = QueryResult.emptyResult();
+            queryResult.setRequestId(request.getQueryRequest().getRequestId());
+            queryResult.setResult(rowList);
+            asyncHandler.handle(Future.succeededFuture(queryResult));
+          } else {
+            asyncHandler.handle(Future.failedFuture(executeResult.cause()));
+          }
+        });
+      } else {
+        log.error("Ошибка при обогащении запроса");
+        asyncHandler.handle(Future.failedFuture(sqlResult.cause()));
+      }
+    });
+  }
+}

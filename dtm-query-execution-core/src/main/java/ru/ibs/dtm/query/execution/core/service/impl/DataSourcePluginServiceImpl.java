@@ -23,45 +23,47 @@ import java.util.stream.Collectors;
 @EnablePluginRegistries({DtmDataSourcePlugin.class})
 public class DataSourcePluginServiceImpl implements DataSourcePluginService {
 
-  private final PluginRegistry<DtmDataSourcePlugin, SourceType> pluginRegistry;
+    private final PluginRegistry<DtmDataSourcePlugin, SourceType> pluginRegistry;
+    private final Set<SourceType> sourceTypes;
 
-  @Autowired
-  public DataSourcePluginServiceImpl(
-    @Qualifier("dtmDataSourcePluginRegistry") PluginRegistry<DtmDataSourcePlugin, SourceType> pluginRegistry) {
-    this.pluginRegistry = pluginRegistry;
-  }
+    @Autowired
+    public DataSourcePluginServiceImpl(
+            @Qualifier("dtmDataSourcePluginRegistry") PluginRegistry<DtmDataSourcePlugin, SourceType> pluginRegistry) {
+        this.pluginRegistry = pluginRegistry;
+        this.sourceTypes = pluginRegistry.getPlugins().stream()
+                .map(DtmDataSourcePlugin::getSourceType)
+                .collect(Collectors.toSet());
+    }
 
-  public Set<SourceType> getSourceTypes() {
-    return pluginRegistry.getPlugins().stream()
-      .map(DtmDataSourcePlugin::getSourceType)
-      .collect(Collectors.toSet());
-  }
+    public Set<SourceType> getSourceTypes() {
+        return sourceTypes;
+    }
 
-  public void ddl(SourceType sourceType,
-                  DdlRequest request,
-                  Handler<AsyncResult<Void>> asyncResultHandler) {
-    getPlugin(sourceType).ddl(request, asyncResultHandler);
-  }
+    public void ddl(SourceType sourceType,
+                    DdlRequest request,
+                    Handler<AsyncResult<Void>> asyncResultHandler) {
+        getPlugin(sourceType).ddl(request, asyncResultHandler);
+    }
 
-  public void llr(SourceType sourceType,
-                  LlrRequest request,
-                  Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-    getPlugin(sourceType).llr(request, asyncResultHandler);
-  }
+    public void llr(SourceType sourceType,
+                    LlrRequest request,
+                    Handler<AsyncResult<QueryResult>> asyncResultHandler) {
+        getPlugin(sourceType).llr(request, asyncResultHandler);
+    }
 
-  public void mpprKafka(SourceType sourceType,
-                        MpprKafkaRequest request,
-                        Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-    getPlugin(sourceType).mpprKafka(request, asyncResultHandler);
-  }
+    public void mpprKafka(SourceType sourceType,
+                          MpprKafkaRequest request,
+                          Handler<AsyncResult<QueryResult>> asyncResultHandler) {
+        getPlugin(sourceType).mpprKafka(request, asyncResultHandler);
+    }
 
-  public void calcQueryCost(SourceType sourceType,
-                            CalcQueryCostRequest request,
-                            Handler<AsyncResult<Integer>> asyncResultHandler) {
-    getPlugin(sourceType).calcQueryCost(request, asyncResultHandler);
-  }
+    public void calcQueryCost(SourceType sourceType,
+                              CalcQueryCostRequest request,
+                              Handler<AsyncResult<Integer>> asyncResultHandler) {
+        getPlugin(sourceType).calcQueryCost(request, asyncResultHandler);
+    }
 
-  private DtmDataSourcePlugin getPlugin(SourceType sourceType) {
-    return pluginRegistry.getRequiredPluginFor(sourceType);
-  }
+    private DtmDataSourcePlugin getPlugin(SourceType sourceType) {
+        return pluginRegistry.getRequiredPluginFor(sourceType);
+    }
 }

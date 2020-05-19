@@ -3,32 +3,26 @@ package ru.ibs.dtm.query.execution.plugin.adg.service.impl;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.reader.QueryRequest;
-import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.plugin.adg.configuration.KafkaProperties;
 import ru.ibs.dtm.query.execution.plugin.adg.configuration.kafka.KafkaAdminProperty;
-import ru.ibs.dtm.query.execution.plugin.adg.model.QueryResultItem;
-import ru.ibs.dtm.query.execution.plugin.adg.model.metadata.ColumnMetadata;
-import ru.ibs.dtm.query.execution.plugin.adg.model.metadata.ColumnType;
 import ru.ibs.dtm.query.execution.plugin.adg.service.*;
 import ru.ibs.dtm.query.execution.plugin.adg.service.impl.ddl.AdgDdlService;
+import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.dto.DdlRequest;
-import ru.ibs.dtm.query.execution.plugin.api.dto.LlrRequest;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static ru.ibs.dtm.query.execution.plugin.adg.constants.Procedures.DROP_SPACE;
+import static ru.ibs.dtm.query.execution.plugin.api.ddl.DdlQueryType.DROP_TABLE;
 
 public class AdgDdlServiceImpl {
 
@@ -76,7 +70,7 @@ public class AdgDdlServiceImpl {
     List<ClassField> fields = Collections.singletonList(new ClassField("test_field", "varchar(1)", false, false, ""));
     ClassTable classTable = new ClassTable("test_schema.test_table", fields);
 
-    adgDdlService.execute(new DdlRequest(queryRequest, classTable, false), handler -> {
+    adgDdlService.execute(new DdlRequestContext(new DdlRequest(queryRequest, classTable), DROP_TABLE), handler -> {
       assertTrue(handler.succeeded());
     });
   }

@@ -4,7 +4,6 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.execution.core.factory.MetadataFactory;
-import ru.ibs.dtm.query.execution.plugin.api.dto.DdlRequest;
 
 /**
  * Сервис синхронизации физической модели из служебной БД к Greenplum и Tarantool
@@ -17,7 +16,7 @@ public interface DatabaseSynchronizeService {
    * @param table             имя таблицы
    * @param completionHandler обработчик результата
    * @param createTopics      создать топики Kafka
-   * @see MetadataFactory#apply(DdlRequest, Handler)
+   * @see MetadataFactory#apply(RequestContext, Handler)
    */
   void putForRefresh(QueryRequest request,
                      String table,
@@ -31,7 +30,7 @@ public interface DatabaseSynchronizeService {
    * @param datamartId        идентификатор схемы
    * @param tableName         имя таблицы
    * @param completionHandler обработчик результата
-   * @see MetadataFactory#apply(DdlRequest, Handler)
+   * @see MetadataFactory#apply(RequestContext, Handler)
    */
   void removeTable(QueryRequest request,
                    Long datamartId,

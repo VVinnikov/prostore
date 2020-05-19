@@ -10,13 +10,16 @@ import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
 import ru.ibs.dtm.query.execution.core.factory.MetadataFactory;
 import ru.ibs.dtm.query.execution.core.service.DataSourcePluginService;
+import ru.ibs.dtm.query.execution.plugin.api.RequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlQueryType;
+import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.dto.DdlRequest;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
-public class MetadataFactoryImpl implements MetadataFactory {
+public class MetadataFactoryImpl implements MetadataFactory<DdlRequestContext> {
 
   private ServiceDao serviceDao;
   private DataSourcePluginService dataSourcePluginService;
@@ -40,7 +43,7 @@ public class MetadataFactoryImpl implements MetadataFactory {
   }
 
   @Override
-  public void apply(DdlRequest request, Handler<AsyncResult<Void>> handler) {
+  public void apply(DdlRequestContext request, Handler<AsyncResult<Void>> handler) {
     List<Future> futures = new ArrayList<>();
     dataSourcePluginService.getSourceTypes().forEach(sourceType ->
       futures.add(Future.future(p -> dataSourcePluginService.ddl(

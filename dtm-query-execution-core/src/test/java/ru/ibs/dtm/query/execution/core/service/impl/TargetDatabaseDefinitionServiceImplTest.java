@@ -12,8 +12,8 @@ import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.query.execution.core.service.TargetDatabaseDefinitionService;
 import ru.ibs.dtm.query.execution.core.utils.HintExtractor;
 import ru.ibs.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
+import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.dto.CalcQueryCostRequest;
-import ru.ibs.dtm.query.execution.plugin.api.dto.DdlRequest;
 import ru.ibs.dtm.query.execution.plugin.api.dto.LlrRequest;
 import ru.ibs.dtm.query.execution.plugin.api.dto.MpprKafkaRequest;
 
@@ -34,7 +34,7 @@ public class TargetDatabaseDefinitionServiceImplTest {
             }
 
             @Override
-            public void ddl(DdlRequest request, Handler<AsyncResult<Void>> handler) {
+            public void ddl(DdlRequestContext request, Handler<AsyncResult<Void>> handler) {
 
             }
 

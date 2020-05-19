@@ -11,8 +11,8 @@ import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.query.execution.core.service.DataSourcePluginService;
 import ru.ibs.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
+import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.dto.CalcQueryCostRequest;
-import ru.ibs.dtm.query.execution.plugin.api.dto.DdlRequest;
 import ru.ibs.dtm.query.execution.plugin.api.dto.LlrRequest;
 import ru.ibs.dtm.query.execution.plugin.api.dto.MpprKafkaRequest;
 
@@ -40,7 +40,7 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     }
 
     public void ddl(SourceType sourceType,
-                    DdlRequest request,
+                    DdlRequestContext request,
                     Handler<AsyncResult<Void>> asyncResultHandler) {
         getPlugin(sourceType).ddl(request, asyncResultHandler);
     }

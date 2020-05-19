@@ -5,8 +5,8 @@ import io.vertx.core.Handler;
 import org.springframework.plugin.core.Plugin;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.reader.SourceType;
+import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.dto.CalcQueryCostRequest;
-import ru.ibs.dtm.query.execution.plugin.api.dto.DdlRequest;
 import ru.ibs.dtm.query.execution.plugin.api.dto.LlrRequest;
 import ru.ibs.dtm.query.execution.plugin.api.dto.MpprKafkaRequest;
 
@@ -33,12 +33,11 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
   SourceType getSourceType();
 
   /**
-   * <p>Применение изменений физической модели на БД</p>
-   *
-   * @param request            запрос
+   * <p>Применение DDL по созданию базы дынных</p>
+   *  @param request            запрос
    * @param asyncResultHandler хэндлер асинхронной обработки результата
    */
-  void ddl(DdlRequest request, Handler<AsyncResult<Void>> asyncResultHandler);
+  void ddl(DdlRequestContext request, Handler<AsyncResult<Void>> asyncResultHandler);
 
   /**
    * <p>Получение данных с помощью выполнения Low Latency запроса</p>

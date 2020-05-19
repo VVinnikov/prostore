@@ -13,18 +13,12 @@ public class DdlRequest extends BaseRequest{
    */
   private ClassTable classTable;
 
-  /**
-   * Требуется создание топика
-   */
-  private boolean createTopic;
-
   public DdlRequest() {
   }
 
-  public DdlRequest(QueryRequest queryRequest, ClassTable classTable, boolean createTopic) {
+  public DdlRequest(QueryRequest queryRequest, ClassTable classTable) {
     super(queryRequest);
     this.classTable = classTable;
-    this.createTopic = createTopic;
   }
 
   public ClassTable getClassTable() {
@@ -35,20 +29,11 @@ public class DdlRequest extends BaseRequest{
     this.classTable = classTable;
   }
 
-  public boolean isCreateTopic() {
-    return createTopic;
-  }
-
-  public void setCreateTopic(boolean createTopic) {
-    this.createTopic = createTopic;
-  }
-
   @Override
   public String toString() {
     return "DdlRequest{" +
       super.toString() +
       ", classTable=" + classTable +
-      ", createTopic=" + createTopic +
       '}';
   }
 }

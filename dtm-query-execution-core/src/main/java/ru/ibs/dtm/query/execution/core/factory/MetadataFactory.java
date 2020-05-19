@@ -3,12 +3,12 @@ package ru.ibs.dtm.query.execution.core.factory;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
-import ru.ibs.dtm.query.execution.plugin.api.dto.DdlRequest;
+import ru.ibs.dtm.query.execution.plugin.api.RequestContext;
 
 /**
  * Генератор и исполнитель метаданных
  */
-public interface MetadataFactory {
+public interface MetadataFactory<Request> {
   /**
    * Получить отражение физической модели таблицы в классы.
    *
@@ -19,9 +19,8 @@ public interface MetadataFactory {
 
   /**
    * Применить физическую модель на БД через плагин
-   *
-   * @param request dto-обертка для физическая модели
+   *  @param request dto-обертка для физическая модели
    * @param handler обработчик
    */
-  void apply(DdlRequest request, Handler<AsyncResult<Void>> handler);
+  void apply(Request request, Handler<AsyncResult<Void>> handler);
 }

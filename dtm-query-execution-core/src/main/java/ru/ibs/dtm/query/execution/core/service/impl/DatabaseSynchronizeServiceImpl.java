@@ -96,8 +96,8 @@ public class DatabaseSynchronizeServiceImpl implements DatabaseSynchronizeServic
     });
   }
 
-  private void applyMetadata(DdlRequestContext request, ClassTable classTable, Handler<AsyncResult<Void>> handler) {
-    metadataFactory.apply(request, ar1 -> {
+  private void applyMetadata(DdlRequestContext context, ClassTable classTable, Handler<AsyncResult<Void>> handler) {
+    metadataFactory.apply(context, ar1 -> {
       if (ar1.succeeded()) {
         generatorService.save(classTable, ar2 -> {
           if (ar2.succeeded()) {

@@ -37,7 +37,7 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
    *  @param request            запрос
    * @param asyncResultHandler хэндлер асинхронной обработки результата
    */
-  void ddl(DdlRequestContext request, Handler<AsyncResult<Void>> asyncResultHandler);
+  void ddl(DdlRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler);
 
   /**
    * <p>Получение данных с помощью выполнения Low Latency запроса</p>

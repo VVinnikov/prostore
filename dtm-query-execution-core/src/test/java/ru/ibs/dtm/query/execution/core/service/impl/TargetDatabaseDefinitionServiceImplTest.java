@@ -34,7 +34,7 @@ public class TargetDatabaseDefinitionServiceImplTest {
             }
 
             @Override
-            public void ddl(DdlRequestContext request, Handler<AsyncResult<Void>> handler) {
+            public void ddl(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {
 
             }
 

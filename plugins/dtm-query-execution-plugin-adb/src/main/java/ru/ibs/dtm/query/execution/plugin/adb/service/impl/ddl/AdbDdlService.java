@@ -46,20 +46,20 @@ public class AdbDdlService implements DdlService {
 	}
 
 	@Override
-	public void execute(DdlRequestContext request, Handler<AsyncResult<Void>> handler) {
-		switch (request.getRequest().getQueryType()) {
+	public void execute(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {
+		switch (context.getRequest().getQueryType()) {
 			case CREATE_TABLE:
-				createTable(request, handler);
+				createTable(context, handler);
 				return;
 			case DROP_TABLE:
-				dropTable(request, handler);
+				dropTable(context, handler);
 				return;
 			case CREATE_SCHEMA:
 			case DROP_SCHEMA:
-				applySql(request.getRequest().getQueryRequest().getSql(), handler);
+				applySql(context.getRequest().getQueryRequest().getSql(), handler);
 				return;
 		}
-		handler.handle(Future.failedFuture("DDL не опознан: " + request));
+		handler.handle(Future.failedFuture("DDL не опознан: " + context));
 	}
 
 	private void applySql(String sql, Handler<AsyncResult<Void>> handler) {
@@ -72,14 +72,14 @@ public class AdbDdlService implements DdlService {
 		});
 	}
 
-	private void createTable(DdlRequestContext request, Handler<AsyncResult<Void>> handler) {
-		metadataFactory.apply(request.getRequest().getClassTable(), ar -> {
+	private void createTable(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {
+		metadataFactory.apply(context.getRequest().getClassTable(), ar -> {
 			if (ar.succeeded()) {
-				if (!request.getRequest().getQueryType().isCreateTopic()) {
+				if (!context.getRequest().getQueryType().isCreateTopic()) {
 					handler.handle(Future.succeededFuture());
 					return;
 				}
-				kafkaTopicService.createOrReplace(getTopics(request.getRequest().getClassTable()), ar2 -> {
+				kafkaTopicService.createOrReplace(getTopics(context.getRequest().getClassTable()), ar2 -> {
 					if (ar2.succeeded()) {
 						handler.handle(Future.succeededFuture());
 					} else {
@@ -94,10 +94,10 @@ public class AdbDdlService implements DdlService {
 		});
 	}
 
-	private void dropTable(DdlRequestContext request, Handler<AsyncResult<Void>> handler) {
-		metadataFactory.purge(request.getRequest().getClassTable(), ar -> {
+	private void dropTable(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {
+		metadataFactory.purge(context.getRequest().getClassTable(), ar -> {
 			if (ar.succeeded()) {
-				kafkaTopicService.delete(getTopics(request.getRequest().getClassTable()), ar2 -> {
+				kafkaTopicService.delete(getTopics(context.getRequest().getClassTable()), ar2 -> {
 					if (ar2.succeeded()) {
 						handler.handle(Future.succeededFuture());
 					} else {

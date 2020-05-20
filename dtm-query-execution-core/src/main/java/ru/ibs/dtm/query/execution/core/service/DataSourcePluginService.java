@@ -30,7 +30,7 @@ public interface DataSourcePluginService {
    * @param asyncResultHandler хэндлер асинхронной обработки результата
    */
   void ddl(SourceType sourceType,
-           DdlRequestContext request,
+           DdlRequestContext context,
            Handler<AsyncResult<Void>> asyncResultHandler);
 
   /**

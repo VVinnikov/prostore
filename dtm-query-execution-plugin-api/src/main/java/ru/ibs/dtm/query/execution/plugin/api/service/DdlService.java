@@ -9,5 +9,5 @@ import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
  */
 public interface DdlService {
 
-  void execute(DdlRequestContext request, Handler<AsyncResult<Void>> handler);
+  void execute(DdlRequestContext context, Handler<AsyncResult<Void>> handler);
 }

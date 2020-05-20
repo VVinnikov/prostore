@@ -40,9 +40,9 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     }
 
     public void ddl(SourceType sourceType,
-                    DdlRequestContext request,
+                    DdlRequestContext context,
                     Handler<AsyncResult<Void>> asyncResultHandler) {
-        getPlugin(sourceType).ddl(request, asyncResultHandler);
+        getPlugin(sourceType).ddl(context, asyncResultHandler);
     }
 
     public void llr(SourceType sourceType,

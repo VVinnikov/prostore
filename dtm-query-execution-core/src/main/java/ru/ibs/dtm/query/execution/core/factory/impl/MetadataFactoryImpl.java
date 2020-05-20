@@ -43,12 +43,12 @@ public class MetadataFactoryImpl implements MetadataFactory<DdlRequestContext> {
   }
 
   @Override
-  public void apply(DdlRequestContext request, Handler<AsyncResult<Void>> handler) {
+  public void apply(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {
     List<Future> futures = new ArrayList<>();
     dataSourcePluginService.getSourceTypes().forEach(sourceType ->
       futures.add(Future.future(p -> dataSourcePluginService.ddl(
         sourceType,
-        request,
+        context,
         ar -> {
           if (ar.succeeded()) {
             p.complete();

@@ -18,6 +18,7 @@
 
     <properties>
         <java.version>1.8</java.version>
+        <maven.release.plugin>3.0.0-M1</maven.release.plugin>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <apache.avro.version>1.9.2</apache.avro.version>
@@ -39,6 +40,12 @@
         <pg.client.version>0.11.4</pg.client.version>
         <skipITs>true</skipITs>
     </properties>
+
+    <scm>
+        <connection>scm:git:git@github.com:arenadata/dtm.git</connection>
+        <url>https://github.com/arenadata/dtm</url>
+        <developerConnection>scm:git:git@github.com:arenadata/dtm.git</developerConnection>
+    </scm>
 
     <profiles>
         <profile>
@@ -65,6 +72,20 @@
             </properties>
         </profile>
     </profiles>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>${maven.release.plugin}</version>
+                <configuration>
+                    <tagNameFormat>v@{project.version}</tagNameFormat>
+                    <autoVersionSubmodules>true</autoVersionSubmodules>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
     <repositories>
         <repository>

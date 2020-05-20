@@ -48,7 +48,7 @@ public class AdgDdlService implements DdlService {
   @Override
   public void execute(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {
 
-    switch (context.getCommand()) {
+    switch (context.getRequest().getQueryType()) {
       case DROP_TABLE:
         dropTable(context.getRequest(), handler);
         return;

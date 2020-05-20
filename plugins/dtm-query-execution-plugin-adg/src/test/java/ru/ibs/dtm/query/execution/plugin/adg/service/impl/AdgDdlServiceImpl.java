@@ -70,7 +70,7 @@ public class AdgDdlServiceImpl {
     List<ClassField> fields = Collections.singletonList(new ClassField("test_field", "varchar(1)", false, false, ""));
     ClassTable classTable = new ClassTable("test_schema.test_table", fields);
 
-    adgDdlService.execute(new DdlRequestContext(new DdlRequest(queryRequest, classTable), DROP_TABLE), handler -> {
+    adgDdlService.execute(new DdlRequestContext(new DdlRequest(queryRequest, classTable, DROP_TABLE)), handler -> {
       assertTrue(handler.succeeded());
     });
   }

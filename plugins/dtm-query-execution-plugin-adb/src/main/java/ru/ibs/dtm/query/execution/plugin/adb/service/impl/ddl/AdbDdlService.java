@@ -47,7 +47,7 @@ public class AdbDdlService implements DdlService {
 
 	@Override
 	public void execute(DdlRequestContext request, Handler<AsyncResult<Void>> handler) {
-		switch (request.getCommand()) {
+		switch (request.getRequest().getQueryType()) {
 			case CREATE_TABLE:
 				createTable(request, handler);
 				return;
@@ -75,7 +75,7 @@ public class AdbDdlService implements DdlService {
 	private void createTable(DdlRequestContext request, Handler<AsyncResult<Void>> handler) {
 		metadataFactory.apply(request.getRequest().getClassTable(), ar -> {
 			if (ar.succeeded()) {
-				if (!request.getCommand().isCreateTopic()) {
+				if (!request.getRequest().getQueryType().isCreateTopic()) {
 					handler.handle(Future.succeededFuture());
 					return;
 				}

@@ -71,8 +71,8 @@ class AdbDtmDataSourcePluginIT {
       new ClassField("id", ClassTypes.INT.name(), false, true, null),
       new ClassField("name", ClassTypes.VARCHAR.name(), true, false, null),
       new ClassField("dt", ClassTypes.DATETIME.name(), true, false, null)
-    )));
-    plugin.ddl(new DdlRequestContext(dto, DdlQueryType.CREATE_TABLE), ar -> {
+    )), DdlQueryType.CREATE_TABLE);
+    plugin.ddl(new DdlRequestContext(dto), ar -> {
       if (ar.succeeded()) {
         testContext.completeNow();
       } else {

@@ -47,7 +47,7 @@ public class DatabaseSynchronizeServiceImpl implements DatabaseSynchronizeServic
           if (ar2.succeeded()) {
             classTable.setSchema(request.getDatamartMnemonic());
             classTable.setNameWithSchema(request.getDatamartMnemonic() + "." + classTable.getName());
-            applyMetadata(new DdlRequestContext(new DdlRequest(request, classTable), CREATE_TABLE), classTable, handler);
+            applyMetadata(new DdlRequestContext(new DdlRequest(request, classTable, CREATE_TABLE)), classTable, handler);
           } else {
             log.debug("Ошибка удаления таблицы в сервисной БД", ar2.cause());
             handler.handle(Future.failedFuture(ar2.cause()));
@@ -70,7 +70,7 @@ public class DatabaseSynchronizeServiceImpl implements DatabaseSynchronizeServic
             classTable.setSchema(request.getDatamartMnemonic());
             classTable.setNameWithSchema(request.getDatamartMnemonic() + "." + classTable.getName());
 
-            metadataFactory.apply(new DdlRequestContext(new DdlRequest(request, classTable), DROP_TABLE), result -> {
+            metadataFactory.apply(new DdlRequestContext(new DdlRequest(request, classTable, DROP_TABLE)), result -> {
               if (result.succeeded()) {
                 log.trace("Удаление сущности {} из схемы {}", tableName, request.getDatamartMnemonic());
                 serviceDao.dropEntity(datamartId, tableName, ar2 -> {

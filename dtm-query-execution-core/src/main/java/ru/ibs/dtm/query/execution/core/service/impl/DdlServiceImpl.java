@@ -129,7 +129,7 @@ public class DdlServiceImpl implements DdlService {
 
 	private void createSchema(QueryRequest request, Handler<AsyncResult<QueryResult>> handler, String sqlNodeName) {
 		replaceDatabaseInSql(request);
-		metadataFactory.apply(new DdlRequestContext(new DdlRequest(request, null), CREATE_SCHEMA), result -> {
+		metadataFactory.apply(new DdlRequestContext(new DdlRequest(request, CREATE_SCHEMA)), result -> {
 			if (result.succeeded()) {
 				createDatamart(sqlNodeName, handler);
 			} else {
@@ -239,7 +239,7 @@ public class DdlServiceImpl implements DdlService {
 							if (resultTableDelete.succeeded()) {
 								//удаляем физическую витрину
 								replaceDatabaseInSql(request);
-								metadataFactory.apply(new DdlRequestContext(new DdlRequest(request, null), DROP_SCHEMA), result -> {
+								metadataFactory.apply(new DdlRequestContext(new DdlRequest(request, DROP_SCHEMA)), result -> {
 									if (result.succeeded()) {
 										//удаляем логическую витрину
 										serviceDao.dropDatamart(datamartResult.result(), ar2 -> {

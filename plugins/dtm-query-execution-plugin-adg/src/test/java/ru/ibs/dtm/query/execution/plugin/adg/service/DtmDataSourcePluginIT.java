@@ -70,8 +70,8 @@ public class DtmDataSourcePluginIT {
     DdlRequest dto = new DdlRequest(null, new ClassTable("test.test_", Arrays.asList(
       new ClassField("id", ClassTypes.INT.name(), false, true, null),
       new ClassField("test", ClassTypes.VARCHAR.name(), true, false, null)
-    )));
-    plugin.ddl(new DdlRequestContext(dto, DdlQueryType.CREATE_TABLE), ar -> {
+    )), DdlQueryType.CREATE_TABLE);
+    plugin.ddl(new DdlRequestContext(dto), ar -> {
       if (ar.succeeded()) {
         testContext.completeNow();
       } else {

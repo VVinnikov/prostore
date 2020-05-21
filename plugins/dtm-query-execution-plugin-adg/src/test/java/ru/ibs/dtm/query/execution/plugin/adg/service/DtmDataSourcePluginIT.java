@@ -14,6 +14,8 @@ import ru.ibs.dtm.common.model.ddl.ClassTypes;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
+import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlQueryType;
+import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.dto.CalcQueryCostRequest;
 import ru.ibs.dtm.query.execution.plugin.api.dto.DdlRequest;
 import ru.ibs.dtm.query.execution.plugin.api.dto.LlrRequest;
@@ -43,7 +45,7 @@ public class DtmDataSourcePluginIT {
     }
 
     @Override
-    public void ddl(DdlRequest ddlRequest, Handler<AsyncResult<Void>> handler) {
+    public void ddl(DdlRequestContext ddlRequest, Handler<AsyncResult<Void>> handler) {
       ddlService.execute(ddlRequest, handler);
     }
 
@@ -68,8 +70,8 @@ public class DtmDataSourcePluginIT {
     DdlRequest dto = new DdlRequest(null, new ClassTable("test.test_", Arrays.asList(
       new ClassField("id", ClassTypes.INT.name(), false, true, null),
       new ClassField("test", ClassTypes.VARCHAR.name(), true, false, null)
-    )), false);
-    plugin.ddl(dto, ar -> {
+    )), DdlQueryType.CREATE_TABLE);
+    plugin.ddl(new DdlRequestContext(dto), ar -> {
       if (ar.succeeded()) {
         testContext.completeNow();
       } else {

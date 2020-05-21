@@ -1,7 +1,6 @@
 package ru.ibs.dtm.query.execution.plugin.adg.service.impl.ddl;
 
 import io.vertx.core.AsyncResult;
-import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
@@ -13,10 +12,10 @@ import ru.ibs.dtm.query.execution.plugin.adg.configuration.KafkaProperties;
 import ru.ibs.dtm.query.execution.plugin.adg.configuration.kafka.KafkaAdminProperty;
 import ru.ibs.dtm.query.execution.plugin.adg.model.schema.SchemaReq;
 import ru.ibs.dtm.query.execution.plugin.adg.service.*;
+import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.dto.DdlRequest;
 import ru.ibs.dtm.query.execution.plugin.api.service.DdlService;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -47,20 +46,18 @@ public class AdgDdlService implements DdlService {
   }
 
   @Override
-  public void execute(DdlRequest ddl, Handler<AsyncResult<Void>> handler) {
+  public void execute(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {
 
-    //TODO подумать, как определить тип запроса
-    if (ddl.getQueryRequest().getSql().toLowerCase().contains("drop table")) {
-      dropTable(ddl, handler);
-      return;
-    } else if (ddl.getQueryRequest().getSql().toLowerCase().contains("create schema")) {
-      handler.handle(Future.succeededFuture());
-      return;
-    } else if (ddl.getQueryRequest().getSql().toLowerCase().contains("drop schema")) {
-      handler.handle(Future.succeededFuture());
-      return;
+    switch (context.getRequest().getQueryType()) {
+      case DROP_TABLE:
+        dropTable(context.getRequest(), handler);
+        return;
+      case CREATE_SCHEMA:
+      case DROP_SCHEMA:
+        handler.handle(Future.succeededFuture());
+        return;
     }
-
+    DdlRequest ddl = context.getRequest();
     cartridgeProvider.apply(ddl.getClassTable(), ar1 -> {
       if (ar1.succeeded()) {
         kafkaTopicService.createOrReplace(getTopics(ddl.getClassTable()), ar2 -> {

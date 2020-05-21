@@ -4,8 +4,8 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.reader.SourceType;
+import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.dto.CalcQueryCostRequest;
-import ru.ibs.dtm.query.execution.plugin.api.dto.DdlRequest;
 import ru.ibs.dtm.query.execution.plugin.api.dto.LlrRequest;
 import ru.ibs.dtm.query.execution.plugin.api.dto.MpprKafkaRequest;
 
@@ -25,13 +25,12 @@ public interface DataSourcePluginService {
 
   /**
    * <p>Применение физической модели на БД</p>
-   *
    * @param sourceType тип источника
    * @param request запрос
    * @param asyncResultHandler хэндлер асинхронной обработки результата
    */
   void ddl(SourceType sourceType,
-           DdlRequest request,
+           DdlRequestContext context,
            Handler<AsyncResult<Void>> asyncResultHandler);
 
   /**

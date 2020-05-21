@@ -3,8 +3,8 @@ package ru.ibs.dtm.query.execution.plugin.api;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import ru.ibs.dtm.common.reader.QueryResult;
+import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.dto.CalcQueryCostRequest;
-import ru.ibs.dtm.query.execution.plugin.api.dto.DdlRequest;
 import ru.ibs.dtm.query.execution.plugin.api.dto.LlrRequest;
 import ru.ibs.dtm.query.execution.plugin.api.dto.MpprKafkaRequest;
 import ru.ibs.dtm.query.execution.plugin.api.service.DdlService;
@@ -30,8 +30,8 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
   }
 
   @Override
-  public void ddl(DdlRequest request, Handler<AsyncResult<Void>> asyncResultHandler) {
-    ddlService.execute(request, asyncResultHandler);
+  public void ddl(DdlRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler) {
+    ddlService.execute(context, asyncResultHandler);
   }
 
   @Override

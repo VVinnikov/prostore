@@ -4,7 +4,6 @@ import org.apache.calcite.adapter.java.AbstractQueryableTable;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.type.RelDataType;
@@ -12,7 +11,6 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.TranslatableTable;
 import ru.ibs.dtm.query.execution.plugin.adb.calcite.CalciteUtil;
-import ru.ibs.dtm.query.execution.plugin.adb.calcite.dtm.DtmTableScan;
 import ru.ibs.dtm.query.execution.plugin.adb.model.metadata.DatamartClass;
 
 import java.util.ArrayList;

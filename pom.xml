@@ -42,6 +42,7 @@
         <tarantool.connector.version>1.9.4</tarantool.connector.version>
         <commons.pool2.version>2.7.0</commons.pool2.version>
         <pg.client.version>0.11.4</pg.client.version>
+        <liquibase.version>3.8.9</liquibase.version>
         <skipITs>true</skipITs>
     </properties>
 
@@ -54,9 +55,22 @@
 
     <profiles>
         <profile>
-            <id>dev</id>
+            <id>local</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <datasource.service.options.host>localhost</datasource.service.options.host>
+                <datasource.service.options.port>3306</datasource.service.options.port>
+                <datasource.service.options.database>dtmservice</datasource.service.options.database>
+                <datasource.service.options.user>dtmuser</datasource.service.options.user>
+                <datasource.service.options.password>Cat6Gmt7Ncr</datasource.service.options.password>
+            </properties>
+        </profile>
+        <profile>
+            <id>dev</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
             </activation>
             <properties>
                 <datasource.service.options.host>10.18.84.17</datasource.service.options.host>

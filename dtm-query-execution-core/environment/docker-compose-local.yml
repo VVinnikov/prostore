@@ -5,6 +5,7 @@ networks:
 
 volumes:
   dtmservice:
+  kafkalogs:
 
 services:
   dtmservicedb:
@@ -27,3 +28,18 @@ services:
     restart: always
     ports:
       - "2181:2181"
+
+  kafka:
+    image: wurstmeister/kafka:2.12-2.5.0
+    container_name: dtmkafka
+    restart: always
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafkalogs:/kafka
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://dtmkafka:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ZOOKEEPER_CONNECT: dtmzk:2181

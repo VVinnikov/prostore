@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-SCRIPT_PATH="$(dirname "$(readlink -f "$0")")"
-docker-compose -f "${SCRIPT_PATH}/../environment/docker-compose-local.yml" up -d
+docker-compose -f "./environment/docker-compose-local.yml" up -d
 
 # Service db
 export SERVICEDB_DB_NAME=dtmservice

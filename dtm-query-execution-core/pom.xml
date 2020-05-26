@@ -292,7 +292,7 @@
                 <configuration>
                     <changeLogDirectory>src/main/resources/db/changelog/serviceDb</changeLogDirectory>
                     <changeLogFile>src/main/resources/db/changelog/serviceDb/changelog.yml</changeLogFile>
-                    <dataDir>src/main/resources/db/data/serviceDb</dataDir>
+<!--                    <dataDir>src/main/resources/db/data/serviceDb</dataDir>-->
                     <!-- log  -->
                     <verbose>true</verbose>
                     <logging>info</logging>

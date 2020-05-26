@@ -1,7 +1,45 @@
 databaseChangeLog:
-  - include:
-      file: db/changelog/serviceDb/04_2020/0001.sql
-  - include:
-      file: db/changelog/serviceDb/04_2020/0002.sql
-  - include:
-      file: db/changelog/serviceDb/04_2020/0003.sql
+
+  - changeSet:
+      id:  20200525_130000
+      author:  'Dmitry Voronkov'
+      changes:
+        - sqlFile:
+            path: db/changelog/serviceDb/04_2020/0001.sql
+  - changeSet:
+      id:  20200525_130001
+      author:  'Dmitry Voronkov'
+      changes:
+        - sqlFile:
+            path: db/data/serviceDb/04_2020/0002.sql
+  - changeSet:
+      id:  20200525_130002
+      author:  'Dmitry Voronkov'
+      changes:
+        - sqlFile:
+            path: db/data/serviceDb/04_2020/0003.sql
+  - changeSet:
+      id:  20200525_140000
+      author:  'Dmitry Voronkov'
+      changes:
+        - sqlFile:
+            path: db/data/serviceDb/0001.sql
+  - changeSet:
+      id:  20200525_140001
+      author:  'Dmitry Voronkov'
+      changes:
+        - sqlFile:
+            path: db/data/serviceDb/0002.sql
+  - changeSet:
+      id:  20200525_140002
+      author:  'Dmitry Voronkov'
+      changes:
+        - sqlFile:
+            path: db/data/serviceDb/0003.sql
+
+  - changeSet:
+      id:  v1.0.0
+      author:  'Dmitry Voronkov'
+      changes:
+        - tagDatabase:
+          tag:  v1.0.0

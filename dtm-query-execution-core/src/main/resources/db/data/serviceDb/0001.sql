@@ -1,14 +1,17 @@
 insert into datamarts_registry(datamart_id, datamart_mnemonics) values (1, 'test_datamart');
+commit;
 
 insert into entities_registry(entity_id, datamart_id, entity_mnemonics) values (1, 1, 'PSO');
 insert into entities_registry(entity_id, datamart_id, entity_mnemonics) values (2, 1, 'DOC');
 insert into entities_registry(entity_id, datamart_id, entity_mnemonics) values (3, 1, 'OBJ');
 insert into entities_registry(entity_id, datamart_id, entity_mnemonics) values (4, 1, 'REG_CXT');
+commit;
 
 insert into data_types_registry(data_type_id, data_type_mnemonics) values (1, 'varchar');
 insert into data_types_registry(data_type_id, data_type_mnemonics) values (2, 'bigint');
 insert into data_types_registry(data_type_id, data_type_mnemonics) values (3, 'datetime');
 insert into data_types_registry(data_type_id, data_type_mnemonics) values (4, 'int');
+commit;
 
 insert into attributes_registry(attr_id, entity_id, data_type_id, attr_mnemonics)
     values (1, 1,  2, 'ID');

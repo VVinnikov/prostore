@@ -1,3 +1,8 @@
 databaseChangeLog:
-  - include:
-      file: db/changelog/serviceDb/release_2.1/release_2.1.0.sql
+  - changeSet:
+      id:  20200525_150000
+      author: 'Dmitry Voronkov'
+      changes:
+        - sqlFile:
+            path: release_2.1.0.sql
+            relativeToChangelogFile:  true

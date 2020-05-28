@@ -58,10 +58,10 @@ class EdmlServiceImplTest {
 
     final SchemaStorageProvider schemaProvider = mock(SchemaStorageProvider.class);
     Mockito.doAnswer(invocation -> {
-      final Handler<AsyncResult<JsonObject>> handler = invocation.getArgument(0);
+      final Handler<AsyncResult<JsonObject>> handler = invocation.getArgument(1);
       handler.handle(Future.succeededFuture(new JsonObject()));
       return null;
-    }).when(schemaProvider).getLogicalSchema(any());
+    }).when(schemaProvider).getLogicalSchema(any(), any());
 
     final DataSourcePluginService dataSourcePluginService = mock(DataSourcePluginService.class);
     Mockito.when(dataSourcePluginService.getSourceTypes())

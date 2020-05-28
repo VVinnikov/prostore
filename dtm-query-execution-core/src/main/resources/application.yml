@@ -1,8 +1,5 @@
 http:
   port: ${SERVER_PORT:8080}
-server:
-  metadata:
-    path: ./config
 datasource:
   edml:
     sourceType: ${EDML_DATASOURCE:ADB}

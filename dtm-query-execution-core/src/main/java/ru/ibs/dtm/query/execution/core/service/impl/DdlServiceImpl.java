@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.core.configuration.jooq.MariaProperties;
@@ -275,28 +276,33 @@ public class DdlServiceImpl implements DdlService {
 	 * @param handler  - обработчик
 	 */
 	private void dropAllTables(List<DatamartEntity> entities, Handler<AsyncResult<QueryResult>> handler) {
-		List<Future> futures = new ArrayList<>();
-		entities.forEach(entity -> {
-			futures.add(Future.future(p -> {
-				QueryRequest requestDeleteTable = new QueryRequest();
-				requestDeleteTable.setDatamartMnemonic(entity.getDatamartMnemonic());
-				requestDeleteTable.setSql("DROP TABLE IF EXISTS " + entity.getDatamartMnemonic() + "." + entity.getMnemonic());
-				dropTable(requestDeleteTable, entity.getMnemonic(), true,
-						ar -> {
-							if (ar.succeeded()) {
-								p.complete();
-							} else {
-								p.fail(ar.cause());
-							}
-						});
-			}));
-		});
-		CompositeFuture.all(futures).setHandler(ar -> {
-			if (ar.succeeded()) {
-				handler.handle(Future.succeededFuture());
-			} else {
-				handler.handle(Future.failedFuture(ar.cause()));
-			}
-		});
+		if (CollectionUtils.isEmpty(entities)) {
+			handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
+		} else {
+			dropTableChain(entities, 0, handler);
+		}
+	}
+
+	private void dropTableChain(List<DatamartEntity> entities, int pos, Handler<AsyncResult<QueryResult>> handler) {
+		if (pos >= entities.size()) {
+			handler.handle(Future.failedFuture("Неправильно переданны входные параметры для удаления таблиц"));
+			return;
+		}
+		DatamartEntity entity = entities.get(pos);
+		QueryRequest requestDeleteTable = new QueryRequest();
+		requestDeleteTable.setDatamartMnemonic(entity.getDatamartMnemonic());
+		requestDeleteTable.setSql("DROP TABLE IF EXISTS " + entity.getDatamartMnemonic() + "." + entity.getMnemonic());
+		dropTable(requestDeleteTable, entity.getMnemonic(), true,
+				ar -> {
+					if (ar.succeeded()) {
+						if (pos + 1 < entities.size()) {
+							dropTableChain(entities, pos + 1, handler);
+						} else {
+							handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
+						}
+					} else {
+						handler.handle(Future.failedFuture(ar.cause()));
+					}
+				});
 	}
 }

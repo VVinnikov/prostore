@@ -50,13 +50,13 @@ public class DmlServiceImpl implements DmlService {
 
   private void pluginExecute(QuerySourceRequest request,
                              Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-    schemaStorageProvider.getLogicalSchema(schemaAr -> {
+    schemaStorageProvider.getLogicalSchema(request.getQueryRequest().getDatamartMnemonic(),schemaAr -> {
       if (schemaAr.succeeded()) {
         JsonObject schema = schemaAr.result();
         dataSourcePluginService.llr(
-          request.getSourceType(),
-          new LlrRequest(request.getQueryRequest(), schema),
-          asyncResultHandler);
+                request.getSourceType(),
+                new LlrRequest(request.getQueryRequest(), schema),
+                asyncResultHandler);
       } else {
         asyncResultHandler.handle(Future.failedFuture(schemaAr.cause()));
       }

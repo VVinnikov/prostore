@@ -32,10 +32,10 @@ import java.util.regex.Pattern;
 @Service("coreEdmlService")
 public class EdmlServiceImpl implements EdmlService {
   private static final Logger LOGGER = LoggerFactory.getLogger(EdmlServiceImpl.class);
-
+  //.* не всегда срабатывает, поэтому заменена на \s\S
   private static final Pattern EXT_TABLE_AFTER_INSERT_INTO = Pattern.compile(
-    ".*insert\\s+into\\s+([A-z.0-9]+)\\s+(select\\s+.*)",
-    Pattern.CASE_INSENSITIVE
+          ".*insert\\s+into\\s+([A-z.0-9]+)\\s+(select\\s+[\\s\\S]*)",
+          Pattern.CASE_INSENSITIVE
   );
 
   private final DataSourcePluginService pluginService;
@@ -67,7 +67,7 @@ public class EdmlServiceImpl implements EdmlService {
 
   @Override
   public void execute(ParsedQueryRequest parsedQueryRequest, Handler<AsyncResult<QueryResult>> resultHandler) {
-    schemaStorageProvider.getLogicalSchema(schemaAr -> {
+    schemaStorageProvider.getLogicalSchema(parsedQueryRequest.getQueryRequest().getDatamartMnemonic(), schemaAr -> {
       if (schemaAr.succeeded()) {
         JsonObject schema = schemaAr.result();
         executeWithSchema(schema, parsedQueryRequest, resultHandler);
@@ -79,7 +79,7 @@ public class EdmlServiceImpl implements EdmlService {
 
   public void executeWithSchema(JsonObject schema, ParsedQueryRequest parsedQueryRequest, Handler<AsyncResult<QueryResult>> resultHandler) {
     LOGGER.debug("Начало обработки EDML-запроса. execute(type: {}, queryRequest: {})",
-      parsedQueryRequest.getProcessingType(), parsedQueryRequest.getQueryRequest());
+            parsedQueryRequest.getProcessingType(), parsedQueryRequest.getQueryRequest());
     final QueryRequest queryRequest = parsedQueryRequest.getQueryRequest();
 
     // В версии 2.1 внешняя таблица будет не только после INSERT INTO, но и в FROM/JOIN.
@@ -101,9 +101,9 @@ public class EdmlServiceImpl implements EdmlService {
             if (Type.KAFKA_TOPIC == exloadParam.getLocationType()) {
               LOGGER.debug("Перед обращением к plugin.mmprKafka");
               pluginService.mpprKafka(
-                edmlProperties.getSourceType(),
-                mpprKafkaRequestFactory.create(qrOnlySelect, exloadParam, schema),
-                resultHandler);
+                      edmlProperties.getSourceType(),
+                      mpprKafkaRequestFactory.create(qrOnlySelect, exloadParam, schema),
+                      resultHandler);
             } else {
               LOGGER.error("Другие типы ещё не реализованы");
               resultHandler.handle(Future.failedFuture("Другие типы ещё не реализованы"));
@@ -131,7 +131,7 @@ public class EdmlServiceImpl implements EdmlService {
     exloadParam.setLocationPath(detRecord.getLocationPath());
     exloadParam.setFormat(detRecord.getFormat());
     exloadParam.setChunkSize(detRecord.getChunkSize() != null ?
-      detRecord.getChunkSize() : edmlProperties.getDefaultChunkSize());
+            detRecord.getChunkSize() : edmlProperties.getDefaultChunkSize());
     return exloadParam;
   }
 }

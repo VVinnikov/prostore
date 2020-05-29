@@ -15,7 +15,8 @@ import ru.ibs.dtm.query.execution.core.service.DataSourcePluginService;
 import ru.ibs.dtm.query.execution.core.service.TargetDatabaseDefinitionService;
 import ru.ibs.dtm.query.execution.core.utils.HintExtractor;
 import ru.ibs.dtm.query.execution.core.utils.MetaDataQueryPreparer;
-import ru.ibs.dtm.query.execution.plugin.api.dto.CalcQueryCostRequest;
+import ru.ibs.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.request.QueryCostRequest;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -75,7 +76,7 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
     List<Future> sourceTypeCost = new ArrayList<>();
     pluginService.getSourceTypes().forEach(sourceType -> {
       sourceTypeCost.add(Future.future(p ->
-        pluginService.calcQueryCost(sourceType, new CalcQueryCostRequest(request), ar -> {
+        pluginService.calcQueryCost(sourceType, new QueryCostRequestContext(new QueryCostRequest(request)), ar -> {
           if (ar.succeeded()) {
             p.complete(Pair.of(sourceType, ar.result()));
           } else {

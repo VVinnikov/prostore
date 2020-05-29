@@ -2,12 +2,15 @@ package ru.ibs.dtm.query.execution.plugin.api.service;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
-import ru.ibs.dtm.query.execution.plugin.api.dto.CalcQueryCostRequest;
+import ru.ibs.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.request.QueryCostRequest;
 
-/**
- * Сервис определения стоимости запроса
- */
-public interface QueryCostService {
+public interface QueryCostService<T> extends DatamartExecutionService<QueryCostRequestContext, AsyncResult<T>> {
 
-  void calc(CalcQueryCostRequest request, Handler<AsyncResult<Integer>> handler);
+	default SqlProcessingType getSqlProcessingType() {
+		return SqlProcessingType.COST;
+	}
+
+	void calc(QueryCostRequestContext context, Handler<AsyncResult<Integer>> handler);
+
 }

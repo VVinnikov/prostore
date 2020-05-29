@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class MpprKafkaRequestFactoryImplTest {
+class MpprRequestFactoryImplTest {
 
   public static final String LOCATION_PATH_WITHOUT_PORT = "kafka://localhost/topicX";
   public static final String LOCATION_PATH = "kafka://localhost:2181/topicX";

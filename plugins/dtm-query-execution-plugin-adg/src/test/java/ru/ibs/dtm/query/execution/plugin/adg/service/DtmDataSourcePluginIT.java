@@ -14,12 +14,12 @@ import ru.ibs.dtm.common.model.ddl.ClassTypes;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
-import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlQueryType;
+import ru.ibs.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import ru.ibs.dtm.query.execution.plugin.api.dto.CalcQueryCostRequest;
-import ru.ibs.dtm.query.execution.plugin.api.dto.DdlRequest;
-import ru.ibs.dtm.query.execution.plugin.api.dto.LlrRequest;
-import ru.ibs.dtm.query.execution.plugin.api.dto.MpprKafkaRequest;
+import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlType;
+import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
 import ru.ibs.dtm.query.execution.plugin.api.service.DdlService;
 
 import java.util.Arrays;
@@ -50,28 +50,31 @@ public class DtmDataSourcePluginIT {
     }
 
     @Override
-    public void llr(LlrRequest llrRequest, Handler<AsyncResult<QueryResult>> handler) {
+    public void llr(LlrRequestContext llrRequest, Handler<AsyncResult<QueryResult>> handler) {
 
     }
 
     @Override
-    public void mpprKafka(MpprKafkaRequest mpprKafkaRequest, Handler<AsyncResult<QueryResult>> handler) {
+    public void mpprKafka(MpprRequestContext mpprRequest, Handler<AsyncResult<QueryResult>> handler) {
 
     }
 
     @Override
-    public void calcQueryCost(CalcQueryCostRequest calcQueryCostRequest, Handler<AsyncResult<Integer>> handler) {
+    public void calcQueryCost(QueryCostRequestContext calcQueryCostRequest, Handler<AsyncResult<Integer>> handler) {
 
     }
   };
 
   @Test
   void testDdl(VertxTestContext testContext) throws Throwable {
-    DdlRequest dto = new DdlRequest(null, new ClassTable("test.test_", Arrays.asList(
-      new ClassField("id", ClassTypes.INT.name(), false, true, null),
-      new ClassField("test", ClassTypes.VARCHAR.name(), true, false, null)
-    )), DdlQueryType.CREATE_TABLE);
-    plugin.ddl(new DdlRequestContext(dto), ar -> {
+    ClassTable classTable = new ClassTable("test.test_", Arrays.asList(
+            new ClassField("id", ClassTypes.INT.name(), false, true, null),
+            new ClassField("test", ClassTypes.VARCHAR.name(), true, false, null)
+    ));
+    DdlRequest dto = new DdlRequest(null, classTable);
+    DdlRequestContext context = new DdlRequestContext(dto);
+    context.setDdlType(DdlType.CREATE_TABLE);
+    plugin.ddl(context, ar -> {
       if (ar.succeeded()) {
         testContext.completeNow();
       } else {

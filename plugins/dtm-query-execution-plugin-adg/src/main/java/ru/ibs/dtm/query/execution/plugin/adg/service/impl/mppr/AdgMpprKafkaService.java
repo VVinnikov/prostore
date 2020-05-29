@@ -11,7 +11,8 @@ import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.plugin.adg.dto.EnrichQueryRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryEnrichmentService;
 import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeClient;
-import ru.ibs.dtm.query.execution.plugin.api.dto.MpprKafkaRequest;
+import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.request.MpprRequest;
 import ru.ibs.dtm.query.execution.plugin.api.service.MpprKafkaService;
 
 import java.util.UUID;
@@ -19,40 +20,41 @@ import java.util.UUID;
 @Slf4j
 @RequiredArgsConstructor
 @Service("adgMpprKafkaService")
-public class AdgMpprKafkaService implements MpprKafkaService {
-  private final QueryEnrichmentService adbQueryEnrichmentService;
-  private final TtCartridgeClient ttCartridgeClient;
+public class AdgMpprKafkaService implements MpprKafkaService<QueryResult> {
+	private final QueryEnrichmentService adbQueryEnrichmentService;
+	private final TtCartridgeClient ttCartridgeClient;
 
-  @Override
-  public void execute(MpprKafkaRequest queryRequest, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-    EnrichQueryRequest enrichQueryRequest = EnrichQueryRequest.generate(queryRequest.getQueryRequest(), queryRequest.getSchema());
-    adbQueryEnrichmentService.enrich(enrichQueryRequest, sqlResult -> {
-      if (sqlResult.succeeded()) {
-        uploadData(queryRequest, asyncResultHandler, sqlResult.result());
-      } else {
-        log.error("Ошибка при обогащении запроса");
-        asyncResultHandler.handle(Future.failedFuture(sqlResult.cause()));
-      }
-    });
-  }
+	@Override
+	public void execute(MpprRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
+		MpprRequest request = context.getRequest();
+		EnrichQueryRequest enrichQueryRequest = EnrichQueryRequest.generate(request.getQueryRequest(), request.getSchema());
+		adbQueryEnrichmentService.enrich(enrichQueryRequest, sqlResult -> {
+			if (sqlResult.succeeded()) {
+				uploadData(request, asyncResultHandler, sqlResult.result());
+			} else {
+				log.error("Ошибка при обогащении запроса");
+				asyncResultHandler.handle(Future.failedFuture(sqlResult.cause()));
+			}
+		});
+	}
 
-  private void uploadData(MpprKafkaRequest queryRequest,
-                          Handler<AsyncResult<QueryResult>> asyncResultHandler,
-                          String sql) {
-    QueryExloadParam queryExloadParam = queryRequest.getQueryExloadParam();
-    ttCartridgeClient.uploadData(sql, queryRequest.getTopic(), queryExloadParam.getChunkSize(), ar -> {
-        UUID requestId = queryRequest.getQueryRequest().getRequestId();
-        if (ar.succeeded()) {
-          log.info("Выгрузка данных из ADG прошла успешно по запросу: {}", requestId);
-          asyncResultHandler.handle(Future.succeededFuture(QueryResult.emptyResult()));
-        } else {
-          String errMsg = String.format("Ошибка выгрузки данных из ADG: %s по запросу %s",
-            ar.cause().getMessage(),
-            requestId);
-          log.error(errMsg);
-          asyncResultHandler.handle(Future.failedFuture(new RuntimeException(errMsg, ar.cause())));
-        }
-      }
-    );
-  }
+	private void uploadData(MpprRequest queryRequest,
+							Handler<AsyncResult<QueryResult>> asyncResultHandler,
+							String sql) {
+		QueryExloadParam queryExloadParam = queryRequest.getQueryExloadParam();
+		ttCartridgeClient.uploadData(sql, queryRequest.getTopic(), queryExloadParam.getChunkSize(), ar -> {
+					UUID requestId = queryRequest.getQueryRequest().getRequestId();
+					if (ar.succeeded()) {
+						log.info("Выгрузка данных из ADG прошла успешно по запросу: {}", requestId);
+						asyncResultHandler.handle(Future.succeededFuture(QueryResult.emptyResult()));
+					} else {
+						String errMsg = String.format("Ошибка выгрузки данных из ADG: %s по запросу %s",
+								ar.cause().getMessage(),
+								requestId);
+						log.error(errMsg);
+						asyncResultHandler.handle(Future.failedFuture(new RuntimeException(errMsg, ar.cause())));
+					}
+				}
+		);
+	}
 }

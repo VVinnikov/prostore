@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.plugin.api.dto;
+package ru.ibs.dtm.query.execution.plugin.api.request;
 
 import io.vertx.core.json.JsonObject;
 import ru.ibs.dtm.common.plugin.exload.QueryExloadParam;
@@ -7,7 +7,7 @@ import ru.ibs.dtm.common.reader.QueryRequest;
 /**
  * dto для выполнения MpprKafka
  */
-public class MpprKafkaRequest extends BaseRequest {
+public class MpprRequest extends DatamartRequest {
 
   /**
    * Парамеры выполнения выгрузки
@@ -31,11 +31,7 @@ public class MpprKafkaRequest extends BaseRequest {
    */
   private String topic;
 
-
-  public MpprKafkaRequest() {
-  }
-
-  public MpprKafkaRequest(QueryRequest queryRequest, QueryExloadParam queryExloadParam, JsonObject schema) {
+  public MpprRequest(QueryRequest queryRequest, QueryExloadParam queryExloadParam, JsonObject schema) {
     super(queryRequest);
     this.queryExloadParam = queryExloadParam;
     this.schema = schema;

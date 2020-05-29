@@ -11,9 +11,10 @@ import java.util.UUID;
 public class QueryResult {
   private UUID requestId;
   private JsonArray result;
+  private static final QueryResult emptyResult = new QueryResult(null, new JsonArray());
 
   public static QueryResult emptyResult() {
-    return new QueryResult(null, new JsonArray());
+    return emptyResult;
   }
 
   public QueryResult(UUID requestId, JsonArray result) {

@@ -1,7 +1,7 @@
 package ru.ibs.dtm.query.execution.core.dto;
 
 import ru.ibs.dtm.common.reader.QueryRequest;
-import ru.ibs.dtm.query.execution.core.service.SqlProcessingType;
+import ru.ibs.dtm.query.execution.plugin.api.service.SqlProcessingType;
 
 /**
  * dto для передачи информации диспетчеру

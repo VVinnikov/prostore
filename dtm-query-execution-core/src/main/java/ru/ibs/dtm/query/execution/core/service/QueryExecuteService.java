@@ -4,6 +4,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.core.dto.ParsedQueryRequest;
+import ru.ibs.dtm.query.execution.plugin.api.service.SqlProcessingType;
 
 /**
  * Сервис выполнения SQL+

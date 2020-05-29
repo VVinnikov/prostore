@@ -13,7 +13,7 @@ import ru.ibs.dtm.query.execution.plugin.adg.configuration.kafka.KafkaAdminPrope
 import ru.ibs.dtm.query.execution.plugin.adg.model.schema.SchemaReq;
 import ru.ibs.dtm.query.execution.plugin.adg.service.*;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import ru.ibs.dtm.query.execution.plugin.api.dto.DdlRequest;
+import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
 import ru.ibs.dtm.query.execution.plugin.api.service.DdlService;
 
 import java.util.Arrays;
@@ -25,124 +25,125 @@ import static ru.ibs.dtm.query.execution.plugin.adg.constants.Procedures.DROP_SP
 
 @Slf4j
 @Service("adgDdlService")
-public class AdgDdlService implements DdlService {
+public class AdgDdlService implements DdlService<Void> {
 
-  private TtCartridgeProvider cartridgeProvider;
-  private KafkaTopicService kafkaTopicService;
-  private KafkaProperties kafkaProperties;
-  private AvroSchemaGenerator schemaGenerator;
-  private SchemaRegistryClient registryClient;
-  private final QueryExecutorService executorService;
+	private TtCartridgeProvider cartridgeProvider;
+	private KafkaTopicService kafkaTopicService;
+	private KafkaProperties kafkaProperties;
+	private AvroSchemaGenerator schemaGenerator;
+	private SchemaRegistryClient registryClient;
+	private final QueryExecutorService executorService;
 
-  @Autowired
-  public AdgDdlService(TtCartridgeProvider cartridgeProvider, KafkaTopicService kafkaTopicService,
-                       KafkaProperties kafkaProperties, AvroSchemaGenerator schemaGenerator, SchemaRegistryClient registryClient, QueryExecutorService executorService) {
-    this.cartridgeProvider = cartridgeProvider;
-    this.kafkaTopicService = kafkaTopicService;
-    this.kafkaProperties = kafkaProperties;
-    this.schemaGenerator = schemaGenerator;
-    this.registryClient = registryClient;
-    this.executorService = executorService;
-  }
+	@Autowired
+	public AdgDdlService(TtCartridgeProvider cartridgeProvider, KafkaTopicService kafkaTopicService,
+						 KafkaProperties kafkaProperties, AvroSchemaGenerator schemaGenerator, SchemaRegistryClient registryClient, QueryExecutorService executorService) {
+		this.cartridgeProvider = cartridgeProvider;
+		this.kafkaTopicService = kafkaTopicService;
+		this.kafkaProperties = kafkaProperties;
+		this.schemaGenerator = schemaGenerator;
+		this.registryClient = registryClient;
+		this.executorService = executorService;
+	}
 
-  @Override
-  public void execute(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {
+	@Override
+	public void execute(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {
 
-    switch (context.getRequest().getQueryType()) {
-      case DROP_TABLE:
-        dropTable(context.getRequest(), handler);
-        return;
-      case CREATE_SCHEMA:
-      case DROP_SCHEMA:
-        handler.handle(Future.succeededFuture());
-        return;
-    }
-    DdlRequest ddl = context.getRequest();
-    cartridgeProvider.apply(ddl.getClassTable(), ar1 -> {
-      if (ar1.succeeded()) {
-        kafkaTopicService.createOrReplace(getTopics(ddl.getClassTable()), ar2 -> {
-          if (ar2.succeeded()) {
-            Schema schema = schemaGenerator.generate(ddl.getClassTable());
-            registryClient.register(getSubject(ddl.getClassTable()), new SchemaReq(schema.toString()), ar3 -> {
-              if (ar3.succeeded()) {
-                handler.handle(Future.succeededFuture());
-              } else {
-                handler.handle(Future.failedFuture(ar3.cause()));
-              }
-            });
-          } else {
-            handler.handle(Future.failedFuture(ar2.cause()));
-          }
-        });
-      } else {
-        handler.handle(Future.failedFuture(ar1.cause()));
-      }
-    });
-  }
+		switch (context.getDdlType()) {
+			case DROP_TABLE:
+				dropTable(context.getRequest(), handler);
+				return;
+			case CREATE_SCHEMA:
+			case DROP_SCHEMA:
+				handler.handle(Future.succeededFuture());
+				return;
+		}
+		DdlRequest ddl = context.getRequest();
+		cartridgeProvider.apply(ddl.getClassTable(), ar1 -> {
+			if (ar1.succeeded()) {
+				kafkaTopicService.createOrReplace(getTopics(ddl.getClassTable()), ar2 -> {
+					if (ar2.succeeded()) {
+						Schema schema = schemaGenerator.generate(ddl.getClassTable());
+						registryClient.register(getSubject(ddl.getClassTable()), new SchemaReq(schema.toString()), ar3 -> {
+							if (ar3.succeeded()) {
+								handler.handle(Future.succeededFuture());
+							} else {
+								handler.handle(Future.failedFuture(ar3.cause()));
+							}
+						});
+					} else {
+						handler.handle(Future.failedFuture(ar2.cause()));
+					}
+				});
+			} else {
+				handler.handle(Future.failedFuture(ar1.cause()));
+			}
+		});
+	}
 
-  private void dropTable(DdlRequest ddl, Handler<AsyncResult<Void>> handler) {
-    //удаление таблиц из базы
-    dropSpacesFromDb(ddl.getClassTable(), dropResult -> {
-      if (dropResult.succeeded()) {
-        //удаление конфигов
-        cartridgeProvider.delete(ddl.getClassTable(), deleteResult -> {
-          if (deleteResult.succeeded()) {
-            //удаление топиков
-            kafkaTopicService.delete(getTopics(ddl.getClassTable()), deleteTopicResult -> {
-              if (deleteTopicResult.succeeded()) {
-                //удаление из SchemaRegistry
-                registryClient.unregister(getSubject(ddl.getClassTable()), ar3 -> {
-                  if (ar3.succeeded()) {
-                    handler.handle(Future.succeededFuture());
-                  } else {
-                    handler.handle(Future.failedFuture(ar3.cause()));
-                  }
-                });
-              } else {
-                log.warn("При удалении топиков произошла ошибка", deleteTopicResult.cause());
-                handler.handle(Future.failedFuture(deleteTopicResult.cause()));
-              }
-            });
-          } else {
-            handler.handle(Future.failedFuture(deleteResult.cause()));
-          }
-        });
-      } else {
-        handler.handle(Future.failedFuture(dropResult.cause()));
-      }
-    });
-  }
+	private void dropTable(DdlRequest ddl, Handler<AsyncResult<Void>> handler) {
+		//удаление таблиц из базы
+		dropSpacesFromDb(ddl.getClassTable(), dropResult -> {
+			if (dropResult.succeeded()) {
+				//удаление конфигов
+				cartridgeProvider.delete(ddl.getClassTable(), deleteResult -> {
+					if (deleteResult.succeeded()) {
+						//удаление топиков
+						kafkaTopicService.delete(getTopics(ddl.getClassTable()), deleteTopicResult -> {
+							if (deleteTopicResult.succeeded()) {
+								//удаление из SchemaRegistry
+								registryClient.unregister(getSubject(ddl.getClassTable()), ar3 -> {
+									if (ar3.succeeded()) {
+										handler.handle(Future.succeededFuture());
+									} else {
+										handler.handle(Future.failedFuture(ar3.cause()));
+									}
+								});
+							} else {
+								log.warn("При удалении топиков произошла ошибка", deleteTopicResult.cause());
+								handler.handle(Future.failedFuture(deleteTopicResult.cause()));
+							}
+						});
+					} else {
+						handler.handle(Future.failedFuture(deleteResult.cause()));
+					}
+				});
+			} else {
+				handler.handle(Future.failedFuture(dropResult.cause()));
+			}
+		});
+	}
 
-  /**
-   * Удаление таблиц из базы Tarantool (_actual и _history)
-   * @param classTable - описание таблицы
-   * @param handler    - обработчик
-   */
-  private void dropSpacesFromDb(ClassTable classTable, Handler<AsyncResult<Void>> handler) {
+	/**
+	 * Удаление таблиц из базы Tarantool (_actual и _history)
+	 *
+	 * @param classTable - описание таблицы
+	 * @param handler    - обработчик
+	 */
+	private void dropSpacesFromDb(ClassTable classTable, Handler<AsyncResult<Void>> handler) {
 
-    String actualTable = classTable.getName() + ACTUAL_POSTFIX;
-    String historyTable = classTable.getName() + HISTORY_POSTFIX;
+		String actualTable = classTable.getName() + ACTUAL_POSTFIX;
+		String historyTable = classTable.getName() + HISTORY_POSTFIX;
 
-    executorService.executeProcedure( ar -> {
-      if (ar.succeeded()) {
-        log.debug("Удаление {} выполнено", actualTable);
-        executorService.executeProcedure(
-          ar2 -> {
-            if (ar2.succeeded()) {
-              log.debug("Удаление {} выполнено", historyTable);
-              handler.handle(Future.succeededFuture());
-            } else {
-              log.error("Ошибка при удалении таблицы {}", historyTable);
-              handler.handle(Future.failedFuture(ar.cause()));
-            }
-          }, DROP_SPACE, historyTable);
+		executorService.executeProcedure(ar -> {
+			if (ar.succeeded()) {
+				log.debug("Удаление {} выполнено", actualTable);
+				executorService.executeProcedure(
+						ar2 -> {
+							if (ar2.succeeded()) {
+								log.debug("Удаление {} выполнено", historyTable);
+								handler.handle(Future.succeededFuture());
+							} else {
+								log.error("Ошибка при удалении таблицы {}", historyTable);
+								handler.handle(Future.failedFuture(ar.cause()));
+							}
+						}, DROP_SPACE, historyTable);
 
-      } else {
-        log.error("Ошибка при удалении таблицы {}", actualTable);
-      }
-    }, DROP_SPACE, actualTable);
+			} else {
+				log.error("Ошибка при удалении таблицы {}", actualTable);
+			}
+		}, DROP_SPACE, actualTable);
 
-    //TODO вернуть после того , как функция drop_space_on_cluster будет корректно работать при параллельных вызовах
+		//TODO вернуть после того , как функция drop_space_on_cluster будет корректно работать при параллельных вызовах
 
 //    List<Future> futures = new ArrayList<>();
 //    futures.add(Future.future(p -> executorService.executeProcedure(
@@ -172,18 +173,18 @@ public class AdgDdlService implements DdlService {
 //        handler.handle(Future.failedFuture(ar.cause()));
 //      }
 //    });
-  }
+	}
 
-  private List<String> getTopics(ClassTable classTable) {
-    KafkaAdminProperty properties = kafkaProperties.getAdmin();
-    String adgUploadRq = String.format(properties.getAdgUploadRq(), classTable.getName(), classTable.getSchema());
-    String adgUploadRs = String.format(properties.getAdgUploadRs(), classTable.getName(), classTable.getSchema());
-    String adgUploadErr = String.format(properties.getAdgUploadErr(), classTable.getName(), classTable.getSchema());
-    return Arrays.asList(adgUploadRq, adgUploadRs, adgUploadErr);
-  }
+	private List<String> getTopics(ClassTable classTable) {
+		KafkaAdminProperty properties = kafkaProperties.getAdmin();
+		String adgUploadRq = String.format(properties.getAdgUploadRq(), classTable.getName(), classTable.getSchema());
+		String adgUploadRs = String.format(properties.getAdgUploadRs(), classTable.getName(), classTable.getSchema());
+		String adgUploadErr = String.format(properties.getAdgUploadErr(), classTable.getName(), classTable.getSchema());
+		return Arrays.asList(adgUploadRq, adgUploadRs, adgUploadErr);
+	}
 
-  private String getSubject(ClassTable classTable) {
-    return String.format(kafkaProperties.getAdmin().getAdgUploadRq(), classTable.getName(), classTable.getSchema())
-      .replace(".", "-");
-  }
+	private String getSubject(ClassTable classTable) {
+		return String.format(kafkaProperties.getAdmin().getAdgUploadRq(), classTable.getName(), classTable.getSchema())
+				.replace(".", "-");
+	}
 }

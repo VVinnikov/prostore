@@ -4,10 +4,11 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 
-/**
- * Сервис исполнения запроса для DDL.
- */
-public interface DdlService {
 
-  void execute(DdlRequestContext context, Handler<AsyncResult<Void>> handler);
+public interface DdlService<T> extends DatamartExecutionService<DdlRequestContext, AsyncResult<T>> {
+
+	default SqlProcessingType getSqlProcessingType() {
+		return SqlProcessingType.DDL;
+	}
+
 }

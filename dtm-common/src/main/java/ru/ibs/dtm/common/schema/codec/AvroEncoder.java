@@ -11,7 +11,7 @@ import java.io.ByteArrayOutputStream;
 import java.util.List;
 
 @Slf4j
-public class AvroEncoder<T> {
+public class AvroEncoder<T> extends AvroSerdeHelper {
 
     @SneakyThrows
     public byte[] encode(List<T> values, Schema schema) {

@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
-public class AvroDecoder {
+public class AvroDecoder extends AvroSerdeHelper {
     private final SpecificDatumReader<GenericRecord> datumReader = new SpecificDatumReader<>(SpecificData.get());
 
     @SneakyThrows

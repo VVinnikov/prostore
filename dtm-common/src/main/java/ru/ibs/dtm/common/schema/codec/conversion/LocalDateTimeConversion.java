@@ -15,6 +15,14 @@ public class LocalDateTimeConversion extends Conversion<LocalDateTime> {
     private static final Pattern LOCAL_DATE_TIME_PATTERN
             = Pattern.compile("^\\d\\d\\d\\d-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(.\\d\\d\\d|)$");
 
+    private LocalDateTimeConversion() {
+        super();
+    }
+
+    public static LocalDateTimeConversion getInstance() {
+        return LocalDateTimeConversionHolder.INSTANCE;
+    }
+
     @Override
     public Class<LocalDateTime> getConvertedType() {
         return LocalDateTime.class;
@@ -48,5 +56,9 @@ public class LocalDateTimeConversion extends Conversion<LocalDateTime> {
     @Override
     public CharSequence toCharSequence(LocalDateTime value, Schema schema, LogicalType type) {
         return value.toString();
+    }
+
+    private static class LocalDateTimeConversionHolder {
+        private static final LocalDateTimeConversion INSTANCE = new LocalDateTimeConversion();
     }
 }

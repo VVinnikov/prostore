@@ -9,28 +9,40 @@ import java.math.BigDecimal;
 
 public class BigDecimalConversion extends Conversion<BigDecimal> {
 
-  @Override
-  public Class<BigDecimal> getConvertedType() {
-    return BigDecimal.class;
-  }
+    private BigDecimalConversion() {
+        super();
+    }
 
-  @Override
-  public String getLogicalTypeName() {
-    return BigDecimalLogicalType.INSTANCE.getName();
-  }
+    public static BigDecimalConversion getInstance() {
+        return BigDecimalConversion.BigDecimalConversionHolder.INSTANCE;
+    }
 
-  @Override
-  public Schema getRecommendedSchema() {
-    return BigDecimalLogicalType.INSTANCE.addToSchema(Schema.create(Schema.Type.STRING));
-  }
+    @Override
+    public Class<BigDecimal> getConvertedType() {
+        return BigDecimal.class;
+    }
 
-  @Override
-  public CharSequence toCharSequence(BigDecimal value, Schema schema, LogicalType type) {
-    return value.toString();
-  }
+    @Override
+    public String getLogicalTypeName() {
+        return BigDecimalLogicalType.INSTANCE.getName();
+    }
 
-  @Override
-  public BigDecimal fromCharSequence(CharSequence value, Schema schema, LogicalType type) {
-    return new BigDecimal(value.toString());
-  }
+    @Override
+    public Schema getRecommendedSchema() {
+        return BigDecimalLogicalType.INSTANCE.addToSchema(Schema.create(Schema.Type.STRING));
+    }
+
+    @Override
+    public CharSequence toCharSequence(BigDecimal value, Schema schema, LogicalType type) {
+        return value.toString();
+    }
+
+    @Override
+    public BigDecimal fromCharSequence(CharSequence value, Schema schema, LogicalType type) {
+        return new BigDecimal(value.toString());
+    }
+
+    private static class BigDecimalConversionHolder {
+        private static final BigDecimalConversion INSTANCE = new BigDecimalConversion();
+    }
 }

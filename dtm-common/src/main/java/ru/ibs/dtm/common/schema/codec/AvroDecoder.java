@@ -17,7 +17,7 @@ public class AvroDecoder extends AvroSerdeHelper {
     private final SpecificDatumReader<GenericRecord> datumReader = new SpecificDatumReader<>(SpecificData.get());
 
     @SneakyThrows
-    public List<GenericRecord> readValues(byte[] encodedData) {
+    public List<GenericRecord> decode(byte[] encodedData) {
         val values = new ArrayList<GenericRecord>();
         try (val sin = new SeekableByteArrayInput(encodedData)) {
             try (val reader = new DataFileReader<>(sin, datumReader)) {

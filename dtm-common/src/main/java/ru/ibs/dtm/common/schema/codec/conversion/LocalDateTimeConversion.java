@@ -9,8 +9,11 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.regex.Pattern;
 
 public class LocalDateTimeConversion extends Conversion<LocalDateTime> {
+    private static final Pattern LOCAL_DATE_TIME_PATTERN
+            = Pattern.compile("^\\d\\d\\d\\d-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(.\\d\\d\\d|)$");
 
     @Override
     public Class<LocalDateTime> getConvertedType() {
@@ -39,7 +42,7 @@ public class LocalDateTimeConversion extends Conversion<LocalDateTime> {
 
     @Override
     public LocalDateTime fromCharSequence(CharSequence value, Schema schema, LogicalType type) {
-        return value.length() > 19 ? ZonedDateTime.parse(value).toLocalDateTime() : LocalDateTime.parse(value);
+        return LOCAL_DATE_TIME_PATTERN.matcher(value).matches() ? LocalDateTime.parse(value) : ZonedDateTime.parse(value).toLocalDateTime();
     }
 
     @Override

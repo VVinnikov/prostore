@@ -21,8 +21,8 @@ public class AvroDecoder extends AvroSerdeHelper {
         val values = new ArrayList<GenericRecord>();
         try (val sin = new SeekableByteArrayInput(encodedData)) {
             try (val reader = new DataFileReader<>(sin, datumReader)) {
-                for (GenericRecord genericRecord : reader) {
-                    values.add(genericRecord);
+                while (reader.hasNext()) {
+                    values.add(reader.next());
                 }
             }
         } catch (Exception e) {

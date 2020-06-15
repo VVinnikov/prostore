@@ -1,9 +1,12 @@
 package ru.ibs.dtm.query.execution.core.service.impl;
 
-import io.vertx.core.*;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.calcite.sql.SqlDialect;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.plugin.exload.QueryExloadParam;
@@ -24,8 +27,6 @@ import ru.ibs.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.service.EdmlService;
 
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -34,12 +35,8 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service("coreEdmlService")
 public class EdmlServiceImpl implements EdmlService<QueryResult> {
-    //.* не всегда срабатывает, поэтому заменена на \s\S
-    private static final Pattern EXT_TABLE_AFTER_INSERT_INTO = Pattern.compile(
-            ".*insert\\s+into\\s+([A-z.0-9]+)\\s+(select\\s+[\\s\\S]*)",
-            Pattern.CASE_INSENSITIVE
-    );
 
+    private static final SqlDialect SQL_DIALECT = new SqlDialect(SqlDialect.EMPTY_CONTEXT);
     private final Transformer<DownloadExternalTableAttribute, TableAttribute> tableAttributeTransformer;
     private final DataSourcePluginService pluginService;
     private final SchemaStorageProvider schemaStorageProvider;
@@ -61,16 +58,6 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
         this.edmlProperties = edmlProperties;
     }
 
-    static String cutOutInsertInto(String sqlInsertSelect) {
-        final Matcher cutOutInsertMatcher = EXT_TABLE_AFTER_INSERT_INTO.matcher(sqlInsertSelect);
-        return cutOutInsertMatcher.matches() ? cutOutInsertMatcher.group(2) : null;
-    }
-
-    static String extractExternalTable(String sqlInsertSelect) {
-        final Matcher afterInsertMatcher = EXT_TABLE_AFTER_INSERT_INTO.matcher(sqlInsertSelect);
-        return afterInsertMatcher.matches() ? afterInsertMatcher.group(1) : null;
-    }
-
     @Override
     public void execute(EdmlRequestContext context, Handler<AsyncResult<QueryResult>> resultHandler) {
         schemaStorageProvider.getLogicalSchema(context.getRequest().getQueryRequest().getDatamartMnemonic(), schemaAr -> {
@@ -88,11 +75,8 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
         log.debug("Начало обработки EDML-запроса. execute(type: {}, queryRequest: {})",
                 context.getProcessingType(), queryRequest);
 
-        // В версии 2.1 внешняя таблица будет не только после INSERT INTO, но и в FROM/JOIN.
-        // Придётся выбирать все таблицы и отсеивать внешние через таблицу download_external_table
-        // Пока по-простому: таблица после INSERT INTO только одна.
-        final String externalTable = extractExternalTable(queryRequest.getSql());
-        String onlySelect = cutOutInsertInto(queryRequest.getSql());
+        final String externalTable = context.getSqlNode().getTargetTable().toString();
+        String onlySelect = context.getSqlNode().getSource().toSqlString(SQL_DIALECT).toString();
         final QueryRequest qrOnlySelect = queryRequest.copy();
         qrOnlySelect.setSql(onlySelect);
         log.debug("От запроса оставили: {}", onlySelect);

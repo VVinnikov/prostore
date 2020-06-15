@@ -1,6 +1,7 @@
 package ru.ibs.dtm.query.execution.core.factory.impl;
 
 import org.apache.calcite.sql.SqlDdl;
+import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlNode;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryRequest;
@@ -29,7 +30,7 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
 
 		switch (node.getKind()) {
 			case INSERT:
-				return new EdmlRequestContext(new DatamartRequest(request));
+				return new EdmlRequestContext(new DatamartRequest(request), (SqlInsert) node);
 			default:
 				return new DmlRequestContext(new DdlRequest(request));
 		}

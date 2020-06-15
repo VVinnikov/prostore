@@ -5,6 +5,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.VertxTestContext;
+import lombok.val;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import ru.ibs.dtm.common.plugin.exload.Format;
@@ -16,17 +17,20 @@ import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.query.execution.core.configuration.properties.EdmlProperties;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
 import ru.ibs.dtm.query.execution.core.dto.DownloadExtTableRecord;
+import ru.ibs.dtm.query.execution.core.dto.DownloadExternalTableAttribute;
 import ru.ibs.dtm.query.execution.core.dto.ParsedQueryRequest;
+import ru.ibs.dtm.query.execution.core.transformer.DownloadExtTableAttributeTransformer;
 import ru.ibs.dtm.query.execution.core.service.DataSourcePluginService;
 import ru.ibs.dtm.query.execution.core.service.SchemaStorageProvider;
 import ru.ibs.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.EdmlRequest;
-import ru.ibs.dtm.query.execution.plugin.api.request.MpprRequest;
 import ru.ibs.dtm.query.execution.plugin.api.service.SqlProcessingType;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -40,6 +44,12 @@ class EdmlServiceImplTest {
 	private static final String SELECT_1 = "SELECT Col1, Col2 FROM tbl1 FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14'" +
 			" JOIN tbl2 FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59' ON tbl1.Col3 = tbl2.Col4";
 	private static final String INSERT_SELECT_1 = "INSERT INTO tblExt " + SELECT_1;
+	public static final DownloadExternalTableAttribute EXPECTED_ATTRIBUTE = new DownloadExternalTableAttribute(
+			"column1",
+			"varchar",
+			1,
+			1L
+	);
 
 	private QueryExloadParam queryExloadParam;
 
@@ -59,6 +69,8 @@ class EdmlServiceImplTest {
 	void execute() throws Throwable {
 		VertxTestContext testContext = new VertxTestContext();
 
+		val attributeMapper = new DownloadExtTableAttributeTransformer();
+
 		final SchemaStorageProvider schemaProvider = mock(SchemaStorageProvider.class);
 		Mockito.doAnswer(invocation -> {
 			final Handler<AsyncResult<JsonObject>> handler = invocation.getArgument(1);
@@ -71,7 +83,7 @@ class EdmlServiceImplTest {
 				.thenReturn(new HashSet<>(Arrays.asList(SourceType.ADB, SourceType.ADG)));
 
 		Mockito.doAnswer(invocation -> {
-			queryExloadParam = ((MpprRequest) invocation.getArgument(1)).getQueryExloadParam();
+			queryExloadParam = ((MpprRequestContext) invocation.getArgument(1)).getRequest().getQueryExloadParam();
 			final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(2);
 			handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
 			return null;
@@ -95,10 +107,16 @@ class EdmlServiceImplTest {
 			handler.handle(Future.succeededFuture());
 			return null;
 		}).when(serviceDao).insertDownloadQuery(any(), eq(1L), eq(SELECT_1), any());
+		Mockito.doAnswer(invocation -> {
+			final Handler<AsyncResult<List<DownloadExternalTableAttribute>>> handler = invocation.getArgument(1);
+			handler.handle(Future.succeededFuture(Collections.singletonList(EXPECTED_ATTRIBUTE)));
+			return null;
+		}).when(serviceDao).findDownloadExternalTableAttributes(any(), any());
 
 		EdmlProperties edmlProperties = new EdmlProperties();
 		edmlProperties.setSourceType(SourceType.ADB);
 		final EdmlServiceImpl edmlService = new EdmlServiceImpl(
+				attributeMapper,
 				dataSourcePluginService,
 				serviceDao,
 				schemaProvider,
@@ -122,7 +140,8 @@ class EdmlServiceImplTest {
 		assertEquals("test", queryExloadParam.getDatamart());
 		assertEquals("tblExt", queryExloadParam.getTableName());
 		assertEquals(SELECT_1, queryExloadParam.getSqlQuery());
-
+		assertEquals(1, queryExloadParam.getTableAttributes().size());
+		assertEquals(attributeMapper.transform(EXPECTED_ATTRIBUTE), queryExloadParam.getTableAttributes().get(0));
 		verify(dataSourcePluginService, times(1)).mpprKafka(any(), any(), any());
 	}
 

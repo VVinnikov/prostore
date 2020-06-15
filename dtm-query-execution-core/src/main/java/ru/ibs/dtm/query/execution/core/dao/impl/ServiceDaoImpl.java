@@ -5,6 +5,7 @@ import io.github.jklingsporn.vertx.jooq.shared.internal.QueryResult;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.ext.sql.ResultSet;
 import lombok.val;
 import org.jooq.DSLContext;
@@ -406,36 +407,26 @@ public class ServiceDaoImpl implements ServiceDao {
     });
   }
 
+
   @Override
   public void dropDownloadExternalTable(String datamart,
                                         String tableName,
                                         Handler<AsyncResult<Void>> resultHandler) {
-    findDatamart(datamart, datamartHandler -> {
-      if (datamartHandler.succeeded()) {
-        Long datamartId = datamartHandler.result();
-        findDownloadExternalTable(datamart, tableName.toLowerCase(), findDownloadExtTableHandler -> {
-          if (findDownloadExtTableHandler.succeeded()) {
-            Long detId = findDownloadExtTableHandler.result().getId();
-            dropTableAttributesByTableId(detId, dropAttrsHandler -> {
-              if (dropAttrsHandler.succeeded()) {
-                dropDownloadExternalTable(datamartId, dropTableHandler -> {
-                  if (dropTableHandler.succeeded()) {
-                    resultHandler.handle(Future.succeededFuture());
-                  } else {
-                    resultHandler.handle(Future.failedFuture(dropTableHandler.cause()));
-                  }
-                });
-              } else {
-                resultHandler.handle(Future.failedFuture(dropAttrsHandler.cause()));
-              }
-            });
-          } else {
-            resultHandler.handle(Future.failedFuture(findDownloadExtTableHandler.cause()));
-          }});
-      } else {
-        resultHandler.handle(Future.failedFuture(datamartHandler.cause()));
-      }
-    });
+    Future.future((Promise<DownloadExtTableRecord> promise) -> {
+              findDownloadExternalTable(datamart, tableName.toLowerCase(), promise);
+            })
+            .compose(deTable -> Future.future((Promise<Long> promise) -> {
+              dropTableAttributesByTableId(deTable.getId(), ar -> {
+                if (ar.succeeded()) {
+                  promise.complete(deTable.getId());
+                } else {
+                  promise.fail(ar.cause());
+                }
+              });
+            }))
+            .compose(detId -> Future.future((Promise<Integer> promise) -> dropDownloadExternalTable(detId, promise)))
+            .onSuccess(success -> resultHandler.handle(Future.succeededFuture()))
+            .onFailure(fail -> resultHandler.handle(Future.failedFuture(fail)));
   }
 
   private void dropTableAttributesByTableId(Long detId, Handler<AsyncResult<Integer>> handler) {

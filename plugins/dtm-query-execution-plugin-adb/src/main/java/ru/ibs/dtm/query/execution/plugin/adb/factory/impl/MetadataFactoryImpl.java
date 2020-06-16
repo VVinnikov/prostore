@@ -11,7 +11,10 @@ import ru.ibs.dtm.common.model.ddl.ClassTypeUtil;
 import ru.ibs.dtm.query.execution.plugin.adb.factory.MetadataFactory;
 import ru.ibs.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 
-import java.util.Optional;
+import java.util.Collection;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 @Service
 @Slf4j
@@ -134,14 +137,16 @@ public class MetadataFactoryImpl implements MetadataFactory {
         .append(" ")
         .append("varchar(36)");
     }
-    Optional<ClassField> primaryKey = classTable.getFields().stream().findAny().filter(ClassField::getPrimary);
-    primaryKey.ifPresent(classField -> sb.append(prefix[0])
-      .append("constraint ")
-      .append("pk_")
-      .append(tableName.replace('.', '_'))
-      .append(" primary key (")
-      .append(classField.getName())
-      .append(")"));
+    Collection<ClassField> pkList = classTable.getFields().stream().filter(f -> f.getPrimaryOrder() != null).collect(toList());
+    if (pkList.size() > 0) {
+      sb.append(prefix[0])
+              .append("constraint ")
+              .append("pk_")
+              .append(tableName.replace('.', '_'))
+              .append(" primary key (")
+              .append(pkList.stream().map(ClassField::getName).collect(Collectors.joining(", ")))
+              .append(")");
+    }
     sb.append(")");
     return sb.toString();
   }

@@ -111,19 +111,20 @@ public class MetaStorageGeneratorServiceImpl implements MetaStorageGeneratorServ
 				log.trace("Вставка сущности {}: {}", datamartId, table);
 				insertEntity(table, datamartId, resultHandler);
 			} else {
-				log.trace("Очистка сущности {}: {}", datamartId, table);
-				serviceDao.dropEntity(datamartId, table, ar2 -> {
+				log.trace("Очистка атрибутов для {}: {}", datamartId, table);
+				serviceDao.dropAttribute(ar1.result(), ar2-> {
 					if (ar2.succeeded()) {
-						log.trace("Очистка атрибутов для {}: {}", datamartId, table);
-						serviceDao.dropAttribute(ar1.result(), ar3 -> {
+						log.trace("Очистка сущности {}: {}", datamartId, table);
+						serviceDao.dropEntity(datamartId, table, ar3 -> {
 							if (ar3.succeeded()) {
 								insertEntity(table, datamartId, resultHandler);
 							} else {
-								log.error("Ошибка очистки атрибута(dropAttribute)", ar3.cause());
+								log.error("Exception during entity delete operation", ar3.cause());
 								resultHandler.handle(Future.failedFuture(ar3.cause()));
 							}
 						});
 					} else {
+						log.error("Ошибка очистки атрибута(dropAttribute)", ar2.cause());
 						resultHandler.handle(Future.failedFuture(ar2.cause()));
 					}
 				});

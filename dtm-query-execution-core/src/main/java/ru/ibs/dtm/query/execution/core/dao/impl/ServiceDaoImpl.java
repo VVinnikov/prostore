@@ -39,530 +39,528 @@ import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 import static java.time.temporal.ChronoField.*;
 import static org.jooq.generated.dtmservice.Tables.*;
 import static org.jooq.generated.information_schema.Tables.COLUMNS;
-import static org.jooq.generated.information_schema.Tables.TABLES;
+import static org.jooq.generated.information_schema.Tables.KEY_COLUMN_USAGE;
 import static org.jooq.impl.DSL.max;
 
 @Repository
 public class ServiceDaoImpl implements ServiceDao {
-  private static final Logger LOGGER = LoggerFactory.getLogger(ServiceDaoImpl.class);
-  private static final String SCHEMA_TABLE_COLUMN_NAME = "COLUMN_NAME";
-  private static final String SCHEMA_TABLE_COLUMN_TYPE = "COLUMN_TYPE";
-  private static final String SCHEMA_TABLE_IS_NULLABLE = "IS_NULLABLE";
-  private static final String SCHEMA_TABLE_COLUMN_KEY = "COLUMN_KEY";
-  private static final String SCHEMA_TABLE_COLUMN_DEFAULT = "COLUMN_DEFAULT";
+	private static final Logger LOGGER = LoggerFactory.getLogger(ServiceDaoImpl.class);
 
-  private static final DateTimeFormatter LOCAL_DATE_TIME = new DateTimeFormatterBuilder()
-    .parseCaseInsensitive()
-    .append(ISO_LOCAL_DATE)
-    .appendLiteral(' ')
-    .appendValue(HOUR_OF_DAY, 2)
-    .appendLiteral(':')
-    .appendValue(MINUTE_OF_HOUR, 2)
-    .optionalStart()
-    .appendLiteral(':')
-    .appendValue(SECOND_OF_MINUTE, 2)
-    .toFormatter();
+	private static final DateTimeFormatter LOCAL_DATE_TIME = new DateTimeFormatterBuilder()
+			.parseCaseInsensitive()
+			.append(ISO_LOCAL_DATE)
+			.appendLiteral(' ')
+			.appendValue(HOUR_OF_DAY, 2)
+			.appendLiteral(':')
+			.appendValue(MINUTE_OF_HOUR, 2)
+			.optionalStart()
+			.appendLiteral(':')
+			.appendValue(SECOND_OF_MINUTE, 2)
+			.toFormatter();
 
-  private final AsyncClassicGenericQueryExecutor executor;
+	private final AsyncClassicGenericQueryExecutor executor;
 
-  @Autowired
-  public ServiceDaoImpl(@Qualifier("coreQueryExecutor") AsyncClassicGenericQueryExecutor executor) {
-    this.executor = executor;
-  }
+	@Autowired
+	public ServiceDaoImpl(@Qualifier("coreQueryExecutor") AsyncClassicGenericQueryExecutor executor) {
+		this.executor = executor;
+	}
 
-  @Override
-  public void findDatamart(String name, Handler<AsyncResult<Long>> resultHandler) {
-    executor.query(dsl -> dsl
-      .select(DATAMARTS_REGISTRY.DATAMART_ID)
-      .from(DATAMARTS_REGISTRY)
-      .where(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.equalIgnoreCase(name))).setHandler(ar -> {
-      if (ar.succeeded()) {
-        resultHandler.handle(ar.result().hasResults()
-          ? Future.succeededFuture(ar.result().get(DATAMARTS_REGISTRY.DATAMART_ID))
-          : Future.failedFuture(String.format("Витрина не найдена: [%s]", name)));
-      } else {
-        resultHandler.handle(Future.failedFuture(ar.cause()));
-      }
-    });
-  }
+	@Override
+	public void findDatamart(String name, Handler<AsyncResult<Long>> resultHandler) {
+		executor.query(dsl -> dsl
+				.select(DATAMARTS_REGISTRY.DATAMART_ID)
+				.from(DATAMARTS_REGISTRY)
+				.where(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.equalIgnoreCase(name))).setHandler(ar -> {
+			if (ar.succeeded()) {
+				resultHandler.handle(ar.result().hasResults()
+						? Future.succeededFuture(ar.result().get(DATAMARTS_REGISTRY.DATAMART_ID))
+						: Future.failedFuture(String.format("Витрина не найдена: [%s]", name)));
+			} else {
+				resultHandler.handle(Future.failedFuture(ar.cause()));
+			}
+		});
+	}
 
-  @Override
-  public void dropDatamart(Long id, Handler<AsyncResult<Void>> resultHandler) {
-    executor.execute(dsl -> dsl
-      .deleteFrom(DATAMARTS_REGISTRY)
-      .where(DATAMARTS_REGISTRY.DATAMART_ID.eq(id))
-    ).setHandler(ar -> {
-      if (ar.succeeded()) {
-        resultHandler.handle(Future.succeededFuture());
-      } else {
-        resultHandler.handle(Future.failedFuture(ar.cause()));
-      }
-    });
-  }
+	@Override
+	public void dropDatamart(Long id, Handler<AsyncResult<Void>> resultHandler) {
+		executor.execute(dsl -> dsl
+				.deleteFrom(DATAMARTS_REGISTRY)
+				.where(DATAMARTS_REGISTRY.DATAMART_ID.eq(id))
+		).setHandler(ar -> {
+			if (ar.succeeded()) {
+				resultHandler.handle(Future.succeededFuture());
+			} else {
+				resultHandler.handle(Future.failedFuture(ar.cause()));
+			}
+		});
+	}
 
-  @Override
-  public void insertDatamart(String name, Handler<AsyncResult<Void>> resultHandler) {
-    executor.execute(dsl -> dsl
-      .insertInto(DATAMARTS_REGISTRY)
-      .set(DATAMARTS_REGISTRY.DATAMART_MNEMONICS, name))
-      .setHandler(ar -> {
-        if (ar.succeeded()) {
-          resultHandler.handle(Future.succeededFuture());
-        } else {
-          resultHandler.handle(Future.failedFuture(ar.cause()));
-        }
-      });
-  }
+	@Override
+	public void insertDatamart(String name, Handler<AsyncResult<Void>> resultHandler) {
+		executor.execute(dsl -> dsl
+				.insertInto(DATAMARTS_REGISTRY)
+				.set(DATAMARTS_REGISTRY.DATAMART_MNEMONICS, name))
+				.setHandler(ar -> {
+					if (ar.succeeded()) {
+						resultHandler.handle(Future.succeededFuture());
+					} else {
+						resultHandler.handle(Future.failedFuture(ar.cause()));
+					}
+				});
+	}
 
-  @Override
-  public void insertEntity(Long datamartId, String name, Handler<AsyncResult<Void>> resultHandler) {
-    executor.execute(dsl -> dsl
-      .insertInto(ENTITIES_REGISTRY)
-      .set(ENTITIES_REGISTRY.DATAMART_ID, datamartId)
-      .set(ENTITIES_REGISTRY.ENTITY_MNEMONICS, name)
-    ).setHandler(ar -> {
-      if (ar.succeeded()) {
-        resultHandler.handle(Future.succeededFuture());
-      } else {
-        resultHandler.handle(Future.failedFuture(ar.cause()));
-      }
-    });
-  }
+	@Override
+	public void insertEntity(Long datamartId, String name, Handler<AsyncResult<Void>> resultHandler) {
+		executor.execute(dsl -> dsl
+				.insertInto(ENTITIES_REGISTRY)
+				.set(ENTITIES_REGISTRY.DATAMART_ID, datamartId)
+				.set(ENTITIES_REGISTRY.ENTITY_MNEMONICS, name)
+		).setHandler(ar -> {
+			if (ar.succeeded()) {
+				resultHandler.handle(Future.succeededFuture());
+			} else {
+				resultHandler.handle(Future.failedFuture(ar.cause()));
+			}
+		});
+	}
 
-  @Override
-  public void findEntity(Long datamartId, String name, Handler<AsyncResult<Long>> resultHandler) {
-    executor.query(dsl -> dsl
-      .select(ENTITIES_REGISTRY.ENTITY_ID)
-      .from(ENTITIES_REGISTRY)
-      .where(ENTITIES_REGISTRY.DATAMART_ID.eq(datamartId))
-      .and(ENTITIES_REGISTRY.ENTITY_MNEMONICS.equalIgnoreCase(name))
-    ).setHandler(ar -> {
-      if (ar.succeeded()) {
-        resultHandler.handle(ar.result().hasResults()
-          ? Future.succeededFuture(ar.result().get(ENTITIES_REGISTRY.ENTITY_ID))
-          : Future.failedFuture(String.format("Таблица не найдена: [%s]", name)));
-      } else {
-        resultHandler.handle(Future.failedFuture(ar.cause()));
-      }
-    });
-  }
+	@Override
+	public void findEntity(Long datamartId, String name, Handler<AsyncResult<Long>> resultHandler) {
+		executor.query(dsl -> dsl
+				.select(ENTITIES_REGISTRY.ENTITY_ID)
+				.from(ENTITIES_REGISTRY)
+				.where(ENTITIES_REGISTRY.DATAMART_ID.eq(datamartId))
+				.and(ENTITIES_REGISTRY.ENTITY_MNEMONICS.equalIgnoreCase(name))
+		).setHandler(ar -> {
+			if (ar.succeeded()) {
+				resultHandler.handle(ar.result().hasResults()
+						? Future.succeededFuture(ar.result().get(ENTITIES_REGISTRY.ENTITY_ID))
+						: Future.failedFuture(String.format("Таблица не найдена: [%s]", name)));
+			} else {
+				resultHandler.handle(Future.failedFuture(ar.cause()));
+			}
+		});
+	}
 
-  @Override
-  public void dropEntity(Long datamartId, String name, Handler<AsyncResult<Void>> resultHandler) {
-    executor.execute(dsl -> dsl
-      .deleteFrom(ENTITIES_REGISTRY)
-      .where(ENTITIES_REGISTRY.DATAMART_ID.eq(datamartId))
-      .and(ENTITIES_REGISTRY.ENTITY_MNEMONICS.equalIgnoreCase(name))
-    ).setHandler(ar -> {
-      if (ar.succeeded()) {
-        resultHandler.handle(Future.succeededFuture());
-      } else {
-        resultHandler.handle(Future.failedFuture(ar.cause()));
-      }
-    });
-  }
+	@Override
+	public void dropEntity(Long datamartId, String name, Handler<AsyncResult<Void>> resultHandler) {
+		executor.execute(dsl -> dsl
+				.deleteFrom(ENTITIES_REGISTRY)
+				.where(ENTITIES_REGISTRY.DATAMART_ID.eq(datamartId))
+				.and(ENTITIES_REGISTRY.ENTITY_MNEMONICS.equalIgnoreCase(name))
+		).setHandler(ar -> {
+			if (ar.succeeded()) {
+				resultHandler.handle(Future.succeededFuture());
+			} else {
+				resultHandler.handle(Future.failedFuture(ar.cause()));
+			}
+		});
+	}
 
-  @Override
-  public void insertAttribute(Long entityId, String name, Integer typeId, Integer length, Handler<AsyncResult<Void>> resultHandler) {
-    executor.execute(dsl -> dsl
-      .insertInto(ATTRIBUTES_REGISTRY)
-      .set(ATTRIBUTES_REGISTRY.ENTITY_ID, entityId)
-      .set(ATTRIBUTES_REGISTRY.ATTR_MNEMONICS, name)
-      .set(ATTRIBUTES_REGISTRY.LENGTH, length)
-      .set(ATTRIBUTES_REGISTRY.DATA_TYPE_ID, typeId)
-    ).setHandler(ar -> {
-      if (ar.succeeded()) {
-        resultHandler.handle(Future.succeededFuture());
-      } else {
-        resultHandler.handle(Future.failedFuture(ar.cause()));
-      }
-    });
-  }
+	@Override
+	public void insertAttribute(Long entityId, String name, Integer typeId, Integer length, Handler<AsyncResult<Void>> resultHandler) {
+		executor.execute(dsl -> dsl
+				.insertInto(ATTRIBUTES_REGISTRY)
+				.set(ATTRIBUTES_REGISTRY.ENTITY_ID, entityId)
+				.set(ATTRIBUTES_REGISTRY.ATTR_MNEMONICS, name)
+				.set(ATTRIBUTES_REGISTRY.LENGTH, length)
+				.set(ATTRIBUTES_REGISTRY.DATA_TYPE_ID, typeId)
+		).setHandler(ar -> {
+			if (ar.succeeded()) {
+				resultHandler.handle(Future.succeededFuture());
+			} else {
+				resultHandler.handle(Future.failedFuture(ar.cause()));
+			}
+		});
+	}
 
-  @Override
-  public void dropAttribute(Long entityId, Handler<AsyncResult<Void>> resultHandler) {
-    executor.execute(dsl -> dsl
-      .deleteFrom(ATTRIBUTES_REGISTRY)
-      .where(ATTRIBUTES_REGISTRY.ENTITY_ID.eq(entityId))
-    ).setHandler(ar -> {
-      if (ar.succeeded()) {
-        resultHandler.handle(Future.succeededFuture());
-      } else {
-        resultHandler.handle(Future.failedFuture(ar.cause()));
-      }
-    });
-  }
+	@Override
+	public void dropAttribute(Long entityId, Handler<AsyncResult<Void>> resultHandler) {
+		executor.execute(dsl -> dsl
+				.deleteFrom(ATTRIBUTES_REGISTRY)
+				.where(ATTRIBUTES_REGISTRY.ENTITY_ID.eq(entityId))
+		).setHandler(ar -> {
+			if (ar.succeeded()) {
+				resultHandler.handle(Future.succeededFuture());
+			} else {
+				resultHandler.handle(Future.failedFuture(ar.cause()));
+			}
+		});
+	}
 
-  @Override
-  public void selectType(String name, Handler<AsyncResult<Integer>> resultHandler) {
-    executor.query(dsl -> dsl
-      .select(DATA_TYPES_REGISTRY.DATA_TYPE_ID)
-      .from(DATA_TYPES_REGISTRY)
-      .where(DATA_TYPES_REGISTRY.DATA_TYPE_MNEMONICS.equalIgnoreCase(name))
-    ).setHandler(ar -> {
-      if (ar.succeeded())
-        resultHandler.handle(ar.result().hasResults()
-          ? Future.succeededFuture(ar.result().get(DATA_TYPES_REGISTRY.DATA_TYPE_ID))
-          : Future.failedFuture(String.format("Тип не найден: [%s]", name)));
-      else {
-        resultHandler.handle(Future.failedFuture(ar.cause()));
-      }
-    });
-  }
+	@Override
+	public void selectType(String name, Handler<AsyncResult<Integer>> resultHandler) {
+		executor.query(dsl -> dsl
+				.select(DATA_TYPES_REGISTRY.DATA_TYPE_ID)
+				.from(DATA_TYPES_REGISTRY)
+				.where(DATA_TYPES_REGISTRY.DATA_TYPE_MNEMONICS.equalIgnoreCase(name))
+		).setHandler(ar -> {
+			if (ar.succeeded())
+				resultHandler.handle(ar.result().hasResults()
+						? Future.succeededFuture(ar.result().get(DATA_TYPES_REGISTRY.DATA_TYPE_ID))
+						: Future.failedFuture(String.format("Тип не найден: [%s]", name)));
+			else {
+				resultHandler.handle(Future.failedFuture(ar.cause()));
+			}
+		});
+	}
 
-  public void getDatamartMeta(Handler<AsyncResult<List<DatamartInfo>>> resultHandler) {
-    executor.query(dsl -> dsl
-      .select(DATAMARTS_REGISTRY.DATAMART_ID, DATAMARTS_REGISTRY.DATAMART_MNEMONICS)
-      .from(DATAMARTS_REGISTRY)).setHandler(ar -> {
-      if (ar.succeeded()) {
-        if (ar.result().unwrap() instanceof ResultSet) {
-          ResultSet rows = ar.result().unwrap();
-          List<DatamartInfo> datamartInfoList = new ArrayList<>();
-          rows.getRows().forEach(it ->
-            datamartInfoList.add(new DatamartInfo(
-              it.getInteger(DATAMARTS_REGISTRY.DATAMART_ID.getName()),
-              it.getString(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.getName())
-            ))
-          );
-          resultHandler.handle(Future.succeededFuture(datamartInfoList));
-        } else {
-          resultHandler.handle(Future.failedFuture("Невозможно получить метаданные"));
-        }
-      } else
-        resultHandler.handle(Future.failedFuture(ar.cause()));
-    });
-  }
+	public void getDatamartMeta(Handler<AsyncResult<List<DatamartInfo>>> resultHandler) {
+		executor.query(dsl -> dsl
+				.select(DATAMARTS_REGISTRY.DATAMART_ID, DATAMARTS_REGISTRY.DATAMART_MNEMONICS)
+				.from(DATAMARTS_REGISTRY)).setHandler(ar -> {
+			if (ar.succeeded()) {
+				if (ar.result().unwrap() instanceof ResultSet) {
+					ResultSet rows = ar.result().unwrap();
+					List<DatamartInfo> datamartInfoList = new ArrayList<>();
+					rows.getRows().forEach(it ->
+							datamartInfoList.add(new DatamartInfo(
+									it.getInteger(DATAMARTS_REGISTRY.DATAMART_ID.getName()),
+									it.getString(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.getName())
+							))
+					);
+					resultHandler.handle(Future.succeededFuture(datamartInfoList));
+				} else {
+					resultHandler.handle(Future.failedFuture("Невозможно получить метаданные"));
+				}
+			} else
+				resultHandler.handle(Future.failedFuture(ar.cause()));
+		});
+	}
 
-  public void getEntitiesMeta(String datamartMnemonic, Handler<AsyncResult<List<DatamartEntity>>> resultHandler) {
-    executor.query(dsl -> dsl
-      .select(ENTITIES_REGISTRY.ENTITY_ID, ENTITIES_REGISTRY.ENTITY_MNEMONICS, DATAMARTS_REGISTRY.DATAMART_MNEMONICS)
-      .from(ENTITIES_REGISTRY)
-      .join(DATAMARTS_REGISTRY)
-      .on(ENTITIES_REGISTRY.DATAMART_ID.eq(DATAMARTS_REGISTRY.DATAMART_ID))
-      .where(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.equalIgnoreCase(datamartMnemonic))
-    ).setHandler(ar -> {
-      if (ar.succeeded()) {
-        if (ar.result().unwrap() instanceof ResultSet) {
-          List<DatamartEntity> datamartEntityList = new ArrayList<>();
-          ResultSet rows = ar.result().unwrap();
-          rows.getRows().forEach(it ->
-            datamartEntityList.add(new DatamartEntity(
-              it.getInteger(ENTITIES_REGISTRY.ENTITY_ID.getName()),
-              it.getString(ENTITIES_REGISTRY.ENTITY_MNEMONICS.getName()),
-              it.getString(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.getName())
-            ))
-          );
-          LOGGER.info("Найдено {} сущностей для витрины: {}", datamartEntityList.size(), datamartMnemonic);
-          resultHandler.handle(Future.succeededFuture(datamartEntityList));
-        } else {
-          resultHandler.handle(Future.failedFuture(String.format("Невозможно получить сущности для витрины %s", datamartMnemonic)));
-        }
-      } else
-        resultHandler.handle(Future.failedFuture(ar.cause()));
-    });
+	public void getEntitiesMeta(String datamartMnemonic, Handler<AsyncResult<List<DatamartEntity>>> resultHandler) {
+		executor.query(dsl -> dsl
+				.select(ENTITIES_REGISTRY.ENTITY_ID, ENTITIES_REGISTRY.ENTITY_MNEMONICS, DATAMARTS_REGISTRY.DATAMART_MNEMONICS)
+				.from(ENTITIES_REGISTRY)
+				.join(DATAMARTS_REGISTRY)
+				.on(ENTITIES_REGISTRY.DATAMART_ID.eq(DATAMARTS_REGISTRY.DATAMART_ID))
+				.where(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.equalIgnoreCase(datamartMnemonic))
+		).setHandler(ar -> {
+			if (ar.succeeded()) {
+				if (ar.result().unwrap() instanceof ResultSet) {
+					List<DatamartEntity> datamartEntityList = new ArrayList<>();
+					ResultSet rows = ar.result().unwrap();
+					rows.getRows().forEach(it ->
+							datamartEntityList.add(new DatamartEntity(
+									it.getInteger(ENTITIES_REGISTRY.ENTITY_ID.getName()),
+									it.getString(ENTITIES_REGISTRY.ENTITY_MNEMONICS.getName()),
+									it.getString(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.getName())
+							))
+					);
+					LOGGER.info("Найдено {} сущностей для витрины: {}", datamartEntityList.size(), datamartMnemonic);
+					resultHandler.handle(Future.succeededFuture(datamartEntityList));
+				} else {
+					resultHandler.handle(Future.failedFuture(String.format("Невозможно получить сущности для витрины %s", datamartMnemonic)));
+				}
+			} else
+				resultHandler.handle(Future.failedFuture(ar.cause()));
+		});
 
-  }
+	}
 
-  public void getAttributesMeta(String datamartMnemonic, String entityMnemonic, Handler<AsyncResult<List<EntityAttribute>>> resultHandler) {
-    executor.query(dsl -> dsl
-      .select(ATTRIBUTES_REGISTRY.ATTR_ID,
-        ATTRIBUTES_REGISTRY.ATTR_MNEMONICS,
-        ATTRIBUTES_REGISTRY.LENGTH,
-        ATTRIBUTES_REGISTRY.ACCURACY,
-        DATA_TYPES_REGISTRY.DATA_TYPE_MNEMONICS,
-        DATAMARTS_REGISTRY.DATAMART_MNEMONICS,
-        ENTITIES_REGISTRY.ENTITY_MNEMONICS
-      )
-      .from(ATTRIBUTES_REGISTRY)
-      .join(DATA_TYPES_REGISTRY).on(ATTRIBUTES_REGISTRY.DATA_TYPE_ID.eq(DATA_TYPES_REGISTRY.DATA_TYPE_ID))
-      .join(ENTITIES_REGISTRY).on(ENTITIES_REGISTRY.ENTITY_ID.eq(ATTRIBUTES_REGISTRY.ENTITY_ID))
-      .join(DATAMARTS_REGISTRY).on(DATAMARTS_REGISTRY.DATAMART_ID.eq(ENTITIES_REGISTRY.DATAMART_ID))
-      .where(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.equalIgnoreCase(datamartMnemonic)).and(ENTITIES_REGISTRY.ENTITY_MNEMONICS.equalIgnoreCase(entityMnemonic))
-    ).setHandler(ar -> {
-      if (ar.succeeded() && ar.result().unwrap() instanceof ResultSet) {
-        List<EntityAttribute> res = new ArrayList<>();
-        ResultSet rows;
-        rows = ar.result().unwrap();
-        rows.getRows().forEach(it ->
-          res.add(new EntityAttribute(
-            it.getInteger(ATTRIBUTES_REGISTRY.ATTR_ID.getName()),
-            it.getString(ATTRIBUTES_REGISTRY.ATTR_MNEMONICS.getName()),
-            it.getString(DATA_TYPES_REGISTRY.DATA_TYPE_MNEMONICS.getName()),
-            it.getInteger(ATTRIBUTES_REGISTRY.LENGTH.getName()),
-            it.getInteger(ATTRIBUTES_REGISTRY.ACCURACY.getName()),
-            it.getString(ENTITIES_REGISTRY.ENTITY_MNEMONICS.getName()),
-            it.getString(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.getName())
-          ))
-        );
-        LOGGER.info("Найдено {} атрибутов для сущности: '{}' схемы: '{}'.", res.size(), entityMnemonic, datamartMnemonic);
-        resultHandler.handle(Future.succeededFuture(res));
-      } else {
-        LOGGER.error("Невозможно получить атрибуты метаданных: {}", ar.cause().getMessage());
-        resultHandler.handle(Future.failedFuture(ar.cause()));
-      }
-    });
-  }
+	public void getAttributesMeta(String datamartMnemonic, String entityMnemonic, Handler<AsyncResult<List<EntityAttribute>>> resultHandler) {
+		executor.query(dsl -> dsl
+				.select(ATTRIBUTES_REGISTRY.ATTR_ID,
+						ATTRIBUTES_REGISTRY.ATTR_MNEMONICS,
+						ATTRIBUTES_REGISTRY.LENGTH,
+						ATTRIBUTES_REGISTRY.ACCURACY,
+						DATA_TYPES_REGISTRY.DATA_TYPE_MNEMONICS,
+						DATAMARTS_REGISTRY.DATAMART_MNEMONICS,
+						ENTITIES_REGISTRY.ENTITY_MNEMONICS
+				)
+				.from(ATTRIBUTES_REGISTRY)
+				.join(DATA_TYPES_REGISTRY).on(ATTRIBUTES_REGISTRY.DATA_TYPE_ID.eq(DATA_TYPES_REGISTRY.DATA_TYPE_ID))
+				.join(ENTITIES_REGISTRY).on(ENTITIES_REGISTRY.ENTITY_ID.eq(ATTRIBUTES_REGISTRY.ENTITY_ID))
+				.join(DATAMARTS_REGISTRY).on(DATAMARTS_REGISTRY.DATAMART_ID.eq(ENTITIES_REGISTRY.DATAMART_ID))
+				.where(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.equalIgnoreCase(datamartMnemonic)).and(ENTITIES_REGISTRY.ENTITY_MNEMONICS.equalIgnoreCase(entityMnemonic))
+		).setHandler(ar -> {
+			if (ar.succeeded() && ar.result().unwrap() instanceof ResultSet) {
+				List<EntityAttribute> res = new ArrayList<>();
+				ResultSet rows;
+				rows = ar.result().unwrap();
+				rows.getRows().forEach(it ->
+						res.add(new EntityAttribute(
+								it.getInteger(ATTRIBUTES_REGISTRY.ATTR_ID.getName()),
+								it.getString(ATTRIBUTES_REGISTRY.ATTR_MNEMONICS.getName()),
+								it.getString(DATA_TYPES_REGISTRY.DATA_TYPE_MNEMONICS.getName()),
+								it.getInteger(ATTRIBUTES_REGISTRY.LENGTH.getName()),
+								it.getInteger(ATTRIBUTES_REGISTRY.ACCURACY.getName()),
+								it.getString(ENTITIES_REGISTRY.ENTITY_MNEMONICS.getName()),
+								it.getString(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.getName())
+						))
+				);
+				LOGGER.info("Найдено {} атрибутов для сущности: '{}' схемы: '{}'.", res.size(), entityMnemonic, datamartMnemonic);
+				resultHandler.handle(Future.succeededFuture(res));
+			} else {
+				LOGGER.error("Невозможно получить атрибуты метаданных: {}", ar.cause().getMessage());
+				resultHandler.handle(Future.failedFuture(ar.cause()));
+			}
+		});
+	}
 
-  @Override
-  public void getMetadataByTableName(String tableName, Handler<AsyncResult<List<ClassField>>> resultHandler) {
-    int indexComma = tableName.indexOf(".");
-    String schema = indexComma != -1 ? tableName.substring(0, indexComma) : "test";
-    String table = tableName.substring(indexComma + 1);
-    executor.query(dsl -> dsl.select()
-      .from(COLUMNS)
-      .join(TABLES)
-      .on(COLUMNS.TABLE_NAME.eq(TABLES.TABLE_NAME)).and(COLUMNS.TABLE_SCHEMA.eq(TABLES.TABLE_SCHEMA))
-      // TODO: пока так, нужен upscale sql
-      .where(TABLES.TABLE_NAME.eq(table))
-      .and(TABLES.TABLE_SCHEMA.equalIgnoreCase(schema))
-    ).setHandler(ar -> {
-      if (ar.succeeded()) {
-        QueryResult result = ar.result();
-        ResultSet resultSet = result.unwrap();
-        List<ClassField> classFieldList = new ArrayList<>();
-        resultSet.getRows().forEach(row -> {
-          classFieldList.add(
-            new ClassField(row.getString(SCHEMA_TABLE_COLUMN_NAME),
-              row.getString(SCHEMA_TABLE_COLUMN_TYPE),
-              row.getString(SCHEMA_TABLE_IS_NULLABLE).contains("YES"),
-              row.getString(SCHEMA_TABLE_COLUMN_KEY).contains("PRI"),
-              row.getString(SCHEMA_TABLE_COLUMN_DEFAULT)));
-        });
-        resultHandler.handle(Future.succeededFuture(classFieldList));
-      } else {
-        LOGGER.error("Невозможно получить метаданные таблицы: {}", ar.cause().getMessage());
-        resultHandler.handle(Future.failedFuture(ar.cause()));
-      }
-    });
-  }
+	@Override
+	public void getMetadataByTableName(String tableName, Handler<AsyncResult<List<ClassField>>> resultHandler) {
+		int indexComma = tableName.indexOf(".");
+		String schema = indexComma != -1 ? tableName.substring(0, indexComma) : "test";
+		String table = tableName.substring(indexComma + 1);
+		executor.query(dsl -> dsl.select(COLUMNS.COLUMN_NAME, COLUMNS.COLUMN_TYPE,
+				COLUMNS.IS_NULLABLE, COLUMNS.COLUMN_DEFAULT, KEY_COLUMN_USAGE.ORDINAL_POSITION)
+				.from(COLUMNS)
+				.join(KEY_COLUMN_USAGE).on(COLUMNS.TABLE_SCHEMA.eq(KEY_COLUMN_USAGE.CONSTRAINT_SCHEMA)).and(COLUMNS.TABLE_NAME.eq(KEY_COLUMN_USAGE.TABLE_NAME))
+				.and(COLUMNS.COLUMN_NAME.eq(KEY_COLUMN_USAGE.COLUMN_NAME))
+				.where(COLUMNS.TABLE_NAME.eq(table))
+				.and(COLUMNS.TABLE_SCHEMA.equalIgnoreCase(schema))
+				.and(KEY_COLUMN_USAGE.CONSTRAINT_NAME.eq("PRIMARY"))
+				.orderBy(KEY_COLUMN_USAGE.ORDINAL_POSITION)
+		).setHandler(ar -> {
+			if (ar.succeeded()) {
+				QueryResult result = ar.result();
+				ResultSet resultSet = result.unwrap();
+				List<ClassField> classFieldList = new ArrayList<>();
+				resultSet.getRows().forEach(row -> {
+					classFieldList.add(
+							new ClassField(row.getString(COLUMNS.COLUMN_NAME.getName()),
+									row.getString(COLUMNS.COLUMN_TYPE.getName()),
+									row.getString(COLUMNS.IS_NULLABLE.getName()).contains("YES"),
+									row.getInteger(KEY_COLUMN_USAGE.ORDINAL_POSITION.getName()),
+									row.getInteger(KEY_COLUMN_USAGE.ORDINAL_POSITION.getName()),
+									row.getString(COLUMNS.COLUMN_DEFAULT.getName())));
+				});
+				resultHandler.handle(Future.succeededFuture(classFieldList));
+			} else {
+				LOGGER.error("Невозможно получить метаданные таблицы: {}", ar.cause().getMessage());
+				resultHandler.handle(Future.failedFuture(ar.cause()));
+			}
+		});
+	}
 
-  @Override
-  public void executeUpdate(String sql, Handler<AsyncResult<List<Void>>> resultHandler) {
-    executor.execute(dsl -> dsl.query(sql)
-    ).setHandler(ar -> {
-      if (ar.succeeded()) {
-        LOGGER.debug("Исполнен запрос(executeUpdate) sql: {}, результат: {}", sql, ar.result());
-        resultHandler.handle(Future.succeededFuture());
-      } else {
-        LOGGER.error("Ошибка при исполнении запроса(executeUpdate) sql: {}", sql, ar.cause());
-        resultHandler.handle(Future.failedFuture(ar.cause()));
-      }
-    });
-  }
+	@Override
+	public void executeUpdate(String sql, Handler<AsyncResult<List<Void>>> resultHandler) {
+		executor.execute(dsl -> dsl.query(sql)
+		).setHandler(ar -> {
+			if (ar.succeeded()) {
+				LOGGER.debug("Исполнен запрос(executeUpdate) sql: {}, результат: {}", sql, ar.result());
+				resultHandler.handle(Future.succeededFuture());
+			} else {
+				LOGGER.error("Ошибка при исполнении запроса(executeUpdate) sql: {}", sql, ar.cause());
+				resultHandler.handle(Future.failedFuture(ar.cause()));
+			}
+		});
+	}
 
-  @Override
-  public void dropTable(ClassTable classTable, Handler<AsyncResult<Void>> resultHandler) {
-    executor.execute(dsl -> dsl.dropTableIfExists(classTable.getName())).setHandler(ar -> {
-      if (ar.succeeded()) {
-        LOGGER.debug("Удаление таблицы [{}] успешно завершено", classTable.getNameWithSchema());
-        resultHandler.handle(Future.succeededFuture());
-      } else {
-        LOGGER.error("Ошибка удаления таблицы [{}]", classTable.getNameWithSchema(), ar.cause());
-        resultHandler.handle(Future.failedFuture(ar.cause()));
-      }
-    });
-  }
+	@Override
+	public void dropTable(ClassTable classTable, Handler<AsyncResult<Void>> resultHandler) {
+		executor.execute(dsl -> dsl.dropTableIfExists(classTable.getName())).setHandler(ar -> {
+			if (ar.succeeded()) {
+				LOGGER.debug("Удаление таблицы [{}] успешно завершено", classTable.getNameWithSchema());
+				resultHandler.handle(Future.succeededFuture());
+			} else {
+				LOGGER.error("Ошибка удаления таблицы [{}]", classTable.getNameWithSchema(), ar.cause());
+				resultHandler.handle(Future.failedFuture(ar.cause()));
+			}
+		});
+	}
 
-  @Override
-  public void executeQuery(String sql, Handler<AsyncResult<ResultSet>> resultHandler) {
-    executor.query(dsl -> dsl.resultQuery(sql))
-      .setHandler(ar -> {
-        if (ar.succeeded()) {
-          LOGGER.debug("Исполнен запрос(executeQuery) sql: {}, результат: {}", sql, ar.result());
-          if (ar.result().unwrap() instanceof ResultSet) {
-            resultHandler.handle(Future.succeededFuture(ar.result().unwrap()));
-          } else {
-            LOGGER.error("Невозможно получить результат запроса(executeQuery) sql: {}", sql, ar.cause());
-            resultHandler.handle(Future.failedFuture(String.format("Невозможно получить результат выполнения запроса [%s]", sql)));
-          }
-        } else {
-          LOGGER.error("Ошибка при исполнении запроса(executeQuery) sql: {}", sql, ar.cause());
-          resultHandler.handle(Future.failedFuture(ar.cause()));
-        }
-      });
-  }
+	@Override
+	public void executeQuery(String sql, Handler<AsyncResult<ResultSet>> resultHandler) {
+		executor.query(dsl -> dsl.resultQuery(sql))
+				.setHandler(ar -> {
+					if (ar.succeeded()) {
+						LOGGER.debug("Исполнен запрос(executeQuery) sql: {}, результат: {}", sql, ar.result());
+						if (ar.result().unwrap() instanceof ResultSet) {
+							resultHandler.handle(Future.succeededFuture(ar.result().unwrap()));
+						} else {
+							LOGGER.error("Невозможно получить результат запроса(executeQuery) sql: {}", sql, ar.cause());
+							resultHandler.handle(Future.failedFuture(String.format("Невозможно получить результат выполнения запроса [%s]", sql)));
+						}
+					} else {
+						LOGGER.error("Ошибка при исполнении запроса(executeQuery) sql: {}", sql, ar.cause());
+						resultHandler.handle(Future.failedFuture(ar.cause()));
+					}
+				});
+	}
 
-  @Override
-  public void insertDownloadExternalTable(CreateDownloadExternalTableQuery downloadExternalTableQuery, Handler<AsyncResult<Void>> resultHandler) {
-    findDatamart(downloadExternalTableQuery.getSchemaName(), datamartHandler -> {
-      if (datamartHandler.succeeded()) {
-        Long datamartId = datamartHandler.result();
-        executor.execute(dsl -> dsl.insertInto(DOWNLOAD_EXTERNAL_TABLE)
-          .set(DOWNLOAD_EXTERNAL_TABLE.SCHEMA_ID, datamartId)
-          .set(DOWNLOAD_EXTERNAL_TABLE.TABLE_NAME, downloadExternalTableQuery.getTableName())
-          .set(DOWNLOAD_EXTERNAL_TABLE.TYPE_ID, downloadExternalTableQuery.getLocationType().ordinal())
-          .set(DOWNLOAD_EXTERNAL_TABLE.LOCATION, downloadExternalTableQuery.getLocationPath())
-          .set(DOWNLOAD_EXTERNAL_TABLE.FORMAT_ID, downloadExternalTableQuery.getFormat().ordinal())
-          .set(DOWNLOAD_EXTERNAL_TABLE.CHUNK_SIZE, downloadExternalTableQuery.getChunkSize())
-        )
-          .setHandler(ar -> {
-            if (ar.succeeded()) {
-              resultHandler.handle(Future.succeededFuture());
-            } else {
-              resultHandler.handle(Future.failedFuture(ar.cause()));
-            }
-          });
-      } else {
-        resultHandler.handle(Future.failedFuture(datamartHandler.cause()));
-      }
-    });
-  }
+	@Override
+	public void insertDownloadExternalTable(CreateDownloadExternalTableQuery downloadExternalTableQuery, Handler<AsyncResult<Void>> resultHandler) {
+		findDatamart(downloadExternalTableQuery.getSchemaName(), datamartHandler -> {
+			if (datamartHandler.succeeded()) {
+				Long datamartId = datamartHandler.result();
+				executor.execute(dsl -> dsl.insertInto(DOWNLOAD_EXTERNAL_TABLE)
+						.set(DOWNLOAD_EXTERNAL_TABLE.SCHEMA_ID, datamartId)
+						.set(DOWNLOAD_EXTERNAL_TABLE.TABLE_NAME, downloadExternalTableQuery.getTableName())
+						.set(DOWNLOAD_EXTERNAL_TABLE.TYPE_ID, downloadExternalTableQuery.getLocationType().ordinal())
+						.set(DOWNLOAD_EXTERNAL_TABLE.LOCATION, downloadExternalTableQuery.getLocationPath())
+						.set(DOWNLOAD_EXTERNAL_TABLE.FORMAT_ID, downloadExternalTableQuery.getFormat().ordinal())
+						.set(DOWNLOAD_EXTERNAL_TABLE.CHUNK_SIZE, downloadExternalTableQuery.getChunkSize())
+				)
+						.setHandler(ar -> {
+							if (ar.succeeded()) {
+								resultHandler.handle(Future.succeededFuture());
+							} else {
+								resultHandler.handle(Future.failedFuture(ar.cause()));
+							}
+						});
+			} else {
+				resultHandler.handle(Future.failedFuture(datamartHandler.cause()));
+			}
+		});
+	}
 
-  @Override
-  public void dropDownloadExternalTable(String datamart,
-                                        String tableName,
-                                        Handler<AsyncResult<Void>> resultHandler) {
-    findDatamart(datamart, datamartHandler -> {
-      if (datamartHandler.succeeded()) {
-        Long datamartId = datamartHandler.result();
-        executor.execute(dsl -> dsl.deleteFrom(DOWNLOAD_EXTERNAL_TABLE)
-          .where(DOWNLOAD_EXTERNAL_TABLE.SCHEMA_ID.eq(datamartId))
-          .and(DOWNLOAD_EXTERNAL_TABLE.TABLE_NAME.eq(tableName.toLowerCase())))
-          .setHandler(ar -> {
-            if (ar.succeeded()) {
-              resultHandler.handle(Future.succeededFuture());
-            } else {
-              resultHandler.handle(Future.failedFuture(ar.cause()));
-            }
-          });
-      } else {
-        resultHandler.handle(Future.failedFuture(datamartHandler.cause()));
-      }
-    });
-  }
+	@Override
+	public void dropDownloadExternalTable(String datamart,
+										  String tableName,
+										  Handler<AsyncResult<Void>> resultHandler) {
+		findDatamart(datamart, datamartHandler -> {
+			if (datamartHandler.succeeded()) {
+				Long datamartId = datamartHandler.result();
+				executor.execute(dsl -> dsl.deleteFrom(DOWNLOAD_EXTERNAL_TABLE)
+						.where(DOWNLOAD_EXTERNAL_TABLE.SCHEMA_ID.eq(datamartId))
+						.and(DOWNLOAD_EXTERNAL_TABLE.TABLE_NAME.eq(tableName.toLowerCase())))
+						.setHandler(ar -> {
+							if (ar.succeeded()) {
+								resultHandler.handle(Future.succeededFuture());
+							} else {
+								resultHandler.handle(Future.failedFuture(ar.cause()));
+							}
+						});
+			} else {
+				resultHandler.handle(Future.failedFuture(datamartHandler.cause()));
+			}
+		});
+	}
 
-  @Override
-  public void getDeltaOnDateTime(ActualDeltaRequest actualDeltaRequest, Handler<AsyncResult<Long>> resultHandler) {
+	@Override
+	public void getDeltaOnDateTime(ActualDeltaRequest actualDeltaRequest, Handler<AsyncResult<Long>> resultHandler) {
     /* из постановки:
       SELECT MAX(sinId)
       FROM loaded_deltas_table
       WHERE SysDate <= 'дата-время' AND Status = 1 AND datamartMnemonics = 'datamart'
      */
-    final String datamart = actualDeltaRequest.getDatamart();
-    final String dateTime = actualDeltaRequest.getDateTime();
-    LOGGER.debug("Получение дельты витрины {} на {}, начало", datamart, dateTime);
-    executor.query(dsl -> getDeltaByDatamartAndDateSelect(dsl, actualDeltaRequest)).setHandler(ar -> {
-      if (ar.succeeded()) {
-        final Long delta = ar.result().get(0, Long.class);
-        LOGGER.debug("Дельта витрины {} на дату {}: {}", datamart, dateTime, delta);
-        resultHandler.handle(Future.succeededFuture(delta));
-      } else {
-        LOGGER.error("Невозможно получить дельту витрины {} на дату {}: {}",
-          datamart, dateTime, ar.cause().getMessage());
-        resultHandler.handle(Future.failedFuture(ar.cause()));
-      }
-    });
-  }
+		final String datamart = actualDeltaRequest.getDatamart();
+		final String dateTime = actualDeltaRequest.getDateTime();
+		LOGGER.debug("Получение дельты витрины {} на {}, начало", datamart, dateTime);
+		executor.query(dsl -> getDeltaByDatamartAndDateSelect(dsl, actualDeltaRequest)).setHandler(ar -> {
+			if (ar.succeeded()) {
+				final Long delta = ar.result().get(0, Long.class);
+				LOGGER.debug("Дельта витрины {} на дату {}: {}", datamart, dateTime, delta);
+				resultHandler.handle(Future.succeededFuture(delta));
+			} else {
+				LOGGER.error("Невозможно получить дельту витрины {} на дату {}: {}",
+						datamart, dateTime, ar.cause().getMessage());
+				resultHandler.handle(Future.failedFuture(ar.cause()));
+			}
+		});
+	}
 
-  @Override
-  public void getDeltasOnDateTimes(List<ActualDeltaRequest> actualDeltaRequests, Handler<AsyncResult<List<Long>>> resultHandler) {
-    LOGGER.debug("Получение {} дельт, начало", actualDeltaRequests.size());
-    if (actualDeltaRequests.isEmpty()) {
-      LOGGER.warn("Список запросов на дельты должен быть не пуст.");
-      resultHandler.handle(Future.succeededFuture(Collections.emptyList()));
-      return;
-    }
-    executor.query(dsl -> getUnionOfDeltaByDatamartAndDateSelects(dsl, actualDeltaRequests)).setHandler(ar -> {
-      if (ar.succeeded()) {
-        LOGGER.debug("Получение {} дельт, запрос выполнен", actualDeltaRequests.size());
-        final List<Long> result = ar.result().stream()
-          .map(queryResult -> queryResult.get(0, Long.class))
-          .collect(Collectors.toList());
-        LOGGER.debug("Получение {} дельт, результат: {}", actualDeltaRequests.size(), result);
-        resultHandler.handle(Future.succeededFuture(result));
-      } else {
-        LOGGER.error("Получение {} дельт, ошибка: {}", actualDeltaRequests.size(), ar.cause().getMessage());
-        resultHandler.handle(Future.failedFuture(ar.cause()));
-      }
-    });
-  }
+	@Override
+	public void getDeltasOnDateTimes(List<ActualDeltaRequest> actualDeltaRequests, Handler<AsyncResult<List<Long>>> resultHandler) {
+		LOGGER.debug("Получение {} дельт, начало", actualDeltaRequests.size());
+		if (actualDeltaRequests.isEmpty()) {
+			LOGGER.warn("Список запросов на дельты должен быть не пуст.");
+			resultHandler.handle(Future.succeededFuture(Collections.emptyList()));
+			return;
+		}
+		executor.query(dsl -> getUnionOfDeltaByDatamartAndDateSelects(dsl, actualDeltaRequests)).setHandler(ar -> {
+			if (ar.succeeded()) {
+				LOGGER.debug("Получение {} дельт, запрос выполнен", actualDeltaRequests.size());
+				final List<Long> result = ar.result().stream()
+						.map(queryResult -> queryResult.get(0, Long.class))
+						.collect(Collectors.toList());
+				LOGGER.debug("Получение {} дельт, результат: {}", actualDeltaRequests.size(), result);
+				resultHandler.handle(Future.succeededFuture(result));
+			} else {
+				LOGGER.error("Получение {} дельт, ошибка: {}", actualDeltaRequests.size(), ar.cause().getMessage());
+				resultHandler.handle(Future.failedFuture(ar.cause()));
+			}
+		});
+	}
 
-  private Select<Record1<Long>> getUnionOfDeltaByDatamartAndDateSelects(DSLContext dsl, List<ActualDeltaRequest> actualDeltaRequests) {
-    return actualDeltaRequests.stream()
-      .map(adr -> getDeltaByDatamartAndDateSelect(dsl, adr))
-      .reduce(Select::unionAll)
-      .get();
-  }
+	private Select<Record1<Long>> getUnionOfDeltaByDatamartAndDateSelects(DSLContext dsl, List<ActualDeltaRequest> actualDeltaRequests) {
+		return actualDeltaRequests.stream()
+				.map(adr -> getDeltaByDatamartAndDateSelect(dsl, adr))
+				.reduce(Select::unionAll)
+				.get();
+	}
 
-  private Select<Record1<Long>> getDeltaByDatamartAndDateSelect(DSLContext dsl, ActualDeltaRequest actualDeltaRequest) {
-    return dsl.select(max(DELTA_DATA.SIN_ID))
-      .from(DELTA_DATA)
-      .where(DELTA_DATA.DATAMART_MNEMONICS.equalIgnoreCase(actualDeltaRequest.getDatamart()))
-      .and(DELTA_DATA.SYS_DATE.le(LocalDateTime.from(LOCAL_DATE_TIME.parse(actualDeltaRequest.getDateTime()))));
-  }
+	private Select<Record1<Long>> getDeltaByDatamartAndDateSelect(DSLContext dsl, ActualDeltaRequest actualDeltaRequest) {
+		return dsl.select(max(DELTA_DATA.SIN_ID))
+				.from(DELTA_DATA)
+				.where(DELTA_DATA.DATAMART_MNEMONICS.equalIgnoreCase(actualDeltaRequest.getDatamart()))
+				.and(DELTA_DATA.SYS_DATE.le(LocalDateTime.from(LOCAL_DATE_TIME.parse(actualDeltaRequest.getDateTime()))));
+	}
 
-  @Override
-  public void findDownloadExternalTable(String datamartMnemonic, String table, Handler<AsyncResult<DownloadExtTableRecord>> resultHandler) {
-    LOGGER.debug("Поиск внешней таблицы {}.{}, начало", datamartMnemonic, table);
+	@Override
+	public void findDownloadExternalTable(String datamartMnemonic, String table, Handler<AsyncResult<DownloadExtTableRecord>> resultHandler) {
+		LOGGER.debug("Поиск внешней таблицы {}.{}, начало", datamartMnemonic, table);
     /*
      select det.id from download_external_table det
      inner join datamarts_registry dr on dr.datamart_id=det.schema_id
      where dr.datamart_mnemonics='test' and det.table_name='tblExt';
      */
-    executor.query(dsl -> dsl
-      .select(DOWNLOAD_EXTERNAL_TABLE.ID
-        , DOWNLOAD_EXTERNAL_TYPE.NAME
-        , DOWNLOAD_EXTERNAL_TABLE.LOCATION
-        , DOWNLOAD_EXTERNAL_FORMAT.NAME
-        , DOWNLOAD_EXTERNAL_TABLE.CHUNK_SIZE
-      )
-      .from(DOWNLOAD_EXTERNAL_TABLE)
-      .join(DATAMARTS_REGISTRY).on(DATAMARTS_REGISTRY.DATAMART_ID.eq(DOWNLOAD_EXTERNAL_TABLE.SCHEMA_ID))
-      .join(DOWNLOAD_EXTERNAL_TYPE).on(DOWNLOAD_EXTERNAL_TYPE.ID.eq(DOWNLOAD_EXTERNAL_TABLE.TYPE_ID))
-      .join(DOWNLOAD_EXTERNAL_FORMAT).on(DOWNLOAD_EXTERNAL_FORMAT.ID.eq(DOWNLOAD_EXTERNAL_TABLE.FORMAT_ID))
-      .where(DOWNLOAD_EXTERNAL_TABLE.TABLE_NAME.equalIgnoreCase(table))
-      .and(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.equalIgnoreCase(datamartMnemonic))
-    ).setHandler(ar -> {
-      if (ar.succeeded()) {
-        final QueryResult result = ar.result();
-        final boolean found = result.hasResults();
-        if (!found) {
-          LOGGER.error("Поиск внешней таблицы {}.{}, результат: не найдена", datamartMnemonic, table);
-          resultHandler.handle(
-            Future.failedFuture(String.format("Внешняя таблица %s.%s не найдена", datamartMnemonic, table)));
-          return;
-        }
-        final Long downloadExtTableId = result.get(DOWNLOAD_EXTERNAL_TABLE.ID);
-        final String locationType = result.get(1, String.class); // 1 и 3 поле -- конфликт по имени (name)
-        final String locationPath = result.get(DOWNLOAD_EXTERNAL_TABLE.LOCATION);
-        final String format = result.get(3, String.class);
-        final Integer chunkSize = result.get(DOWNLOAD_EXTERNAL_TABLE.CHUNK_SIZE);
+		executor.query(dsl -> dsl
+				.select(DOWNLOAD_EXTERNAL_TABLE.ID
+						, DOWNLOAD_EXTERNAL_TYPE.NAME
+						, DOWNLOAD_EXTERNAL_TABLE.LOCATION
+						, DOWNLOAD_EXTERNAL_FORMAT.NAME
+						, DOWNLOAD_EXTERNAL_TABLE.CHUNK_SIZE
+				)
+				.from(DOWNLOAD_EXTERNAL_TABLE)
+				.join(DATAMARTS_REGISTRY).on(DATAMARTS_REGISTRY.DATAMART_ID.eq(DOWNLOAD_EXTERNAL_TABLE.SCHEMA_ID))
+				.join(DOWNLOAD_EXTERNAL_TYPE).on(DOWNLOAD_EXTERNAL_TYPE.ID.eq(DOWNLOAD_EXTERNAL_TABLE.TYPE_ID))
+				.join(DOWNLOAD_EXTERNAL_FORMAT).on(DOWNLOAD_EXTERNAL_FORMAT.ID.eq(DOWNLOAD_EXTERNAL_TABLE.FORMAT_ID))
+				.where(DOWNLOAD_EXTERNAL_TABLE.TABLE_NAME.equalIgnoreCase(table))
+				.and(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.equalIgnoreCase(datamartMnemonic))
+		).setHandler(ar -> {
+			if (ar.succeeded()) {
+				final QueryResult result = ar.result();
+				final boolean found = result.hasResults();
+				if (!found) {
+					LOGGER.error("Поиск внешней таблицы {}.{}, результат: не найдена", datamartMnemonic, table);
+					resultHandler.handle(
+							Future.failedFuture(String.format("Внешняя таблица %s.%s не найдена", datamartMnemonic, table)));
+					return;
+				}
+				final Long downloadExtTableId = result.get(DOWNLOAD_EXTERNAL_TABLE.ID);
+				final String locationType = result.get(1, String.class); // 1 и 3 поле -- конфликт по имени (name)
+				final String locationPath = result.get(DOWNLOAD_EXTERNAL_TABLE.LOCATION);
+				final String format = result.get(3, String.class);
+				final Integer chunkSize = result.get(DOWNLOAD_EXTERNAL_TABLE.CHUNK_SIZE);
 
-        DownloadExtTableRecord record = new DownloadExtTableRecord();
-        record.setId(downloadExtTableId);
-        record.setDatamart(datamartMnemonic);
-        record.setTableName(table);
-        record.setLocationType(Type.findByName(locationType));
-        record.setLocationPath(locationPath);
-        record.setFormat(Format.findByName(format));
-        record.setChunkSize(chunkSize);
+				DownloadExtTableRecord record = new DownloadExtTableRecord();
+				record.setId(downloadExtTableId);
+				record.setDatamart(datamartMnemonic);
+				record.setTableName(table);
+				record.setLocationType(Type.findByName(locationType));
+				record.setLocationPath(locationPath);
+				record.setFormat(Format.findByName(format));
+				record.setChunkSize(chunkSize);
 
-        LOGGER.debug("Поиск внешней таблицы {}.{}, результат (id): {}", datamartMnemonic, table, downloadExtTableId);
-        resultHandler.handle(Future.succeededFuture(record));
-      } else {
-        LOGGER.error("Поиск внешней таблицы {}.{}, ошибка {}", datamartMnemonic, table, ar.cause().getMessage());
-        resultHandler.handle(Future.failedFuture(ar.cause()));
-      }
-    });
-  }
+				LOGGER.debug("Поиск внешней таблицы {}.{}, результат (id): {}", datamartMnemonic, table, downloadExtTableId);
+				resultHandler.handle(Future.succeededFuture(record));
+			} else {
+				LOGGER.error("Поиск внешней таблицы {}.{}, ошибка {}", datamartMnemonic, table, ar.cause().getMessage());
+				resultHandler.handle(Future.failedFuture(ar.cause()));
+			}
+		});
+	}
 
-  @Override
-  public void insertDownloadQuery(UUID id, Long detId, String sql, Handler<AsyncResult<Void>> resultHandler) {
-    LOGGER.debug("INSERT в таблицу запросов, начало. id: {}, detId: {}, sql: {}", id, detId, sql);
-    executor.execute(dsl -> dsl
-      .insertInto(DOWNLOAD_QUERY)
-      .set(DOWNLOAD_QUERY.ID, id.toString())
-      .set(DOWNLOAD_QUERY.DET_ID, detId)
-      .set(DOWNLOAD_QUERY.SQL_QUERY, sql))
-      .setHandler(ar -> {
-        if (ar.succeeded()) {
-          LOGGER.debug("INSERT в таблицу запросов успешен. id: {}, detId: {}, sql: {}", id, detId, sql);
-          resultHandler.handle(Future.succeededFuture());
-        } else {
-          LOGGER.error("INSERT в таблицу запросов не успешен. id: {}, detId: {}, sql: {}, error: {}",
-            id, detId, sql, ar.cause().getMessage());
-          resultHandler.handle(Future.failedFuture(ar.cause()));
-        }
-      });
-  }
+	@Override
+	public void insertDownloadQuery(UUID id, Long detId, String sql, Handler<AsyncResult<Void>> resultHandler) {
+		LOGGER.debug("INSERT в таблицу запросов, начало. id: {}, detId: {}, sql: {}", id, detId, sql);
+		executor.execute(dsl -> dsl
+				.insertInto(DOWNLOAD_QUERY)
+				.set(DOWNLOAD_QUERY.ID, id.toString())
+				.set(DOWNLOAD_QUERY.DET_ID, detId)
+				.set(DOWNLOAD_QUERY.SQL_QUERY, sql))
+				.setHandler(ar -> {
+					if (ar.succeeded()) {
+						LOGGER.debug("INSERT в таблицу запросов успешен. id: {}, detId: {}, sql: {}", id, detId, sql);
+						resultHandler.handle(Future.succeededFuture());
+					} else {
+						LOGGER.error("INSERT в таблицу запросов не успешен. id: {}, detId: {}, sql: {}, error: {}",
+								id, detId, sql, ar.cause().getMessage());
+						resultHandler.handle(Future.failedFuture(ar.cause()));
+					}
+				});
+	}
 }

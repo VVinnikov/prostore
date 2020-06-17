@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id:  20200525_150000
+      author: 'Dmitry Voronkov'
+      changes:
+        - sqlFile:
+            path: 0001.sql
+            relativeToChangelogFile:  true
+  - changeSet:
+      id:  20200611_150000
+      author: 'Ivan Lapa'
+      changes:
+        - sqlFile:
+            path: 0002.sql
+            relativeToChangelogFile:  true

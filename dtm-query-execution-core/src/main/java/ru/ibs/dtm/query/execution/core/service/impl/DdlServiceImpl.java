@@ -190,15 +190,15 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
 	private void createDatamart(String datamartName, Handler<AsyncResult<QueryResult>> handler) {
 		serviceDao.findDatamart(datamartName, datamartResult -> {
 			if (datamartResult.succeeded()) {
-				log.error("База данных {} уже существует", datamartName);
+				logger.error("База данных {} уже существует", datamartName);
 				handler.handle(Future.failedFuture(String.format("База данных [%s] уже существует", datamartName)));
 			} else {
 				serviceDao.insertDatamart(datamartName, insertResult -> {
 					if (insertResult.succeeded()) {
-						log.debug("Создана новая витрина {}", datamartName);
+						logger.debug("Создана новая витрина {}", datamartName);
 						handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
 					} else {
-						log.error("Ошибка при создании витрины {}", datamartName, insertResult.cause());
+						logger.error("Ошибка при создании витрины {}", datamartName, insertResult.cause());
 						handler.handle(Future.failedFuture(insertResult.cause()));
 					}
 				});

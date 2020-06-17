@@ -1,0 +1,18 @@
+package ru.ibs.dtm.query.execution.plugin.api.delta.query;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+import static ru.ibs.dtm.query.execution.plugin.api.delta.query.DeltaAction.BEGIN_DELTA;
+
+@EqualsAndHashCode(callSuper = true)
+@Data
+public class BeginDeltaQuery extends DeltaQuery {
+
+    private Long deltaNum;
+
+    @Override
+    public DeltaAction getDeltaAction() {
+        return BEGIN_DELTA;
+    }
+}

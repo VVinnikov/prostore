@@ -41,6 +41,7 @@ data: {
       "DOWNLOAD"
       "LOCATION"
       "CHUNK_SIZE"
+      "DELTA"
     ]
 
     # List of keywords from "keywords" section that are not reserved.
@@ -384,6 +385,8 @@ data: {
 
     # List of methods for parsing custom SQL statements.
     statementParserMethods: [
+        "SqlBeginDelta()"
+        "SqlCommitDelta()"
     ]
 
     # List of methods for parsing custom literals.

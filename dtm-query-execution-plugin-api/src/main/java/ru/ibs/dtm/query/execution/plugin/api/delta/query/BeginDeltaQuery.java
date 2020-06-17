@@ -2,11 +2,13 @@ package ru.ibs.dtm.query.execution.plugin.api.delta.query;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import static ru.ibs.dtm.query.execution.plugin.api.delta.query.DeltaAction.BEGIN_DELTA;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
+@ToString
 public class BeginDeltaQuery extends DeltaQuery {
 
     private Long deltaNum;

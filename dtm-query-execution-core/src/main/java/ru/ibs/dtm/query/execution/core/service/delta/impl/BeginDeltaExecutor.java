@@ -42,10 +42,13 @@ public class BeginDeltaExecutor implements DeltaExecutor {
         serviceDao.getDeltaHotByDatamart(datamartMnemonic, deltaHandler -> {
                     if (deltaHandler.succeeded()) {
                         DeltaRecord deltaRecord = deltaHandler.result();
+                        log.debug("Найдена последняя delta: {} для витрины: {}", deltaRecord,  datamartMnemonic);
                         Long deltaHot = initAndCheckDeltaHot(context, handler, deltaRecord);
+                        log.debug("Найдена deltaHot: {} для витрины: {}", deltaHot,  datamartMnemonic);
                         DeltaRecord newDelta = createNextDeltaRecord(deltaHot, datamartMnemonic);
                         serviceDao.insertDelta(newDelta, insDeltaHandler -> {
                             if (insDeltaHandler.succeeded()) {
+                                log.debug("Создана новая дельта: {} для витрины: {}", newDelta,  datamartMnemonic);
                                 QueryResult res = deltaQueryResultFactory.create(context, newDelta);
                                 handler.handle(Future.succeededFuture(res));
                             } else {
@@ -57,18 +60,6 @@ public class BeginDeltaExecutor implements DeltaExecutor {
                     }
                 }
         );
-    }
-
-    private Long getDeltaHot(DeltaRecord deltaRecord) {
-        switch (deltaRecord.getStatus()) {
-            case SUCCESS:
-                return deltaRecord.getSinId() + 1;
-            case ERROR:
-                return deltaRecord.getSinId();
-            case IN_PROCESS:
-            default:
-                return null;
-        }
     }
 
     @Nullable
@@ -84,6 +75,18 @@ public class BeginDeltaExecutor implements DeltaExecutor {
             }
         }
         return deltaHot;
+    }
+
+    private Long getDeltaHot(DeltaRecord deltaRecord) {
+        switch (deltaRecord.getStatus()) {
+            case SUCCESS:
+                return deltaRecord.getSinId() + 1;
+            case ERROR:
+                return deltaRecord.getSinId();
+            case IN_PROCESS:
+            default:
+                return null;
+        }
     }
 
     @NotNull

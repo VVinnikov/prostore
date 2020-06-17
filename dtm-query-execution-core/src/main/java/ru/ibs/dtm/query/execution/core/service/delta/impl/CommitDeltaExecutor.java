@@ -39,12 +39,14 @@ public class CommitDeltaExecutor implements DeltaExecutor {
         serviceDao.getDeltaHotByDatamart(datamartMnemonic, deltaHandler -> {
                     if (deltaHandler.succeeded()) {
                         DeltaRecord deltaHotRecord = deltaHandler.result();
+                        log.debug("Найдена последняя дельта: {} для витрины: {}", deltaHotRecord,  datamartMnemonic);
                         if (!deltaHotRecord.getStatus().equals(DeltaLoadStatus.IN_PROCESS)) {
                             handler.handle(Future.failedFuture(new RuntimeException("По заданной дельте еще не завершена загрузка данных!")));
                         }
                         serviceDao.getDeltaActualBySinIdAndDatamart(datamartMnemonic, deltaHotRecord.getSinId() - 1, actualDeltaHandler -> {
                             if (actualDeltaHandler.succeeded()) {
                                 DeltaRecord deltaActualRecord = deltaHandler.result();
+                                log.debug("Найдена актуальная дельта: {} для витрины: {}", deltaActualRecord,  datamartMnemonic);
                                 if (((CommitDeltaQuery) context.getDeltaQuery()).getDeltaDateTime() != null
                                         && (deltaActualRecord.getSysDate().isAfter(((CommitDeltaQuery) context.getDeltaQuery()).getDeltaDateTime())
                                         || deltaActualRecord.getSysDate().equals(((CommitDeltaQuery) context.getDeltaQuery()).getDeltaDateTime()))) {
@@ -55,6 +57,7 @@ public class CommitDeltaExecutor implements DeltaExecutor {
                                 deltaHotRecord.setStatus(DeltaLoadStatus.SUCCESS);
                                 serviceDao.updateDelta(deltaHotRecord, updDeltaHandler -> {
                                     if (updDeltaHandler.succeeded()) {
+                                        log.debug("Обновлена дельта: {} для витрины: {}", deltaHotRecord,  datamartMnemonic);
                                         QueryResult res = deltaQueryResultFactory.create(context, deltaHotRecord);
                                         handler.handle(Future.succeededFuture(res));
                                     } else {

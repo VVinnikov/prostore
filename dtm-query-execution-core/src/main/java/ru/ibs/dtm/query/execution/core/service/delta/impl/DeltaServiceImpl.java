@@ -3,6 +3,7 @@ package ru.ibs.dtm.query.execution.core.service.delta.impl;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,9 +22,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service("coreDeltaService")
+@Slf4j
 public class DeltaServiceImpl implements DeltaService<QueryResult> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DdlServiceImpl.class);
     private DeltaQueryParamExtractor deltaQueryParamExtractor;
     private final Map<DeltaAction, DeltaExecutor> executors;
 
@@ -44,9 +45,11 @@ public class DeltaServiceImpl implements DeltaService<QueryResult> {
                         .execute(context, deltaExecHandler -> {
                             if (deltaExecHandler.succeeded()) {
                                 QueryResult queryDeltaResult = deltaExecHandler.result();
+                                log.debug("Результат выполнения запроса: {}, queryResult : {}",
+                                        context.getRequest().getQueryRequest(), queryDeltaResult);
                                 handler.handle(Future.succeededFuture(queryDeltaResult));
                             } else {
-                                LOGGER.error(deltaExecHandler.cause().getMessage());
+                                log.error(deltaExecHandler.cause().getMessage());
                                 handler.handle(Future.failedFuture(deltaExecHandler.cause()));
                             }
                         });

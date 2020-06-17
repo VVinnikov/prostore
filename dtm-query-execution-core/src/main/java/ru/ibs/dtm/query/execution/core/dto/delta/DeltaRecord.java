@@ -84,4 +84,17 @@ public class DeltaRecord {
     public void setStatus(DeltaLoadStatus status) {
         this.status = status;
     }
+
+    @Override
+    public String toString() {
+        return "DeltaRecord{" +
+                "loadId=" + loadId +
+                ", datamartMnemonic='" + datamartMnemonic + '\'' +
+                ", sysDate=" + sysDate +
+                ", statusDate=" + statusDate +
+                ", sinId=" + sinId +
+                ", loadProcId='" + loadProcId + '\'' +
+                ", status=" + status +
+                '}';
+    }
 }

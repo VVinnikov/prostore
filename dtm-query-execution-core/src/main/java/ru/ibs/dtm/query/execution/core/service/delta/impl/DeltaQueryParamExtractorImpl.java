@@ -6,8 +6,6 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlNode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryRequest;
@@ -15,7 +13,6 @@ import ru.ibs.dtm.query.execution.core.calcite.delta.SqlBeginDelta;
 import ru.ibs.dtm.query.execution.core.calcite.delta.SqlCommitDelta;
 import ru.ibs.dtm.query.execution.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.service.delta.DeltaQueryParamExtractor;
-import ru.ibs.dtm.query.execution.core.service.eddl.impl.EddlQueryParamExtractorImpl;
 import ru.ibs.dtm.query.execution.plugin.api.delta.query.BeginDeltaQuery;
 import ru.ibs.dtm.query.execution.plugin.api.delta.query.CommitDeltaQuery;
 import ru.ibs.dtm.query.execution.plugin.api.delta.query.DeltaQuery;
@@ -27,7 +24,6 @@ import java.time.format.DateTimeFormatter;
 @Slf4j
 public class DeltaQueryParamExtractorImpl implements DeltaQueryParamExtractor {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(EddlQueryParamExtractorImpl.class);
     private final DefinitionService<SqlNode> definitionService;
     private final Vertx coreVertx;
 
@@ -44,7 +40,7 @@ public class DeltaQueryParamExtractorImpl implements DeltaQueryParamExtractor {
                 SqlNode node = definitionService.processingQuery(request.getSql());
                 it.complete(node);
             } catch (Exception e) {
-                LOGGER.error("Ошибка парсинга запроса", e);
+                log.error("Ошибка парсинга запроса", e);
                 it.fail(e);
             }
         }, ar -> {
@@ -70,6 +66,7 @@ public class DeltaQueryParamExtractorImpl implements DeltaQueryParamExtractor {
     private void createBeginDeltaQuery(SqlBeginDelta sqlNode, Handler<AsyncResult<DeltaQuery>> asyncResultHandler) {
         BeginDeltaQuery deltaQuery = new BeginDeltaQuery();
         deltaQuery.setDeltaNum(sqlNode.getDeltaNumOperator().getNum());
+        log.debug("Извлечены параметры beginDeltaQuery: {}", deltaQuery);
         asyncResultHandler.handle(Future.succeededFuture(deltaQuery));
     }
 
@@ -77,9 +74,10 @@ public class DeltaQueryParamExtractorImpl implements DeltaQueryParamExtractor {
         try {
             CommitDeltaQuery deltaQuery = new CommitDeltaQuery();
             deltaQuery.setDeltaDateTime(getDeltaDateTime(sqlNode));
+            log.debug("Извлечены параметры commitDeltaQuery: {}", deltaQuery);
             asyncResultHandler.handle(Future.succeededFuture(deltaQuery));
         } catch (RuntimeException e) {
-            LOGGER.error("Ошибка преобразования параметра 'dateTime'", e);
+            log.error("Ошибка преобразования параметра 'dateTime'", e);
             asyncResultHandler.handle(Future.failedFuture(e.getMessage()));
         }
     }

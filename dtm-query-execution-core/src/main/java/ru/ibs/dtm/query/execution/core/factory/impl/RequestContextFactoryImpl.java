@@ -35,7 +35,7 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
 
         switch (node.getKind()) {
             case INSERT:
-                return new EdmlRequestContext(new DatamartRequest(request));
+                return new EdmlRequestContext(new DatamartRequest(request), (SqlInsert) node);
             default:
                 return new DmlRequestContext(new DdlRequest(request));
         }

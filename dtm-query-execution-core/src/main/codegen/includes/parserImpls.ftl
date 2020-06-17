@@ -248,14 +248,16 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     final SqlIdentifier id;
     SqlNodeList tableElementList = null;
     SqlNode query = null;
+    SqlNode distributedBy = null;
 }
 {
     <TABLE> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
     [ tableElementList = TableElementList() ]
+    [ <DISTRIBUTED_BY> distributedBy = StringLiteral() ]
     [ <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) ]
     {
-        return SqlDdlNodes.createTable(s.end(this), replace, ifNotExists, id,
-            tableElementList, query);
+        return new ru.ibs.dtm.query.execution.core.calcite.ddl.SqlCreateTable(s.end(this), replace, ifNotExists, id,
+            tableElementList, query, distributedBy);
     }
 }
 SqlCreate SqlCreateDownloadExternalTable(Span s, boolean replace) :

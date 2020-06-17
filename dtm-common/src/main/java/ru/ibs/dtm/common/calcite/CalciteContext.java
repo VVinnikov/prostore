@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.plugin.adb.calcite;
+package ru.ibs.dtm.common.calcite;
 
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.Planner;

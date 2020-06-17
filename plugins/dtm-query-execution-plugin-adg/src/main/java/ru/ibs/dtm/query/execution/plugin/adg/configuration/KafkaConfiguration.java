@@ -16,27 +16,27 @@ import ru.ibs.dtm.query.execution.plugin.adg.factory.VertxKafkaProducerFactory;
 public class KafkaConfiguration {
 
   @Bean("adgKafkaProviderFactory")
-  public KafkaProducerFactory<String, String> kafkaProviderFactory(KafkaProperties kafkaProperties, @Qualifier("adgVertx") Vertx vertx) {
+  public KafkaProducerFactory<String, String> kafkaProviderFactory(@Qualifier("adgKafkaProperties") KafkaProperties kafkaProperties, @Qualifier("adgVertx") Vertx vertx) {
     return new VertxKafkaProducerFactory<>(vertx, kafkaProperties.producer.getProperty());
   }
 
   @Bean("adgKafkaConsumerFactory")
-  public KafkaConsumerFactory<String, String> kafkaConsumerFactory(KafkaProperties kafkaProperties, @Qualifier("adgVertx") Vertx vertx) {
+  public KafkaConsumerFactory<String, String> kafkaConsumerFactory(@Qualifier("adgKafkaProperties") KafkaProperties kafkaProperties, @Qualifier("adgVertx") Vertx vertx) {
     return new VertxKafkaConsumerFactory<>(vertx, kafkaProperties.consumer.getProperty());
   }
 
   @Bean("adgByteArrayKafkaProviderFactory")
-  public KafkaProducerFactory<String, Byte[]> byteArrayKafkaProviderFactory(KafkaProperties kafkaProperties, @Qualifier("adgVertx") Vertx vertx) {
+  public KafkaProducerFactory<String, Byte[]> byteArrayKafkaProviderFactory(@Qualifier("adgKafkaProperties") KafkaProperties kafkaProperties, @Qualifier("adgVertx") Vertx vertx) {
     return new VertxKafkaProducerFactory<>(vertx, kafkaProperties.producer.getProperty());
   }
 
   @Bean("adgByteArrayKafkaConsumerFactory")
-  public KafkaConsumerFactory<String, Byte[]> byteArrayKafkaConsumerFactory(KafkaProperties kafkaProperties, @Qualifier("adgVertx") Vertx vertx) {
+  public KafkaConsumerFactory<String, Byte[]> byteArrayKafkaConsumerFactory(@Qualifier("adgKafkaProperties") KafkaProperties kafkaProperties, @Qualifier("adgVertx") Vertx vertx) {
     return new VertxKafkaConsumerFactory<>(vertx, kafkaProperties.consumer.getProperty());
   }
 
   @Bean("adgKafkaAdminClient")
-  public KafkaAdminClient kafkaAdminClient(KafkaProperties kafkaProperties, @Qualifier("adgVertx") Vertx vertx) {
+  public KafkaAdminClient kafkaAdminClient(@Qualifier("adgKafkaProperties") KafkaProperties kafkaProperties, @Qualifier("adgVertx") Vertx vertx) {
     return KafkaAdminClient.create(vertx, kafkaProperties.consumer.getProperty());
   }
 }

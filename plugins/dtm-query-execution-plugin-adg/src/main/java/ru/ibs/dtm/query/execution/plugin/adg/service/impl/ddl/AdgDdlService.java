@@ -6,6 +6,7 @@ import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.Schema;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.query.execution.plugin.adg.configuration.KafkaProperties;
@@ -36,7 +37,7 @@ public class AdgDdlService implements DdlService<Void> {
 
 	@Autowired
 	public AdgDdlService(TtCartridgeProvider cartridgeProvider, KafkaTopicService kafkaTopicService,
-						 KafkaProperties kafkaProperties, AvroSchemaGenerator schemaGenerator, SchemaRegistryClient registryClient, QueryExecutorService executorService) {
+						 @Qualifier("adgKafkaProperties") KafkaProperties kafkaProperties, AvroSchemaGenerator schemaGenerator, SchemaRegistryClient registryClient, QueryExecutorService executorService) {
 		this.cartridgeProvider = cartridgeProvider;
 		this.kafkaTopicService = kafkaTopicService;
 		this.kafkaProperties = kafkaProperties;

@@ -29,6 +29,11 @@
             <artifactId>vertx-core</artifactId>
             <version>${vertx.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.calcite</groupId>
+            <artifactId>calcite-core</artifactId>
+            <version>${calcite.version}</version>
+        </dependency>
         <!--Tests-->
         <dependency>
             <groupId>org.junit.jupiter</groupId>

@@ -1,9 +1,6 @@
 package ru.ibs.dtm.query.execution.core.service.impl;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
+import io.vertx.core.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -182,7 +179,6 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
         });
     }
 
-
     private void createDatamart(String datamartName, Handler<AsyncResult<QueryResult>> handler) {
         serviceDao.findDatamart(datamartName, datamartResult -> {
             if (datamartResult.succeeded()) {
@@ -203,72 +199,56 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
     }
 
     private void dropTable(DdlRequestContext context, String tableName, boolean ifExists, Handler<AsyncResult<QueryResult>> handler) {
-        serviceDao.findDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic(), datamartResult -> {
-            if (datamartResult.succeeded()) {
-                serviceDao.findEntity(datamartResult.result(), tableName, entityResult -> {
-                    if (entityResult.succeeded()) {
-                        databaseSynchronizeService.removeTable(context, datamartResult.result(), tableName, removeResult -> {
-                            if (removeResult.succeeded()) {
-                                handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
-                            } else {
-                                handler.handle(Future.failedFuture(removeResult.cause()));
-                            }
-                        });
-                    } else {
-                        if (ifExists) {
-                            handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
-                            return;
-                        }
-                        final String msg = "Логической таблицы " + tableName + " не существует (не найдена сущность)";
-                        log.error(msg);
-                        handler.handle(Future.failedFuture(msg));
-                    }
-                });
+        Future.future((Promise<Long> promise) -> serviceDao.findDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic(), promise))
+                .compose(datamartId -> findEntityAndSetDatamartId(context, datamartId, tableName, ifExists))
+                .compose(entityId -> Future.future((Promise<Void> promiseRemove) -> databaseSynchronizeService.removeTable(context, context.getDatamartId(), tableName, promiseRemove)))
+                .onSuccess(success -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
+                .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
+    }
+
+    private Future<Long> findEntityAndSetDatamartId(DdlRequestContext context, Long datamartId, String tableName, boolean ifExists) {
+        context.setDatamartId(datamartId);
+        return Future.future((Promise<Long> promiseEntity) -> serviceDao.findEntity(datamartId, tableName, ar -> {
+            if (ar.succeeded()) {
+                promiseEntity.complete();
             } else {
-                handler.handle(Future.failedFuture(datamartResult.cause()));
+                if (ifExists) {
+                    promiseEntity.complete();
+                }
+                final String msg = "Логической таблицы " + tableName + " не существует (не найдена сущность)";
+                log.error(msg);
+                promiseEntity.fail(ar.cause());
             }
-        });
+        }));
     }
 
     private void dropDatamart(DdlRequestContext context, String datamartName, Handler<AsyncResult<QueryResult>> handler) {
-        serviceDao.findDatamart(datamartName, datamartResult -> {
-            if (datamartResult.succeeded()) {
-                serviceDao.getEntitiesMeta(datamartName, entitiesMetaResult -> {
-                    if (entitiesMetaResult.succeeded()) {
-                        //удаляем все таблицы
-                        dropAllTables(entitiesMetaResult.result(), resultTableDelete -> {
-                            if (resultTableDelete.succeeded()) {
-                                //удаляем физическую витрину
-                                context.getRequest().setQueryRequest(replaceDatabaseInSql(context.getRequest().getQueryRequest()));
-                                context.setDdlType(DROP_SCHEMA);
-                                metadataFactory.apply(context, result -> {
-                                    if (result.succeeded()) {
-                                        //удаляем логическую витрину
-                                        serviceDao.dropDatamart(datamartResult.result(), ar2 -> {
-                                            if (ar2.succeeded()) {
-                                                handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
-                                            } else {
-                                                handler.handle(Future.failedFuture(ar2.cause()));
-                                            }
-                                        });
-                                    } else {
-                                        handler.handle(Future.failedFuture(result.cause()));
-                                    }
-                                });
-                            } else {
-                                handler.handle(Future.failedFuture(resultTableDelete.cause()));
-                            }
-                        });
+        Future.future((Promise<Long> promise) -> serviceDao.findDatamart(datamartName, promise))
+                .compose(datamartId -> getEntitiesMetaAndInitDatamartId(context, datamartId, datamartName))
+                .compose(datamartEntities -> Future.future((Promise<QueryResult> promiseDrop) -> dropAllTables(datamartEntities, promiseDrop)))
+                .compose(queryResult -> applyMetadataRequest(context))
+                .compose(dropResult -> Future.future((Promise<Void> promiseDrop) -> serviceDao.dropDatamart(context.getDatamartId(), ar -> {
+                    if (ar.succeeded()) {
+                        promiseDrop.complete();
                     } else {
-                        handler.handle(Future.failedFuture(entitiesMetaResult.cause()));
+                        promiseDrop.fail(ar.cause());
                     }
-                });
-            } else {
-                handler.handle(Future.failedFuture(datamartResult.cause()));
-            }
-        });
-
+                })))
+                .onSuccess(success -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
+                .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
     }
+
+    private Future<List<DatamartEntity>> getEntitiesMetaAndInitDatamartId(DdlRequestContext context, Long datamartId, String datamartName) {
+        context.setDatamartId(datamartId);
+        return Future.future((Promise<List<DatamartEntity>> promiseEntity) -> serviceDao.getEntitiesMeta(datamartName, promiseEntity));
+    }
+
+    private Future<Void> applyMetadataRequest(DdlRequestContext context) {
+        context.getRequest().setQueryRequest(replaceDatabaseInSql(context.getRequest().getQueryRequest()));
+        context.setDdlType(DROP_SCHEMA);
+        return Future.future((Promise<Void> promise) -> metadataFactory.apply(context, promise));
+    }
+
 
     /**
      * Запуск асинхронного вызова удаления таблиц

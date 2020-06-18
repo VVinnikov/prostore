@@ -6,11 +6,10 @@ import ru.ibs.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 
 public interface QueryCostService<T> extends DatamartExecutionService<QueryCostRequestContext, AsyncResult<T>> {
 
-    default SqlProcessingType getSqlProcessingType() {
-        return SqlProcessingType.COST;
-    }
+	default SqlProcessingType getSqlProcessingType() {
+		return SqlProcessingType.COST;
+	}
 
-    void calc(QueryCostRequestContext context, Handler<AsyncResult<Integer>> handler);
+	void calc(QueryCostRequestContext context, Handler<AsyncResult<Integer>> handler);
 
-    <S extends QueryCostService<T>> void addAnalyzer(QueryCostAnalyzer<T, S> analyzer);
 }

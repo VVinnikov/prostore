@@ -1,6 +1,5 @@
 package ru.ibs.dtm.query.execution.plugin.adb;
 
-import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.query.execution.plugin.api.AbstractDtmDataSourcePlugin;

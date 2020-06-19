@@ -1,6 +1,9 @@
 package ru.ibs.dtm.query.execution.core.service.impl;
 
-import io.vertx.core.*;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -10,35 +13,34 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.core.configuration.jooq.MariaProperties;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
 import ru.ibs.dtm.query.execution.core.dto.DatamartEntity;
-import ru.ibs.dtm.query.execution.core.dto.ParsedQueryRequest;
 import ru.ibs.dtm.query.execution.core.factory.MetadataFactory;
 import ru.ibs.dtm.query.execution.core.service.DatabaseSynchronizeService;
-import ru.ibs.dtm.query.execution.core.service.DdlService;
 import ru.ibs.dtm.query.execution.core.utils.SqlPreparer;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import ru.ibs.dtm.query.execution.plugin.api.dto.DdlRequest;
+import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
+import ru.ibs.dtm.query.execution.plugin.api.service.DdlService;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import static ru.ibs.dtm.query.execution.plugin.api.ddl.DdlQueryType.CREATE_SCHEMA;
-import static ru.ibs.dtm.query.execution.plugin.api.ddl.DdlQueryType.DROP_SCHEMA;
+import static ru.ibs.dtm.query.execution.plugin.api.ddl.DdlType.CREATE_SCHEMA;
+import static ru.ibs.dtm.query.execution.plugin.api.ddl.DdlType.DROP_SCHEMA;
 
 @Slf4j
 @Service("coreDdlService")
-public class DdlServiceImpl implements DdlService {
+public class DdlServiceImpl implements DdlService<QueryResult> {
 
 	private static final Logger logger = LoggerFactory.getLogger(DdlServiceImpl.class);
 
 	private final ServiceDao serviceDao;
 	private final CalciteDefinitionService calciteDefinitionService;
 	private final DatabaseSynchronizeService databaseSynchronizeService;
-	private final MetadataFactory<DdlRequestContext>  metadataFactory;
+	private final MetadataFactory<DdlRequestContext> metadataFactory;
 	private final MariaProperties mariaProperties;
 	private final Vertx vertx;
 
@@ -46,7 +48,7 @@ public class DdlServiceImpl implements DdlService {
 	public DdlServiceImpl(ServiceDao serviceDao,
 						  CalciteDefinitionService calciteDefinitionService,
 						  DatabaseSynchronizeService databaseSynchronizeService,
-						  MetadataFactory<DdlRequestContext>  metadataFactory, MariaProperties mariaProperties,
+						  MetadataFactory<DdlRequestContext> metadataFactory, MariaProperties mariaProperties,
 						  @Qualifier("coreVertx") Vertx vertx
 	) {
 		this.serviceDao = serviceDao;
@@ -58,10 +60,10 @@ public class DdlServiceImpl implements DdlService {
 	}
 
 	@Override
-	public void execute(ParsedQueryRequest parsedQueryRequest, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
+	public void execute(DdlRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
 		vertx.executeBlocking(it -> {
 			try {
-				SqlNode node = calciteDefinitionService.processingQuery(parsedQueryRequest.getQueryRequest().getSql());
+				SqlNode node = calciteDefinitionService.processingQuery(context.getRequest().getQueryRequest().getSql());
 				it.complete(node);
 			} catch (Exception e) {
 				logger.error("Ошибка парсинга запроса", e);
@@ -69,7 +71,7 @@ public class DdlServiceImpl implements DdlService {
 			}
 		}, ar -> {
 			if (ar.succeeded()) {
-				execute(parsedQueryRequest.getQueryRequest(), asyncResultHandler, ar);
+				execute(context, asyncResultHandler, ar);
 			} else {
 				logger.debug("Ошибка исполнения", ar.cause());
 				asyncResultHandler.handle(Future.failedFuture(ar.cause()));
@@ -77,39 +79,39 @@ public class DdlServiceImpl implements DdlService {
 		});
 	}
 
-	private void execute(QueryRequest request, Handler<AsyncResult<QueryResult>> handler, AsyncResult<Object> ar) {
+	private void execute(DdlRequestContext context, Handler<AsyncResult<QueryResult>> handler, AsyncResult<Object> ar) {
 		if (ar.result() instanceof SqlDdl) {
 			SqlDdl sqlDdl = ((SqlDdl) ar.result());
 			String sqlNodeName = sqlDdl.getOperandList().stream().filter(t -> t instanceof SqlIdentifier).findFirst().get().toString();
 
 			switch (sqlDdl.getKind()) {
 				case CREATE_SCHEMA:
-					createSchema(request, handler, sqlNodeName);
+					createSchema(context, handler, sqlNodeName);
 					break;
 				case DROP_SCHEMA:
-					dropSchema(request, handler, sqlNodeName);
+					dropSchema(context, handler, sqlNodeName);
 					break;
 				case CREATE_TABLE:
-					createTable(request, handler, sqlNodeName);
+					createTable(context, handler, sqlNodeName);
 					break;
 				case DROP_TABLE:
-					dropTable(request, handler, sqlNodeName);
+					dropTable(context, handler, sqlNodeName);
 					break;
 				case DEFAULT:
 					logger.error("Не поддерживаемый тип DDL запроса");
-					handler.handle(Future.failedFuture(String.format("Не поддерживаемый тип DDL запроса [%s]", request)));
+					handler.handle(Future.failedFuture(String.format("Не поддерживаемый тип DDL запроса [%s]", context)));
 			}
 		} else {
 			logger.error("Не поддерживаемый тип запроса");
-			handler.handle(Future.failedFuture(String.format("Не поддерживаемый тип запроса [%s]", request)));
+			handler.handle(Future.failedFuture(String.format("Не поддерживаемый тип запроса [%s]", context)));
 		}
 	}
 
-	private void dropTable(QueryRequest request, Handler<AsyncResult<QueryResult>> handler, String sqlNodeName) {
-		String schema = getSchemaName(request, sqlNodeName);
+	private void dropTable(DdlRequestContext context, Handler<AsyncResult<QueryResult>> handler, String sqlNodeName) {
+		String schema = getSchemaName(context.getRequest().getQueryRequest(), sqlNodeName);
 		String table = getTableName(sqlNodeName);
-		request.setDatamartMnemonic(schema);
-		dropTable(request, table, containsIfExistsCheck(request.getSql()), handler);
+		context.getRequest().getQueryRequest().setDatamartMnemonic(schema);
+		dropTable(context, table, containsIfExistsCheck(context.getRequest().getQueryRequest().getSql()), handler);
 	}
 
 	private String getTableName(String sqlNodeName) {
@@ -122,14 +124,15 @@ public class DdlServiceImpl implements DdlService {
 		return indexComma == -1 ? request.getDatamartMnemonic() : sqlNodeName.substring(0, indexComma);
 	}
 
-	private void dropSchema(QueryRequest request, Handler<AsyncResult<QueryResult>> handler, String sqlNodeName) {
-		request.setDatamartMnemonic(sqlNodeName);
-		dropDatamart(request, sqlNodeName, handler);
+	private void dropSchema(DdlRequestContext context, Handler<AsyncResult<QueryResult>> handler, String sqlNodeName) {
+		context.getRequest().getQueryRequest().setDatamartMnemonic(sqlNodeName);
+		dropDatamart(context, sqlNodeName, handler);
 	}
 
-	private void createSchema(QueryRequest request, Handler<AsyncResult<QueryResult>> handler, String sqlNodeName) {
-		replaceDatabaseInSql(request);
-		metadataFactory.apply(new DdlRequestContext(new DdlRequest(request, CREATE_SCHEMA)), result -> {
+	private void createSchema(DdlRequestContext context, Handler<AsyncResult<QueryResult>> handler, String sqlNodeName) {
+		context.getRequest().setQueryRequest(replaceDatabaseInSql(context.getRequest().getQueryRequest()));
+		context.setDdlType(CREATE_SCHEMA);
+		metadataFactory.apply(context, result -> {
 			if (result.succeeded()) {
 				createDatamart(sqlNodeName, handler);
 			} else {
@@ -138,9 +141,10 @@ public class DdlServiceImpl implements DdlService {
 		});
 	}
 
-	private void replaceDatabaseInSql(QueryRequest request) {
+	private QueryRequest replaceDatabaseInSql(QueryRequest request) {
 		String sql = request.getSql().replaceAll("(?i) database", " schema");
 		request.setSql(sql);
+		return request;
 	}
 
 	//TODO проверка наличия if exists
@@ -155,8 +159,9 @@ public class DdlServiceImpl implements DdlService {
 		return sql.toLowerCase().contains("if exists");
 	}
 
-	private void createTable(QueryRequest request, Handler<AsyncResult<QueryResult>> handler, String sqlNodeName) {
-		String schema = getSchemaName(request, sqlNodeName);
+	private void createTable(DdlRequestContext context, Handler<AsyncResult<QueryResult>> handler, String sqlNodeName) {
+		String schema = getSchemaName(context.getRequest().getQueryRequest(), sqlNodeName);
+		QueryRequest request = context.getRequest().getQueryRequest();
 		request.setDatamartMnemonic(schema);
 
 		String tableWithSchema = SqlPreparer.getTableWithSchema(mariaProperties.getOptions().getDatabase(), sqlNodeName);
@@ -164,7 +169,7 @@ public class DdlServiceImpl implements DdlService {
 		serviceDao.executeUpdate(sql, ar2 -> {
 			if (ar2.succeeded()) {
 				databaseSynchronizeService.putForRefresh(
-						request,
+						context,
 						tableWithSchema,
 						true, ar3 -> {
 							if (ar3.succeeded()) {
@@ -201,12 +206,12 @@ public class DdlServiceImpl implements DdlService {
 		});
 	}
 
-	private void dropTable(QueryRequest request, String tableName, boolean ifExists, Handler<AsyncResult<QueryResult>> handler) {
-		serviceDao.findDatamart(request.getDatamartMnemonic(), datamartResult -> {
+	private void dropTable(DdlRequestContext context, String tableName, boolean ifExists, Handler<AsyncResult<QueryResult>> handler) {
+		serviceDao.findDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic(), datamartResult -> {
 			if (datamartResult.succeeded()) {
 				serviceDao.findEntity(datamartResult.result(), tableName, entityResult -> {
 					if (entityResult.succeeded()) {
-						databaseSynchronizeService.removeTable(request, datamartResult.result(), tableName, removeResult -> {
+						databaseSynchronizeService.removeTable(context, datamartResult.result(), tableName, removeResult -> {
 							if (removeResult.succeeded()) {
 								handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
 							} else {
@@ -229,7 +234,7 @@ public class DdlServiceImpl implements DdlService {
 		});
 	}
 
-	private void dropDatamart(QueryRequest request, String datamartName, Handler<AsyncResult<QueryResult>> handler) {
+	private void dropDatamart(DdlRequestContext context, String datamartName, Handler<AsyncResult<QueryResult>> handler) {
 		serviceDao.findDatamart(datamartName, datamartResult -> {
 			if (datamartResult.succeeded()) {
 				serviceDao.getEntitiesMeta(datamartName, entitiesMetaResult -> {
@@ -238,8 +243,9 @@ public class DdlServiceImpl implements DdlService {
 						dropAllTables(entitiesMetaResult.result(), resultTableDelete -> {
 							if (resultTableDelete.succeeded()) {
 								//удаляем физическую витрину
-								replaceDatabaseInSql(request);
-								metadataFactory.apply(new DdlRequestContext(new DdlRequest(request, DROP_SCHEMA)), result -> {
+								context.getRequest().setQueryRequest(replaceDatabaseInSql(context.getRequest().getQueryRequest()));
+								context.setDdlType(DROP_SCHEMA);
+								metadataFactory.apply(context, result -> {
 									if (result.succeeded()) {
 										//удаляем логическую витрину
 										serviceDao.dropDatamart(datamartResult.result(), ar2 -> {
@@ -275,28 +281,34 @@ public class DdlServiceImpl implements DdlService {
 	 * @param handler  - обработчик
 	 */
 	private void dropAllTables(List<DatamartEntity> entities, Handler<AsyncResult<QueryResult>> handler) {
-		List<Future> futures = new ArrayList<>();
-		entities.forEach(entity -> {
-			futures.add(Future.future(p -> {
-				QueryRequest requestDeleteTable = new QueryRequest();
-				requestDeleteTable.setDatamartMnemonic(entity.getDatamartMnemonic());
-				requestDeleteTable.setSql("DROP TABLE IF EXISTS " + entity.getDatamartMnemonic() + "." + entity.getMnemonic());
-				dropTable(requestDeleteTable, entity.getMnemonic(), true,
-						ar -> {
-							if (ar.succeeded()) {
-								p.complete();
-							} else {
-								p.fail(ar.cause());
-							}
-						});
-			}));
-		});
-		CompositeFuture.all(futures).setHandler(ar -> {
-			if (ar.succeeded()) {
-				handler.handle(Future.succeededFuture());
-			} else {
-				handler.handle(Future.failedFuture(ar.cause()));
-			}
-		});
+		if (CollectionUtils.isEmpty(entities)) {
+			handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
+		} else {
+			dropTableChain(entities, 0, handler);
+		}
+	}
+
+	private void dropTableChain(List<DatamartEntity> entities, int pos, Handler<AsyncResult<QueryResult>> handler) {
+		if (pos >= entities.size()) {
+			handler.handle(Future.failedFuture("Неправильно переданны входные параметры для удаления таблиц"));
+			return;
+		}
+		DatamartEntity entity = entities.get(pos);
+		QueryRequest requestDeleteTable = new QueryRequest();
+		requestDeleteTable.setDatamartMnemonic(entity.getDatamartMnemonic());
+		requestDeleteTable.setSql("DROP TABLE IF EXISTS " + entity.getDatamartMnemonic() + "." + entity.getMnemonic());
+		DdlRequestContext context = new DdlRequestContext(new DdlRequest(requestDeleteTable));
+		dropTable(context, entity.getMnemonic(), true,
+				ar -> {
+					if (ar.succeeded()) {
+						if (pos + 1 < entities.size()) {
+							dropTableChain(entities, pos + 1, handler);
+						} else {
+							handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
+						}
+					} else {
+						handler.handle(Future.failedFuture(ar.cause()));
+					}
+				});
 	}
 }

@@ -9,21 +9,24 @@ import org.springframework.plugin.core.SimplePluginRegistry;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.reader.SourceType;
+import ru.ibs.dtm.query.execution.core.service.SchemaStorageProvider;
 import ru.ibs.dtm.query.execution.core.service.TargetDatabaseDefinitionService;
 import ru.ibs.dtm.query.execution.core.utils.HintExtractor;
 import ru.ibs.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
+import ru.ibs.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import ru.ibs.dtm.query.execution.plugin.api.dto.CalcQueryCostRequest;
-import ru.ibs.dtm.query.execution.plugin.api.dto.LlrRequest;
-import ru.ibs.dtm.query.execution.plugin.api.dto.MpprKafkaRequest;
+import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 public class TargetDatabaseDefinitionServiceImplTest {
 
   private TargetDatabaseDefinitionService targetDatabaseDefinitionService =
     new TargetDatabaseDefinitionServiceImpl(
+      mock(SchemaStorageProvider.class),
       new DataSourcePluginServiceImpl(
         SimplePluginRegistry.of(
           new DtmDataSourcePlugin() {
@@ -39,15 +42,15 @@ public class TargetDatabaseDefinitionServiceImplTest {
             }
 
             @Override
-            public void llr(LlrRequest request, Handler<AsyncResult<QueryResult>> handler) {
+            public void llr(LlrRequestContext request, Handler<AsyncResult<QueryResult>> handler) {
             }
 
             @Override
-            public void mpprKafka(MpprKafkaRequest request, Handler<AsyncResult<QueryResult>> handler) {
+            public void mpprKafka(MpprRequestContext request, Handler<AsyncResult<QueryResult>> handler) {
             }
 
             @Override
-            public void calcQueryCost(CalcQueryCostRequest request, Handler<AsyncResult<Integer>> handler) {
+            public void calcQueryCost(QueryCostRequestContext request, Handler<AsyncResult<Integer>> handler) {
               handler.handle(Future.succeededFuture(0));
             }
           }

@@ -1,6 +1,9 @@
 package ru.ibs.dtm.query.execution.plugin.api;
 
-public class RequestContext<Request> {
+import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
+import ru.ibs.dtm.query.execution.plugin.api.service.SqlProcessingType;
+
+public abstract class RequestContext<Request extends DatamartRequest> {
 
 	private Request request;
 
@@ -11,5 +14,7 @@ public class RequestContext<Request> {
 	public Request getRequest() {
 		return request;
 	}
+
+	public abstract SqlProcessingType getProcessingType();
 
 }

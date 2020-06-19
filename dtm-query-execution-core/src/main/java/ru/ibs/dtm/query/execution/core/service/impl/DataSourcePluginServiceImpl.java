@@ -11,10 +11,10 @@ import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.query.execution.core.service.DataSourcePluginService;
 import ru.ibs.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
+import ru.ibs.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import ru.ibs.dtm.query.execution.plugin.api.dto.CalcQueryCostRequest;
-import ru.ibs.dtm.query.execution.plugin.api.dto.LlrRequest;
-import ru.ibs.dtm.query.execution.plugin.api.dto.MpprKafkaRequest;
+import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -46,21 +46,21 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     }
 
     public void llr(SourceType sourceType,
-                    LlrRequest request,
+                    LlrRequestContext context,
                     Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-        getPlugin(sourceType).llr(request, asyncResultHandler);
+        getPlugin(sourceType).llr(context, asyncResultHandler);
     }
 
     public void mpprKafka(SourceType sourceType,
-                          MpprKafkaRequest request,
+                          MpprRequestContext context,
                           Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-        getPlugin(sourceType).mpprKafka(request, asyncResultHandler);
+        getPlugin(sourceType).mpprKafka(context, asyncResultHandler);
     }
 
     public void calcQueryCost(SourceType sourceType,
-                              CalcQueryCostRequest request,
+                              QueryCostRequestContext context,
                               Handler<AsyncResult<Integer>> asyncResultHandler) {
-        getPlugin(sourceType).calcQueryCost(request, asyncResultHandler);
+        getPlugin(sourceType).calcQueryCost(context, asyncResultHandler);
     }
 
     private DtmDataSourcePlugin getPlugin(SourceType sourceType) {

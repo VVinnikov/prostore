@@ -10,9 +10,10 @@ import ru.ibs.dtm.common.reader.QueryRequest;
 @AllArgsConstructor
 @NoArgsConstructor
 public class EnrichQueryRequest {
-  private QueryRequest queryRequest;
-  private JsonObject schema;
-  public static EnrichQueryRequest generate(QueryRequest queryRequest, JsonObject schema) {
-    return new EnrichQueryRequest(queryRequest,schema);
-  }
+	private QueryRequest queryRequest;
+	private JsonObject schema;
+
+	public static EnrichQueryRequest generate(QueryRequest queryRequest, JsonObject schema) {
+		return new EnrichQueryRequest(queryRequest, schema);
+	}
 }

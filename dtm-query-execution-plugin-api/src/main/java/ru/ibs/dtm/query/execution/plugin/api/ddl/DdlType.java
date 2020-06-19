@@ -3,8 +3,8 @@ package ru.ibs.dtm.query.execution.plugin.api.ddl;
 import lombok.ToString;
 
 @ToString
-public enum DdlQueryType {
-
+public enum DdlType {
+	UNKNOWN(false),
 	CREATE_SCHEMA(false),
 	DROP_SCHEMA(false),
 	CREATE_TABLE(true),
@@ -13,7 +13,7 @@ public enum DdlQueryType {
 
 	boolean createTopic;
 
-	DdlQueryType(boolean createTopic) {
+	DdlType(boolean createTopic) {
 		this.createTopic = createTopic;
 	}
 

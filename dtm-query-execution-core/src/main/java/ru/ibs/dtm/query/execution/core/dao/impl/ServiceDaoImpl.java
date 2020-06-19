@@ -5,7 +5,9 @@ import io.github.jklingsporn.vertx.jooq.shared.internal.QueryResult;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.ext.sql.ResultSet;
+import lombok.val;
 import org.jooq.DSLContext;
 import org.jooq.Record1;
 import org.jooq.Select;
@@ -20,10 +22,7 @@ import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.plugin.exload.Format;
 import ru.ibs.dtm.common.plugin.exload.Type;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
-import ru.ibs.dtm.query.execution.core.dto.DatamartEntity;
-import ru.ibs.dtm.query.execution.core.dto.DatamartInfo;
-import ru.ibs.dtm.query.execution.core.dto.DownloadExtTableRecord;
-import ru.ibs.dtm.query.execution.core.dto.EntityAttribute;
+import ru.ibs.dtm.query.execution.core.dto.*;
 import ru.ibs.dtm.query.execution.core.dto.eddl.CreateDownloadExternalTableQuery;
 
 import java.time.LocalDateTime;
@@ -408,27 +407,38 @@ public class ServiceDaoImpl implements ServiceDao {
     });
   }
 
+
   @Override
   public void dropDownloadExternalTable(String datamart,
                                         String tableName,
                                         Handler<AsyncResult<Void>> resultHandler) {
-    findDatamart(datamart, datamartHandler -> {
-      if (datamartHandler.succeeded()) {
-        Long datamartId = datamartHandler.result();
-        executor.execute(dsl -> dsl.deleteFrom(DOWNLOAD_EXTERNAL_TABLE)
-          .where(DOWNLOAD_EXTERNAL_TABLE.SCHEMA_ID.eq(datamartId))
-          .and(DOWNLOAD_EXTERNAL_TABLE.TABLE_NAME.eq(tableName.toLowerCase())))
-          .setHandler(ar -> {
-            if (ar.succeeded()) {
-              resultHandler.handle(Future.succeededFuture());
-            } else {
-              resultHandler.handle(Future.failedFuture(ar.cause()));
-            }
-          });
-      } else {
-        resultHandler.handle(Future.failedFuture(datamartHandler.cause()));
-      }
-    });
+    Future.future((Promise<DownloadExtTableRecord> promise) -> {
+              findDownloadExternalTable(datamart, tableName.toLowerCase(), promise);
+            })
+            .compose(deTable -> Future.future((Promise<Long> promise) -> {
+              dropTableAttributesByTableId(deTable.getId(), ar -> {
+                if (ar.succeeded()) {
+                  promise.complete(deTable.getId());
+                } else {
+                  promise.fail(ar.cause());
+                }
+              });
+            }))
+            .compose(detId -> Future.future((Promise<Integer> promise) -> dropDownloadExternalTable(detId, promise)))
+            .onSuccess(success -> resultHandler.handle(Future.succeededFuture()))
+            .onFailure(fail -> resultHandler.handle(Future.failedFuture(fail)));
+  }
+
+  private void dropTableAttributesByTableId(Long detId, Handler<AsyncResult<Integer>> handler) {
+    executor.execute(dsl -> dsl.deleteFrom(DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE)
+            .where(DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.DET_ID.eq(detId)))
+            .setHandler(handler);
+  }
+
+  private void dropDownloadExternalTable(Long id, Handler<AsyncResult<Integer>> handler) {
+    executor.execute(dsl -> dsl.deleteFrom(DOWNLOAD_EXTERNAL_TABLE)
+            .where(DOWNLOAD_EXTERNAL_TABLE.ID.eq(id)))
+            .setHandler(handler);
   }
 
   @Override
@@ -541,6 +551,35 @@ public class ServiceDaoImpl implements ServiceDao {
         resultHandler.handle(Future.succeededFuture(record));
       } else {
         LOGGER.error("Поиск внешней таблицы {}.{}, ошибка {}", datamartMnemonic, table, ar.cause().getMessage());
+        resultHandler.handle(Future.failedFuture(ar.cause()));
+      }
+    });
+  }
+
+  @Override
+  public void findDownloadExternalTableAttributes(Long detId, Handler<AsyncResult<List<DownloadExternalTableAttribute>>> resultHandler) {
+    executor.query(dsl -> dsl
+            .select(DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.COLUMN_NAME
+                    ,DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.DET_ID
+                    ,DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.DATA_TYPE
+                    ,DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.ORDER_NUM
+            )
+            .from(DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE)
+            .where(DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.DET_ID.eq(detId))
+    ).setHandler(ar -> {
+      if (ar.succeeded()) {
+        QueryResult result = ar.result();
+        ResultSet resultSet = result.unwrap();
+        val tableAttributes = new ArrayList<DownloadExternalTableAttribute>();
+        resultSet.getRows().forEach(row -> {
+          tableAttributes.add(
+                  new DownloadExternalTableAttribute(row.getString(DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.COLUMN_NAME.getName()),
+                          row.getString(DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.DATA_TYPE.getName()),
+                          row.getInteger(DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.ORDER_NUM.getName()),
+                          row.getLong(DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.DET_ID.getName())));
+        });
+        resultHandler.handle(Future.succeededFuture(tableAttributes));
+      } else {
         resultHandler.handle(Future.failedFuture(ar.cause()));
       }
     });

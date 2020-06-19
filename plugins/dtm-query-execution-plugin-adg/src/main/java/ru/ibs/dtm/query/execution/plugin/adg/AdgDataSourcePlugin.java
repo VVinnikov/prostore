@@ -1,5 +1,6 @@
 package ru.ibs.dtm.query.execution.plugin.adg;
 
+import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.query.execution.plugin.api.AbstractDtmDataSourcePlugin;
 import ru.ibs.dtm.query.execution.plugin.api.service.DdlService;
@@ -9,11 +10,12 @@ import ru.ibs.dtm.query.execution.plugin.api.service.QueryCostService;
 
 public class AdgDataSourcePlugin extends AbstractDtmDataSourcePlugin {
 
-  public AdgDataSourcePlugin(DdlService ddlService,
-                             LlrService llrService,
-                             MpprKafkaService mpprKafkaService,
-                             QueryCostService queryCostService) {
-    super(ddlService, llrService, mpprKafkaService, queryCostService);
+  public AdgDataSourcePlugin(
+          DdlService<Void> ddlService,
+          LlrService<QueryResult> llrService,
+          MpprKafkaService<QueryResult> mpprKafkaService,
+          QueryCostService<Integer> adgQueryCostService) {
+    super(ddlService, llrService, mpprKafkaService, adgQueryCostService);
   }
 
   @Override

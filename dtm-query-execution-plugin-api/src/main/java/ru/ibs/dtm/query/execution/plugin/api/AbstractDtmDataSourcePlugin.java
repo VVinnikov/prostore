@@ -3,10 +3,10 @@ package ru.ibs.dtm.query.execution.plugin.api;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import ru.ibs.dtm.common.reader.QueryResult;
+import ru.ibs.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import ru.ibs.dtm.query.execution.plugin.api.dto.CalcQueryCostRequest;
-import ru.ibs.dtm.query.execution.plugin.api.dto.LlrRequest;
-import ru.ibs.dtm.query.execution.plugin.api.dto.MpprKafkaRequest;
+import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.service.DdlService;
 import ru.ibs.dtm.query.execution.plugin.api.service.LlrService;
 import ru.ibs.dtm.query.execution.plugin.api.service.MpprKafkaService;
@@ -14,39 +14,39 @@ import ru.ibs.dtm.query.execution.plugin.api.service.QueryCostService;
 
 public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin {
 
-  protected final DdlService ddlService;
-  protected final LlrService llrService;
-  protected final MpprKafkaService mpprKafkaService;
-  protected final QueryCostService queryCostService;
+	protected final DdlService<Void> ddlService;
+	protected final LlrService<QueryResult> llrService;
+	protected final MpprKafkaService<QueryResult> mpprKafkaService;
+	protected final QueryCostService<Integer> queryCostService;
 
-  public AbstractDtmDataSourcePlugin(DdlService ddlService,
-                                     LlrService llrService,
-                                     MpprKafkaService mpprKafkaService,
-                                     QueryCostService queryCostService) {
-    this.ddlService = ddlService;
-    this.llrService = llrService;
-    this.mpprKafkaService = mpprKafkaService;
-    this.queryCostService = queryCostService;
-  }
+	public AbstractDtmDataSourcePlugin(DdlService<Void> ddlService,
+									   LlrService<QueryResult> llrService,
+									   MpprKafkaService<QueryResult> mpprKafkaService,
+									   QueryCostService<Integer> queryCostService) {
+		this.ddlService = ddlService;
+		this.llrService = llrService;
+		this.mpprKafkaService = mpprKafkaService;
+		this.queryCostService = queryCostService;
+	}
 
-  @Override
-  public void ddl(DdlRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler) {
-    ddlService.execute(context, asyncResultHandler);
-  }
+	@Override
+	public void ddl(DdlRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler) {
+		ddlService.execute(context, asyncResultHandler);
+	}
 
-  @Override
-  public void llr(LlrRequest request, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-    llrService.executeQuery(request, asyncResultHandler);
-  }
+	@Override
+	public void llr(LlrRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
+		llrService.execute(context, asyncResultHandler);
+	}
 
-  @Override
-  public void mpprKafka(MpprKafkaRequest request, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-    mpprKafkaService.execute(request, asyncResultHandler);
-  }
+	@Override
+	public void mpprKafka(MpprRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
+		mpprKafkaService.execute(context, asyncResultHandler);
+	}
 
-  @Override
-  public void calcQueryCost(CalcQueryCostRequest request,
-                            Handler<AsyncResult<Integer>> asyncResultHandler) {
-    queryCostService.calc(request, asyncResultHandler);
-  }
+	@Override
+	public void calcQueryCost(QueryCostRequestContext context,
+							  Handler<AsyncResult<Integer>> asyncResultHandler) {
+		queryCostService.calc(context, asyncResultHandler);
+	}
 }

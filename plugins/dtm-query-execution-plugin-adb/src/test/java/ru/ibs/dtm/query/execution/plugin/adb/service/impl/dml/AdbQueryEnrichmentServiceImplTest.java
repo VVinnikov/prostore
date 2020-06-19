@@ -24,7 +24,7 @@ import ru.ibs.dtm.query.execution.plugin.adb.service.QueryExtendService;
 import ru.ibs.dtm.query.execution.plugin.adb.service.QueryParserService;
 import ru.ibs.dtm.query.execution.plugin.adb.service.impl.enrichment.*;
 import ru.ibs.dtm.query.execution.plugin.adb.service.impl.query.QueryRegexPreprocessor;
-import ru.ibs.dtm.query.execution.plugin.api.dto.LlrRequest;
+import ru.ibs.dtm.query.execution.plugin.api.request.LlrRequest;
 import utils.JsonUtils;
 
 import java.util.ArrayList;
@@ -38,105 +38,103 @@ import static org.mockito.Mockito.*;
 @Slf4j
 public class AdbQueryEnrichmentServiceImplTest {
 
-  QueryEnrichmentService adbQueryEnrichmentService;
-  private CalciteContextProvider contextProvider;
-  private DeltaService deltaService = mock(DeltaService.class);
-  private QueryRegexPreprocessor regexPreprocessor = new QueryRegexPreprocessor();
+	QueryEnrichmentService adbQueryEnrichmentService;
+	private CalciteContextProvider contextProvider;
+	private DeltaService deltaService = mock(DeltaService.class);
+	private QueryRegexPreprocessor regexPreprocessor = new QueryRegexPreprocessor();
 
-  public AdbQueryEnrichmentServiceImplTest() {
-    QueryExtendService queryExtender = new AdbCalciteDMLQueryExtendServiceImpl();
+	public AdbQueryEnrichmentServiceImplTest() {
+		QueryExtendService queryExtender = new AdbCalciteDMLQueryExtendServiceImpl();
 
-    CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
-    calciteConfiguration.init();
-    SqlParser.Config parserConfig = calciteConfiguration.configDdlParser(
-      calciteConfiguration.ddlParserImplFactory()
-    );
+		CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
+		calciteConfiguration.init();
+		SqlParser.Config parserConfig = calciteConfiguration.configDdlParser(
+				calciteConfiguration.ddlParserImplFactory()
+		);
 
-    contextProvider = new CalciteContextProvider(
-      parserConfig,
-      new CalciteSchemaFactory(new SchemaFactoryImpl()));
+		contextProvider = new CalciteContextProvider(
+				parserConfig,
+				new CalciteSchemaFactory(new SchemaFactoryImpl()));
 
-    AdbQueryGeneratorImpl adbQueryGeneratorimpl = new AdbQueryGeneratorImpl(queryExtender);
-    QueryParserService queryParserService = new AdbCalciteDMLQueryParserServiceImpl(Vertx.vertx());
-    adbQueryEnrichmentService = new AdbQueryEnrichmentServiceImpl(
-      queryParserService,
-      adbQueryGeneratorimpl,
-      deltaService,
-      contextProvider,
-      regexPreprocessor,
-      new AdbSchemaExtenderImpl());
+		AdbQueryGeneratorImpl adbQueryGeneratorimpl = new AdbQueryGeneratorImpl(queryExtender);
+		QueryParserService queryParserService = new AdbCalciteDMLQueryParserServiceImpl(Vertx.vertx());
+		adbQueryEnrichmentService = new AdbQueryEnrichmentServiceImpl(
+				queryParserService,
+				adbQueryGeneratorimpl,
+				deltaService,
+				contextProvider,
+				regexPreprocessor,
+				new AdbSchemaExtenderImpl());
 
-    AsyncResult<Long> asyncResultDelta = mock(AsyncResult.class);
-    when(asyncResultDelta.succeeded()).thenReturn(true);
-    when(asyncResultDelta.result()).thenReturn(1L);
-    doAnswer((Answer<AsyncResult<Long>>) arg0 -> {
-      ((Handler<AsyncResult<Long>>) arg0.getArgument(1)).handle(asyncResultDelta);
-      return null;
-    }).when(deltaService).getDeltaOnDateTime(any(), any());
+		AsyncResult<Long> asyncResultDelta = mock(AsyncResult.class);
+		when(asyncResultDelta.succeeded()).thenReturn(true);
+		when(asyncResultDelta.result()).thenReturn(1L);
+		doAnswer((Answer<AsyncResult<Long>>) arg0 -> {
+			((Handler<AsyncResult<Long>>) arg0.getArgument(1)).handle(asyncResultDelta);
+			return null;
+		}).when(deltaService).getDeltaOnDateTime(any(), any());
 
-  }
+	}
 
-  @Test
-  void enrich() {
-    List<String> result = new ArrayList<>();
-    EnrichQueryRequest enrichQueryRequest =
-      prepareRequest("select * from test_datamart.pso FOR SYSTEM_TIME AS OF TIMESTAMP '1999-01-08 04:05:06'");
-    TestSuite suite = TestSuite.create("the_test_suite");
-    suite.test("executeQuery", context -> {
-      Async async = context.async();
-      adbQueryEnrichmentService.enrich(enrichQueryRequest, ar -> {
-        log.debug(ar.toString());
-        result.add("OK");
-        async.complete();
-      });
+	@Test
+	void enrich() {
+		List<String> result = new ArrayList<>();
+		EnrichQueryRequest enrichQueryRequest =
+				prepareRequest("select * from test_datamart.pso FOR SYSTEM_TIME AS OF TIMESTAMP '1999-01-08 04:05:06'");
+		TestSuite suite = TestSuite.create("the_test_suite");
+		suite.test("executeQuery", context -> {
+			Async async = context.async();
+			adbQueryEnrichmentService.enrich(enrichQueryRequest, ar -> {
+				log.debug(ar.toString());
+				result.add("OK");
+				async.complete();
+			});
 
-      async.awaitSuccess(7000);
-    });
-    suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
-    log.info(result.get(0));
-  }
+			async.awaitSuccess(7000);
+		});
+		suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+		log.info(result.get(0));
+	}
 
-  @Test
-  void enrichWithQuotes() {
-    String expectedResult = "select id as id from" +
-      " (select id, lst_nam, fst_nam, mid_nam, otr_nam, brd, gnr," +
-      " snils, inn, tsd, non_rsd_id, phy, r_org, prd_tmz, prd_lan," +
-      " r_ctz_shp, r_cty, stu, bss, brd_plc, index" +
-      " from test_datamart.pso_history" +
-      " where sys_from <= 1 and sys_to >= 1" +
-      " union all" +
-      " select id, lst_nam, fst_nam, mid_nam, otr_nam, brd, gnr," +
-      " snils, inn, tsd, non_rsd_id, phy, r_org, prd_tmz, prd_lan," +
-      " r_ctz_shp, r_cty, stu, bss, brd_plc, index" +
-      " from test_datamart.pso_actual" +
-      " where sys_from <= 1)";
-    EnrichQueryRequest enrichQueryRequest = prepareRequest("select \"id\" from \"test_datamart\".\"pso\"");
-    String[] result = {""};
+	@Test
+	void enrichWithQuotes() {
+		String expectedResult = "select id as id from" +
+				" (select id, lst_nam, fst_nam, mid_nam, otr_nam, brd, gnr," +
+				" snils, inn, tsd, non_rsd_id, phy, r_org, prd_tmz, prd_lan," +
+				" r_ctz_shp, r_cty, stu, bss, brd_plc, index" +
+				" from test_datamart.pso_history" +
+				" where sys_from <= 1 and sys_to >= 1" +
+				" union all" +
+				" select id, lst_nam, fst_nam, mid_nam, otr_nam, brd, gnr," +
+				" snils, inn, tsd, non_rsd_id, phy, r_org, prd_tmz, prd_lan," +
+				" r_ctz_shp, r_cty, stu, bss, brd_plc, index" +
+				" from test_datamart.pso_actual" +
+				" where sys_from <= 1)";
+		EnrichQueryRequest enrichQueryRequest = prepareRequest("select \"id\" from \"test_datamart\".\"pso\"");
+		String[] result = {""};
 
-    TestSuite suite = TestSuite.create("the_test_suite");
-    suite.test("executeQuery", context -> {
-      Async async = context.async();
-      adbQueryEnrichmentService.enrich(enrichQueryRequest, ar -> {
-        if (ar.succeeded()) {
-          result[0] = ar.result();
-        }
-        async.complete();
-      });
-      async.awaitSuccess(10000);
-    });
-    suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
-    assertTrue(result[0].toLowerCase().contains(expectedResult.toLowerCase()));
-  }
+		TestSuite suite = TestSuite.create("the_test_suite");
+		suite.test("executeQuery", context -> {
+			Async async = context.async();
+			adbQueryEnrichmentService.enrich(enrichQueryRequest, ar -> {
+				if (ar.succeeded()) {
+					result[0] = ar.result();
+				}
+				async.complete();
+			});
+			async.awaitSuccess(10000);
+		});
+		suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+		assertTrue(result[0].toLowerCase().contains(expectedResult.toLowerCase()));
+	}
 
-  private EnrichQueryRequest prepareRequest(String sql) {
-    LlrRequest llrRequest = new LlrRequest();
-    JsonObject test_datamart = JsonUtils.init("meta_data.json", "TEST_DATAMART");
-    llrRequest.setSchema(test_datamart);
-    QueryRequest queryRequest = new QueryRequest();
-    queryRequest.setSql(sql);
-    queryRequest.setRequestId(UUID.randomUUID());
-    queryRequest.setDatamartMnemonic("TEST_DATAMART");
-    llrRequest.setQueryRequest(queryRequest);
-    return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
-  }
+	private EnrichQueryRequest prepareRequest(String sql) {
+		JsonObject test_datamart = JsonUtils.init("meta_data.json", "TEST_DATAMART");
+		QueryRequest queryRequest = new QueryRequest();
+		queryRequest.setSql(sql);
+		queryRequest.setRequestId(UUID.randomUUID());
+		queryRequest.setDatamartMnemonic("TEST_DATAMART");
+		LlrRequest llrRequest = new LlrRequest(queryRequest, test_datamart);
+		return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
+	}
 }

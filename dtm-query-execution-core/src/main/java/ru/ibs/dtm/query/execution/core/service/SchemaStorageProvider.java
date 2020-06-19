@@ -13,5 +13,5 @@ public interface SchemaStorageProvider {
    *
    * @param handler хэндлер асинхронной обработки результата
    */
-  void getLogicalSchema(Handler<AsyncResult<JsonObject>> handler);
+  void getLogicalSchema(String detamartMnemonic, Handler<AsyncResult<JsonObject>> handler);
 }

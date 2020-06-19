@@ -22,7 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @Service("adbDdlService")
-public class AdbDdlService implements DdlService {
+public class AdbDdlService implements DdlService<Void> {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(AdbDdlService.class);
 
@@ -47,7 +47,7 @@ public class AdbDdlService implements DdlService {
 
 	@Override
 	public void execute(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {
-		switch (context.getRequest().getQueryType()) {
+		switch (context.getDdlType()) {
 			case CREATE_TABLE:
 				createTable(context, handler);
 				return;
@@ -75,7 +75,7 @@ public class AdbDdlService implements DdlService {
 	private void createTable(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {
 		metadataFactory.apply(context.getRequest().getClassTable(), ar -> {
 			if (ar.succeeded()) {
-				if (!context.getRequest().getQueryType().isCreateTopic()) {
+				if (!context.getDdlType().isCreateTopic()) {
 					handler.handle(Future.succeededFuture());
 					return;
 				}

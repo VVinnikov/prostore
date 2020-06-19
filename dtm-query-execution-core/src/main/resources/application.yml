@@ -1,8 +1,5 @@
 http:
   port: ${SERVER_PORT:8080}
-server:
-  metadata:
-    path: ./config
 datasource:
   edml:
     sourceType: ${EDML_DATASOURCE:ADB}
@@ -12,7 +9,7 @@ datasource:
       database: ${SERVICEDB_DB_NAME:dtmservice}
       user: ${SERVICEDB_USER:dtmuser}
       password: ${SERVICEDB_PASS:Cat6Gmt7Ncr}
-      host: ${SERVICEDB_HOST:10.18.84.17}
+      host: ${SERVICEDB_HOST:localhost}
       port: ${SERVICEDB_PORT:3306}
     poolOptions:
       maxSize: 5

@@ -9,6 +9,7 @@ import org.springframework.plugin.core.SimplePluginRegistry;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.reader.SourceType;
+import ru.ibs.dtm.query.execution.core.service.SchemaStorageProvider;
 import ru.ibs.dtm.query.execution.core.service.TargetDatabaseDefinitionService;
 import ru.ibs.dtm.query.execution.core.utils.HintExtractor;
 import ru.ibs.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
@@ -16,15 +17,16 @@ import ru.ibs.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
-import ru.ibs.dtm.query.execution.plugin.api.request.QueryCostRequest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 public class TargetDatabaseDefinitionServiceImplTest {
 
   private TargetDatabaseDefinitionService targetDatabaseDefinitionService =
     new TargetDatabaseDefinitionServiceImpl(
+      mock(SchemaStorageProvider.class),
       new DataSourcePluginServiceImpl(
         SimplePluginRegistry.of(
           new DtmDataSourcePlugin() {

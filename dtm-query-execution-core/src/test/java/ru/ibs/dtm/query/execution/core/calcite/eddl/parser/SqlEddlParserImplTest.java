@@ -1,8 +1,6 @@
 package ru.ibs.dtm.query.execution.core.calcite.eddl.parser;
 
-import org.apache.calcite.sql.SqlIdentifier;
-import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.apache.calcite.sql.ddl.SqlCreateTable;
 import org.apache.calcite.sql.parser.SqlParseException;
@@ -15,6 +13,11 @@ import ru.ibs.dtm.common.plugin.exload.Format;
 import ru.ibs.dtm.common.plugin.exload.Type;
 import ru.ibs.dtm.query.execution.core.calcite.eddl.*;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -112,6 +115,39 @@ public class SqlEddlParserImplTest {
       SqlNodeUtils.getOne(sqlCreateDownloadExternalTable, LocationOperator.class).getLocation());
     assertEquals(Format.AVRO,
       SqlNodeUtils.getOne(sqlCreateDownloadExternalTable, FormatOperator.class).getFormat());
+  }
+
+  @Test
+  public void testCreateUploadExtTable() throws SqlParseException {
+    Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
+    FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
+    Planner planner = Frameworks.getPlanner(frameworkConfig);
+    Map<String, String> columns = new HashMap<>();
+    columns.put("id", "integer");
+    columns.put("name", "varchar");
+
+    SqlNode sqlNode = planner.parse("CREATE UPLOAD EXTERNAL TABLE uplExtTab (id integer not null, name varchar(100), primary key(id)) " +
+            "LOCATION 'kafka://zookeeper_host:port/topic' FORMAT 'avro'");
+    assertTrue(sqlNode instanceof SqlCreateUploadExternalTable);
+    SqlCreateUploadExternalTable sqlCreateUploadExternalTable = (SqlCreateUploadExternalTable) sqlNode;
+    assertEquals("uplExtTab".toLowerCase(),
+            SqlNodeUtils.getOne(sqlCreateUploadExternalTable, SqlIdentifier.class).getSimple());
+    assertEquals("id", ((SqlIdentifier)((SqlColumnDeclaration)sqlCreateUploadExternalTable.getColumnList()
+            .get(0)).getOperandList().get(0)).getSimple());
+    assertEquals(columns.get("id"), ((SqlDataTypeSpec)((SqlColumnDeclaration)sqlCreateUploadExternalTable.getColumnList()
+            .get(0)).getOperandList().get(1)).getTypeName().getSimple().toLowerCase());
+    assertEquals("name", ((SqlIdentifier)((SqlColumnDeclaration)sqlCreateUploadExternalTable.getColumnList()
+            .get(1)).getOperandList().get(0)).getSimple());
+    assertEquals(columns.get("name"), ((SqlDataTypeSpec)((SqlColumnDeclaration)sqlCreateUploadExternalTable.getColumnList()
+            .get(1)).getOperandList().get(1)).getTypeName().getSimple().toLowerCase());
+    assertEquals(SqlKind.PRIMARY_KEY, ((SqlCreateUploadExternalTable)sqlNode).getColumnList().get(2).getKind());
+
+    assertEquals(Type.KAFKA_TOPIC,
+            SqlNodeUtils.getOne(sqlCreateUploadExternalTable, LocationOperator.class).getType());
+    assertEquals("kafka://zookeeper_host:port/topic",
+            SqlNodeUtils.getOne(sqlCreateUploadExternalTable, LocationOperator.class).getLocation());
+    assertEquals(Format.AVRO,
+            SqlNodeUtils.getOne(sqlCreateUploadExternalTable, FormatOperator.class).getFormat());
   }
 
   @Test

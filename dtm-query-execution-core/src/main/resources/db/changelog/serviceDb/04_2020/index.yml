@@ -23,19 +23,19 @@ databaseChangeLog:
       author:  'Dmitry Voronkov'
       changes:
         - sqlFile:
-            path: db/data/serviceDb/0001.sql
+            path: src/main/resources/db/data/serviceDb/0001.sql
   - changeSet:
       id:  20200525_140001
       author:  'Dmitry Voronkov'
       changes:
         - sqlFile:
-            path: db/data/serviceDb/0002.sql
+            path: src/main/resources/db/data/serviceDb/0002.sql
   - changeSet:
       id:  20200525_140002
       author:  'Dmitry Voronkov'
       changes:
         - sqlFile:
-            path: db/data/serviceDb/0003.sql
+            path: src/main/resources/db/data/serviceDb/0003.sql
 
   - changeSet:
       id:  v1.0.0

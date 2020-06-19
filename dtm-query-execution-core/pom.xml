@@ -429,6 +429,8 @@
                                         |download_external_table_attribute
                                         |download_query
                                         |delta_data
+                                        |upload_external_table
+                                        |upload_query
                                     </includes>
                                     <inputSchema>${datasource.service.options.database}</inputSchema>
                                     <!--outputSchema>dtmservice</outputSchema-->

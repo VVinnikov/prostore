@@ -27,6 +27,7 @@ import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
 import ru.ibs.dtm.query.execution.core.dto.*;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.dto.eddl.CreateDownloadExternalTableQuery;
+import ru.ibs.dtm.query.execution.core.dto.eddl.CreateUploadExternalTableQuery;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -678,7 +679,7 @@ public class ServiceDaoImpl implements ServiceDao {
                 });
     }
 
-  @Override
+    @Override
   public void findDownloadExternalTableAttributes(Long detId, Handler<AsyncResult<List<DownloadExternalTableAttribute>>> resultHandler) {
     executor.query(dsl -> dsl
             .select(DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.COLUMN_NAME
@@ -706,4 +707,30 @@ public class ServiceDaoImpl implements ServiceDao {
       }
     });
   }
+
+    @Override
+    public void insertUploadExternalTable(CreateUploadExternalTableQuery query, Handler<AsyncResult<Void>> handler) {
+        findDatamart(query.getSchemaName(), datamartHandler -> {
+            if (datamartHandler.succeeded()) {
+                Long datamartId = datamartHandler.result();
+                executor.execute(dsl -> dsl.insertInto(UPLOAD_EXTERNAL_TABLE)
+                        .set(UPLOAD_EXTERNAL_TABLE.DATAMART_ID, datamartId)
+                        .set(UPLOAD_EXTERNAL_TABLE.TABLE_NAME, query.getTableName())
+                        .set(UPLOAD_EXTERNAL_TABLE.TYPE_ID, query.getLocationType().ordinal())
+                        .set(UPLOAD_EXTERNAL_TABLE.LOCATION_PATH, query.getLocationPath())
+                        .set(UPLOAD_EXTERNAL_TABLE.FORMAT_ID, query.getFormat().ordinal())
+                        .set(UPLOAD_EXTERNAL_TABLE.MESSAGE_LIMIT, query.getMessageLimit())
+                )
+                        .setHandler(ar -> {
+                            if (ar.succeeded()) {
+                                handler.handle(Future.succeededFuture());
+                            } else {
+                                handler.handle(Future.failedFuture(ar.cause()));
+                            }
+                        });
+            } else {
+                handler.handle(Future.failedFuture(datamartHandler.cause()));
+            }
+        });
+    }
 }

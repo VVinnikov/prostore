@@ -9,6 +9,7 @@ import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.query.execution.core.dto.*;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.dto.eddl.CreateDownloadExternalTableQuery;
+import ru.ibs.dtm.query.execution.core.dto.eddl.CreateUploadExternalTableQuery;
 
 import java.util.List;
 import java.util.UUID;
@@ -71,4 +72,6 @@ public interface ServiceDao {
     void insertDelta(DeltaRecord delta, Handler<AsyncResult<Void>> resultHandler);
 
     void updateDelta(DeltaRecord delta, Handler<AsyncResult<Void>> resultHandler);
+
+    void insertUploadExternalTable(CreateUploadExternalTableQuery query, Handler<AsyncResult<Void>> asyncResultHandler);
 }

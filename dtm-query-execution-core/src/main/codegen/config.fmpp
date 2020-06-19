@@ -39,8 +39,10 @@ data: {
       "FILE"
       "ARCHIVE"
       "DOWNLOAD"
+      "UPLOAD"
       "LOCATION"
       "CHUNK_SIZE"
+      "MESSAGE_LIMIT"
       "DELTA"
     ]
 
@@ -369,8 +371,10 @@ data: {
       "FILE"
       "ARCHIVE"
       "DOWNLOAD"
+      "UPLOAD"
       "LOCATION"
       "CHUNK_SIZE"
+      "MESSAGE_LIMIT"
     ]
 
     # List of non-reserved keywords to remove;
@@ -423,6 +427,7 @@ data: {
       "SqlCreateView"
       "SqlCreateFunction"
       "SqlCreateDownloadExternalTable"
+      "SqlCreateUploadExternalTable"
       "SqlCreateDatabase"
     ]
 
@@ -436,6 +441,7 @@ data: {
       "SqlDropView"
       "SqlDropFunction"
       "SqlDropDownloadExternalTable"
+      "SqlDropUploadExternalTable"
       "DropDatabase"
     ]
 

@@ -38,8 +38,7 @@ public class DropUploadExternalTableExecutor implements EddlExecutor {
         return EddlAction.DROP_UPLOAD_EXTERNAL_TABLE;
     }
 
-    private void executeInternal(DropUploadExternalTableQuery query,
-                                 Handler<AsyncResult<Void>> asyncResultHandler) {
-        serviceDao.dropUploadExternalTable(query.getSchemaName(), query.getTableName(), asyncResultHandler);
+    private void executeInternal(DropUploadExternalTableQuery query, Handler<AsyncResult<Void>> asyncResultHandler) {
+        serviceDao.dropUploadExternalTable(query, asyncResultHandler);
     }
 }

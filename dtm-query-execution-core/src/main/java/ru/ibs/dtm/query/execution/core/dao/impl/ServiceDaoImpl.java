@@ -7,13 +7,13 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.ext.sql.ResultSet;
-import org.jetbrains.annotations.NotNull;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.jetbrains.annotations.NotNull;
 import org.jooq.DSLContext;
 import org.jooq.Record1;
 import org.jooq.Select;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jooq.generated.dtmservice.tables.records.UploadExternalTableRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
@@ -28,6 +28,7 @@ import ru.ibs.dtm.query.execution.core.dto.*;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.dto.eddl.CreateDownloadExternalTableQuery;
 import ru.ibs.dtm.query.execution.core.dto.eddl.CreateUploadExternalTableQuery;
+import ru.ibs.dtm.query.execution.core.dto.eddl.DropUploadExternalTableQuery;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -46,9 +47,9 @@ import static org.jooq.generated.information_schema.Tables.TABLES;
 import static org.jooq.impl.DSL.max;
 
 @Repository
+@Slf4j
 public class ServiceDaoImpl implements ServiceDao {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ServiceDaoImpl.class);
     private static final String SCHEMA_TABLE_COLUMN_NAME = "COLUMN_NAME";
     private static final String SCHEMA_TABLE_COLUMN_TYPE = "COLUMN_TYPE";
     private static final String SCHEMA_TABLE_IS_NULLABLE = "IS_NULLABLE";
@@ -256,7 +257,7 @@ public class ServiceDaoImpl implements ServiceDao {
                                     it.getString(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.getName())
                             ))
                     );
-                    LOGGER.info("Найдено {} сущностей для витрины: {}", datamartEntityList.size(), datamartMnemonic);
+                    log.info("Найдено {} сущностей для витрины: {}", datamartEntityList.size(), datamartMnemonic);
                     resultHandler.handle(Future.succeededFuture(datamartEntityList));
                 } else {
                     resultHandler.handle(Future.failedFuture(String.format("Невозможно получить сущности для витрины %s", datamartMnemonic)));
@@ -298,10 +299,10 @@ public class ServiceDaoImpl implements ServiceDao {
                                 it.getString(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.getName())
                         ))
                 );
-                LOGGER.info("Найдено {} атрибутов для сущности: '{}' схемы: '{}'.", res.size(), entityMnemonic, datamartMnemonic);
+                log.info("Найдено {} атрибутов для сущности: '{}' схемы: '{}'.", res.size(), entityMnemonic, datamartMnemonic);
                 resultHandler.handle(Future.succeededFuture(res));
             } else {
-                LOGGER.error("Невозможно получить атрибуты метаданных: {}", ar.cause().getMessage());
+                log.error("Невозможно получить атрибуты метаданных: {}", ar.cause().getMessage());
                 resultHandler.handle(Future.failedFuture(ar.cause()));
             }
         });
@@ -334,7 +335,7 @@ public class ServiceDaoImpl implements ServiceDao {
                 });
                 resultHandler.handle(Future.succeededFuture(classFieldList));
             } else {
-                LOGGER.error("Невозможно получить метаданные таблицы: {}", ar.cause().getMessage());
+                log.error("Невозможно получить метаданные таблицы: {}", ar.cause().getMessage());
                 resultHandler.handle(Future.failedFuture(ar.cause()));
             }
         });
@@ -345,10 +346,10 @@ public class ServiceDaoImpl implements ServiceDao {
         executor.execute(dsl -> dsl.query(sql)
         ).setHandler(ar -> {
             if (ar.succeeded()) {
-                LOGGER.debug("Исполнен запрос(executeUpdate) sql: {}, результат: {}", sql, ar.result());
+                log.debug("Исполнен запрос(executeUpdate) sql: {}, результат: {}", sql, ar.result());
                 resultHandler.handle(Future.succeededFuture());
             } else {
-                LOGGER.error("Ошибка при исполнении запроса(executeUpdate) sql: {}", sql, ar.cause());
+                log.error("Ошибка при исполнении запроса(executeUpdate) sql: {}", sql, ar.cause());
                 resultHandler.handle(Future.failedFuture(ar.cause()));
             }
         });
@@ -358,10 +359,10 @@ public class ServiceDaoImpl implements ServiceDao {
     public void dropTable(ClassTable classTable, Handler<AsyncResult<Void>> resultHandler) {
         executor.execute(dsl -> dsl.dropTableIfExists(classTable.getName())).setHandler(ar -> {
             if (ar.succeeded()) {
-                LOGGER.debug("Удаление таблицы [{}] успешно завершено", classTable.getNameWithSchema());
+                log.debug("Удаление таблицы [{}] успешно завершено", classTable.getNameWithSchema());
                 resultHandler.handle(Future.succeededFuture());
             } else {
-                LOGGER.error("Ошибка удаления таблицы [{}]", classTable.getNameWithSchema(), ar.cause());
+                log.error("Ошибка удаления таблицы [{}]", classTable.getNameWithSchema(), ar.cause());
                 resultHandler.handle(Future.failedFuture(ar.cause()));
             }
         });
@@ -372,15 +373,15 @@ public class ServiceDaoImpl implements ServiceDao {
         executor.query(dsl -> dsl.resultQuery(sql))
                 .setHandler(ar -> {
                     if (ar.succeeded()) {
-                        LOGGER.debug("Исполнен запрос(executeQuery) sql: {}, результат: {}", sql, ar.result());
+                        log.debug("Исполнен запрос(executeQuery) sql: {}, результат: {}", sql, ar.result());
                         if (ar.result().unwrap() instanceof ResultSet) {
                             resultHandler.handle(Future.succeededFuture(ar.result().unwrap()));
                         } else {
-                            LOGGER.error("Невозможно получить результат запроса(executeQuery) sql: {}", sql, ar.cause());
+                            log.error("Невозможно получить результат запроса(executeQuery) sql: {}", sql, ar.cause());
                             resultHandler.handle(Future.failedFuture(String.format("Невозможно получить результат выполнения запроса [%s]", sql)));
                         }
                     } else {
-                        LOGGER.error("Ошибка при исполнении запроса(executeQuery) sql: {}", sql, ar.cause());
+                        log.error("Ошибка при исполнении запроса(executeQuery) sql: {}", sql, ar.cause());
                         resultHandler.handle(Future.failedFuture(ar.cause()));
                     }
                 });
@@ -413,42 +414,42 @@ public class ServiceDaoImpl implements ServiceDao {
     }
 
 
-  @Override
-  public void dropDownloadExternalTable(String datamart,
-                                        String tableName,
-                                        Handler<AsyncResult<Void>> resultHandler) {
-    Future.future((Promise<DownloadExtTableRecord> promise) -> {
-              findDownloadExternalTable(datamart, tableName.toLowerCase(), promise);
-            })
-            .compose(deTable -> Future.future((Promise<Long> promise) -> {
-              dropTableAttributesByTableId(deTable.getId(), ar -> {
-                if (ar.succeeded()) {
-                  promise.complete(deTable.getId());
-                } else {
-                  promise.fail(ar.cause());
-                }
-              });
-            }))
-            .compose(detId -> Future.future((Promise<Integer> promise) -> dropDownloadExternalTable(detId, promise)))
-            .onSuccess(success -> resultHandler.handle(Future.succeededFuture()))
-            .onFailure(fail -> resultHandler.handle(Future.failedFuture(fail)));
-  }
+    @Override
+    public void dropDownloadExternalTable(String datamart,
+                                          String tableName,
+                                          Handler<AsyncResult<Void>> resultHandler) {
+        Future.future((Promise<DownloadExtTableRecord> promise) -> {
+            findDownloadExternalTable(datamart, tableName.toLowerCase(), promise);
+        })
+                .compose(deTable -> Future.future((Promise<Long> promise) -> {
+                    dropTableAttributesByTableId(deTable.getId(), ar -> {
+                        if (ar.succeeded()) {
+                            promise.complete(deTable.getId());
+                        } else {
+                            promise.fail(ar.cause());
+                        }
+                    });
+                }))
+                .compose(detId -> Future.future((Promise<Integer> promise) -> dropDownloadExternalTable(detId, promise)))
+                .onSuccess(success -> resultHandler.handle(Future.succeededFuture()))
+                .onFailure(fail -> resultHandler.handle(Future.failedFuture(fail)));
+    }
 
-  private void dropTableAttributesByTableId(Long detId, Handler<AsyncResult<Integer>> handler) {
-    executor.execute(dsl -> dsl.deleteFrom(DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE)
-            .where(DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.DET_ID.eq(detId)))
-            .setHandler(handler);
-  }
+    private void dropTableAttributesByTableId(Long detId, Handler<AsyncResult<Integer>> handler) {
+        executor.execute(dsl -> dsl.deleteFrom(DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE)
+                .where(DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.DET_ID.eq(detId)))
+                .setHandler(handler);
+    }
 
-  private void dropDownloadExternalTable(Long id, Handler<AsyncResult<Integer>> handler) {
-    executor.execute(dsl -> dsl.deleteFrom(DOWNLOAD_EXTERNAL_TABLE)
-            .where(DOWNLOAD_EXTERNAL_TABLE.ID.eq(id)))
-            .setHandler(handler);
-  }
+    private void dropDownloadExternalTable(Long id, Handler<AsyncResult<Integer>> handler) {
+        executor.execute(dsl -> dsl.deleteFrom(DOWNLOAD_EXTERNAL_TABLE)
+                .where(DOWNLOAD_EXTERNAL_TABLE.ID.eq(id)))
+                .setHandler(handler);
+    }
 
     @Override
     public void findDownloadExternalTable(String datamartMnemonic, String table, Handler<AsyncResult<DownloadExtTableRecord>> resultHandler) {
-        LOGGER.debug("Поиск внешней таблицы {}.{}, начало", datamartMnemonic, table);
+        log.debug("Поиск внешней таблицы {}.{}, начало", datamartMnemonic, table);
     /*
      select det.id from download_external_table det
      inner join datamarts_registry dr on dr.datamart_id=det.schema_id
@@ -472,7 +473,7 @@ public class ServiceDaoImpl implements ServiceDao {
                 final QueryResult result = ar.result();
                 final boolean found = result.hasResults();
                 if (!found) {
-                    LOGGER.error("Поиск внешней таблицы {}.{}, результат: не найдена", datamartMnemonic, table);
+                    log.error("Поиск внешней таблицы {}.{}, результат: не найдена", datamartMnemonic, table);
                     resultHandler.handle(
                             Future.failedFuture(String.format("Внешняя таблица %s.%s не найдена", datamartMnemonic, table)));
                     return;
@@ -492,10 +493,10 @@ public class ServiceDaoImpl implements ServiceDao {
                 record.setFormat(Format.findByName(format));
                 record.setChunkSize(chunkSize);
 
-                LOGGER.debug("Поиск внешней таблицы {}.{}, результат (id): {}", datamartMnemonic, table, downloadExtTableId);
+                log.debug("Поиск внешней таблицы {}.{}, результат (id): {}", datamartMnemonic, table, downloadExtTableId);
                 resultHandler.handle(Future.succeededFuture(record));
             } else {
-                LOGGER.error("Поиск внешней таблицы {}.{}, ошибка {}", datamartMnemonic, table, ar.cause().getMessage());
+                log.error("Поиск внешней таблицы {}.{}, ошибка {}", datamartMnemonic, table, ar.cause().getMessage());
                 resultHandler.handle(Future.failedFuture(ar.cause()));
             }
         });
@@ -503,7 +504,7 @@ public class ServiceDaoImpl implements ServiceDao {
 
     @Override
     public void insertDownloadQuery(UUID id, Long detId, String sql, Handler<AsyncResult<Void>> resultHandler) {
-        LOGGER.debug("INSERT в таблицу запросов, начало. id: {}, detId: {}, sql: {}", id, detId, sql);
+        log.debug("INSERT в таблицу запросов, начало. id: {}, detId: {}, sql: {}", id, detId, sql);
         executor.execute(dsl -> dsl
                 .insertInto(DOWNLOAD_QUERY)
                 .set(DOWNLOAD_QUERY.ID, id.toString())
@@ -511,10 +512,10 @@ public class ServiceDaoImpl implements ServiceDao {
                 .set(DOWNLOAD_QUERY.SQL_QUERY, sql))
                 .setHandler(ar -> {
                     if (ar.succeeded()) {
-                        LOGGER.debug("INSERT в таблицу запросов успешен. id: {}, detId: {}, sql: {}", id, detId, sql);
+                        log.debug("INSERT в таблицу запросов успешен. id: {}, detId: {}, sql: {}", id, detId, sql);
                         resultHandler.handle(Future.succeededFuture());
                     } else {
-                        LOGGER.error("INSERT в таблицу запросов не успешен. id: {}, detId: {}, sql: {}, error: {}",
+                        log.error("INSERT в таблицу запросов не успешен. id: {}, detId: {}, sql: {}, error: {}",
                                 id, detId, sql, ar.cause().getMessage());
                         resultHandler.handle(Future.failedFuture(ar.cause()));
                     }
@@ -530,14 +531,14 @@ public class ServiceDaoImpl implements ServiceDao {
      */
         final String datamart = actualDeltaRequest.getDatamart();
         final String dateTime = actualDeltaRequest.getDateTime();
-        LOGGER.debug("Получение дельты витрины {} на {}, начало", datamart, dateTime);
+        log.debug("Получение дельты витрины {} на {}, начало", datamart, dateTime);
         executor.query(dsl -> getDeltaByDatamartAndDateSelect(dsl, actualDeltaRequest)).setHandler(ar -> {
             if (ar.succeeded()) {
                 final Long delta = ar.result().get(0, Long.class);
-                LOGGER.debug("Дельта витрины {} на дату {}: {}", datamart, dateTime, delta);
+                log.debug("Дельта витрины {} на дату {}: {}", datamart, dateTime, delta);
                 resultHandler.handle(Future.succeededFuture(delta));
             } else {
-                LOGGER.error("Невозможно получить дельту витрины {} на дату {}: {}",
+                log.error("Невозможно получить дельту витрины {} на дату {}: {}",
                         datamart, dateTime, ar.cause().getMessage());
                 resultHandler.handle(Future.failedFuture(ar.cause()));
             }
@@ -546,22 +547,22 @@ public class ServiceDaoImpl implements ServiceDao {
 
     @Override
     public void getDeltasOnDateTimes(List<ActualDeltaRequest> actualDeltaRequests, Handler<AsyncResult<List<Long>>> resultHandler) {
-        LOGGER.debug("Получение {} дельт, начало", actualDeltaRequests.size());
+        log.debug("Получение {} дельт, начало", actualDeltaRequests.size());
         if (actualDeltaRequests.isEmpty()) {
-            LOGGER.warn("Список запросов на дельты должен быть не пуст.");
+            log.warn("Список запросов на дельты должен быть не пуст.");
             resultHandler.handle(Future.succeededFuture(Collections.emptyList()));
             return;
         }
         executor.query(dsl -> getUnionOfDeltaByDatamartAndDateSelects(dsl, actualDeltaRequests)).setHandler(ar -> {
             if (ar.succeeded()) {
-                LOGGER.debug("Получение {} дельт, запрос выполнен", actualDeltaRequests.size());
+                log.debug("Получение {} дельт, запрос выполнен", actualDeltaRequests.size());
                 final List<Long> result = ar.result().stream()
                         .map(queryResult -> queryResult.get(0, Long.class))
                         .collect(Collectors.toList());
-                LOGGER.debug("Получение {} дельт, результат: {}", actualDeltaRequests.size(), result);
+                log.debug("Получение {} дельт, результат: {}", actualDeltaRequests.size(), result);
                 resultHandler.handle(Future.succeededFuture(result));
             } else {
-                LOGGER.error("Получение {} дельт, ошибка: {}", actualDeltaRequests.size(), ar.cause().getMessage());
+                log.error("Получение {} дельт, ошибка: {}", actualDeltaRequests.size(), ar.cause().getMessage());
                 resultHandler.handle(Future.failedFuture(ar.cause()));
             }
         });
@@ -627,7 +628,7 @@ public class ServiceDaoImpl implements ServiceDao {
                 resultHandler.handle(Future.succeededFuture(null));
             }
         } else {
-            LOGGER.error("Поиск дельты для витрины {}, ошибка {}", datamartMnemonic, ar.cause().getMessage());
+            log.error("Поиск дельты для витрины {}, ошибка {}", datamartMnemonic, ar.cause().getMessage());
             resultHandler.handle(Future.failedFuture(ar.cause()));
         }
     }
@@ -680,33 +681,33 @@ public class ServiceDaoImpl implements ServiceDao {
     }
 
     @Override
-  public void findDownloadExternalTableAttributes(Long detId, Handler<AsyncResult<List<DownloadExternalTableAttribute>>> resultHandler) {
-    executor.query(dsl -> dsl
-            .select(DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.COLUMN_NAME
-                    ,DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.DET_ID
-                    ,DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.DATA_TYPE
-                    ,DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.ORDER_NUM
-            )
-            .from(DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE)
-            .where(DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.DET_ID.eq(detId))
-    ).setHandler(ar -> {
-      if (ar.succeeded()) {
-        QueryResult result = ar.result();
-        ResultSet resultSet = result.unwrap();
-        val tableAttributes = new ArrayList<DownloadExternalTableAttribute>();
-        resultSet.getRows().forEach(row -> {
-          tableAttributes.add(
-                  new DownloadExternalTableAttribute(row.getString(DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.COLUMN_NAME.getName()),
-                          row.getString(DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.DATA_TYPE.getName()),
-                          row.getInteger(DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.ORDER_NUM.getName()),
-                          row.getLong(DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.DET_ID.getName())));
+    public void findDownloadExternalTableAttributes(Long detId, Handler<AsyncResult<List<DownloadExternalTableAttribute>>> resultHandler) {
+        executor.query(dsl -> dsl
+                .select(DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.COLUMN_NAME
+                        , DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.DET_ID
+                        , DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.DATA_TYPE
+                        , DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.ORDER_NUM
+                )
+                .from(DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE)
+                .where(DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.DET_ID.eq(detId))
+        ).setHandler(ar -> {
+            if (ar.succeeded()) {
+                QueryResult result = ar.result();
+                ResultSet resultSet = result.unwrap();
+                val tableAttributes = new ArrayList<DownloadExternalTableAttribute>();
+                resultSet.getRows().forEach(row -> {
+                    tableAttributes.add(
+                            new DownloadExternalTableAttribute(row.getString(DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.COLUMN_NAME.getName()),
+                                    row.getString(DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.DATA_TYPE.getName()),
+                                    row.getInteger(DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.ORDER_NUM.getName()),
+                                    row.getLong(DOWNLOAD_EXTERNAL_TABLE_ATTRIBUTE.DET_ID.getName())));
+                });
+                resultHandler.handle(Future.succeededFuture(tableAttributes));
+            } else {
+                resultHandler.handle(Future.failedFuture(ar.cause()));
+            }
         });
-        resultHandler.handle(Future.succeededFuture(tableAttributes));
-      } else {
-        resultHandler.handle(Future.failedFuture(ar.cause()));
-      }
-    });
-  }
+    }
 
     @Override
     public void insertUploadExternalTable(CreateUploadExternalTableQuery query, Handler<AsyncResult<Void>> handler) {
@@ -719,6 +720,7 @@ public class ServiceDaoImpl implements ServiceDao {
                         .set(UPLOAD_EXTERNAL_TABLE.TYPE_ID, query.getLocationType().ordinal())
                         .set(UPLOAD_EXTERNAL_TABLE.LOCATION_PATH, query.getLocationPath())
                         .set(UPLOAD_EXTERNAL_TABLE.FORMAT_ID, query.getFormat().ordinal())
+                        .set(UPLOAD_EXTERNAL_TABLE.TABLE_SCHEMA, query.getTableSchema())
                         .set(UPLOAD_EXTERNAL_TABLE.MESSAGE_LIMIT, query.getMessageLimit())
                 )
                         .setHandler(ar -> {
@@ -735,22 +737,73 @@ public class ServiceDaoImpl implements ServiceDao {
     }
 
     @Override
-    public void dropUploadExternalTable(String schemaName, String tableName, Handler<AsyncResult<Void>> resultHandler) {
-        //TODO доделать
-        Future.future((Promise<DownloadExtTableRecord> promise) -> {
-            findDownloadExternalTable(schemaName, tableName.toLowerCase(), promise);
-        })
-                .compose(deTable -> Future.future((Promise<Long> promise) -> {
-                    dropTableAttributesByTableId(deTable.getId(), ar -> {
-                        if (ar.succeeded()) {
-                            promise.complete(deTable.getId());
-                        } else {
-                            promise.fail(ar.cause());
-                        }
-                    });
-                }))
-                .compose(detId -> Future.future((Promise<Integer> promise) -> dropDownloadExternalTable(detId, promise)))
+    public void dropUploadExternalTable(DropUploadExternalTableQuery query, Handler<AsyncResult<Void>> resultHandler) {
+        Future.future((Promise<UploadExternalTableRecord> promise) -> findUploadExternalTable(query.getSchemaName(), query.getTableName().toLowerCase(), promise))
+                .compose(uploadExtTableRec -> Future.future((Promise<Integer> promise) -> dropUploadExternalTable(uploadExtTableRec.getId(), promise)))
                 .onSuccess(success -> resultHandler.handle(Future.succeededFuture()))
                 .onFailure(fail -> resultHandler.handle(Future.failedFuture(fail)));
+    }
+
+    private void findUploadExternalTable(String schemaName, String tableName, Handler<AsyncResult<UploadExternalTableRecord>> resultHandler) {
+        executor.query(dsl -> dsl
+                .select(UPLOAD_EXTERNAL_TABLE.ID,
+                        DATAMARTS_REGISTRY.DATAMART_ID,
+                        UPLOAD_EXTERNAL_TABLE.TABLE_NAME,
+                        UPLOAD_EXTERNAL_TABLE.TYPE_ID,
+                        UPLOAD_EXTERNAL_TABLE.LOCATION_PATH,
+                        UPLOAD_EXTERNAL_TABLE.FORMAT_ID,
+                        UPLOAD_EXTERNAL_TABLE.TABLE_SCHEMA,
+                        UPLOAD_EXTERNAL_TABLE.MESSAGE_LIMIT
+                )
+                .from(UPLOAD_EXTERNAL_TABLE)
+                .join(DATAMARTS_REGISTRY).on(DATAMARTS_REGISTRY.DATAMART_ID.eq(UPLOAD_EXTERNAL_TABLE.DATAMART_ID))
+                .where(UPLOAD_EXTERNAL_TABLE.TABLE_NAME.equalIgnoreCase(tableName))
+                .and(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.equalIgnoreCase(schemaName))
+        ).setHandler(ar -> {
+            if (ar.succeeded()) {
+                final QueryResult result = ar.result();
+                final boolean found = result.hasResults();
+                if (!found) {
+                    log.error("Поиск внешней таблицы {}.{}, результат: не найдена", schemaName, tableName);
+                    resultHandler.handle(
+                            Future.failedFuture(String.format("Внешняя таблица %s.%s не найдена", schemaName, tableName)));
+                    return;
+                }
+                UploadExternalTableRecord record = createUploadExternalTableRecord(result);
+                resultHandler.handle(Future.succeededFuture(record));
+            } else {
+                log.error("Поиск внешней таблицы {}.{}, ошибка {}", schemaName, tableName, ar.cause().getMessage());
+                resultHandler.handle(Future.failedFuture(ar.cause()));
+            }
+        });
+    }
+
+    @NotNull
+    private UploadExternalTableRecord createUploadExternalTableRecord(QueryResult result) {
+        final Long uploadExtTableId = result.get(UPLOAD_EXTERNAL_TABLE.ID);
+        final Long datamartId = result.get(1, Long.class);
+        final String tabName = result.get(2, String.class);
+        final Integer locationType = result.get(3, Integer.class);
+        final String locationPath = result.get(UPLOAD_EXTERNAL_TABLE.LOCATION_PATH);
+        final Integer format = result.get(5, Integer.class);
+        final String schema = result.get(6, String.class);
+        final Integer messageLimit = result.get(UPLOAD_EXTERNAL_TABLE.MESSAGE_LIMIT);
+
+        UploadExternalTableRecord record = new UploadExternalTableRecord();
+        record.setId(uploadExtTableId);
+        record.setDatamartId(datamartId);
+        record.setTableName(tabName);
+        record.setTypeId(locationType);
+        record.setLocationPath(locationPath);
+        record.setFormatId(format);
+        record.setTableSchema(schema);
+        record.setMessageLimit(messageLimit);
+        return record;
+    }
+
+    private void dropUploadExternalTable(Long id, Handler<AsyncResult<Integer>> handler) {
+        executor.execute(dsl -> dsl.deleteFrom(UPLOAD_EXTERNAL_TABLE)
+                .where(UPLOAD_EXTERNAL_TABLE.ID.eq(id)))
+                .setHandler(handler);
     }
 }

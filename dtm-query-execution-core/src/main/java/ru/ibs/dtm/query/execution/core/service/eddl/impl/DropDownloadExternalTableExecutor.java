@@ -14,35 +14,32 @@ import ru.ibs.dtm.query.execution.core.service.eddl.EddlExecutor;
 @Component
 public class DropDownloadExternalTableExecutor implements EddlExecutor {
 
-  private final ServiceDao serviceDao;
+    private final ServiceDao serviceDao;
 
-  @Autowired
-  public DropDownloadExternalTableExecutor(ServiceDao serviceDao) {
-    this.serviceDao = serviceDao;
-  }
-
-  @Override
-  public void execute(EddlQuery query, Handler<AsyncResult<Void>> asyncResultHandler) {
-    DropDownloadExternalTableQuery castQuery;
-    try {
-      castQuery = (DropDownloadExternalTableQuery) query;
-    } catch (Exception e) {
-      asyncResultHandler.handle(Future.failedFuture(e));
-      return;
+    @Autowired
+    public DropDownloadExternalTableExecutor(ServiceDao serviceDao) {
+        this.serviceDao = serviceDao;
     }
-    executeInternal(castQuery, asyncResultHandler);
-  }
 
-  @Override
-  public EddlAction getAction() {
-    return EddlAction.DROP_DOWNLOAD_EXTERNAL_TABLE;
-  }
+    @Override
+    public void execute(EddlQuery query, Handler<AsyncResult<Void>> asyncResultHandler) {
+        DropDownloadExternalTableQuery castQuery;
+        try {
+            castQuery = (DropDownloadExternalTableQuery) query;
+        } catch (Exception e) {
+            asyncResultHandler.handle(Future.failedFuture(e));
+            return;
+        }
+        executeInternal(castQuery, asyncResultHandler);
+    }
 
-  private void executeInternal(DropDownloadExternalTableQuery query,
-                               Handler<AsyncResult<Void>> asyncResultHandler) {
-    serviceDao.dropDownloadExternalTable(
-      query.getSchemaName(),
-      query.getTableName(),
-      asyncResultHandler);
-  }
+    @Override
+    public EddlAction getAction() {
+        return EddlAction.DROP_DOWNLOAD_EXTERNAL_TABLE;
+    }
+
+    private void executeInternal(DropDownloadExternalTableQuery query, Handler<AsyncResult<Void>> asyncResultHandler) {
+        //TODO добавить функционал по коммиту сообщений в кафке
+        serviceDao.dropDownloadExternalTable(query.getSchemaName(), query.getTableName(), asyncResultHandler);
+    }
 }

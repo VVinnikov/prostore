@@ -183,6 +183,15 @@ public class SqlEddlParserImplTest {
     }
 
     @Test
+    public void testDropUploadExtTable() throws SqlParseException {
+        Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
+        FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
+        Planner planner = Frameworks.getPlanner(frameworkConfig);
+        SqlNode sqlNode = planner.parse("DROP UPLOAD EXTERNAL TABLE s");
+        assertTrue(sqlNode instanceof SqlDropUploadExternalTable);
+    }
+
+    @Test
     void parseDdlWithQuote() throws SqlParseException {
         Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();

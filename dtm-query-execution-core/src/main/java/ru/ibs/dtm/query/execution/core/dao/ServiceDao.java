@@ -10,6 +10,7 @@ import ru.ibs.dtm.query.execution.core.dto.*;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.dto.eddl.CreateDownloadExternalTableQuery;
 import ru.ibs.dtm.query.execution.core.dto.eddl.CreateUploadExternalTableQuery;
+import ru.ibs.dtm.query.execution.core.dto.eddl.DropUploadExternalTableQuery;
 
 import java.util.List;
 import java.util.UUID;
@@ -63,7 +64,7 @@ public interface ServiceDao {
 
     void insertUploadExternalTable(CreateUploadExternalTableQuery query, Handler<AsyncResult<Void>> asyncResultHandler);
 
-    void dropUploadExternalTable(String schemaName, String tableName, Handler<AsyncResult<Void>> asyncResultHandler);
+    void dropUploadExternalTable(DropUploadExternalTableQuery query, Handler<AsyncResult<Void>> asyncResultHandler);
 
     void getDeltaOnDateTime(ActualDeltaRequest actualDeltaRequest, Handler<AsyncResult<Long>> resultHandler);
 

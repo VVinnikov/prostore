@@ -733,4 +733,24 @@ public class ServiceDaoImpl implements ServiceDao {
             }
         });
     }
+
+    @Override
+    public void dropUploadExternalTable(String schemaName, String tableName, Handler<AsyncResult<Void>> resultHandler) {
+        //TODO доделать
+        Future.future((Promise<DownloadExtTableRecord> promise) -> {
+            findDownloadExternalTable(schemaName, tableName.toLowerCase(), promise);
+        })
+                .compose(deTable -> Future.future((Promise<Long> promise) -> {
+                    dropTableAttributesByTableId(deTable.getId(), ar -> {
+                        if (ar.succeeded()) {
+                            promise.complete(deTable.getId());
+                        } else {
+                            promise.fail(ar.cause());
+                        }
+                    });
+                }))
+                .compose(detId -> Future.future((Promise<Integer> promise) -> dropDownloadExternalTable(detId, promise)))
+                .onSuccess(success -> resultHandler.handle(Future.succeededFuture()))
+                .onFailure(fail -> resultHandler.handle(Future.failedFuture(fail)));
+    }
 }

@@ -111,7 +111,7 @@ public class MetadataFactoryImpl implements MetadataFactory {
       } else {
         sb.append(" ");
       }
-      if (!it.getNull()) {
+      if (!it.getIsNull()) {
         sb.append("NOT NULL");
       }
       prefix[0] = ", ";
@@ -134,7 +134,7 @@ public class MetadataFactoryImpl implements MetadataFactory {
         .append(" ")
         .append("varchar(36)");
     }
-    Optional<ClassField> primaryKey = classTable.getFields().stream().findAny().filter(ClassField::getPrimary);
+    Optional<ClassField> primaryKey = classTable.getFields().stream().findAny().filter(ClassField::getIsPrimary);
     primaryKey.ifPresent(classField -> sb.append(prefix[0])
       .append("constraint ")
       .append("pk_")

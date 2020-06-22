@@ -1,11 +1,16 @@
 package ru.ibs.dtm.common.model.ddl;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * Физическая модель поля служебной БД
  */
+@Data
+@EqualsAndHashCode
 public class ClassField {
 
   private final static Pattern nameWithSizePtn = Pattern.compile("\\w*(\\d)");
@@ -13,10 +18,20 @@ public class ClassField {
   private String name;
   private ClassTypes type;
   private Integer size;
+  private Integer accuracy;
   private Boolean isNull;
   private Boolean isPrimary;
   private String defaultValue;
   private String typeWithSize;
+
+  public ClassField(String name, ClassTypes type, Integer size, Integer accuracy, Boolean isNull, Boolean isPrimary) {
+    this.name = name;
+    this.type = type;
+    this.size = size;
+    this.accuracy = accuracy;
+    this.isNull = isNull;
+    this.isPrimary = isPrimary;
+  }
 
   public ClassField(String name, String typeWithSize, Boolean isNull, Boolean isPrimary, String defaultValue) {
     this.name = name;
@@ -37,59 +52,4 @@ public class ClassField {
     this.typeWithSize = typeWithSize;
   }
 
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public ClassTypes getType() {
-    return type;
-  }
-
-  public void setType(ClassTypes type) {
-    this.type = type;
-  }
-
-  public Integer getSize() {
-    return size;
-  }
-
-  public void setSize(Integer size) {
-    this.size = size;
-  }
-
-  public Boolean getNull() {
-    return isNull;
-  }
-
-  public void setNull(Boolean aNull) {
-    isNull = aNull;
-  }
-
-  public Boolean getPrimary() {
-    return isPrimary;
-  }
-
-  public void setPrimary(Boolean primary) {
-    isPrimary = primary;
-  }
-
-  public String getDefaultValue() {
-    return defaultValue;
-  }
-
-  public void setDefaultValue(String defaultValue) {
-    this.defaultValue = defaultValue;
-  }
-
-  public String getTypeWithSize() {
-    return typeWithSize;
-  }
-
-  public void setTypeWithSize(String typeWithSize) {
-    this.typeWithSize = typeWithSize;
-  }
 }

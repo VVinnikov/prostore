@@ -143,7 +143,7 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
   }
 
   private static SpaceAttribute toAttribute(ClassField field) {
-    return new SpaceAttribute(field.getNull(), field.getName(), SpaceAttributeTypeUtil.toAttributeType(field.getType()));
+    return new SpaceAttribute(field.getIsNull(), field.getName(), SpaceAttributeTypeUtil.toAttributeType(field.getType()));
   }
 
   private TopicsConfig createTopicConfig(KafkaAdminProperty property, ClassTable classTable) {

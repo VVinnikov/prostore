@@ -61,6 +61,10 @@ public interface ServiceDao {
 
     void insertDownloadQuery(UUID id, Long detId, String sql, Handler<AsyncResult<Void>> resultHandler);
 
+    void insertUploadExternalTable(CreateUploadExternalTableQuery query, Handler<AsyncResult<Void>> asyncResultHandler);
+
+    void dropUploadExternalTable(String schemaName, String tableName, Handler<AsyncResult<Void>> asyncResultHandler);
+
     void getDeltaOnDateTime(ActualDeltaRequest actualDeltaRequest, Handler<AsyncResult<Long>> resultHandler);
 
     void getDeltasOnDateTimes(List<ActualDeltaRequest> actualDeltaRequests, Handler<AsyncResult<List<Long>>> resultHandler);
@@ -73,5 +77,5 @@ public interface ServiceDao {
 
     void updateDelta(DeltaRecord delta, Handler<AsyncResult<Void>> resultHandler);
 
-    void insertUploadExternalTable(CreateUploadExternalTableQuery query, Handler<AsyncResult<Void>> asyncResultHandler);
+
 }

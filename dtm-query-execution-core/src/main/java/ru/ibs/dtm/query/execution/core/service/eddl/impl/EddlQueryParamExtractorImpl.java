@@ -5,19 +5,20 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.avro.Schema;
 import org.apache.calcite.sql.SqlDdl;
-import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+import ru.ibs.dtm.common.model.ddl.ClassTable;
+import ru.ibs.dtm.common.plugin.exload.Format;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.execution.core.calcite.eddl.*;
-import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
-import ru.ibs.dtm.query.execution.core.dto.eddl.CreateDownloadExternalTableQuery;
-import ru.ibs.dtm.query.execution.core.dto.eddl.DropDownloadExternalTableQuery;
-import ru.ibs.dtm.query.execution.core.dto.eddl.EddlQuery;
+import ru.ibs.dtm.query.execution.core.dto.eddl.*;
 import ru.ibs.dtm.query.execution.core.service.DefinitionService;
+import ru.ibs.dtm.query.execution.core.service.MetadataCalciteGenerator;
+import ru.ibs.dtm.query.execution.core.service.avro.AvroSchemaGenerator;
 import ru.ibs.dtm.query.execution.core.service.eddl.EddlQueryParamExtractor;
 
 import java.util.List;
@@ -26,15 +27,18 @@ import java.util.List;
 @Slf4j
 public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
 
+    public static final String ERROR_PARSING_EDDL_QUERY = "Ошибка парсинга запроса";
     private final DefinitionService<SqlNode> definitionService;
-    private final ServiceDao serviceDao;
+    private final MetadataCalciteGenerator metadataCalciteGenerator;
+    private final AvroSchemaGenerator avroSchemaGenerator;
     private final Vertx vertx;
 
     @Autowired
     public EddlQueryParamExtractorImpl(DefinitionService<SqlNode> definitionService,
-                                       ServiceDao serviceDao, @Qualifier("coreVertx") Vertx vertx) {
+                                       MetadataCalciteGenerator metadataCalciteGenerator, AvroSchemaGenerator avroSchemaGenerator, @Qualifier("coreVertx") Vertx vertx) {
         this.definitionService = definitionService;
-        this.serviceDao = serviceDao;
+        this.metadataCalciteGenerator = metadataCalciteGenerator;
+        this.avroSchemaGenerator = avroSchemaGenerator;
         this.vertx = vertx;
     }
 
@@ -75,7 +79,7 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
             } else if (sqlNode instanceof SqlCreateUploadExternalTable) {
                 extractCreateUploadExternalTable((SqlCreateUploadExternalTable) sqlNode, defaultSchema, asyncResultHandler);
             } else if (sqlNode instanceof SqlDropUploadExternalTable) {
-                //TODO
+                extractDropUploadExternalTable((SqlDropUploadExternalTable) sqlNode, defaultSchema, asyncResultHandler);
             } else {
                 asyncResultHandler.handle(Future.failedFuture("Запрос [" + sqlNode + "] не является EDDL оператором."));
             }
@@ -95,8 +99,8 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
                             getTableName(names)
                     )));
         } catch (RuntimeException e) {
-            log.error("Ошибка парсинга запроса", e);
-            asyncResultHandler.handle(Future.failedFuture(e.getMessage()));
+            log.error(ERROR_PARSING_EDDL_QUERY, e);
+            asyncResultHandler.handle(Future.failedFuture(e.getCause()));
         }
     }
 
@@ -113,24 +117,55 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
                             getSchema(names, defaultSchema),
                             getTableName(names),
                             locationOperator.getType(),
-                            locationOperator.getLocation(),
+                            getLocation(locationOperator),
                             SqlNodeUtils.getOne(ddl, FormatOperator.class).getFormat(),
                             chunkSizeOperator.getChunkSize())));
         } catch (RuntimeException e) {
-            log.error("Ошибка парсинга запроса", e);
-            asyncResultHandler.handle(Future.failedFuture(e.getMessage()));
+            log.error(ERROR_PARSING_EDDL_QUERY, e);
+            asyncResultHandler.handle(Future.failedFuture(e.getCause()));
         }
     }
 
     private void extractCreateUploadExternalTable(SqlCreateUploadExternalTable sqlNode, String defaultSchema,
                                                   Handler<AsyncResult<EddlQuery>> asyncResultHandler) {
-        //TODO
-        //создание uploadExternalTable
-        //получение из созданной таблицы метаданных в формате метаданных
-        //преобразование метаданных в формат авро
-        String sqlNodeName = sqlNode.getOperandList().stream().filter(t -> t instanceof SqlIdentifier).findFirst().get().toString();
+        try {
+            ClassTable classTable = metadataCalciteGenerator.generateTableMetadata(sqlNode);
+            if (classTable.getSchema() == null) {
+                classTable.setSchema(defaultSchema);
+            }
+            Schema avroSchema = avroSchemaGenerator.generateTableSchema(classTable);
+            LocationOperator locationOperator = SqlNodeUtils.getOne(sqlNode, LocationOperator.class);
+            Format format = SqlNodeUtils.getOne(sqlNode, FormatOperator.class).getFormat();
+            MassageLimitOperator messageLimitOperator = SqlNodeUtils.getOne(sqlNode, MassageLimitOperator.class);
+            asyncResultHandler.handle(Future.succeededFuture(
+                    new CreateUploadExternalTableQuery(classTable.getSchema(), classTable.getName(), locationOperator.getType(),
+                            getLocation(locationOperator), format, avroSchema.toString(), messageLimitOperator.getMessageLimit())
+            ));
+        } catch (RuntimeException e) {
+            log.error(ERROR_PARSING_EDDL_QUERY, e);
+            asyncResultHandler.handle(Future.failedFuture(e.getCause()));
+        }
+    }
 
-        //serviceDao.executeQuery();
+    private String getLocation(LocationOperator locationOperator) {
+        String startToken = "$";
+        String replaceToken = startToken + locationOperator.getType().getName();
+        //TODO доделать когда решится вопрос с конфигами
+        return locationOperator.getLocation().replace(replaceToken, locationOperator.getType().getName());
+    }
+
+    private void extractDropUploadExternalTable(SqlDropUploadExternalTable sqlNode, String defaultSchema, Handler<AsyncResult<EddlQuery>> asyncResultHandler) {
+        try {
+            List<String> names = SqlNodeUtils.getTableNames(sqlNode);
+            asyncResultHandler.handle(Future.succeededFuture(
+                    new DropUploadExternalTableQuery(
+                            getSchema(names, defaultSchema),
+                            getTableName(names)
+                    )));
+        } catch (RuntimeException e) {
+            log.error(ERROR_PARSING_EDDL_QUERY, e);
+            asyncResultHandler.handle(Future.failedFuture(e.getCause()));
+        }
     }
 
     private String getTableName(List<String> names) {

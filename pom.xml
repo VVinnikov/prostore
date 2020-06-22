@@ -109,7 +109,7 @@
     <repositories>
         <repository>
             <id>maven-public</id>
-            <url>hhttps://rt.adsw.io/artifactory/data-mart</url>
+            <url>https://rt.adsw.io/artifactory/data-mart</url>
         </repository>
     </repositories>
 

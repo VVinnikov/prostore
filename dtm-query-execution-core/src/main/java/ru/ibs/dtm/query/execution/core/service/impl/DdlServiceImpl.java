@@ -248,7 +248,6 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
         context.getRequest().setQueryRequest(replaceDatabaseInSql(context.getRequest().getQueryRequest()));
         context.setDdlType(DROP_SCHEMA);
         return Future.future((Promise<Void> promise) -> metadataFactory.apply(context, promise));
-									}
     }
 
 

@@ -3,6 +3,7 @@ package ru.ibs.dtm.query.execution.core.service.delta.impl;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -38,40 +39,55 @@ public class BeginDeltaExecutor implements DeltaExecutor {
 
     @Override
     public void execute(DeltaRequestContext context, Handler<AsyncResult<QueryResult>> handler) {
-        String datamartMnemonic = context.getRequest().getQueryRequest().getDatamartMnemonic();
-        serviceDao.getDeltaHotByDatamart(datamartMnemonic, deltaHandler -> {
-                    if (deltaHandler.succeeded()) {
-                        DeltaRecord deltaRecord = deltaHandler.result();
-                        log.debug("Найдена последняя delta: {} для витрины: {}", deltaRecord,  datamartMnemonic);
-                        Long deltaHot = initAndCheckDeltaHot(context, handler, deltaRecord);
-                        log.debug("Найдена deltaHot: {} для витрины: {}", deltaHot,  datamartMnemonic);
-                        DeltaRecord newDelta = createNextDeltaRecord(deltaHot, datamartMnemonic);
-                        serviceDao.insertDelta(newDelta, insDeltaHandler -> {
-                            if (insDeltaHandler.succeeded()) {
-                                log.debug("Создана новая дельта: {} для витрины: {}", newDelta,  datamartMnemonic);
-                                QueryResult res = deltaQueryResultFactory.create(context, newDelta);
-                                handler.handle(Future.succeededFuture(res));
-                            } else {
-                                handler.handle(Future.failedFuture(insDeltaHandler.cause()));
-                            }
-                        });
+        getDeltaHotByDatamart(context)
+                .compose(newDelta -> insertNewDelta(context, newDelta))
+                .onSuccess(success -> handler.handle(Future.succeededFuture(success)))
+                .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
+    }
+
+    private Future<DeltaRecord> getDeltaHotByDatamart(DeltaRequestContext context) {
+        return Future.future((Promise<DeltaRecord> promiseDelta) ->
+                serviceDao.getDeltaHotByDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic(), ar -> {
+                    if (ar.succeeded()) {
+                        DeltaRecord deltaRecord = ar.result();
+                        log.debug("Найдена последняя delta: {} для витрины: {}", deltaRecord,
+                                context.getRequest().getQueryRequest().getDatamartMnemonic());
+                        Long deltaHot = initAndCheckDeltaHot(context, promiseDelta, deltaRecord);
+                        log.debug("Найдена deltaHot: {} для витрины: {}", deltaHot,
+                                context.getRequest().getQueryRequest().getDatamartMnemonic());
+                        DeltaRecord newDelta = createNextDeltaRecord(deltaHot,
+                                context.getRequest().getQueryRequest().getDatamartMnemonic());
+                        promiseDelta.complete(newDelta);
                     } else {
-                        handler.handle(Future.failedFuture(deltaHandler.cause()));
+                        promiseDelta.fail(ar.cause());
                     }
-                }
-        );
+                }));
+    }
+
+    private Future<QueryResult> insertNewDelta(DeltaRequestContext context, DeltaRecord newDelta) {
+        return Future.future((Promise<QueryResult> promiseDelta) ->
+                serviceDao.insertDelta(newDelta, ar -> {
+                    if (ar.succeeded()) {
+                        log.debug("Создана новая дельта: {} для витрины: {}", newDelta,
+                                context.getRequest().getQueryRequest().getDatamartMnemonic());
+                        QueryResult res = deltaQueryResultFactory.create(context, newDelta);
+                        promiseDelta.complete(res);
+                    } else {
+                        promiseDelta.fail(ar.cause());
+                    }
+                }));
     }
 
     @Nullable
-    private Long initAndCheckDeltaHot(DeltaRequestContext context, Handler<AsyncResult<QueryResult>> handler, DeltaRecord deltaRecord) {
+    private Long initAndCheckDeltaHot(DeltaRequestContext context, Promise<DeltaRecord> promiseDelta, DeltaRecord deltaRecord) {
         Long deltaHot = 0L;
         if (deltaRecord != null) {
             deltaHot = getDeltaHot(deltaRecord);
             if (deltaHot == null) {
-                handler.handle(Future.failedFuture(new RuntimeException("Дельта находится в процессе загрузки!")));
+                promiseDelta.fail(new RuntimeException("Дельта находится в процессе загрузки!"));
             } else if (((BeginDeltaQuery) context.getDeltaQuery()).getDeltaNum() != null
                     && !((BeginDeltaQuery) context.getDeltaQuery()).getDeltaNum().equals(deltaHot)) {
-                handler.handle(Future.failedFuture(new RuntimeException("Номера заданной дельты и актуальной не совпадают!")));
+                promiseDelta.fail(new RuntimeException("Номера заданной дельты и актуальной не совпадают!"));
             }
         }
         return deltaHot;

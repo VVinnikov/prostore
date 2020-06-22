@@ -12,6 +12,7 @@ import static ru.ibs.dtm.query.execution.plugin.api.service.SqlProcessingType.DD
 public class DdlRequestContext extends RequestContext<DdlRequest> {
 
 	private DdlType ddlType;
+	private Long datamartId;
 
 	public DdlRequestContext(DdlRequest request) {
 		super(request);
@@ -29,5 +30,13 @@ public class DdlRequestContext extends RequestContext<DdlRequest> {
 
 	public void setDdlType(DdlType ddlType) {
 		this.ddlType = ddlType;
+	}
+
+	public Long getDatamartId() {
+		return datamartId;
+	}
+
+	public void setDatamartId(Long datamartId) {
+		this.datamartId = datamartId;
 	}
 }

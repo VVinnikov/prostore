@@ -1,14 +1,14 @@
-package ru.ibs.dtm.query.execution.core.service.eddl;
+package ru.ibs.dtm.query.execution.core.service.delta;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import ru.ibs.dtm.common.reader.QueryRequest;
-import ru.ibs.dtm.query.execution.core.dto.eddl.EddlQuery;
+import ru.ibs.dtm.query.execution.plugin.api.delta.query.DeltaQuery;
 
 /**
- * Экстрактор параметров eddl запроса
+ * Экстрактор параметров delta запросов
  */
-public interface EddlQueryParamExtractor {
+public interface DeltaQueryParamExtractor {
 
     /**
      * <p>Извелечь параметры</p>
@@ -16,6 +16,5 @@ public interface EddlQueryParamExtractor {
      * @param request            запрос
      * @param asyncResultHandler хэндлер асинхронной обработки результата
      */
-    void extract(QueryRequest request, Handler<AsyncResult<EddlQuery>> asyncResultHandler);
-
+    void extract(QueryRequest request, Handler<AsyncResult<DeltaQuery>> asyncResultHandler);
 }

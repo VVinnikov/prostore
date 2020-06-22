@@ -165,7 +165,7 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
 		request.setDatamartMnemonic(schema);
 
 		String tableWithSchema = SqlPreparer.getTableWithSchema(mariaProperties.getOptions().getDatabase(), sqlNodeName);
-		String sql = SqlPreparer.replaceQuote(SqlPreparer.replaceTableInSql(request.getSql(), tableWithSchema));
+		String sql = SqlPreparer.removeDistributeBy(SqlPreparer.replaceQuote(SqlPreparer.replaceTableInSql(request.getSql(), tableWithSchema)));
 		serviceDao.executeUpdate(sql, ar2 -> {
 			if (ar2.succeeded()) {
 				databaseSynchronizeService.putForRefresh(

@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 public class SqlPreparer {
 
   private static final Pattern CREATE_TABLE_PATTERN = Pattern.compile("(?<=\\stable\\s)([A-z.0-9\"]+)", Pattern.CASE_INSENSITIVE);
+  private static final Pattern CREATE_DISTRIBUTED_TABLE_PATTERN = Pattern.compile("((.|\\n)*)(DISTRIBUTED BY.+$)", Pattern.CASE_INSENSITIVE);
   private static final Pattern CREATE_TABLE_EXISTS_PATTERN = Pattern.compile("(?<=\\stable if not exists\\s)([A-z.0-9\"]+)", Pattern.CASE_INSENSITIVE);
   private static final String SERVICE_DB_NAME = "dtmservice";
 
@@ -61,5 +62,13 @@ public class SqlPreparer {
    */
   public static String replaceQuote(String sql) {
     return sql.replace(Quoting.DOUBLE_QUOTE.string, Quoting.BACK_TICK.string);
+  }
+
+  public static String removeDistributeBy(String sql) {
+    Matcher matcher = CREATE_DISTRIBUTED_TABLE_PATTERN.matcher(sql);
+    if (matcher.find()) {
+      return matcher.group(1);
+    }
+    return sql;
   }
 }

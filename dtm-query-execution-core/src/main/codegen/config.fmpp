@@ -41,6 +41,7 @@ data: {
       "DOWNLOAD"
       "LOCATION"
       "CHUNK_SIZE"
+      "DISTRIBUTED"
     ]
 
     # List of keywords from "keywords" section that are not reserved.
@@ -370,6 +371,7 @@ data: {
       "DOWNLOAD"
       "LOCATION"
       "CHUNK_SIZE"
+      "DISTRIBUTED"
     ]
 
     # List of non-reserved keywords to remove;

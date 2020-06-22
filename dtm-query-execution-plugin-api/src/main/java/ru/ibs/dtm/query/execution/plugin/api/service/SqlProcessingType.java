@@ -8,5 +8,6 @@ public enum SqlProcessingType {
   LLR,
   MPPR,
   MPPW,
-  COST
+  COST,
+  DELTA,
 }

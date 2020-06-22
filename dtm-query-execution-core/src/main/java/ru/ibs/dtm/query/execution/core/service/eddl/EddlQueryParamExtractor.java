@@ -10,12 +10,12 @@ import ru.ibs.dtm.query.execution.core.dto.eddl.EddlQuery;
  */
 public interface EddlQueryParamExtractor {
 
-  /**
-   * <p>Извелечь параметры</p>
-   *
-   * @param request            запрос
-   * @param asyncResultHandler хэндлер асинхронной обработки результата
-   */
-  public void extract(QueryRequest request, Handler<AsyncResult<EddlQuery>> asyncResultHandler);
+    /**
+     * <p>Извелечь параметры</p>
+     *
+     * @param request            запрос
+     * @param asyncResultHandler хэндлер асинхронной обработки результата
+     */
+    void extract(QueryRequest request, Handler<AsyncResult<EddlQuery>> asyncResultHandler);
 
 }

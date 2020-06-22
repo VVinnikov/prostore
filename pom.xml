@@ -43,6 +43,7 @@
         <commons.pool2.version>2.7.0</commons.pool2.version>
         <pg.client.version>0.11.4</pg.client.version>
         <liquibase.version>3.8.9</liquibase.version>
+        <lombok.version>1.18.12</lombok.version>
         <skipITs>true</skipITs>
     </properties>
 

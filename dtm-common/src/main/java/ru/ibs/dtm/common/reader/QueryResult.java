@@ -58,4 +58,12 @@ public class QueryResult {
   public int hashCode() {
     return Objects.hash(getRequestId(), getResult());
   }
+
+  @Override
+  public String toString() {
+    return "QueryResult{" +
+            "requestId=" + requestId +
+            ", result=" + result +
+            '}';
+  }
 }

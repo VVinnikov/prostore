@@ -3,7 +3,6 @@ package ru.ibs.dtm.query.execution.plugin.api.service;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import ru.ibs.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
-import ru.ibs.dtm.query.execution.plugin.api.request.QueryCostRequest;
 
 public interface QueryCostService<T> extends DatamartExecutionService<QueryCostRequestContext, AsyncResult<T>> {
 

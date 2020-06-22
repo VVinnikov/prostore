@@ -303,7 +303,6 @@ SqlCreate SqlCreateView(Span s, boolean replace) :
             query);
     }
 }
-
 SqlCreate SqlCreateMaterializedView(Span s, boolean replace) :
 {
     final boolean ifNotExists;
@@ -320,7 +319,36 @@ SqlCreate SqlCreateMaterializedView(Span s, boolean replace) :
             ifNotExists, id, columnList, query);
     }
 }
-
+SqlNode SqlBeginDelta() :
+{
+    SqlParserPos beginPos;
+    SqlNode num = null;
+}
+{
+    <BEGIN> <DELTA>
+    {
+    beginPos = getPos();
+    }
+    [ <SET> num = NumericLiteral() ]
+{
+    return new ru.ibs.dtm.query.execution.core.calcite.delta.SqlBeginDelta(beginPos, num);
+}
+}
+SqlNode SqlCommitDelta() :
+{
+    SqlParserPos commitPos;
+    SqlNode dateTime = null;
+}
+{
+    <COMMIT> <DELTA>
+    {
+    commitPos = getPos();
+    }
+    [ <SET> dateTime = StringLiteral() ]
+{
+    return new ru.ibs.dtm.query.execution.core.calcite.delta.SqlCommitDelta(commitPos, dateTime);
+}
+}
 private void FunctionJarDef(SqlNodeList usingList) :
 {
     final SqlDdlNodes.FileType fileType;

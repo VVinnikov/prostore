@@ -427,6 +427,7 @@
                                         |download_external_type
                                         |download_external_format
                                         |download_external_table
+                                        |download_external_table_attribute
                                         |download_query
                                         |delta_data
                                     </includes>

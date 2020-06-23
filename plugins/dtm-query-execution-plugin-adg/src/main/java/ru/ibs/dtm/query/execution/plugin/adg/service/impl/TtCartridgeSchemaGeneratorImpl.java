@@ -5,6 +5,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
@@ -33,7 +34,7 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
   private ContentWriter contentWriter;
 
   @Autowired
-  public TtCartridgeSchemaGeneratorImpl(KafkaProperties kafkaProperties, ContentWriter contentWriter) {
+  public TtCartridgeSchemaGeneratorImpl(@Qualifier("adgKafkaProperties") KafkaProperties kafkaProperties, ContentWriter contentWriter) {
     this.kafkaProperties = kafkaProperties;
     this.contentWriter = contentWriter;
   }

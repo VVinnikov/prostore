@@ -1,9 +1,12 @@
 package ru.ibs.dtm.query.execution.plugin.api.ddl;
 
 import lombok.ToString;
+import org.apache.calcite.sql.SqlNode;
 import ru.ibs.dtm.query.execution.plugin.api.RequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
 import ru.ibs.dtm.query.execution.plugin.api.service.SqlProcessingType;
+
+import java.util.List;
 
 import static ru.ibs.dtm.query.execution.plugin.api.ddl.DdlType.UNKNOWN;
 import static ru.ibs.dtm.query.execution.plugin.api.service.SqlProcessingType.DDL;
@@ -13,10 +16,16 @@ public class DdlRequestContext extends RequestContext<DdlRequest> {
 
 	private DdlType ddlType;
 	private Long datamartId;
+	private SqlNode query;
 
-	public DdlRequestContext(DdlRequest request) {
+	public DdlRequestContext(final DdlRequest request) {
+		this(request, null);
+	}
+
+	public DdlRequestContext(final DdlRequest request, final SqlNode query) {
 		super(request);
-		ddlType = UNKNOWN;
+		this.ddlType = UNKNOWN;
+		this.query = query;
 	}
 
 	@Override
@@ -39,4 +48,9 @@ public class DdlRequestContext extends RequestContext<DdlRequest> {
 	public void setDatamartId(Long datamartId) {
 		this.datamartId = datamartId;
 	}
+
+	public SqlNode getQuery() {
+		return query;
+	}
+
 }

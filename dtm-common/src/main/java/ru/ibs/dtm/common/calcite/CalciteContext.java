@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.plugin.adg.calcite;
+package ru.ibs.dtm.common.calcite;
 
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.Planner;
@@ -13,6 +13,11 @@ public class CalciteContext {
     this.schema = schema;
     this.planner = planner;
     this.relBuilder = relBuilder;
+  }
+
+  public CalciteContext(SchemaPlus schema, Planner planner) {
+    this.schema = schema;
+    this.planner = planner;
   }
 
   public SchemaPlus getSchema() {

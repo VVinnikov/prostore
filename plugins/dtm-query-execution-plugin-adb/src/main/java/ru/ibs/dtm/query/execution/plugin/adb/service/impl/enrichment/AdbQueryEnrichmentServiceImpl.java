@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.dto.ActualDeltaRequest;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.service.DeltaService;
-import ru.ibs.dtm.query.execution.plugin.adb.calcite.CalciteContext;
+import ru.ibs.dtm.common.calcite.CalciteContext;
 import ru.ibs.dtm.query.execution.plugin.adb.calcite.CalciteContextProvider;
 import ru.ibs.dtm.query.execution.plugin.adb.dto.EnrichQueryRequest;
 import ru.ibs.dtm.query.execution.plugin.adb.dto.RegexPreprocessorResult;

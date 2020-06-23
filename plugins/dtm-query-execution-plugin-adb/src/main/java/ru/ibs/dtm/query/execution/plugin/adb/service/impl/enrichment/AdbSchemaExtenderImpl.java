@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import static ru.ibs.dtm.query.execution.plugin.adb.factory.impl.MetadataFactoryImpl.*;
+import static ru.ibs.dtm.query.execution.plugin.adb.factory.impl.MetadataSqlFactoryImpl.*;
 
 
 /**

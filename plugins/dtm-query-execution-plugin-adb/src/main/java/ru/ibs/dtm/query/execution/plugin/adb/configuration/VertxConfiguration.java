@@ -35,7 +35,7 @@ public class VertxConfiguration {
   }
 
   @Bean("adbClusterManager")
-  public ZookeeperClusterManager clusterManager(KafkaProperties properties) {
+  public ZookeeperClusterManager clusterManager(@Qualifier("adbKafkaProperties") KafkaProperties properties) {
     JsonObject config = new JsonObject();
     config.put("zookeeperHosts", properties.getCluster().getZookeeperHosts());
     config.put("rootPath", properties.getCluster().getRootPath());

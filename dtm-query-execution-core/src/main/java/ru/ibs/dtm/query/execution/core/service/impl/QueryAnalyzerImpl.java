@@ -48,7 +48,8 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
 	public void analyzeAndExecute(QueryRequest queryRequest, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
 		getParsedQuery(queryRequest, parseResult -> {
 			if (parseResult.succeeded()) {
-				queryDispatcher.dispatch(requestContextFactory.create(queryRequest, parseResult.result()), asyncResultHandler);
+				queryDispatcher.dispatch(requestContextFactory.
+						create(queryRequest, parseResult.result()), asyncResultHandler);
 			} else {
 				LOGGER.debug("Ошибка анализа запроса", parseResult.cause());
 				asyncResultHandler.handle(Future.failedFuture(parseResult.cause()));

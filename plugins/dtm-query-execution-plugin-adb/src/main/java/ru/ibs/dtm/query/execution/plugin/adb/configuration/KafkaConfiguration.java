@@ -15,31 +15,31 @@ import ru.ibs.dtm.query.execution.plugin.adb.factory.VertxKafkaProducerFactory;
 public class KafkaConfiguration {
 
   @Bean("adbKafkaProducerFactory")
-  public KafkaProducerFactory<String, String> kafkaProviderFactory(KafkaProperties kafkaProperties,
+  public KafkaProducerFactory<String, String> kafkaProviderFactory(@Qualifier("adbKafkaProperties")KafkaProperties kafkaProperties,
                                                                    @Qualifier("adbVertx") Vertx vertx) {
     return new VertxKafkaProducerFactory<>(vertx, kafkaProperties.getProducer().getProperty());
   }
 
   @Bean("adbKafkaConsumerFactory")
-  public KafkaConsumerFactory<String, String> kafkaConsumerFactory(KafkaProperties kafkaProperties,
+  public KafkaConsumerFactory<String, String> kafkaConsumerFactory(@Qualifier("adbKafkaProperties")KafkaProperties kafkaProperties,
                                                                    @Qualifier("adbVertx") Vertx vertx) {
     return new VertxKafkaConsumerFactory<>(vertx, kafkaProperties.getConsumer().getProperty());
   }
 
   @Bean("adbByteArrayKafkaProviderFactory")
-  public KafkaProducerFactory<String, Byte[]> byteArrayKafkaProviderFactory(KafkaProperties kafkaProperties,
+  public KafkaProducerFactory<String, Byte[]> byteArrayKafkaProviderFactory(@Qualifier("adbKafkaProperties")KafkaProperties kafkaProperties,
                                                                             @Qualifier("adbVertx") Vertx vertx) {
     return new VertxKafkaProducerFactory<>(vertx, kafkaProperties.getProducer().getProperty());
   }
 
   @Bean("adbByteArrayKafkaConsumerFactory")
-  public KafkaConsumerFactory<String, Byte[]> byteArrayKafkaConsumerFactory(KafkaProperties kafkaProperties,
+  public KafkaConsumerFactory<String, Byte[]> byteArrayKafkaConsumerFactory(@Qualifier("adbKafkaProperties")KafkaProperties kafkaProperties,
                                                                             @Qualifier("adbVertx") Vertx vertx) {
     return new VertxKafkaConsumerFactory<>(vertx, kafkaProperties.getConsumer().getProperty());
   }
 
   @Bean("adbKafkaAdminClient")
-  public KafkaAdminClient kafkaAdminClient(KafkaProperties kafkaProperties,
+  public KafkaAdminClient kafkaAdminClient(@Qualifier("adbKafkaProperties")KafkaProperties kafkaProperties,
                                            @Qualifier("adbVertx") Vertx vertx) {
     return KafkaAdminClient.create(vertx, kafkaProperties.getConsumer().getProperty());
   }

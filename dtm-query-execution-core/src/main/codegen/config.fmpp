@@ -41,6 +41,7 @@ data: {
       "DOWNLOAD"
       "LOCATION"
       "CHUNK_SIZE"
+      "DISTRIBUTED"
       "DELTA"
     ]
 

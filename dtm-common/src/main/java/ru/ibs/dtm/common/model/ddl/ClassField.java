@@ -8,88 +8,99 @@ import java.util.regex.Pattern;
  */
 public class ClassField {
 
-  private final static Pattern nameWithSizePtn = Pattern.compile("\\w*(\\d)");
+	private final static Pattern nameWithSizePtn = Pattern.compile("\\w*(\\d)");
 
-  private String name;
-  private ClassTypes type;
-  private Integer size;
-  private Boolean isNull;
-  private Boolean isPrimary;
-  private String defaultValue;
-  private String typeWithSize;
+	private String name;
+	private ClassTypes type;
+	private Integer size;
+	private Boolean isNull;
+	private Integer primaryOrder;
+	private Integer shardingOrder;
+	private String defaultValue;
+	private String typeWithSize;
 
-  public ClassField(String name, String typeWithSize, Boolean isNull, Boolean isPrimary, String defaultValue) {
-    this.name = name;
-    this.isNull = isNull;
-    this.isPrimary = isPrimary;
-    this.defaultValue = defaultValue;
-    parseType(typeWithSize);
-  }
+	public ClassField(String name, String typeWithSize, Boolean isNull, Integer primaryOrder,
+					  Integer shardingOrder, String defaultValue) {
+		this.name = name;
+		this.isNull = isNull;
+		this.primaryOrder = primaryOrder;
+		this.shardingOrder = shardingOrder;
+		this.defaultValue = defaultValue;
+		parseType(typeWithSize);
+	}
 
-  private void parseType(String typeWithSize) {
-    Matcher matcher = nameWithSizePtn.matcher(typeWithSize);
-    if (matcher.find()) {
-      this.size = Integer.parseInt(typeWithSize.substring(matcher.start(), matcher.end()));
-      this.type = ClassTypes.valueOf(typeWithSize.substring(0, matcher.start() - 1).toUpperCase());
-    } else {
-      this.type = ClassTypes.valueOf(typeWithSize.toUpperCase());
-    }
-    this.typeWithSize = typeWithSize;
-  }
+	private void parseType(String typeWithSize) {
+		Matcher matcher = nameWithSizePtn.matcher(typeWithSize);
+		if (matcher.find()) {
+			this.size = Integer.parseInt(typeWithSize.substring(matcher.start(), matcher.end()));
+			this.type = ClassTypes.valueOf(typeWithSize.substring(0, matcher.start() - 1).toUpperCase());
+		} else {
+			this.type = ClassTypes.valueOf(typeWithSize.toUpperCase());
+		}
+		this.typeWithSize = typeWithSize;
+	}
 
-  public String getName() {
-    return name;
-  }
+	public String getName() {
+		return name;
+	}
 
-  public void setName(String name) {
-    this.name = name;
-  }
+	public void setName(String name) {
+		this.name = name;
+	}
 
-  public ClassTypes getType() {
-    return type;
-  }
+	public ClassTypes getType() {
+		return type;
+	}
 
-  public void setType(ClassTypes type) {
-    this.type = type;
-  }
+	public void setType(ClassTypes type) {
+		this.type = type;
+	}
 
-  public Integer getSize() {
-    return size;
-  }
+	public Integer getSize() {
+		return size;
+	}
 
-  public void setSize(Integer size) {
-    this.size = size;
-  }
+	public void setSize(Integer size) {
+		this.size = size;
+	}
 
-  public Boolean getNull() {
-    return isNull;
-  }
+	public Boolean getNull() {
+		return isNull;
+	}
 
-  public void setNull(Boolean aNull) {
-    isNull = aNull;
-  }
+	public void setNull(Boolean aNull) {
+		isNull = aNull;
+	}
 
-  public Boolean getPrimary() {
-    return isPrimary;
-  }
+	public Integer getPrimaryOrder() {
+		return primaryOrder;
+	}
 
-  public void setPrimary(Boolean primary) {
-    isPrimary = primary;
-  }
+	public void setPrimaryOrder(Integer primaryOrder) {
+		primaryOrder = primaryOrder;
+	}
 
-  public String getDefaultValue() {
-    return defaultValue;
-  }
+	public Integer getShardingOrder() {
+		return shardingOrder;
+	}
 
-  public void setDefaultValue(String defaultValue) {
-    this.defaultValue = defaultValue;
-  }
+	public void setShardingOrder(Integer shardingOrder) {
+		this.shardingOrder = shardingOrder;
+	}
 
-  public String getTypeWithSize() {
-    return typeWithSize;
-  }
+	public String getDefaultValue() {
+		return defaultValue;
+	}
 
-  public void setTypeWithSize(String typeWithSize) {
-    this.typeWithSize = typeWithSize;
-  }
+	public void setDefaultValue(String defaultValue) {
+		this.defaultValue = defaultValue;
+	}
+
+	public String getTypeWithSize() {
+		return typeWithSize;
+	}
+
+	public void setTypeWithSize(String typeWithSize) {
+		this.typeWithSize = typeWithSize;
+	}
 }

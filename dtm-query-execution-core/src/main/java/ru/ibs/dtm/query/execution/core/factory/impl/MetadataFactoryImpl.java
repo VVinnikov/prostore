@@ -28,8 +28,8 @@ public class MetadataFactoryImpl implements MetadataFactory<DdlRequestContext> {
 	}
 
 	@Override
-	public void reflect(String table, Handler<AsyncResult<ClassTable>> handler) {
-		serviceDao.getMetadataByTableName(table, ar -> {
+	public void reflect(DdlRequestContext context, String table, Handler<AsyncResult<ClassTable>> handler) {
+		serviceDao.getMetadataByTableName(context, table, ar -> {
 			if (ar.succeeded()) {
 				ClassTable res = new ClassTable(table, ar.result());
 				handler.handle(Future.succeededFuture(res));

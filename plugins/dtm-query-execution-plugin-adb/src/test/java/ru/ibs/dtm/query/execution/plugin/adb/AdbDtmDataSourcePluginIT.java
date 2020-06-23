@@ -68,9 +68,9 @@ class AdbDtmDataSourcePluginIT {
 	@Test
 	void testDdl(VertxTestContext testContext) throws Throwable {
 		ClassTable classTable = new ClassTable("test.test_ts3222", Arrays.asList(
-				new ClassField("id", ClassTypes.INT.name(), false, true, null),
-				new ClassField("name", ClassTypes.VARCHAR.name(), true, false, null),
-				new ClassField("dt", ClassTypes.DATETIME.name(), true, false, null)
+				new ClassField("id", ClassTypes.INT.name(), false, 1, 1, null),
+				new ClassField("name", ClassTypes.VARCHAR.name(), true, null, null, null),
+				new ClassField("dt", ClassTypes.DATETIME.name(), true, null, null, null)
 		));
 		DdlRequest dto = new DdlRequest(null, classTable);
 		DdlRequestContext context = new DdlRequestContext(dto);

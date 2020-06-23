@@ -35,7 +35,7 @@ public class AdbDdlService implements DdlService<Void> {
 	@Autowired
 	public AdbDdlService(MetadataFactory metadataFactory,
 						 DatabaseExecutor adbDatabaseExecutor, KafkaTopicCreatorService kafkaTopicService,
-						 KafkaProperties kafkaProperties,
+						 @Qualifier("adbKafkaProperties") KafkaProperties kafkaProperties,
 						 @Qualifier("adbVertx") Vertx vertx
 	) {
 		this.metadataFactory = metadataFactory;

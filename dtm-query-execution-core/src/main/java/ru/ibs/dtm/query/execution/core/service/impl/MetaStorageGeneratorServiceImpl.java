@@ -1,9 +1,6 @@
 package ru.ibs.dtm.query.execution.core.service.impl;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.CompositeFuture;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
+import io.vertx.core.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -76,7 +73,7 @@ public class MetaStorageGeneratorServiceImpl implements MetaStorageGeneratorServ
 	private void createAttribute(Long entityId, ClassField field, Handler<AsyncResult<Void>> handler) {
 		serviceDao.selectType(field.getType().name(), ar1 -> {
 			if (ar1.succeeded()) {
-				serviceDao.insertAttribute(entityId, field.getName(), ar1.result(), field.getSize(), ar2 -> {
+				serviceDao.insertAttribute(entityId, field, ar1.result(), ar2 -> {
 					if (ar2.succeeded()) {
 						handler.handle(Future.succeededFuture());
 					} else {
@@ -105,47 +102,46 @@ public class MetaStorageGeneratorServiceImpl implements MetaStorageGeneratorServ
 		});
 	}
 
-	private void createTable(String table, Long datamartId, Handler<AsyncResult<Long>> resultHandler) {
+	private void createTable(String table, Long datamartId, Handler<AsyncResult<Long>> handler) {
 		serviceDao.findEntity(datamartId, table, ar1 -> {
 			if (ar1.failed()) {
 				log.trace("Вставка сущности {}: {}", datamartId, table);
-				insertEntity(table, datamartId, resultHandler);
+				handler.handle(insertEntity(table, datamartId));
 			} else {
-				log.trace("Очистка сущности {}: {}", datamartId, table);
-				serviceDao.dropEntity(datamartId, table, ar2 -> {
+				log.trace("Очистка атрибутов для {}: {}", datamartId, table);
+				serviceDao.dropAttribute(ar1.result(), ar2-> {
 					if (ar2.succeeded()) {
-						log.trace("Очистка атрибутов для {}: {}", datamartId, table);
-						serviceDao.dropAttribute(ar1.result(), ar3 -> {
-							if (ar3.succeeded()) {
-								insertEntity(table, datamartId, resultHandler);
-							} else {
-								log.error("Ошибка очистки атрибута(dropAttribute)", ar3.cause());
-								resultHandler.handle(Future.failedFuture(ar3.cause()));
-							}
-						});
+						log.trace("Очистка сущности {}: {}", datamartId, table);
+							serviceDao.dropEntity(datamartId, table)
+									.compose(v -> insertEntity(table, datamartId))
+									.onSuccess(s -> handler.handle(Future.succeededFuture(s)))
+									.onFailure(f -> handler.handle(Future.failedFuture(f)));
 					} else {
-						resultHandler.handle(Future.failedFuture(ar2.cause()));
+						log.error("Ошибка очистки атрибута(dropAttribute)", ar2.cause());
+						handler.handle(Future.failedFuture(ar2.cause()));
 					}
 				});
 			}
 		});
 	}
 
-	private void insertEntity(String table, Long datamartId, Handler<AsyncResult<Long>> handler) {
-		serviceDao.insertEntity(datamartId, table, ar1 -> {
-			if (ar1.succeeded()) {
-				serviceDao.findEntity(datamartId, table, ar2 -> {
-					if (ar2.succeeded()) {
-						handler.handle(Future.succeededFuture(ar2.result()));
-					} else {
-						log.error("Не удалось вставить сущность {}", table, ar2.cause());
-						handler.handle(Future.failedFuture(ar1.cause()));
-					}
-				});
-			} else {
-				log.error("Ошибка вставки сущности {}", table, ar1.cause());
-				handler.handle(Future.failedFuture(ar1.cause()));
-			}
-		});
+	private Future<Long> insertEntity(String table, Long datamartId) {
+		return Future.future((Promise<Long> result) ->
+			serviceDao.insertEntity(datamartId, table, ar1 -> {
+				if (ar1.succeeded()) {
+					serviceDao.findEntity(datamartId, table, ar2 -> {
+						if (ar2.succeeded()) {
+							result.complete(ar2.result());
+						} else {
+							log.error("Не удалось вставить сущность {}", table, ar2.cause());
+							result.fail(ar2.cause());
+						}
+					});
+				} else {
+					log.error("Ошибка вставки сущности {}", table, ar1.cause());
+					result.fail(ar1.cause());
+				}
+			})
+		);
 	}
 }

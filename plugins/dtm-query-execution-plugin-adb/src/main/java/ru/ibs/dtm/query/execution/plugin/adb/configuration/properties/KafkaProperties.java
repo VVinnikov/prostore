@@ -1,5 +1,6 @@
 package ru.ibs.dtm.query.execution.plugin.adb.configuration.properties;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.query.execution.plugin.adb.configuration.kafka.KafkaAdminProperty;
@@ -8,6 +9,7 @@ import ru.ibs.dtm.query.execution.plugin.adb.configuration.kafka.KafkaConsumerPr
 import ru.ibs.dtm.query.execution.plugin.adb.configuration.kafka.KafkaProducerProperty;
 
 @ConfigurationProperties(prefix = "kafka.adb")
+@Qualifier("adbKafkaProperties")
 @Component
 public class KafkaProperties {
 

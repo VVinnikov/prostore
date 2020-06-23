@@ -1,23 +1,11 @@
 databaseChangeLog:
 
-  - changeSet:
-      id:  20200525_130000
-      author:  'Dmitry Voronkov'
-      changes:
-        - sqlFile:
-            path: src/main/resources/db/changelog/serviceDb/04_2020/0001.sql
-  - changeSet:
-      id:  20200525_130001
-      author:  'Dmitry Voronkov'
-      changes:
-        - sqlFile:
-            path: src/main/resources/db/changelog/serviceDb/04_2020/0002.sql
-  - changeSet:
-      id:  20200525_130002
-      author:  'Dmitry Voronkov'
-      changes:
-        - sqlFile:
-            path: src/main/resources/db/changelog/serviceDb/04_2020/0003.sql
+  - include:
+      file: src/main/resources/db/changelog/serviceDb/04_2020/0001.sql
+  - include:
+      file: src/main/resources/db/changelog/serviceDb/04_2020/0002.sql
+  - include:
+      file: src/main/resources/db/changelog/serviceDb/04_2020/0003.sql
   - changeSet:
       id:  20200525_140000
       author:  'Dmitry Voronkov'

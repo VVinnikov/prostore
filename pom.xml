@@ -110,22 +110,20 @@
     <repositories>
         <repository>
             <id>maven-public</id>
-            <url>http://build.dtm.local:8081/repository/maven-dtm-public/</url>
+            <url>https://rt.adsw.io/artifactory/data-mart</url>
         </repository>
     </repositories>
 
     <distributionManagement>
         <repository>
-            <id>maven-releases</id>
-            <url>http://build.dtm.local:8081/repository/maven-dtm-releases/</url>
-            <layout>default</layout>
-            <uniqueVersion>true</uniqueVersion>
+            <id>central</id>
+            <name>Arenadata Artifactory-releases</name>
+            <url>https://rt.adsw.io/artifactory/data-mart</url>
         </repository>
-
         <snapshotRepository>
-            <id>maven-snapshots</id>
-            <url>http://build.dtm.local:8081/repository/maven-dtm-snapshots/</url>
-            <layout>default</layout>
+            <id>snapshots</id>
+            <name>Arenadata Artifactory-snapshots</name>
+            <url>https://rt.adsw.io/artifactory/data-mart</url>
         </snapshotRepository>
     </distributionManagement>
 

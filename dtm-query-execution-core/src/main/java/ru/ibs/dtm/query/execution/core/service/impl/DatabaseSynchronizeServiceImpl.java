@@ -39,7 +39,7 @@ public class DatabaseSynchronizeServiceImpl implements DatabaseSynchronizeServic
 							  String table,
 							  boolean createTopics,
 							  Handler<AsyncResult<Void>> handler) {
-		metadataFactory.reflect(table, ar1 -> {
+		metadataFactory.reflect(context, table, ar1 -> {
 			if (ar1.succeeded()) {
 				ClassTable classTable = ar1.result();
 				serviceDao.dropTable(classTable, ar2 -> {
@@ -64,7 +64,7 @@ public class DatabaseSynchronizeServiceImpl implements DatabaseSynchronizeServic
 
 	@Override
 	public void removeTable(DdlRequestContext context, Long datamartId, String tableName, Handler<AsyncResult<Void>> handler) {
-		metadataFactory.reflect(tableName, ar1 -> {
+		metadataFactory.reflect(context, tableName, ar1 -> {
 			if (ar1.succeeded()) {
 				ClassTable classTable = ar1.result();
 				serviceDao.dropTable(classTable, dropTableResult -> {
@@ -78,13 +78,9 @@ public class DatabaseSynchronizeServiceImpl implements DatabaseSynchronizeServic
 						metadataFactory.apply(context, result -> {
 							if (result.succeeded()) {
 								log.trace("Удаление сущности {} из схемы {}", tableName, queryRequest.getDatamartMnemonic());
-								serviceDao.dropEntity(datamartId, tableName, ar2 -> {
-									if (ar2.succeeded()) {
-										handler.handle(Future.succeededFuture());
-									} else {
-										handler.handle(Future.failedFuture(ar2.cause()));
-									}
-								});
+								serviceDao.dropEntity(datamartId, tableName)
+									.onSuccess(s -> handler.handle(Future.succeededFuture()))
+									.onFailure(f -> handler.handle(Future.failedFuture(f)));
 							} else {
 								handler.handle(Future.failedFuture(result.cause()));
 							}

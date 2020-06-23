@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import ru.ibs.dtm.common.dto.ActualDeltaRequest;
+import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.query.execution.core.CoreTestConfiguration;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
@@ -88,7 +89,8 @@ class ServiceDaoImplIT {
 
   @Test
   void insertAttribute(VertxTestContext testContext) throws Throwable {
-    serviceDao.insertAttribute(entityId, attrName, 1, 100, ar -> {
+    ClassField cf = new ClassField(attrName, null, null, null, null, null);
+    serviceDao.insertAttribute(entityId, cf, 1,  ar -> {
       if (ar.succeeded()) {
         testContext.completeNow();
       } else {
@@ -112,13 +114,9 @@ class ServiceDaoImplIT {
 
   @Test
   void dropEntity(VertxTestContext testContext) throws Throwable {
-    serviceDao.dropEntity(datamartId, entity, ar -> {
-      if (ar.succeeded()) {
-        testContext.completeNow();
-      } else {
-        testContext.failNow(ar.cause());
-      }
-    });
+    serviceDao.dropEntity(datamartId, entity)
+            .onSuccess(s -> testContext.completeNow())
+            .onFailure(testContext::failNow);
     testContext.awaitCompletion(5, TimeUnit.SECONDS);
   }
 

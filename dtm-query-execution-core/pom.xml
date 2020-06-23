@@ -351,6 +351,7 @@
                                     <includes>
                                         columns
                                         |tables
+                                        |key_column_usage
                                     </includes>
                                     <inputSchema>information_schema</inputSchema>
                                     <!--outputSchema>dtmservice</outputSchema-->

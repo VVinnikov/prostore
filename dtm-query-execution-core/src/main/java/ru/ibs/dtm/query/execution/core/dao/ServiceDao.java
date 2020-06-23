@@ -1,6 +1,7 @@
 package ru.ibs.dtm.query.execution.core.dao;
 
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.ext.sql.ResultSet;
 import ru.ibs.dtm.common.dto.ActualDeltaRequest;
@@ -28,7 +29,7 @@ public interface ServiceDao {
 
     void findEntity(Long datamartId, String name, Handler<AsyncResult<Long>> resultHandler);
 
-    void dropEntity(Long datamartId, String name, Handler<AsyncResult<Void>> resultHandler);
+    Future<Integer> dropEntity(Long datamartId, String name);
 
     void insertAttribute(Long entityId, String name, Integer typeId, Integer length, Handler<AsyncResult<Void>> resultHandler);
 

@@ -112,13 +112,9 @@ class ServiceDaoImplIT {
 
   @Test
   void dropEntity(VertxTestContext testContext) throws Throwable {
-    serviceDao.dropEntity(datamartId, entity, ar -> {
-      if (ar.succeeded()) {
-        testContext.completeNow();
-      } else {
-        testContext.failNow(ar.cause());
-      }
-    });
+    serviceDao.dropEntity(datamartId, entity)
+            .onSuccess(s -> testContext.completeNow())
+            .onFailure(testContext::failNow);
     testContext.awaitCompletion(5, TimeUnit.SECONDS);
   }
 

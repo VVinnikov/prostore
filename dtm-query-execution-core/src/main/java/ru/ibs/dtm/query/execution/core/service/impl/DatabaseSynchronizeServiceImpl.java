@@ -78,13 +78,9 @@ public class DatabaseSynchronizeServiceImpl implements DatabaseSynchronizeServic
 						metadataFactory.apply(context, result -> {
 							if (result.succeeded()) {
 								log.trace("Удаление сущности {} из схемы {}", tableName, queryRequest.getDatamartMnemonic());
-								serviceDao.dropEntity(datamartId, tableName, ar2 -> {
-									if (ar2.succeeded()) {
-										handler.handle(Future.succeededFuture());
-									} else {
-										handler.handle(Future.failedFuture(ar2.cause()));
-									}
-								});
+								serviceDao.dropEntity(datamartId, tableName)
+									.onSuccess(s -> handler.handle(Future.succeededFuture()))
+									.onFailure(f -> handler.handle(Future.failedFuture(f)));
 							} else {
 								handler.handle(Future.failedFuture(result.cause()));
 							}

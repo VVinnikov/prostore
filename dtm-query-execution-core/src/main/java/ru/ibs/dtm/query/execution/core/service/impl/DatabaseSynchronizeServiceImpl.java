@@ -39,7 +39,7 @@ public class DatabaseSynchronizeServiceImpl implements DatabaseSynchronizeServic
 							  String table,
 							  boolean createTopics,
 							  Handler<AsyncResult<Void>> handler) {
-		metadataFactory.reflect(table, ar1 -> {
+		metadataFactory.reflect(context, table, ar1 -> {
 			if (ar1.succeeded()) {
 				ClassTable classTable = ar1.result();
 				serviceDao.dropTable(classTable, ar2 -> {
@@ -64,7 +64,7 @@ public class DatabaseSynchronizeServiceImpl implements DatabaseSynchronizeServic
 
 	@Override
 	public void removeTable(DdlRequestContext context, Long datamartId, String tableName, Handler<AsyncResult<Void>> handler) {
-		metadataFactory.reflect(tableName, ar1 -> {
+		metadataFactory.reflect(context, tableName, ar1 -> {
 			if (ar1.succeeded()) {
 				ClassTable classTable = ar1.result();
 				serviceDao.dropTable(classTable, dropTableResult -> {

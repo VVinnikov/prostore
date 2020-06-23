@@ -23,8 +23,7 @@ import ru.ibs.dtm.query.execution.plugin.api.service.DdlService;
 
 import java.util.List;
 
-import static ru.ibs.dtm.query.execution.plugin.api.ddl.DdlType.CREATE_SCHEMA;
-import static ru.ibs.dtm.query.execution.plugin.api.ddl.DdlType.DROP_SCHEMA;
+import static ru.ibs.dtm.query.execution.plugin.api.ddl.DdlType.*;
 
 @Slf4j
 @Service("coreDdlService")
@@ -275,6 +274,7 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
         requestDeleteTable.setDatamartMnemonic(entity.getDatamartMnemonic());
         requestDeleteTable.setSql("DROP TABLE IF EXISTS " + entity.getDatamartMnemonic() + "." + entity.getMnemonic());
         DdlRequestContext context = new DdlRequestContext(new DdlRequest(requestDeleteTable));
+        context.setDdlType(DROP_TABLE);
         dropTable(context, entity.getMnemonic(), true,
                 ar -> {
                     if (ar.succeeded()) {

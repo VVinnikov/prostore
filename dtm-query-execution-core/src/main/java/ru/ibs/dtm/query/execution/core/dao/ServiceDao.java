@@ -10,6 +10,7 @@ import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.query.execution.core.dto.*;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.dto.eddl.CreateDownloadExternalTableQuery;
+import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 
 import java.util.List;
 import java.util.UUID;
@@ -31,7 +32,7 @@ public interface ServiceDao {
 
     Future<Integer> dropEntity(Long datamartId, String name);
 
-    void insertAttribute(Long entityId, String name, Integer typeId, Integer length, Handler<AsyncResult<Void>> resultHandler);
+    void insertAttribute(Long entityId, ClassField field, Integer typeId, Handler<AsyncResult<Void>> resultHandler);
 
     void dropAttribute(Long entityId, Handler<AsyncResult<Void>> resultHandler);
 
@@ -43,7 +44,7 @@ public interface ServiceDao {
 
     void getAttributesMeta(String datamartMnemonic, String entityMnemonic, Handler<AsyncResult<List<EntityAttribute>>> resultHandler);
 
-    void getMetadataByTableName(String table, Handler<AsyncResult<List<ClassField>>> resultHandler);
+    void getMetadataByTableName(DdlRequestContext context, String table, Handler<AsyncResult<List<ClassField>>> resultHandler);
 
     void executeUpdate(String sql, Handler<AsyncResult<List<Void>>> resultHandler);
 

@@ -27,7 +27,7 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
                 case OTHER_DDL:
                     return new EddlRequestContext(new DatamartRequest(request));
                 default:
-                    return new DdlRequestContext(new DdlRequest(request));
+                    return new DdlRequestContext(new DdlRequest(request), node);
             }
         } else if (node instanceof SqlBeginDelta || node instanceof SqlCommitDelta) {
             return new DeltaRequestContext(new DatamartRequest(request));

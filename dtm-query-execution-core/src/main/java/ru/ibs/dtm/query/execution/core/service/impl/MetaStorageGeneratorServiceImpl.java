@@ -73,7 +73,7 @@ public class MetaStorageGeneratorServiceImpl implements MetaStorageGeneratorServ
 	private void createAttribute(Long entityId, ClassField field, Handler<AsyncResult<Void>> handler) {
 		serviceDao.selectType(field.getType().name(), ar1 -> {
 			if (ar1.succeeded()) {
-				serviceDao.insertAttribute(entityId, field.getName(), ar1.result(), field.getSize(), ar2 -> {
+				serviceDao.insertAttribute(entityId, field, ar1.result(), ar2 -> {
 					if (ar2.succeeded()) {
 						handler.handle(Future.succeededFuture());
 					} else {

@@ -15,7 +15,7 @@ public interface MetadataFactory<Request> {
    * @param table   таблица
    * @param handler обработчик
    */
-  void reflect(String table, Handler<AsyncResult<ClassTable>> handler);
+  void reflect(Request request, String table, Handler<AsyncResult<ClassTable>> handler);
 
   /**
    * Применить физическую модель на БД через плагин

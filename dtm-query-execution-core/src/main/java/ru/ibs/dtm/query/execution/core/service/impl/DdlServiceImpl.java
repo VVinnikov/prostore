@@ -13,7 +13,7 @@ import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.core.configuration.jooq.MariaProperties;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
-import ru.ibs.dtm.query.execution.core.dto.DatamartEntity;
+import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
 import ru.ibs.dtm.query.execution.core.factory.MetadataFactory;
 import ru.ibs.dtm.query.execution.core.service.DatabaseSynchronizeService;
 import ru.ibs.dtm.query.execution.core.utils.SqlPreparer;

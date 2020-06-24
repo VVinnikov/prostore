@@ -1,7 +1,8 @@
-package ru.ibs.dtm.query.execution.plugin.adb.factory;
+package ru.ibs.dtm.query.execution.core.factory.impl;
 
 import io.vertx.core.Vertx;
 import io.vertx.kafka.client.consumer.KafkaConsumer;
+import ru.ibs.dtm.query.execution.core.factory.KafkaConsumerFactory;
 
 import java.util.Map;
 

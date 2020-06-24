@@ -24,11 +24,9 @@ public class ClassField {
   private String defaultValue;
   private String typeWithSize;
 
-  public ClassField(String name, ClassTypes type, Integer size, Integer accuracy, Boolean isNull, Boolean isPrimary) {
+  public ClassField(String name, ClassTypes type, Boolean isNull, Boolean isPrimary) {
     this.name = name;
     this.type = type;
-    this.size = size;
-    this.accuracy = accuracy;
     this.isNull = isNull;
     this.isPrimary = isPrimary;
   }

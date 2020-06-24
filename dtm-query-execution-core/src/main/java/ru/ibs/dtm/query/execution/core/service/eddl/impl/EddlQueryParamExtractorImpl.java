@@ -13,8 +13,10 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.plugin.exload.Format;
+import ru.ibs.dtm.common.plugin.exload.Type;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.execution.core.calcite.eddl.*;
+import ru.ibs.dtm.query.execution.core.configuration.properties.KafkaProperties;
 import ru.ibs.dtm.query.execution.core.dto.eddl.*;
 import ru.ibs.dtm.query.execution.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.service.MetadataCalciteGenerator;
@@ -28,17 +30,22 @@ import java.util.List;
 public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
 
     public static final String ERROR_PARSING_EDDL_QUERY = "Ошибка парсинга запроса";
+    public static final String LOCATION_START_TOKEN = "$";
     private final DefinitionService<SqlNode> definitionService;
     private final MetadataCalciteGenerator metadataCalciteGenerator;
     private final AvroSchemaGenerator avroSchemaGenerator;
+    private final KafkaProperties kafkaProperties;
     private final Vertx vertx;
 
     @Autowired
     public EddlQueryParamExtractorImpl(DefinitionService<SqlNode> definitionService,
-                                       MetadataCalciteGenerator metadataCalciteGenerator, AvroSchemaGenerator avroSchemaGenerator, @Qualifier("coreVertx") Vertx vertx) {
+                                       MetadataCalciteGenerator metadataCalciteGenerator,
+                                       AvroSchemaGenerator avroSchemaGenerator,
+                                       @Qualifier("coreKafkaProperties") KafkaProperties kafkaProperties, @Qualifier("coreVertx") Vertx vertx) {
         this.definitionService = definitionService;
         this.metadataCalciteGenerator = metadataCalciteGenerator;
         this.avroSchemaGenerator = avroSchemaGenerator;
+        this.kafkaProperties = kafkaProperties;
         this.vertx = vertx;
     }
 
@@ -100,7 +107,7 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
                     )));
         } catch (RuntimeException e) {
             log.error(ERROR_PARSING_EDDL_QUERY, e);
-            asyncResultHandler.handle(Future.failedFuture(e.getCause()));
+            asyncResultHandler.handle(Future.failedFuture(e));
         }
     }
 
@@ -122,7 +129,7 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
                             chunkSizeOperator.getChunkSize())));
         } catch (RuntimeException e) {
             log.error(ERROR_PARSING_EDDL_QUERY, e);
-            asyncResultHandler.handle(Future.failedFuture(e.getCause()));
+            asyncResultHandler.handle(Future.failedFuture(e));
         }
     }
 
@@ -143,15 +150,25 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
             ));
         } catch (RuntimeException e) {
             log.error(ERROR_PARSING_EDDL_QUERY, e);
-            asyncResultHandler.handle(Future.failedFuture(e.getCause()));
+            asyncResultHandler.handle(Future.failedFuture(e));
         }
     }
 
     private String getLocation(LocationOperator locationOperator) {
-        String startToken = "$";
-        String replaceToken = startToken + locationOperator.getType().getName();
-        //TODO доделать когда решится вопрос с конфигами
-        return locationOperator.getLocation().replace(replaceToken, locationOperator.getType().getName());
+        String replaceToken = LOCATION_START_TOKEN + locationOperator.getType().getName();
+        return locationOperator.getLocation().replace(replaceToken, getConfigUrl(locationOperator.getType()));
+    }
+
+    private String getConfigUrl(Type type) {
+        switch (type) {
+            case KAFKA_TOPIC:
+                return kafkaProperties.getProducer().getProperty().get("bootstrap.servers");
+            case CSV_FILE:
+            case HDFS_LOCATION:
+                throw new IllegalArgumentException("Unsupported location type: " + type);
+            default:
+                throw new RuntimeException("Данный тип не поддерживается!");
+        }
     }
 
     private void extractDropUploadExternalTable(SqlDropUploadExternalTable sqlNode, String defaultSchema, Handler<AsyncResult<EddlQuery>> asyncResultHandler) {
@@ -164,7 +181,7 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
                     )));
         } catch (RuntimeException e) {
             log.error(ERROR_PARSING_EDDL_QUERY, e);
-            asyncResultHandler.handle(Future.failedFuture(e.getCause()));
+            asyncResultHandler.handle(Future.failedFuture(e));
         }
     }
 

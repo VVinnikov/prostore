@@ -8,7 +8,7 @@ import io.vertx.spi.cluster.zookeeper.ZookeeperClusterManager;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import ru.ibs.dtm.query.execution.plugin.adb.configuration.properties.KafkaProperties;
+import ru.ibs.dtm.common.configuration.kafka.KafkaConfig;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -35,10 +35,10 @@ public class VertxConfiguration {
   }
 
   @Bean("adbClusterManager")
-  public ZookeeperClusterManager clusterManager(KafkaProperties properties) {
+  public ZookeeperClusterManager clusterManager(@Qualifier("coreKafkaProperties") KafkaConfig properties) {
     JsonObject config = new JsonObject();
-    config.put("zookeeperHosts", properties.getCluster().getZookeeperHosts());
-    config.put("rootPath", properties.getCluster().getRootPath());
+    config.put("zookeeperHosts", properties.getKafkaClusterProperty().getZookeeperHosts());
+    config.put("rootPath", properties.getKafkaClusterProperty().getRootPath());
     config.put("retry", new JsonObject()
       .put("initialSleepTime", 3000)
       .put("maxTimes", 3)

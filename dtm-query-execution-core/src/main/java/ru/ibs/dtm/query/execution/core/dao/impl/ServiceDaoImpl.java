@@ -24,11 +24,16 @@ import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.plugin.exload.Format;
 import ru.ibs.dtm.common.plugin.exload.Type;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
-import ru.ibs.dtm.query.execution.core.dto.*;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.dto.eddl.CreateDownloadExternalTableQuery;
 import ru.ibs.dtm.query.execution.core.dto.eddl.CreateUploadExternalTableQuery;
 import ru.ibs.dtm.query.execution.core.dto.eddl.DropUploadExternalTableQuery;
+import ru.ibs.dtm.query.execution.core.dto.edml.DownloadExtTableRecord;
+import ru.ibs.dtm.query.execution.core.dto.edml.DownloadExternalTableAttribute;
+import ru.ibs.dtm.query.execution.core.dto.edml.UploadExtTableRecord;
+import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
+import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartInfo;
+import ru.ibs.dtm.query.execution.core.dto.metadata.EntityAttribute;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -460,7 +465,8 @@ public class ServiceDaoImpl implements ServiceDao {
                         DOWNLOAD_EXTERNAL_TYPE.NAME,
                         DOWNLOAD_EXTERNAL_TABLE.LOCATION,
                         DOWNLOAD_EXTERNAL_FORMAT.NAME,
-                        DOWNLOAD_EXTERNAL_TABLE.CHUNK_SIZE
+                        DOWNLOAD_EXTERNAL_TABLE.CHUNK_SIZE,
+                        DATAMARTS_REGISTRY.DATAMART_ID
                 )
                 .from(DOWNLOAD_EXTERNAL_TABLE)
                 .join(DATAMARTS_REGISTRY).on(DATAMARTS_REGISTRY.DATAMART_ID.eq(DOWNLOAD_EXTERNAL_TABLE.SCHEMA_ID))
@@ -483,10 +489,11 @@ public class ServiceDaoImpl implements ServiceDao {
                 final String locationPath = result.get(DOWNLOAD_EXTERNAL_TABLE.LOCATION);
                 final String format = result.get(3, String.class);
                 final Integer chunkSize = result.get(DOWNLOAD_EXTERNAL_TABLE.CHUNK_SIZE);
+                final Long datamartId = result.get(5, Long.class);
 
                 DownloadExtTableRecord record = new DownloadExtTableRecord();
                 record.setId(downloadExtTableId);
-                record.setDatamart(datamartMnemonic);
+                record.setDatamartId(datamartId);
                 record.setTableName(table);
                 record.setLocationType(Type.findByName(locationType));
                 record.setLocationPath(locationPath);
@@ -738,13 +745,14 @@ public class ServiceDaoImpl implements ServiceDao {
 
     @Override
     public void dropUploadExternalTable(DropUploadExternalTableQuery query, Handler<AsyncResult<Void>> resultHandler) {
-        Future.future((Promise<UploadExternalTableRecord> promise) -> findUploadExternalTable(query.getSchemaName(), query.getTableName().toLowerCase(), promise))
+        /*Future.future((Promise<UploadExternalTableRecord> promise) -> findUploadExternalTable(query.getSchemaName(), query.getTableName().toLowerCase(), promise))
                 .compose(uploadExtTableRec -> Future.future((Promise<Integer> promise) -> dropUploadExternalTable(uploadExtTableRec.getId(), promise)))
                 .onSuccess(success -> resultHandler.handle(Future.succeededFuture()))
-                .onFailure(fail -> resultHandler.handle(Future.failedFuture(fail)));
+                .onFailure(fail -> resultHandler.handle(Future.failedFuture(fail)));*/
     }
 
-    private void findUploadExternalTable(String schemaName, String tableName, Handler<AsyncResult<UploadExternalTableRecord>> resultHandler) {
+    @Override
+    public void findUploadExternalTable(String schemaName, String tableName, Handler<AsyncResult<UploadExtTableRecord>> resultHandler) {
         executor.query(dsl -> dsl
                 .select(UPLOAD_EXTERNAL_TABLE.ID,
                         DATAMARTS_REGISTRY.DATAMART_ID,
@@ -769,7 +777,7 @@ public class ServiceDaoImpl implements ServiceDao {
                             Future.failedFuture(String.format("Внешняя таблица %s.%s не найдена", schemaName, tableName)));
                     return;
                 }
-                UploadExternalTableRecord record = createUploadExternalTableRecord(result);
+                UploadExtTableRecord record = createUploadExternalTableRecord(result);
                 resultHandler.handle(Future.succeededFuture(record));
             } else {
                 log.error("Поиск внешней таблицы {}.{}, ошибка {}", schemaName, tableName, ar.cause().getMessage());
@@ -779,7 +787,7 @@ public class ServiceDaoImpl implements ServiceDao {
     }
 
     @NotNull
-    private UploadExternalTableRecord createUploadExternalTableRecord(QueryResult result) {
+    private UploadExtTableRecord createUploadExternalTableRecord(QueryResult result) {
         final Long uploadExtTableId = result.get(UPLOAD_EXTERNAL_TABLE.ID);
         final Long datamartId = result.get(1, Long.class);
         final String tabName = result.get(2, String.class);
@@ -789,21 +797,27 @@ public class ServiceDaoImpl implements ServiceDao {
         final String schema = result.get(6, String.class);
         final Integer messageLimit = result.get(UPLOAD_EXTERNAL_TABLE.MESSAGE_LIMIT);
 
-        UploadExternalTableRecord record = new UploadExternalTableRecord();
+        UploadExtTableRecord record = new UploadExtTableRecord();
         record.setId(uploadExtTableId);
         record.setDatamartId(datamartId);
         record.setTableName(tabName);
-        record.setTypeId(locationType);
+        record.setLocationType(Type.values()[locationType]);
         record.setLocationPath(locationPath);
-        record.setFormatId(format);
+        record.setFormat(Format.values()[format]);
         record.setTableSchema(schema);
         record.setMessageLimit(messageLimit);
         return record;
     }
 
-    private void dropUploadExternalTable(Long id, Handler<AsyncResult<Integer>> handler) {
+    public void dropUploadExternalTable(Long uploadExtTableId, Handler<AsyncResult<Void>> resultHandler) {
         executor.execute(dsl -> dsl.deleteFrom(UPLOAD_EXTERNAL_TABLE)
-                .where(UPLOAD_EXTERNAL_TABLE.ID.eq(id)))
-                .setHandler(handler);
+                .where(UPLOAD_EXTERNAL_TABLE.ID.eq(uploadExtTableId)))
+                .setHandler(ar -> {
+                    if (ar.succeeded()) {
+                        resultHandler.handle(Future.succeededFuture());
+                    } else {
+                        resultHandler.handle(Future.failedFuture(ar.cause()));
+                    }
+                });
     }
 }

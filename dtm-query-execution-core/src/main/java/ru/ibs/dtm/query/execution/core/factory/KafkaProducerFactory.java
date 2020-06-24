@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.plugin.adb.factory;
+package ru.ibs.dtm.query.execution.core.factory;
 
 import io.vertx.kafka.client.producer.KafkaProducer;
 

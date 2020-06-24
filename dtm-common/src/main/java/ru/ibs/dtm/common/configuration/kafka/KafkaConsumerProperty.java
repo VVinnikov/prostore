@@ -1,9 +1,9 @@
-package ru.ibs.dtm.query.execution.plugin.adb.configuration.kafka;
+package ru.ibs.dtm.common.configuration.kafka;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class KafkaProducerProperty {
+public class KafkaConsumerProperty {
   Map<String, String> property = new HashMap<>();
 
   public Map<String, String> getProperty() {

@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.dto;
+package ru.ibs.dtm.query.execution.core.dto.edml;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

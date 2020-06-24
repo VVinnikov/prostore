@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.plugin.exload.QueryExloadParam;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.execution.core.factory.MpprKafkaRequestFactory;
@@ -14,6 +15,7 @@ import ru.ibs.dtm.query.execution.plugin.api.request.MpprRequest;
 import java.net.URI;
 
 @Slf4j
+@Component
 public class MpprKafkaRequestFactoryImpl implements MpprKafkaRequestFactory {
 
 	public static final int DEFAULT_ZOOKEEPER_PORT = 2181;

@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.plugin.adb.configuration.kafka;
+package ru.ibs.dtm.common.configuration.kafka;
 
 public class KafkaClusterProperty {
   String zookeeperHosts = "";

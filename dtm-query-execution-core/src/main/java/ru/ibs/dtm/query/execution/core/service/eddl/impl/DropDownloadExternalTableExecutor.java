@@ -39,7 +39,6 @@ public class DropDownloadExternalTableExecutor implements EddlExecutor {
     }
 
     private void executeInternal(DropDownloadExternalTableQuery query, Handler<AsyncResult<Void>> asyncResultHandler) {
-        //TODO добавить функционал по коммиту сообщений в кафке
         serviceDao.dropDownloadExternalTable(query.getSchemaName(), query.getTableName(), asyncResultHandler);
     }
 }

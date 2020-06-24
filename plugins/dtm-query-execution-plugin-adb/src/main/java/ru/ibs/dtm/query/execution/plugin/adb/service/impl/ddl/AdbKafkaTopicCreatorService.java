@@ -23,7 +23,7 @@ public class AdbKafkaTopicCreatorService implements KafkaTopicCreatorService {
   private KafkaAdminClient adminClient;
 
   @Autowired
-  public AdbKafkaTopicCreatorService(@Qualifier("adbKafkaAdminClient") KafkaAdminClient adminClient) {
+  public AdbKafkaTopicCreatorService(@Qualifier("coreKafkaAdminClient") KafkaAdminClient adminClient) {
     this.adminClient = adminClient;
   }
 

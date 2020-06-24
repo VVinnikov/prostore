@@ -1,3 +1,5 @@
+kafkaUrl: &kafkaUrl ${KAFKA_BOOTSTRAP_SERVERS:kafka-1.dtm.local:9092}
+
 http:
   port: ${SERVER_PORT:8080}
 datasource:
@@ -13,6 +15,31 @@ datasource:
       port: ${SERVICEDB_PORT:3306}
     poolOptions:
       maxSize: 5
+
+kafka:
+  producer:
+    property:
+      bootstrap.servers: *kafkaUrl
+  consumer:
+    property:
+      bootstrap.servers: *kafkaUrl
+      group.adb.id: adb-query-execution
+      group.adg.id: adg-query-execution
+  cluster:
+    zookeeperHosts: ${ZOOKEEPER_HOSTS:kafka-1.dtm.local}
+    rootPath: arenadata/cluster/21
+  admin:
+    upload:
+      requestTopic:
+        adb: "%s.%s.adb.upload.rq"
+        adg: "%s.%s.adg.upload.rq"
+      responseTopic:
+        adb: "%s.%s.adb.upload.rs"
+        adg: "%s.%s.adg.upload.rs"
+      errorTopic:
+        adb: "%s.%s.adb.upload.err"
+        adg: "%s.%s.adg.upload.err"
+
 spring:
   liquibase:
     enabled: false

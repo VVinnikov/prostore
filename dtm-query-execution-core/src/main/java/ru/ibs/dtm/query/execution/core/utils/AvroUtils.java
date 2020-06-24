@@ -6,7 +6,7 @@ import org.apache.avro.specific.SpecificData;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTypes;
 import ru.ibs.dtm.common.schema.codec.type.LocalDateLogicalType;
-import ru.ibs.dtm.common.schema.codec.type.LocalDateTimeLogicalType;
+import ru.ibs.dtm.common.schema.codec.type.LocalTimeLogicalType;
 
 public class AvroUtils {
 
@@ -43,8 +43,8 @@ public class AvroUtils {
             case DATE:
                 schema = SpecificData.get().getConversionFor(LocalDateLogicalType.INSTANCE).getRecommendedSchema();
                 break;
-            case DATETIME:
-                schema = SpecificData.get().getConversionFor(LocalDateTimeLogicalType.INSTANCE).getRecommendedSchema();
+            case TIME:
+                schema = SpecificData.get().getConversionFor(LocalTimeLogicalType.INSTANCE).getRecommendedSchema();
                 break;
             case BOOLEAN:
                 schema = Schema.create(Schema.Type.BOOLEAN);

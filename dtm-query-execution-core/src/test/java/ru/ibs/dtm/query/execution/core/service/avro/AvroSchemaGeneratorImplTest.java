@@ -30,15 +30,16 @@ class AvroSchemaGeneratorImplTest {
     }
 
     private List<ClassField> createFields() {
-        ClassField f1 = new ClassField("id", ClassTypes.INT, null, null, false, true);
-        ClassField f2 = new ClassField("name", ClassTypes.VARCHAR, 100, null, true, false);
-        ClassField f3 = new ClassField("booleanvalue", ClassTypes.BOOLEAN, null, null, true, false);
-        ClassField f4 = new ClassField("charvalue", ClassTypes.CHAR, null, null, true, false);
-        ClassField f5 = new ClassField("bgintvalue", ClassTypes.BIGINT, null, null, true, false);
-        ClassField f6 = new ClassField("dbvalue", ClassTypes.DOUBLE, null, null, true, false);
-        ClassField f7 = new ClassField("flvalue", ClassTypes.FLOAT, null, null, true, false);
-        ClassField f8 = new ClassField("datevalue", ClassTypes.DATE, null, null, true, false);
-        ClassField f9 = new ClassField("datetimevalue", ClassTypes.DATETIME, null, null, true, false);
+        ClassField f1 = new ClassField("id", ClassTypes.INT, false, true);
+        ClassField f2 = new ClassField("name", ClassTypes.VARCHAR, true, false);
+        f2.setSize(100);
+        ClassField f3 = new ClassField("booleanvalue", ClassTypes.BOOLEAN, true, false);
+        ClassField f4 = new ClassField("charvalue", ClassTypes.CHAR, true, false);
+        ClassField f5 = new ClassField("bgintvalue", ClassTypes.BIGINT, true, false);
+        ClassField f6 = new ClassField("dbvalue", ClassTypes.DOUBLE, true, false);
+        ClassField f7 = new ClassField("flvalue", ClassTypes.FLOAT, true, false);
+        ClassField f8 = new ClassField("datevalue", ClassTypes.DATE, true, false);
+        ClassField f9 = new ClassField("datetimevalue", ClassTypes.DATETIME, true, false);
         return new ArrayList<>(Arrays.asList(f1, f2, f3, f4, f5, f6, f7, f8));
     }
 
@@ -61,7 +62,7 @@ class AvroSchemaGeneratorImplTest {
 
     @Test
     void generateTableSchemaUnsupportedType() {
-        table.getFields().add(new ClassField("num", ClassTypes.NUMERIC, null, null, true, false));
+        table.getFields().add(new ClassField("num", ClassTypes.NUMERIC, true, false));
         Executable executable = () -> avroSchemaGenerator.generateTableSchema(table);
         assertThrows(IllegalArgumentException.class,
                 executable, "Unsupported data type: NUMERIC");

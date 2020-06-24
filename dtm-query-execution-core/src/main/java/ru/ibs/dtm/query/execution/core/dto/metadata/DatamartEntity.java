@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.dto;
+package ru.ibs.dtm.query.execution.core.dto.metadata;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;

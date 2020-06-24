@@ -59,11 +59,15 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
     @NotNull
     private ClassField createField(SqlColumnDeclaration columnValue) {
         final SqlIdentifier column = getColumn(columnValue);
-        final SqlBasicTypeNameSpec columnType = getColumnType(columnValue);
-        final SqlDataTypeSpec sqlDataType = getSqlDataType(columnValue);
-        return new ClassField(column.getSimple(),
+        final SqlDataTypeSpec columnType = getColumnType(columnValue);
+        final ClassField field = new ClassField(column.getSimple(),
                 ColumnTypeUtil.valueOf(SqlTypeName.get(columnType.getTypeName().getSimple().toUpperCase())),
-                getPrecision(columnType), getScale(columnType), sqlDataType.getNullable(), false);
+                columnType.getNullable(), false);
+        if (columnType.getTypeNameSpec() instanceof SqlBasicTypeNameSpec) {
+            field.setSize(getPrecision(((SqlBasicTypeNameSpec) columnType.getTypeNameSpec())));
+            field.setAccuracy(getScale(((SqlBasicTypeNameSpec) columnType.getTypeNameSpec())));
+        }
+        return field;
     }
 
     @NotNull
@@ -71,16 +75,12 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
         return ((SqlIdentifier) col.getOperandList().get(0));
     }
 
-    private SqlBasicTypeNameSpec getColumnType(SqlColumnDeclaration col) {
-        if (col.getOperandList().size() > 0) {
-            return (SqlBasicTypeNameSpec) ((SqlDataTypeSpec) col.getOperandList().get(1)).getTypeNameSpec();
+    private SqlDataTypeSpec getColumnType(SqlColumnDeclaration col) {
+        if (col.getOperandList().size() > 1) {
+            return (SqlDataTypeSpec) col.getOperandList().get(1);
         } else {
             throw new RuntimeException("Ошибка определения типа столбца!");
         }
-    }
-
-    private SqlDataTypeSpec getSqlDataType(SqlColumnDeclaration col) {
-        return (SqlDataTypeSpec) col.getOperandList().get(1);
     }
 
     private SqlIdentifier getPrimaryKey(SqlKeyConstraint col) {

@@ -24,7 +24,7 @@ public class KafkaTopicServiceImpl implements KafkaTopicService {
   private KafkaAdminClient adminClient;
 
   @Autowired
-  public KafkaTopicServiceImpl(@Qualifier("adgKafkaAdminClient") KafkaAdminClient adminClient) {
+  public KafkaTopicServiceImpl(@Qualifier("coreKafkaAdminClient") KafkaAdminClient adminClient) {
     this.adminClient = adminClient;
   }
 

@@ -15,11 +15,13 @@ import ru.ibs.dtm.common.model.ddl.ClassTypes;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import ru.ibs.dtm.query.execution.core.service.MetadataCalciteGenerator;
 
+import java.time.LocalTime;
+import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class MetadataCalciteGeneratorImplTest {
 
@@ -40,17 +42,18 @@ class MetadataCalciteGeneratorImplTest {
     }
 
     private List<ClassField> createFields() {
-        ClassField f1 = new ClassField("id", ClassTypes.INT, null, null, false, true);
-        ClassField f2 = new ClassField("name", ClassTypes.VARCHAR, 100, null, true, false);
-        ClassField f3 = new ClassField("booleanvalue", ClassTypes.BOOLEAN, null, null, true, false);
-        ClassField f4 = new ClassField("charvalue", ClassTypes.CHAR, null, null, true, false);
-        ClassField f5 = new ClassField("bgintvalue", ClassTypes.BIGINT, null, null, true, false);
-        ClassField f6 = new ClassField("dbvalue", ClassTypes.DOUBLE, null, null, true, false);
-        ClassField f7 = new ClassField("flvalue", ClassTypes.FLOAT, null, null, true, false);
-        ClassField f8 = new ClassField("datevalue", ClassTypes.DATE, null, null, true, false);
-        ClassField f9 = new ClassField("timevalue", ClassTypes.TIME, null, null, true, false);
-        ClassField f10 = new ClassField("tsvalue", ClassTypes.TIMESTAMP, null, null, true, false);
-        return new ArrayList<>(Arrays.asList(f1, f2, f3, f4, f5, f6, f7, f8, f9, f10));
+        ClassField f1 = new ClassField("id", ClassTypes.INT, false, true);
+        ClassField f2 = new ClassField("name", ClassTypes.VARCHAR, true, false);
+        f2.setSize(100);
+        ClassField f3 = new ClassField("booleanvalue", ClassTypes.BOOLEAN, true, false);
+        ClassField f4 = new ClassField("charvalue", ClassTypes.CHAR, true, false);
+        ClassField f5 = new ClassField("bgintvalue", ClassTypes.BIGINT, true, false);
+        ClassField f6 = new ClassField("dbvalue", ClassTypes.DOUBLE, true, false);
+        ClassField f7 = new ClassField("flvalue", ClassTypes.FLOAT, true, false);
+        ClassField f8 = new ClassField("datevalue", ClassTypes.DATE, true, false);
+        ClassField f9 = new ClassField("timevalue", ClassTypes.TIME, true, false);
+        ClassField f11 = new ClassField("tsvalue", ClassTypes.TIMESTAMP, true, false);
+        return new ArrayList<>(Arrays.asList(f1, f2, f3, f4, f5, f6, f7, f8, f9, f11));
     }
 
     @Test
@@ -69,8 +72,19 @@ class MetadataCalciteGeneratorImplTest {
                 " primary key(id)) " +
                 "LOCATION 'kafka://zookeeper_host:port/topic' FORMAT 'avro'";
         SqlNode sqlNode = planner.parse(sql);
+        LocalTime time = LocalTime.parse("01:01:01.001");
+        Long microSec = getMicroSec(time);
+
         ClassTable classTable = metadataCalciteGenerator.generateTableMetadata((SqlCreate) sqlNode);
         assertEquals(table, classTable);
+    }
+
+    private Long getMicroSec(LocalTime time){
+        long var1 = (long)time.getHour() * 3600000000L;
+        var1 += (long)time.getMinute() * 60000000L;
+        var1 += (long)time.getSecond() * 1000000L;
+        var1 += (long)time.getNano();
+        return var1;
     }
 
     @Test

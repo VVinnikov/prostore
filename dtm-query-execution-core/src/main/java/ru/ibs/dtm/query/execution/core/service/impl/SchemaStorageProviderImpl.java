@@ -9,7 +9,7 @@ import io.vertx.core.json.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
-import ru.ibs.dtm.query.execution.core.dto.DatamartEntity;
+import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
 import ru.ibs.dtm.query.execution.core.service.SchemaStorageProvider;
 import ru.ibs.dtm.query.execution.plugin.adb.model.metadata.*;
 

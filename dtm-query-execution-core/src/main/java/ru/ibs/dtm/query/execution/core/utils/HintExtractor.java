@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 @Component
 public class HintExtractor {
     private final Pattern HINT_PATTERN = Pattern.compile(
-            "(.*)[\\s]+DATASOURCE_TYPE[\\s]*=[\\s]*([^\\s]+)",
+            "(.*)[\\s]+DATASOURCE_TYPE[\\s]*=[\\s]*'([^\\s]+)'",
             Pattern.CASE_INSENSITIVE);
 
     public QuerySourceRequest extractHint(QueryRequest request) {

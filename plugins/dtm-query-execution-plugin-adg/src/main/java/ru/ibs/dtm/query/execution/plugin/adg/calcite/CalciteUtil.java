@@ -1,7 +1,7 @@
 package ru.ibs.dtm.query.execution.plugin.adg.calcite;
 
 import org.apache.calcite.sql.type.SqlTypeName;
-import ru.ibs.dtm.query.execution.plugin.adg.model.metadata.ColumnType;
+import ru.ibs.dtm.query.execution.model.metadata.ColumnType;
 
 import static org.apache.calcite.sql.type.SqlTypeName.*;
 

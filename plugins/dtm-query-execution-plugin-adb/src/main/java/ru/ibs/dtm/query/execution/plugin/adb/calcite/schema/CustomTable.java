@@ -11,7 +11,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.TranslatableTable;
 import ru.ibs.dtm.query.execution.plugin.adb.calcite.CalciteUtil;
-import ru.ibs.dtm.query.execution.plugin.adb.model.metadata.DatamartClass;
+import ru.ibs.dtm.query.execution.model.metadata.DatamartClass;
 
 import java.util.ArrayList;
 

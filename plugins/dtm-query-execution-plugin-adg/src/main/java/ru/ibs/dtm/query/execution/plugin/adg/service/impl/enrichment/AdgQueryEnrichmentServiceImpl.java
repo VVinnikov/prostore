@@ -15,7 +15,6 @@ import ru.ibs.dtm.query.execution.plugin.adg.calcite.CalciteContext;
 import ru.ibs.dtm.query.execution.plugin.adg.dto.EnrichQueryRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.dto.RegexPreprocessorResult;
 import ru.ibs.dtm.query.execution.plugin.adg.dto.schema.SchemaDescription;
-import ru.ibs.dtm.query.execution.plugin.adg.model.metadata.Datamart;
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryEnrichmentService;
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryGenerator;
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryParserService;

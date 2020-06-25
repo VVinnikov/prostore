@@ -1,7 +1,7 @@
 package ru.ibs.dtm.query.execution.plugin.adg.service.impl.enrichment;
 
 import org.springframework.stereotype.Service;
-import ru.ibs.dtm.query.execution.plugin.adg.model.metadata.*;
+import ru.ibs.dtm.query.execution.model.metadata.*;
 import ru.ibs.dtm.query.execution.plugin.adg.service.SchemaExtender;
 
 import java.util.ArrayList;

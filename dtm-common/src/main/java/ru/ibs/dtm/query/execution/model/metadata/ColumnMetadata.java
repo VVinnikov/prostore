@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.plugin.adb.model.metadata;
+package ru.ibs.dtm.query.execution.model.metadata;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

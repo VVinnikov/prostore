@@ -6,7 +6,7 @@ import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.dialect.PostgresqlSqlDialect;
-import ru.ibs.dtm.query.execution.plugin.adg.model.metadata.Datamart;
+import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 
 import java.util.ArrayList;
 import java.util.Collection;

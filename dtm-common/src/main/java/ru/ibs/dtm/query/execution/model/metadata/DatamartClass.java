@@ -1,8 +1,9 @@
-package ru.ibs.dtm.query.execution.plugin.adg.model.metadata;
+package ru.ibs.dtm.query.execution.model.metadata;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import ru.ibs.dtm.query.execution.model.metadata.ClassAttribute;
 
 import java.util.List;
 import java.util.UUID;

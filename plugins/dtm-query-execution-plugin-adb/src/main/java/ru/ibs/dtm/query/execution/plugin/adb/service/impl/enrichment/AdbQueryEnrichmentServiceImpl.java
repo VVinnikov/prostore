@@ -13,7 +13,7 @@ import ru.ibs.dtm.common.calcite.CalciteContext;
 import ru.ibs.dtm.query.execution.plugin.adb.calcite.CalciteContextProvider;
 import ru.ibs.dtm.query.execution.plugin.adb.dto.EnrichQueryRequest;
 import ru.ibs.dtm.query.execution.plugin.adb.dto.RegexPreprocessorResult;
-import ru.ibs.dtm.query.execution.plugin.adb.model.metadata.Datamart;
+import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 import ru.ibs.dtm.query.execution.plugin.adb.service.QueryEnrichmentService;
 import ru.ibs.dtm.query.execution.plugin.adb.service.QueryGenerator;
 import ru.ibs.dtm.query.execution.plugin.adb.service.QueryParserService;

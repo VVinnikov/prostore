@@ -1,5 +1,8 @@
-http:
-  port: ${SERVER_PORT:8080}
+dtm:
+  name: local
+  http:
+    port: ${SERVER_PORT:8080}
+
 datasource:
   edml:
     sourceType: ${EDML_DATASOURCE:ADB}

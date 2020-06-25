@@ -76,9 +76,13 @@ public interface ServiceDao {
 
     void updateDelta(DeltaRecord delta, Handler<AsyncResult<Void>> resultHandler);
 
-  void existsView(String viewName, Long datamartId, Handler<AsyncResult<Boolean>> resultHandler);
-  void findViewsByDatamart(String datamart, List<String> views, Handler<AsyncResult<List<DatamartView>>> resultHandler);
-  void insertView(String viewName, Long datamartId, String query, Handler<AsyncResult<Void>> resultHandler);
-  void updateView(String viewName, Long datamartId, String query, Handler<AsyncResult<Void>> resultHandler);
-  void dropView(String viewName, Long datamartId, Handler<AsyncResult<Void>> resultHandler);
+    void existsView(String viewName, Long datamartId, Handler<AsyncResult<Boolean>> resultHandler);
+
+    void findViewsByDatamart(String datamart, List<String> views, Handler<AsyncResult<List<DatamartView>>> resultHandler);
+
+    void insertView(String viewName, Long datamartId, String query, Handler<AsyncResult<Void>> resultHandler);
+
+    void updateView(String viewName, Long datamartId, String query, Handler<AsyncResult<Void>> resultHandler);
+
+    void dropView(String viewName, Long datamartId, Handler<AsyncResult<Void>> resultHandler);
 }

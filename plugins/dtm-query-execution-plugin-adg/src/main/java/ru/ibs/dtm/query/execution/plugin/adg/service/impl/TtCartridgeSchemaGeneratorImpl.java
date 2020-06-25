@@ -49,7 +49,7 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
 		int indexComma = classTable.getName().indexOf(".");
 		String table = classTable.getName().substring(indexComma + 1).toLowerCase();
 		spaces.put(table + ACTUAL_POSTFIX, create(classTable.getFields()));
-		spaces.put(table + STAGING_POSTFIX, createStageingSpace(classTable.getFields()));
+		spaces.put(table + STAGING_POSTFIX, createStagingSpace(classTable.getFields()));
 		spaces.put(table + HISTORY_POSTFIX, create(classTable.getFields()));
 		handler.handle(Future.succeededFuture(yaml));
 	}
@@ -133,9 +133,9 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
 				));
 	}
 
-	public static Space createStageingSpace(List<ClassField> fields) {
+	public static Space createStagingSpace(List<ClassField> fields) {
 		return new Space(
-				getAttributes(fields),
+				getStagingAttributes(fields),
 				false,
 				SpaceEngines.MEMTX,
 				false,
@@ -170,6 +170,16 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
 						new SpaceAttribute(false, SYS_OP_FIELD, SpaceAttributeTypes.NUMBER),
 						new SpaceAttribute(false, SYS_FROM_FIELD, SpaceAttributeTypes.NUMBER),
 						new SpaceAttribute(true, SYS_TO_FIELD, SpaceAttributeTypes.NUMBER),
+						new SpaceAttribute(false, BUCKET_ID, SpaceAttributeTypes.UNSIGNED))
+		);
+		return attributes;
+	}
+
+	private static List<SpaceAttribute> getStagingAttributes(List<ClassField> fields) {
+		List<SpaceAttribute> attributes = fields.stream().map(TtCartridgeSchemaGeneratorImpl::toAttribute).collect(Collectors.toList());
+		attributes.addAll(
+				Arrays.asList(
+						new SpaceAttribute(false, SYS_OP_FIELD, SpaceAttributeTypes.NUMBER),
 						new SpaceAttribute(false, BUCKET_ID, SpaceAttributeTypes.UNSIGNED))
 		);
 		return attributes;

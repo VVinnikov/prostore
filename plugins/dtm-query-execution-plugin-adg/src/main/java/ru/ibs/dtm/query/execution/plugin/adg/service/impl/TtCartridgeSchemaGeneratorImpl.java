@@ -48,6 +48,7 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
     int indexComma = classTable.getName().indexOf(".");
     String table = classTable.getName().substring(indexComma + 1).toLowerCase();
     spaces.put(table + ACTUAL_POSTFIX, create(classTable.getFields()));
+    spaces.put(table + STAGING_POSTFIX, create(classTable.getFields()));
     spaces.put(table + HISTORY_POSTFIX, create(classTable.getFields()));
     handler.handle(Future.succeededFuture(yaml));
   }

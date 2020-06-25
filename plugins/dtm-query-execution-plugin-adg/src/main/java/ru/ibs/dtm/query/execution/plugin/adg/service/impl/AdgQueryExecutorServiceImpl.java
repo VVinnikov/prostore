@@ -3,6 +3,7 @@ package ru.ibs.dtm.query.execution.plugin.adg.service.impl;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -23,61 +24,63 @@ import java.util.stream.Collectors;
 @Service("adgQueryExecutor")
 public class AdgQueryExecutorServiceImpl implements QueryExecutorService {
 
-  private TtPool ttPool;
+	private TtPool ttPool;
 
-  @Autowired
-  public AdgQueryExecutorServiceImpl(@Qualifier("adgTtPool") TtPool ttPool) {
-    this.ttPool = ttPool;
-  }
+	@Autowired
+	public AdgQueryExecutorServiceImpl(@Qualifier("adgTtPool") TtPool ttPool) {
+		this.ttPool = ttPool;
+	}
 
-  @SneakyThrows
-  @Override
-  public void execute(String sql, Handler<AsyncResult<QueryResultItem>> handler) {
-    val cl = ttPool.borrowObject();
-    try {
-      cl.callQuery(ar -> {
-        if (ar.succeeded()) {
-          val map = (Map<?, ?>) ar.result().get(0);
-          val metadata = getMetadata((List<Map<String, String>>) map.get("metadata"));
-          val dataSet = (List<List<?>>) map.get("rows");
-          handler.handle(Future.succeededFuture(new QueryResultItem(metadata, dataSet)));
-        } else {
-          handler.handle(Future.failedFuture(ar.cause()));
-        }
-      }, sql, null);
-    } finally {
-      ttPool.returnObject(cl);
-    }
-  }
+	@SneakyThrows
+	@Override
+	public void execute(String sql, Handler<AsyncResult<QueryResultItem>> handler) {
+		val cl = ttPool.borrowObject();
+		try {
+			cl.callQuery(ar -> {
+				if (ar.succeeded()) {
+					val map = (Map<?, ?>) ar.result().get(0);
+					val metadata = getMetadata((List<Map<String, String>>) map.get("metadata"));
+					val dataSet = (List<List<?>>) map.get("rows");
+					handler.handle(Future.succeededFuture(new QueryResultItem(metadata, dataSet)));
+				} else {
+					handler.handle(Future.failedFuture(ar.cause()));
+				}
+			}, sql, null);
+		} finally {
+			ttPool.returnObject(cl);
+		}
+	}
 
-  @SneakyThrows
-  @Override
-    public void executeProcedure(Handler<AsyncResult<Object>> handler, String procedure, Object... args) {
-    val cl = ttPool.borrowObject();
-    try {
-      cl.call(ar -> {
-        if (ar.succeeded()) {
-          handler.handle(Future.succeededFuture(ar.result()));
-        } else {
-          handler.handle(Future.failedFuture(ar.cause()));
-        }
-      }, procedure, args);
-    } finally {
-      log.debug("Выполнена процедура {} {}", procedure, args);
-      ttPool.returnObject(cl);
-    }
-  }
+	@SneakyThrows
+	@Override
+	public Future<Object> executeProcedure(String procedure, Object... args) {
+		return Future.future((Promise<Object> promise) -> {
+			val cl = ttPool.borrowObject();
+			try {
+				cl.call(ar -> {
+					if (ar.succeeded()) {
+						promise.complete(ar.result());
+					} else {
+						promise.fail(ar.cause());
+					}
+				}, procedure, args);
+			} finally {
+				log.debug("Call procedure {} {}", procedure, args);
+				ttPool.returnObject(cl);
+			}
+		});
+	}
 
-  private List<ColumnMetadata> getMetadata(List<Map<String, String>> columns) {
-    return columns.stream().map(it -> {
-      if (!it.containsKey("name")) {
-        throw new IllegalStateException("name is not specified");
-      }
-      if (!it.containsKey("type")) {
-        throw new IllegalStateException("type is not specified");
-      }
-      return new ColumnMetadata(it.get("name"), ColumnTypeUtil.columnTypeFromTtColumnType(it.get("type")));
-    }).collect(Collectors.toList());
-  }
+	private List<ColumnMetadata> getMetadata(List<Map<String, String>> columns) {
+		return columns.stream().map(it -> {
+			if (!it.containsKey("name")) {
+				throw new IllegalStateException("name is not specified");
+			}
+			if (!it.containsKey("type")) {
+				throw new IllegalStateException("type is not specified");
+			}
+			return new ColumnMetadata(it.get("name"), ColumnTypeUtil.columnTypeFromTtColumnType(it.get("type")));
+		}).collect(Collectors.toList());
+	}
 
 }

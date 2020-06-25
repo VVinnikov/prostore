@@ -67,7 +67,8 @@ public class AdgDdlServiceImpl {
 		queryRequest.setSql("drop table test_table");
 		queryRequest.setDatamartMnemonic("test_schema");
 
-		List<ClassField> fields = Collections.singletonList(new ClassField("test_field", "varchar(1)", false, false, ""));
+		List<ClassField> fields = Collections.singletonList(
+				new ClassField("test_field", "varchar(1)", false, null, null, ""));
 		ClassTable classTable = new ClassTable("test_schema.test_table", fields);
 
       DdlRequestContext context = new DdlRequestContext(new DdlRequest(queryRequest, classTable));

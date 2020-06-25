@@ -11,8 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import ru.ibs.dtm.common.calcite.CalciteContext;
 import ru.ibs.dtm.common.reader.QueryRequest;
-import ru.ibs.dtm.query.execution.plugin.adqm.calcite.CalciteContext;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.QueryParserService;
 
 @Service

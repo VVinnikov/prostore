@@ -6,8 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import ru.ibs.dtm.common.calcite.CalciteContext;
 import ru.ibs.dtm.common.reader.QueryRequest;
-import ru.ibs.dtm.query.execution.plugin.adqm.calcite.CalciteContext;
 import ru.ibs.dtm.query.execution.plugin.adqm.calcite.CalciteContextProvider;
 import ru.ibs.dtm.query.execution.plugin.adqm.calcite.CalciteSchemaFactory;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.CalciteConfiguration;
@@ -15,7 +15,6 @@ import ru.ibs.dtm.query.execution.plugin.adqm.factory.impl.SchemaFactoryImpl;
 import ru.ibs.dtm.query.execution.plugin.adqm.model.metadata.*;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.impl.enrichment.AdqmCalciteDMLQueryParserServiceImpl;
 
-import java.sql.Time;
 import java.util.Arrays;
 import java.util.UUID;
 

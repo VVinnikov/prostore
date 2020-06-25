@@ -11,7 +11,7 @@ import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.Util;
 import org.springframework.stereotype.Service;
-import ru.ibs.dtm.query.execution.plugin.adqm.calcite.CalciteContext;
+import ru.ibs.dtm.common.calcite.CalciteContext;
 import ru.ibs.dtm.query.execution.plugin.adqm.calcite.schema.dialect.DtmConvention;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.QueryExtendService;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.QueryGenerator;

@@ -23,8 +23,8 @@ class AvroSchemaGeneratorImplTest {
   @Test
   public void testGenerate() {
     Schema schema = schemaGenerator.generate(new ClassTable("test.test_", Arrays.asList(
-      new ClassField("id", ClassTypes.INT.name(), false, true, null),
-      new ClassField("test", ClassTypes.VARCHAR.name(), true, false, null)
+      new ClassField("id", ClassTypes.INT.name(), false, 0, null, ""),
+      new ClassField("test", ClassTypes.VARCHAR.name(), true, null, null, "")
     )));
     Assertions.assertNotNull(schema);
   }

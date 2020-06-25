@@ -134,7 +134,7 @@ public class MetadataFactoryImpl implements MetadataFactory {
                     .append(" ")
                     .append("varchar(36)");
         }
-        Optional<ClassField> primaryKey = classTable.getFields().stream().findAny().filter(ClassField::getPrimary);
+        Optional<ClassField> primaryKey = classTable.getFields().stream().findAny().filter(f -> f.getPrimaryOrder() != null);
         primaryKey.ifPresent(classField -> sb.append(prefix[0])
                 .append("constraint ")
                 .append("pk_")

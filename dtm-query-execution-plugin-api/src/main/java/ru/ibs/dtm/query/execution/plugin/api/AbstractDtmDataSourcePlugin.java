@@ -7,10 +7,10 @@ import ru.ibs.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
-import ru.ibs.dtm.query.execution.plugin.api.service.DdlService;
 import ru.ibs.dtm.query.execution.plugin.api.service.LlrService;
 import ru.ibs.dtm.query.execution.plugin.api.service.MpprKafkaService;
 import ru.ibs.dtm.query.execution.plugin.api.service.QueryCostService;
+import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
 
 public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin {
 

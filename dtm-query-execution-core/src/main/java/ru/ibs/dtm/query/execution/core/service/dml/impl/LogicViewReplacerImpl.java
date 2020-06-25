@@ -16,6 +16,7 @@ import ru.ibs.dtm.query.execution.core.dto.dml.DatamartViewWrap;
 import ru.ibs.dtm.query.execution.core.dto.dml.ReplaceContext;
 import ru.ibs.dtm.query.execution.core.dto.dml.ViewReplaceAction;
 import ru.ibs.dtm.query.execution.core.service.DefinitionService;
+import ru.ibs.dtm.query.execution.core.service.dml.DatamartViewWrapLoader;
 import ru.ibs.dtm.query.execution.core.service.dml.LogicViewReplacer;
 import ru.ibs.dtm.query.execution.core.service.dml.SqlSnapshotReplacer;
 

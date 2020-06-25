@@ -11,6 +11,7 @@ import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
 import ru.ibs.dtm.query.execution.core.dto.DatamartView;
 import ru.ibs.dtm.query.execution.core.dto.dml.DatamartViewPair;
 import ru.ibs.dtm.query.execution.core.dto.dml.DatamartViewWrap;
+import ru.ibs.dtm.query.execution.core.service.dml.DatamartViewWrapLoader;
 
 import java.util.List;
 import java.util.Map;
@@ -21,10 +22,11 @@ import static java.util.stream.Collectors.toList;
 
 @Component
 @RequiredArgsConstructor
-public class DatamartViewWrapLoader {
+public class DatamartViewWrapLoaderImpl  implements DatamartViewWrapLoader {
     private final ServiceDao serviceDao;
 
     @SuppressWarnings("unchecked")
+    @Override
     public Future<List<DatamartViewWrap>> loadViews(Set<DatamartViewPair> byLoadViews) {
         return Future.future(viewsPromise -> CompositeFuture.join(getLoaderFutures(groupByDatamart(byLoadViews)))
                 .onComplete(ar -> {

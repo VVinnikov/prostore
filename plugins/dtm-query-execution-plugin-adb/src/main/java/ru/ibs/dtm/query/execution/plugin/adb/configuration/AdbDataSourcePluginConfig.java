@@ -5,10 +5,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.plugin.adb.AdbDtmDataSourcePlugin;
-import ru.ibs.dtm.query.execution.plugin.api.service.DdlService;
 import ru.ibs.dtm.query.execution.plugin.api.service.LlrService;
 import ru.ibs.dtm.query.execution.plugin.api.service.MpprKafkaService;
 import ru.ibs.dtm.query.execution.plugin.api.service.QueryCostService;
+import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
 
 @Configuration
 public class AdbDataSourcePluginConfig {

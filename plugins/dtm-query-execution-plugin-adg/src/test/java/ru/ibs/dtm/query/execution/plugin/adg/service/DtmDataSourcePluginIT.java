@@ -20,7 +20,7 @@ import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlType;
 import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
-import ru.ibs.dtm.query.execution.plugin.api.service.DdlService;
+import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;

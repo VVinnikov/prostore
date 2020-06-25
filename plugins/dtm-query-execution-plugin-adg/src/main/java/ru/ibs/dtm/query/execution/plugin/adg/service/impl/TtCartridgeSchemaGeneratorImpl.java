@@ -19,6 +19,7 @@ import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.config.TopicsConfig
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.schema.*;
 import ru.ibs.dtm.query.execution.plugin.adg.service.ContentWriter;
 import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeSchemaGenerator;
+import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -41,16 +42,19 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
 	}
 
 	@Override
-	public void generate(ClassTable classTable, OperationYaml yaml, Handler<AsyncResult<OperationYaml>> handler) {
+	public void generate(DdlRequestContext context, OperationYaml yaml, Handler<AsyncResult<OperationYaml>> handler) {
 		if (yaml.getSpaces().isEmpty()) {
 			yaml.setSpaces(new LinkedHashMap<>());
 		}
 		val spaces = yaml.getSpaces();
+		String prefix = context.getSystemName() + "_" + context.getRequest().getQueryRequest().getDatamartMnemonic() + "_";
+		ClassTable classTable = context.getRequest().getClassTable();
 		int indexComma = classTable.getName().indexOf(".");
 		String table = classTable.getName().substring(indexComma + 1).toLowerCase();
-		spaces.put(table + ACTUAL_POSTFIX, create(classTable.getFields()));
-		spaces.put(table + STAGING_POSTFIX, createStagingSpace(classTable.getFields()));
-		spaces.put(table + HISTORY_POSTFIX, create(classTable.getFields()));
+
+		spaces.put(prefix + table + ACTUAL_POSTFIX, create(classTable.getFields()));
+		spaces.put(prefix + table + STAGING_POSTFIX, createStagingSpace(classTable.getFields()));
+		spaces.put(prefix + table + HISTORY_POSTFIX, create(classTable.getFields()));
 		handler.handle(Future.succeededFuture(yaml));
 	}
 

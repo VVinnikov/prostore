@@ -63,7 +63,7 @@ public class AdgDdlService implements DdlService<Void> {
 
 	private void applyConfig(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {
 		DdlRequest ddl = context.getRequest();
-		Future.future((Promise<Void> promise) -> cartridgeProvider.apply(ddl.getClassTable(), promise))
+		Future.future((Promise<Void> promise) -> cartridgeProvider.apply(context, promise))
 				.compose(d -> Future.future((Promise<Void> promise) ->
 						kafkaTopicService.createOrReplace(getTopics(ddl.getClassTable()), promise)))
 				.compose(d -> Future.future((Promise<Void> promise) -> {

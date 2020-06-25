@@ -6,6 +6,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.reader.QuerySourceRequest;
 import ru.ibs.dtm.common.reader.SourceType;
@@ -13,6 +14,7 @@ import ru.ibs.dtm.query.execution.core.service.DataSourcePluginService;
 import ru.ibs.dtm.query.execution.core.service.MetadataService;
 import ru.ibs.dtm.query.execution.core.service.SchemaStorageProvider;
 import ru.ibs.dtm.query.execution.core.service.TargetDatabaseDefinitionService;
+import ru.ibs.dtm.query.execution.core.service.dml.LogicViewReplacer;
 import ru.ibs.dtm.query.execution.plugin.api.dml.DmlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.LlrRequest;
@@ -24,16 +26,19 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
 	private final DataSourcePluginService dataSourcePluginService;
 	private final TargetDatabaseDefinitionService targetDatabaseDefinitionService;
 	private final SchemaStorageProvider schemaStorageProvider;
+	private final LogicViewReplacer logicViewReplacer;
 	private final MetadataService metadataService;
 
 	@Autowired
 	public DmlServiceImpl(DataSourcePluginService dataSourcePluginService,
 						  TargetDatabaseDefinitionService targetDatabaseDefinitionService,
 						  SchemaStorageProvider schemaStorageProvider,
+						  LogicViewReplacer logicViewReplacer,
 						  MetadataService metadataService) {
 		this.dataSourcePluginService = dataSourcePluginService;
 		this.targetDatabaseDefinitionService = targetDatabaseDefinitionService;
 		this.schemaStorageProvider = schemaStorageProvider;
+		this.logicViewReplacer = logicViewReplacer;
 		this.metadataService = metadataService;
 	}
 
@@ -45,8 +50,23 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
 				if (querySourceRequest.getSourceType() == SourceType.INFORMATION_SCHEMA) {
 					metadataService.executeQuery(context.getRequest().getQueryRequest(), asyncResultHandler);
 				} else {
-					pluginExecute(querySourceRequest, asyncResultHandler);
+					replaceViewsAndExecute(querySourceRequest, asyncResultHandler);
 				}
+			} else {
+				asyncResultHandler.handle(Future.failedFuture(ar.cause()));
+			}
+		});
+	}
+
+	private void replaceViewsAndExecute(QuerySourceRequest querySourceRequest,
+										Handler<AsyncResult<QueryResult>> asyncResultHandler) {
+		QueryRequest request = querySourceRequest.getQueryRequest();
+		logicViewReplacer.replace(request.getSql(), request.getDatamartMnemonic(), ar -> {
+			if (ar.succeeded()) {
+				QueryRequest withoutViewsRequest = request.copy();
+				withoutViewsRequest.setSql(ar.result());
+				querySourceRequest.setQueryRequest(withoutViewsRequest);
+				pluginExecute(querySourceRequest, asyncResultHandler);
 			} else {
 				asyncResultHandler.handle(Future.failedFuture(ar.cause()));
 			}

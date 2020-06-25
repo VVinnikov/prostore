@@ -2,11 +2,12 @@ package ru.ibs.dtm.query.execution.core.factory.impl;
 
 import lombok.val;
 import org.junit.jupiter.api.Test;
+import ru.ibs.dtm.query.execution.core.utils.LocationUriParser;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class MpprRequestFactoryImplTest {
+class LocationUriParserTest {
 
   public static final String LOCATION_PATH_WITHOUT_PORT = "kafka://localhost/topicX";
   public static final String LOCATION_PATH = "kafka://localhost:2181/topicX";
@@ -16,7 +17,7 @@ class MpprRequestFactoryImplTest {
 
   @Test
   void parseLocationPathWithZookeeperPort() {
-    val topicUri = MpprKafkaRequestFactoryImpl.parseLocationPath(LOCATION_PATH);
+    val topicUri = LocationUriParser.parseKafkaLocationPath(LOCATION_PATH);
     assertEquals(EXPECTED_HOST, topicUri.getHost());
     assertEquals(EXPECTED_TOPIC, topicUri.getTopic());
     assertEquals(EXPECTED_PORT, topicUri.getPort());
@@ -24,7 +25,7 @@ class MpprRequestFactoryImplTest {
 
   @Test
   void parseLocationPathWithoutZookeeperPort() {
-    val topicUri = MpprKafkaRequestFactoryImpl.parseLocationPath(LOCATION_PATH_WITHOUT_PORT);
+    val topicUri = LocationUriParser.parseKafkaLocationPath(LOCATION_PATH_WITHOUT_PORT);
     assertEquals(EXPECTED_HOST, topicUri.getHost());
     assertEquals(EXPECTED_TOPIC, topicUri.getTopic());
     assertEquals(EXPECTED_PORT, topicUri.getPort());
@@ -33,7 +34,7 @@ class MpprRequestFactoryImplTest {
   @Test
   void badParseLocationPathWithoutZookeeperPort() {
     assertThrows(RuntimeException.class,
-      () -> MpprKafkaRequestFactoryImpl.parseLocationPath("LOCATION_PATH_WITHOUT_PORT"),
+      () -> LocationUriParser.parseKafkaLocationPath("LOCATION_PATH_WITHOUT_PORT"),
       "Ошибка парсинга locationPath [LOCATION_PATH_WITHOUT_PORT]: null");
   }
 }

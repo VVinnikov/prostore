@@ -61,6 +61,7 @@ public class DropUploadExternalTableExecutor implements EddlExecutor {
             }
 
         });
+        //TODO доделать
         serviceDao.dropUploadExternalTable(query, asyncResultHandler);
     }
 }

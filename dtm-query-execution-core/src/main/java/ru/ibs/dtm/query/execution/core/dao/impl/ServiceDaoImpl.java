@@ -13,7 +13,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jooq.DSLContext;
 import org.jooq.Record1;
 import org.jooq.Select;
-import org.jooq.generated.dtmservice.tables.records.UploadExternalTableRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
@@ -31,6 +30,7 @@ import ru.ibs.dtm.query.execution.core.dto.eddl.DropUploadExternalTableQuery;
 import ru.ibs.dtm.query.execution.core.dto.edml.DownloadExtTableRecord;
 import ru.ibs.dtm.query.execution.core.dto.edml.DownloadExternalTableAttribute;
 import ru.ibs.dtm.query.execution.core.dto.edml.UploadExtTableRecord;
+import ru.ibs.dtm.query.execution.core.dto.edml.UploadQueryRecord;
 import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
 import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartInfo;
 import ru.ibs.dtm.query.execution.core.dto.metadata.EntityAttribute;
@@ -745,6 +745,7 @@ public class ServiceDaoImpl implements ServiceDao {
 
     @Override
     public void dropUploadExternalTable(DropUploadExternalTableQuery query, Handler<AsyncResult<Void>> resultHandler) {
+        //TODO отрефакторить
         /*Future.future((Promise<UploadExternalTableRecord> promise) -> findUploadExternalTable(query.getSchemaName(), query.getTableName().toLowerCase(), promise))
                 .compose(uploadExtTableRec -> Future.future((Promise<Integer> promise) -> dropUploadExternalTable(uploadExtTableRec.getId(), promise)))
                 .onSuccess(success -> resultHandler.handle(Future.succeededFuture()))
@@ -812,6 +813,25 @@ public class ServiceDaoImpl implements ServiceDao {
     public void dropUploadExternalTable(Long uploadExtTableId, Handler<AsyncResult<Void>> resultHandler) {
         executor.execute(dsl -> dsl.deleteFrom(UPLOAD_EXTERNAL_TABLE)
                 .where(UPLOAD_EXTERNAL_TABLE.ID.eq(uploadExtTableId)))
+                .setHandler(ar -> {
+                    if (ar.succeeded()) {
+                        resultHandler.handle(Future.succeededFuture());
+                    } else {
+                        resultHandler.handle(Future.failedFuture(ar.cause()));
+                    }
+                });
+    }
+
+    @Override
+    public void inserUploadQuery(UploadQueryRecord record, Handler<AsyncResult<Void>> resultHandler) {
+        executor.execute(dsl -> dsl
+                .insertInto(UPLOAD_QUERY)
+                .set(UPLOAD_QUERY.ID, record.getId())
+                .set(UPLOAD_QUERY.DATAMART_ID, record.getDatamartId())
+                .set(UPLOAD_QUERY.TABLE_NAME_EXT, record.getTableNameExt())
+                .set(UPLOAD_QUERY.TABLE_NAME_DST, record.getTableNameDst())
+                .set(UPLOAD_QUERY.SQL_QUERY, record.getSqlQuery())
+                .set(UPLOAD_QUERY.STATUS, record.getStatus()))
                 .setHandler(ar -> {
                     if (ar.succeeded()) {
                         resultHandler.handle(Future.succeededFuture());

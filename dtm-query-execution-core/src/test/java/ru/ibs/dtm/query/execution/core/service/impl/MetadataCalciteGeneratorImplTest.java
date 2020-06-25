@@ -72,19 +72,8 @@ class MetadataCalciteGeneratorImplTest {
                 " primary key(id)) " +
                 "LOCATION 'kafka://zookeeper_host:port/topic' FORMAT 'avro'";
         SqlNode sqlNode = planner.parse(sql);
-        LocalTime time = LocalTime.parse("01:01:01.001");
-        Long microSec = getMicroSec(time);
-
         ClassTable classTable = metadataCalciteGenerator.generateTableMetadata((SqlCreate) sqlNode);
         assertEquals(table, classTable);
-    }
-
-    private Long getMicroSec(LocalTime time){
-        long var1 = (long)time.getHour() * 3600000000L;
-        var1 += (long)time.getMinute() * 60000000L;
-        var1 += (long)time.getSecond() * 1000000L;
-        var1 += (long)time.getNano();
-        return var1;
     }
 
     @Test

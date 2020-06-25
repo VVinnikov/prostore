@@ -15,6 +15,7 @@ import ru.ibs.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -55,6 +56,12 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
                           MpprRequestContext context,
                           Handler<AsyncResult<QueryResult>> asyncResultHandler) {
         getPlugin(sourceType).mpprKafka(context, asyncResultHandler);
+    }
+
+    public void mppwKafka(SourceType sourceType,
+                          MppwRequestContext context,
+                          Handler<AsyncResult<QueryResult>> asyncResultHandler) {
+        getPlugin(sourceType).mppwKafka(context, asyncResultHandler);
     }
 
     public void calcQueryCost(SourceType sourceType,

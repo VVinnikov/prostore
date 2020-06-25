@@ -11,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.model.ddl.ClassTypes;
+import ru.ibs.dtm.common.plugin.status.StatusQueryResult;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
@@ -19,8 +20,10 @@ import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlType;
 import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
 import ru.ibs.dtm.query.execution.plugin.api.service.DdlService;
+import ru.ibs.dtm.query.execution.plugin.api.status.KafkaStatusRequestContext;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -60,7 +63,17 @@ public class DtmDataSourcePluginIT {
     }
 
     @Override
+    public void mppwKafka(MppwRequestContext mppwRequest, Handler<AsyncResult<QueryResult>> handler) {
+
+    }
+
+    @Override
     public void calcQueryCost(QueryCostRequestContext calcQueryCostRequest, Handler<AsyncResult<Integer>> handler) {
+
+    }
+
+    @Override
+    public void kafkaStatus(KafkaStatusRequestContext kafkaStatusRequestContext, Handler<AsyncResult<StatusQueryResult>> asyncResultHandler) {
 
     }
   };

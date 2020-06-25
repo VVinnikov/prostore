@@ -14,6 +14,7 @@ import ru.ibs.dtm.query.execution.core.dto.eddl.DropUploadExternalTableQuery;
 import ru.ibs.dtm.query.execution.core.dto.edml.DownloadExtTableRecord;
 import ru.ibs.dtm.query.execution.core.dto.edml.DownloadExternalTableAttribute;
 import ru.ibs.dtm.query.execution.core.dto.edml.UploadExtTableRecord;
+import ru.ibs.dtm.query.execution.core.dto.edml.UploadQueryRecord;
 import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
 import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartInfo;
 import ru.ibs.dtm.query.execution.core.dto.metadata.EntityAttribute;
@@ -86,5 +87,5 @@ public interface ServiceDao {
 
     void updateDelta(DeltaRecord delta, Handler<AsyncResult<Void>> resultHandler);
 
-
+    void inserUploadQuery(UploadQueryRecord uploadQueryRecord, Handler<AsyncResult<Void>> resultHandler);
 }

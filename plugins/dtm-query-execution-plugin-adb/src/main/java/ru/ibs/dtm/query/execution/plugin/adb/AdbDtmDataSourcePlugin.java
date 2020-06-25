@@ -1,26 +1,26 @@
 package ru.ibs.dtm.query.execution.plugin.adb;
 
+import ru.ibs.dtm.common.plugin.status.StatusQueryResult;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.query.execution.plugin.api.AbstractDtmDataSourcePlugin;
-import ru.ibs.dtm.query.execution.plugin.api.service.DdlService;
-import ru.ibs.dtm.query.execution.plugin.api.service.LlrService;
-import ru.ibs.dtm.query.execution.plugin.api.service.MpprKafkaService;
-import ru.ibs.dtm.query.execution.plugin.api.service.QueryCostService;
+import ru.ibs.dtm.query.execution.plugin.api.service.*;
 
 public class AdbDtmDataSourcePlugin extends AbstractDtmDataSourcePlugin {
 
-	public AdbDtmDataSourcePlugin(
-			DdlService<Void> ddlService,
-			LlrService<QueryResult> adbLlrService,
-			MpprKafkaService<QueryResult> adbMpprKafkaService,
-			QueryCostService<Integer> adbQueryCostService) {
-		super(ddlService, adbLlrService, adbMpprKafkaService, adbQueryCostService);
-	}
+    public AdbDtmDataSourcePlugin(
+            DdlService<Void> ddlService,
+            LlrService<QueryResult> adbLlrService,
+            MpprKafkaService<QueryResult> adbMpprKafkaService,
+            MppwKafkaService<QueryResult> adbMppwKafkaService,
+            QueryCostService<Integer> adbQueryCostService,
+            KafkaStatusService<StatusQueryResult> kafkaStatusService) {
+        super(ddlService, adbLlrService, adbMpprKafkaService, adbMppwKafkaService, adbQueryCostService, kafkaStatusService);
+    }
 
-	@Override
-	public SourceType getSourceType() {
-		return SourceType.ADB;
-	}
+    @Override
+    public SourceType getSourceType() {
+        return SourceType.ADB;
+    }
 
 }

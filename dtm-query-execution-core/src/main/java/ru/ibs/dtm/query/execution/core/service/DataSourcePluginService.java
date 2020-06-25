@@ -8,6 +8,7 @@ import ru.ibs.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 
 import java.util.Set;
 
@@ -16,50 +17,63 @@ import java.util.Set;
  */
 public interface DataSourcePluginService {
 
-  /**
-   * <p>Получить тип Источника</p>
-   *
-   * @return пооддерживаемые типы источников
-   */
-  Set<SourceType> getSourceTypes();
+    /**
+     * <p>Получить тип Источника</p>
+     *
+     * @return пооддерживаемые типы источников
+     */
+    Set<SourceType> getSourceTypes();
 
-  /**
-   * <p>Применение физической модели на БД</p>
-   * @param sourceType тип источника
-   * @param context запрос
-   * @param asyncResultHandler хэндлер асинхронной обработки результата
-   */
-  void ddl(SourceType sourceType,
-           DdlRequestContext context,
-           Handler<AsyncResult<Void>> asyncResultHandler);
+    /**
+     * <p>Применение физической модели на БД</p>
+     *
+     * @param sourceType         тип источника
+     * @param context            запрос
+     * @param asyncResultHandler хэндлер асинхронной обработки результата
+     */
+    void ddl(SourceType sourceType,
+             DdlRequestContext context,
+             Handler<AsyncResult<Void>> asyncResultHandler);
 
-  /**
-   * <p>Выполнить получение данных</p>
-   *  @param sourceType тип источника
-   * @param context запрос
-   * @param asyncResultHandler хэндлер асинхронной обработки результата
-   */
-  void llr(SourceType sourceType,
-           LlrRequestContext context,
-           Handler<AsyncResult<QueryResult>> asyncResultHandler);
+    /**
+     * <p>Выполнить получение данных</p>
+     *
+     * @param sourceType         тип источника
+     * @param context            запрос
+     * @param asyncResultHandler хэндлер асинхронной обработки результата
+     */
+    void llr(SourceType sourceType,
+             LlrRequestContext context,
+             Handler<AsyncResult<QueryResult>> asyncResultHandler);
 
-  /**
-   * <p>Выполнить извлечение данных</p>
-   *  @param sourceType тип источника
-   * @param context запрос
-   * @param asyncResultHandler хэндлер асинхронной обработки результата
-   */
-  void mpprKafka(SourceType sourceType,
-                 MpprRequestContext context,
-                 Handler<AsyncResult<QueryResult>> asyncResultHandler);
+    /**
+     * <p>Выполнить извлечение данных</p>
+     *
+     * @param sourceType         тип источника
+     * @param context            запрос
+     * @param asyncResultHandler хэндлер асинхронной обработки результата
+     */
+    void mpprKafka(SourceType sourceType,
+                   MpprRequestContext context,
+                   Handler<AsyncResult<QueryResult>> asyncResultHandler);
 
-  /**
-   * <p>Получить оценку стоимости выполнения запроса</p>
-   *  @param sourceType тип источника
-   * @param context запрос
-   * @param asyncResultHandler хэндлер асинхронной обработки результата
-   */
-  void calcQueryCost(SourceType sourceType,
-                     QueryCostRequestContext context,
-                     Handler<AsyncResult<Integer>> asyncResultHandler);
+    /**
+     * <p>Получить оценку стоимости выполнения запроса</p>
+     *
+     * @param sourceType         тип источника
+     * @param context            запрос
+     * @param asyncResultHandler хэндлер асинхронной обработки результата
+     */
+    void calcQueryCost(SourceType sourceType,
+                       QueryCostRequestContext context,
+                       Handler<AsyncResult<Integer>> asyncResultHandler);
+
+    /**
+     * <p>Выполнить загрузку данных</p>
+     * @param sourceType тип источника
+     * @param mppwRequestContext запрос
+     * @param resultHandler хэндлер асинхронной обработки результата
+     */
+    void mppwKafka(SourceType sourceType, MppwRequestContext mppwRequestContext,
+                   Handler<AsyncResult<QueryResult>> resultHandler);
 }

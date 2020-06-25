@@ -262,18 +262,20 @@ SqlCreate SqlCreateDownloadExternalTable(Span s, boolean replace) :
 {
     final boolean ifNotExists;
     final SqlIdentifier id;
+    SqlNodeList tableElementList = null;
     SqlNode location = null;
     SqlNode format = null;
     SqlNode chunkSize = null;
 }
 {
     <DOWNLOAD> <EXTERNAL> <TABLE> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
+    [ tableElementList = TableElementList() ]
     <LOCATION> location = StringLiteral()
     <FORMAT> format = StringLiteral()
     [ <CHUNK_SIZE> chunkSize = NumericLiteral() ]
     {
         return new ru.ibs.dtm.query.execution.core.calcite.eddl.SqlCreateDownloadExternalTable(s.end(this),
-            ifNotExists, id, location, format, chunkSize);
+            ifNotExists, id, tableElementList, location, format, chunkSize);
     }
 }
 SqlCreate SqlCreateUploadExternalTable(Span s, boolean replace) :

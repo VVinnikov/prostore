@@ -6,6 +6,7 @@ datasource:
   edml:
     sourceType: ${EDML_DATASOURCE:ADB}
     defaultChunkSize: ${EDML_DEFAULT_CHUNK_SIZE:1000}
+    pluginStatusCheckPeriodMs: 1000
   service:
     options:
       database: ${SERVICEDB_DB_NAME:dtmservice}
@@ -29,6 +30,7 @@ kafka:
     zookeeperHosts: ${ZOOKEEPER_HOSTS:kafka-1.dtm.local}
     rootPath: arenadata/cluster/21
   admin:
+    inputStreamTimeoutMs: 1000
     upload:
       requestTopic:
         adb: "%s.%s.adb.upload.rq"

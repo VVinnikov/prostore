@@ -6,8 +6,12 @@ import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlSelect;
 import org.springframework.stereotype.Service;
+import ru.ibs.dtm.common.dto.TableInfo;
 import ru.ibs.dtm.common.reader.QueryResult;
+import ru.ibs.dtm.query.execution.core.calcite.eddl.SqlNodeUtils;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
 import ru.ibs.dtm.query.execution.core.dto.edml.DownloadExtTableRecord;
 import ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction;
@@ -60,46 +64,47 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
          * 3. для заданного datamart, в таблице DownloadExternalTables найдена запись, где table_name = название таблицы-приёмника -> EDML Download
          * 4. для заданного datamart, в таблице UploadExternalTables найдена запись, где table_name = название таблицы-источника -> EDML Upload
          */
-        //TODO добавить логирование
         checkDownloadExtSourceTableExists(context)
-                .compose(v -> checkUploadExtTargetTableExists(context))
+                .compose(result -> checkUploadExtTargetTableExists(context))
                 .compose(dwnExtRecord -> findTargetDownloadExtTable(context))
                 .compose(edmlQuery -> execute(context, edmlQuery, resultHandler))
                 .setHandler(resultHandler);
     }
 
     private Future<Void> checkDownloadExtSourceTableExists(EdmlRequestContext context) {
-        return Future.future((Promise<Void> promise) ->
-                serviceDao.findDownloadExternalTable(context.getRequest().getQueryRequest().getDatamartMnemonic(),
-                        context.getSqlNode().getSource().toString(), ar -> {
-                            if (ar.succeeded()) {
-                                if (ar.result() != null) {
-                                    //TODO перепроверить, возможно не нужна проверка на null
+        return Future.future((Promise<Void> promise) -> {
+                    initSourceAndTargetTables(context);
+                    serviceDao.findDownloadExternalTable(context.getSourceTable().getSchemaName(),
+                            context.getSourceTable().getTableName(), ar -> {
+                                if (ar.succeeded()) {
                                     promise.fail(new RuntimeException("Невозможно выбрать данные из внешней таблицы выгрузки: "
-                                            + context.getSqlNode().getSource().toString()));
+                                            + context.getSourceTable()));
                                 } else {
                                     promise.complete();
                                 }
-                            } else {
-                                promise.fail(ar.cause());
-                            }
-                        }));
+                            });
+                }
+        );
+    }
+
+    private void initSourceAndTargetTables(EdmlRequestContext context) {
+        TableInfo sourceTable = SqlNodeUtils.getTableInfo((SqlSelect) context.getSqlNode().getSource(),
+                context.getRequest().getQueryRequest().getDatamartMnemonic());
+        TableInfo targetTable = SqlNodeUtils.getTableInfo((SqlIdentifier) context.getSqlNode().getTargetTable(),
+                context.getRequest().getQueryRequest().getDatamartMnemonic());
+        context.setSourceTable(sourceTable);
+        context.setTargetTable(targetTable);
     }
 
     private Future<Void> checkUploadExtTargetTableExists(EdmlRequestContext context) {
         return Future.future((Promise<Void> promise) ->
-                serviceDao.findUploadExternalTable(context.getRequest().getQueryRequest().getDatamartMnemonic(),
-                        context.getSqlNode().getTargetTable().toString(), ar -> {
+                serviceDao.findUploadExternalTable(context.getTargetTable().getSchemaName(),
+                        context.getTargetTable().getTableName(), ar -> {
                             if (ar.succeeded()) {
-                                if (ar.result() != null) {
-                                    //TODO перепроверить, возможно не нужна проверка на null
-                                    promise.fail(new RuntimeException("Невозможно записать данные во внешнюю таблицу загрузки: "
-                                            + context.getSqlNode().getTargetTable().toString()));
-                                } else {
-                                    promise.complete();
-                                }
+                                promise.fail(new RuntimeException("Невозможно записать данные во внешнюю таблицу загрузки: "
+                                        + context.getSqlNode().getTargetTable().toString()));
                             } else {
-                                promise.fail(ar.cause());
+                                promise.complete();
                             }
                         }
                 ));
@@ -107,16 +112,19 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
 
     private Future<EdmlQuery> findTargetDownloadExtTable(EdmlRequestContext context) {
         return Future.future((Promise<EdmlQuery> promise) ->
-                serviceDao.findDownloadExternalTable(context.getRequest().getQueryRequest().getDatamartMnemonic(),
-                        context.getSqlNode().getTargetTable().toString(), ar -> {
+                serviceDao.findDownloadExternalTable(context.getTargetTable().getSchemaName(),
+                        context.getTargetTable().getTableName(), ar -> {
                             if (ar.succeeded()) {
                                 DownloadExtTableRecord record = ar.result();
+                                log.debug("Найдена запись в downloadExternalTable: {}; для targetTable: {}", record, context.getTargetTable());
                                 promise.complete(new EdmlQuery(EdmlAction.DOWNLOAD, record));
                             } else {
-                                serviceDao.findUploadExternalTable(context.getRequest().getQueryRequest().getDatamartMnemonic(),
-                                        context.getSqlNode().getSource().toString(), arUpl -> {
+                                serviceDao.findUploadExternalTable(context.getSourceTable().getSchemaName(),
+                                        context.getSourceTable().getTableName(), arUpl -> {
                                             if (arUpl.succeeded()) {
                                                 UploadExtTableRecord record = arUpl.result();
+                                                log.debug("Найдена запись в uploadExternalTable: {}; для sourceTable: {}",
+                                                        record, context.getSourceTable());
                                                 promise.complete(new EdmlQuery(EdmlAction.UPLOAD, record));
                                             } else {
                                                 promise.fail(new RuntimeException("Не найдено внешних таблиц загрузки/выгрузки!"));

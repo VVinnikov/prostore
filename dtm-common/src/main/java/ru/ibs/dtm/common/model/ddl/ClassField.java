@@ -64,6 +64,9 @@ public class ClassField {
 		this.size = size;
 	}
 
+	public Boolean isNullable() {
+		return isNull;
+	}
 	public Boolean getNull() {
 		return isNull;
 	}

@@ -116,6 +116,8 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
 	}
 
 	public static Space create(List<ClassField> fields) {
+		List<SpaceIndexPart> primaryKeyParts = getPrimaryKeyParts(fields);
+		primaryKeyParts.add(new SpaceIndexPart(SYS_FROM_FIELD, SpaceAttributeTypes.NUMBER.getName(), false));
 		return new Space(
 				getAttributes(fields),
 				false,
@@ -123,14 +125,17 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
 				false,
 				getShardingKey(fields),
 				Arrays.asList(
-						new SpaceIndex(true, Arrays.asList(
-								new SpaceIndexPart(ID, SpaceAttributeTypes.NUMBER.getName(), false),
-								new SpaceIndexPart(SYS_FROM_FIELD, SpaceAttributeTypes.NUMBER.getName(), false)
-						), SpaceIndexTypes.TREE, ID),
+						new SpaceIndex(true, primaryKeyParts, SpaceIndexTypes.TREE, ID),
 						new SpaceIndex(false, Collections.singletonList(
 								new SpaceIndexPart(BUCKET_ID, SpaceAttributeTypes.UNSIGNED.getName(), false)
 						), SpaceIndexTypes.TREE, BUCKET_ID)
 				));
+	}
+
+	private static List<SpaceIndexPart> getPrimaryKeyParts(List<ClassField> fields) {
+		return ClassFieldUtils.getPrimaryKeyList(fields).stream()
+				.map(f -> new SpaceIndexPart(f.getName(), SpaceAttributeTypeUtil.toAttributeType(f.getType()).getName(), f.isNullable()))
+				.collect(Collectors.toList());
 	}
 
 	public static Space createStagingSpace(List<ClassField> fields) {
@@ -141,10 +146,7 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
 				false,
 				getShardingKey(fields),
 				Arrays.asList(
-						new SpaceIndex(true, Arrays.asList(
-								new SpaceIndexPart(ID, SpaceAttributeTypes.NUMBER.getName(), false),
-								new SpaceIndexPart(SYS_FROM_FIELD, SpaceAttributeTypes.NUMBER.getName(), false)
-						), SpaceIndexTypes.TREE, ID),
+						new SpaceIndex(true, getPrimaryKeyParts(fields), SpaceIndexTypes.TREE, ID),
 						new SpaceIndex(false, Collections.singletonList(
 								new SpaceIndexPart(BUCKET_ID, SpaceAttributeTypes.UNSIGNED.getName(), false)
 						), SpaceIndexTypes.TREE, BUCKET_ID)
@@ -154,8 +156,13 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
 	private static List<String> getShardingKey(List<ClassField> fields) {
 		List<String> sk = ClassFieldUtils.getShardingKeyList(fields).stream().map(ClassField::getName).collect(Collectors.toList());
 		if (sk.size() == 0) {
-			sk = ClassFieldUtils.getPrimaryKeyList(fields).stream().map(ClassField::getName).collect(Collectors.toList());
+			sk = getPrimaryKey(fields);
 		}
+		return sk;
+	}
+
+	private static List<String> getPrimaryKey(List<ClassField> fields) {
+		List<String> sk = ClassFieldUtils.getPrimaryKeyList(fields).stream().map(ClassField::getName).collect(Collectors.toList());
 		if (sk.size() == 0) {
 			sk = Collections.singletonList(ID);
 		}

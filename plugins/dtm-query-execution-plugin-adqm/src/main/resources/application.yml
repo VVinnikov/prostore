@@ -1,0 +1,32 @@
+.kafkaUrl: &kafkaUrl ${KAFKA_BOOTSTRAP_SERVERS:kafka-1.dtm.local:9092}
+
+datasource:
+  adqm:
+    options:
+      database: ${ADQM_DB_NAME:upload}
+      user: ${ADQM_USERNAME:}
+      password: ${ADQM_PASS:}
+      hosts: ${ADQM_HOSTS:localhost:8123}
+
+connector:
+  adqm:
+    host: ${ADQM_MPPR_CONNECTOR_HOST:10.18.84.18}
+    port: ${ADQM_MPPR_CONNECTOR_PORT:8086}
+    url: ${ADQM_MPPR_CONNECTOR_URL:/query}
+
+kafka:
+  adqm:
+    producer:
+      property:
+        bootstrap.servers: *kafkaUrl
+    consumer:
+      property:
+        bootstrap.servers: *kafkaUrl
+        group.id: adqm-query-execution
+    cluster:
+      zookeeperHosts: ${ZOOKEEPER_HOSTS:kafka-1.dtm.local}
+      rootPath: arenadata/cluster/21
+    admin:
+      adqmUploadRq: "%s.%s.adqm.upload.rq"
+      adqmUploadRs: "%s.%s.adqm.upload.rs"
+      adqmUploadErr: "%s.%s.adqm.upload.err"

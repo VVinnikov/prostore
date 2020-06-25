@@ -44,6 +44,7 @@
         <pg.client.version>0.11.4</pg.client.version>
         <liquibase.version>3.8.9</liquibase.version>
         <lombok.version>1.18.12</lombok.version>
+        <clickhouse.jdbc.version>0.2.4</clickhouse.jdbc.version>
         <skipITs>true</skipITs>
     </properties>
 

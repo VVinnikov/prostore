@@ -15,7 +15,6 @@ import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.query.execution.core.service.DataSourcePluginService;
 import ru.ibs.dtm.query.execution.core.service.SchemaStorageProvider;
 import ru.ibs.dtm.query.execution.core.service.TargetDatabaseDefinitionService;
-import ru.ibs.dtm.query.execution.core.utils.HintExtractor;
 import ru.ibs.dtm.query.execution.core.utils.MetaDataQueryPreparer;
 import ru.ibs.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.QueryCostRequest;
@@ -29,22 +28,14 @@ import java.util.List;
 public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefinitionService {
     private final SchemaStorageProvider schemaStorageProvider;
     private final DataSourcePluginService pluginService;
-    private final HintExtractor hintExtractor;
 
     @Override
-    public void getTargetSource(QueryRequest request, Handler<AsyncResult<QuerySourceRequest>> handler) {
-        hintExtractor.extractHint(request, ar -> {
-            if (ar.succeeded()) {
-                QuerySourceRequest querySourceRequest = ar.result();
-                if (querySourceRequest.getSourceType() != null) {
-                    handler.handle(Future.succeededFuture(querySourceRequest));
-                } else {
-                    getTargetSourceWithoutHint(request, handler);
-                }
-            } else {
-                handler.handle(Future.failedFuture(ar.cause()));
-            }
-        });
+    public void getTargetSource(QuerySourceRequest request, Handler<AsyncResult<QuerySourceRequest>> handler) {
+        if (request.getSourceType() != null) {
+            handler.handle(Future.succeededFuture(request));
+        } else {
+            getTargetSourceWithoutHint(request.getQueryRequest(), handler);
+        }
     }
 
     private void getTargetSourceWithoutHint(QueryRequest request, Handler<AsyncResult<QuerySourceRequest>> handler) {

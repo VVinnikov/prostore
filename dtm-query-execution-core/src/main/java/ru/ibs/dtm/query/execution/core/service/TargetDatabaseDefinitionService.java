@@ -2,7 +2,6 @@ package ru.ibs.dtm.query.execution.core.service;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
-import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QuerySourceRequest;
 
 /**
@@ -16,5 +15,5 @@ public interface TargetDatabaseDefinitionService {
    * @param request запрос
    * @return запрос с определенным типом
    */
-  void getTargetSource(QueryRequest request, Handler<AsyncResult<QuerySourceRequest>> handler);
+  void getTargetSource(QuerySourceRequest request, Handler<AsyncResult<QuerySourceRequest>> handler);
 }

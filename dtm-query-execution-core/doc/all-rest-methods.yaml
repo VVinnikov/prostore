@@ -1,7 +1,7 @@
 _type: export
 __export_format: 4
-__export_date: 2020-04-17T21:40:51.535Z
-__export_source: insomnia.desktop.app:v7.1.1
+__export_date: 2020-06-25T17:50:51.815Z
+__export_source: insomnia.desktop.app:v2020.2.2
 resources:
   - _id: req_2eb958532567437f8f926ba8655c4bdc
     authentication: {}
@@ -40,6 +40,7 @@ resources:
     modified: 1587146826886
     name: Query Execution Core
     parentId: null
+    scope: null
     _type: workspace
   - _id: req_48442f485d004fc1bd2cbeae43b7d5bd
     authentication: {}
@@ -134,6 +135,99 @@ resources:
     settingStoreCookies: true
     url: "{{ queryExecutor }}/query/execute"
     _type: request
+  - _id: req_b6700d188b314eb2889496d0d487eaa2
+    authentication: {}
+    body:
+      mimeType: application/json
+      text: >-
+        {
+        	"requestId": "a7180dcb-b286-4168-a34a-eb378a69abd4",
+        	"datamartMnemonic": "test_datamart",
+        	"sql": "CREATE OR REPLACE VIEW test_view AS select * from test_datamart.doc"
+        }
+    created: 1593092910158
+    description: ""
+    headers:
+      - id: pair_e984ab6a42e64c4ea9d8dbef1a7e3788
+        name: Content-Type
+        value: application/json
+    isPrivate: false
+    metaSortKey: -1577799072742.125
+    method: POST
+    modified: 1593107335491
+    name: 5. Create TEST_VIEW
+    parameters: []
+    parentId: wrk_24b47dd33fe64619bd3b182f8a7e7907
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingFollowRedirects: global
+    settingRebuildPath: true
+    settingSendCookies: true
+    settingStoreCookies: true
+    url: "{{ queryExecutor }}/query/execute"
+    _type: request
+  - _id: req_7f45731a350b4fdcae333eb0bbedbd2a
+    authentication: {}
+    body:
+      mimeType: application/json
+      text: |-
+        {
+        	"requestId": "a7180dcb-b286-4168-a34a-eb378a69abd4",
+        	"datamartMnemonic": "test_datamart",
+        	"sql": "DROP VIEW test_view"
+        }
+    created: 1593097190419
+    description: ""
+    headers:
+      - id: pair_e984ab6a42e64c4ea9d8dbef1a7e3788
+        name: Content-Type
+        value: application/json
+    isPrivate: false
+    metaSortKey: -1575122141576.0625
+    method: POST
+    modified: 1593107325955
+    name: 6. Drop TEST_VIEW
+    parameters: []
+    parentId: wrk_24b47dd33fe64619bd3b182f8a7e7907
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingFollowRedirects: global
+    settingRebuildPath: true
+    settingSendCookies: true
+    settingStoreCookies: false
+    url: "{{ queryExecutor }}/query/execute"
+    _type: request
+  - _id: req_0ff1499093cf4ec08fe0352a7cb02af4
+    authentication: {}
+    body:
+      mimeType: application/json
+      text: |-
+        {
+        	"requestId": "a7180dcb-b286-4168-a34a-eb378a69abd4",
+        	"datamartMnemonic": "test_datamart",
+        	"sql": "select * from test_view DATASOURCE_TYPE = 'ADB'"
+        }
+    created: 1593097441153
+    description: ""
+    headers:
+      - id: pair_e984ab6a42e64c4ea9d8dbef1a7e3788
+        name: Content-Type
+        value: application/json
+    isPrivate: false
+    metaSortKey: -1573783675993.0312
+    method: POST
+    modified: 1593106948578
+    name: 7. Select with TEST_VIEW
+    parameters: []
+    parentId: wrk_24b47dd33fe64619bd3b182f8a7e7907
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingFollowRedirects: global
+    settingRebuildPath: true
+    settingSendCookies: true
+    settingStoreCookies: false
+    url: "{{ queryExecutor }}/query/execute"
+    _type: request
   - _id: env_117d6f8027ef0a383063e21e0cfa00b52521945d
     color: null
     created: 1583152910294
@@ -155,6 +249,14 @@ resources:
     name: Default Jar
     parentId: wrk_24b47dd33fe64619bd3b182f8a7e7907
     _type: cookie_jar
+  - _id: spc_38694cc261f54bb4859519b91b53c615
+    contentType: yaml
+    contents: ""
+    created: 1593092865794
+    fileName: Query Execution Core
+    modified: 1593092865794
+    parentId: wrk_24b47dd33fe64619bd3b182f8a7e7907
+    _type: api_spec
   - _id: env_4f5f5b59640249ffa228c66d21c183c3
     color: null
     created: 1587145215585

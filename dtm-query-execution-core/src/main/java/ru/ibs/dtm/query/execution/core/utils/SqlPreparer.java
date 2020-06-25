@@ -14,10 +14,10 @@ public class SqlPreparer {
   private static final Pattern CREATE_TABLE_PATTERN = Pattern.compile("(?<=\\stable\\s)([A-z.0-9\"]+)", Pattern.CASE_INSENSITIVE);
   private static final Pattern CREATE_DISTRIBUTED_TABLE_PATTERN = Pattern.compile("((.|\\n)*)(DISTRIBUTED BY.+$)", Pattern.CASE_INSENSITIVE);
   private static final Pattern CREATE_TABLE_EXISTS_PATTERN = Pattern.compile("(?<=\\stable if not exists\\s)([A-z.0-9\"]+)", Pattern.CASE_INSENSITIVE);
-  private static final Pattern VIEW_NAME_PATTERN = Pattern.compile("(?i)view\\s+(\\w+)\\s+as");
+  private static final Pattern VIEW_NAME_PATTERN = Pattern.compile("(?i)view\\s+(\\w+)");
   private static final Pattern CHECK_CREATE_OR_REPLACE_PATTERN = Pattern.compile("(?i)^(\\s+)?CREATE\\s+OR\\s+REPLACE");
   private static final Pattern CHECK_ALTER_PATTERN = Pattern.compile("(?i)^(\\s+)?ALTER");
-  private static final Pattern GET_VIEW_QUERY_PATTERN = Pattern.compile("(?i)AS SELECT.*");
+  private static final Pattern GET_VIEW_QUERY_PATTERN = Pattern.compile("(?i)view\\s+\\w+\\s+as\\s+(SELECT.*)");
   private static final String SERVICE_DB_NAME = "dtmservice";
 
   /**
@@ -81,7 +81,7 @@ public class SqlPreparer {
 
   public static String getViewName(String sql) {
     val matcher = VIEW_NAME_PATTERN.matcher(sql);
-    if (matcher.matches()) {
+    if (matcher.find()) {
       return matcher.group(1);
     } else {
       val msg = String.format("Unable to get view name by pattern: [%s] of SQL [%s]", VIEW_NAME_PATTERN.toString(), sql);
@@ -91,19 +91,19 @@ public class SqlPreparer {
   }
 
   public static boolean isCreateOrReplace(String sql) {
-    return CHECK_CREATE_OR_REPLACE_PATTERN.matcher(sql).matches();
+    return CHECK_CREATE_OR_REPLACE_PATTERN.matcher(sql).find();
   }
 
   public static boolean isAlter(String sql) {
-    return CHECK_ALTER_PATTERN.matcher(sql).matches();
+    return CHECK_ALTER_PATTERN.matcher(sql).find();
   }
 
   public static String getViewQuery(String sql) {
     val matcher = GET_VIEW_QUERY_PATTERN.matcher(sql);
-    if (matcher.matches()) {
+    if (matcher.find()) {
       return matcher.group(1);
     } else {
-      val msg = String.format("Unable to get view query name by pattern: [%s] of SQL [%s]", GET_VIEW_QUERY_PATTERN.toString(), sql);
+      val msg = String.format("Unable to get view query by pattern: [%s] of SQL [%s]", GET_VIEW_QUERY_PATTERN.toString(), sql);
       log.error(msg);
       throw new IllegalArgumentException(msg);
     }

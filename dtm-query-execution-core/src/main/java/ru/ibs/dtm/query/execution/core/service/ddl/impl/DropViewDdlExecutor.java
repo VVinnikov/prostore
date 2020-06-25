@@ -27,12 +27,16 @@ public class DropViewDdlExecutor extends QueryResultDdlExecutor {
 
     @Override
     public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<QueryResult>> handler) {
-        val schema = getSchemaName(context.getRequest().getQueryRequest(), sqlNodeName);
-        val sql = getSql(context, sqlNodeName);
-        val viewName = SqlPreparer.getViewName(sql);
-        findDatamart(schema)
-                .compose(datamartId -> dropView(viewName, datamartId))
-                .onComplete(handler);
+        try {
+            val schema = getSchemaName(context.getRequest().getQueryRequest(), sqlNodeName);
+            val sql = getSql(context, sqlNodeName);
+            val viewName = SqlPreparer.getViewName(sql);
+            findDatamart(schema)
+                    .compose(datamartId -> dropView(viewName, datamartId))
+                    .onComplete(handler);
+        } catch (Exception e){
+            handler.handle(Future.failedFuture(e));
+        }
     }
 
     private Future<Long> findDatamart(String datamartName) {
@@ -51,7 +55,7 @@ public class DropViewDdlExecutor extends QueryResultDdlExecutor {
                 if (existsHandler.result()) {
                     serviceDao.dropView(viewName, datamartId, updateHandler -> {
                         if (updateHandler.succeeded()) {
-                            p.complete();
+                            p.complete(QueryResult.emptyResult());
                         } else {
                             p.fail(updateHandler.cause());
                         }

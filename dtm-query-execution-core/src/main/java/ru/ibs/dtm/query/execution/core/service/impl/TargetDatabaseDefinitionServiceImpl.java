@@ -68,10 +68,10 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
     }
 
     private void getTargetSourceFromCost(QueryRequest request, Handler<AsyncResult<SourceType>> handler) {
-        List<Future> sourceTypeCost = new ArrayList<>();
-        schemaStorageProvider.getLogicalSchema(request.getDatamartMnemonic(), schemaHandler ->{
+        schemaStorageProvider.getLogicalSchema(request.getDatamartMnemonic(), schemaHandler -> {
             if (schemaHandler.succeeded()) {
                 val schema = schemaHandler.result();
+                List<Future> sourceTypeCost = new ArrayList<>();
                 pluginService.getSourceTypes().forEach(sourceType -> {
                     sourceTypeCost.add(Future.future(p ->
                             {
@@ -87,22 +87,22 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
                             })
                     );
                 });
+                CompositeFuture.join(sourceTypeCost).onComplete(
+                        ar -> {
+                            if (ar.succeeded()) {
+                                SourceType sourceType = ar.result().list().stream()
+                                        .map(res -> (Pair<SourceType, Integer>) res)
+                                        .min(Comparator.comparingInt(Pair::getValue))
+                                        .map(Pair::getKey)
+                                        .orElse(null);
+                                handler.handle(Future.succeededFuture(sourceType));
+                            } else {
+                                handler.handle(Future.failedFuture(ar.cause()));
+                            }
+                        });
             } else {
                 handler.handle(Future.failedFuture(schemaHandler.cause()));
             }
         });
-        CompositeFuture.all(sourceTypeCost).onComplete(
-                ar -> {
-                    if (ar.succeeded()) {
-                        SourceType sourceType = ar.result().list().stream()
-                                .map(res -> (Pair<SourceType, Integer>) res)
-                                .min(Comparator.comparingInt(Pair::getValue))
-                                .map(Pair::getKey)
-                                .orElse(null);
-                        handler.handle(Future.succeededFuture(sourceType));
-                    } else {
-                        handler.handle(Future.failedFuture(ar.cause()));
-                    }
-                });
     }
 }

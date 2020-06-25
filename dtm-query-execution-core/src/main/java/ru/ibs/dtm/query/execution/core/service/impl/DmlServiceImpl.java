@@ -23,68 +23,68 @@ import ru.ibs.dtm.query.execution.plugin.api.service.DmlService;
 @Service("coreDmlService")
 public class DmlServiceImpl implements DmlService<QueryResult> {
 
-	private final DataSourcePluginService dataSourcePluginService;
-	private final TargetDatabaseDefinitionService targetDatabaseDefinitionService;
-	private final SchemaStorageProvider schemaStorageProvider;
-	private final LogicViewReplacer logicViewReplacer;
-	private final MetadataService metadataService;
+    private final DataSourcePluginService dataSourcePluginService;
+    private final TargetDatabaseDefinitionService targetDatabaseDefinitionService;
+    private final SchemaStorageProvider schemaStorageProvider;
+    private final LogicViewReplacer logicViewReplacer;
+    private final MetadataService metadataService;
 
-	@Autowired
-	public DmlServiceImpl(DataSourcePluginService dataSourcePluginService,
-						  TargetDatabaseDefinitionService targetDatabaseDefinitionService,
-						  SchemaStorageProvider schemaStorageProvider,
-						  LogicViewReplacer logicViewReplacer,
-						  MetadataService metadataService) {
-		this.dataSourcePluginService = dataSourcePluginService;
-		this.targetDatabaseDefinitionService = targetDatabaseDefinitionService;
-		this.schemaStorageProvider = schemaStorageProvider;
-		this.logicViewReplacer = logicViewReplacer;
-		this.metadataService = metadataService;
-	}
+    @Autowired
+    public DmlServiceImpl(DataSourcePluginService dataSourcePluginService,
+                          TargetDatabaseDefinitionService targetDatabaseDefinitionService,
+                          SchemaStorageProvider schemaStorageProvider,
+                          LogicViewReplacer logicViewReplacer,
+                          MetadataService metadataService) {
+        this.dataSourcePluginService = dataSourcePluginService;
+        this.targetDatabaseDefinitionService = targetDatabaseDefinitionService;
+        this.schemaStorageProvider = schemaStorageProvider;
+        this.logicViewReplacer = logicViewReplacer;
+        this.metadataService = metadataService;
+    }
 
-	@Override
-	public void execute(DmlRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-		targetDatabaseDefinitionService.getTargetSource(context.getRequest().getQueryRequest(), ar -> {
-			if (ar.succeeded()) {
-				QuerySourceRequest querySourceRequest = ar.result();
-				if (querySourceRequest.getSourceType() == SourceType.INFORMATION_SCHEMA) {
-					metadataService.executeQuery(context.getRequest().getQueryRequest(), asyncResultHandler);
-				} else {
-					replaceViewsAndExecute(querySourceRequest, asyncResultHandler);
-				}
-			} else {
-				asyncResultHandler.handle(Future.failedFuture(ar.cause()));
-			}
-		});
-	}
+    @Override
+    public void execute(DmlRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
+        QueryRequest request = context.getRequest().getQueryRequest();
+        logicViewReplacer.replace(request.getSql(), request.getDatamartMnemonic(), ar -> {
+            if (ar.succeeded()) {
+                QueryRequest withoutViewsRequest = request.copy();
+                withoutViewsRequest.setSql(ar.result());
+                context.getRequest().setQueryRequest(withoutViewsRequest);
+                setTargetSourceAndExecute(context, asyncResultHandler);
+            } else {
+                asyncResultHandler.handle(Future.failedFuture(ar.cause()));
+            }
+        });
+    }
 
-	private void replaceViewsAndExecute(QuerySourceRequest querySourceRequest,
-										Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-		QueryRequest request = querySourceRequest.getQueryRequest();
-		logicViewReplacer.replace(request.getSql(), request.getDatamartMnemonic(), ar -> {
-			if (ar.succeeded()) {
-				QueryRequest withoutViewsRequest = request.copy();
-				withoutViewsRequest.setSql(ar.result());
-				querySourceRequest.setQueryRequest(withoutViewsRequest);
-				pluginExecute(querySourceRequest, asyncResultHandler);
-			} else {
-				asyncResultHandler.handle(Future.failedFuture(ar.cause()));
-			}
-		});
-	}
+    private void setTargetSourceAndExecute(DmlRequestContext context,
+                                           Handler<AsyncResult<QueryResult>> asyncResultHandler) {
+        targetDatabaseDefinitionService.getTargetSource(context.getRequest().getQueryRequest(), ar -> {
+            if (ar.succeeded()) {
+                QuerySourceRequest querySourceRequest = ar.result();
+                if (querySourceRequest.getSourceType() == SourceType.INFORMATION_SCHEMA) {
+                    metadataService.executeQuery(querySourceRequest.getQueryRequest(), asyncResultHandler);
+                } else {
+                    pluginExecute(querySourceRequest, asyncResultHandler);
+                }
+            } else {
+                asyncResultHandler.handle(Future.failedFuture(ar.cause()));
+            }
+        });
+    }
 
-	private void pluginExecute(QuerySourceRequest request,
-							   Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-		schemaStorageProvider.getLogicalSchema(request.getQueryRequest().getDatamartMnemonic(), schemaAr -> {
-			if (schemaAr.succeeded()) {
-				JsonObject schema = schemaAr.result();
-				dataSourcePluginService.llr(
-						request.getSourceType(),
-						new LlrRequestContext(new LlrRequest(request.getQueryRequest(), schema)),
-						asyncResultHandler);
-			} else {
-				asyncResultHandler.handle(Future.failedFuture(schemaAr.cause()));
-			}
-		});
-	}
+    private void pluginExecute(QuerySourceRequest request,
+                               Handler<AsyncResult<QueryResult>> asyncResultHandler) {
+        schemaStorageProvider.getLogicalSchema(request.getQueryRequest().getDatamartMnemonic(), schemaAr -> {
+            if (schemaAr.succeeded()) {
+                JsonObject schema = schemaAr.result();
+                dataSourcePluginService.llr(
+                        request.getSourceType(),
+                        new LlrRequestContext(new LlrRequest(request.getQueryRequest(), schema)),
+                        asyncResultHandler);
+            } else {
+                asyncResultHandler.handle(Future.failedFuture(schemaAr.cause()));
+            }
+        });
+    }
 }

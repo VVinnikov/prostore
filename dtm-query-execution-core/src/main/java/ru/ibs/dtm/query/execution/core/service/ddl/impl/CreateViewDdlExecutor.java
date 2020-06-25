@@ -31,10 +31,16 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
 
     @Override
     public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<QueryResult>> handler) {
-        findDatamart(getCreateViewContext(context, sqlNodeName))
-                .compose(this::checkEntity)
-                .compose(this::createOrReplaceView)
-                .onComplete(handler);
+        try {
+            val ctx = getCreateViewContext(context, sqlNodeName);
+            findDatamart(ctx)
+                    .compose(this::checkEntity)
+                    .compose(this::createOrReplaceView)
+                    .onComplete(handler);
+        } catch (Exception e) {
+            log.error("CreateViewContext creating error", e);
+            handler.handle(Future.failedFuture(e));
+        }
 
     }
 
@@ -116,7 +122,7 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
                         Handler<AsyncResult<QueryResult>> handler) {
         serviceDao.insertView(ctx.getViewName(), ctx.getDatamartId(), ctx.getViewQuery(), updateHandler -> {
             if (updateHandler.succeeded()) {
-                handler.handle(Future.succeededFuture());
+                handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
             } else {
                 handler.handle(Future.failedFuture(updateHandler.cause()));
             }
@@ -126,7 +132,7 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
     private void update(CreateViewContext ctx, Handler<AsyncResult<QueryResult>> handler) {
         serviceDao.updateView(ctx.getViewName(), ctx.getDatamartId(), ctx.getViewQuery(), updateHandler -> {
             if (updateHandler.succeeded()) {
-                handler.handle(Future.succeededFuture());
+                handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
             } else {
                 handler.handle(Future.failedFuture(updateHandler.cause()));
             }

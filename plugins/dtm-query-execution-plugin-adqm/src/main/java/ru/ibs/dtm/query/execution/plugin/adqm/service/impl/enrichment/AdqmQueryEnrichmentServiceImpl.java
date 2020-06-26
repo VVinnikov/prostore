@@ -6,102 +6,68 @@ import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import ru.ibs.dtm.common.calcite.CalciteContext;
 import ru.ibs.dtm.common.dto.ActualDeltaRequest;
-import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.service.DeltaService;
 import ru.ibs.dtm.query.execution.plugin.adqm.calcite.CalciteContextProvider;
 import ru.ibs.dtm.query.execution.plugin.adqm.dto.EnrichQueryRequest;
-import ru.ibs.dtm.query.execution.plugin.adqm.dto.RegexPreprocessorResult;
-import ru.ibs.dtm.query.execution.plugin.adqm.model.metadata.Datamart;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.QueryEnrichmentService;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.QueryGenerator;
-import ru.ibs.dtm.query.execution.plugin.adqm.service.QueryParserService;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.SchemaExtender;
-import ru.ibs.dtm.query.execution.plugin.adqm.service.impl.query.QueryRegexPreprocessor;
+import ru.ibs.dtm.query.execution.plugin.adqm.service.impl.query.QueryPreprocessor;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 @Slf4j
 public class AdqmQueryEnrichmentServiceImpl implements QueryEnrichmentService {
-    private QueryParserService queryParserService;
     private QueryGenerator adqmQueryGenerator;
     private final DeltaService deltaService;
     private final CalciteContextProvider contextProvider;
-    private final QueryRegexPreprocessor regexPreprocessor;
+    private final QueryPreprocessor preprocessor;
     private final SchemaExtender schemaExtender;
 
-    public AdqmQueryEnrichmentServiceImpl(QueryParserService queryParserService,
-                                          AdqmQueryGeneratorImpl adqmQueryGeneratorimpl,
+    public AdqmQueryEnrichmentServiceImpl(AdqmQueryGeneratorImpl adqmQueryGeneratorimpl,
                                           DeltaService deltaService,
                                           CalciteContextProvider contextProvider,
-                                          QueryRegexPreprocessor regexPreprocessor,
+                                          QueryPreprocessor preprocessor,
                                           @Qualifier("adqmSchemaExtender") SchemaExtender schemaExtender) {
-        this.queryParserService = queryParserService;
         this.adqmQueryGenerator = adqmQueryGeneratorimpl;
         this.deltaService = deltaService;
         this.contextProvider = contextProvider;
-        this.regexPreprocessor = regexPreprocessor;
+        this.preprocessor = preprocessor;
         this.schemaExtender = schemaExtender;
     }
 
     @Override
     public void enrich(EnrichQueryRequest request, Handler<AsyncResult<String>> asyncHandler) {
-        //Вырезаем дату-время systemDateTime из запроса
-        regexPreprocessor.process(request.getQueryRequest(), ar -> {
-            if (ar.succeeded()) {
-                // на основе даты определяем номер дельты
-                RegexPreprocessorResult regexPreprocessorResult = ar.result();
-                calculateDeltaValue(request.getQueryRequest(), regexPreprocessorResult.getSystemTimeAsOf(), deltaResult -> {
-                    if (deltaResult.failed()) {
-                        asyncHandler.handle(Future.failedFuture(deltaResult.cause()));
-                        return;
-                    }
-                    Datamart logicalSchema;
-                    try {
-                        logicalSchema = request.getSchema().mapTo(Datamart.class);
-                    } catch (Exception ex) {
-                        log.error("Ошибка десериализации схемы");
-                        asyncHandler.handle(Future.failedFuture(ex));
-                        return;
-                    }
-                    CalciteContext calciteContext = contextProvider.context(logicalSchema);
-                    // парсим исходный SQL в RelNode
-                    queryParserService.parse(regexPreprocessorResult.getActualQueryRequest(), calciteContext, parsedQueryResult -> {
-                        if (parsedQueryResult.succeeded()) {
-                            contextProvider.enrichContext(calciteContext, schemaExtender.generatePhysicalSchema(logicalSchema));
-                            // формируем новый sql-запрос
-                            adqmQueryGenerator.mutateQuery(parsedQueryResult.result(), deltaResult.result(), calciteContext, enrichedQueryResult -> {
-                                if (enrichedQueryResult.succeeded()) {
-                                    log.trace("Сформирован запрос: {}", enrichedQueryResult.result());
-                                    asyncHandler.handle(Future.succeededFuture(enrichedQueryResult.result()));
-                                } else {
-                                    log.debug("Ошибка при обогащении запроса", enrichedQueryResult.cause());
-                                    asyncHandler.handle(Future.failedFuture(enrichedQueryResult.cause()));
-                                }
-                            });
-                        } else {
-                            asyncHandler.handle(Future.failedFuture(parsedQueryResult.cause()));
-                        }
-                    });
-                });
-            } else {
-                log.error("Ошибка предобработки запроса", ar.cause());
-                asyncHandler.handle(Future.failedFuture(ar.cause()));
-            }
-        });
+        // 1. Extract information about deltas via QueryPreprocessor
+        // 2. Modify query - add filter for sys_from/sys_to columns based on deltas
+        // 3. Modify query - duplicate via union all (with sub queries) and rename table names to physical names
+        // 4. Modify query - rename schemas to physical name
     }
 
-    private void calculateDeltaValue(QueryRequest request, String selectOn, Handler<AsyncResult<Long>> handler) {
-        String datamartMnemonic = request.getDatamartMnemonic();
-        ActualDeltaRequest deltaRequest = new ActualDeltaRequest(datamartMnemonic, selectOn);
+    void calculateDeltaValues(List<QueryPreprocessor.DeltaTimeInformation> deltas,
+                              Handler<AsyncResult<List<QueryPreprocessor.DeltaTimeInformation>>> handler) {
+        List<QueryPreprocessor.DeltaTimeInformation> result = new ArrayList<>(deltas);
 
-        deltaService.getDeltaOnDateTime(deltaRequest, deltaResult -> {
-            if (deltaResult.succeeded()) {
-                handler.handle(Future.succeededFuture(deltaResult.result()));
-            } else {
-                log.error("Не удалось получить дельту витрины {} на дату {}", datamartMnemonic, selectOn, deltaResult.cause());
-                handler.handle(Future.failedFuture(deltaResult.cause()));
+        List<ActualDeltaRequest> requests = deltas.stream()
+                .map(d -> new ActualDeltaRequest(d.getTableName(), d.getDeltaTimestamp()))
+                .collect(Collectors.toList());
+
+        deltaService.getDeltasOnDateTimes(requests, ar -> {
+            if (ar.failed()) {
+                handler.handle(Future.failedFuture(ar.cause()));
             }
+
+            // we expect what order for returned deltas is the same as in requests list
+            // we need to concatenate information about used tables and deltas
+            List<Long> deltaNums = ar.result();
+            IntStream.range(0, requests.size())
+                    .forEach(i -> result.get(i).setDeltaNum(deltaNums.get(i)));
+            handler.handle(Future.succeededFuture(result));
         });
     }
 }

@@ -94,7 +94,7 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
                 case DROP_TABLE:
                     dropTable(context, handler, sqlNodeName);
                     break;
-                case DEFAULT:
+                default:
                     log.error("Не поддерживаемый тип DDL запроса");
                     handler.handle(Future.failedFuture(String.format("Не поддерживаемый тип DDL запроса [%s]", context)));
             }

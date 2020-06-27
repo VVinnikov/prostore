@@ -16,6 +16,7 @@ import ru.ibs.dtm.query.execution.plugin.api.eddl.EddlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
 import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
+import ru.ibs.dtm.query.execution.plugin.api.request.DmlRequest;
 
 @Component
 public class RequestContextFactoryImpl implements RequestContextFactory<RequestContext<? extends DatamartRequest>, QueryRequest> {
@@ -37,7 +38,7 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
             case INSERT:
                 return new EdmlRequestContext(new DatamartRequest(request), (SqlInsert) node);
             default:
-                return new DmlRequestContext(new DdlRequest(request));
+                return new DmlRequestContext(new DmlRequest(request), node);
         }
     }
 

@@ -7,7 +7,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.dto.ActualDeltaRequest;
 import ru.ibs.dtm.common.service.DeltaService;
-import ru.ibs.dtm.query.execution.plugin.adqm.service.impl.query.QueryPreprocessor;
+import ru.ibs.dtm.query.execution.plugin.adqm.dto.DeltaInformation;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -15,11 +15,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AdqmQueryEnrichmentServiceImplTest {
     private static AdqmQueryEnrichmentServiceImpl enrichmentService;
-    private static Map<String, Long> mockDeltas = new HashMap<>();
+    private static final Map<String, Long> mockDeltas = new HashMap<>();
 
     private static class MockDeltaService implements DeltaService {
 
@@ -49,10 +50,10 @@ class AdqmQueryEnrichmentServiceImplTest {
 
     @Test
     public void testCalcDeltaValues() {
-        List<QueryPreprocessor.DeltaTimeInformation> deltas = Arrays.asList(
-                new QueryPreprocessor.DeltaTimeInformation("test", "table1", "t1", "2020-01-01 16:00:00"),
-                new QueryPreprocessor.DeltaTimeInformation("test", "table1", "t2", "2020-02-01 16:00:00"),
-                new QueryPreprocessor.DeltaTimeInformation("test", "table2", "t3", "2020-03-01 16:00:00")
+        List<DeltaInformation> deltas = Arrays.asList(
+                new DeltaInformation("test", "table1", "t1", "2020-01-01 16:00:00", 0L),
+                new DeltaInformation("test", "table1", "t2", "2020-02-01 16:00:00", 0L),
+                new DeltaInformation("test", "table2", "t3", "2020-03-01 16:00:00", 0L)
         );
 
         enrichmentService.calculateDeltaValues(deltas, ar -> {

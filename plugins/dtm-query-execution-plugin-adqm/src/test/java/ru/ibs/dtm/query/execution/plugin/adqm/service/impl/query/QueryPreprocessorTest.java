@@ -7,7 +7,7 @@ import org.springframework.util.StringUtils;
 import ru.ibs.dtm.query.execution.plugin.adqm.calcite.CalciteContextProvider;
 import ru.ibs.dtm.query.execution.plugin.adqm.calcite.CalciteSchemaFactory;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.CalciteConfiguration;
-import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.QueryEnrichmentProperties;
+import ru.ibs.dtm.query.execution.plugin.adqm.dto.DeltaInformation;
 import ru.ibs.dtm.query.execution.plugin.adqm.factory.impl.SchemaFactoryImpl;
 
 import java.util.List;
@@ -16,7 +16,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class QueryPreprocessorTest {
     private static CalciteContextProvider calciteContextProvider;
-    private static QueryEnrichmentProperties queryEnrichmentProperties;
 
     @BeforeAll
     public static void setup() {
@@ -29,9 +28,6 @@ class QueryPreprocessorTest {
         calciteContextProvider = new CalciteContextProvider(
                 parserConfig,
                 new CalciteSchemaFactory(new SchemaFactoryImpl()));
-
-        queryEnrichmentProperties.setDefaultDatamart("test_datamart");
-        queryEnrichmentProperties.setEnvironment("dev");
     }
 
     @Test
@@ -50,19 +46,19 @@ class QueryPreprocessorTest {
                 "    group by a.account_id. a.account_type\n" +
                 ") x";
 
-        QueryPreprocessor preprocessor = new QueryPreprocessor(calciteContextProvider, queryEnrichmentProperties);
+        QueryPreprocessor preprocessor = new QueryPreprocessor(calciteContextProvider);
         preprocessor.process(query, ar -> {
             assertTrue(ar.succeeded());
-            List<QueryPreprocessor.DeltaTimeInformation> info = ar.result();
+            List<DeltaInformation> info = ar.result();
             assertEquals(2, info.size());
 
-            QueryPreprocessor.DeltaTimeInformation accounts = info.get(0);
+            DeltaInformation accounts = info.get(0);
             assertEquals("shares", accounts.getSchemaName());
             assertEquals("accounts", accounts.getTableName());
             assertEquals("a", accounts.getTableAlias());
             assertEquals("2019-12-23 15:15:14", accounts.getDeltaTimestamp());
 
-            QueryPreprocessor.DeltaTimeInformation transactions = info.get(1);
+            DeltaInformation transactions = info.get(1);
             assertEquals("shares", transactions.getSchemaName());
             assertEquals("transactions", transactions.getTableName());
             assertEquals("", transactions.getTableAlias());
@@ -88,25 +84,25 @@ class QueryPreprocessorTest {
                 "    group by a.account_id. a.account_type\n" +
                 ") x";
 
-        QueryPreprocessor preprocessor = new QueryPreprocessor(calciteContextProvider, queryEnrichmentProperties);
+        QueryPreprocessor preprocessor = new QueryPreprocessor(calciteContextProvider);
         preprocessor.process(query, ar -> {
             assertTrue(ar.succeeded());
-            List<QueryPreprocessor.DeltaTimeInformation> info = ar.result();
+            List<DeltaInformation> info = ar.result();
             assertEquals(3, info.size());
 
-            QueryPreprocessor.DeltaTimeInformation accounts = info.get(0);
+            DeltaInformation accounts = info.get(0);
             assertEquals("shares", accounts.getSchemaName());
             assertEquals("accounts", accounts.getTableName());
             assertEquals("a", accounts.getTableAlias());
             assertEquals("2019-12-23 15:15:14", accounts.getDeltaTimestamp());
 
-            QueryPreprocessor.DeltaTimeInformation balances = info.get(1);
-            assertEquals("test_datamart", balances.getSchemaName());
+            DeltaInformation balances = info.get(1);
+            assertEquals("", balances.getSchemaName());
             assertEquals("balances", balances.getTableName());
             assertEquals("b", balances.getTableAlias());
             assertFalse(StringUtils.isEmpty(balances.getDeltaTimestamp()));
 
-            QueryPreprocessor.DeltaTimeInformation transactions = info.get(2);
+            DeltaInformation transactions = info.get(2);
             assertEquals("shares", transactions.getSchemaName());
             assertEquals("transactions", transactions.getTableName());
             assertEquals("", transactions.getTableAlias());

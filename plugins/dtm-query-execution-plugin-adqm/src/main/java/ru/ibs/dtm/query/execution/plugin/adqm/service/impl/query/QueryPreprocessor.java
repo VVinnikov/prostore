@@ -3,14 +3,13 @@ package ru.ibs.dtm.query.execution.plugin.adqm.service.impl.query;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.calcite.CalciteContext;
 import ru.ibs.dtm.query.execution.plugin.adqm.calcite.CalciteContextProvider;
-import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.QueryEnrichmentProperties;
+import ru.ibs.dtm.query.execution.plugin.adqm.dto.DeltaInformation;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -37,31 +36,21 @@ public class QueryPreprocessor {
             .toFormatter();
 
     private final CalciteContextProvider calciteContextProvider;
-    private final QueryEnrichmentProperties queryEnrichmentProperties;
 
-    public QueryPreprocessor(CalciteContextProvider calciteContextProvider, QueryEnrichmentProperties queryEnrichmentProperties) {
+    public QueryPreprocessor(CalciteContextProvider calciteContextProvider) {
         this.calciteContextProvider = calciteContextProvider;
-        this.queryEnrichmentProperties = queryEnrichmentProperties;
     }
 
-    @Data
-    public static class DeltaTimeInformation {
-        private final String schemaName;
-        private final String tableName;
-        private final String tableAlias;
-        private final String deltaTimestamp;
-        private Long deltaNum;
-    }
-
-    public void process(String sql, Handler<AsyncResult<List<DeltaTimeInformation>>> handler) {
+    public void process(String sql, Handler<AsyncResult<List<DeltaInformation>>> handler) {
         CalciteContext context = calciteContextProvider.context(null);
         try {
             SqlNode root = context.getPlanner().parse(sql);
+            // FIXME support SqlOrderBy, SqlUnion which contains SqlSelect itself
             if (!(root instanceof SqlSelect)) {
                 handler.handle(Future.failedFuture("Expecting SELECT to extract information"));
                 return;
             }
-            List<DeltaTimeInformation> result = new ArrayList<>();
+            List<DeltaInformation> result = new ArrayList<>();
             processFrom(((SqlSelect) root).getFrom(), result);
             handler.handle(Future.succeededFuture(result));
         } catch (SqlParseException e) {
@@ -69,7 +58,7 @@ public class QueryPreprocessor {
         }
     }
 
-    private void processFrom(SqlNode from, List<DeltaTimeInformation> accum) {
+    private void processFrom(SqlNode from, List<DeltaInformation> accum) {
         if (from instanceof SqlBasicCall) {
            SqlKind kind = from.getKind();
            if (kind == SqlKind.AS) {
@@ -118,12 +107,12 @@ public class QueryPreprocessor {
         }
     }
 
-    private DeltaTimeInformation fromSnapshot(SqlSnapshot snapshot, SqlIdentifier alias) {
+    private DeltaInformation fromSnapshot(SqlSnapshot snapshot, SqlIdentifier alias) {
         String snapshotTime = snapshot.getPeriod().toString().replaceAll("'", "");
         return fromIdentifier((SqlIdentifier) snapshot.getTableRef(), alias, snapshotTime);
     }
 
-    private DeltaTimeInformation fromIdentifier(SqlIdentifier id, SqlIdentifier alias, String snapshotTime) {
+    private DeltaInformation fromIdentifier(SqlIdentifier id, SqlIdentifier alias, String snapshotTime) {
         String datamart = "";
         String tableName;
         if (id.names.size() > 1) {
@@ -140,6 +129,6 @@ public class QueryPreprocessor {
 
         String deltaTime = snapshotTime == null ? LOCAL_DATE_TIME.format(LocalDateTime.now()) : snapshotTime;
 
-        return new DeltaTimeInformation(datamart, tableName, aliasVal, deltaTime);
+        return new DeltaInformation(datamart, tableName, aliasVal, deltaTime, 0L);
     }
 }

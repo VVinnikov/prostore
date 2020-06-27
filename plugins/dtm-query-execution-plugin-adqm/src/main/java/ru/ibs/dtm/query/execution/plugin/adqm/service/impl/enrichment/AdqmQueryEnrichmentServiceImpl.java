@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.dto.ActualDeltaRequest;
 import ru.ibs.dtm.common.service.DeltaService;
 import ru.ibs.dtm.query.execution.plugin.adqm.calcite.CalciteContextProvider;
+import ru.ibs.dtm.query.execution.plugin.adqm.dto.DeltaInformation;
 import ru.ibs.dtm.query.execution.plugin.adqm.dto.EnrichQueryRequest;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.QueryEnrichmentService;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.QueryGenerator;
@@ -43,15 +44,29 @@ public class AdqmQueryEnrichmentServiceImpl implements QueryEnrichmentService {
 
     @Override
     public void enrich(EnrichQueryRequest request, Handler<AsyncResult<String>> asyncHandler) {
+        // FIXME rewrite to the Future's compose instead of callback hell
+
         // 1. Extract information about deltas via QueryPreprocessor
+        preprocessor.process(request.getQueryRequest().getSql(), ar -> {
+            if (ar.failed()) {
+                asyncHandler.handle(Future.failedFuture(ar.cause()));
+            }
+
+            calculateDeltaValues(ar.result(), ar2 -> {
+                if (ar2.failed()) {
+                    asyncHandler.handle(Future.failedFuture(ar2.cause()));
+                }
+
+
+            });
+        });
         // 2. Modify query - add filter for sys_from/sys_to columns based on deltas
         // 3. Modify query - duplicate via union all (with sub queries) and rename table names to physical names
         // 4. Modify query - rename schemas to physical name
     }
 
-    void calculateDeltaValues(List<QueryPreprocessor.DeltaTimeInformation> deltas,
-                              Handler<AsyncResult<List<QueryPreprocessor.DeltaTimeInformation>>> handler) {
-        List<QueryPreprocessor.DeltaTimeInformation> result = new ArrayList<>(deltas);
+    void calculateDeltaValues(List<DeltaInformation> deltas,
+                              Handler<AsyncResult<List<DeltaInformation>>> handler) {
 
         List<ActualDeltaRequest> requests = deltas.stream()
                 .map(d -> new ActualDeltaRequest(d.getTableName(), d.getDeltaTimestamp()))
@@ -65,8 +80,9 @@ public class AdqmQueryEnrichmentServiceImpl implements QueryEnrichmentService {
             // we expect what order for returned deltas is the same as in requests list
             // we need to concatenate information about used tables and deltas
             List<Long> deltaNums = ar.result();
-            IntStream.range(0, requests.size())
-                    .forEach(i -> result.get(i).setDeltaNum(deltaNums.get(i)));
+            List<DeltaInformation> result = IntStream.range(0, requests.size())
+                    .mapToObj(i -> deltas.get(i).withDeltaNum(deltaNums.get(i)))
+                    .collect(Collectors.toList());
             handler.handle(Future.succeededFuture(result));
         });
     }

@@ -18,7 +18,7 @@ public class AdgPluginConfig {
             @Qualifier("adgMpprKafkaService") MpprKafkaService<QueryResult> mpprKafkaService,
             @Qualifier("adgMppwKafkaService") MppwKafkaService<QueryResult> mppwKafkaService,
             @Qualifier("adgQueryCostService") QueryCostService<Integer> queryCostService,
-            @Qualifier("adgKafkaStatusService") KafkaStatusService<StatusQueryResult> kafkaStatusService) {
-        return new AdgDataSourcePlugin(ddlService, llrService, mpprKafkaService, mppwKafkaService, queryCostService, kafkaStatusService);
+            @Qualifier("adgKafkaStatusService") StatusService<StatusQueryResult> statusService) {
+        return new AdgDataSourcePlugin(ddlService, llrService, mpprKafkaService, mppwKafkaService, queryCostService, statusService);
     }
 }

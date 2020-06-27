@@ -14,8 +14,8 @@ public class AdgDataSourcePlugin extends AbstractDtmDataSourcePlugin {
             MpprKafkaService<QueryResult> mpprKafkaService,
             MppwKafkaService<QueryResult> mppwKafkaService,
             QueryCostService<Integer> adgQueryCostService,
-            KafkaStatusService<StatusQueryResult> kafkaStatusService) {
-        super(ddlService, llrService, mpprKafkaService, mppwKafkaService, adgQueryCostService, kafkaStatusService);
+            StatusService<StatusQueryResult> statusService) {
+        super(ddlService, llrService, mpprKafkaService, mppwKafkaService, adgQueryCostService, statusService);
     }
 
     @Override

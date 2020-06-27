@@ -20,7 +20,8 @@ public class DownloadKafkaExecutor implements EdmlDownloadExecutor {
     private final MpprKafkaRequestFactory mpprKafkaRequestFactory;
     private final EdmlProperties edmlProperties;
 
-    public DownloadKafkaExecutor(DataSourcePluginService pluginService, MpprKafkaRequestFactory mpprKafkaRequestFactory, EdmlProperties edmlProperties) {
+    public DownloadKafkaExecutor(DataSourcePluginService pluginService, MpprKafkaRequestFactory mpprKafkaRequestFactory,
+                                 EdmlProperties edmlProperties) {
         this.pluginService = pluginService;
         this.mpprKafkaRequestFactory = mpprKafkaRequestFactory;
         this.edmlProperties = edmlProperties;

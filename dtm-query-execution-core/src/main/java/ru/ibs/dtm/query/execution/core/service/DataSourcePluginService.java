@@ -2,6 +2,7 @@ package ru.ibs.dtm.query.execution.core.service;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
+import ru.ibs.dtm.common.plugin.status.StatusQueryResult;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
@@ -9,6 +10,7 @@ import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.status.StatusRequestContext;
 
 import java.util.Set;
 
@@ -76,4 +78,12 @@ public interface DataSourcePluginService {
      */
     void mppwKafka(SourceType sourceType, MppwRequestContext mppwRequestContext,
                    Handler<AsyncResult<QueryResult>> resultHandler);
+
+    /**
+     * <p>Получить статус плагина</p>
+     * @param sourceType тип источника
+     * @param statusRequestContext запрос
+     * @param asyncResultHandler хэндлер асинхронной обработки результата
+     */
+    void status(SourceType sourceType, StatusRequestContext statusRequestContext, Handler<AsyncResult<StatusQueryResult>> asyncResultHandler);
 }

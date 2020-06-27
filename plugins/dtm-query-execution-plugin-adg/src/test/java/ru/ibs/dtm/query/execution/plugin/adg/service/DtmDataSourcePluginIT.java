@@ -23,7 +23,7 @@ import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
 import ru.ibs.dtm.query.execution.plugin.api.service.DdlService;
-import ru.ibs.dtm.query.execution.plugin.api.status.KafkaStatusRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.status.StatusRequestContext;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -73,7 +73,7 @@ public class DtmDataSourcePluginIT {
     }
 
     @Override
-    public void kafkaStatus(KafkaStatusRequestContext kafkaStatusRequestContext, Handler<AsyncResult<StatusQueryResult>> asyncResultHandler) {
+    public void status(StatusRequestContext statusRequestContext, Handler<AsyncResult<StatusQueryResult>> asyncResultHandler) {
 
     }
   };

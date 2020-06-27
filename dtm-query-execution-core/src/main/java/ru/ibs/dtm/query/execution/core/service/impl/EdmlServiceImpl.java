@@ -58,12 +58,6 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
     }
 
     private void executeRequest(EdmlRequestContext context, Handler<AsyncResult<QueryResult>> resultHandler) {
-        /*
-         * 1. для заданного datamart, в таблице DownloadExternalTables найдена запись, где table_name = название таблицы-источника -> throw Exception
-         * 2. для заданного datamart, в таблице UploadExternalTables найдена запись, где table_name = название таблицы-приёмника -> throw Exception
-         * 3. для заданного datamart, в таблице DownloadExternalTables найдена запись, где table_name = название таблицы-приёмника -> EDML Download
-         * 4. для заданного datamart, в таблице UploadExternalTables найдена запись, где table_name = название таблицы-источника -> EDML Upload
-         */
         checkDownloadExtSourceTableExists(context)
                 .compose(result -> checkUploadExtTargetTableExists(context))
                 .compose(dwnExtRecord -> findTargetDownloadExtTable(context))

@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.service.impl;
+package ru.ibs.dtm.query.execution.core.service.edml;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -26,6 +26,8 @@ import ru.ibs.dtm.query.execution.core.service.DataSourcePluginService;
 import ru.ibs.dtm.query.execution.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.service.SchemaStorageProvider;
 import ru.ibs.dtm.query.execution.core.service.edml.EdmlExecutor;
+import ru.ibs.dtm.query.execution.core.service.impl.CalciteDefinitionService;
+import ru.ibs.dtm.query.execution.core.service.impl.EdmlServiceImpl;
 import ru.ibs.dtm.query.execution.core.transformer.DownloadExtTableAttributeTransformer;
 import ru.ibs.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;

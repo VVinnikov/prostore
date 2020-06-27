@@ -11,7 +11,7 @@ import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
-import ru.ibs.dtm.query.execution.plugin.api.status.KafkaStatusRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.status.StatusRequestContext;
 
 /**
  * Интерфейс взаимодействия с плагинами источников данных
@@ -78,5 +78,5 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
     /**
      * <p>Возвращает информацию о состоянии плагина и собранную статистику</p>
      */
-    void kafkaStatus(KafkaStatusRequestContext kafkaStatusRequestContext, Handler<AsyncResult<StatusQueryResult>> asyncResultHandler);
+    void status(StatusRequestContext statusRequestContext, Handler<AsyncResult<StatusQueryResult>> asyncResultHandler);
 }

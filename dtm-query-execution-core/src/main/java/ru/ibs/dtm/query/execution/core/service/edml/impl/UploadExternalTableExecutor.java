@@ -10,8 +10,8 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.delta.DeltaLoadStatus;
-import ru.ibs.dtm.common.plugin.exload.Type;
 import ru.ibs.dtm.common.plugin.exload.QueryLoadParam;
+import ru.ibs.dtm.common.plugin.exload.Type;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.core.configuration.properties.EdmlProperties;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
@@ -54,6 +54,22 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
                 .setHandler(asyncResultHandler);
     }
 
+    private Future<DeltaRecord> getDeltaHotInProcess(EdmlRequestContext context) {
+        return Future.future((Promise<DeltaRecord> promise) ->
+                serviceDao.getDeltaHotByDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic(), ar -> {
+                    if (ar.succeeded()) {
+                        DeltaRecord deltaRecord = ar.result();
+                        if (deltaRecord.getStatus() != DeltaLoadStatus.IN_PROCESS) {
+                            promise.fail(new RuntimeException("Не найдена открытая дельта!"));
+                        }
+                        log.debug("Найдена последняя открытая дельта {}", deltaRecord);
+                        promise.complete(deltaRecord);
+                    } else {
+                        promise.fail(ar.cause());
+                    }
+                }));
+    }
+
     private Future<UploadQueryRecord> insertUploadQuery(EdmlRequestContext context, EdmlQuery edmlQuery, DeltaRecord deltaRecord) {
         return Future.future((Promise<UploadQueryRecord> promise) -> {
             UploadQueryRecord uploadQueryRecord = createUploadQueryRecord(context, edmlQuery);
@@ -61,6 +77,7 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
             context.setLoadParam(queryLoadParam);
             serviceDao.inserUploadQuery(uploadQueryRecord, ar -> {
                 if (ar.succeeded()) {
+                    log.debug("Добавлен uploadQuery {}", uploadQueryRecord);
                     promise.complete(uploadQueryRecord);
                 } else {
                     promise.fail(ar.cause());
@@ -88,14 +105,14 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
         loadParam.setIsLoadStart(true);
         loadParam.setDatamart(context.getSourceTable().getSchemaName());
         loadParam.setTableName(context.getTargetTable().getTableName());
-        loadParam.setSqlQuery(context.getSqlNode().toString());
+        loadParam.setSqlQuery(context.getSqlNode().toSqlString(SQL_DIALECT).toString());
         loadParam.setLocationType(uplRecord.getLocationType());
         loadParam.setLocationPath(uplRecord.getLocationPath());
         loadParam.setFormat(uplRecord.getFormat());
         loadParam.setAvroSchema(uplRecord.getTableSchema());
         loadParam.setDeltaHot(deltaRecord.getSinId());
         loadParam.setMessageLimit(uplRecord.getMessageLimit() != null ?
-                uplRecord.getMessageLimit() : edmlProperties.getDefaultChunkSize());//TODO уточнить у Михаила насчет дефолтного значения
+                uplRecord.getMessageLimit() : edmlProperties.getDefaultMessageLimit());
         return loadParam;
     }
 
@@ -105,24 +122,9 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
                 edmlQuery.getRecord().getDatamartId(),
                 edmlQuery.getRecord().getTableName(),
                 context.getTargetTable().getTableName(),
-                context.getSqlNode().toString(),
+                context.getSqlNode().toSqlString(SQL_DIALECT).toString(),
                 0
         );
-    }
-
-    private Future<DeltaRecord> getDeltaHotInProcess(EdmlRequestContext context) {
-        return Future.future((Promise<DeltaRecord> promise) ->
-                serviceDao.getDeltaHotByDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic(), ar -> {
-                    if (ar.succeeded()) {
-                        DeltaRecord deltaRecord = ar.result();
-                        if (deltaRecord.getStatus() != DeltaLoadStatus.IN_PROCESS) {
-                            promise.fail(new RuntimeException("Не найдена открытая дельта!"));
-                        }
-                        promise.complete(deltaRecord);
-                    } else {
-                        promise.fail(ar.cause());
-                    }
-                }));
     }
 
     @Override

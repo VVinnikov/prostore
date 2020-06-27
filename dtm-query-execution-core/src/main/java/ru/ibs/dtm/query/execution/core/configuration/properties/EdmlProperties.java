@@ -12,5 +12,6 @@ import ru.ibs.dtm.common.reader.SourceType;
 public class EdmlProperties {
   private SourceType sourceType;
   private Integer defaultChunkSize;
+  private Integer defaultMessageLimit;
   private Integer pluginStatusCheckPeriodMs;
 }

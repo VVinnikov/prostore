@@ -14,33 +14,69 @@ import ru.ibs.dtm.query.execution.core.factory.impl.VertxKafkaProducerFactory;
 @Configuration
 public class KafkaConfiguration {
 
-  @Bean("coreKafkaProducerFactory")
-  public KafkaProducerFactory<String, String> kafkaProviderFactory(KafkaProperties kafkaProperties,
-                                                                   @Qualifier("coreVertx") Vertx vertx) {
-    return new VertxKafkaProducerFactory<>(vertx, kafkaProperties.getProducer().getProperty());
-  }
+    @Bean("coreKafkaProducerFactory")
+    public KafkaProducerFactory<String, String> kafkaProviderFactory(KafkaProperties kafkaProperties,
+                                                                     @Qualifier("coreVertx") Vertx vertx) {
+        return new VertxKafkaProducerFactory<>(vertx, kafkaProperties.getProducer().getProperty());
+    }
 
-  @Bean("coreKafkaConsumerFactory")
-  public KafkaConsumerFactory<String, String> kafkaConsumerFactory(KafkaProperties kafkaProperties,
-                                                                   @Qualifier("coreVertx") Vertx vertx) {
-    return new VertxKafkaConsumerFactory<>(vertx, kafkaProperties.getConsumer().getProperty());
-  }
+    @Bean("adbKafkaConsumerFactory")
+    public KafkaConsumerFactory<String, String> adbKafkaConsumerFactory(KafkaProperties kafkaProperties,
+                                                                        @Qualifier("coreVertx") Vertx vertx) {
+        return new VertxKafkaConsumerFactory<>(vertx, kafkaProperties.getConsumer().getAdb());
+    }
 
-  @Bean("coreByteArrayKafkaProviderFactory")
-  public KafkaProducerFactory<String, Byte[]> byteArrayKafkaProviderFactory(KafkaProperties kafkaProperties,
-                                                                            @Qualifier("coreVertx") Vertx vertx) {
-    return new VertxKafkaProducerFactory<>(vertx, kafkaProperties.getProducer().getProperty());
-  }
+    @Bean("adgKafkaConsumerFactory")
+    public KafkaConsumerFactory<String, String> adgKafkaConsumerFactory(KafkaProperties kafkaProperties,
+                                                                        @Qualifier("coreVertx") Vertx vertx) {
+        return new VertxKafkaConsumerFactory<>(vertx, kafkaProperties.getConsumer().getAdg());
+    }
 
-  @Bean("coreByteArrayKafkaConsumerFactory")
-  public KafkaConsumerFactory<String, Byte[]> byteArrayKafkaConsumerFactory(KafkaProperties kafkaProperties,
-                                                                            @Qualifier("coreVertx") Vertx vertx) {
-    return new VertxKafkaConsumerFactory<>(vertx, kafkaProperties.getConsumer().getProperty());
-  }
+    @Bean("adqmKafkaConsumerFactory")
+    public KafkaConsumerFactory<String, String> adqmKafkaConsumerFactory(KafkaProperties kafkaProperties,
+                                                                         @Qualifier("coreVertx") Vertx vertx) {
+        return new VertxKafkaConsumerFactory<>(vertx, kafkaProperties.getConsumer().getAdqm());
+    }
 
-  @Bean("coreKafkaAdminClient")
-  public KafkaAdminClient kafkaAdminClient(KafkaProperties kafkaProperties,
-                                           @Qualifier("coreVertx") Vertx vertx) {
-    return KafkaAdminClient.create(vertx, kafkaProperties.getConsumer().getProperty());
-  }
+    @Bean("coreByteArrayKafkaProviderFactory")
+    public KafkaProducerFactory<String, Byte[]> byteArrayKafkaProviderFactory(KafkaProperties kafkaProperties,
+                                                                              @Qualifier("coreVertx") Vertx vertx) {
+        return new VertxKafkaProducerFactory<>(vertx, kafkaProperties.getProducer().getProperty());
+    }
+
+    @Bean("adbByteArrayKafkaConsumerFactory")
+    public KafkaConsumerFactory<String, Byte[]> adbByteArrayKafkaConsumerFactory(KafkaProperties kafkaProperties,
+                                                                                 @Qualifier("coreVertx") Vertx vertx) {
+        return new VertxKafkaConsumerFactory<>(vertx, kafkaProperties.getConsumer().getAdb());
+    }
+
+    @Bean("adgByteArrayKafkaConsumerFactory")
+    public KafkaConsumerFactory<String, Byte[]> adgByteArrayKafkaConsumerFactory(KafkaProperties kafkaProperties,
+                                                                                 @Qualifier("coreVertx") Vertx vertx) {
+        return new VertxKafkaConsumerFactory<>(vertx, kafkaProperties.getConsumer().getAdg());
+    }
+
+    @Bean("adqmByteArrayKafkaConsumerFactory")
+    public KafkaConsumerFactory<String, Byte[]> adqmByteArrayKafkaConsumerFactory(KafkaProperties kafkaProperties,
+                                                                                  @Qualifier("coreVertx") Vertx vertx) {
+        return new VertxKafkaConsumerFactory<>(vertx, kafkaProperties.getConsumer().getAdqm());
+    }
+
+    @Bean("adbKafkaAdminClient")
+    public KafkaAdminClient adbKafkaAdminClient(KafkaProperties kafkaProperties,
+                                                @Qualifier("coreVertx") Vertx vertx) {
+        return KafkaAdminClient.create(vertx, kafkaProperties.getConsumer().getAdb());
+    }
+
+    @Bean("adgKafkaAdminClient")
+    public KafkaAdminClient adgKafkaAdminClient(KafkaProperties kafkaProperties,
+                                                @Qualifier("coreVertx") Vertx vertx) {
+        return KafkaAdminClient.create(vertx, kafkaProperties.getConsumer().getAdg());
+    }
+
+    @Bean("adqmKafkaAdminClient")
+    public KafkaAdminClient adqmKafkaAdminClient(KafkaProperties kafkaProperties,
+                                                 @Qualifier("coreVertx") Vertx vertx) {
+        return KafkaAdminClient.create(vertx, kafkaProperties.getConsumer().getAdqm());
+    }
 }

@@ -745,11 +745,12 @@ public class ServiceDaoImpl implements ServiceDao {
 
     @Override
     public void dropUploadExternalTable(DropUploadExternalTableQuery query, Handler<AsyncResult<Void>> resultHandler) {
-        //TODO отрефакторить
-        /*Future.future((Promise<UploadExternalTableRecord> promise) -> findUploadExternalTable(query.getSchemaName(), query.getTableName().toLowerCase(), promise))
-                .compose(uploadExtTableRec -> Future.future((Promise<Integer> promise) -> dropUploadExternalTable(uploadExtTableRec.getId(), promise)))
+        Future.future((Promise<UploadExtTableRecord> promise) -> findUploadExternalTable(query.getSchemaName(),
+                query.getTableName().toLowerCase(), promise))
+                .compose(uploadExtTableRec -> Future.future((Promise<Void> promise) ->
+                        dropUploadExternalTable(uploadExtTableRec.getId(), promise)))
                 .onSuccess(success -> resultHandler.handle(Future.succeededFuture()))
-                .onFailure(fail -> resultHandler.handle(Future.failedFuture(fail)));*/
+                .onFailure(fail -> resultHandler.handle(Future.failedFuture(fail)));
     }
 
     @Override

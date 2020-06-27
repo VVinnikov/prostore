@@ -1,9 +1,6 @@
 package ru.ibs.dtm.query.execution.core.service.eddl.impl;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
+import io.vertx.core.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.Schema;
 import org.apache.calcite.sql.SqlDdl;
@@ -29,7 +26,7 @@ import ru.ibs.dtm.query.execution.core.service.eddl.EddlQueryParamExtractor;
 public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
 
     public static final String ERROR_PARSING_EDDL_QUERY = "Ошибка парсинга запроса";
-    public static final String LOCATION_START_TOKEN = "$";
+    public static final String START_LOCATION_TOKEN = "$";
     private final DefinitionService<SqlNode> definitionService;
     private final MetadataCalciteGenerator metadataCalciteGenerator;
     private final AvroSchemaGenerator avroSchemaGenerator;
@@ -50,15 +47,7 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
 
     @Override
     public void extract(QueryRequest request, Handler<AsyncResult<EddlQuery>> asyncResultHandler) {
-        vertx.executeBlocking(it -> {
-            try {
-                SqlNode node = definitionService.processingQuery(request.getSql());
-                it.complete(node);
-            } catch (Exception e) {
-                log.error("Ошибка парсинга запроса", e);
-                it.fail(e);
-            }
-        }, ar -> {
+        vertx.executeBlocking(it -> processSqlQuery(request, it), ar -> {
             if (ar.succeeded()) {
                 SqlNode sqlNode = (SqlNode) ar.result();
                 extract(sqlNode, request.getDatamartMnemonic(), asyncResultHandler);
@@ -66,6 +55,16 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
                 asyncResultHandler.handle(Future.failedFuture(ar.cause()));
             }
         });
+    }
+
+    private void processSqlQuery(QueryRequest request, Promise<Object> it) {
+        try {
+            SqlNode node = definitionService.processingQuery(request.getSql());
+            it.complete(node);
+        } catch (Exception e) {
+            log.error("Ошибка парсинга запроса", e);
+            it.fail(e);
+        }
     }
 
     private void extract(SqlNode sqlNode,
@@ -114,7 +113,6 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
             TableInfo tableInfo = SqlNodeUtils.getTableInfo(ddl, defaultSchema);
             LocationOperator locationOperator = SqlNodeUtils.getOne(ddl, LocationOperator.class);
             ChunkSizeOperator chunkSizeOperator = SqlNodeUtils.getOne(ddl, ChunkSizeOperator.class);
-
             asyncResultHandler.handle(Future.succeededFuture(
                     new CreateDownloadExternalTableQuery(
                             tableInfo.getSchemaName(),
@@ -149,7 +147,7 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
     }
 
     private String getLocation(LocationOperator locationOperator) {
-        String replaceToken = LOCATION_START_TOKEN + locationOperator.getType().getName();
+        String replaceToken = START_LOCATION_TOKEN + locationOperator.getType().getName();
         return locationOperator.getLocation().replace(replaceToken, getConfigUrl(locationOperator.getType()));
     }
 
@@ -159,7 +157,7 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
                 return kafkaProperties.getProducer().getProperty().get("bootstrap.servers");
             case CSV_FILE:
             case HDFS_LOCATION:
-                throw new IllegalArgumentException("Unsupported location type: " + type);
+                throw new IllegalArgumentException("Данный location type: " + type + " не поддерживается!");
             default:
                 throw new RuntimeException("Данный тип не поддерживается!");
         }

@@ -10,7 +10,7 @@ import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.service.*;
-import ru.ibs.dtm.query.execution.plugin.api.status.KafkaStatusRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.status.StatusRequestContext;
 
 public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin {
 
@@ -19,19 +19,19 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
     protected final MpprKafkaService<QueryResult> mpprKafkaService;
     protected final MppwKafkaService<QueryResult> mppwKafkaService;
     protected final QueryCostService<Integer> queryCostService;
-    protected final KafkaStatusService<StatusQueryResult> kafkaStatusService;
+    protected final StatusService<StatusQueryResult> statusService;
 
     public AbstractDtmDataSourcePlugin(DdlService<Void> ddlService,
                                        LlrService<QueryResult> llrService,
                                        MpprKafkaService<QueryResult> mpprKafkaService,
                                        MppwKafkaService<QueryResult> mppwKafkaService, QueryCostService<Integer> queryCostService,
-                                       KafkaStatusService<StatusQueryResult> kafkaStatusService) {
+                                       StatusService<StatusQueryResult> statusService) {
         this.ddlService = ddlService;
         this.llrService = llrService;
         this.mpprKafkaService = mpprKafkaService;
         this.mppwKafkaService = mppwKafkaService;
         this.queryCostService = queryCostService;
-        this.kafkaStatusService = kafkaStatusService;
+        this.statusService = statusService;
     }
 
     @Override
@@ -61,7 +61,7 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
     }
 
     @Override
-    public void kafkaStatus(KafkaStatusRequestContext context, Handler<AsyncResult<StatusQueryResult>> asyncResultHandler) {
-        kafkaStatusService.execute(context, asyncResultHandler);
+    public void status(StatusRequestContext context, Handler<AsyncResult<StatusQueryResult>> asyncResultHandler) {
+        statusService.execute(context, asyncResultHandler);
     }
 }

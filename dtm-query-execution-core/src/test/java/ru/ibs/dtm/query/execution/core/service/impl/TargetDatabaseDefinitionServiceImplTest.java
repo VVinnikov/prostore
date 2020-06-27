@@ -19,7 +19,7 @@ import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
-import ru.ibs.dtm.query.execution.plugin.api.status.KafkaStatusRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.status.StatusRequestContext;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -62,7 +62,7 @@ public class TargetDatabaseDefinitionServiceImplTest {
                                         }
 
                                         @Override
-                                        public void kafkaStatus(KafkaStatusRequestContext kafkaStatusRequestContext, Handler<AsyncResult<StatusQueryResult>> asyncResultHandler) {
+                                        public void status(StatusRequestContext statusRequestContext, Handler<AsyncResult<StatusQueryResult>> asyncResultHandler) {
 
                                         }
                                     }

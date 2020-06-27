@@ -53,7 +53,6 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
 
     @Override
     public void execute(EdmlRequestContext context, EdmlQuery edmlQuery, Handler<AsyncResult<QueryResult>> resultHandler) {
-        //TODO написать тесты
         insertDownloadQuery(context, (DownloadExtTableRecord) edmlQuery.getRecord())
                 .compose(this::getDownloadExternalAttributes)
                 .compose(attributes -> executePluginService(context, attributes, resultHandler))
@@ -62,10 +61,10 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
 
     private Future<DownloadExtTableRecord> insertDownloadQuery(EdmlRequestContext context, DownloadExtTableRecord extTableRecord) {
         return Future.future((Promise<DownloadExtTableRecord> promise) -> {
-            log.debug("Внешняя таблица {} найдена", context.getSqlNode().getTargetTable().toString());
+            log.debug("Внешняя таблица {} найдена", context.getTargetTable().getTableName());
             context.getRequest().getQueryRequest().setSql(context.getSqlNode().getSource().toSqlString(SQL_DIALECT).toString());
             log.debug("От запроса оставили: {}", context.getRequest().getQueryRequest().getSql());
-            context.setExloadParam(createQueryExloadParam(context.getSqlNode().getTargetTable().toString(),
+            context.setExloadParam(createQueryExloadParam(context.getTargetTable().getTableName(),
                     context.getRequest().getQueryRequest(), extTableRecord));
             serviceDao.insertDownloadQuery(context.getExloadParam().getId(), extTableRecord.getId(),
                     context.getRequest().getQueryRequest().getSql(), ar -> {
@@ -104,7 +103,7 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
     private QueryExloadParam createQueryExloadParam(String externalTable, QueryRequest queryRequest, DownloadExtTableRecord detRecord) {
         final QueryExloadParam exloadParam = new QueryExloadParam();
         exloadParam.setId(UUID.randomUUID());
-        exloadParam.setDatamart(queryRequest.getDatamartMnemonic());//TODO здесь должно быть определение из запроса вида <schema>.<table> либо по умолчанию из запроса
+        exloadParam.setDatamart(queryRequest.getDatamartMnemonic());
         exloadParam.setTableName(externalTable);
         exloadParam.setSqlQuery(queryRequest.getSql());
         exloadParam.setLocationType(detRecord.getLocationType());

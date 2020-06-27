@@ -1,9 +1,9 @@
 package ru.ibs.dtm.query.execution.plugin.api.service;
 
 import io.vertx.core.AsyncResult;
-import ru.ibs.dtm.query.execution.plugin.api.status.KafkaStatusRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.status.StatusRequestContext;
 
-public interface KafkaStatusService<T> extends DatamartExecutionService<KafkaStatusRequestContext, AsyncResult<T>> {
+public interface StatusService<T> extends DatamartExecutionService<StatusRequestContext, AsyncResult<T>> {
 
     default SqlProcessingType getSqlProcessingType() {
         return SqlProcessingType.STATUS;

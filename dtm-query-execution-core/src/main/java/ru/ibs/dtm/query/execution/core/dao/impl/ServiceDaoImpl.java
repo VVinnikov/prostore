@@ -608,7 +608,8 @@ public class ServiceDaoImpl implements ServiceDao {
 	private Select<Record1<Long>> getDeltaByDatamartAndDateSelect(DSLContext dsl, ActualDeltaRequest actualDeltaRequest) {
 		SelectConditionStep<Record1<Long>> query = dsl.select(max(DELTA_DATA.SIN_ID))
 				.from(DELTA_DATA)
-				.where(DELTA_DATA.DATAMART_MNEMONICS.equalIgnoreCase(actualDeltaRequest.getDatamart()));
+				.where(DELTA_DATA.DATAMART_MNEMONICS.equalIgnoreCase(actualDeltaRequest.getDatamart()))
+				.and(DELTA_DATA.STATUS.eq(1));
 		if (actualDeltaRequest.getDateTime() != null) {
 			return query.and(DELTA_DATA.SYS_DATE.le(LocalDateTime.from(LOCAL_DATE_TIME.parse(actualDeltaRequest.getDateTime()))));
 		}

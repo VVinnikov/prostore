@@ -27,82 +27,83 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefinitionService {
-    private final SchemaStorageProvider schemaStorageProvider;
-    private final DataSourcePluginService pluginService;
-    private final HintExtractor hintExtractor;
+	private final SchemaStorageProvider schemaStorageProvider;
+	private final DataSourcePluginService pluginService;
+	private final HintExtractor hintExtractor;
 
-    @Override
-    public void getTargetSource(QueryRequest request, Handler<AsyncResult<QuerySourceRequest>> handler) {
-        hintExtractor.extractHint(request, ar -> {
-            if (ar.succeeded()) {
-                QuerySourceRequest querySourceRequest = ar.result();
-                if (querySourceRequest.getSourceType() != null) {
-                    handler.handle(Future.succeededFuture(querySourceRequest));
-                } else {
-                    getTargetSourceWithoutHint(request, handler);
-                }
-            } else {
-                handler.handle(Future.failedFuture(ar.cause()));
-            }
-        });
-    }
+	@Override
+	public void getTargetSource(QueryRequest request, Handler<AsyncResult<QuerySourceRequest>> handler) {
+		hintExtractor.extractHint(request, ar -> {
+			if (ar.succeeded()) {
+				QuerySourceRequest querySourceRequest = ar.result();
+				if (querySourceRequest.getSourceType() != null) {
+					handler.handle(Future.succeededFuture(querySourceRequest));
+				} else {
+					getTargetSourceWithoutHint(request, handler);
+				}
+			} else {
+				handler.handle(Future.failedFuture(ar.cause()));
+			}
+		});
+	}
 
-    private void getTargetSourceWithoutHint(QueryRequest request, Handler<AsyncResult<QuerySourceRequest>> handler) {
-        if (CollectionUtils.isEmpty(MetaDataQueryPreparer.findInformationSchemaViews(request.getSql()))) {
-            getTargetSourceFromCost(request, ar -> {
-                if (ar.succeeded()) {
-                    handler.handle(Future.succeededFuture(
-                            new QuerySourceRequest(
-                                    request.copy(),
-                                    ar.result())));
-                } else {
-                    handler.handle(Future.failedFuture(ar.cause()));
-                }
-            });
-        } else {
-            handler.handle(Future.succeededFuture(
-                    new QuerySourceRequest(
-                            request.copy(),
-                            SourceType.INFORMATION_SCHEMA)));
-        }
-    }
+	private void getTargetSourceWithoutHint(QueryRequest request, Handler<AsyncResult<QuerySourceRequest>> handler) {
+		if (CollectionUtils.isEmpty(MetaDataQueryPreparer.findInformationSchemaViews(request.getSql()))) {
+			getTargetSourceFromCost(request, ar -> {
+				if (ar.succeeded()) {
+					handler.handle(Future.succeededFuture(
+							new QuerySourceRequest(
+									request.copy(),
+									ar.result())));
+				} else {
+					handler.handle(Future.failedFuture(ar.cause()));
+				}
+			});
+		} else {
+			handler.handle(Future.succeededFuture(
+					new QuerySourceRequest(
+							request.copy(),
+							SourceType.INFORMATION_SCHEMA)));
+		}
+	}
 
-    private void getTargetSourceFromCost(QueryRequest request, Handler<AsyncResult<SourceType>> handler) {
-        List<Future> sourceTypeCost = new ArrayList<>();
-        schemaStorageProvider.getLogicalSchema(request.getDatamartMnemonic(), schemaHandler ->{
-            if (schemaHandler.succeeded()) {
-                val schema = schemaHandler.result();
-                pluginService.getSourceTypes().forEach(sourceType -> {
-                    sourceTypeCost.add(Future.future(p ->
-                            {
-                                val costRequest = new QueryCostRequest(request, schema);
-                                val costRequestContext = new QueryCostRequestContext(costRequest);
-                                pluginService.calcQueryCost(sourceType, costRequestContext, costHandler -> {
-                                    if (costHandler.succeeded()) {
-                                        p.complete(Pair.of(sourceType, costHandler.result()));
-                                    } else {
-                                        p.fail(costHandler.cause());
-                                    }
-                                });
-                            })
-                    );
-                });
-            } else {
-                handler.handle(Future.failedFuture(schemaHandler.cause()));
-            }
-        });
-        CompositeFuture.all(sourceTypeCost).onComplete(
-                ar -> {
-                    if (ar.succeeded()) {
-                        SourceType sourceType = ar.result().list().stream()
-                                .map(res -> (Pair<SourceType, Integer>) res)
-                                .min(Comparator.comparingInt(Pair::getValue))
-                                .map(Pair::getKey)
-                                .orElse(null);
-                        handler.handle(Future.succeededFuture(sourceType));
-                    } else {
-                        handler.handle(Future.failedFuture(ar.cause()));
-                    }
-                });
-    }
+	private void getTargetSourceFromCost(QueryRequest request, Handler<AsyncResult<SourceType>> handler) {
+		List<Future> sourceTypeCost = new ArrayList<>();
+		Future.future(p -> schemaStorageProvider.getLogicalSchema(request.getDatamartMnemonic(), schemaHandler -> {
+			if (schemaHandler.succeeded()) {
+				val schema = schemaHandler.result();
+				pluginService.getSourceTypes().forEach(sourceType -> {
+					sourceTypeCost.add(Future.future(stp ->
+							{
+								val costRequest = new QueryCostRequest(request, schema);
+								val costRequestContext = new QueryCostRequestContext(costRequest);
+								pluginService.calcQueryCost(sourceType, costRequestContext, costHandler -> {
+									if (costHandler.succeeded()) {
+										stp.complete(Pair.of(sourceType, costHandler.result()));
+									} else {
+										stp.fail(costHandler.cause());
+									}
+								});
+							})
+					);
+				});
+			} else {
+				handler.handle(Future.failedFuture(schemaHandler.cause()));
+			}
+			p.complete();
+		})).compose(r ->
+				CompositeFuture.all(sourceTypeCost).onComplete(
+						ar -> {
+							if (ar.succeeded()) {
+								SourceType sourceType = ar.result().list().stream()
+										.map(res -> (Pair<SourceType, Integer>) res)
+										.min(Comparator.comparingInt(Pair::getValue))
+										.map(Pair::getKey)
+										.orElse(null);
+									handler.handle(Future.succeededFuture(sourceType));
+							} else {
+								handler.handle(Future.failedFuture(ar.cause()));
+							}
+						}));
+	}
 }

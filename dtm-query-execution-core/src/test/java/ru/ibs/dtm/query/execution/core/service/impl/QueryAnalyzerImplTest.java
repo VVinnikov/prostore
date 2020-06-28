@@ -21,6 +21,7 @@ import ru.ibs.dtm.query.execution.core.factory.impl.RequestContextFactoryImpl;
 import ru.ibs.dtm.query.execution.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.service.QueryAnalyzer;
 import ru.ibs.dtm.query.execution.core.service.QueryDispatcher;
+import ru.ibs.dtm.query.execution.core.utils.DatamartMnemonicExtractor;
 import ru.ibs.dtm.query.execution.core.utils.HintExtractor;
 import ru.ibs.dtm.query.execution.plugin.api.RequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
@@ -43,7 +44,7 @@ class QueryAnalyzerImplTest {
 	private QueryAnalyzer queryAnalyzer = new QueryAnalyzerImpl(queryDispatcher,
 			definitionService,
 			requestContextFactory,
-			vertx, new HintExtractor(), new AppConfiguration(mock(Environment.class)));
+			vertx, new HintExtractor(), new DatamartMnemonicExtractor(), new AppConfiguration(mock(Environment.class)));
 
 	@Test
 	void parsedSelect() {
@@ -82,6 +83,10 @@ class QueryAnalyzerImplTest {
 		analyzeAndExecute(testData, queryRequest);
 
 		assertThat(testData.getResult()).isEqualToIgnoringCase("complete");
+		assertEquals("test_datamart"
+				, testData.getParsedQueryRequests()
+						.getQueryRequest()
+						.getDatamartMnemonic());
 		assertEquals(SqlProcessingType.DML, testData.getParsedQueryRequests().getProcessingType());
 	}
 

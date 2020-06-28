@@ -16,6 +16,7 @@ import ru.ibs.dtm.query.execution.core.factory.RequestContextFactory;
 import ru.ibs.dtm.query.execution.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.service.QueryAnalyzer;
 import ru.ibs.dtm.query.execution.core.service.QueryDispatcher;
+import ru.ibs.dtm.query.execution.core.utils.DatamartMnemonicExtractor;
 import ru.ibs.dtm.query.execution.core.utils.HintExtractor;
 import ru.ibs.dtm.query.execution.plugin.api.RequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
@@ -30,26 +31,34 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
 	private final Vertx vertx;
 	private final HintExtractor hintExtractor;
 	private final RequestContextFactory<RequestContext<? extends DatamartRequest>, QueryRequest> requestContextFactory;
+	private final DatamartMnemonicExtractor datamartMnemonicExtractor;
 
 	@Autowired
 	public QueryAnalyzerImpl(QueryDispatcher queryDispatcher,
 							 DefinitionService<SqlNode> definitionService,
 							 RequestContextFactory<RequestContext<? extends DatamartRequest>, QueryRequest> requestContextFactory,
 							 @Qualifier("coreVertx") Vertx vertx,
-							 HintExtractor hintExtractor) {
+							 HintExtractor hintExtractor,
+							 DatamartMnemonicExtractor datamartMnemonicExtractor) {
 		this.queryDispatcher = queryDispatcher;
 		this.definitionService = definitionService;
 		this.requestContextFactory = requestContextFactory;
 		this.vertx = vertx;
 		this.hintExtractor = hintExtractor;
+		this.datamartMnemonicExtractor = datamartMnemonicExtractor;
 	}
 
 	@Override
 	public void analyzeAndExecute(QueryRequest queryRequest, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
 		getParsedQuery(queryRequest, parseResult -> {
 			if (parseResult.succeeded()) {
-				queryDispatcher.dispatch(requestContextFactory.
-						create(queryRequest, parseResult.result()), asyncResultHandler);
+				SqlNode sqlNode = parseResult.result();
+				if (queryRequest.getDatamartMnemonic() == null) {
+					datamartMnemonicExtractor.extract(sqlNode).ifPresent(queryRequest::setDatamartMnemonic);
+				}
+				queryDispatcher.dispatch(
+						requestContextFactory.create(queryRequest, sqlNode), asyncResultHandler
+				);
 			} else {
 				LOGGER.debug("Ошибка анализа запроса", parseResult.cause());
 				asyncResultHandler.handle(Future.failedFuture(parseResult.cause()));

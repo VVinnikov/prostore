@@ -13,12 +13,12 @@ import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
-import ru.ibs.dtm.query.execution.core.dto.ParsedQueryRequest;
 import ru.ibs.dtm.query.execution.core.factory.RequestContextFactory;
 import ru.ibs.dtm.query.execution.core.factory.impl.RequestContextFactoryImpl;
 import ru.ibs.dtm.query.execution.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.service.QueryAnalyzer;
 import ru.ibs.dtm.query.execution.core.service.QueryDispatcher;
+import ru.ibs.dtm.query.execution.core.utils.DatamartMnemonicExtractor;
 import ru.ibs.dtm.query.execution.core.utils.HintExtractor;
 import ru.ibs.dtm.query.execution.plugin.api.RequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
@@ -41,7 +41,7 @@ class QueryAnalyzerImplTest {
 	private QueryAnalyzer queryAnalyzer = new QueryAnalyzerImpl(queryDispatcher,
 			definitionService,
 			requestContextFactory,
-			vertx, new HintExtractor());
+			vertx, new HintExtractor(), new DatamartMnemonicExtractor());
 
 	@Test
 	void parsedSelect() {
@@ -80,6 +80,11 @@ class QueryAnalyzerImplTest {
 		analyzeAndExecute(testData, queryRequest);
 
 		assertThat(testData.getResult()).isEqualToIgnoringCase("complete");
+		assertEquals("test_datamart"
+				, testData.getParsedQueryRequests()
+						.getRequest()
+						.getQueryRequest()
+						.getDatamartMnemonic());
 		assertEquals(SqlProcessingType.DML, testData.getParsedQueryRequests().getProcessingType());
 	}
 
@@ -106,7 +111,7 @@ class QueryAnalyzerImplTest {
 		analyzeAndExecute(testData, queryRequest);
 
 		assertThat(testData.getResult()).isEqualToIgnoringCase("complete");
-		assertEquals(sql, testData.getParsedQueryRequests().getQueryRequest().getSql());
+		assertEquals(sql, testData.getParsedQueryRequests().getRequest().getQueryRequest().getSql());
 		assertEquals(SqlProcessingType.EDDL, testData.getParsedQueryRequests().getProcessingType());
 	}
 
@@ -150,7 +155,7 @@ class QueryAnalyzerImplTest {
 
 		private String result;
 
-		private ParsedQueryRequest parsedQueryRequests;
+		private RequestContext<? extends DatamartRequest> parsedQueryRequests;
 
 		String getResult() {
 			return result;
@@ -160,11 +165,11 @@ class QueryAnalyzerImplTest {
 			this.result = result;
 		}
 
-		ParsedQueryRequest getParsedQueryRequests() {
+		RequestContext<? extends DatamartRequest> getParsedQueryRequests() {
 			return parsedQueryRequests;
 		}
 
-		void setParsedQueryRequests(ParsedQueryRequest parsedQueryRequests) {
+		void setParsedQueryRequests(RequestContext<? extends DatamartRequest> parsedQueryRequests) {
 			this.parsedQueryRequests = parsedQueryRequests;
 		}
 	}

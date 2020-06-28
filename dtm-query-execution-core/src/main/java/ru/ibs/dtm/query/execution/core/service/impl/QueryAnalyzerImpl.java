@@ -4,6 +4,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +22,7 @@ import ru.ibs.dtm.query.execution.core.utils.HintExtractor;
 import ru.ibs.dtm.query.execution.plugin.api.RequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
 
+@Slf4j
 @Component
 public class QueryAnalyzerImpl implements QueryAnalyzer {
 
@@ -54,7 +56,12 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
 			if (parseResult.succeeded()) {
 				SqlNode sqlNode = parseResult.result();
 				if (queryRequest.getDatamartMnemonic() == null) {
-					datamartMnemonicExtractor.extract(sqlNode).ifPresent(queryRequest::setDatamartMnemonic);
+					try {
+						datamartMnemonicExtractor.extract(sqlNode).ifPresent(queryRequest::setDatamartMnemonic);
+					} catch (Exception ex) {
+						log.error("Datamart mnemonic is not extract from sql [{}]: {}", sqlNode, ex);
+						asyncResultHandler.handle(Future.failedFuture(ex));
+					}
 				}
 				queryDispatcher.dispatch(
 						requestContextFactory.create(queryRequest, sqlNode), asyncResultHandler

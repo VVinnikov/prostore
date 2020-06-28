@@ -82,7 +82,7 @@ class QueryPreprocessorTest {
                 "    left join shares.transactions FOR SYSTEM_TIME AS OF '2020-06-10 23:59:59'" +
                 "       using(account_id)\n" +
                 "    group by a.account_id. a.account_type\n" +
-                ") x";
+                ")";
 
         QueryPreprocessor preprocessor = new QueryPreprocessor(calciteContextProvider);
         preprocessor.process(query, ar -> {

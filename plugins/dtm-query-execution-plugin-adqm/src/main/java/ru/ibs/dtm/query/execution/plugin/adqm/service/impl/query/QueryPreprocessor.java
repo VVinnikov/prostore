@@ -46,6 +46,7 @@ public class QueryPreprocessor {
         try {
             SqlNode root = context.getPlanner().parse(sql);
             // FIXME support SqlOrderBy, SqlUnion which contains SqlSelect itself
+            // FIXME support for `select a, (select b from t) as b from t2`
             if (!(root instanceof SqlSelect)) {
                 handler.handle(Future.failedFuture("Expecting SELECT to extract information"));
                 return;
@@ -59,6 +60,10 @@ public class QueryPreprocessor {
     }
 
     private void processFrom(SqlNode from, List<DeltaInformation> accum) {
+        if (from instanceof SqlSelect) {
+            processFrom(((SqlSelect) from).getFrom(), accum);
+        }
+
         if (from instanceof SqlBasicCall) {
            SqlKind kind = from.getKind();
            if (kind == SqlKind.AS) {

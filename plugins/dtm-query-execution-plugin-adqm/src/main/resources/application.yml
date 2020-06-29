@@ -14,6 +14,10 @@ connector:
     port: ${ADQM_MPPR_CONNECTOR_PORT:8086}
     url: ${ADQM_MPPR_CONNECTOR_URL:/query}
 
+enrichment:
+  defaultDatamart: ${ADQM_DEFAULT_DATAMART:test_datamart}
+  environment: ${ADQM_ENV:dev}
+
 kafka:
   adqm:
     producer:

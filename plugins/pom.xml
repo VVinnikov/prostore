@@ -17,6 +17,7 @@
     <modules>
         <module>dtm-query-execution-plugin-adb</module>
         <module>dtm-query-execution-plugin-adg</module>
+        <module>dtm-query-execution-plugin-adqm</module>
     </modules>
 
 </project>

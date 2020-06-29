@@ -3,17 +3,19 @@ package ru.ibs.dtm.query.execution.plugin.adqm.service.impl.query;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.sql.*;
-import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
+import org.apache.calcite.util.Pair;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.calcite.CalciteContext;
 import ru.ibs.dtm.query.execution.plugin.adqm.calcite.CalciteContextProvider;
@@ -40,6 +42,7 @@ public class QueryRewriter {
     private final static Pattern FINAL_PATTERN = Pattern.compile("`(\\w+)_final`", Pattern.CASE_INSENSITIVE);
     private final static Pattern TABLE_ALIAS_PATTERN = Pattern.compile("^\\s+(AS\\s+`\\w+`)");
     private final static String UNION_ALL_TEMPLATE = "select * from (select 1 from dual) union all select * from (select 1 from dual)";
+    private final static String SNAPSHOT_PATTERN = "FOR SYSTEM_TIME AS OF '\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}'";
 
     public QueryRewriter(CalciteContextProvider calciteContextProvider, QueryEnrichmentProperties queryEnrichmentProperties) {
         this.calciteContextProvider = calciteContextProvider;
@@ -62,19 +65,118 @@ public class QueryRewriter {
         // 2. Modify query - duplicate via union all (with sub queries) and rename table names to physical names
         // 3. Modify query - rename schemas to physical name (take into account _shard _final modifiers)
         SqlNode union = createUnionAll(withDeltaFilters, deltas);
-        handler.handle(Future.succeededFuture(replaceFinalToKeyword(union)));
+        handler.handle(Future.succeededFuture(
+                replaceFinalToKeyword(removeSnapshots(union.toString()))));
     }
 
     private SqlNode addDeltaFilters(SqlNode root, List<DeltaInformation> deltas) {
         // Recursive scan for select, on each level collect table aliases and names
         // For collected names add filter in where clause
-        // TODO add support for top level order by, union all queries
-        if (!(root instanceof SqlSelect)) {
-            return root;
+        // Add clause in where, change SqlSnapshot to SqlIdentifier to remove for system_time clause
+        List<ParseTableContext> ctxs = new ArrayList<>();
+        scanForTables(root, ctxs);
+
+        for (ParseTableContext ctx: ctxs) {
+            for (TableWithAlias t: ctx.tables) {
+                Long delta = findDelta(deltas, t.id, t.alias);
+                if (delta != null) {
+                    Pair<String, String> parsed = fromSqlIdentifier(t.id);
+                    String alias = t.alias.equals("") ? parsed.right : t.alias;
+                    SqlNode filter = createDeltaFilter(alias, delta, ctx.current.getParserPosition());
+                    ctx.current.setWhere(createOperator(SqlStdOperatorTable.AND, ctx.current.getWhere(), filter));
+                }
+            }
         }
 
-        SqlNode from = ((SqlSelect) root).getFrom();
         return root;
+    }
+
+    private void scanForTables(SqlNode root, List<ParseTableContext> accum) {
+        // First entry, initialize context
+        ParseTableContext ctx = new ParseTableContext();
+        ctx.current = (SqlSelect) root;
+        accum.add(ctx);
+
+        // Work with last created context
+        ParseTableContext currentCtx = accum.get(accum.size() - 1);
+        SqlNode from = currentCtx.current.getFrom();
+
+        TableWithAlias t;
+        t = tableFromNode(from, accum);
+        if (t != null) {
+            currentCtx.tables.add(t);
+        }
+
+        if (from instanceof SqlSelect) { // select from <query>
+            scanForTables(from, accum);
+        }
+
+        if (from instanceof SqlJoin) {
+            SqlNode currentJoin = from;
+            while (true) {
+                t = tableFromNode(((SqlJoin) currentJoin).getRight(), accum);
+                if (t != null) {
+                    currentCtx.tables.add(t);
+                }
+
+                t = tableFromNode(((SqlJoin) currentJoin).getLeft(), accum);
+                if (t != null) {
+                    currentCtx.tables.add(t);
+                    break; // all join sides are tables
+                }
+
+                if (((SqlJoin) currentJoin).getLeft() instanceof SqlJoin) {
+                    currentJoin = ((SqlJoin) currentJoin).getLeft();
+                } else {
+                    break;
+                }
+            }
+        }
+    }
+
+    @AllArgsConstructor
+    @NoArgsConstructor
+    private static class ParseTableContext {
+        SqlSelect current;
+        List<TableWithAlias> tables = new ArrayList<>();
+    }
+
+    @AllArgsConstructor
+    @NoArgsConstructor
+    private static class TableWithAlias {
+        SqlIdentifier id;
+        String alias;
+    }
+
+    private TableWithAlias tableFromNode(SqlNode node, List<ParseTableContext> accum) {
+        if (node instanceof SqlIdentifier) { // select from table
+            return new TableWithAlias((SqlIdentifier) node, "");
+        }
+
+        if (node instanceof SqlSnapshot) { // select from table for system_time
+            return new TableWithAlias((SqlIdentifier) ((SqlSnapshot) node).getTableRef(), "");
+        }
+
+        if (node instanceof SqlBasicCall) {
+            if (node.getKind() == SqlKind.AS) { // select from table as t && select from (select from) as
+                Pair<String, String> parsed = fromSqlIdentifier((SqlIdentifier) ((SqlBasicCall) node).operands[1]);
+                String alias = parsed.right;
+                TableWithAlias tt = tableFromNode(((SqlBasicCall) node).operands[0], accum);
+                if (tt != null) {
+                    tt.alias = alias;
+                    return tt;
+                }
+
+                if (((SqlBasicCall) node).operands[0] instanceof SqlSelect) {
+                    // we need to go to the next level
+                    ParseTableContext newCtx = new ParseTableContext();
+                    newCtx.current = (SqlSelect) ((SqlBasicCall) node).operands[0];
+                    scanForTables(((SqlBasicCall) node).operands[0], accum);
+                }
+            }
+        }
+
+        return null;
     }
 
     private void setPhysicalNames(SqlNode root, List<DeltaInformation> deltas,
@@ -114,14 +216,9 @@ public class QueryRewriter {
     private boolean setPhysicalName(SqlNode root, List<DeltaInformation> deltas,
                                     boolean withFinalModifiers, boolean firstInQuery,
                                     List<String> physicalNames) {
-        String schema = "";
-        String id = "";
-        if (((SqlIdentifier) root).names.size() == 1) {
-            id = ((SqlIdentifier) root).names.get(0);
-        } else {
-            schema = ((SqlIdentifier) root).names.get(0);
-            id = ((SqlIdentifier) root).names.get(1);
-        }
+        Pair<String, String> parsed = fromSqlIdentifier((SqlIdentifier) root);
+        String schema = parsed.left;
+        String id = parsed.right;
 
         if (containsDelta(deltas, schema, id)) {
             String envPrefix = queryEnrichmentProperties.getEnvironment() + "__";
@@ -144,9 +241,36 @@ public class QueryRewriter {
         return false;
     }
 
+    private Pair<String, String> fromSqlIdentifier(SqlIdentifier node) {
+        String schema = "";
+        String id = "";
+        if (node.names.size() == 1) {
+            id = node.names.get(0);
+        } else {
+            schema = node.names.get(0);
+            id = node.names.get(1);
+        }
+
+        return Pair.of(schema, id);
+    }
+
     private boolean containsDelta(List<DeltaInformation> deltas, String schema, String name) {
         // It's better to convert List to Map, but for typical uses (less then 10 tables) full list scan is possible
         return deltas.stream().anyMatch(d -> d.getSchemaName().equals(schema) && d.getTableName().equals(name));
+    }
+
+    private Long findDelta(List<DeltaInformation> deltas, SqlIdentifier table, String alias) {
+        Pair<String, String> parsed = fromSqlIdentifier(table);
+        // It's better to convert List to Map, but for typical uses (less then 10 tables) full list scan is possible
+        for (DeltaInformation d: deltas) {
+            if (d.getSchemaName().equals(parsed.left) &&
+                d.getTableName().equals(parsed.right) &&
+                d.getTableAlias().equals(alias)) {
+                return d.getDeltaNum();
+            }
+        }
+
+        return null;
     }
 
     @SneakyThrows
@@ -234,9 +358,8 @@ public class QueryRewriter {
     // This is dirty hack, because current calcite parser didn't support FINAL keyword for Clickhouse
     // Replace `from tbl_actual_final t` => `from tbl_actual t FINAL`
     // FIXME add support for FINAL keyword into the parser
-    String replaceFinalToKeyword(SqlNode root) {
-        String repr = root.toString();
-        StringBuilder result = new StringBuilder(repr);
+    String replaceFinalToKeyword(String root) {
+        StringBuilder result = new StringBuilder(root);
         while (true) {
             Matcher m = FINAL_PATTERN.matcher(result.toString());
             if (!m.find()) {
@@ -247,7 +370,7 @@ public class QueryRewriter {
             int end = m.end();
             String tableWithFinal = String.format("`%s`", m.group(1));
             // find next token - AS alias or anything else
-            String tableAlias = tableAlias(repr, end);
+            String tableAlias = tableAlias(result.toString(), end);
             if (!tableAlias.equals("")) {
                 result.delete(start, end + tableAlias.length());
                 tableWithFinal = String.format("%s %s FINAL ", tableWithFinal, tableAlias);
@@ -264,7 +387,13 @@ public class QueryRewriter {
     private String tableAlias(String str, int from) {
         String test = str.substring(from);
         Matcher m = TABLE_ALIAS_PATTERN.matcher(test);
-        return m.find() ? m.group(1) : "";
+        return m.find() ? m.group(0) : "";
+    }
+
+    // Cut FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14'
+    // FIXME Use SqlSnapshot -> SqlIdentifier instead of regexp
+    private String removeSnapshots(String query) {
+        return query.replaceAll(SNAPSHOT_PATTERN, "");
     }
 
     // mutable counter for recursion calls

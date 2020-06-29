@@ -4,19 +4,15 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.dto.ActualDeltaRequest;
 import ru.ibs.dtm.common.service.DeltaService;
-import ru.ibs.dtm.query.execution.plugin.adqm.calcite.CalciteContextProvider;
 import ru.ibs.dtm.query.execution.plugin.adqm.dto.DeltaInformation;
 import ru.ibs.dtm.query.execution.plugin.adqm.dto.EnrichQueryRequest;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.QueryEnrichmentService;
-import ru.ibs.dtm.query.execution.plugin.adqm.service.QueryGenerator;
-import ru.ibs.dtm.query.execution.plugin.adqm.service.SchemaExtender;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.impl.query.QueryPreprocessor;
+import ru.ibs.dtm.query.execution.plugin.adqm.service.impl.query.QueryRewriter;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -24,22 +20,16 @@ import java.util.stream.IntStream;
 @Service
 @Slf4j
 public class AdqmQueryEnrichmentServiceImpl implements QueryEnrichmentService {
-    private QueryGenerator adqmQueryGenerator;
     private final DeltaService deltaService;
-    private final CalciteContextProvider contextProvider;
     private final QueryPreprocessor preprocessor;
-    private final SchemaExtender schemaExtender;
+    private final QueryRewriter queryRewriter;
 
-    public AdqmQueryEnrichmentServiceImpl(AdqmQueryGeneratorImpl adqmQueryGeneratorimpl,
-                                          DeltaService deltaService,
-                                          CalciteContextProvider contextProvider,
+    public AdqmQueryEnrichmentServiceImpl(DeltaService deltaService,
                                           QueryPreprocessor preprocessor,
-                                          @Qualifier("adqmSchemaExtender") SchemaExtender schemaExtender) {
-        this.adqmQueryGenerator = adqmQueryGeneratorimpl;
+                                          QueryRewriter queryRewriter) {
         this.deltaService = deltaService;
-        this.contextProvider = contextProvider;
         this.preprocessor = preprocessor;
-        this.schemaExtender = schemaExtender;
+        this.queryRewriter = queryRewriter;
     }
 
     @Override
@@ -57,12 +47,18 @@ public class AdqmQueryEnrichmentServiceImpl implements QueryEnrichmentService {
                     asyncHandler.handle(Future.failedFuture(ar2.cause()));
                 }
 
+                // 2. Modify query - add filter for sys_from/sys_to columns based on deltas
+                // 3. Modify query - duplicate via union all (with sub queries) and rename table names to physical names
+                // 4. Modify query - rename schemas to physical name
+                queryRewriter.rewrite(request.getQueryRequest().getSql(), ar2.result(), ar3 -> {
+                    if (ar3.failed()) {
+                        asyncHandler.handle(Future.failedFuture(ar3.cause()));
+                    }
 
+                    asyncHandler.handle(Future.succeededFuture(ar3.result()));
+                });
             });
         });
-        // 2. Modify query - add filter for sys_from/sys_to columns based on deltas
-        // 3. Modify query - duplicate via union all (with sub queries) and rename table names to physical names
-        // 4. Modify query - rename schemas to physical name
     }
 
     void calculateDeltaValues(List<DeltaInformation> deltas,

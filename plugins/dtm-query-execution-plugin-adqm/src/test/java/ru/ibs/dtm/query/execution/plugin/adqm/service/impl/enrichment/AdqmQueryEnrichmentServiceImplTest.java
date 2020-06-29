@@ -44,7 +44,7 @@ class AdqmQueryEnrichmentServiceImplTest {
         mockDeltas.put("table2_2020-03-01 16:00:00", 103L);
 
         enrichmentService = new AdqmQueryEnrichmentServiceImpl(
-                null, new MockDeltaService(), null, null, null
+                new MockDeltaService(), null, null
         );
     }
 

@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
@@ -61,12 +62,13 @@ public class QueryRewriter {
 
     private void rewriteInternal(SqlNode root, List<DeltaInformation> deltas, Handler<AsyncResult<String>> handler) {
         // 1. Modify query - add filter for sys_from/sys_to columns based on deltas
-        SqlNode withDeltaFilters = addDeltaFilters(root, deltas);
         // 2. Modify query - duplicate via union all (with sub queries) and rename table names to physical names
         // 3. Modify query - rename schemas to physical name (take into account _shard _final modifiers)
-        SqlNode union = createUnionAll(withDeltaFilters, deltas);
+        SqlNode union = createUnionAll(root, deltas);
         handler.handle(Future.succeededFuture(
-                replaceFinalToKeyword(removeSnapshots(union.toString()))));
+                replaceAnsiToSpecific(
+                        replaceFinalToKeyword(
+                                removeSnapshots(union.toString())))));
     }
 
     private SqlNode addDeltaFilters(SqlNode root, List<DeltaInformation> deltas) {
@@ -82,7 +84,7 @@ public class QueryRewriter {
                 if (delta != null) {
                     Pair<String, String> parsed = fromSqlIdentifier(t.id);
                     String alias = t.alias.equals("") ? parsed.right : t.alias;
-                    SqlNode filter = createDeltaFilter(alias, delta, ctx.current.getParserPosition());
+                    SqlNode filter = createDeltaFilter(alias.replaceAll("_final", ""), delta, ctx.current.getParserPosition());
                     ctx.current.setWhere(createOperator(SqlStdOperatorTable.AND, ctx.current.getWhere(), filter));
                 }
             }
@@ -234,6 +236,7 @@ public class QueryRewriter {
             id = id + postfix;
             ((SqlIdentifier) root).setNames(Arrays.asList(schema, id), Arrays.asList(root.getParserPosition(), root.getParserPosition()));
             physicalNames.add(schema + "." + id);
+            updateDelta(deltas, parsed, Pair.of(schema, id.replaceAll("_final", "")));
 
             return true;
         }
@@ -243,7 +246,7 @@ public class QueryRewriter {
 
     private Pair<String, String> fromSqlIdentifier(SqlIdentifier node) {
         String schema = "";
-        String id = "";
+        String id;
         if (node.names.size() == 1) {
             id = node.names.get(0);
         } else {
@@ -259,12 +262,25 @@ public class QueryRewriter {
         return deltas.stream().anyMatch(d -> d.getSchemaName().equals(schema) && d.getTableName().equals(name));
     }
 
+    private void updateDelta(List<DeltaInformation> deltas,
+                             Pair<String, String> datamartName,
+                             Pair<String, String> physicalName) {
+        // FIXME This will fail if one table use more than once in the query with different aliases
+        // Like accounts_actual a1 join accounts_actual_shard a2
+        deltas.forEach(d -> {
+            if (d.getSchemaName().equals(datamartName.left) && d.getTableName().equals(datamartName.right)) {
+                d.setSchemaName(physicalName.left);
+                d.setTableName(physicalName.right);
+            }
+        });
+    }
+
     private Long findDelta(List<DeltaInformation> deltas, SqlIdentifier table, String alias) {
         Pair<String, String> parsed = fromSqlIdentifier(table);
         // It's better to convert List to Map, but for typical uses (less then 10 tables) full list scan is possible
         for (DeltaInformation d: deltas) {
             if (d.getSchemaName().equals(parsed.left) &&
-                d.getTableName().equals(parsed.right) &&
+                d.getTableName().equals(parsed.right.replaceAll("_final", "")) &&
                 d.getTableAlias().equals(alias)) {
                 return d.getDeltaNum();
             }
@@ -311,13 +327,17 @@ public class QueryRewriter {
         String sourceQuery = query.toString();
 
         for (int i = 0; i < union.operands.length; i++) {
+            // Because we mutates original deltas to physical table names
+            List<DeltaInformation> localDeltas = deltas.stream().map(DeltaInformation::copy).collect(Collectors.toList());
+
             SqlSelect unionPart = (SqlSelect) union.operands[i];
             SqlNode part = parseInternalRepresentation(sourceQuery);
             boolean firstUnionPart = i == 0;
             List<String> physicalNames = new ArrayList<>();
-            setPhysicalNames(part, deltas, firstUnionPart, new LevelCounter(), physicalNames);
+            setPhysicalNames(part, localDeltas, firstUnionPart, new LevelCounter(), physicalNames);
+            SqlNode withDeltaFilters = addDeltaFilters(part, localDeltas);
 
-            unionPart.setFrom(part);
+            unionPart.setFrom(withDeltaFilters);
             unionPart.setWhere(addSubqueryFilters(physicalNames, firstUnionPart));
         }
         return union;
@@ -394,6 +414,14 @@ public class QueryRewriter {
     // FIXME Use SqlSnapshot -> SqlIdentifier instead of regexp
     private String removeSnapshots(String query) {
         return query.replaceAll(SNAPSHOT_PATTERN, "");
+    }
+
+    private String replaceAnsiToSpecific(String query) {
+        // Remove asymmetric from between
+        // Change fetch 1 next to limit 1
+        return query
+                .replaceAll("ASYMMETRIC", "")
+                .replaceAll("FETCH NEXT 1 ROWS ONLY", "LIMIT 1");
     }
 
     // mutable counter for recursion calls

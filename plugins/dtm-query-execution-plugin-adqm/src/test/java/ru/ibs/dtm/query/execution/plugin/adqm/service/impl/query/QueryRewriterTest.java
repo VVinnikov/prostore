@@ -49,8 +49,8 @@ class QueryRewriterTest {
         String query = "select *, " +
                 "       CASE " +
                 "         WHEN (account_type = 'D' AND amount >= 0) " +
-                "              OR (account_type = 'C' AND  amount <= 0) THEN \"OK\" " +
-                "       ELSE \"NOT OK\" " +
+                "              OR (account_type = 'C' AND  amount <= 0) THEN 'OK' " +
+                "       ELSE 'NOT OK' " +
                 "       END " +
                 " from (\n" +
                 "    select a.account_id, coalesce(sum(amount),0) amount, a.account_type\n" +
@@ -58,7 +58,7 @@ class QueryRewriterTest {
                 "    join balances b on b.account_id = a.account_id\n" +
                 "    left join shares.transactions FOR SYSTEM_TIME AS OF '2020-06-10 23:59:59'" +
                 "       using(account_id)\n" +
-                "    group by a.account_id. a.account_type\n" +
+                "    group by a.account_id, a.account_type\n" +
                 ") x";
 
         rewriter.rewrite(query, mockDeltas(), ar -> {

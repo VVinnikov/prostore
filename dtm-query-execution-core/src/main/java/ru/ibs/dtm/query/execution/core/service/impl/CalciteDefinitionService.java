@@ -1,5 +1,6 @@
 package ru.ibs.dtm.query.execution.core.service.impl;
 
+import lombok.SneakyThrows;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,8 +18,9 @@ public class CalciteDefinitionService implements DefinitionService<SqlNode> {
     this.config = config;
   }
 
+  @SneakyThrows
   @Override
-  public SqlNode processingQuery(String sql) throws Exception {
+  public SqlNode processingQuery(String sql) {
     SqlParser parser = SqlParser.create(sql, config);
     return parser.parseQuery();
   }

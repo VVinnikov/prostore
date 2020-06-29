@@ -430,6 +430,7 @@
                                         |download_external_table_attribute
                                         |download_query
                                         |delta_data
+                                        |views_registry
                                     </includes>
                                     <inputSchema>${datasource.service.options.database}</inputSchema>
                                     <!--outputSchema>dtmservice</outputSchema-->

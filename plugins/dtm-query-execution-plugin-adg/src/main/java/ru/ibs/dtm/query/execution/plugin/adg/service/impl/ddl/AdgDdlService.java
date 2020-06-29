@@ -17,7 +17,8 @@ import ru.ibs.dtm.query.execution.plugin.adg.service.QueryExecutorService;
 import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeProvider;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
-import ru.ibs.dtm.query.execution.plugin.api.service.DdlService;
+import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
+import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
 
 import java.util.Arrays;
 import java.util.List;
@@ -99,5 +100,10 @@ public class AdgDdlService implements DdlService<Void> {
 	private String getSubject(ClassTable classTable) {
 		return String.format(kafkaProperties.getAdmin().getAdgUploadRq(), classTable.getName(), classTable.getSchema())
 				.replace(".", "-");
+	}
+
+	@Override
+	public void addExecutor(DdlExecutor<Void> executor) {
+		// TODO implemented
 	}
 }

@@ -14,6 +14,13 @@ databaseChangeLog:
             path: 0002.sql
             relativeToChangelogFile:  true
   - changeSet:
+      id:  20200618_000000
+      author: 'Ivan Lapa'
+      changes:
+        - sqlFile:
+            path: 0003.sql
+            relativeToChangelogFile:  true
+  - changeSet:
       id:  20200623_150000
       author: 'Dmitry Voronkov'
       changes:

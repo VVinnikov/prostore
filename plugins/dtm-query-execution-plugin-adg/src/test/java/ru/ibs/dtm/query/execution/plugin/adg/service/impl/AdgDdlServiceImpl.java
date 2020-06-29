@@ -9,7 +9,10 @@ import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.configuration.KafkaProperties;
 import ru.ibs.dtm.query.execution.plugin.adg.configuration.kafka.KafkaAdminProperty;
-import ru.ibs.dtm.query.execution.plugin.adg.service.*;
+import ru.ibs.dtm.query.execution.plugin.adg.service.AvroSchemaGenerator;
+import ru.ibs.dtm.query.execution.plugin.adg.service.KafkaTopicService;
+import ru.ibs.dtm.query.execution.plugin.adg.service.QueryExecutorService;
+import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeProvider;
 import ru.ibs.dtm.query.execution.plugin.adg.service.impl.ddl.AdgDdlService;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
@@ -30,11 +33,10 @@ public class AdgDdlServiceImpl {
 	private KafkaTopicService kafkaTopicService = mock(KafkaTopicService.class);
 	private KafkaProperties kafkaProperties = mock(KafkaProperties.class);
 	private AvroSchemaGenerator schemaGenerator = mock(AvroSchemaGenerator.class);
-	private SchemaRegistryClient registryClient = mock(SchemaRegistryClient.class);
 	private final QueryExecutorService executorService = mock(QueryExecutorService.class);
 
 	private AdgDdlService adgDdlService = new AdgDdlService(cartridgeProvider, kafkaTopicService, kafkaProperties,
-			schemaGenerator, registryClient, executorService);
+			schemaGenerator, executorService);
 
 	@Test
 	void testExecuteNotEmptyOk() {
@@ -55,12 +57,6 @@ public class AdgDdlServiceImpl {
 			handler.handle(Future.succeededFuture());
 			return null;
 		}).when(kafkaTopicService).delete(any(), any());
-
-		doAnswer(invocation -> {
-			Handler<AsyncResult<Object>> handler = invocation.getArgument(0);
-			handler.handle(Future.succeededFuture());
-			return null;
-		}).when(registryClient).unregister(any(), any());
 
 		QueryRequest queryRequest = new QueryRequest();
 		queryRequest.setRequestId(UUID.randomUUID());

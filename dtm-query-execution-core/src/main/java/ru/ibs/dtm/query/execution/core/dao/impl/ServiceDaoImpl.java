@@ -583,7 +583,7 @@ public class ServiceDaoImpl implements ServiceDao {
 
 	@Override
 	public void getDeltaHotByDatamart(String datamartMnemonic, Handler<AsyncResult<DeltaRecord>> resultHandler) {
-		executor.query(dsl -> dsl.select(max(DELTA_DATA.LOAD_ID),
+		executor.query(dsl -> dsl.select(DELTA_DATA.LOAD_ID,
 				DELTA_DATA.DATAMART_MNEMONICS,
 				DELTA_DATA.SYS_DATE,
 				DELTA_DATA.STATUS_DATE,
@@ -592,7 +592,7 @@ public class ServiceDaoImpl implements ServiceDao {
 				DELTA_DATA.STATUS)
 				.from(DELTA_DATA)
 				.where(DELTA_DATA.DATAMART_MNEMONICS.eq(datamartMnemonic))
-				.groupBy(DELTA_DATA.LOAD_ID))
+				.and(DELTA_DATA.LOAD_ID.in(dsl.select(max(DELTA_DATA.LOAD_ID)).from(DELTA_DATA).where(DELTA_DATA.DATAMART_MNEMONICS.eq(datamartMnemonic)))))
 				.setHandler(ar -> {
 					initQueryDeltaResult(datamartMnemonic, resultHandler, ar);
 				});

@@ -90,7 +90,7 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
                             } else {
                                 handler.handle(Future.failedFuture(ar.cause()));
                             }
-						}));
+						});
             } else {
                 handler.handle(Future.failedFuture(schemaHandler.cause()));
             }

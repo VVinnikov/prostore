@@ -586,6 +586,7 @@ public class ServiceDaoImpl implements ServiceDao {
                 log.debug("Получение {} дельт, запрос выполнен", actualDeltaRequests.size());
                 final List<Long> result = ar.result().stream()
                         .map(queryResult -> queryResult.get(0, Long.class))
+                        .map(delta -> (delta == null) ? Long.valueOf(-1L) : delta)
                         .collect(Collectors.toList());
                 log.debug("Получение {} дельт, результат: {}", actualDeltaRequests.size(), result);
                 resultHandler.handle(Future.succeededFuture(result));

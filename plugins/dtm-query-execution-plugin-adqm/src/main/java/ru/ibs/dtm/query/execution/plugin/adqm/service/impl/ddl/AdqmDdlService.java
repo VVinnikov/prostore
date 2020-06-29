@@ -16,7 +16,8 @@ import ru.ibs.dtm.query.execution.plugin.adqm.factory.MetadataFactory;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.KafkaTopicCreatorService;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import ru.ibs.dtm.query.execution.plugin.api.service.DdlService;
+import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
+import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
 
 import java.util.Arrays;
 import java.util.List;
@@ -119,5 +120,10 @@ public class AdqmDdlService implements DdlService<Void> {
         String adqmUploadRs = String.format(properties.getAdqmUploadRs(), table.getName(), table.getSchema());
         String adqmUploadErr = String.format(properties.getAdqmUploadErr(), table.getName(), table.getSchema());
         return Arrays.asList(adqmUploadRq, adqmUploadRs, adqmUploadErr);
+    }
+
+    @Override
+    public void addExecutor(DdlExecutor<Void> executor) {
+
     }
 }

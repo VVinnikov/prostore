@@ -16,17 +16,17 @@ import java.util.regex.Pattern;
 @Component
 public class HintExtractor {
     private final Pattern HINT_PATTERN = Pattern.compile(
-            "(.*)[\\s]+DATASOURCE_TYPE[\\s]*=[\\s]*'([^\\s]+)'",
+            "((.|\\n)*)(DATASOURCE_TYPE[\\s]*=[\\s]*')([^\\s]+)('[\\s]*$)",
             Pattern.CASE_INSENSITIVE);
 
     public QuerySourceRequest extractHint(QueryRequest request) {
         QuerySourceRequest sourceRequest = new QuerySourceRequest();
         Matcher matcher = HINT_PATTERN.matcher(request.getSql());
         if (matcher.find()) {
-            String newSql = matcher.group(1);
-            String dataSource = matcher.group(2);
+            String strippedSql = matcher.group(1);
+            String dataSource = matcher.group(4);
             QueryRequest newQueryRequest = request.copy();
-            newQueryRequest.setSql(newSql);
+            newQueryRequest.setSql(strippedSql);
             sourceRequest.setSourceType(SourceType.valueOf(dataSource));
             sourceRequest.setQueryRequest(newQueryRequest);
         } else {

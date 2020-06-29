@@ -3,7 +3,7 @@ package ru.ibs.dtm.query.execution.plugin.adqm;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.query.execution.plugin.api.AbstractDtmDataSourcePlugin;
-import ru.ibs.dtm.query.execution.plugin.api.service.DdlService;
+import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
 import ru.ibs.dtm.query.execution.plugin.api.service.LlrService;
 import ru.ibs.dtm.query.execution.plugin.api.service.MpprKafkaService;
 import ru.ibs.dtm.query.execution.plugin.api.service.QueryCostService;

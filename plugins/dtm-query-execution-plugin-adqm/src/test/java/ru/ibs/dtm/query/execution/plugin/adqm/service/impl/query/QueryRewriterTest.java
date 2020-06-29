@@ -39,7 +39,7 @@ class QueryRewriterTest {
                 new CalciteSchemaFactory(new SchemaFactoryImpl()));
 
         queryEnrichmentProperties.setDefaultDatamart("test_datamart");
-        queryEnrichmentProperties.setEnvironment("dev");
+        queryEnrichmentProperties.setName("dev");
     }
 
     @Test

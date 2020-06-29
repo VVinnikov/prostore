@@ -2,7 +2,7 @@ package ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties("enrichment")
+@ConfigurationProperties("env")
 public class QueryEnrichmentProperties {
     private String defaultDatamart;
     private String environment;
@@ -19,7 +19,7 @@ public class QueryEnrichmentProperties {
         return environment;
     }
 
-    public void setEnvironment(String environment) {
-        this.environment = environment;
+    public void setName(String name) {
+        this.environment = name;
     }
 }

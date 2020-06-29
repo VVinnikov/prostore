@@ -65,7 +65,7 @@ public class AdqmQueryEnrichmentServiceImpl implements QueryEnrichmentService {
                               Handler<AsyncResult<List<DeltaInformation>>> handler) {
 
         List<ActualDeltaRequest> requests = deltas.stream()
-                .map(d -> new ActualDeltaRequest(d.getTableName(), d.getDeltaTimestamp()))
+                .map(d -> new ActualDeltaRequest(d.getSchemaName(), d.getDeltaTimestamp()))
                 .collect(Collectors.toList());
 
         deltaService.getDeltasOnDateTimes(requests, ar -> {

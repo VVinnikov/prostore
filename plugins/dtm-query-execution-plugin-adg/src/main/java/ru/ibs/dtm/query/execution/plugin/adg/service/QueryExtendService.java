@@ -2,6 +2,8 @@ package ru.ibs.dtm.query.execution.plugin.adg.service;
 
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.tools.RelBuilder;
+import ru.ibs.dtm.common.reader.QueryRequest;
+import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 
 /**
  * Интерфейс сервиса для обогащения запроса
@@ -14,7 +16,7 @@ public interface QueryExtendService {
    * @param queryTree исходное дерево объектов
    * @return модифицированное дерево запроса
    */
-  RelNode extendQuery(RelNode queryTree);
+  RelNode extendQuery(QueryRequest queryRequest, RelNode queryTree);
 
   /**
    * Инициализация билдера дерева

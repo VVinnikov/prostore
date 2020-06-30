@@ -45,9 +45,10 @@ public class AdgLlrService implements LlrService<QueryResult> {
 							queryResultItem.getDataSet().forEach(row -> {
 								JsonObject jsonObject = new JsonObject();
 								for (int i = 0; i < row.size(); i++) {
+									Object value = row.get(i);
 									jsonObject.put(
 											queryResultItem.getMetadata().get(i).getName(),
-											row.get(i));
+											(value == null) ? "" : value);
 								}
 								rowList.add(jsonObject);
 							});

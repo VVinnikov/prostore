@@ -67,7 +67,7 @@ public class TargetDatabaseDefinitionServiceImplTest {
                                         }
                                     }
                             )
-                    ), new HintExtractor());
+                    ));
 
     @Test
     void getTargetSourceOk() {
@@ -75,30 +75,30 @@ public class TargetDatabaseDefinitionServiceImplTest {
         QueryRequest request = new QueryRequest();
         request.setSql("select * from dual");
 
-    targetDatabaseDefinitionService.getTargetSource(new QuerySourceRequest(request, SourceType.ADB), handler -> {
-      if (handler.succeeded()) {
-        promise.complete(handler.result().getSourceType());
-      } else {
-        promise.fail(handler.cause());
-      }
-    });
+        targetDatabaseDefinitionService.getTargetSource(new QuerySourceRequest(request, SourceType.ADB), handler -> {
+            if (handler.succeeded()) {
+                promise.complete(handler.result().getSourceType());
+            } else {
+                promise.fail(handler.cause());
+            }
+        });
 
         assertEquals(SourceType.ADB, promise.future().result());
     }
 
-  @Test
-  void getTargetSourceWhenHintExist() {
-    Promise promise = Promise.promise();
-    QueryRequest request = new QueryRequest();
-    request.setSql("select * from dual");
+    @Test
+    void getTargetSourceWhenHintExist() {
+        Promise promise = Promise.promise();
+        QueryRequest request = new QueryRequest();
+        request.setSql("select * from dual");
 
-    targetDatabaseDefinitionService.getTargetSource(new QuerySourceRequest(request, SourceType.ADG), handler -> {
-      if (handler.succeeded()) {
-        promise.complete(handler.result().getSourceType());
-      } else {
-        promise.fail(handler.cause());
-      }
-    });
+        targetDatabaseDefinitionService.getTargetSource(new QuerySourceRequest(request, SourceType.ADG), handler -> {
+            if (handler.succeeded()) {
+                promise.complete(handler.result().getSourceType());
+            } else {
+                promise.fail(handler.cause());
+            }
+        });
 
         assertEquals(SourceType.ADG, promise.future().result());
     }
@@ -108,20 +108,20 @@ public class TargetDatabaseDefinitionServiceImplTest {
         QueryRequest request = new QueryRequest();
         request.setSql("select * from information_schema.schemata");
 
-    targetDatabaseDefinitionService.getTargetSource(new QuerySourceRequest(request, null), handler -> {
-      assertTrue(handler.succeeded());
-      assertEquals(SourceType.INFORMATION_SCHEMA, handler.result().getSourceType());
-    });
-  }
+        targetDatabaseDefinitionService.getTargetSource(new QuerySourceRequest(request, null), handler -> {
+            assertTrue(handler.succeeded());
+            assertEquals(SourceType.INFORMATION_SCHEMA, handler.result().getSourceType());
+        });
+    }
 
     @Test
     void getTargetSourceInformationSchemaWithQuotes() {
         QueryRequest request = new QueryRequest();
         request.setSql("select * from \"information_schema\".\"schemata\"");
 
-    targetDatabaseDefinitionService.getTargetSource(new QuerySourceRequest(request, null), handler -> {
-      assertTrue(handler.succeeded());
-      assertEquals(SourceType.INFORMATION_SCHEMA, handler.result().getSourceType());
-    });
-  }
+        targetDatabaseDefinitionService.getTargetSource(new QuerySourceRequest(request, null), handler -> {
+            assertTrue(handler.succeeded());
+            assertEquals(SourceType.INFORMATION_SCHEMA, handler.result().getSourceType());
+        });
+    }
 }

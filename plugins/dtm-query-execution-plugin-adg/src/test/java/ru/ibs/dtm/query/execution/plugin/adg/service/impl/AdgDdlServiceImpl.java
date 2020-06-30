@@ -11,7 +11,10 @@ import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.SourceType;
-import ru.ibs.dtm.query.execution.plugin.adg.service.*;
+import ru.ibs.dtm.query.execution.plugin.adg.service.AvroSchemaGenerator;
+import ru.ibs.dtm.query.execution.plugin.adg.service.KafkaTopicService;
+import ru.ibs.dtm.query.execution.plugin.adg.service.QueryExecutorService;
+import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeProvider;
 import ru.ibs.dtm.query.execution.plugin.adg.service.impl.ddl.AdgDdlService;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
@@ -30,11 +33,10 @@ public class AdgDdlServiceImpl {
     private KafkaTopicService kafkaTopicService = mock(KafkaTopicService.class);
     private KafkaConfig kafkaProperties = mock(KafkaConfig.class);
     private AvroSchemaGenerator schemaGenerator = mock(AvroSchemaGenerator.class);
-    private SchemaRegistryClient registryClient = mock(SchemaRegistryClient.class);
     private final QueryExecutorService executorService = mock(QueryExecutorService.class);
 
     private AdgDdlService adgDdlService = new AdgDdlService(cartridgeProvider, kafkaTopicService, kafkaProperties,
-            schemaGenerator, registryClient, executorService);
+            schemaGenerator, executorService);
 
     @Test
     void testExecuteNotEmptyOk() {
@@ -53,11 +55,11 @@ public class AdgDdlServiceImpl {
         kafkaAdminProperty.setUpload(kafkaUploadProperty);
         when(kafkaProperties.getKafkaAdminProperty()).thenReturn(kafkaAdminProperty);
 
-		doAnswer(invocation -> {
-			Handler<AsyncResult<Object>> handler = invocation.getArgument(0);
-			handler.handle(Future.succeededFuture());
-			return null;
-		}).when(executorService).executeProcedure(eq(DROP_SPACE), eq("test_table"));
+        doAnswer(invocation -> {
+            Handler<AsyncResult<Object>> handler = invocation.getArgument(0);
+            handler.handle(Future.succeededFuture());
+            return null;
+        }).when(executorService).executeProcedure(eq(DROP_SPACE), eq("test_table"));
 
         doAnswer(invocation -> {
             Handler<AsyncResult<Object>> handler = invocation.getArgument(0);
@@ -65,10 +67,10 @@ public class AdgDdlServiceImpl {
             return null;
         }).when(kafkaTopicService).delete(any(), any());
 
-		QueryRequest queryRequest = new QueryRequest();
-		queryRequest.setRequestId(UUID.randomUUID());
-		queryRequest.setSql("drop table test_table");
-		queryRequest.setDatamartMnemonic("test_schema");
+        QueryRequest queryRequest = new QueryRequest();
+        queryRequest.setRequestId(UUID.randomUUID());
+        queryRequest.setSql("drop table test_table");
+        queryRequest.setDatamartMnemonic("test_schema");
 
         List<ClassField> fields = Collections.singletonList(new ClassField("test_field", "varchar(1)", false, false, ""));
         ClassTable classTable = new ClassTable("test_schema.test_table", fields);

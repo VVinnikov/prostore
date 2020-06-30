@@ -7,6 +7,7 @@ import ru.ibs.dtm.common.plugin.status.StatusQueryResult;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.plugin.adg.AdgDataSourcePlugin;
 import ru.ibs.dtm.query.execution.plugin.api.service.*;
+import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
 
 @Configuration
 public class AdgPluginConfig {
@@ -18,7 +19,7 @@ public class AdgPluginConfig {
             @Qualifier("adgMpprKafkaService") MpprKafkaService<QueryResult> mpprKafkaService,
             @Qualifier("adgMppwKafkaService") MppwKafkaService<QueryResult> mppwKafkaService,
             @Qualifier("adgQueryCostService") QueryCostService<Integer> queryCostService,
-            @Qualifier("adgKafkaStatusService") StatusService<StatusQueryResult> statusService) {
+            @Qualifier("adgStatusService") StatusService<StatusQueryResult> statusService) {
         return new AdgDataSourcePlugin(ddlService, llrService, mpprKafkaService, mppwKafkaService, queryCostService, statusService);
     }
 }

@@ -2,7 +2,7 @@ package ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties("datasource.adqm")
+@ConfigurationProperties("datasource.adqm.options")
 public class ClickhouseProperties {
     private String database;
     private String hosts;

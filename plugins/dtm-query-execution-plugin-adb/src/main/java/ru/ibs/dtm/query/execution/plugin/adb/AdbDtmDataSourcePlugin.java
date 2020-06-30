@@ -5,6 +5,7 @@ import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.query.execution.plugin.api.AbstractDtmDataSourcePlugin;
 import ru.ibs.dtm.query.execution.plugin.api.service.*;
+import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
 
 public class AdbDtmDataSourcePlugin extends AbstractDtmDataSourcePlugin {
 

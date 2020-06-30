@@ -108,12 +108,12 @@
         </plugins>
     </build>
 
-    <repositories>
+    <!--<repositories>
         <repository>
             <id>maven-public</id>
             <url>https://rt.adsw.io/artifactory/data-mart</url>
         </repository>
-    </repositories>
+    </repositories>-->
 
     <distributionManagement>
         <repository>

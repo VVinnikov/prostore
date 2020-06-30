@@ -111,7 +111,7 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
         } else {
             sb.append(" ");
         }
-        if (! field.getNull()) {
+        if (! field.getIsNull()) {
             sb.append("NOT NULL");
         }
         return sb.toString();

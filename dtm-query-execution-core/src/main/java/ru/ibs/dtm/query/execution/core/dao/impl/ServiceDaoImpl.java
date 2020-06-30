@@ -12,13 +12,10 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.NotNull;
 import org.jooq.DSLContext;
 import org.jooq.Record1;
 import org.jooq.Select;
 import org.jooq.SelectConditionStep;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
@@ -31,9 +28,15 @@ import ru.ibs.dtm.common.plugin.exload.Type;
 import ru.ibs.dtm.query.execution.core.calcite.ddl.DistributedOperator;
 import ru.ibs.dtm.query.execution.core.calcite.ddl.SqlCreateTable;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
-import ru.ibs.dtm.query.execution.core.dto.*;
+import ru.ibs.dtm.query.execution.core.dto.DatamartView;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.dto.eddl.CreateDownloadExternalTableQuery;
+import ru.ibs.dtm.query.execution.core.dto.eddl.CreateUploadExternalTableQuery;
+import ru.ibs.dtm.query.execution.core.dto.eddl.DropUploadExternalTableQuery;
+import ru.ibs.dtm.query.execution.core.dto.edml.*;
+import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
+import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartInfo;
+import ru.ibs.dtm.query.execution.core.dto.metadata.EntityAttribute;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 
 import java.time.LocalDateTime;
@@ -42,7 +45,6 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
@@ -149,8 +151,8 @@ public class ServiceDaoImpl implements ServiceDao {
                 .and(ENTITIES_REGISTRY.ENTITY_MNEMONICS.equalIgnoreCase(name))
         ).setHandler(ar -> {
             if (ar.succeeded()) {
-				resultHandler.handle(ar.result().hasResults()
-						? Future.succeededFuture(ar.result().get(ENTITIES_REGISTRY.ENTITY_ID))
+                resultHandler.handle(ar.result().hasResults()
+                        ? Future.succeededFuture(ar.result().get(ENTITIES_REGISTRY.ENTITY_ID))
                         : Future.failedFuture(String.format("Таблица не найдена: [%s]", name)));
             } else {
                 resultHandler.handle(Future.failedFuture(ar.cause()));
@@ -328,7 +330,7 @@ public class ServiceDaoImpl implements ServiceDao {
     @Override
     public void getMetadataByTableName(DdlRequestContext context, String tableName, Handler<AsyncResult<List<ClassField>>> resultHandler) {
         int indexComma = tableName.indexOf(".");
-        String schema = indexComma != - 1 ? tableName.substring(0, indexComma) : "test";
+        String schema = indexComma != -1 ? tableName.substring(0, indexComma) : "test";
         String table = tableName.substring(indexComma + 1);
         executor.query(dsl -> dsl.select(COLUMNS.COLUMN_NAME, COLUMNS.COLUMN_TYPE,
                 COLUMNS.IS_NULLABLE, COLUMNS.COLUMN_DEFAULT, KEY_COLUMN_USAGE.ORDINAL_POSITION, KEY_COLUMN_USAGE.CONSTRAINT_NAME)
@@ -371,8 +373,8 @@ public class ServiceDaoImpl implements ServiceDao {
                     .filter(f -> f instanceof SqlIdentifier)
                     .map(i -> ((SqlIdentifier) i).names.indexOf(field))
                     .findFirst()
-                    .orElse(- 1);
-            return (ind == - 1) ? null : ind + 1;
+                    .orElse(-1);
+            return (ind == -1) ? null : ind + 1;
         }
         return null;
     }
@@ -605,22 +607,22 @@ public class ServiceDaoImpl implements ServiceDao {
         });
     }
 
-	@Override
-	public void getDeltaHotByDatamart(String datamartMnemonic, Handler<AsyncResult<DeltaRecord>> resultHandler) {
-		executor.query(dsl -> dsl.select(DELTA_DATA.LOAD_ID,
-				DELTA_DATA.DATAMART_MNEMONICS,
-				DELTA_DATA.SYS_DATE,
-				DELTA_DATA.STATUS_DATE,
-				DELTA_DATA.SIN_ID,
-				DELTA_DATA.LOAD_PROC_ID,
-				DELTA_DATA.STATUS)
-				.from(DELTA_DATA)
-				.where(DELTA_DATA.DATAMART_MNEMONICS.eq(datamartMnemonic))
-				.and(DELTA_DATA.LOAD_ID.in(dsl.select(max(DELTA_DATA.LOAD_ID)).from(DELTA_DATA).where(DELTA_DATA.DATAMART_MNEMONICS.eq(datamartMnemonic)))))
-				.setHandler(ar -> {
-					initQueryDeltaResult(datamartMnemonic, resultHandler, ar);
-				});
-	}
+    @Override
+    public void getDeltaHotByDatamart(String datamartMnemonic, Handler<AsyncResult<DeltaRecord>> resultHandler) {
+        executor.query(dsl -> dsl.select(DELTA_DATA.LOAD_ID,
+                DELTA_DATA.DATAMART_MNEMONICS,
+                DELTA_DATA.SYS_DATE,
+                DELTA_DATA.STATUS_DATE,
+                DELTA_DATA.SIN_ID,
+                DELTA_DATA.LOAD_PROC_ID,
+                DELTA_DATA.STATUS)
+                .from(DELTA_DATA)
+                .where(DELTA_DATA.DATAMART_MNEMONICS.eq(datamartMnemonic))
+                .and(DELTA_DATA.LOAD_ID.in(dsl.select(max(DELTA_DATA.LOAD_ID)).from(DELTA_DATA).where(DELTA_DATA.DATAMART_MNEMONICS.eq(datamartMnemonic)))))
+                .setHandler(ar -> {
+                    initQueryDeltaResult(datamartMnemonic, resultHandler, ar);
+                });
+    }
 
     private Select<Record1<Long>> getUnionOfDeltaByDatamartAndDateSelects(DSLContext dsl, List<ActualDeltaRequest> actualDeltaRequests) {
         return actualDeltaRequests.stream()
@@ -629,16 +631,16 @@ public class ServiceDaoImpl implements ServiceDao {
                 .get();
     }
 
-	private Select<Record1<Long>> getDeltaByDatamartAndDateSelect(DSLContext dsl, ActualDeltaRequest actualDeltaRequest) {
-		SelectConditionStep<Record1<Long>> query = dsl.select(max(DELTA_DATA.SIN_ID))
-				.from(DELTA_DATA)
-				.where(DELTA_DATA.DATAMART_MNEMONICS.equalIgnoreCase(actualDeltaRequest.getDatamart()))
-				.and(DELTA_DATA.STATUS.eq(1));
-		if (actualDeltaRequest.getDateTime() != null) {
-			return query.and(DELTA_DATA.SYS_DATE.le(LocalDateTime.from(LOCAL_DATE_TIME.parse(actualDeltaRequest.getDateTime()))));
-		}
-		return query;
-	}
+    private Select<Record1<Long>> getDeltaByDatamartAndDateSelect(DSLContext dsl, ActualDeltaRequest actualDeltaRequest) {
+        SelectConditionStep<Record1<Long>> query = dsl.select(max(DELTA_DATA.SIN_ID))
+                .from(DELTA_DATA)
+                .where(DELTA_DATA.DATAMART_MNEMONICS.equalIgnoreCase(actualDeltaRequest.getDatamart()))
+                .and(DELTA_DATA.STATUS.eq(1));
+        if (actualDeltaRequest.getDateTime() != null) {
+            return query.and(DELTA_DATA.SYS_DATE.le(LocalDateTime.from(LOCAL_DATE_TIME.parse(actualDeltaRequest.getDateTime()))));
+        }
+        return query;
+    }
 
     @Override
     public void getDeltaActualBySinIdAndDatamart(String datamartMnemonic, Long sinId, Handler<AsyncResult<DeltaRecord>> resultHandler) {

@@ -10,6 +10,7 @@ import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.service.*;
+import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
 import ru.ibs.dtm.query.execution.plugin.api.status.StatusRequestContext;
 
 public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin {

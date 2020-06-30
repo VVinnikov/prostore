@@ -139,7 +139,7 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
 
 	private static List<SpaceIndexPart> getPrimaryKeyParts(List<ClassField> fields) {
 		return ClassFieldUtils.getPrimaryKeyList(fields).stream()
-				.map(f -> new SpaceIndexPart(f.getName(), SpaceAttributeTypeUtil.toAttributeType(f.getType()).getName(), f.isNullable()))
+				.map(f -> new SpaceIndexPart(f.getName(), SpaceAttributeTypeUtil.toAttributeType(f.getType()).getName(), f.getIsNull()))
 				.collect(Collectors.toList());
 	}
 

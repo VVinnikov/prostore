@@ -1,29 +1,32 @@
--- changeset VArkhipov:alter_download_query
+-- changeset VArkhipov:create_upload_external_table
 -- preconditions onFail:MARK_RAN
--- precondition-sql-check expectedResult:1 select count(*) from information_schema.COLUMNS where table_name = 'download_query' and table_schema = database() and column_name = 'det_id';
-alter table download_query change det_id datamart_id bigint not null;
--- rollback alter table download_query change det_id datamart_id bigint not null;
+-- precondition-sql-check expectedResult:0 select count(*) from information_schema.tables where table_name = 'upload_external_table' and table_schema = database();
+create table upload_external_table (
+  id bigint not null auto_increment primary key,
+  datamart_id bigint not null,
+  table_name varchar(100) not null,
+  type_id integer not null,
+  location_path varchar(1024) not null,
+  format_id integer not null,
+  table_schema text not null,
+  message_limit integer,
+  constraint upload_external_table_schema foreign key(datamart_id) references datamarts_registry(datamart_id) on delete cascade,
+  constraint upload_external_table_type foreign key(type_id) references download_external_type(id),
+  constraint upload_external_table_format foreign key(format_id) references download_external_format(id),
+  constraint upload_external_table_ak1 unique(datamart_id, table_name)
+);
+-- rollback drop table upload_external_table;
 
--- changeset VArkhipov:add_table_name_ext_to_download_query
+-- changeset VArkhipov:create_upload_query
 -- preconditions onFail:MARK_RAN
--- precondition-sql-check expectedResult:0 select count(*) from information_schema.COLUMNS where table_name = 'download_query' and table_schema = database() and column_name = 'table_name_ext';
-alter table download_query add table_name_ext varchar(100) not null;
--- rollback alter table download_query add table_name_ext varchar(100) not null;
-
--- changeset VArkhipov:add_status_to_download_query
--- preconditions onFail:MARK_RAN
--- precondition-sql-check expectedResult:0 select count(*) from information_schema.COLUMNS where table_name = 'download_query' and table_schema = database() and column_name = 'status';
-alter table download_query add status integer not null;
--- rollback alter table download_query add status integer not null;
-
--- changeset VArkhipov:delete_constraint_download_query
--- preconditions onFail:MARK_RAN
--- precondition-sql-check expectedResult:1 select count(*) from information_schema.TABLE_CONSTRAINTS where TABLE_NAME = 'download_query' and table_schema = database() and CONSTRAINT_NAME = 'download_query_det';
-alter table download_query drop foreign key download_query_det;
--- rollback alter table download_query drop foreign key download_query_det;
-
--- changeset VArkhipov:add_datamart_constraint_download_query
--- preconditions onFail:MARK_RAN
--- precondition-sql-check expectedResult:0 select count(*) from information_schema.TABLE_CONSTRAINTS where TABLE_NAME = 'download_query' and table_schema = database() and CONSTRAINT_NAME = 'download_query_datamart';
-alter table download_query add constraint download_query_datamart foreign key (datamart_id) references datamarts_registry (datamart_id) on delete cascade;
--- rollback alter table download_query add constraint download_query_datamart foreign key (datamart_id) references datamarts_registry (datamart_id) on delete cascade;
+-- precondition-sql-check expectedResult:0 select count(*) from information_schema.tables where table_name = 'upload_query' and table_schema = database();
+create table upload_query (
+  id char(36) not null primary key,
+  datamart_id bigint not null,
+  table_name_ext varchar(100) not null,
+  table_name_dst varchar(100) not null,
+  sql_query text not null,
+  status integer not null,
+  constraint upload_query_datamart foreign key(datamart_id) references upload_external_table(datamart_id)
+);
+-- rollback drop table upload_query;

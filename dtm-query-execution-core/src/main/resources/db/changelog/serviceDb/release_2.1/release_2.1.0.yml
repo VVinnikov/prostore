@@ -18,12 +18,12 @@ databaseChangeLog:
       author: 'Viktor Arkhipov'
       changes:
         - sqlFile:
-            path: 0003.sql
+            path: 0004.sql
             relativeToChangelogFile:  true
   - changeSet:
       id:  20200625_110000
       author: 'Viktor Arkhipov'
       changes:
         - sqlFile:
-            path: 0004.sql
+            path: 0005.sql
             relativeToChangelogFile:  true

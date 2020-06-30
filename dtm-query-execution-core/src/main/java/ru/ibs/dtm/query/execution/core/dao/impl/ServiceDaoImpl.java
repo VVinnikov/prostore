@@ -10,10 +10,15 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.sql.ResultSet;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.calcite.sql.SqlIdentifier;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.NotNull;
 import org.jooq.DSLContext;
 import org.jooq.Record1;
 import org.jooq.Select;
+import org.jooq.SelectConditionStep;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
@@ -23,15 +28,13 @@ import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.plugin.exload.Format;
 import ru.ibs.dtm.common.plugin.exload.Type;
+import ru.ibs.dtm.query.execution.core.calcite.ddl.DistributedOperator;
+import ru.ibs.dtm.query.execution.core.calcite.ddl.SqlCreateTable;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
+import ru.ibs.dtm.query.execution.core.dto.*;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.dto.eddl.CreateDownloadExternalTableQuery;
-import ru.ibs.dtm.query.execution.core.dto.eddl.CreateUploadExternalTableQuery;
-import ru.ibs.dtm.query.execution.core.dto.eddl.DropUploadExternalTableQuery;
-import ru.ibs.dtm.query.execution.core.dto.edml.*;
-import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
-import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartInfo;
-import ru.ibs.dtm.query.execution.core.dto.metadata.EntityAttribute;
+import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -39,17 +42,18 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 import static java.time.temporal.ChronoField.*;
 import static org.jooq.generated.dtmservice.Tables.*;
 import static org.jooq.generated.information_schema.Tables.COLUMNS;
-import static org.jooq.generated.information_schema.Tables.TABLES;
+import static org.jooq.generated.information_schema.Tables.KEY_COLUMN_USAGE;
 import static org.jooq.impl.DSL.max;
 
-@Repository
 @Slf4j
+@Repository
 public class ServiceDaoImpl implements ServiceDao {
 
     private static final String SCHEMA_TABLE_COLUMN_NAME = "COLUMN_NAME";
@@ -145,8 +149,8 @@ public class ServiceDaoImpl implements ServiceDao {
                 .and(ENTITIES_REGISTRY.ENTITY_MNEMONICS.equalIgnoreCase(name))
         ).setHandler(ar -> {
             if (ar.succeeded()) {
-                resultHandler.handle(ar.result().hasResults()
-                        ? Future.succeededFuture(ar.result().get(ENTITIES_REGISTRY.ENTITY_ID))
+				resultHandler.handle(ar.result().hasResults()
+						? Future.succeededFuture(ar.result().get(ENTITIES_REGISTRY.ENTITY_ID))
                         : Future.failedFuture(String.format("Таблица не найдена: [%s]", name)));
             } else {
                 resultHandler.handle(Future.failedFuture(ar.cause()));
@@ -155,14 +159,15 @@ public class ServiceDaoImpl implements ServiceDao {
     }
 
     @Override
-    public void dropEntity(Long datamartId, String name, Handler<AsyncResult<Void>> resultHandler) {
-        executor.execute(dsl -> dsl
-                .deleteFrom(ENTITIES_REGISTRY)
+    public void existsEntity(Long datamartId, String name, Handler<AsyncResult<Boolean>> resultHandler) {
+        executor.query(dsl -> dsl
+                .select(ENTITIES_REGISTRY.ENTITY_ID)
+                .from(ENTITIES_REGISTRY)
                 .where(ENTITIES_REGISTRY.DATAMART_ID.eq(datamartId))
                 .and(ENTITIES_REGISTRY.ENTITY_MNEMONICS.equalIgnoreCase(name))
         ).setHandler(ar -> {
             if (ar.succeeded()) {
-                resultHandler.handle(Future.succeededFuture());
+                resultHandler.handle(Future.succeededFuture(ar.result().hasResults()));
             } else {
                 resultHandler.handle(Future.failedFuture(ar.cause()));
             }
@@ -170,13 +175,23 @@ public class ServiceDaoImpl implements ServiceDao {
     }
 
     @Override
-    public void insertAttribute(Long entityId, String name, Integer typeId, Integer length, Handler<AsyncResult<Void>> resultHandler) {
+    public Future<Integer> dropEntity(Long datamartId, String name) {
+        return executor.execute(dsl -> dsl
+                .deleteFrom(ENTITIES_REGISTRY)
+                .where(ENTITIES_REGISTRY.DATAMART_ID.eq(datamartId))
+                .and(ENTITIES_REGISTRY.ENTITY_MNEMONICS.equalIgnoreCase(name)));
+    }
+
+    @Override
+    public void insertAttribute(Long entityId, ClassField field, Integer typeId, Handler<AsyncResult<Void>> resultHandler) {
         executor.execute(dsl -> dsl
                 .insertInto(ATTRIBUTES_REGISTRY)
                 .set(ATTRIBUTES_REGISTRY.ENTITY_ID, entityId)
-                .set(ATTRIBUTES_REGISTRY.ATTR_MNEMONICS, name)
-                .set(ATTRIBUTES_REGISTRY.LENGTH, length)
+                .set(ATTRIBUTES_REGISTRY.ATTR_MNEMONICS, field.getName())
+                .set(ATTRIBUTES_REGISTRY.LENGTH, field.getSize())
                 .set(ATTRIBUTES_REGISTRY.DATA_TYPE_ID, typeId)
+                .set(ATTRIBUTES_REGISTRY.PRIMARY_KEY_ORDER, field.getPrimaryOrder())
+                .set(ATTRIBUTES_REGISTRY.DISTRIBUTE_KEY_ORDER, field.getShardingOrder())
         ).setHandler(ar -> {
             if (ar.succeeded()) {
                 resultHandler.handle(Future.succeededFuture());
@@ -311,29 +326,33 @@ public class ServiceDaoImpl implements ServiceDao {
     }
 
     @Override
-    public void getMetadataByTableName(String tableName, Handler<AsyncResult<List<ClassField>>> resultHandler) {
+    public void getMetadataByTableName(DdlRequestContext context, String tableName, Handler<AsyncResult<List<ClassField>>> resultHandler) {
         int indexComma = tableName.indexOf(".");
-        String schema = indexComma != -1 ? tableName.substring(0, indexComma) : "test";
+        String schema = indexComma != - 1 ? tableName.substring(0, indexComma) : "test";
         String table = tableName.substring(indexComma + 1);
-        executor.query(dsl -> dsl.select()
+        executor.query(dsl -> dsl.select(COLUMNS.COLUMN_NAME, COLUMNS.COLUMN_TYPE,
+                COLUMNS.IS_NULLABLE, COLUMNS.COLUMN_DEFAULT, KEY_COLUMN_USAGE.ORDINAL_POSITION, KEY_COLUMN_USAGE.CONSTRAINT_NAME)
                 .from(COLUMNS)
-                .join(TABLES)
-                .on(COLUMNS.TABLE_NAME.eq(TABLES.TABLE_NAME)).and(COLUMNS.TABLE_SCHEMA.eq(TABLES.TABLE_SCHEMA))
-                // TODO: пока так, нужен upscale sql
-                .where(TABLES.TABLE_NAME.eq(table))
-                .and(TABLES.TABLE_SCHEMA.equalIgnoreCase(schema))
+                .leftJoin(KEY_COLUMN_USAGE).on(COLUMNS.TABLE_SCHEMA.eq(KEY_COLUMN_USAGE.CONSTRAINT_SCHEMA).and(COLUMNS.TABLE_NAME.eq(KEY_COLUMN_USAGE.TABLE_NAME))
+                        .and(COLUMNS.COLUMN_NAME.eq(KEY_COLUMN_USAGE.COLUMN_NAME)))
+                .where(COLUMNS.TABLE_NAME.eq(table))
+                .and(COLUMNS.TABLE_SCHEMA.equalIgnoreCase(schema))
+                .orderBy(KEY_COLUMN_USAGE.ORDINAL_POSITION)
         ).setHandler(ar -> {
             if (ar.succeeded()) {
                 QueryResult result = ar.result();
                 ResultSet resultSet = result.unwrap();
                 List<ClassField> classFieldList = new ArrayList<>();
                 resultSet.getRows().forEach(row -> {
+                    boolean isPrimary = "PRIMARY".equals(row.getString(KEY_COLUMN_USAGE.CONSTRAINT_NAME.getName()));
+                    Integer ordinal = row.getInteger(KEY_COLUMN_USAGE.ORDINAL_POSITION.getName());
                     classFieldList.add(
-                            new ClassField(row.getString(SCHEMA_TABLE_COLUMN_NAME),
-                                    row.getString(SCHEMA_TABLE_COLUMN_TYPE),
-                                    row.getString(SCHEMA_TABLE_IS_NULLABLE).contains("YES"),
-                                    row.getString(SCHEMA_TABLE_COLUMN_KEY).contains("PRI"),
-                                    row.getString(SCHEMA_TABLE_COLUMN_DEFAULT)));
+                            new ClassField(row.getString(COLUMNS.COLUMN_NAME.getName()),
+                                    row.getString(COLUMNS.COLUMN_TYPE.getName()),
+                                    row.getString(COLUMNS.IS_NULLABLE.getName()).contains("YES"),
+                                    isPrimary ? ordinal : null,
+                                    isInDistributedKey(context, row.getString(COLUMNS.COLUMN_NAME.getName())),
+                                    row.getString(COLUMNS.COLUMN_DEFAULT.getName())));
                 });
                 resultHandler.handle(Future.succeededFuture(classFieldList));
             } else {
@@ -341,6 +360,21 @@ public class ServiceDaoImpl implements ServiceDao {
                 resultHandler.handle(Future.failedFuture(ar.cause()));
             }
         });
+    }
+
+    private Integer isInDistributedKey(final DdlRequestContext context, final String field) {
+        if (context.getQuery() instanceof SqlCreateTable) {
+            int ind = ((SqlCreateTable) context.getQuery()).getOperandList().stream()
+                    .filter(e -> e instanceof DistributedOperator)
+                    .map(d -> ((DistributedOperator) d).getDistributedBy())
+                    .flatMap(n -> n.getList().stream())
+                    .filter(f -> f instanceof SqlIdentifier)
+                    .map(i -> ((SqlIdentifier) i).names.indexOf(field))
+                    .findFirst()
+                    .orElse(- 1);
+            return (ind == - 1) ? null : ind + 1;
+        }
+        return null;
     }
 
     @Override
@@ -560,6 +594,7 @@ public class ServiceDaoImpl implements ServiceDao {
                 log.debug("Получение {} дельт, запрос выполнен", actualDeltaRequests.size());
                 final List<Long> result = ar.result().stream()
                         .map(queryResult -> queryResult.get(0, Long.class))
+                        .map(delta -> (delta == null) ? Long.valueOf(-1L) : delta)
                         .collect(Collectors.toList());
                 log.debug("Получение {} дельт, результат: {}", actualDeltaRequests.size(), result);
                 resultHandler.handle(Future.succeededFuture(result));
@@ -570,22 +605,22 @@ public class ServiceDaoImpl implements ServiceDao {
         });
     }
 
-    @Override
-    public void getDeltaHotByDatamart(String datamartMnemonic, Handler<AsyncResult<DeltaRecord>> resultHandler) {
-        executor.query(dsl -> dsl.select(max(DELTA_DATA.LOAD_ID),
-                DELTA_DATA.DATAMART_MNEMONICS,
-                DELTA_DATA.SYS_DATE,
-                DELTA_DATA.STATUS_DATE,
-                DELTA_DATA.SIN_ID,
-                DELTA_DATA.LOAD_PROC_ID,
-                DELTA_DATA.STATUS)
-                .from(DELTA_DATA)
-                .where(DELTA_DATA.DATAMART_MNEMONICS.eq(datamartMnemonic))
-                .groupBy(DELTA_DATA.LOAD_ID))
-                .setHandler(ar -> {
-                    initQueryDeltaResult(datamartMnemonic, resultHandler, ar);
-                });
-    }
+	@Override
+	public void getDeltaHotByDatamart(String datamartMnemonic, Handler<AsyncResult<DeltaRecord>> resultHandler) {
+		executor.query(dsl -> dsl.select(DELTA_DATA.LOAD_ID,
+				DELTA_DATA.DATAMART_MNEMONICS,
+				DELTA_DATA.SYS_DATE,
+				DELTA_DATA.STATUS_DATE,
+				DELTA_DATA.SIN_ID,
+				DELTA_DATA.LOAD_PROC_ID,
+				DELTA_DATA.STATUS)
+				.from(DELTA_DATA)
+				.where(DELTA_DATA.DATAMART_MNEMONICS.eq(datamartMnemonic))
+				.and(DELTA_DATA.LOAD_ID.in(dsl.select(max(DELTA_DATA.LOAD_ID)).from(DELTA_DATA).where(DELTA_DATA.DATAMART_MNEMONICS.eq(datamartMnemonic)))))
+				.setHandler(ar -> {
+					initQueryDeltaResult(datamartMnemonic, resultHandler, ar);
+				});
+	}
 
     private Select<Record1<Long>> getUnionOfDeltaByDatamartAndDateSelects(DSLContext dsl, List<ActualDeltaRequest> actualDeltaRequests) {
         return actualDeltaRequests.stream()
@@ -594,12 +629,16 @@ public class ServiceDaoImpl implements ServiceDao {
                 .get();
     }
 
-    private Select<Record1<Long>> getDeltaByDatamartAndDateSelect(DSLContext dsl, ActualDeltaRequest actualDeltaRequest) {
-        return dsl.select(max(DELTA_DATA.SIN_ID))
-                .from(DELTA_DATA)
-                .where(DELTA_DATA.DATAMART_MNEMONICS.equalIgnoreCase(actualDeltaRequest.getDatamart()))
-                .and(DELTA_DATA.SYS_DATE.le(LocalDateTime.from(LOCAL_DATE_TIME.parse(actualDeltaRequest.getDateTime()))));
-    }
+	private Select<Record1<Long>> getDeltaByDatamartAndDateSelect(DSLContext dsl, ActualDeltaRequest actualDeltaRequest) {
+		SelectConditionStep<Record1<Long>> query = dsl.select(max(DELTA_DATA.SIN_ID))
+				.from(DELTA_DATA)
+				.where(DELTA_DATA.DATAMART_MNEMONICS.equalIgnoreCase(actualDeltaRequest.getDatamart()))
+				.and(DELTA_DATA.STATUS.eq(1));
+		if (actualDeltaRequest.getDateTime() != null) {
+			return query.and(DELTA_DATA.SYS_DATE.le(LocalDateTime.from(LOCAL_DATE_TIME.parse(actualDeltaRequest.getDateTime()))));
+		}
+		return query;
+	}
 
     @Override
     public void getDeltaActualBySinIdAndDatamart(String datamartMnemonic, Long sinId, Handler<AsyncResult<DeltaRecord>> resultHandler) {
@@ -835,5 +874,117 @@ public class ServiceDaoImpl implements ServiceDao {
                         resultHandler.handle(Future.failedFuture(ar.cause()));
                     }
                 });
+    }
+
+    @Override
+    public void existsView(String viewName, Long datamartId, Handler<AsyncResult<Boolean>> resultHandler) {
+        executor.query(dsl -> dsl
+                .select(VIEWS_REGISTRY.DATAMART_ID
+                        , VIEWS_REGISTRY.VIEW_NAME
+                        , VIEWS_REGISTRY.QUERY
+                )
+                .from(VIEWS_REGISTRY)
+                .where(VIEWS_REGISTRY.DATAMART_ID.eq(datamartId))
+                .and(VIEWS_REGISTRY.VIEW_NAME.eq(viewName))
+        ).setHandler(ar -> {
+            if (ar.succeeded()) {
+                QueryResult result = ar.result();
+                ResultSet resultSet = result.unwrap();
+                int viewsSize = resultSet.getNumRows();
+                if (viewsSize == 0) {
+                    resultHandler.handle(Future.succeededFuture(false));
+                } else if (viewsSize == 1) {
+                    resultHandler.handle(Future.succeededFuture(true));
+                } else {
+                    val failureMsg = String.format("Many views exists by viewName [%s] and datamart [%s]: %s"
+                            , viewName
+                            , datamartId
+                            , resultSet.getRows());
+                    log.error(failureMsg);
+                    resultHandler.handle(Future.failedFuture(failureMsg));
+                }
+            } else {
+                resultHandler.handle(Future.failedFuture(ar.cause()));
+            }
+        });
+    }
+
+    @Override
+    public void findViewsByDatamart(String datamart, List<String> views, Handler<AsyncResult<List<DatamartView>>> resultHandler) {
+        executor.query(dsl -> dsl
+                .select(VIEWS_REGISTRY.DATAMART_ID
+                        , VIEWS_REGISTRY.VIEW_NAME
+                        , VIEWS_REGISTRY.QUERY
+                )
+                .from(VIEWS_REGISTRY)
+                .join(DATAMARTS_REGISTRY).on(DATAMARTS_REGISTRY.DATAMART_ID.eq(VIEWS_REGISTRY.DATAMART_ID))
+                .where(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.eq(datamart))
+                .and(VIEWS_REGISTRY.VIEW_NAME.in(views))
+        ).setHandler(ar -> {
+            if (ar.succeeded()) {
+                QueryResult result = ar.result();
+                ResultSet resultSet = result.unwrap();
+                val viewRecords = new ArrayList<DatamartView>();
+                resultSet.getRows().forEach(row -> {
+                    viewRecords.add(
+                            new DatamartView(row.getString(VIEWS_REGISTRY.VIEW_NAME.getName()),
+                                    row.getLong(VIEWS_REGISTRY.DATAMART_ID.getName()),
+                                    row.getString(VIEWS_REGISTRY.QUERY.getName())));
+                });
+                resultHandler.handle(Future.succeededFuture(viewRecords));
+            } else {
+                resultHandler.handle(Future.failedFuture(ar.cause()));
+            }
+        });
+    }
+
+    @Override
+    public void insertView(String viewName,
+                           Long datamartId,
+                           String query,
+                           Handler<AsyncResult<Void>> resultHandler) {
+        executor.execute(dsl -> dsl.insertInto(VIEWS_REGISTRY)
+                .set(VIEWS_REGISTRY.VIEW_NAME, viewName)
+                .set(VIEWS_REGISTRY.DATAMART_ID, datamartId)
+                .set(VIEWS_REGISTRY.QUERY, query)
+        ).setHandler(ar -> {
+            if (ar.succeeded()) {
+                resultHandler.handle(Future.succeededFuture());
+            } else {
+                resultHandler.handle(Future.failedFuture(ar.cause()));
+            }
+        });
+    }
+
+    @Override
+    public void updateView(String viewName,
+                           Long datamartId,
+                           String query,
+                           Handler<AsyncResult<Void>> resultHandler) {
+        executor.execute(dsl -> dsl.update(VIEWS_REGISTRY)
+                .set(VIEWS_REGISTRY.QUERY, query)
+                .where(VIEWS_REGISTRY.VIEW_NAME.eq(viewName))
+                .and(VIEWS_REGISTRY.DATAMART_ID.eq(datamartId))
+        ).setHandler(ar -> {
+            if (ar.succeeded()) {
+                resultHandler.handle(Future.succeededFuture());
+            } else {
+                resultHandler.handle(Future.failedFuture(ar.cause()));
+            }
+        });
+    }
+
+    @Override
+    public void dropView(String viewName, Long datamartId, Handler<AsyncResult<Void>> resultHandler) {
+        executor.execute(dsl -> dsl.deleteFrom(VIEWS_REGISTRY)
+                .where(VIEWS_REGISTRY.VIEW_NAME.eq(viewName))
+                .and(VIEWS_REGISTRY.DATAMART_ID.eq(datamartId))
+        ).setHandler(ar -> {
+            if (ar.succeeded()) {
+                resultHandler.handle(Future.succeededFuture());
+            } else {
+                resultHandler.handle(Future.failedFuture(ar.cause()));
+            }
+        });
     }
 }

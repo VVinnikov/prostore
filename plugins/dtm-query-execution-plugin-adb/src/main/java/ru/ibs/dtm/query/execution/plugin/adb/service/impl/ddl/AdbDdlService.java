@@ -16,7 +16,8 @@ import ru.ibs.dtm.query.execution.plugin.adb.factory.MetadataFactory;
 import ru.ibs.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adb.service.KafkaTopicCreatorService;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import ru.ibs.dtm.query.execution.plugin.api.service.DdlService;
+import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
+import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
 
 import java.util.Arrays;
 import java.util.List;
@@ -116,4 +117,9 @@ public class AdbDdlService implements DdlService<Void> {
         String adbUploadErr = String.format(properties.getUpload().getErrorTopic().get(SourceType.ADB.toString().toLowerCase()), table.getName(), table.getSchema());
         return Arrays.asList(adbUploadRq, adbUploadRs, adbUploadErr);
     }
+
+	@Override
+	public void addExecutor(DdlExecutor<Void> executor) {
+		// TODO implemented
+	}
 }

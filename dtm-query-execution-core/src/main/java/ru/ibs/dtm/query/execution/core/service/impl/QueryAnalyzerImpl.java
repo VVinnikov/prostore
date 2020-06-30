@@ -4,9 +4,9 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.calcite.sql.SqlNode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -20,10 +20,9 @@ import ru.ibs.dtm.query.execution.core.utils.HintExtractor;
 import ru.ibs.dtm.query.execution.plugin.api.RequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
 
+@Slf4j
 @Component
 public class QueryAnalyzerImpl implements QueryAnalyzer {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(QueryAnalyzerImpl.class);
 
 	private final QueryDispatcher queryDispatcher;
 	private final DefinitionService<SqlNode> definitionService;
@@ -48,9 +47,10 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
 	public void analyzeAndExecute(QueryRequest queryRequest, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
 		getParsedQuery(queryRequest, parseResult -> {
 			if (parseResult.succeeded()) {
-				queryDispatcher.dispatch(requestContextFactory.create(queryRequest, parseResult.result()), asyncResultHandler);
+				queryDispatcher.dispatch(requestContextFactory.
+						create(queryRequest, parseResult.result()), asyncResultHandler);
 			} else {
-				LOGGER.debug("Ошибка анализа запроса", parseResult.cause());
+				log.debug("Ошибка анализа запроса", parseResult.cause());
 				asyncResultHandler.handle(Future.failedFuture(parseResult.cause()));
 			}
 		});
@@ -59,21 +59,19 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
 	private void getParsedQuery(QueryRequest queryRequest,
 								Handler<AsyncResult<SqlNode>> asyncResultHandler) {
 		vertx.executeBlocking(it ->
-				hintExtractor.extractHint(queryRequest, arHint -> {
-					if (!arHint.succeeded()) {
-						it.fail(arHint.cause());
-						return;
-					}
-					try {
-						String query = arHint.result().getQueryRequest().getSql();
-						LOGGER.debug("Предпарсинг запроса: {}", query);
-						SqlNode node = definitionService.processingQuery(query);
-						it.complete(node);
-					} catch (Exception e) {
-						LOGGER.error("Ошибка парсинга запроса", e);
-						it.fail(e);
-					}
-				}), ar -> {
+			{
+				try {
+					val hint = hintExtractor.extractHint(queryRequest);
+					val query = hint.getQueryRequest().getSql();
+					log.debug("Предпарсинг запроса: {}", query);
+					val node = definitionService.processingQuery(query);
+					it.complete(node);
+				} catch (Exception e){
+					log.error("Ошибка парсинга запроса", e);
+					it.fail(e);
+				}
+			}
+				, ar -> {
 			if (ar.succeeded()) {
 				asyncResultHandler.handle(Future.succeededFuture((SqlNode) ar.result()));
 			} else {

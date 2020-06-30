@@ -43,6 +43,7 @@ data: {
       "LOCATION"
       "CHUNK_SIZE"
       "MESSAGE_LIMIT"
+      "DISTRIBUTED"
       "DELTA"
     ]
 

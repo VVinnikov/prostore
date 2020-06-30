@@ -24,6 +24,7 @@ import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
 import ru.ibs.dtm.query.execution.plugin.api.service.DdlService;
 import ru.ibs.dtm.query.execution.plugin.api.status.StatusRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -81,8 +82,8 @@ public class DtmDataSourcePluginIT {
   @Test
   void testDdl(VertxTestContext testContext) throws Throwable {
     ClassTable classTable = new ClassTable("test.test_", Arrays.asList(
-            new ClassField("id", ClassTypes.INT.name(), false, true, null),
-            new ClassField("test", ClassTypes.VARCHAR.name(), true, false, null)
+            new ClassField("id", ClassTypes.INT.name(), false, 1, 1, null),
+            new ClassField("test", ClassTypes.VARCHAR.name(), true, 1, 1, null)
     ));
     DdlRequest dto = new DdlRequest(null, classTable);
     DdlRequestContext context = new DdlRequestContext(dto);

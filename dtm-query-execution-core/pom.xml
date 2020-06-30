@@ -56,6 +56,17 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>ru.ibs.dtm</groupId>
+            <artifactId>dtm-query-execution-plugin-adqm</artifactId>
+            <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
         <!--Spring-->
         <dependency>
@@ -351,6 +362,7 @@
                                     <includes>
                                         columns
                                         |tables
+                                        |key_column_usage
                                     </includes>
                                     <inputSchema>information_schema</inputSchema>
                                     <!--outputSchema>dtmservice</outputSchema-->
@@ -431,6 +443,7 @@
                                         |delta_data
                                         |upload_external_table
                                         |upload_query
+                                        |views_registry
                                     </includes>
                                     <inputSchema>${datasource.service.options.database}</inputSchema>
                                     <!--outputSchema>dtmservice</outputSchema-->

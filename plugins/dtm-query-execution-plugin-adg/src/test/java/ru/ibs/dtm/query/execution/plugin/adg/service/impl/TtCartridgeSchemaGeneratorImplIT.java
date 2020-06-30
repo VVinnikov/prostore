@@ -18,6 +18,8 @@ import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.OperationYaml;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response.ResConfig;
 import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeClient;
 import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeSchemaGenerator;
+import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -40,8 +42,8 @@ class TtCartridgeSchemaGeneratorImplIT {
   private ObjectMapper yamlMapper;
 
   private ClassTable classTable = new ClassTable("test.test_", Arrays.asList(
-    new ClassField("id", ClassTypes.INT.name(), false, true, null),
-    new ClassField("test", ClassTypes.VARCHAR.name(), true, false, null)
+    new ClassField("id", ClassTypes.INT.name(), false, 1, 1, null),
+    new ClassField("test", ClassTypes.VARCHAR.name(), true, null, null, null)
   ));
 
   @Test
@@ -50,7 +52,8 @@ class TtCartridgeSchemaGeneratorImplIT {
     client.getSchema(ar1 -> {
       if (ar1.succeeded()) {
         OperationYaml yaml = parseYaml(ar1.result().getData().getCluster().getSchema().getYaml());
-        generator.generate(classTable, yaml, ar2 -> {
+        DdlRequestContext context = new DdlRequestContext(new DdlRequest(null, classTable));
+        generator.generate(context, yaml, ar2 -> {
           if (ar2.succeeded()) {
             testContext.completeNow();
           } else {

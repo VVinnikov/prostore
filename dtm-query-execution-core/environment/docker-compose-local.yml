@@ -22,6 +22,26 @@ services:
       MYSQL_PASSWORD: Cat6Gmt7Ncr
       MYSQL_RANDOM_ROOT_PASSWORD: "yes"
 
+  adb:
+    image: postgres:10.4
+    restart: always
+    environment:
+      POSTGRES_USER: gpadmin
+      POSTGRES_PASSWORD:
+      POSTGRES_DB: adb
+    ports:
+      - "5432:5432"
+
+  adg:
+    image: nsud:1.0.17
+    restart: always
+    volumes:
+      - /Users/d.voronkov/IdeaProjects/tarantool/nsud/memstorage/bootstrap.lua:/opt/tarantool/bootstrap.lua
+    ports:
+      - "3301:3301"
+      - "8081:8081"
+      - "8180:8180"
+
   zookeeper:
     image: zookeeper:3.6
     container_name: zk-1.dtm.local

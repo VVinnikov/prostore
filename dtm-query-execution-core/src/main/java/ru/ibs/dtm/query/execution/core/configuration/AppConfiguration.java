@@ -16,28 +16,32 @@ import ru.ibs.dtm.common.schema.codec.AvroEncoder;
 @Configuration
 public class AppConfiguration {
 
-    private Environment environment;
+	private Environment environment;
 
-    @Autowired
-    public AppConfiguration(Environment environment) {
-        this.environment = environment;
-    }
+	@Autowired
+	public AppConfiguration(Environment environment) {
+		this.environment = environment;
+	}
 
-    public Integer httpPort() {
-        return environment.getProperty("http.port", Integer.class);
-    }
+	public Integer httpPort() {
+		return environment.getProperty("http.port", Integer.class);
+	}
 
-    @Bean("coreObjectMapper")
-    @Primary
-    public ObjectMapper objectMapper() {
-        SimpleModule simpleModule = new SimpleModule();
-        ObjectMapper mapper = DatabindCodec.mapper();
-        mapper.registerModule(simpleModule);
-        mapper.registerModule(new JavaTimeModule());
-        mapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
-        mapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
-        return mapper;
-    }
+	public String getSystemName() {
+		return environment.getProperty("env.name", String.class);
+	}
+
+	@Bean("coreObjectMapper")
+	@Primary
+	public ObjectMapper objectMapper() {
+		SimpleModule simpleModule = new SimpleModule();
+		ObjectMapper mapper = DatabindCodec.mapper();
+		mapper.registerModule(simpleModule);
+		mapper.registerModule(new JavaTimeModule());
+		mapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+		mapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
+		return mapper;
+	}
 
     @Bean
     public AvroEncoder avroEncoder() {

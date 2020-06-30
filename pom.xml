@@ -44,6 +44,7 @@
         <pg.client.version>0.11.4</pg.client.version>
         <liquibase.version>3.8.9</liquibase.version>
         <lombok.version>1.18.12</lombok.version>
+        <clickhouse.jdbc.version>0.2.4</clickhouse.jdbc.version>
         <skipITs>true</skipITs>
     </properties>
 
@@ -110,22 +111,20 @@
     <repositories>
         <repository>
             <id>maven-public</id>
-            <url>http://build.dtm.local:8081/repository/maven-dtm-public/</url>
+            <url>https://rt.adsw.io/artifactory/data-mart</url>
         </repository>
     </repositories>
 
     <distributionManagement>
         <repository>
-            <id>maven-releases</id>
-            <url>http://build.dtm.local:8081/repository/maven-dtm-releases/</url>
-            <layout>default</layout>
-            <uniqueVersion>true</uniqueVersion>
+            <id>central</id>
+            <name>Arenadata Artifactory-releases</name>
+            <url>https://rt.adsw.io/artifactory/data-mart</url>
         </repository>
-
         <snapshotRepository>
-            <id>maven-snapshots</id>
-            <url>http://build.dtm.local:8081/repository/maven-dtm-snapshots/</url>
-            <layout>default</layout>
+            <id>snapshots</id>
+            <name>Arenadata Artifactory-snapshots</name>
+            <url>https://rt.adsw.io/artifactory/data-mart</url>
         </snapshotRepository>
     </distributionManagement>
 

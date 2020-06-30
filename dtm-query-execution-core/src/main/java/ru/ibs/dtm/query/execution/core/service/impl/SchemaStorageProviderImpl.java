@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
 import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
 import ru.ibs.dtm.query.execution.core.service.SchemaStorageProvider;
-import ru.ibs.dtm.query.execution.plugin.adb.model.metadata.*;
+import ru.ibs.dtm.query.execution.model.metadata.*;
 
 import java.util.ArrayList;
 import java.util.List;

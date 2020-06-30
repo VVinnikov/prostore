@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
+import ru.ibs.dtm.query.execution.core.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.core.configuration.jooq.MariaProperties;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
 import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
@@ -23,8 +24,7 @@ import ru.ibs.dtm.query.execution.plugin.api.service.DdlService;
 
 import java.util.List;
 
-import static ru.ibs.dtm.query.execution.plugin.api.ddl.DdlType.CREATE_SCHEMA;
-import static ru.ibs.dtm.query.execution.plugin.api.ddl.DdlType.DROP_SCHEMA;
+import static ru.ibs.dtm.query.execution.plugin.api.ddl.DdlType.*;
 
 @Slf4j
 @Service("coreDdlService")
@@ -36,13 +36,15 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
     private final MetadataFactory<DdlRequestContext> metadataFactory;
     private final MariaProperties mariaProperties;
     private final Vertx vertx;
+    private final AppConfiguration configuration;
 
     @Autowired
     public DdlServiceImpl(ServiceDao serviceDao,
                           CalciteDefinitionService calciteDefinitionService,
                           DatabaseSynchronizeService databaseSynchronizeService,
                           MetadataFactory<DdlRequestContext> metadataFactory, MariaProperties mariaProperties,
-                          @Qualifier("coreVertx") Vertx vertx
+                          @Qualifier("coreVertx") Vertx vertx,
+                          AppConfiguration configuration
     ) {
         this.serviceDao = serviceDao;
         this.calciteDefinitionService = calciteDefinitionService;
@@ -50,10 +52,11 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
         this.metadataFactory = metadataFactory;
         this.mariaProperties = mariaProperties;
         this.vertx = vertx;
+        this.configuration = configuration;
     }
 
     @Override
-    public void execute(DdlRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
+    public void execute(final DdlRequestContext context, final Handler<AsyncResult<QueryResult>> asyncResultHandler) {
         vertx.executeBlocking(it -> {
             try {
                 SqlNode node = calciteDefinitionService.processingQuery(context.getRequest().getQueryRequest().getSql());
@@ -72,8 +75,9 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
         });
     }
 
-    private void execute(DdlRequestContext context, Handler<AsyncResult<QueryResult>> handler, AsyncResult<Object> ar) {
+    private void execute(final DdlRequestContext context, final Handler<AsyncResult<QueryResult>> handler, final AsyncResult<Object> ar) {
         if (ar.result() instanceof SqlDdl) {
+            context.setSystemName(configuration.getSystemName());
             SqlDdl sqlDdl = ((SqlDdl) ar.result());
             String sqlNodeName = sqlDdl.getOperandList().stream().filter(t -> t instanceof SqlIdentifier).findFirst().get().toString();
 
@@ -90,7 +94,7 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
                 case DROP_TABLE:
                     dropTable(context, handler, sqlNodeName);
                     break;
-                case DEFAULT:
+                default:
                     log.error("Не поддерживаемый тип DDL запроса");
                     handler.handle(Future.failedFuture(String.format("Не поддерживаемый тип DDL запроса [%s]", context)));
             }
@@ -158,7 +162,7 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
         request.setDatamartMnemonic(schema);
 
         String tableWithSchema = SqlPreparer.getTableWithSchema(mariaProperties.getOptions().getDatabase(), sqlNodeName);
-        String sql = SqlPreparer.replaceQuote(SqlPreparer.replaceTableInSql(request.getSql(), tableWithSchema));
+		String sql = SqlPreparer.removeDistributeBy(SqlPreparer.replaceQuote(SqlPreparer.replaceTableInSql(request.getSql(), tableWithSchema)));
         serviceDao.executeUpdate(sql, ar2 -> {
             if (ar2.succeeded()) {
                 databaseSynchronizeService.putForRefresh(
@@ -178,6 +182,7 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
             }
         });
     }
+
 
     private void createDatamart(String datamartName, Handler<AsyncResult<QueryResult>> handler) {
         serviceDao.findDatamart(datamartName, datamartResult -> {
@@ -274,6 +279,7 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
         requestDeleteTable.setDatamartMnemonic(entity.getDatamartMnemonic());
         requestDeleteTable.setSql("DROP TABLE IF EXISTS " + entity.getDatamartMnemonic() + "." + entity.getMnemonic());
         DdlRequestContext context = new DdlRequestContext(new DdlRequest(requestDeleteTable));
+        context.setDdlType(DROP_TABLE);
         dropTable(context, entity.getMnemonic(), true,
                 ar -> {
                     if (ar.succeeded()) {

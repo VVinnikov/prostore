@@ -53,11 +53,11 @@ public class AdgDdlServiceImpl {
         kafkaAdminProperty.setUpload(kafkaUploadProperty);
         when(kafkaProperties.getKafkaAdminProperty()).thenReturn(kafkaAdminProperty);
 
-        doAnswer(invocation -> {
-            Handler<AsyncResult<Object>> handler = invocation.getArgument(0);
-            handler.handle(Future.succeededFuture());
-            return null;
-        }).when(executorService).executeProcedure(any(), eq(DROP_SPACE), eq("test_table"));
+		doAnswer(invocation -> {
+			Handler<AsyncResult<Object>> handler = invocation.getArgument(0);
+			handler.handle(Future.succeededFuture());
+			return null;
+		}).when(executorService).executeProcedure(eq(DROP_SPACE), eq("test_table"));
 
         doAnswer(invocation -> {
             Handler<AsyncResult<Object>> handler = invocation.getArgument(0);
@@ -65,16 +65,10 @@ public class AdgDdlServiceImpl {
             return null;
         }).when(kafkaTopicService).delete(any(), any());
 
-        doAnswer(invocation -> {
-            Handler<AsyncResult<Object>> handler = invocation.getArgument(0);
-            handler.handle(Future.succeededFuture());
-            return null;
-        }).when(registryClient).unregister(any(), any());
-
-        QueryRequest queryRequest = new QueryRequest();
-        queryRequest.setRequestId(UUID.randomUUID());
-        queryRequest.setSql("drop table test_table");
-        queryRequest.setDatamartMnemonic("test_schema");
+		QueryRequest queryRequest = new QueryRequest();
+		queryRequest.setRequestId(UUID.randomUUID());
+		queryRequest.setSql("drop table test_table");
+		queryRequest.setDatamartMnemonic("test_schema");
 
         List<ClassField> fields = Collections.singletonList(new ClassField("test_field", "varchar(1)", false, false, ""));
         ClassTable classTable = new ClassTable("test_schema.test_table", fields);

@@ -22,6 +22,7 @@ import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
+import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
 import ru.ibs.dtm.query.execution.plugin.api.service.DdlService;
 import ru.ibs.dtm.query.execution.plugin.api.status.StatusRequestContext;
 
@@ -78,23 +79,23 @@ class AdbDtmDataSourcePluginIT {
         }
     };
 
-    @Test
-    void testDdl(VertxTestContext testContext) throws Throwable {
-        ClassTable classTable = new ClassTable("test.test_ts3222", Arrays.asList(
-                new ClassField("id", ClassTypes.INT.name(), false, true, null),
-                new ClassField("name", ClassTypes.VARCHAR.name(), true, false, null),
-                new ClassField("dt", ClassTypes.DATETIME.name(), true, false, null)
-        ));
-        DdlRequest dto = new DdlRequest(null, classTable);
-        DdlRequestContext context = new DdlRequestContext(dto);
-        context.setDdlType(DdlType.CREATE_TABLE);
-        plugin.ddl(context, ar -> {
-            if (ar.succeeded()) {
-                testContext.completeNow();
-            } else {
-                testContext.failNow(ar.cause());
-            }
-        });
-        testContext.awaitCompletion(5, TimeUnit.SECONDS);
-    }
+	@Test
+	void testDdl(VertxTestContext testContext) throws Throwable {
+		ClassTable classTable = new ClassTable("test.test_ts3222", Arrays.asList(
+				new ClassField("id", ClassTypes.INT.name(), false, 1, 1, null),
+				new ClassField("name", ClassTypes.VARCHAR.name(), true, null, null, null),
+				new ClassField("dt", ClassTypes.DATETIME.name(), true, null, null, null)
+		));
+		DdlRequest dto = new DdlRequest(null, classTable);
+		DdlRequestContext context = new DdlRequestContext(dto);
+		context.setDdlType(DdlType.CREATE_TABLE);
+		plugin.ddl(context, ar -> {
+			if (ar.succeeded()) {
+				testContext.completeNow();
+			} else {
+				testContext.failNow(ar.cause());
+			}
+		});
+		testContext.awaitCompletion(5, TimeUnit.SECONDS);
+	}
 }

@@ -4,15 +4,12 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.core.service.delta.DeltaExecutor;
 import ru.ibs.dtm.query.execution.core.service.delta.DeltaQueryParamExtractor;
 import ru.ibs.dtm.query.execution.core.service.delta.DeltaService;
-import ru.ibs.dtm.query.execution.core.service.impl.DdlServiceImpl;
 import ru.ibs.dtm.query.execution.plugin.api.delta.DeltaRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.delta.query.DeltaAction;
 import ru.ibs.dtm.query.execution.plugin.api.delta.query.DeltaQuery;
@@ -25,8 +22,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DeltaServiceImpl implements DeltaService<QueryResult> {
 
-    private DeltaQueryParamExtractor deltaQueryParamExtractor;
     private final Map<DeltaAction, DeltaExecutor> executors;
+    private final DeltaQueryParamExtractor deltaQueryParamExtractor;
 
     @Autowired
     public DeltaServiceImpl(DeltaQueryParamExtractor deltaQueryParamExtractor, List<DeltaExecutor> deltaExecutorList) {

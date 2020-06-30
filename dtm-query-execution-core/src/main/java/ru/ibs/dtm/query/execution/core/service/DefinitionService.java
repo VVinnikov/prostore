@@ -1,10 +1,13 @@
 package ru.ibs.dtm.query.execution.core.service;
 
+import lombok.SneakyThrows;
+
 /**
  * Сервис работы с Sql
  *
  * @param <T> тип результата
  */
 public interface DefinitionService<T> {
-  T processingQuery(String sql) throws Exception;
+  @SneakyThrows
+  T processingQuery(String sql);
 }

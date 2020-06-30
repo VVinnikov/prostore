@@ -13,7 +13,6 @@ import ru.ibs.dtm.common.configuration.kafka.KafkaConfig;
 import java.util.concurrent.CompletableFuture;
 
 @Configuration
-//@EnableConfigurationProperties(KafkaProperties.class)
 public class VertxConfiguration {
 
     @Bean("adgWebClient")

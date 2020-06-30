@@ -6,8 +6,6 @@ import ru.ibs.dtm.query.execution.plugin.api.RequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
 import ru.ibs.dtm.query.execution.plugin.api.service.SqlProcessingType;
 
-import java.util.List;
-
 import static ru.ibs.dtm.query.execution.plugin.api.ddl.DdlType.UNKNOWN;
 import static ru.ibs.dtm.query.execution.plugin.api.service.SqlProcessingType.DDL;
 
@@ -17,7 +15,6 @@ public class DdlRequestContext extends RequestContext<DdlRequest> {
 	private DdlType ddlType;
 	private Long datamartId;
 	private SqlNode query;
-	private String systemName;
 
 	public DdlRequestContext(final DdlRequest request) {
 		this(request, null);
@@ -27,7 +24,6 @@ public class DdlRequestContext extends RequestContext<DdlRequest> {
 		super(request);
 		this.ddlType = UNKNOWN;
 		this.query = query;
-		this.systemName = "local";
 	}
 
 	@Override
@@ -55,11 +51,4 @@ public class DdlRequestContext extends RequestContext<DdlRequest> {
 		return query;
 	}
 
-	public String getSystemName() {
-		return systemName;
-	}
-
-	public void setSystemName(String systemName) {
-		this.systemName = systemName;
-	}
 }

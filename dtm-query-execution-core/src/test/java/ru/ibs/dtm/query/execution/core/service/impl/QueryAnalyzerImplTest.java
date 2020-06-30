@@ -10,8 +10,10 @@ import io.vertx.reactivex.ext.unit.Async;
 import io.vertx.reactivex.ext.unit.TestSuite;
 import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.env.Environment;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
+import ru.ibs.dtm.query.execution.core.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import ru.ibs.dtm.query.execution.core.dto.ParsedQueryRequest;
 import ru.ibs.dtm.query.execution.core.factory.RequestContextFactory;
@@ -41,7 +43,7 @@ class QueryAnalyzerImplTest {
 	private QueryAnalyzer queryAnalyzer = new QueryAnalyzerImpl(queryDispatcher,
 			definitionService,
 			requestContextFactory,
-			vertx, new HintExtractor());
+			vertx, new HintExtractor(), new AppConfiguration(mock(Environment.class)));
 
 	@Test
 	void parsedSelect() {

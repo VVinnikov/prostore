@@ -6,11 +6,15 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.vertx.core.json.jackson.DatabindCodec;
+import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.env.Environment;
+import ru.ibs.dtm.query.execution.plugin.api.SystemNameRegistration;
+
+import java.util.List;
 
 @Configuration
 public class AppConfiguration {
@@ -40,6 +44,12 @@ public class AppConfiguration {
 		mapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
 		mapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
 		return mapper;
+	}
+
+	@Autowired
+	public void registerSystemName(List<SystemNameRegistration> registrations) {
+		val systemName = getSystemName();
+		registrations.forEach(r -> r.register(systemName));
 	}
 
 }

@@ -1,14 +1,12 @@
 package ru.ibs.dtm.query.execution.core.service.edml.impl;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
+import io.vertx.core.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -28,10 +26,11 @@ import ru.ibs.dtm.query.execution.plugin.api.status.StatusRequestContext;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoField;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -55,79 +54,131 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
 
     @Override
     public void execute(EdmlRequestContext context, Handler<AsyncResult<QueryResult>> resultHandler) {
-        final Map<SourceType, PluginMppwStatus> offsetMap = new ConcurrentHashMap<>();
         try {
-            final Set<SourceType> sourceTypes = pluginService.getSourceTypes();
-            Arrays.asList(SourceType.ADB, SourceType.ADG).forEach(ds -> {
+            final Map<SourceType, Future> startMppwFutureMap = new HashMap<>();
+            pluginService.getSourceTypes().forEach(ds -> {
                 final MppwRequestContext mppwRequestContext = mppwKafkaRequestFactory.create(context);
-                pluginService.mppwKafka(ds, mppwRequestContext, ar -> {
-                    if (ar.succeeded()) {
-                        log.debug("Отпрален запрос {} на старт загрузки mppw для плагина {}", mppwRequestContext.getRequest(), ds);
-                    } else {
-                        mppwRequestContext.getRequest().getQueryLoadParam().setIsLoadStart(false);
-                        log.debug("Отправлен запрос {} на остановку загрузки mppw для плагина {}", mppwRequestContext.getRequest(), ds);
-                        pluginService.mppwKafka(ds, mppwRequestContext, er -> {
-                            if (er.succeeded()) {
-                                //TODO завершение алгоритма т.к. при старте загрузки произошла ошибка
-                                resultHandler.handle(Future.failedFuture(new RuntimeException("Загрузка в плагине " + ds + " завершена с ошибкой!")));
-                            } else {
-                                resultHandler.handle(Future.failedFuture(er.cause()));
-                            }
-                        });
-                    }
-                });
-                final StatusRequestContext statusRequestContext = new StatusRequestContext(new StatusRequest(context.getRequest().getQueryRequest()));
-                vertx.setTimer(edmlProperties.getPluginStatusCheckPeriodMs(), tr -> {
-                    pluginService.status(ds, statusRequestContext, ar -> {
-                        if (ar.succeeded()) {
-                            StatusQueryResult queryResult = ar.result();
-                            if (queryResult.getPartitionInfo().getEnd().equals(queryResult.getPartitionInfo().getOffset())
-                                    && checkLastCommitTime(queryResult.getPartitionInfo().getLastCommitTime())) {
-                                mppwRequestContext.getRequest().getQueryLoadParam().setIsLoadStart(false);
-                                log.debug("Отправлен запрос {} на остановку загрузки mppw для плагина {}", mppwRequestContext.getRequest(), ds);
-                                pluginService.mppwKafka(ds, mppwRequestContext, par -> {
-                                    if (par.succeeded()) {
-                                        PluginMppwStatus status = new PluginMppwStatus(ds, true, queryResult.getPartitionInfo().getOffset());
-                                        log.debug("Завершена загрузка mppw по плагину {}", status);
-                                        offsetMap.putIfAbsent(ds, status);
-                                        //проверка загрузки остальных плагинов
-                                        if (checkFinishMppwLoading(ds, offsetMap, sourceTypes)) {
-                                            //завершение загрузки
-                                            resultHandler.handle(Future.succeededFuture(new QueryResult()));//TODO доделать возвращение результата
-                                        }
-                                    } else {
-                                        resultHandler.handle(Future.failedFuture(par.cause()));
-                                    }
-                                });
-                            }
-                        } else {
-                            resultHandler.handle(Future.failedFuture(ar.cause()));
-                        }
-                    });
-                });
+                startMppwFutureMap.put(ds, startMppw(ds, mppwRequestContext, context));
             });
+            checkPluginsMppwExecution(startMppwFutureMap, resultHandler);
         } catch (Exception e) {
+            log.error("Ошибка запуска загрузки mppw!", e);
             resultHandler.handle(Future.failedFuture(e));
         }
     }
 
-    private boolean checkFinishMppwLoading(SourceType currentPlugin, Map<SourceType, PluginMppwStatus> resultMap, Set<SourceType> sourceTypes) {
-        //проверяем, что загрузка произведена по всем плагинам
-        if (sourceTypes.containsAll(resultMap.keySet())) {
-            final PluginMppwStatus currentPluginStatus = resultMap.get(currentPlugin);
-            //проверяем, что offset по каждому плагину не изменился
-            for (Map.Entry<SourceType, PluginMppwStatus> entry : resultMap.entrySet()) {
-                if (!currentPluginStatus.getOffset().equals(entry.getValue().getOffset())) {
+    private Future<MppwStopFuture> startMppw(SourceType ds, MppwRequestContext mppwRequestContext, EdmlRequestContext context) {
+        return Future.future((Promise<MppwStopFuture> promise) -> pluginService.mppwKafka(ds, mppwRequestContext, ar -> {
+            if (ar.succeeded()) {
+                log.debug("Отправлен запрос для плагина: {} на старт загрузки mppw: {}", ds, mppwRequestContext.getRequest());
+                final StatusRequestContext statusRequestContext = new StatusRequestContext(new StatusRequest(context.getRequest().getQueryRequest()));
+                vertx.setPeriodic(edmlProperties.getPluginStatusCheckPeriodMs(), timerId -> {
+                    log.trace("Запрос статуса плагина: {} mppw загрузки", ds);
+                    checkMppwStatus(ds, statusRequestContext, timerId)
+                            .setHandler(chr -> {
+                                if (chr.succeeded()) {
+                                    StatusQueryResult result = chr.result();
+                                    promise.complete(new MppwStopFuture(ds, stopMppw(ds, mppwRequestContext),
+                                            result.getPartitionInfo().getOffset()));
+                                } else {
+                                    log.error("Ошибка получения статуса плагина: {}", ds, chr.cause());
+                                    promise.fail(chr.cause());
+                                }
+                            });
+                });
+            } else {
+                log.error("Ошибка старта загрузки mppw для плагина: {}", ds, ar.cause());
+                promise.complete(new MppwStopFuture(ds, stopMppw(ds, mppwRequestContext), null));
+            }
+        }));
+    }
+
+    private Future<StatusQueryResult> checkMppwStatus(SourceType ds, StatusRequestContext statusRequestContext, Long timerId) {
+        return Future.future((Promise<StatusQueryResult> promise) -> pluginService.status(ds, statusRequestContext, ar -> {
+            if (ar.succeeded()) {
+                StatusQueryResult queryResult = ar.result();
+                log.trace("Получен статус плагина: {} mppw загрузки: {}, по запросу: {}", ds, queryResult, statusRequestContext);
+                if (queryResult.getPartitionInfo().getEnd().equals(queryResult.getPartitionInfo().getOffset())
+                        && checkLastCommitTime(queryResult.getPartitionInfo().getLastCommitTime())) {
+                    vertx.cancelTimer(timerId);
+                    promise.complete(queryResult);
+                } else {
+                    promise.future();
+                }
+            } else {
+                vertx.cancelTimer(timerId);
+                promise.fail(ar.cause());
+            }
+        }));
+    }
+
+    private Future<QueryResult> stopMppw(SourceType ds, MppwRequestContext mppwRequestContext) {
+        return Future.future((Promise<QueryResult> promise) -> {
+            mppwRequestContext.getRequest().setLoadStart(false);
+            log.debug("Отправлен запрос для плагина: {} на остановку загрузки mppw: {}", ds, mppwRequestContext.getRequest());
+            pluginService.mppwKafka(ds, mppwRequestContext, ar -> {
+                if (ar.succeeded()) {
+                    log.debug("Завершена остановка загрузки mppw по плагину: {}", ds);
+                    promise.complete(ar.result());
+                } else {
+                    promise.fail(ar.cause());
+                }
+            });
+        });
+    }
+
+    private void checkPluginsMppwExecution(Map<SourceType, Future> startMppwFuturefMap, Handler<AsyncResult<QueryResult>> resultHandler) {
+        final Map<SourceType, MppwStopFuture> mppwStopFutureMap = new HashMap<>();
+        CompositeFuture.all(new ArrayList<>(startMppwFuturefMap.values()))
+                .setHandler(ar -> {
+                    if (ar.succeeded()) {
+                        List<Future> stopMppwFutures = getStopMppwFutures(mppwStopFutureMap, ar);
+                        CompositeFuture.all(stopMppwFutures).setHandler(sr -> {
+                            //завершены загрузки по всем плагинам
+                            if (sr.succeeded()) {
+                                //Все плагины имеют одинаковые offset
+                                if (isAllMppwPluginsHasEqualOffsets(mppwStopFutureMap)) {
+                                    resultHandler.handle(Future.succeededFuture(QueryResult.emptyResult()));
+                                } else {
+                                    RuntimeException e = new RuntimeException("Изменился offset одного из плагинов!");
+                                    log.error("Ошибка выполнения mppw загрузки!", e);
+                                    resultHandler.handle(Future.failedFuture(e));
+                                }
+                            }
+                        });
+                    } else {
+                        resultHandler.handle(Future.failedFuture(ar.cause()));
+                    }
+                });
+    }
+
+    @NotNull
+    private List<Future> getStopMppwFutures(Map<SourceType, MppwStopFuture> mppwStopFutureMap, AsyncResult<CompositeFuture> ar) {
+        CompositeFuture mppwStart = ar.result();
+        mppwStart.list().forEach(r -> {
+            //проверяем что все функции начала загрузки завершились успешно
+            MppwStopFuture mppwResult = (MppwStopFuture) r;
+            mppwStopFutureMap.putIfAbsent(mppwResult.getSourceType(), mppwResult);
+        });
+        return mppwStopFutureMap.values().stream().map(MppwStopFuture::getFuture).collect(Collectors.toList());
+    }
+
+    private boolean isAllMppwPluginsHasEqualOffsets(Map<SourceType, MppwStopFuture> resultMap) {
+        //проверяем, что offset по каждому плагину не изменился
+        if (!resultMap.isEmpty()) {
+            Long offset = resultMap.values().stream().map(MppwStopFuture::getOffset).collect(Collectors.toList()).get(0);
+            for (MppwStopFuture p : resultMap.values()) {
+                if (p.getOffset() == null || !p.getOffset().equals(offset)) {
                     return false;
                 }
             }
-            return true;
         }
-        return false;
+        return true;
     }
 
     private boolean checkLastCommitTime(LocalDateTime lastCommitTime) {
-        LocalDateTime commitTimeWithTimeout = lastCommitTime.plus(kafkaProperties.getAdmin().getInputStreamTimeoutMs(), ChronoField.MILLI_OF_DAY.getBaseUnit());
+        LocalDateTime commitTimeWithTimeout = lastCommitTime.plus(kafkaProperties.getAdmin().getInputStreamTimeoutMs(),
+                ChronoField.MILLI_OF_DAY.getBaseUnit());
         return commitTimeWithTimeout.isAfter(LocalDateTime.now());
     }
 
@@ -140,9 +191,10 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
     @NoArgsConstructor
     @AllArgsConstructor
     @ToString
-    private class PluginMppwStatus {
+    private static class MppwStopFuture {
         private SourceType sourceType;
-        private boolean isFinished;
+        private Future future;
         private Long offset;
     }
+
 }

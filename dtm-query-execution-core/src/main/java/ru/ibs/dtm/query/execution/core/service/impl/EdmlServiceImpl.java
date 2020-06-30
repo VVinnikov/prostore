@@ -8,6 +8,7 @@ import io.vertx.core.json.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlSelect;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.dto.TableInfo;
 import ru.ibs.dtm.common.reader.QueryResult;
@@ -37,15 +38,16 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
     private final ServiceDao serviceDao;
     private final Map<EdmlAction, EdmlExecutor> executors;
 
+    @Autowired
     public EdmlServiceImpl(ServiceDao serviceDao, SchemaStorageProvider schemaStorageProvider, List<EdmlExecutor> edmlExecutors) {
         this.serviceDao = serviceDao;
         this.schemaStorageProvider = schemaStorageProvider;
-        this.executors = edmlExecutors.stream()
-                .collect(Collectors.toMap(EdmlExecutor::getAction, it -> it));
+        this.executors = edmlExecutors.stream().collect(Collectors.toMap(EdmlExecutor::getAction, it -> it));
     }
 
     @Override
     public void execute(EdmlRequestContext context, Handler<AsyncResult<QueryResult>> resultHandler) {
+        //TODO переделать на генерацию схемы из списка атрибутов
         schemaStorageProvider.getLogicalSchema(context.getRequest().getQueryRequest().getDatamartMnemonic(), schemaAr -> {
             if (schemaAr.succeeded()) {
                 JsonObject schema = schemaAr.result();

@@ -13,15 +13,11 @@ import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.plugin.exload.QueryExloadParam;
 import ru.ibs.dtm.common.plugin.exload.TableAttribute;
 import ru.ibs.dtm.common.plugin.exload.Type;
-import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.transformer.Transformer;
 import ru.ibs.dtm.query.execution.core.configuration.properties.EdmlProperties;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
-import ru.ibs.dtm.query.execution.core.dto.edml.DownloadExtTableRecord;
-import ru.ibs.dtm.query.execution.core.dto.edml.DownloadExternalTableAttribute;
-import ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction;
-import ru.ibs.dtm.query.execution.core.dto.edml.EdmlQuery;
+import ru.ibs.dtm.query.execution.core.dto.edml.*;
 import ru.ibs.dtm.query.execution.core.service.edml.EdmlDownloadExecutor;
 import ru.ibs.dtm.query.execution.core.service.edml.EdmlExecutor;
 import ru.ibs.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
@@ -30,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import static ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction.*;
 
 @Service
 @Slf4j
@@ -47,8 +45,7 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
         this.tableAttributeTransformer = tableAttributeTransformer;
         this.edmlProperties = edmlProperties;
         this.serviceDao = serviceDao;
-        this.executors = downloadExecutors.stream()
-                .collect(Collectors.toMap(EdmlDownloadExecutor::getDownloadType, it -> it));
+        this.executors = downloadExecutors.stream().collect(Collectors.toMap(EdmlDownloadExecutor::getDownloadType, it -> it));
     }
 
     @Override
@@ -64,16 +61,16 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
             log.debug("Внешняя таблица {} найдена", context.getTargetTable().getTableName());
             context.getRequest().getQueryRequest().setSql(context.getSqlNode().getSource().toSqlString(SQL_DIALECT).toString());
             log.debug("От запроса оставили: {}", context.getRequest().getQueryRequest().getSql());
-            context.setExloadParam(createQueryExloadParam(context.getTargetTable().getTableName(),
-                    context.getRequest().getQueryRequest(), extTableRecord));
-            serviceDao.insertDownloadQuery(context.getExloadParam().getId(), extTableRecord.getId(),
-                    context.getRequest().getQueryRequest().getSql(), ar -> {
-                        if (ar.succeeded()) {
-                            promise.complete(extTableRecord);
-                        } else {
-                            promise.fail(ar.cause());
-                        }
-                    });
+            context.setExloadParam(createQueryExloadParam(context, extTableRecord));
+            DownloadQueryRecord downloadQueryRecord = createDownloadQueryRecord(context, extTableRecord);
+            serviceDao.insertDownloadQuery(downloadQueryRecord, ar -> {
+                if (ar.succeeded()) {
+                    log.debug("Добавлен downloadQuery {}", downloadQueryRecord);
+                    promise.complete(extTableRecord);
+                } else {
+                    promise.fail(ar.cause());
+                }
+            });
         });
     }
 
@@ -100,12 +97,12 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
     }
 
     @NotNull
-    private QueryExloadParam createQueryExloadParam(String externalTable, QueryRequest queryRequest, DownloadExtTableRecord detRecord) {
+    private QueryExloadParam createQueryExloadParam(EdmlRequestContext context, DownloadExtTableRecord detRecord) {
         final QueryExloadParam exloadParam = new QueryExloadParam();
         exloadParam.setId(UUID.randomUUID());
-        exloadParam.setDatamart(queryRequest.getDatamartMnemonic());
-        exloadParam.setTableName(externalTable);
-        exloadParam.setSqlQuery(queryRequest.getSql());
+        exloadParam.setDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic());
+        exloadParam.setTableName(context.getTargetTable().getTableName());
+        exloadParam.setSqlQuery(context.getRequest().getQueryRequest().getSql());
         exloadParam.setLocationType(detRecord.getLocationType());
         exloadParam.setLocationPath(detRecord.getLocationPath());
         exloadParam.setFormat(detRecord.getFormat());
@@ -114,8 +111,14 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
         return exloadParam;
     }
 
+    @NotNull
+    private DownloadQueryRecord createDownloadQueryRecord(EdmlRequestContext context, DownloadExtTableRecord extTableRecord) {
+        return new DownloadQueryRecord(UUID.randomUUID().toString(), extTableRecord.getDatamartId(),
+                extTableRecord.getTableName(), context.getRequest().getQueryRequest().getSql(), 0);
+    }
+
     @Override
     public EdmlAction getAction() {
-        return EdmlAction.DOWNLOAD;
+        return DOWNLOAD;
     }
 }

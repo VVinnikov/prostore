@@ -21,9 +21,9 @@ databaseChangeLog:
             path: 0003.sql
             relativeToChangelogFile:  true
   - changeSet:
-      id:  20200617_150000
+      id:  20200625_110000
       author: 'Viktor Arkhipov'
       changes:
         - sqlFile:
-            path: 0003.sql
+            path: 0004.sql
             relativeToChangelogFile:  true

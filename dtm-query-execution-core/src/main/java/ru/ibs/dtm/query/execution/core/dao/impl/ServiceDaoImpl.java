@@ -6,6 +6,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.sql.ResultSet;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -27,10 +28,7 @@ import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.dto.eddl.CreateDownloadExternalTableQuery;
 import ru.ibs.dtm.query.execution.core.dto.eddl.CreateUploadExternalTableQuery;
 import ru.ibs.dtm.query.execution.core.dto.eddl.DropUploadExternalTableQuery;
-import ru.ibs.dtm.query.execution.core.dto.edml.DownloadExtTableRecord;
-import ru.ibs.dtm.query.execution.core.dto.edml.DownloadExternalTableAttribute;
-import ru.ibs.dtm.query.execution.core.dto.edml.UploadExtTableRecord;
-import ru.ibs.dtm.query.execution.core.dto.edml.UploadQueryRecord;
+import ru.ibs.dtm.query.execution.core.dto.edml.*;
 import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
 import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartInfo;
 import ru.ibs.dtm.query.execution.core.dto.metadata.EntityAttribute;
@@ -41,7 +39,6 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
@@ -510,20 +507,18 @@ public class ServiceDaoImpl implements ServiceDao {
     }
 
     @Override
-    public void insertDownloadQuery(UUID id, Long detId, String sql, Handler<AsyncResult<Void>> resultHandler) {
-        log.debug("INSERT в таблицу запросов, начало. id: {}, detId: {}, sql: {}", id, detId, sql);
+    public void insertDownloadQuery(DownloadQueryRecord downloadQueryRecord, Handler<AsyncResult<Void>> resultHandler) {
         executor.execute(dsl -> dsl
                 .insertInto(DOWNLOAD_QUERY)
-                .set(DOWNLOAD_QUERY.ID, id.toString())
-                .set(DOWNLOAD_QUERY.DET_ID, detId)
-                .set(DOWNLOAD_QUERY.SQL_QUERY, sql))
+                .set(DOWNLOAD_QUERY.ID, downloadQueryRecord.getId())
+                .set(DOWNLOAD_QUERY.DATAMART_ID, downloadQueryRecord.getDatamartId())
+                .set(DOWNLOAD_QUERY.TABLE_NAME_EXT, downloadQueryRecord.getTableNameExt())
+                .set(DOWNLOAD_QUERY.SQL_QUERY, downloadQueryRecord.getSqlQuery())
+                .set(DOWNLOAD_QUERY.STATUS, downloadQueryRecord.getStatus()))
                 .setHandler(ar -> {
                     if (ar.succeeded()) {
-                        log.debug("INSERT в таблицу запросов успешен. id: {}, detId: {}, sql: {}", id, detId, sql);
                         resultHandler.handle(Future.succeededFuture());
                     } else {
-                        log.error("INSERT в таблицу запросов не успешен. id: {}, detId: {}, sql: {}, error: {}",
-                                id, detId, sql, ar.cause().getMessage());
                         resultHandler.handle(Future.failedFuture(ar.cause()));
                     }
                 });
@@ -806,7 +801,7 @@ public class ServiceDaoImpl implements ServiceDao {
         record.setLocationType(Type.values()[locationType]);
         record.setLocationPath(locationPath);
         record.setFormat(Format.values()[format]);
-        record.setTableSchema(schema);
+        record.setTableSchema(JsonObject.mapFrom(schema));
         record.setMessageLimit(messageLimit);
         return record;
     }

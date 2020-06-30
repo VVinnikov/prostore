@@ -18,6 +18,7 @@ public class MppwKafkaRequestFactoryImpl implements MppwKafkaRequestFactory {
         request.setTopic(kafkaTopicUri.getTopic());
         request.setZookeeperHost(kafkaTopicUri.getHost());
         request.setZookeeperPort(kafkaTopicUri.getPort());
+        request.setLoadStart(true);
         return new MppwRequestContext(request);
     }
 }

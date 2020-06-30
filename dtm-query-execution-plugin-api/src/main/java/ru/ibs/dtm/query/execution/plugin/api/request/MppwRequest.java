@@ -9,71 +9,82 @@ import ru.ibs.dtm.common.reader.QueryRequest;
  */
 public class MppwRequest extends DatamartRequest {
 
-  /**
-   * Парамеры выполнения загрузки
-   */
-  private QueryLoadParam queryLoadParam;
-  /**
-   * Логическая схема
-   */
-  private JsonObject avroSchema;
+    /**
+     * логический признак начала загрузки
+     */
+    private Boolean isLoadStart;
+    /**
+     * авро схема данных
+     */
+    private JsonObject schema;
+    /**
+     * Парамеры выполнения загрузки
+     */
+    private QueryLoadParam queryLoadParam;
+    /**
+     * Хост zookeeper'а
+     */
+    private String zookeeperHost;
+    /**
+     * Порт zookeeper'а
+     */
+    private int zookeeperPort;
+    /**
+     * Название выгружаеиого топика
+     */
+    private String topic;
 
-  /**
-   * Хост zookeeper'а
-   */
-  private String zookeeperHost;
-  /**
-   * Порт zookeeper'а
-   */
-  private int zookeeperPort;
-  /**
-   * Название выгружаеиого топика
-   */
-  private String topic;
+    public MppwRequest(QueryRequest queryRequest, QueryLoadParam queryLoadParam, JsonObject schema) {
+        super(queryRequest);
+        this.queryLoadParam = queryLoadParam;
+        this.schema = schema;
+    }
 
-  public MppwRequest(QueryRequest queryRequest, QueryLoadParam queryLoadParam, JsonObject avroSchema) {
-    super(queryRequest);
-    this.queryLoadParam = queryLoadParam;
-    this.avroSchema = avroSchema;
-  }
+    public QueryLoadParam getQueryLoadParam() {
+        return queryLoadParam;
+    }
 
-  public QueryLoadParam getQueryLoadParam() {
-    return queryLoadParam;
-  }
+    public void setQueryLoadParam(QueryLoadParam queryLoadParam) {
+        this.queryLoadParam = queryLoadParam;
+    }
 
-  public void setQueryLoadParam(QueryLoadParam queryLoadParam) {
-    this.queryLoadParam = queryLoadParam;
-  }
+    public String getZookeeperHost() {
+        return zookeeperHost;
+    }
 
-  public JsonObject getAvroSchema() {
-    return avroSchema;
-  }
+    public void setZookeeperHost(String zookeeperHost) {
+        this.zookeeperHost = zookeeperHost;
+    }
 
-  public void setAvroSchema(JsonObject avroSchema) {
-    this.avroSchema = avroSchema;
-  }
+    public int getZookeeperPort() {
+        return zookeeperPort;
+    }
 
-  public String getZookeeperHost() {
-    return zookeeperHost;
-  }
+    public void setZookeeperPort(int zookeeperPort) {
+        this.zookeeperPort = zookeeperPort;
+    }
 
-  public void setZookeeperHost(String zookeeperHost) {
-    this.zookeeperHost = zookeeperHost;
-  }
+    public String getTopic() {
+        return topic;
+    }
 
-  public int getZookeeperPort() {
-    return zookeeperPort;
-  }
+    public void setTopic(String topic) {
+        this.topic = topic;
+    }
 
-  public void setZookeeperPort(int zookeeperPort) {
-    this.zookeeperPort = zookeeperPort;
-  }
+    public Boolean getLoadStart() {
+        return isLoadStart;
+    }
 
-  public String getTopic() {
-    return topic;
-  }
+    public void setLoadStart(Boolean loadStart) {
+        isLoadStart = loadStart;
+    }
 
-  public void setTopic(String topic) {
-    this.topic = topic;
-  }
+    public JsonObject getSchema() {
+        return schema;
+    }
+
+    public void setSchema(JsonObject schema) {
+        this.schema = schema;
+    }
 }

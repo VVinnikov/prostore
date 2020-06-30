@@ -62,13 +62,4 @@ public class QueryLoadParam {
      * Количество записей в сообщении
      */
     private Integer messageLimit;
-    /**
-     * avro схема
-     */
-    private String avroSchema;
-    /**
-     * логический признак начала загрузки
-     */
-    private Boolean isLoadStart;
-
 }

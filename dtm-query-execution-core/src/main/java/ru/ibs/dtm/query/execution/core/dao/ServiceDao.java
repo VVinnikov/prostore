@@ -11,10 +11,7 @@ import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.dto.eddl.CreateDownloadExternalTableQuery;
 import ru.ibs.dtm.query.execution.core.dto.eddl.CreateUploadExternalTableQuery;
 import ru.ibs.dtm.query.execution.core.dto.eddl.DropUploadExternalTableQuery;
-import ru.ibs.dtm.query.execution.core.dto.edml.DownloadExtTableRecord;
-import ru.ibs.dtm.query.execution.core.dto.edml.DownloadExternalTableAttribute;
-import ru.ibs.dtm.query.execution.core.dto.edml.UploadExtTableRecord;
-import ru.ibs.dtm.query.execution.core.dto.edml.UploadQueryRecord;
+import ru.ibs.dtm.query.execution.core.dto.edml.*;
 import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
 import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartInfo;
 import ru.ibs.dtm.query.execution.core.dto.metadata.EntityAttribute;
@@ -67,7 +64,7 @@ public interface ServiceDao {
 
     void findDownloadExternalTable(String datamartMnemonic, String table, Handler<AsyncResult<DownloadExtTableRecord>> resultHandler);
 
-    void insertDownloadQuery(UUID id, Long detId, String sql, Handler<AsyncResult<Void>> resultHandler);
+    void insertDownloadQuery(DownloadQueryRecord downloadQueryRecord, Handler<AsyncResult<Void>> resultHandler);
 
     void findUploadExternalTable(String schemaName, String tableName, Handler<AsyncResult<UploadExtTableRecord>> resultHandler);
 

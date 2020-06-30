@@ -96,7 +96,7 @@ class DownloadExternalTableExecutorTest {
             final Handler<AsyncResult<DeltaRecord>> handler = invocation.getArgument(3);
             handler.handle(Future.succeededFuture());
             return null;
-        }).when(serviceDao).insertDownloadQuery(any(), any(), any(), any());
+        }).when(serviceDao).insertDownloadQuery(any(), any());
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<List<DownloadExternalTableAttribute>>> handler = invocation.getArgument(1);
@@ -144,10 +144,10 @@ class DownloadExternalTableExecutorTest {
 
         RuntimeException exception = new RuntimeException("Ошибка добавления download_query!");
         Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<DeltaRecord>> handler = invocation.getArgument(3);
+            final Handler<AsyncResult<DeltaRecord>> handler = invocation.getArgument(1);
             handler.handle(Future.failedFuture(exception));
             return null;
-        }).when(serviceDao).insertDownloadQuery(any(), any(), any(), any());
+        }).when(serviceDao).insertDownloadQuery(any(), any());
 
         downloadExternalTableExecutor.execute(context, edmlQuery, ar -> {
             if (ar.succeeded()) {

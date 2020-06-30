@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction.*;
+
 @Service
 @Slf4j
 public class UploadExternalTableExecutor implements EdmlExecutor {
@@ -75,6 +77,7 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
             UploadQueryRecord uploadQueryRecord = createUploadQueryRecord(context, edmlQuery);
             QueryLoadParam queryLoadParam = createQueryLoadParam(context, (UploadExtTableRecord) edmlQuery.getRecord(), deltaRecord);
             context.setLoadParam(queryLoadParam);
+            context.setSchema(((UploadExtTableRecord) edmlQuery.getRecord()).getTableSchema());
             serviceDao.inserUploadQuery(uploadQueryRecord, ar -> {
                 if (ar.succeeded()) {
                     log.debug("Добавлен uploadQuery {}", uploadQueryRecord);
@@ -99,23 +102,6 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
     }
 
     @NotNull
-    private QueryLoadParam createQueryLoadParam(EdmlRequestContext context, UploadExtTableRecord uplRecord, DeltaRecord deltaRecord) {
-        final QueryLoadParam loadParam = new QueryLoadParam();
-        loadParam.setId(UUID.randomUUID());
-        loadParam.setIsLoadStart(true);
-        loadParam.setDatamart(context.getSourceTable().getSchemaName());
-        loadParam.setTableName(context.getTargetTable().getTableName());
-        loadParam.setSqlQuery(context.getSqlNode().toSqlString(SQL_DIALECT).toString());
-        loadParam.setLocationType(uplRecord.getLocationType());
-        loadParam.setLocationPath(uplRecord.getLocationPath());
-        loadParam.setFormat(uplRecord.getFormat());
-        loadParam.setAvroSchema(uplRecord.getTableSchema());
-        loadParam.setDeltaHot(deltaRecord.getSinId());
-        loadParam.setMessageLimit(uplRecord.getMessageLimit() != null ?
-                uplRecord.getMessageLimit() : edmlProperties.getDefaultMessageLimit());
-        return loadParam;
-    }
-
     private UploadQueryRecord createUploadQueryRecord(EdmlRequestContext context, EdmlQuery edmlQuery) {
         return new UploadQueryRecord(
                 UUID.randomUUID().toString(),
@@ -127,8 +113,24 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
         );
     }
 
+    @NotNull
+    private QueryLoadParam createQueryLoadParam(EdmlRequestContext context, UploadExtTableRecord uplRecord, DeltaRecord deltaRecord) {
+        final QueryLoadParam loadParam = new QueryLoadParam();
+        loadParam.setId(UUID.randomUUID());
+        loadParam.setDatamart(context.getSourceTable().getSchemaName());
+        loadParam.setTableName(context.getTargetTable().getTableName());
+        loadParam.setSqlQuery(context.getSqlNode().toSqlString(SQL_DIALECT).toString());
+        loadParam.setLocationType(uplRecord.getLocationType());
+        loadParam.setLocationPath(uplRecord.getLocationPath());
+        loadParam.setFormat(uplRecord.getFormat());
+        loadParam.setDeltaHot(deltaRecord.getSinId());
+        loadParam.setMessageLimit(uplRecord.getMessageLimit() != null ?
+                uplRecord.getMessageLimit() : edmlProperties.getDefaultMessageLimit());
+        return loadParam;
+    }
+
     @Override
     public EdmlAction getAction() {
-        return EdmlAction.UPLOAD;
+        return UPLOAD;
     }
 }

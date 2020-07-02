@@ -25,6 +25,3 @@ tarantool:
     password: ${TARANTOOL_DB_PASS:123}
   cartridge:
     url: ${TARANTOOL_CATRIDGE_URL:http://10.18.84.10:8811}
-
-schema-registry:
-  url: ${SCHEMA_REGISTRY_URL:http://10.18.84.6:8081}

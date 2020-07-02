@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassFieldUtils;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
+import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.configuration.KafkaProperties;
 import ru.ibs.dtm.query.execution.plugin.adg.configuration.kafka.KafkaAdminProperty;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.OperationFile;
@@ -47,7 +48,8 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
 			yaml.setSpaces(new LinkedHashMap<>());
 		}
 		val spaces = yaml.getSpaces();
-		String prefix = context.getSystemName() + "_" + context.getRequest().getQueryRequest().getDatamartMnemonic() + "_";
+		QueryRequest queryRequest = context.getRequest().getQueryRequest();
+		String prefix = queryRequest.getSystemName() + "_" + queryRequest.getDatamartMnemonic() + "_";
 		ClassTable classTable = context.getRequest().getClassTable();
 		int indexComma = classTable.getName().indexOf(".");
 		String table = classTable.getName().substring(indexComma + 1).toLowerCase();

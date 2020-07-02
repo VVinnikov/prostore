@@ -29,7 +29,7 @@ public class QueryConfiguration {
 
   @Bean("adbQueryExecutor")
   public AdbQueryExecutor greenplam(@Qualifier("adbVertx") Vertx vertx, GreenplumProperties greenplumProperties) {
-    PgPool pgPool = PgClient.pool(vertx, greenplumProperties.getOptions());
+    PgPool pgPool = PgClient.pool(greenplumProperties.getOptions());
     return new AdbQueryExecutor(pgPool, greenplumProperties.getFetchSize());
   }
 }

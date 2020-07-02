@@ -1,0 +1,31 @@
+http:
+  port: ${SERVER_PORT:8080}
+
+env:
+  name: ${DTM_NAME:test}
+  defaultDatamart: ${DEFAULT_DATAMART:shares}
+
+datasource:
+  edml:
+    sourceType: ${EDML_DATASOURCE:ADB}
+    defaultChunkSize: ${EDML_DEFAULT_CHUNK_SIZE:1000}
+  service:
+    options:
+      database: ${SERVICEDB_DB_NAME:dtmservice}
+      user: ${SERVICEDB_USER:dtmuser}
+      password: ${SERVICEDB_PASS:Cat6Gmt7Ncr}
+      host: ${SERVICEDB_HOST:10.92.3.41}
+      port: ${SERVICEDB_PORT:3306}
+    poolOptions:
+      maxSize: 5
+spring:
+  liquibase:
+    enabled: false
+
+liquibase:
+  change-log-location:
+    serviceDb: classpath:db/changelog/serviceDb/changelog.yml
+
+logging:
+  level:
+    ru.ibs.dtm.query.execution: TRACE

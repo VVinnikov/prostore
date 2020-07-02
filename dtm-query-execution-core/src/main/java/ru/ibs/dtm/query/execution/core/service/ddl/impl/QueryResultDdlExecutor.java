@@ -37,6 +37,6 @@ public abstract class QueryResultDdlExecutor implements DdlExecutor<QueryResult>
     protected String getSql(DdlRequestContext context, String sqlNodeName) {
         QueryRequest request = context.getRequest().getQueryRequest();
         String tableWithSchema = SqlPreparer.getTableWithSchema(mariaProperties.getOptions().getDatabase(), sqlNodeName);
-        return SqlPreparer.replaceQuote(SqlPreparer.replaceTableInSql(request.getSql(), tableWithSchema));
+        return SqlPreparer.removeDistributeBy(SqlPreparer.replaceQuote(SqlPreparer.replaceTableInSql(request.getSql(), tableWithSchema)));
     }
 }

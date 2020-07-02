@@ -30,6 +30,8 @@ public class QueryRequest {
      */
     private String sql;
 
+    private String systemName;
+
     /**
      * Параметры(необязательно)
      */
@@ -75,6 +77,14 @@ public class QueryRequest {
         this.parameters = parameters;
     }
 
+    public String getSystemName() {
+        return systemName;
+    }
+
+    public void setSystemName(String systemName) {
+        this.systemName = systemName;
+    }
+
     public QueryRequest copy() {
         QueryRequest newQueryRequest = new QueryRequest();
         newQueryRequest.setSql(sql);
@@ -87,6 +97,7 @@ public class QueryRequest {
             paramsCopy.addAll(parameters);
         }
         newQueryRequest.setParameters(paramsCopy);
+        newQueryRequest.setSystemName(systemName);
         return newQueryRequest;
     }
 

@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
+import ru.ibs.dtm.query.execution.core.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.core.factory.RequestContextFactory;
 import ru.ibs.dtm.query.execution.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.service.QueryAnalyzer;
@@ -29,24 +30,28 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
 	private final Vertx vertx;
 	private final HintExtractor hintExtractor;
 	private final RequestContextFactory<RequestContext<? extends DatamartRequest>, QueryRequest> requestContextFactory;
+	private final AppConfiguration configuration;
 
 	@Autowired
 	public QueryAnalyzerImpl(QueryDispatcher queryDispatcher,
 							 DefinitionService<SqlNode> definitionService,
 							 RequestContextFactory<RequestContext<? extends DatamartRequest>, QueryRequest> requestContextFactory,
 							 @Qualifier("coreVertx") Vertx vertx,
-							 HintExtractor hintExtractor) {
+							 HintExtractor hintExtractor,
+							 AppConfiguration configuration) {
 		this.queryDispatcher = queryDispatcher;
 		this.definitionService = definitionService;
 		this.requestContextFactory = requestContextFactory;
 		this.vertx = vertx;
 		this.hintExtractor = hintExtractor;
+		this.configuration = configuration;
 	}
 
 	@Override
 	public void analyzeAndExecute(QueryRequest queryRequest, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
 		getParsedQuery(queryRequest, parseResult -> {
 			if (parseResult.succeeded()) {
+				queryRequest.setSystemName(configuration.getSystemName());
 				queryDispatcher.dispatch(requestContextFactory.
 						create(queryRequest, parseResult.result()), asyncResultHandler);
 			} else {

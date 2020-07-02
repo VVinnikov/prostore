@@ -7,12 +7,12 @@ import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import ru.ibs.dtm.common.configuration.kafka.KafkaAdminProperty;
-import ru.ibs.dtm.common.configuration.kafka.KafkaConfig;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassFieldUtils;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
-import ru.ibs.dtm.common.reader.SourceType;
+import ru.ibs.dtm.common.reader.QueryRequest;
+import ru.ibs.dtm.query.execution.plugin.adg.configuration.KafkaProperties;
+import ru.ibs.dtm.query.execution.plugin.adg.configuration.kafka.KafkaAdminProperty;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.OperationFile;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.OperationYaml;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.config.ConsumerConfig;
@@ -33,14 +33,14 @@ import static ru.ibs.dtm.query.execution.plugin.adg.constants.ColumnFields.*;
 @Service
 public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerator {
 
-    private KafkaConfig kafkaProperties;
-    private ContentWriter contentWriter;
+	private KafkaProperties kafkaProperties;
+	private ContentWriter contentWriter;
 
-    @Autowired
-    public TtCartridgeSchemaGeneratorImpl(@Qualifier("coreKafkaProperties") KafkaConfig kafkaProperties, ContentWriter contentWriter) {
-        this.kafkaProperties = kafkaProperties;
-        this.contentWriter = contentWriter;
-    }
+	@Autowired
+	public TtCartridgeSchemaGeneratorImpl(@Qualifier("adgKafkaProperties") KafkaProperties kafkaProperties, ContentWriter contentWriter) {
+		this.kafkaProperties = kafkaProperties;
+		this.contentWriter = contentWriter;
+	}
 
 	@Override
 	public void generate(DdlRequestContext context, OperationYaml yaml, Handler<AsyncResult<OperationYaml>> handler) {
@@ -48,7 +48,8 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
 			yaml.setSpaces(new LinkedHashMap<>());
 		}
 		val spaces = yaml.getSpaces();
-		String prefix = context.getSystemName() + "_" + context.getRequest().getQueryRequest().getDatamartMnemonic() + "_";
+		QueryRequest queryRequest = context.getRequest().getQueryRequest();
+		String prefix = queryRequest.getSystemName() + "_" + queryRequest.getDatamartMnemonic() + "_";
 		ClassTable classTable = context.getRequest().getClassTable();
 		int indexComma = classTable.getName().indexOf(".");
 		String table = classTable.getName().substring(indexComma + 1).toLowerCase();
@@ -65,60 +66,60 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
 		setTopicConfig(files, handler, classTable);
 	}
 
-    @Override
-    public void deleteConfig(ClassTable classTable, List<OperationFile> files, Handler<AsyncResult<List<OperationFile>>> handler) {
-        //setConsumerConfig
-        val consumerConfig = files.stream().filter(it -> it.getFilename().equalsIgnoreCase(ConsumerConfig.FILE_NAME)).findFirst();
-        if (consumerConfig.isPresent()) {
-            val config = contentWriter.toConsumerConfig(consumerConfig.get().getContent());
-            val properties = kafkaProperties.getKafkaAdminProperty();
-            val topic = String.format(properties.getUpload().getRequestTopic().get(SourceType.ADG.toString().toLowerCase()), classTable.getName(), classTable.getSchema());
-            config.getTopics().remove(topic);
-            files.stream().filter(it -> it.getFilename().equalsIgnoreCase(ConsumerConfig.FILE_NAME)).findFirst().ifPresent(it -> it.setContent(contentWriter.toContent(config)));
-        } else {
-            handler.handle(Future.failedFuture(new Exception("Не найден искомый файл конфигурации: " + ConsumerConfig.FILE_NAME)));
-        }
+	@Override
+	public void deleteConfig(ClassTable classTable, List<OperationFile> files, Handler<AsyncResult<List<OperationFile>>> handler) {
+		//setConsumerConfig
+		val consumerConfig = files.stream().filter(it -> it.getFilename().equalsIgnoreCase(ConsumerConfig.FILE_NAME)).findFirst();
+		if (consumerConfig.isPresent()) {
+			val config = contentWriter.toConsumerConfig(consumerConfig.get().getContent());
+			val properties = kafkaProperties.getAdmin();
+			val topic = String.format(properties.getAdgUploadRq(), classTable.getName(), classTable.getSchema());
+			config.getTopics().remove(topic);
+			files.stream().filter(it -> it.getFilename().equalsIgnoreCase(ConsumerConfig.FILE_NAME)).findFirst().ifPresent(it -> it.setContent(contentWriter.toContent(config)));
+		} else {
+			handler.handle(Future.failedFuture(new Exception("Не найден искомый файл конфигурации: " + ConsumerConfig.FILE_NAME)));
+		}
 
-        //setTopicConfig
-        val topicsConfig = files.stream().filter(it -> it.getFilename().equalsIgnoreCase(TopicsConfig.FILE_NAME)).findFirst();
-        if (topicsConfig.isPresent()) {
-            val config = contentWriter.toTopicsConfig(topicsConfig.get().getContent());
-            val properties = kafkaProperties.getKafkaAdminProperty();
-            val topic = String.format(properties.getUpload().getRequestTopic().get(SourceType.ADG.toString().toLowerCase()), classTable.getName(), classTable.getSchema());
-            config.remove(topic, createTopicConfig(properties, classTable));
-            files.stream().filter(it -> it.getFilename().equalsIgnoreCase(TopicsConfig.FILE_NAME)).findFirst().ifPresent(it -> it.setContent(contentWriter.toContent(config)));
-            handler.handle(Future.succeededFuture(files));
-        } else {
-            handler.handle(Future.failedFuture(new Exception("Не найден искомый файл конфигурации: " + ConsumerConfig.FILE_NAME)));
-        }
-    }
+		//setTopicConfig
+		val topicsConfig = files.stream().filter(it -> it.getFilename().equalsIgnoreCase(TopicsConfig.FILE_NAME)).findFirst();
+		if (topicsConfig.isPresent()) {
+			val config = contentWriter.toTopicsConfig(topicsConfig.get().getContent());
+			val properties = kafkaProperties.getAdmin();
+			val topic = String.format(properties.getAdgUploadRq(), classTable.getName(), classTable.getSchema());
+			config.remove(topic, createTopicConfig(properties, classTable));
+			files.stream().filter(it -> it.getFilename().equalsIgnoreCase(TopicsConfig.FILE_NAME)).findFirst().ifPresent(it -> it.setContent(contentWriter.toContent(config)));
+			handler.handle(Future.succeededFuture(files));
+		} else {
+			handler.handle(Future.failedFuture(new Exception("Не найден искомый файл конфигурации: " + ConsumerConfig.FILE_NAME)));
+		}
+	}
 
-    private void setTopicConfig(List<OperationFile> files, Handler<AsyncResult<List<OperationFile>>> handler, ClassTable classTable) {
-        val topicsConfig = files.stream().filter(it -> it.getFilename().equalsIgnoreCase(TopicsConfig.FILE_NAME)).findFirst();
-        if (topicsConfig.isPresent()) {
-            val config = contentWriter.toTopicsConfig(topicsConfig.get().getContent());
-            val properties = kafkaProperties.getKafkaAdminProperty();
-            val topic = String.format(properties.getUpload().getRequestTopic().get(SourceType.ADG.toString().toLowerCase()), classTable.getName(), classTable.getSchema());
-            config.put(topic, createTopicConfig(properties, classTable));
-            files.stream().filter(it -> it.getFilename().equalsIgnoreCase(TopicsConfig.FILE_NAME)).findFirst().ifPresent(it -> it.setContent(contentWriter.toContent(config)));
-            handler.handle(Future.succeededFuture(files));
-        } else {
-            handler.handle(Future.failedFuture(new Exception("Не найден искомый файл конфигурации: " + ConsumerConfig.FILE_NAME)));
-        }
-    }
+	private void setTopicConfig(List<OperationFile> files, Handler<AsyncResult<List<OperationFile>>> handler, ClassTable classTable) {
+		val topicsConfig = files.stream().filter(it -> it.getFilename().equalsIgnoreCase(TopicsConfig.FILE_NAME)).findFirst();
+		if (topicsConfig.isPresent()) {
+			val config = contentWriter.toTopicsConfig(topicsConfig.get().getContent());
+			val properties = kafkaProperties.getAdmin();
+			val topic = String.format(properties.getAdgUploadRq(), classTable.getName(), classTable.getSchema());
+			config.put(topic, createTopicConfig(properties, classTable));
+			files.stream().filter(it -> it.getFilename().equalsIgnoreCase(TopicsConfig.FILE_NAME)).findFirst().ifPresent(it -> it.setContent(contentWriter.toContent(config)));
+			handler.handle(Future.succeededFuture(files));
+		} else {
+			handler.handle(Future.failedFuture(new Exception("Не найден искомый файл конфигурации: " + ConsumerConfig.FILE_NAME)));
+		}
+	}
 
-    private void setConsumerConfig(List<OperationFile> files, Handler<AsyncResult<List<OperationFile>>> handler, ClassTable classTable) {
-        val consumerConfig = files.stream().filter(it -> it.getFilename().equalsIgnoreCase(ConsumerConfig.FILE_NAME)).findFirst();
-        if (consumerConfig.isPresent()) {
-            val config = contentWriter.toConsumerConfig(consumerConfig.get().getContent());
-            val properties = kafkaProperties.getKafkaAdminProperty();
-            val topic = String.format(properties.getUpload().getRequestTopic().get(SourceType.ADG.toString().toLowerCase()), classTable.getName(), classTable.getSchema());
-            config.getTopics().add(topic);
-            files.stream().filter(it -> it.getFilename().equalsIgnoreCase(ConsumerConfig.FILE_NAME)).findFirst().ifPresent(it -> it.setContent(contentWriter.toContent(config)));
-        } else {
-            handler.handle(Future.failedFuture(new Exception("Не найден искомый файл конфигурации: " + ConsumerConfig.FILE_NAME)));
-        }
-    }
+	private void setConsumerConfig(List<OperationFile> files, Handler<AsyncResult<List<OperationFile>>> handler, ClassTable classTable) {
+		val consumerConfig = files.stream().filter(it -> it.getFilename().equalsIgnoreCase(ConsumerConfig.FILE_NAME)).findFirst();
+		if (consumerConfig.isPresent()) {
+			val config = contentWriter.toConsumerConfig(consumerConfig.get().getContent());
+			val properties = kafkaProperties.getAdmin();
+			val topic = String.format(properties.getAdgUploadRq(), classTable.getName(), classTable.getSchema());
+			config.getTopics().add(topic);
+			files.stream().filter(it -> it.getFilename().equalsIgnoreCase(ConsumerConfig.FILE_NAME)).findFirst().ifPresent(it -> it.setContent(contentWriter.toContent(config)));
+		} else {
+			handler.handle(Future.failedFuture(new Exception("Не найден искомый файл конфигурации: " + ConsumerConfig.FILE_NAME)));
+		}
+	}
 
 	public static Space create(List<ClassField> fields) {
 		List<SpaceIndexPart> primaryKeyParts = getPrimaryKeyParts(fields);
@@ -139,7 +140,7 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
 
 	private static List<SpaceIndexPart> getPrimaryKeyParts(List<ClassField> fields) {
 		return ClassFieldUtils.getPrimaryKeyList(fields).stream()
-				.map(f -> new SpaceIndexPart(f.getName(), SpaceAttributeTypeUtil.toAttributeType(f.getType()).getName(), f.getIsNull()))
+				.map(f -> new SpaceIndexPart(f.getName(), SpaceAttributeTypeUtil.toAttributeType(f.getType()).getName(), f.isNullable()))
 				.collect(Collectors.toList());
 	}
 
@@ -197,14 +198,14 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
 		return attributes;
 	}
 
-    private static SpaceAttribute toAttribute(ClassField field) {
-        return new SpaceAttribute(field.getIsNull(), field.getName(), SpaceAttributeTypeUtil.toAttributeType(field.getType()));
-    }
+	private static SpaceAttribute toAttribute(ClassField field) {
+		return new SpaceAttribute(field.getNull(), field.getName(), SpaceAttributeTypeUtil.toAttributeType(field.getType()));
+	}
 
-    private TopicsConfig createTopicConfig(KafkaAdminProperty property, ClassTable classTable) {
-        val adgUploadRq = String.format(property.getUpload().getRequestTopic().get(SourceType.ADG.toString().toLowerCase()), classTable.getName(), classTable.getSchema());
-        val adgUploadRs = String.format(property.getUpload().getResponseTopic().get(SourceType.ADG.toString().toLowerCase()), classTable.getName(), classTable.getSchema());
-        val adgUploadErr = String.format(property.getUpload().getErrorTopic().get(SourceType.ADG.toString().toLowerCase()), classTable.getName(), classTable.getSchema());
-        return new TopicsConfig(adgUploadErr, "", classTable.getName().toLowerCase() + ACTUAL_POSTFIX, adgUploadRq.replace(".", "-"), adgUploadRs);
-    }
+	private TopicsConfig createTopicConfig(KafkaAdminProperty property, ClassTable classTable) {
+		val adgUploadRq = String.format(property.getAdgUploadRq(), classTable.getName(), classTable.getSchema());
+		val adgUploadRs = String.format(property.getAdgUploadRs(), classTable.getName(), classTable.getSchema());
+		val adgUploadErr = String.format(property.getAdgUploadErr(), classTable.getName(), classTable.getSchema());
+		return new TopicsConfig(adgUploadErr, "", classTable.getName().toLowerCase() + ACTUAL_POSTFIX, adgUploadRq.replace(".", "-"), adgUploadRs);
+	}
 }

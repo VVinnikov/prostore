@@ -5,11 +5,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 @Data
-@Component("adgKafkaConnectorProperties")
-@ConfigurationProperties(prefix = "kafka.adg.connector")
+@Component("adgConnectorProperties")
+@ConfigurationProperties(prefix = "tarantool.connector")
 public class AdgConnectorApiProperties {
-    private String address;
-    private String subscriptionPath;
-    private String loadDataPath;
-    private String transferDataToScdTablePath;
+    private String url;
+    private String kafkaSubscriptionUrl;
+    private String kafkaLoadDataUrl;
+    private String transferDataToScdTableUrl;
 }

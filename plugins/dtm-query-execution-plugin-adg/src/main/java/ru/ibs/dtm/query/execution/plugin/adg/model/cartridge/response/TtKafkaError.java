@@ -1,5 +1,6 @@
-package ru.ibs.dtm.query.execution.plugin.adg.exception.connector;
+package ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -7,7 +8,8 @@ import lombok.NoArgsConstructor;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
-public class AdgConnectorError extends RuntimeException {
+@AllArgsConstructor
+public class TtKafkaError extends RuntimeException {
     private String code;
     private String message;
 

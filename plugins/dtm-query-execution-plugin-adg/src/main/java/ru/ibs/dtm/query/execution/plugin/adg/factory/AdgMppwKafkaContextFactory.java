@@ -1,12 +1,8 @@
 package ru.ibs.dtm.query.execution.plugin.adg.factory;
 
-import io.vertx.core.json.JsonObject;
 import ru.ibs.dtm.query.execution.plugin.adg.dto.mppw.AdgMppwKafkaContext;
+import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 
 public interface AdgMppwKafkaContextFactory {
-    AdgMppwKafkaContext create(String datamartMnemonic,
-                               String topicName,
-                               String tableName,
-                               JsonObject schema,
-                               long hotDelta);
+    AdgMppwKafkaContext create(MppwRequest request);
 }

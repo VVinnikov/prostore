@@ -6,15 +6,11 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.vertx.core.json.jackson.DatabindCodec;
-import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.env.Environment;
-import ru.ibs.dtm.query.execution.plugin.api.SystemNameRegistration;
-
-import java.util.List;
 import ru.ibs.dtm.common.schema.codec.AvroEncoder;
 
 @Configuration
@@ -51,10 +47,5 @@ public class AppConfiguration {
     public AvroEncoder avroEncoder() {
         return new AvroEncoder();
     }
-	@Autowired
-	public void registerSystemName(List<SystemNameRegistration> registrations) {
-		val systemName = getSystemName();
-		registrations.forEach(r -> r.register(systemName));
-	}
 
 }

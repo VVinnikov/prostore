@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class UploadKafkaExecutor implements EdmlUploadExecutor {
 
+    public static final String MPPW_LOAD_ERROR_MESSAGE = "Ошибка выполнения mppw загрузки!";
     private final DataSourcePluginService pluginService;
     private final MppwKafkaRequestFactory mppwKafkaRequestFactory;
     private final EdmlProperties edmlProperties;
@@ -129,26 +130,29 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
 
     private void checkPluginsMppwExecution(Map<SourceType, Future> startMppwFuturefMap, Handler<AsyncResult<QueryResult>> resultHandler) {
         final Map<SourceType, MppwStopFuture> mppwStopFutureMap = new HashMap<>();
-        CompositeFuture.all(new ArrayList<>(startMppwFuturefMap.values()))
-                .setHandler(ar -> {
-                    if (ar.succeeded()) {
-                        List<Future> stopMppwFutures = getStopMppwFutures(mppwStopFutureMap, ar);
-                        CompositeFuture.all(stopMppwFutures).setHandler(sr -> {
-                            //завершены загрузки по всем плагинам
-                            if (sr.succeeded()) {
-                                //Все плагины имеют одинаковые offset
-                                if (isAllMppwPluginsHasEqualOffsets(mppwStopFutureMap)) {
-                                    resultHandler.handle(Future.succeededFuture(QueryResult.emptyResult()));
-                                } else {
-                                    RuntimeException e = new RuntimeException("Изменился offset одного из плагинов!");
-                                    log.error("Ошибка выполнения mppw загрузки!", e);
-                                    resultHandler.handle(Future.failedFuture(e));
-                                }
-                            }
-                        });
-                    } else {
-                        resultHandler.handle(Future.failedFuture(ar.cause()));
+        CompositeFuture.join(new ArrayList<>(startMppwFuturefMap.values()))
+                .onComplete(startComplete -> {
+                    if (startComplete.succeeded()) {
+                        List<Future> stopMppwFutures = getStopMppwFutures(mppwStopFutureMap, startComplete);
+                        CompositeFuture.join(stopMppwFutures)
+                                .onComplete(stopComplete -> {
+                                    if (isAllMppwPluginsHasEqualOffsets(mppwStopFutureMap)) {
+                                        resultHandler.handle(Future.succeededFuture(QueryResult.emptyResult()));
+                                    } else {
+                                        RuntimeException e = new RuntimeException("Изменился offset одного из плагинов!");
+                                        log.error(MPPW_LOAD_ERROR_MESSAGE, e);
+                                        resultHandler.handle(Future.failedFuture(e));
+                                    }
+                                })
+                                .onFailure(fail -> {
+                                    log.error(MPPW_LOAD_ERROR_MESSAGE, fail);
+                                    resultHandler.handle(Future.failedFuture(fail));
+                                });
                     }
+                })
+                .onFailure(fail -> {
+                    log.error(MPPW_LOAD_ERROR_MESSAGE, fail);
+                    resultHandler.handle(Future.failedFuture(fail));
                 });
     }
 

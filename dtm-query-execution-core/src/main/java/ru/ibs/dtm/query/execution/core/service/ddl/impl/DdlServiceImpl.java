@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
-@Service
+@Service("coreDdlService")
 public class DdlServiceImpl implements DdlService<QueryResult> {
 
     private final CalciteDefinitionService calciteDefinitionService;

@@ -11,7 +11,7 @@ datasource:
     sourceType: ${EDML_DATASOURCE:ADB}
     defaultChunkSize: ${EDML_DEFAULT_CHUNK_SIZE:1000}
     defaultMessageLimit: ${EDML_DEFAULT_MESSAGE_LIMIT:1000}
-    pluginStatusCheckPeriodMs: ${EDML_PLUGIN_STATUSCHECK_PERIOD_MS:1000}
+    pluginStatusCheckPeriodMs: ${EDML_STATUS_CHECK_PERIOD_MS:1000}
   service:
     options:
       database: ${SERVICEDB_DB_NAME:dtmservice}
@@ -38,9 +38,9 @@ kafka:
       group.id: adqm-query-execution
   cluster:
     zookeeperHosts: ${ZOOKEEPER_HOSTS:kafka-1.dtm.local}
-    rootPath: arenadata/cluster/21
+    rootPath: ${KAFKA_CLUSTER_ROOTPATH:arenadata/cluster/21}
   admin:
-    inputStreamTimeoutMs: ${INPUT_STREAM_TIMEOUT_MS:1000}
+    inputStreamTimeoutMs: ${KAFKA_INPUT_STREAM_TIMEOUT_MS:1000}
     upload:
       requestTopic:
         adb: "%s.%s.adb.upload.rq"

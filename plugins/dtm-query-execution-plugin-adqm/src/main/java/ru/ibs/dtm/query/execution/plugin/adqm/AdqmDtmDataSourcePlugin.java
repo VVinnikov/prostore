@@ -1,12 +1,11 @@
 package ru.ibs.dtm.query.execution.plugin.adqm;
 
+import ru.ibs.dtm.common.plugin.status.StatusQueryResult;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.query.execution.plugin.api.AbstractDtmDataSourcePlugin;
+import ru.ibs.dtm.query.execution.plugin.api.service.*;
 import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
-import ru.ibs.dtm.query.execution.plugin.api.service.LlrService;
-import ru.ibs.dtm.query.execution.plugin.api.service.MpprKafkaService;
-import ru.ibs.dtm.query.execution.plugin.api.service.QueryCostService;
 
 public class AdqmDtmDataSourcePlugin extends AbstractDtmDataSourcePlugin {
 
@@ -14,8 +13,10 @@ public class AdqmDtmDataSourcePlugin extends AbstractDtmDataSourcePlugin {
             DdlService<Void> ddlService,
             LlrService<QueryResult> adqmLlrService,
             MpprKafkaService<QueryResult> adqmMpprKafkaService,
-            QueryCostService<Integer> adqmQueryCostService) {
-        super(ddlService, adqmLlrService, adqmMpprKafkaService, adqmQueryCostService);
+            MppwKafkaService<QueryResult> mppwKafkaService,
+            QueryCostService<Integer> adqmQueryCostService,
+            StatusService<StatusQueryResult> statusService) {
+        super(ddlService, adqmLlrService, adqmMpprKafkaService, mppwKafkaService, adqmQueryCostService, statusService);
     }
 
     @Override

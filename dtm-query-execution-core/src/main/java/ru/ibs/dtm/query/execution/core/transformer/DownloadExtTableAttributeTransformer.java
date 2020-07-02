@@ -3,7 +3,7 @@ package ru.ibs.dtm.query.execution.core.transformer;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.plugin.exload.TableAttribute;
 import ru.ibs.dtm.common.transformer.Transformer;
-import ru.ibs.dtm.query.execution.core.dto.DownloadExternalTableAttribute;
+import ru.ibs.dtm.query.execution.core.dto.edml.DownloadExternalTableAttribute;
 
 @Component
 public class DownloadExtTableAttributeTransformer implements Transformer<DownloadExternalTableAttribute, TableAttribute> {

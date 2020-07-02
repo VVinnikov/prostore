@@ -9,9 +9,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import ru.ibs.dtm.common.configuration.kafka.KafkaAdminProperty;
+import ru.ibs.dtm.common.configuration.kafka.KafkaConfig;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
-import ru.ibs.dtm.query.execution.plugin.adqm.configuration.kafka.KafkaAdminProperty;
-import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.KafkaProperties;
+import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.query.execution.plugin.adqm.factory.MetadataFactory;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.KafkaTopicCreatorService;
@@ -30,14 +31,14 @@ public class AdqmDdlService implements DdlService<Void> {
     private final MetadataFactory metadataFactory;
     private final DatabaseExecutor adqmDatabaseExecutor;
     private final KafkaTopicCreatorService kafkaTopicService;
-    private final KafkaProperties kafkaProperties;
+    private final KafkaConfig kafkaProperties;
     private final Vertx vertx;
 
     @Autowired
     public AdqmDdlService(MetadataFactory metadataFactory,
                           DatabaseExecutor adqmDatabaseExecutor,
                           KafkaTopicCreatorService kafkaTopicService,
-                          KafkaProperties kafkaProperties,
+                          @Qualifier("coreKafkaProperties") KafkaConfig kafkaProperties,
                           @Qualifier("adqmVertx") Vertx vertx
     ) {
         this.metadataFactory = metadataFactory;
@@ -115,10 +116,10 @@ public class AdqmDdlService implements DdlService<Void> {
     }
 
     private List<String> getTopics(ClassTable table) {
-        KafkaAdminProperty properties = kafkaProperties.getAdmin();
-        String adqmUploadRq = String.format(properties.getAdqmUploadRq(), table.getName(), table.getSchema());
-        String adqmUploadRs = String.format(properties.getAdqmUploadRs(), table.getName(), table.getSchema());
-        String adqmUploadErr = String.format(properties.getAdqmUploadErr(), table.getName(), table.getSchema());
+        KafkaAdminProperty properties = kafkaProperties.getKafkaAdminProperty();
+        String adqmUploadRq = String.format(properties.getUpload().getRequestTopic().get(SourceType.ADQM.toString().toLowerCase()), table.getName(), table.getSchema());
+        String adqmUploadRs = String.format(properties.getUpload().getResponseTopic().get(SourceType.ADQM.toString().toLowerCase()), table.getName(), table.getSchema());
+        String adqmUploadErr = String.format(properties.getUpload().getErrorTopic().get(SourceType.ADQM.toString().toLowerCase()), table.getName(), table.getSchema());
         return Arrays.asList(adqmUploadRq, adqmUploadRs, adqmUploadErr);
     }
 

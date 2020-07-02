@@ -15,6 +15,7 @@ import org.springframework.core.env.Environment;
 import ru.ibs.dtm.query.execution.plugin.api.SystemNameRegistration;
 
 import java.util.List;
+import ru.ibs.dtm.common.schema.codec.AvroEncoder;
 
 @Configuration
 public class AppConfiguration {
@@ -46,6 +47,10 @@ public class AppConfiguration {
 		return mapper;
 	}
 
+    @Bean
+    public AvroEncoder avroEncoder() {
+        return new AvroEncoder();
+    }
 	@Autowired
 	public void registerSystemName(List<SystemNameRegistration> registrations) {
 		val systemName = getSystemName();

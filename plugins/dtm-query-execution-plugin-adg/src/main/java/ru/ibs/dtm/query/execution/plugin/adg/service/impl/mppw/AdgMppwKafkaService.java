@@ -6,6 +6,7 @@ import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.stereotype.Service;
+import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.plugin.adg.configuration.AdgMppwKafkaProperties;
 import ru.ibs.dtm.query.execution.plugin.adg.dto.connector.AdgLoadDataConnectorRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.dto.connector.AdgSubscriptionConnectorRequest;
@@ -20,7 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
-public class AdgMppwKafkaService {
+public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
+
     private final AdgMppwKafkaContextFactory contextFactory;
     private final Map<String, String> initializedLoadingByTopic;
     private final AdgMppwKafkaProperties properties;
@@ -33,6 +35,12 @@ public class AdgMppwKafkaService {
         this.connectorApi = connectorApi;
         this.properties = properties;
         initializedLoadingByTopic = new ConcurrentHashMap<>();
+    }
+
+    @Override
+    public void execute(MppwRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
+        MppwRequest request = context.getRequest();
+        //TODO реализовать
     }
 
     private void initializeLoading(AdgMppwKafkaContext ctx, Handler<AsyncResult<Void>> handler) {

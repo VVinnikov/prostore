@@ -2,7 +2,7 @@ package ru.ibs.dtm.query.execution.core.utils;
 
 import org.springframework.util.CollectionUtils;
 import ru.ibs.dtm.common.reader.InformationSchemaView;
-import ru.ibs.dtm.query.execution.core.dto.InformationSchemaViewPosition;
+import ru.ibs.dtm.query.execution.core.dto.metadata.InformationSchemaViewPosition;
 
 import java.util.ArrayList;
 import java.util.List;

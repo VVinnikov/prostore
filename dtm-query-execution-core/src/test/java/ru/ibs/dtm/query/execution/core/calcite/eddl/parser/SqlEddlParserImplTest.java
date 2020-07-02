@@ -45,12 +45,22 @@ public class SqlEddlParserImplTest {
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
         Planner planner = Frameworks.getPlanner(frameworkConfig);
 
-        SqlNode sqlNode = planner.parse("CREATE DOWNLOAD EXTERNAL TABLE s LOCATION 'kafka://zookeeper_host:port/topic' FORMAT 'avro' CHUNK_SIZE 10");
+        SqlNode sqlNode = planner.parse("CREATE DOWNLOAD EXTERNAL TABLE s (id integer, name varchar(100)) LOCATION 'kafka://zookeeper_host:port/topic' FORMAT 'avro' CHUNK_SIZE 10");
         assertTrue(sqlNode instanceof SqlCreateDownloadExternalTable);
+        Map<String, String> columns = new HashMap<>();
+        columns.put("id", "integer");
+        columns.put("name", "varchar");
 
         SqlCreateDownloadExternalTable sqlCreateDownloadExternalTable = (SqlCreateDownloadExternalTable) sqlNode;
+        SqlNodeList columnList = (SqlNodeList) sqlCreateDownloadExternalTable.getOperandList().get(1);
         assertEquals("s",
                 SqlNodeUtils.getOne(sqlCreateDownloadExternalTable, SqlIdentifier.class).getSimple());
+        assertEquals("id", ((SqlIdentifier) ((SqlColumnDeclaration) columnList.get(0)).getOperandList().get(0)).getSimple());
+        assertEquals(columns.get("id"), ((SqlDataTypeSpec) ((SqlColumnDeclaration)columnList.get(0))
+                .getOperandList().get(1)).getTypeName().getSimple().toLowerCase());
+        assertEquals("name", ((SqlIdentifier) ((SqlColumnDeclaration) columnList.get(1)).getOperandList().get(0)).getSimple());
+        assertEquals(columns.get("name"), ((SqlDataTypeSpec) ((SqlColumnDeclaration) columnList.get(1))
+                .getOperandList().get(1)).getTypeName().getSimple().toLowerCase());
         assertEquals(Type.KAFKA_TOPIC,
                 SqlNodeUtils.getOne(sqlCreateDownloadExternalTable, LocationOperator.class).getType());
         assertEquals("kafka://zookeeper_host:port/topic",
@@ -69,7 +79,7 @@ public class SqlEddlParserImplTest {
         Planner planner = Frameworks.getPlanner(frameworkConfig);
 
         assertThrows(SqlParseException.class,
-                () -> planner.parse("CREATE DOWNLOAD EXTERNAL TABLE s FORMAT 'avro'"));
+                () -> planner.parse("CREATE DOWNLOAD EXTERNAL TABLE s (id integer, name varchar(100)) FORMAT 'avro'"));
     }
 
     @Test
@@ -80,7 +90,7 @@ public class SqlEddlParserImplTest {
         Planner planner = Frameworks.getPlanner(frameworkConfig);
 
         assertThrows(SqlParseException.class,
-                () -> planner.parse("CREATE DOWNLOAD EXTERNAL TABLE s LOCATION 'kafkaTopic1=test' FORMAT 'avro'"));
+                () -> planner.parse("CREATE DOWNLOAD EXTERNAL TABLE s (id integer, name varchar(100)) LOCATION 'kafkaTopic1=test' FORMAT 'avro'"));
     }
 
     @Test
@@ -91,7 +101,7 @@ public class SqlEddlParserImplTest {
         Planner planner = Frameworks.getPlanner(frameworkConfig);
 
         assertThrows(SqlParseException.class,
-                () -> planner.parse("CREATE DOWNLOAD EXTERNAL TABLE s LOCATION 'kafkaTopic=test' FORMAT 'avro1'"));
+                () -> planner.parse("CREATE DOWNLOAD EXTERNAL TABLE s (id integer, name varchar(100)) LOCATION 'kafkaTopic=test' FORMAT 'avro1'"));
     }
 
     @Test
@@ -101,7 +111,7 @@ public class SqlEddlParserImplTest {
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
         Planner planner = Frameworks.getPlanner(frameworkConfig);
 
-        SqlNode sqlNode = planner.parse("CREATE DOWNLOAD EXTERNAL TABLE s LOCATION 'kafka://zookeeper_host:port/topic' FORMAT 'avro'");
+        SqlNode sqlNode = planner.parse("CREATE DOWNLOAD EXTERNAL TABLE s (id integer, name varchar(100)) LOCATION 'kafka://zookeeper_host:port/topic' FORMAT 'avro'");
         assertTrue(sqlNode instanceof SqlCreateDownloadExternalTable);
 
         SqlCreateDownloadExternalTable sqlCreateDownloadExternalTable = (SqlCreateDownloadExternalTable) sqlNode;
@@ -197,8 +207,8 @@ public class SqlEddlParserImplTest {
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
         Planner planner = Frameworks.getPlanner(frameworkConfig);
 
-        SqlCreateTable node = (SqlCreateTable) planner.parse("CREATE TABLE a(\"index\" integer)");
-        assertTrue(node instanceof SqlCreateTable);
+        ru.ibs.dtm.query.execution.core.calcite.ddl.SqlCreateTable node = (ru.ibs.dtm.query.execution.core.calcite.ddl.SqlCreateTable) planner.parse("CREATE TABLE a(\"index\" integer)");
+        assertTrue(node instanceof ru.ibs.dtm.query.execution.core.calcite.ddl.SqlCreateTable);
         assertEquals("a", SqlNodeUtils.getOne(node, SqlIdentifier.class).getSimple());
         assertEquals("index",
                 SqlNodeUtils.getOne(

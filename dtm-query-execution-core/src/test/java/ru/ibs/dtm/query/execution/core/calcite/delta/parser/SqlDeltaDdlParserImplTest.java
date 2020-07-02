@@ -103,7 +103,7 @@ public class SqlDeltaDdlParserImplTest {
     FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
     Planner planner = Frameworks.getPlanner(frameworkConfig);
 
-    SqlNode sqlNode = planner.parse("CREATE DOWNLOAD EXTERNAL TABLE s LOCATION 'kafka://zookeeper_host:port/topic' FORMAT 'avro'");
+    SqlNode sqlNode = planner.parse("CREATE DOWNLOAD EXTERNAL TABLE s (id integer, name varchar(100)) LOCATION 'kafka://zookeeper_host:port/topic' FORMAT 'avro'");
     assertTrue(sqlNode instanceof SqlCreateDownloadExternalTable);
 
     SqlCreateDownloadExternalTable sqlCreateDownloadExternalTable = (SqlCreateDownloadExternalTable) sqlNode;
@@ -123,8 +123,9 @@ public class SqlDeltaDdlParserImplTest {
     FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
     Planner planner = Frameworks.getPlanner(frameworkConfig);
 
-    SqlCreateTable node = (SqlCreateTable) planner.parse("CREATE TABLE a(\"index\" integer)");
-    assertTrue(node instanceof SqlCreateTable);
+    ru.ibs.dtm.query.execution.core.calcite.ddl.SqlCreateTable node =
+            (ru.ibs.dtm.query.execution.core.calcite.ddl.SqlCreateTable) planner.parse("CREATE TABLE a(\"index\" integer)");
+    assertTrue(node instanceof ru.ibs.dtm.query.execution.core.calcite.ddl.SqlCreateTable);
     assertEquals("a", SqlNodeUtils.getOne(node, SqlIdentifier.class).getSimple());
     assertEquals("index",
       SqlNodeUtils.getOne(

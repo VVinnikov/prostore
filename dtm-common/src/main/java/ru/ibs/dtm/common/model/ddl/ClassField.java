@@ -43,9 +43,9 @@ public class ClassField {
         this.isPrimary = isPrimary;
     }
 
-    public ClassField(String name, String typeWithSize, Boolean isNull, Boolean isPrimary, String defaultValue) {
+    public ClassField(String name, String typeWithSize, Boolean nullable, Boolean isPrimary, String defaultValue) {
         this.name = name;
-        this.isNull = isNull;
+        this.nullable = nullable;
         this.isPrimary = isPrimary;
         this.defaultValue = defaultValue;
         parseType(typeWithSize);

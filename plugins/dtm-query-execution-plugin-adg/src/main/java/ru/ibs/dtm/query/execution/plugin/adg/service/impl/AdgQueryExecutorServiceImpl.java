@@ -89,7 +89,7 @@ public class AdgQueryExecutorServiceImpl implements QueryExecutorService {
 			if (!it.containsKey("type")) {
 				throw new IllegalStateException("type is not specified");
 			}
-			return new ColumnMetadata(it.get("name"), ColumnTypeUtil.c	olumnTypeFromTtColumnType(it.get("type")));
+			return new ColumnMetadata(it.get("name"), ColumnTypeUtil.columnTypeFromTtColumnType(it.get("type")));
 		}).collect(Collectors.toList());
 	}
 

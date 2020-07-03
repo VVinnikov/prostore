@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.env.Environment;
+import ru.ibs.dtm.common.schema.codec.AvroEncoder;
 
 @Configuration
 public class AppConfiguration {
@@ -42,4 +43,8 @@ public class AppConfiguration {
 		return mapper;
 	}
 
+    @Bean
+    public AvroEncoder avroEncoder() {
+        return new AvroEncoder();
+    }
 }

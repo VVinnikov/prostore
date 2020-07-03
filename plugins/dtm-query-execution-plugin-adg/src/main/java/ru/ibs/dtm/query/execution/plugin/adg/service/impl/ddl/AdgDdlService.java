@@ -8,9 +8,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import ru.ibs.dtm.common.configuration.kafka.KafkaAdminProperty;
+import ru.ibs.dtm.common.configuration.kafka.KafkaConfig;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
-import ru.ibs.dtm.query.execution.plugin.adg.configuration.KafkaProperties;
-import ru.ibs.dtm.query.execution.plugin.adg.configuration.kafka.KafkaAdminProperty;
+import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.query.execution.plugin.adg.service.AvroSchemaGenerator;
 import ru.ibs.dtm.query.execution.plugin.adg.service.KafkaTopicService;
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryExecutorService;
@@ -32,13 +33,13 @@ public class AdgDdlService implements DdlService<Void> {
 
 	private TtCartridgeProvider cartridgeProvider;
 	private KafkaTopicService kafkaTopicService;
-	private KafkaProperties kafkaProperties;
+	private KafkaConfig kafkaProperties;
 	private AvroSchemaGenerator schemaGenerator;
 	private final QueryExecutorService executorService;
 
 	@Autowired
 	public AdgDdlService(TtCartridgeProvider cartridgeProvider, KafkaTopicService kafkaTopicService,
-						 @Qualifier("adgKafkaProperties") KafkaProperties kafkaProperties, AvroSchemaGenerator schemaGenerator, QueryExecutorService executorService) {
+						 @Qualifier("coreKafkaProperties") KafkaConfig kafkaProperties, AvroSchemaGenerator schemaGenerator, QueryExecutorService executorService) {
 		this.cartridgeProvider = cartridgeProvider;
 		this.kafkaTopicService = kafkaTopicService;
 		this.kafkaProperties = kafkaProperties;
@@ -46,8 +47,8 @@ public class AdgDdlService implements DdlService<Void> {
 		this.executorService = executorService;
 	}
 
-	@Override
-	public void execute(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {
+    @Override
+    public void execute(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {
 
 		switch (context.getDdlType()) {
 			case DROP_TABLE:
@@ -89,18 +90,18 @@ public class AdgDdlService implements DdlService<Void> {
 				.compose(f -> executorService.executeProcedure(DROP_SPACE, stagingTable));
 	}
 
-	private List<String> getTopics(ClassTable classTable) {
-		KafkaAdminProperty properties = kafkaProperties.getAdmin();
-		String adgUploadRq = String.format(properties.getAdgUploadRq(), classTable.getName(), classTable.getSchema());
-		String adgUploadRs = String.format(properties.getAdgUploadRs(), classTable.getName(), classTable.getSchema());
-		String adgUploadErr = String.format(properties.getAdgUploadErr(), classTable.getName(), classTable.getSchema());
-		return Arrays.asList(adgUploadRq, adgUploadRs, adgUploadErr);
-	}
+    private List<String> getTopics(ClassTable classTable) {
+        KafkaAdminProperty properties = kafkaProperties.getKafkaAdminProperty();
+        String adgUploadRq = String.format(properties.getUpload().getRequestTopic().get(SourceType.ADG.toString().toLowerCase()), classTable.getName(), classTable.getSchema());
+        String adgUploadRs = String.format(properties.getUpload().getResponseTopic().get(SourceType.ADG.toString().toLowerCase()), classTable.getName(), classTable.getSchema());
+        String adgUploadErr = String.format(properties.getUpload().getErrorTopic().get(SourceType.ADG.toString().toLowerCase()), classTable.getName(), classTable.getSchema());
+        return Arrays.asList(adgUploadRq, adgUploadRs, adgUploadErr);
+    }
 
-	private String getSubject(ClassTable classTable) {
-		return String.format(kafkaProperties.getAdmin().getAdgUploadRq(), classTable.getName(), classTable.getSchema())
-				.replace(".", "-");
-	}
+    private String getSubject(ClassTable classTable) {
+        return String.format(kafkaProperties.getKafkaAdminProperty().getUpload().getRequestTopic().get(SourceType.ADG.toString().toLowerCase()),
+                classTable.getName(), classTable.getSchema()).replace(".", "-");
+    }
 
 	@Override
 	public void addExecutor(DdlExecutor<Void> executor) {

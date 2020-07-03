@@ -7,9 +7,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
-import ru.ibs.dtm.query.execution.core.dto.DatamartEntity;
-import ru.ibs.dtm.query.execution.core.dto.DatamartInfo;
-import ru.ibs.dtm.query.execution.core.dto.EntityAttribute;
+import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
+import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartInfo;
+import ru.ibs.dtm.query.execution.core.dto.metadata.EntityAttribute;
 import ru.ibs.dtm.query.execution.core.service.DatamartMetaService;
 
 import java.util.List;

@@ -11,8 +11,7 @@ import java.util.List;
  */
 public interface DeltaService {
   /**
-   * Получение DELTA_OK на дату, см.
-   * <a href="https://conf.ibs.ru/pages/viewpage.action?pageId=113451710">постановку</a>
+   * Получение DELTA_OK на дату
    * <p>
    * Передаёт в {@code resultHandler} максимальный номер загруженной в datamart дельты,
    * дата-время загрузки которой не больше заданной.

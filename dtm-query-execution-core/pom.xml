@@ -266,9 +266,9 @@
                                     <artifactId>calcite-core</artifactId>
                                     <version>${calcite.version}</version>
                                     <type>jar</type>
-                                    <overWrite>false</overWrite>
+                                    <overWrite>true</overWrite>
                                     <outputDirectory>${project.build.directory}</outputDirectory>
-                                    <includes>**/Parser.jj</includes>
+                                    <includes>src/main/codegen/templates/Parser.jj</includes>
                                     <excludes>**/*.class,**/*.xml,**/*test.class</excludes>
                                 </artifactItem>
                                 <artifactItem>
@@ -329,7 +329,8 @@
                         <configuration>
                             <config>src/main/codegen/config.fmpp</config>
                             <output>${project.build.directory}/generated-sources/fmpp</output>
-                            <templates>${project.build.directory}/codegen/templates</templates>
+                            <!--<templates>${project.build.directory}/codegen/templates</templates>-->
+                            <templates>src/main/codegen/templates</templates>
                         </configuration>
                         <id>generate-fmpp-sources</id>
                         <phase>validate</phase>

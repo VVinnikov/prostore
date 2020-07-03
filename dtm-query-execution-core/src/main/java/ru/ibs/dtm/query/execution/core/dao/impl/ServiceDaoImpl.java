@@ -563,9 +563,9 @@ public class ServiceDaoImpl implements ServiceDao {
     @Override
     public void getDeltaOnDateTime(ActualDeltaRequest actualDeltaRequest, Handler<AsyncResult<Long>> resultHandler) {
     /* из постановки:
-      SELECT MAX(sinId)
-      FROM loaded_deltas_table
-      WHERE SysDate <= 'дата-время' AND Status = 1 AND datamartMnemonics = 'datamart'
+      SELECT MAX(sin_id)
+      FROM delta_data
+      WHERE [sys_date <= 'дата-время'] AND status = 1 AND datamart_mnemonics = 'datamart'
      */
         final String datamart = actualDeltaRequest.getDatamart();
         final String dateTime = actualDeltaRequest.getDateTime();
@@ -635,7 +635,7 @@ public class ServiceDaoImpl implements ServiceDao {
         SelectConditionStep<Record1<Long>> query = dsl.select(max(DELTA_DATA.SIN_ID))
                 .from(DELTA_DATA)
                 .where(DELTA_DATA.DATAMART_MNEMONICS.equalIgnoreCase(actualDeltaRequest.getDatamart()))
-                .and(DELTA_DATA.STATUS.eq(1));
+                .and(DELTA_DATA.STATUS.eq(DeltaLoadStatus.SUCCESS.ordinal()));
         if (actualDeltaRequest.getDateTime() != null) {
             return query.and(DELTA_DATA.SYS_DATE.le(LocalDateTime.from(LOCAL_DATE_TIME.parse(actualDeltaRequest.getDateTime()))));
         }

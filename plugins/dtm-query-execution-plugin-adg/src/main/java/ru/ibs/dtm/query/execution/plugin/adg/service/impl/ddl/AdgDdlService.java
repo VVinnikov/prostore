@@ -5,15 +5,16 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.avro.Schema;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.query.execution.plugin.adg.configuration.KafkaProperties;
 import ru.ibs.dtm.query.execution.plugin.adg.configuration.kafka.KafkaAdminProperty;
-import ru.ibs.dtm.query.execution.plugin.adg.model.schema.SchemaReq;
-import ru.ibs.dtm.query.execution.plugin.adg.service.*;
+import ru.ibs.dtm.query.execution.plugin.adg.service.AvroSchemaGenerator;
+import ru.ibs.dtm.query.execution.plugin.adg.service.KafkaTopicService;
+import ru.ibs.dtm.query.execution.plugin.adg.service.QueryExecutorService;
+import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeProvider;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
 import ru.ibs.dtm.query.execution.plugin.api.service.DdlService;
@@ -32,17 +33,15 @@ public class AdgDdlService implements DdlService<Void> {
 	private KafkaTopicService kafkaTopicService;
 	private KafkaProperties kafkaProperties;
 	private AvroSchemaGenerator schemaGenerator;
-	private SchemaRegistryClient registryClient;
 	private final QueryExecutorService executorService;
 
 	@Autowired
 	public AdgDdlService(TtCartridgeProvider cartridgeProvider, KafkaTopicService kafkaTopicService,
-						 @Qualifier("adgKafkaProperties") KafkaProperties kafkaProperties, AvroSchemaGenerator schemaGenerator, SchemaRegistryClient registryClient, QueryExecutorService executorService) {
+						 @Qualifier("adgKafkaProperties") KafkaProperties kafkaProperties, AvroSchemaGenerator schemaGenerator, QueryExecutorService executorService) {
 		this.cartridgeProvider = cartridgeProvider;
 		this.kafkaTopicService = kafkaTopicService;
 		this.kafkaProperties = kafkaProperties;
 		this.schemaGenerator = schemaGenerator;
-		this.registryClient = registryClient;
 		this.executorService = executorService;
 	}
 
@@ -66,10 +65,6 @@ public class AdgDdlService implements DdlService<Void> {
 		Future.future((Promise<Void> promise) -> cartridgeProvider.apply(context, promise))
 				.compose(d -> Future.future((Promise<Void> promise) ->
 						kafkaTopicService.createOrReplace(getTopics(ddl.getClassTable()), promise)))
-				.compose(d -> Future.future((Promise<Void> promise) -> {
-					Schema schema = schemaGenerator.generate(ddl.getClassTable());
-					registryClient.register(getSubject(ddl.getClassTable()), new SchemaReq(schema.toString()), promise);
-				}))
 				.onSuccess(s -> handler.handle(Future.succeededFuture(s)))
 				.onFailure(f -> handler.handle(Future.failedFuture(f)));
 	}
@@ -78,7 +73,6 @@ public class AdgDdlService implements DdlService<Void> {
 		dropSpacesFromDb(ddl.getClassTable())
 				.compose(d -> Future.future((Promise<Void> promise) -> cartridgeProvider.delete(ddl.getClassTable(), promise)))
 				.compose(d -> Future.future((Promise<Void> promise) -> kafkaTopicService.delete(getTopics(ddl.getClassTable()), promise)))
-				.compose(d -> Future.future((Promise<Void> promise) -> registryClient.unregister(getSubject(ddl.getClassTable()), promise)))
 				.onSuccess(s -> handler.handle(Future.succeededFuture(s)))
 				.onFailure(f -> handler.handle(Future.failedFuture(f)));
 	}

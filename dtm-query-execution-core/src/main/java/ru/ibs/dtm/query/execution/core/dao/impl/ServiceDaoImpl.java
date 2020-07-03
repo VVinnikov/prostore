@@ -13,6 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jooq.DSLContext;
 import org.jooq.Record1;
 import org.jooq.Select;
+import org.jooq.SelectConditionStep;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -140,8 +141,9 @@ public class ServiceDaoImpl implements ServiceDao {
 				.and(ENTITIES_REGISTRY.ENTITY_MNEMONICS.equalIgnoreCase(name))
 		).setHandler(ar -> {
 			if (ar.succeeded()) {
-				resultHandler.handle(ar.result().hasResults()
-						? Future.succeededFuture(ar.result().get(ENTITIES_REGISTRY.ENTITY_ID))
+				QueryResult result = ar.result();
+				resultHandler.handle(result.hasResults()
+						? Future.succeededFuture(result.get(ENTITIES_REGISTRY.ENTITY_ID))
 						: Future.failedFuture(String.format("Таблица не найдена: [%s]", name)));
 			} else {
 				resultHandler.handle(Future.failedFuture(ar.cause()));
@@ -339,7 +341,7 @@ public class ServiceDaoImpl implements ServiceDao {
 
 	private Integer isInDistributedKey(final DdlRequestContext context, final String field) {
 		if (context.getQuery() instanceof SqlCreateTable) {
-			int ind =  ((SqlCreateTable) context.getQuery()).getOperandList().stream()
+			int ind = ((SqlCreateTable) context.getQuery()).getOperandList().stream()
 					.filter(e -> e instanceof DistributedOperator)
 					.map(d -> ((DistributedOperator) d).getDistributedBy())
 					.flatMap(n -> n.getList().stream())
@@ -581,7 +583,7 @@ public class ServiceDaoImpl implements ServiceDao {
 
 	@Override
 	public void getDeltaHotByDatamart(String datamartMnemonic, Handler<AsyncResult<DeltaRecord>> resultHandler) {
-		executor.query(dsl -> dsl.select(max(DELTA_DATA.LOAD_ID),
+		executor.query(dsl -> dsl.select(DELTA_DATA.LOAD_ID,
 				DELTA_DATA.DATAMART_MNEMONICS,
 				DELTA_DATA.SYS_DATE,
 				DELTA_DATA.STATUS_DATE,
@@ -590,7 +592,7 @@ public class ServiceDaoImpl implements ServiceDao {
 				DELTA_DATA.STATUS)
 				.from(DELTA_DATA)
 				.where(DELTA_DATA.DATAMART_MNEMONICS.eq(datamartMnemonic))
-				.groupBy(DELTA_DATA.LOAD_ID))
+				.and(DELTA_DATA.LOAD_ID.in(dsl.select(max(DELTA_DATA.LOAD_ID)).from(DELTA_DATA).where(DELTA_DATA.DATAMART_MNEMONICS.eq(datamartMnemonic)))))
 				.setHandler(ar -> {
 					initQueryDeltaResult(datamartMnemonic, resultHandler, ar);
 				});
@@ -604,10 +606,14 @@ public class ServiceDaoImpl implements ServiceDao {
 	}
 
 	private Select<Record1<Long>> getDeltaByDatamartAndDateSelect(DSLContext dsl, ActualDeltaRequest actualDeltaRequest) {
-		return dsl.select(max(DELTA_DATA.SIN_ID))
+		SelectConditionStep<Record1<Long>> query = dsl.select(max(DELTA_DATA.SIN_ID))
 				.from(DELTA_DATA)
 				.where(DELTA_DATA.DATAMART_MNEMONICS.equalIgnoreCase(actualDeltaRequest.getDatamart()))
-				.and(DELTA_DATA.SYS_DATE.le(LocalDateTime.from(LOCAL_DATE_TIME.parse(actualDeltaRequest.getDateTime()))));
+				.and(DELTA_DATA.STATUS.eq(1));
+		if (actualDeltaRequest.getDateTime() != null) {
+			return query.and(DELTA_DATA.SYS_DATE.le(LocalDateTime.from(LOCAL_DATE_TIME.parse(actualDeltaRequest.getDateTime()))));
+		}
+		return query;
 	}
 
 	@Override

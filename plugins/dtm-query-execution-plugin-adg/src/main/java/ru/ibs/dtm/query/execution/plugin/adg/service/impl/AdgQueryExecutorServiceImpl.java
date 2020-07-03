@@ -57,11 +57,15 @@ public class AdgQueryExecutorServiceImpl implements QueryExecutorService {
 		}
 	}
 
-	@SneakyThrows
 	@Override
 	public Future<Object> executeProcedure(String procedure, Object... args) {
 		return Future.future((Promise<Object> promise) -> {
-			val cl = ttPool.borrowObject();
+			TtClient cl = null;
+			try {
+				cl = ttPool.borrowObject();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 			try {
 				cl.call(ar -> {
 					if (ar.succeeded()) {

@@ -52,15 +52,13 @@ public class MetaStorageGeneratorServiceImpl implements MetaStorageGeneratorServ
 	}
 
 	private void createAttributes(Long entityId, List<ClassField> fields, Handler<AsyncResult<Void>> resultHandler) {
-		List<Future> futures = fields.stream().map(it -> {
-			return Future.future(p -> createAttribute(entityId, it, ar -> {
-				if (ar.succeeded()) {
-					p.complete();
-				} else {
-					p.fail(ar.cause());
-				}
-			}));
-		}).collect(Collectors.toList());
+		List<Future> futures = fields.stream().map(it -> Future.future(p -> createAttribute(entityId, it, ar -> {
+			if (ar.succeeded()) {
+				p.complete();
+			} else {
+				p.fail(ar.cause());
+			}
+		}))).collect(Collectors.toList());
 		CompositeFuture.all(futures).onComplete(ar -> {
 			if (ar.succeeded()) {
 				resultHandler.handle(Future.succeededFuture());
@@ -106,16 +104,18 @@ public class MetaStorageGeneratorServiceImpl implements MetaStorageGeneratorServ
 		serviceDao.findEntity(datamartId, table, ar1 -> {
 			if (ar1.failed()) {
 				log.trace("Вставка сущности {}: {}", datamartId, table);
-				handler.handle(insertEntity(table, datamartId));
+				insertEntity(table, datamartId)
+						.onSuccess(s -> handler.handle(Future.succeededFuture(s)))
+						.onFailure(f -> handler.handle(Future.failedFuture(f)));
 			} else {
 				log.trace("Очистка атрибутов для {}: {}", datamartId, table);
-				serviceDao.dropAttribute(ar1.result(), ar2-> {
+				serviceDao.dropAttribute(ar1.result(), ar2 -> {
 					if (ar2.succeeded()) {
 						log.trace("Очистка сущности {}: {}", datamartId, table);
-							serviceDao.dropEntity(datamartId, table)
-									.compose(v -> insertEntity(table, datamartId))
-									.onSuccess(s -> handler.handle(Future.succeededFuture(s)))
-									.onFailure(f -> handler.handle(Future.failedFuture(f)));
+						serviceDao.dropEntity(datamartId, table)
+								.compose(v -> insertEntity(table, datamartId))
+								.onSuccess(s -> handler.handle(Future.succeededFuture(s)))
+								.onFailure(f -> handler.handle(Future.failedFuture(f)));
 					} else {
 						log.error("Ошибка очистки атрибута(dropAttribute)", ar2.cause());
 						handler.handle(Future.failedFuture(ar2.cause()));
@@ -126,22 +126,22 @@ public class MetaStorageGeneratorServiceImpl implements MetaStorageGeneratorServ
 	}
 
 	private Future<Long> insertEntity(String table, Long datamartId) {
-		return Future.future((Promise<Long> result) ->
-			serviceDao.insertEntity(datamartId, table, ar1 -> {
-				if (ar1.succeeded()) {
-					serviceDao.findEntity(datamartId, table, ar2 -> {
-						if (ar2.succeeded()) {
-							result.complete(ar2.result());
-						} else {
-							log.error("Не удалось вставить сущность {}", table, ar2.cause());
-							result.fail(ar2.cause());
-						}
-					});
-				} else {
-					log.error("Ошибка вставки сущности {}", table, ar1.cause());
-					result.fail(ar1.cause());
-				}
-			})
-		);
+		Promise<Long> promise = Promise.promise();
+		serviceDao.insertEntity(datamartId, table, ar1 -> {
+			if (ar1.succeeded()) {
+				serviceDao.findEntity(datamartId, table, ar2 -> {
+					if (ar2.succeeded()) {
+						promise.complete(ar2.result());
+					} else {
+						log.error("Не удалось вставить сущность {}", table, ar2.cause());
+						promise.fail(ar2.cause());
+					}
+				});
+			} else {
+				log.error("Ошибка вставки сущности {}", table, ar1.cause());
+				promise.fail(ar1.cause());
+			}
+		});
+		return promise.future();
 	}
 }

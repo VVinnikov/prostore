@@ -13,12 +13,12 @@ import ru.ibs.dtm.query.execution.plugin.api.service.QueryCostService;
 @Configuration
 public class AdgPluginConfig {
 
-  @Bean("adgDtmDataSourcePlugin")
-  public AdgDataSourcePlugin adbDataSourcePlugin(
-    @Qualifier("adgDdlService") DdlService<Void> ddlService,
-    @Qualifier("adgLlrService") LlrService<QueryResult> llrService,
-    @Qualifier("adgMpprKafkaService") MpprKafkaService<QueryResult> mpprKafkaService,
-    @Qualifier("adgQueryCostService") QueryCostService<Integer> queryCostService) {
-    return new AdgDataSourcePlugin(ddlService, llrService, mpprKafkaService, queryCostService);
-  }
+	@Bean("adgDtmDataSourcePlugin")
+	public AdgDataSourcePlugin adgDataSourcePlugin(
+			@Qualifier("adgDdlService") DdlService<Void> ddlService,
+			@Qualifier("adgLlrService") LlrService<QueryResult> llrService,
+			@Qualifier("adgMpprKafkaService") MpprKafkaService<QueryResult> mpprKafkaService,
+			@Qualifier("adgQueryCostService") QueryCostService<Integer> queryCostService) {
+		return new AdgDataSourcePlugin(ddlService, llrService, mpprKafkaService, queryCostService);
+	}
 }

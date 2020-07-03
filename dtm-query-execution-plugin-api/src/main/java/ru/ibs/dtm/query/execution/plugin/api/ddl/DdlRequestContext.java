@@ -1,5 +1,6 @@
 package ru.ibs.dtm.query.execution.plugin.api.ddl;
 
+import lombok.Data;
 import lombok.ToString;
 import org.apache.calcite.sql.SqlNode;
 import ru.ibs.dtm.query.execution.plugin.api.RequestContext;
@@ -11,6 +12,7 @@ import java.util.List;
 import static ru.ibs.dtm.query.execution.plugin.api.ddl.DdlType.UNKNOWN;
 import static ru.ibs.dtm.query.execution.plugin.api.service.SqlProcessingType.DDL;
 
+@Data
 @ToString
 public class DdlRequestContext extends RequestContext<DdlRequest> {
 
@@ -35,31 +37,4 @@ public class DdlRequestContext extends RequestContext<DdlRequest> {
 		return DDL;
 	}
 
-	public DdlType getDdlType() {
-		return ddlType;
-	}
-
-	public void setDdlType(DdlType ddlType) {
-		this.ddlType = ddlType;
-	}
-
-	public Long getDatamartId() {
-		return datamartId;
-	}
-
-	public void setDatamartId(Long datamartId) {
-		this.datamartId = datamartId;
-	}
-
-	public SqlNode getQuery() {
-		return query;
-	}
-
-	public String getSystemName() {
-		return systemName;
-	}
-
-	public void setSystemName(String systemName) {
-		this.systemName = systemName;
-	}
 }

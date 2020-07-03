@@ -14,6 +14,7 @@ import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
 import ru.ibs.dtm.query.execution.plugin.adg.model.QueryResultItem;
 import ru.ibs.dtm.query.execution.plugin.adg.model.metadata.ColumnTypeUtil;
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryExecutorService;
+import ru.ibs.dtm.query.execution.plugin.adg.service.TtClient;
 import ru.ibs.dtm.query.execution.plugin.adg.service.TtPool;
 
 import java.util.List;
@@ -31,13 +32,14 @@ public class AdgQueryExecutorServiceImpl implements QueryExecutorService {
 		this.ttPool = ttPool;
 	}
 
-	@SneakyThrows
 	@Override
+	@SuppressWarnings("unchecked")
 	public void execute(String sql, Handler<AsyncResult<QueryResultItem>> handler) {
-		val cl = ttPool.borrowObject();
+		TtClient cl = null;
 		try {
+			cl = ttPool.borrowObject();
 			cl.callQuery(ar -> {
-				if (ar.succeeded()) {
+				if (ar.succeeded() && ar.result() != null && !ar.result().isEmpty()) {
 					val map = (Map<?, ?>) ar.result().get(0);
 					val metadata = getMetadata((List<Map<String, String>>) map.get("metadata"));
 					val dataSet = (List<List<?>>) map.get("rows");
@@ -46,8 +48,12 @@ public class AdgQueryExecutorServiceImpl implements QueryExecutorService {
 					handler.handle(Future.failedFuture(ar.cause()));
 				}
 			}, sql, null);
+		} catch (Exception ex) {
+			handler.handle(Future.failedFuture(ex));
 		} finally {
-			ttPool.returnObject(cl);
+			if (cl != null) {
+				ttPool.returnObject(cl);
+			}
 		}
 	}
 
@@ -79,7 +85,7 @@ public class AdgQueryExecutorServiceImpl implements QueryExecutorService {
 			if (!it.containsKey("type")) {
 				throw new IllegalStateException("type is not specified");
 			}
-			return new ColumnMetadata(it.get("name"), ColumnTypeUtil.columnTypeFromTtColumnType(it.get("type")));
+			return new ColumnMetadata(it.get("name"), ColumnTypeUtil.c	olumnTypeFromTtColumnType(it.get("type")));
 		}).collect(Collectors.toList());
 	}
 

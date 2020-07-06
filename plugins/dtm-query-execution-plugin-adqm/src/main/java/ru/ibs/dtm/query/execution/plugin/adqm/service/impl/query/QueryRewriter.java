@@ -19,7 +19,7 @@ import org.apache.calcite.util.Pair;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.calcite.CalciteContext;
 import ru.ibs.dtm.query.execution.plugin.adqm.calcite.CalciteContextProvider;
-import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.QueryEnrichmentProperties;
+import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.dto.DeltaInformation;
 
 import java.util.ArrayList;
@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 public class QueryRewriter {
 
     private final CalciteContextProvider calciteContextProvider;
-    private final QueryEnrichmentProperties queryEnrichmentProperties;
+    private final AppConfiguration appConfiguration;
 
     private final static String SUBQUERY_TEMPLATE = "select 1 from %s where sign < 0 limit 1";
     private final static String SUBQUERY_NOT_NULL_CHECK = "select 1 from dual where (select 1 from dual) is not null";
@@ -45,9 +45,9 @@ public class QueryRewriter {
     private final static String UNION_ALL_TEMPLATE = "select * from (select 1 from dual) union all select * from (select 1 from dual)";
     private final static String SNAPSHOT_PATTERN = "FOR SYSTEM_TIME AS OF '\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}'";
 
-    public QueryRewriter(CalciteContextProvider calciteContextProvider, QueryEnrichmentProperties queryEnrichmentProperties) {
+    public QueryRewriter(CalciteContextProvider calciteContextProvider, AppConfiguration appConfiguration) {
         this.calciteContextProvider = calciteContextProvider;
-        this.queryEnrichmentProperties = queryEnrichmentProperties;
+        this.appConfiguration = appConfiguration;
     }
 
     public void rewrite(String sql, List<DeltaInformation> deltas, Handler<AsyncResult<String>> handler) {
@@ -223,9 +223,9 @@ public class QueryRewriter {
         String id = parsed.right;
 
         if (containsDelta(deltas, schema, id)) {
-            String envPrefix = queryEnrichmentProperties.getEnvironment() + "__";
+            String envPrefix = appConfiguration.getSystemName() + "__";
             if (schema.equals("")) {
-                schema = queryEnrichmentProperties.getDefaultDatamart();
+                schema = appConfiguration.getDefaultDatamart();
             }
             schema = envPrefix + schema;
             String postfix = firstInQuery ? "_actual" : "_actual_shard";

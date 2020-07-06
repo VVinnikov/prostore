@@ -2,7 +2,7 @@ package ru.ibs.dtm.query.execution.plugin.adg.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import ru.ibs.dtm.query.execution.plugin.adg.model.metadata.ColumnMetadata;
+import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
 
 import java.util.List;
 

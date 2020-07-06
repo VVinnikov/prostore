@@ -3,6 +3,7 @@ package ru.ibs.dtm.query.execution.plugin.adb.factory.impl;
 import lombok.val;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.model.ddl.ClassField;
+import ru.ibs.dtm.common.model.ddl.ClassFieldUtils;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.model.ddl.ClassTypeUtil;
 import ru.ibs.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
@@ -81,30 +82,16 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
         if (addReqId) {
             appendReqIdColumn(sb);
         }
-        val pkList = getPrimaryKeyList(classTable.getFields());
+        val pkList = ClassFieldUtils.getPrimaryKeyList(classTable.getFields());
         if (pkList.size() > 0) {
             appendPrimaryKeys(sb, tableName, pkList);
         }
         sb.append(")");
-        val shardingKeyList = getShardingKeyList(classTable.getFields());
+        val shardingKeyList = ClassFieldUtils.getShardingKeyList(classTable.getFields());
         if (shardingKeyList.size() > 0) {
             appendShardingKeys(sb, shardingKeyList);
         }
         return sb.toString();
-    }
-
-    private List<ClassField> getPrimaryKeyList(List<ClassField> fields) {
-        return fields.stream()
-                .filter(f -> f.getPrimaryOrder() != null)
-                .sorted(Comparator.comparing(ClassField::getPrimaryOrder))
-                .collect(toList());
-    }
-
-    private List<ClassField> getShardingKeyList(List<ClassField> fields) {
-        return fields.stream()
-                .filter(f -> f.getShardingOrder() != null)
-                .sorted(Comparator.comparing(ClassField::getShardingOrder))
-                .collect(toList());
     }
 
     private void appendClassTableFields(StringBuilder builder, List<ClassField> fields) {
@@ -124,7 +111,7 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
         } else {
             sb.append(" ");
         }
-        if (! field.getNull()) {
+        if (!field.getNullable()) {
             sb.append("NOT NULL");
         }
         return sb.toString();

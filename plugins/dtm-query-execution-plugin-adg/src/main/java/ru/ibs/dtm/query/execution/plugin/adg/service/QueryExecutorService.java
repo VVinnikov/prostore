@@ -1,6 +1,7 @@
 package ru.ibs.dtm.query.execution.plugin.adg.service;
 
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import ru.ibs.dtm.query.execution.plugin.adg.model.QueryResultItem;
 
@@ -10,5 +11,5 @@ import ru.ibs.dtm.query.execution.plugin.adg.model.QueryResultItem;
 public interface QueryExecutorService {
   void execute(String sql, Handler<AsyncResult<QueryResultItem>> handler);
 
-  void executeProcedure(Handler<AsyncResult<Object>> handler, String procedure, Object... args);
+  Future<Object> executeProcedure(String procedure, Object... args);
 }

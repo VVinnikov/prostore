@@ -12,9 +12,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import ru.ibs.dtm.common.calcite.CalciteContext;
 import ru.ibs.dtm.common.reader.QueryRequest;
+import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 import ru.ibs.dtm.query.execution.plugin.adg.calcite.CalciteSchemaFactory;
 import ru.ibs.dtm.query.execution.plugin.adg.dto.schema.SchemaDescription;
-import ru.ibs.dtm.query.execution.plugin.adg.model.metadata.Datamart;
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryParserService;
 import ru.ibs.dtm.query.execution.plugin.adg.service.SchemaExtender;
 
@@ -47,7 +47,7 @@ public class AdgCalciteDmlQueryParserServiceImpl implements QueryParserService {
         try {
           Datamart datamartLogicalSchema = schemaDescription.getLogicalSchema();
           schemaFactory.addSubSchema(context.getSchema(), datamartLogicalSchema);
-          Datamart datamartPhysicalSchema = schemaExtender.generatePhysicalSchema(datamartLogicalSchema);
+          Datamart datamartPhysicalSchema = schemaExtender.generatePhysicalSchema(datamartLogicalSchema, querySourceRequest);
           schemaDescription.setPhysicalSchema(datamartPhysicalSchema);
 
           schemaFactory.addRootSchema(context.getSchema(), datamartPhysicalSchema);

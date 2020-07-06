@@ -17,14 +17,16 @@ services:
       - WRITER_LOG_LEVEL=TRACE
       - EDML_DATASOURCE=ADB
       - EDML_DEFAULT_CHUNK_SIZE=1000
-    # For ADB plugin
+      - EDML_STATUS_CHECK_PERIOD_MS=1000
+      - ZOOKEEPER_HOSTS=kafka-1.dtm.local
       - KAFKA_BOOTSTRAP_SERVERS=kafka-1.dtm.local:9092
+      - KAFKA_CLUSTER_ROOTPATH=arenadata/cluster/21
+      - KAFKA_INPUT_STREAM_TIMEOUT_MS=1000
+    # For ADB plugin
       - ADB_DB_NAME=adb
       - ADB_USERNAME=gpadmin
       - ADB_PASS=
       - ADB_HOST=10.18.84.12
-      - ZOOKEEPER_HOSTS=kafka-1.dtm.local
-      - KAFKA_CLUSTER_ROOTPATH=arenadata/cluster/21
       - ADB_MPPR_CONNECTOR_HOST=10.18.84.18
       - ADB_MPPR_CONNECTOR_PORT=8086
     # For ADG plugin

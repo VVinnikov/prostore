@@ -264,19 +264,41 @@ SqlCreate SqlCreateDownloadExternalTable(Span s, boolean replace) :
 {
     final boolean ifNotExists;
     final SqlIdentifier id;
+    SqlNodeList tableElementList = null;
     SqlNode location = null;
     SqlNode format = null;
     SqlNode chunkSize = null;
 }
 {
     <DOWNLOAD> <EXTERNAL> <TABLE> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
+    [ tableElementList = TableElementList() ]
     <LOCATION> location = StringLiteral()
     <FORMAT> format = StringLiteral()
     [ <CHUNK_SIZE> chunkSize = NumericLiteral() ]
     {
         return new ru.ibs.dtm.query.execution.core.calcite.eddl.SqlCreateDownloadExternalTable(s.end(this),
-            ifNotExists, id, location, format, chunkSize);
+            ifNotExists, id, tableElementList, location, format, chunkSize);
     }
+}
+SqlCreate SqlCreateUploadExternalTable(Span s, boolean replace) :
+{
+    final boolean ifNotExists;
+    final SqlIdentifier id;
+    SqlNodeList tableElementList = null;
+    SqlNode location = null;
+    SqlNode format = null;
+    SqlNode messageLimit = null;
+}
+{
+    <UPLOAD> <EXTERNAL> <TABLE> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
+    [ tableElementList = TableElementList() ]
+    <LOCATION> location = StringLiteral()
+    <FORMAT> format = StringLiteral()
+    [ <MESSAGE_LIMIT> messageLimit = NumericLiteral() ]
+    {
+        return new ru.ibs.dtm.query.execution.core.calcite.eddl.SqlCreateUploadExternalTable(s.end(this),
+            ifNotExists, id, tableElementList, location, format, messageLimit);
+}
 }
 SqlCreate SqlCreateDatabase(Span s, boolean replace) :
 {
@@ -444,6 +466,16 @@ SqlDrop DropDatabase(Span s, boolean replace) :
       return new ru.ibs.dtm.query.execution.core.calcite.eddl.DropDatabase(s.end(this),ifExists,id);
    }
 }
+SqlDrop SqlDropUploadExternalTable(Span s, boolean replace) :
+{
+    final boolean ifExists;
+    final SqlIdentifier id;
+}
+{
+    <UPLOAD> <EXTERNAL> <TABLE> ifExists = IfExistsOpt() id = CompoundIdentifier() {
+        return new ru.ibs.dtm.query.execution.core.calcite.eddl.SqlDropUploadExternalTable(s.end(this), ifExists, id);
+    }
+}
 SqlDrop SqlDropDownloadExternalTable(Span s, boolean replace) :
 {
     final boolean ifExists;
@@ -452,9 +484,8 @@ SqlDrop SqlDropDownloadExternalTable(Span s, boolean replace) :
 {
     <DOWNLOAD> <EXTERNAL> <TABLE> ifExists = IfExistsOpt() id = CompoundIdentifier() {
         return new ru.ibs.dtm.query.execution.core.calcite.eddl.SqlDropDownloadExternalTable(s.end(this), ifExists, id);
-    }
 }
-
+}
 SqlDrop SqlDropView(Span s, boolean replace) :
 {
     final boolean ifExists;

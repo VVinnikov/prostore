@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import ru.ibs.dtm.query.execution.plugin.adb.calcite.schema.QueryableSchema;
 import ru.ibs.dtm.query.execution.plugin.adb.calcite.schema.dialect.DtmConvention;
 import ru.ibs.dtm.query.execution.plugin.adb.factory.SchemaFactory;
-import ru.ibs.dtm.query.execution.plugin.adb.model.metadata.Datamart;
+import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 
 @Service
 public class SchemaFactoryImpl implements SchemaFactory {

@@ -4,9 +4,9 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Schemas;
 import org.springframework.stereotype.Service;
+import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 import ru.ibs.dtm.query.execution.plugin.adg.calcite.schema.QueryableSchema;
 import ru.ibs.dtm.query.execution.plugin.adg.calcite.schema.dialect.DtmConvention;
-import ru.ibs.dtm.query.execution.plugin.adg.model.metadata.Datamart;
 
 @Service
 public class SchemaFactoryImpl implements SchemaFactory {

@@ -8,6 +8,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
 import org.springframework.stereotype.Service;
+import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryExtendService;
 
 import java.util.ArrayList;
@@ -25,6 +26,8 @@ public class AdgCalciteDmlQueryExtendServiceImpl implements QueryExtendService {
   private RelBuilder relBuilder;
 
   public void setRequestBuilder(RelBuilder relBuilder, boolean clearOptions) {
+    // TODO refactor this, do not hold the relBuilder state, it will cause
+    // issues in concurrent execution
     this.relBuilder = relBuilder;
     if (clearOptions) {
       options = new LinkedList<>();
@@ -35,27 +38,27 @@ public class AdgCalciteDmlQueryExtendServiceImpl implements QueryExtendService {
     options.add(option);
   }
 
-  public RelNode extendQuery(RelNode queryTree) {
+  public RelNode extendQuery(QueryRequest queryRequest, RelNode queryTree) {
     if (options.isEmpty()) {
       throw new RuntimeException("Не определены параметры для обогащения запроса");
     }
     relBuilder.clear();
-    RelNode relNode = iterateTree(queryTree);
+    RelNode relNode = iterateTree(queryRequest, queryTree);
     relBuilder.clear();
     return relNode;
   }
 
-  RelNode iterateTree(RelNode node) {
+  RelNode iterateTree(QueryRequest queryRequest, RelNode node) {
     List<RelNode> newInput = new ArrayList();
     if (node.getInputs() == null || node.getInputs().isEmpty()) {
       if (node instanceof TableScan) {
-        relBuilder.push(insertModifiedTableScan(node, (Long) options.getFirst()));
+        relBuilder.push(insertModifiedTableScan(queryRequest, node, (Long) options.getFirst()));
         removeOption();
       }
       return relBuilder.build();
     }
     node.getInputs().forEach(input -> {
-      newInput.add(iterateTree(input));
+      newInput.add(iterateTree(queryRequest, input));
     });
     relBuilder.push(node.copy(node.getTraitSet(), newInput));
     return relBuilder.build();
@@ -65,7 +68,7 @@ public class AdgCalciteDmlQueryExtendServiceImpl implements QueryExtendService {
     options.removeFirst();
   }
 
-  RelNode insertModifiedTableScan(RelNode tableScan, Long selectOnDelta) {
+  RelNode insertModifiedTableScan(QueryRequest queryRequest, RelNode tableScan, Long selectOnDelta) {
     RelBuilder relBuilder = RelBuilder.proto(tableScan.getCluster().getPlanner().getContext()).create(tableScan.getCluster(), this.relBuilder.getRelOptSchema());
 
     RexBuilder rexBuilder = relBuilder.getCluster().getRexBuilder();
@@ -81,8 +84,9 @@ public class AdgCalciteDmlQueryExtendServiceImpl implements QueryExtendService {
       selectOnDelta = 0L;
     }
 
-    String physicalActualTableName = createPhysicalTableName(tableScan.getTable().getQualifiedName(), ACTUAL_POSTFIX);
-    String physicalHistoryTableName = createPhysicalTableName(tableScan.getTable().getQualifiedName(), HISTORY_POSTFIX);
+    String prefix = queryRequest.getSystemName() + "_" + queryRequest.getDatamartMnemonic() + "_";
+    String physicalActualTableName = createPhysicalTableName(tableScan.getTable().getQualifiedName(), prefix, ACTUAL_POSTFIX);
+    String physicalHistoryTableName = createPhysicalTableName(tableScan.getTable().getQualifiedName(), prefix, HISTORY_POSTFIX);
 
     RelNode topRelNode = relBuilder.scan(physicalHistoryTableName).filter(
       relBuilder.call(SqlStdOperatorTable.AND,
@@ -103,11 +107,11 @@ public class AdgCalciteDmlQueryExtendServiceImpl implements QueryExtendService {
     return subQueryNode;
   }
 
-  private String createPhysicalTableName(List<String> qualifiedName, String postfix) {
+  private String createPhysicalTableName(List<String> qualifiedName, String prefix, String postfix) {
     List<String> mutableQualifiedName = new ArrayList<>(qualifiedName);
     //формирует имя физической таблицы, к примеру DOC_ACTUAL или OBJ_HISTORY
     //TODO будет переделываться на <имя среды>_<имя схемы>__<имя таблицы>_<суффикс>
-    return mutableQualifiedName.get(mutableQualifiedName.size() > 1 ? 1 : 0) + postfix;
+    return prefix + mutableQualifiedName.get(mutableQualifiedName.size() > 1 ? 1 : 0) + postfix;
   }
 
 }

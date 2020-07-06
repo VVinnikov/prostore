@@ -1,22 +1,3 @@
-kafkaUrl: &kafkaUrl ${KAFKA_BOOTSTRAP_SERVERS:kafka-1.dtm.local:9092}
-
-kafka:
-  adg:
-    producer:
-      property:
-        bootstrap.servers: *kafkaUrl
-    consumer:
-      property:
-        bootstrap.servers: *kafkaUrl
-        group.id: adg-query-execution
-    cluster:
-      zookeeperHosts: ${ZOOKEEPER_HOSTS:kafka-1.dtm.local}
-      rootPath: arenadata/cluster/21
-    admin:
-      adgUploadRq: "%s.%s.adg.upload.rq"
-      adgUploadRs: "%s.%s.adg.upload.rs"
-      adgUploadErr: "%s.%s.adg.upload.err"
-
 tarantool:
   db:
     host: ${TARANTOOL_DB_HOST:10.18.84.10}
@@ -26,6 +7,3 @@ tarantool:
     operationTimeout: ${TARANTOOL_DB_OPER_TIMEOUT:60000}
   cartridge:
     url: ${TARANTOOL_CATRIDGE_URL:http://10.18.84.10:8811}
-
-schema-registry:
-  url: ${SCHEMA_REGISTRY_URL:http://10.18.84.6:8081}

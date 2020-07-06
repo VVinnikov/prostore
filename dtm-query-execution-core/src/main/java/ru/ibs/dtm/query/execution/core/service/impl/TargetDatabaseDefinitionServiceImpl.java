@@ -15,7 +15,6 @@ import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.query.execution.core.service.DataSourcePluginService;
 import ru.ibs.dtm.query.execution.core.service.SchemaStorageProvider;
 import ru.ibs.dtm.query.execution.core.service.TargetDatabaseDefinitionService;
-import ru.ibs.dtm.query.execution.core.utils.HintExtractor;
 import ru.ibs.dtm.query.execution.core.utils.MetaDataQueryPreparer;
 import ru.ibs.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.QueryCostRequest;
@@ -29,22 +28,14 @@ import java.util.List;
 public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefinitionService {
     private final SchemaStorageProvider schemaStorageProvider;
     private final DataSourcePluginService pluginService;
-    private final HintExtractor hintExtractor;
 
     @Override
-    public void getTargetSource(QueryRequest request, Handler<AsyncResult<QuerySourceRequest>> handler) {
-        hintExtractor.extractHint(request, ar -> {
-            if (ar.succeeded()) {
-                QuerySourceRequest querySourceRequest = ar.result();
-                if (querySourceRequest.getSourceType() != null) {
-                    handler.handle(Future.succeededFuture(querySourceRequest));
-                } else {
-                    getTargetSourceWithoutHint(request, handler);
-                }
-            } else {
-                handler.handle(Future.failedFuture(ar.cause()));
-            }
-        });
+    public void getTargetSource(QuerySourceRequest request, Handler<AsyncResult<QuerySourceRequest>> handler) {
+        if (request.getSourceType() != null) {
+            handler.handle(Future.succeededFuture(request));
+        } else {
+            getTargetSourceWithoutHint(request.getQueryRequest(), handler);
+        }
     }
 
     private void getTargetSourceWithoutHint(QueryRequest request, Handler<AsyncResult<QuerySourceRequest>> handler) {
@@ -68,10 +59,10 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
     }
 
     private void getTargetSourceFromCost(QueryRequest request, Handler<AsyncResult<SourceType>> handler) {
-        List<Future> sourceTypeCost = new ArrayList<>();
-        schemaStorageProvider.getLogicalSchema(request.getDatamartMnemonic(), schemaHandler ->{
+        schemaStorageProvider.getLogicalSchema(request.getDatamartMnemonic(), schemaHandler -> {
             if (schemaHandler.succeeded()) {
                 val schema = schemaHandler.result();
+                List<Future> sourceTypeCost = new ArrayList<>();
                 pluginService.getSourceTypes().forEach(sourceType -> {
                     sourceTypeCost.add(Future.future(p ->
                             {
@@ -87,22 +78,22 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
                             })
                     );
                 });
+                CompositeFuture.join(sourceTypeCost).onComplete(
+                        ar -> {
+                            if (ar.succeeded()) {
+                                SourceType sourceType = ar.result().list().stream()
+                                        .map(res -> (Pair<SourceType, Integer>) res)
+                                        .min(Comparator.comparingInt(Pair::getValue))
+                                        .map(Pair::getKey)
+                                        .orElse(null);
+                                handler.handle(Future.succeededFuture(sourceType));
+                            } else {
+                                handler.handle(Future.failedFuture(ar.cause()));
+                            }
+						});
             } else {
                 handler.handle(Future.failedFuture(schemaHandler.cause()));
             }
         });
-        CompositeFuture.all(sourceTypeCost).onComplete(
-                ar -> {
-                    if (ar.succeeded()) {
-                        SourceType sourceType = ar.result().list().stream()
-                                .map(res -> (Pair<SourceType, Integer>) res)
-                                .min(Comparator.comparingInt(Pair::getValue))
-                                .map(Pair::getKey)
-                                .orElse(null);
-                        handler.handle(Future.succeededFuture(sourceType));
-                    } else {
-                        handler.handle(Future.failedFuture(ar.cause()));
-                    }
-                });
     }
 }

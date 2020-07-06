@@ -1,7 +1,7 @@
 package ru.ibs.dtm.query.execution.plugin.adb.service.impl.enrichment;
 
 import org.springframework.stereotype.Service;
-import ru.ibs.dtm.query.execution.plugin.adb.model.metadata.*;
+import ru.ibs.dtm.query.execution.model.metadata.*;
 import ru.ibs.dtm.query.execution.plugin.adb.service.SchemaExtender;
 
 import java.util.ArrayList;

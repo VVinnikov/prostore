@@ -10,12 +10,11 @@ import ru.ibs.dtm.common.calcite.CalciteContext;
 import ru.ibs.dtm.common.dto.ActualDeltaRequest;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.service.DeltaService;
+import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 import ru.ibs.dtm.query.execution.plugin.adg.calcite.AdgCalciteContextProvider;
-import ru.ibs.dtm.query.execution.plugin.adg.calcite.CalciteContext;
 import ru.ibs.dtm.query.execution.plugin.adg.dto.EnrichQueryRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.dto.RegexPreprocessorResult;
 import ru.ibs.dtm.query.execution.plugin.adg.dto.schema.SchemaDescription;
-import ru.ibs.dtm.query.execution.plugin.adg.model.metadata.Datamart;
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryEnrichmentService;
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryGenerator;
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryParserService;
@@ -77,7 +76,7 @@ public class AdgQueryEnrichmentServiceImpl implements QueryEnrichmentService {
           queryParserService.parse(regexPreprocessorResult.getActualQueryRequest(), schemaDescription, calciteContext, parsedQueryResult -> {
             if (parsedQueryResult.succeeded()) {
               // формируем новый sql-запрос
-              adgQueryGenerator.mutateQuery(parsedQueryResult.result(), deltaResult.result(), schemaDescription, calciteContext, enrichedQueryResult -> {
+              adgQueryGenerator.mutateQuery(parsedQueryResult.result(), deltaResult.result(), schemaDescription, calciteContext, request.getQueryRequest(), enrichedQueryResult -> {
                 if (enrichedQueryResult.succeeded()) {
                   log.trace("Сформирован запрос: {}", enrichedQueryResult.result());
                   asyncHandler.handle(Future.succeededFuture(enrichedQueryResult.result()));

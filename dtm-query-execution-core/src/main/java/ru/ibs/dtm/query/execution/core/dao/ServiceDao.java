@@ -7,13 +7,18 @@ import io.vertx.ext.sql.ResultSet;
 import ru.ibs.dtm.common.dto.ActualDeltaRequest;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
-import ru.ibs.dtm.query.execution.core.dto.*;
+import ru.ibs.dtm.query.execution.core.dto.DatamartView;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.dto.eddl.CreateDownloadExternalTableQuery;
+import ru.ibs.dtm.query.execution.core.dto.eddl.CreateUploadExternalTableQuery;
+import ru.ibs.dtm.query.execution.core.dto.eddl.DropUploadExternalTableQuery;
+import ru.ibs.dtm.query.execution.core.dto.edml.*;
+import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
+import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartInfo;
+import ru.ibs.dtm.query.execution.core.dto.metadata.EntityAttribute;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Слой взаимодействия с сервисной БД
@@ -62,7 +67,15 @@ public interface ServiceDao {
 
     void findDownloadExternalTable(String datamartMnemonic, String table, Handler<AsyncResult<DownloadExtTableRecord>> resultHandler);
 
-    void insertDownloadQuery(UUID id, Long detId, String sql, Handler<AsyncResult<Void>> resultHandler);
+    void insertDownloadQuery(DownloadQueryRecord downloadQueryRecord, Handler<AsyncResult<Void>> resultHandler);
+
+    void findUploadExternalTable(String schemaName, String tableName, Handler<AsyncResult<UploadExtTableRecord>> resultHandler);
+
+    void insertUploadExternalTable(CreateUploadExternalTableQuery query, Handler<AsyncResult<Void>> asyncResultHandler);
+
+    void dropUploadExternalTable(DropUploadExternalTableQuery query, Handler<AsyncResult<Void>> asyncResultHandler);
+
+    void inserUploadQuery(UploadQueryRecord uploadQueryRecord, Handler<AsyncResult<Void>> resultHandler);
 
     void getDeltaOnDateTime(ActualDeltaRequest actualDeltaRequest, Handler<AsyncResult<Long>> resultHandler);
 

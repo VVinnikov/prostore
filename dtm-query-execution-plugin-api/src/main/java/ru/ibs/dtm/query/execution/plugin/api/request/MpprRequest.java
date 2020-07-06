@@ -14,7 +14,7 @@ public class MpprRequest extends DatamartRequest {
    */
   private QueryExloadParam queryExloadParam;
   /**
-   * Логическая схема
+   * схема данных
    */
   private JsonObject schema;
 

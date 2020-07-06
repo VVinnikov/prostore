@@ -85,8 +85,12 @@ public class TtCartridgeProviderImpl implements TtCartridgeProvider {
 		Future.future((Promise<ResOperation> promise) -> client.getSchema(promise))
 				.compose(f -> Future.future((Promise<OperationYaml> promise) ->
 				{
-					val yaml = yamlMapper.readValue(f.getData().getCluster().getSchema().getYaml(), OperationYaml.class);
-					generator.generate(context, yaml, promise);
+					try {
+						val yaml = yamlMapper.readValue(f.getData().getCluster().getSchema().getYaml(), OperationYaml.class);
+						generator.generate(context, yaml, promise);
+					} catch (Exception ex) {
+						promise.fail(ex);
+					}
 				})
 				.compose(yaml -> Future.future((Promise<String> promise) -> {
 					try {
@@ -97,7 +101,7 @@ public class TtCartridgeProviderImpl implements TtCartridgeProvider {
 							promise.fail("Empty generated yaml config");
 						}
 					} catch (Exception ex) {
-						handler.handle(Future.failedFuture(ex));
+						promise.fail(ex);
 					}
 				}))
 				.compose(ys -> Future.future((Promise<ResOperation> promise) -> client.setSchema(ys, promise)))

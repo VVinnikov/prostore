@@ -8,6 +8,7 @@ import ru.ibs.dtm.common.schema.codec.type.LocalDateLogicalType;
 import java.time.LocalDate;
 
 public class LocalDateConversion extends Conversion<LocalDate> {
+
     private LocalDateConversion() {
         super();
     }

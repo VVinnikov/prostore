@@ -2,9 +2,9 @@ package ru.ibs.dtm.query.execution.core.service;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
-import ru.ibs.dtm.query.execution.core.dto.DatamartEntity;
-import ru.ibs.dtm.query.execution.core.dto.DatamartInfo;
-import ru.ibs.dtm.query.execution.core.dto.EntityAttribute;
+import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
+import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartInfo;
+import ru.ibs.dtm.query.execution.core.dto.metadata.EntityAttribute;
 
 import java.util.List;
 

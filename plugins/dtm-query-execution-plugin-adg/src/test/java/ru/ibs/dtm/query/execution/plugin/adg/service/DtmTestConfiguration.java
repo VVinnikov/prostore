@@ -8,7 +8,10 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.json.jackson.DatabindCodec;
+import io.vertx.kafka.admin.KafkaAdminClient;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
@@ -21,33 +24,39 @@ import java.util.List;
 @TestConfiguration
 public class DtmTestConfiguration {
 
-  @Bean
-  @Primary
-  public ObjectMapper objectMapper() {
-    SimpleModule simpleModule = new SimpleModule();
-    ObjectMapper mapper = DatabindCodec.mapper();
-    mapper.registerModule(simpleModule);
-    mapper.registerModule(new JavaTimeModule());
-    mapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
-    mapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
-    return mapper;
-  }
+    @Bean
+    @Primary
+    public ObjectMapper objectMapper() {
+        SimpleModule simpleModule = new SimpleModule();
+        ObjectMapper mapper = DatabindCodec.mapper();
+        mapper.registerModule(simpleModule);
+        mapper.registerModule(new JavaTimeModule());
+        mapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+        mapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
+        return mapper;
+    }
 
-  @Bean("adgDeltaService")
-  public DeltaService deltaService() {
-    return new DeltaService() {
-      @Override
-      public void getDeltaOnDateTime(ActualDeltaRequest actualDeltaRequest, Handler<AsyncResult<Long>> handler) {
-        //TODO заглушка
-        handler.handle(Future.succeededFuture(1L));
-      }
+    @Bean("adgDeltaService")
+    public DeltaService deltaService() {
+        return new DeltaService() {
+            @Override
+            public void getDeltaOnDateTime(ActualDeltaRequest actualDeltaRequest, Handler<AsyncResult<Long>> handler) {
+                //TODO заглушка
+                handler.handle(Future.succeededFuture(1L));
+            }
 
-      @Override
-      public void getDeltasOnDateTimes(List<ActualDeltaRequest> list, Handler<AsyncResult<List<Long>>> handler) {
-        //TODO заглушка
-        handler.handle(Future.succeededFuture(Collections.singletonList(1L)));
-      }
-    };
-  }
+            @Override
+            public void getDeltasOnDateTimes(List<ActualDeltaRequest> list, Handler<AsyncResult<List<Long>>> handler) {
+                //TODO заглушка
+                handler.handle(Future.succeededFuture(Collections.singletonList(1L)));
+            }
+        };
+    }
+
+    @Bean("adgKafkaAdminClient")
+    public KafkaAdminClient adqmKafkaAdminClient(KafkaProperties kafkaProperties,
+                                                 @Qualifier("adgVertx") Vertx vertx) {
+        return KafkaAdminClient.create(vertx, kafkaProperties.getConsumer().getAdg());
+    }
 
 }

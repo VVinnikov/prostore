@@ -3,30 +3,28 @@ package ru.ibs.dtm.query.execution.core.service.impl;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-import org.apache.calcite.sql.SqlDialect;
-import org.jetbrains.annotations.NotNull;
+import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlSelect;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import ru.ibs.dtm.common.plugin.exload.QueryExloadParam;
-import ru.ibs.dtm.common.plugin.exload.TableAttribute;
-import ru.ibs.dtm.common.plugin.exload.Type;
-import ru.ibs.dtm.common.reader.QueryRequest;
+import ru.ibs.dtm.common.dto.TableInfo;
 import ru.ibs.dtm.common.reader.QueryResult;
-import ru.ibs.dtm.common.transformer.Transformer;
-import ru.ibs.dtm.query.execution.core.configuration.properties.EdmlProperties;
+import ru.ibs.dtm.query.execution.core.calcite.eddl.SqlNodeUtils;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
-import ru.ibs.dtm.query.execution.core.dto.DownloadExtTableRecord;
-import ru.ibs.dtm.query.execution.core.dto.DownloadExternalTableAttribute;
-import ru.ibs.dtm.query.execution.core.factory.MpprKafkaRequestFactory;
-import ru.ibs.dtm.query.execution.core.factory.impl.MpprKafkaRequestFactoryImpl;
-import ru.ibs.dtm.query.execution.core.service.DataSourcePluginService;
+import ru.ibs.dtm.query.execution.core.dto.edml.DownloadExtTableRecord;
+import ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction;
+import ru.ibs.dtm.query.execution.core.dto.edml.EdmlQuery;
+import ru.ibs.dtm.query.execution.core.dto.edml.UploadExtTableRecord;
 import ru.ibs.dtm.query.execution.core.service.SchemaStorageProvider;
+import ru.ibs.dtm.query.execution.core.service.edml.EdmlExecutor;
 import ru.ibs.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.service.EdmlService;
 
-import java.util.UUID;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -36,102 +34,104 @@ import java.util.stream.Collectors;
 @Service("coreEdmlService")
 public class EdmlServiceImpl implements EdmlService<QueryResult> {
 
-    private static final SqlDialect SQL_DIALECT = new SqlDialect(SqlDialect.EMPTY_CONTEXT);
-    private final Transformer<DownloadExternalTableAttribute, TableAttribute> tableAttributeTransformer;
-    private final DataSourcePluginService pluginService;
     private final SchemaStorageProvider schemaStorageProvider;
-    private final MpprKafkaRequestFactory mpprKafkaRequestFactory;
-    private final EdmlProperties edmlProperties;
     private final ServiceDao serviceDao;
+    private final Map<EdmlAction, EdmlExecutor> executors;
 
-    public EdmlServiceImpl(Transformer<DownloadExternalTableAttribute, TableAttribute> tableAttributeTransformer,
-                           DataSourcePluginService pluginService,
-                           ServiceDao serviceDao,
-                           SchemaStorageProvider schemaStorageProvider,
-                           EdmlProperties edmlProperties
-    ) {
-        this.tableAttributeTransformer = tableAttributeTransformer;
-        this.pluginService = pluginService;
+    @Autowired
+    public EdmlServiceImpl(ServiceDao serviceDao, SchemaStorageProvider schemaStorageProvider, List<EdmlExecutor> edmlExecutors) {
         this.serviceDao = serviceDao;
         this.schemaStorageProvider = schemaStorageProvider;
-        this.mpprKafkaRequestFactory = new MpprKafkaRequestFactoryImpl();
-        this.edmlProperties = edmlProperties;
+        this.executors = edmlExecutors.stream().collect(Collectors.toMap(EdmlExecutor::getAction, it -> it));
     }
 
     @Override
     public void execute(EdmlRequestContext context, Handler<AsyncResult<QueryResult>> resultHandler) {
+        //TODO переделать на генерацию схемы из списка атрибутов
         schemaStorageProvider.getLogicalSchema(context.getRequest().getQueryRequest().getDatamartMnemonic(), schemaAr -> {
             if (schemaAr.succeeded()) {
                 JsonObject schema = schemaAr.result();
-                executeWithSchema(schema, context, resultHandler);
+                context.setSchema(schema);
+                executeRequest(context, resultHandler);
             } else {
                 resultHandler.handle(Future.failedFuture(schemaAr.cause()));
             }
         });
     }
 
-    public void executeWithSchema(JsonObject schema, EdmlRequestContext context, Handler<AsyncResult<QueryResult>> resultHandler) {
-        final QueryRequest queryRequest = context.getRequest().getQueryRequest();
-        log.debug("Начало обработки EDML-запроса. execute(type: {}, queryRequest: {})",
-                context.getProcessingType(), queryRequest);
-
-        final String externalTable = context.getSqlNode().getTargetTable().toString();
-        String onlySelect = context.getSqlNode().getSource().toSqlString(SQL_DIALECT).toString();
-        final QueryRequest qrOnlySelect = queryRequest.copy();
-        qrOnlySelect.setSql(onlySelect);
-        log.debug("От запроса оставили: {}", onlySelect);
-
-        serviceDao.findDownloadExternalTable(qrOnlySelect.getDatamartMnemonic(), externalTable, ar -> {
-            if (ar.succeeded()) {
-                final DownloadExtTableRecord detRecord = ar.result();
-                log.debug("Внешняя таблица {} найдена", externalTable);
-                final QueryExloadParam exloadParam = createQueryExloadParam(externalTable, qrOnlySelect, detRecord);
-                serviceDao.insertDownloadQuery(exloadParam.getId(), detRecord.getId(), qrOnlySelect.getSql(), idqHandler -> {
-                    if (idqHandler.succeeded()) {
-                        serviceDao.findDownloadExternalTableAttributes(detRecord.getId(), attrsHandler -> {
-                            if (attrsHandler.succeeded()) {
-                                val tableAttributes = attrsHandler.result().stream()
-                                        .map(tableAttributeTransformer::transform)
-                                        .collect(Collectors.toList());
-                                exloadParam.setTableAttributes(tableAttributes);
-                                if (Type.KAFKA_TOPIC == exloadParam.getLocationType()) {
-                                    log.debug("Перед обращением к plugin.mmprKafka");
-                                    pluginService.mpprKafka(
-                                            edmlProperties.getSourceType(),
-                                            mpprKafkaRequestFactory.create(qrOnlySelect, exloadParam, schema),
-                                            resultHandler);
-                                } else {
-                                    log.error("Другие типы ещё не реализованы");
-                                    resultHandler.handle(Future.failedFuture("Другие типы ещё не реализованы"));
-                                }
-                            } else {
-                                resultHandler.handle(Future.failedFuture(attrsHandler.cause()));
-                            }
-                        });
-                    } else {
-                        resultHandler.handle(Future.failedFuture(idqHandler.cause()));
-                    }
-                });
-            } else {
-                resultHandler.handle(Future.failedFuture(ar.cause()));
-            }
-        });
+    private void executeRequest(EdmlRequestContext context, Handler<AsyncResult<QueryResult>> resultHandler) {
+        checkDownloadExtSourceTableExists(context)
+                .compose(result -> checkUploadExtTargetTableExists(context))
+                .compose(dwnExtRecord -> findTargetDownloadExtTable(context))
+                .compose(edmlQuery -> execute(context, edmlQuery, resultHandler))
+                .setHandler(resultHandler);
     }
 
-    @NotNull
-    private QueryExloadParam createQueryExloadParam(String externalTable,
-                                                    QueryRequest queryRequest,
-                                                    DownloadExtTableRecord detRecord) {
-        final QueryExloadParam exloadParam = new QueryExloadParam();
-        exloadParam.setId(UUID.randomUUID());
-        exloadParam.setDatamart(queryRequest.getDatamartMnemonic());
-        exloadParam.setTableName(externalTable);
-        exloadParam.setSqlQuery(queryRequest.getSql());
-        exloadParam.setLocationType(detRecord.getLocationType());
-        exloadParam.setLocationPath(detRecord.getLocationPath());
-        exloadParam.setFormat(detRecord.getFormat());
-        exloadParam.setChunkSize(detRecord.getChunkSize() != null ?
-                detRecord.getChunkSize() : edmlProperties.getDefaultChunkSize());
-        return exloadParam;
+    private Future<Void> checkDownloadExtSourceTableExists(EdmlRequestContext context) {
+        return Future.future((Promise<Void> promise) -> {
+                    initSourceAndTargetTables(context);
+                    serviceDao.findDownloadExternalTable(context.getSourceTable().getSchemaName(),
+                            context.getSourceTable().getTableName(), ar -> {
+                                if (ar.succeeded()) {
+                                    promise.fail(new RuntimeException("Невозможно выбрать данные из внешней таблицы выгрузки: "
+                                            + context.getSourceTable()));
+                                } else {
+                                    promise.complete();
+                                }
+                            });
+                }
+        );
+    }
+
+    private void initSourceAndTargetTables(EdmlRequestContext context) {
+        TableInfo sourceTable = SqlNodeUtils.getTableInfo((SqlSelect) context.getSqlNode().getSource(),
+                context.getRequest().getQueryRequest().getDatamartMnemonic());
+        TableInfo targetTable = SqlNodeUtils.getTableInfo((SqlIdentifier) context.getSqlNode().getTargetTable(),
+                context.getRequest().getQueryRequest().getDatamartMnemonic());
+        context.setSourceTable(sourceTable);
+        context.setTargetTable(targetTable);
+    }
+
+    private Future<Void> checkUploadExtTargetTableExists(EdmlRequestContext context) {
+        return Future.future((Promise<Void> promise) ->
+                serviceDao.findUploadExternalTable(context.getTargetTable().getSchemaName(),
+                        context.getTargetTable().getTableName(), ar -> {
+                            if (ar.succeeded()) {
+                                promise.fail(new RuntimeException("Невозможно записать данные во внешнюю таблицу загрузки: "
+                                        + context.getSqlNode().getTargetTable().toString()));
+                            } else {
+                                promise.complete();
+                            }
+                        }
+                ));
+    }
+
+    private Future<EdmlQuery> findTargetDownloadExtTable(EdmlRequestContext context) {
+        return Future.future((Promise<EdmlQuery> promise) ->
+                serviceDao.findDownloadExternalTable(context.getTargetTable().getSchemaName(),
+                        context.getTargetTable().getTableName(), ar -> {
+                            if (ar.succeeded()) {
+                                DownloadExtTableRecord record = ar.result();
+                                log.debug("Найдена запись в downloadExternalTable: {}; для targetTable: {}", record, context.getTargetTable());
+                                promise.complete(new EdmlQuery(EdmlAction.DOWNLOAD, record));
+                            } else {
+                                serviceDao.findUploadExternalTable(context.getSourceTable().getSchemaName(),
+                                        context.getSourceTable().getTableName(), arUpl -> {
+                                            if (arUpl.succeeded()) {
+                                                UploadExtTableRecord record = arUpl.result();
+                                                log.debug("Найдена запись в uploadExternalTable: {}; для sourceTable: {}",
+                                                        record, context.getSourceTable());
+                                                promise.complete(new EdmlQuery(EdmlAction.UPLOAD, record));
+                                            } else {
+                                                promise.fail(new RuntimeException("Не найдено внешних таблиц загрузки/выгрузки!"));
+                                            }
+                                        });
+                            }
+                        })
+        );
+    }
+
+    private Future<QueryResult> execute(EdmlRequestContext context, EdmlQuery edmlQuery, Handler<AsyncResult<QueryResult>> resultHandler) {
+        return Future.future((Promise<QueryResult> promise) -> executors.get(edmlQuery.getAction()).execute(context, edmlQuery, resultHandler));
     }
 }

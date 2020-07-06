@@ -11,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.model.ddl.ClassTypes;
+import ru.ibs.dtm.common.plugin.status.StatusQueryResult;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
@@ -19,8 +20,10 @@ import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlType;
 import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
 import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
+import ru.ibs.dtm.query.execution.plugin.api.status.StatusRequestContext;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -29,59 +32,69 @@ import java.util.concurrent.TimeUnit;
 @ExtendWith(VertxExtension.class)
 class AdbDtmDataSourcePluginIT {
 
-	@Autowired
-	private DdlService ddlService;
+    @Autowired
+    private DdlService ddlService;
 
-	private DtmDataSourcePlugin plugin = new DtmDataSourcePlugin() {
+    private DtmDataSourcePlugin plugin = new DtmDataSourcePlugin() {
 
-		@Override
-		public boolean supports(SourceType sourceType) {
-			return false;
-		}
+        @Override
+        public boolean supports(SourceType sourceType) {
+            return false;
+        }
 
-		@Override
-		public SourceType getSourceType() {
-			return SourceType.ADB;
-		}
+        @Override
+        public SourceType getSourceType() {
+            return SourceType.ADB;
+        }
 
-		@Override
-		public void ddl(DdlRequestContext ddlRequest, Handler<AsyncResult<Void>> handler) {
-			ddlService.execute(ddlRequest, handler);
-		}
+        @Override
+        public void ddl(DdlRequestContext ddlRequest, Handler<AsyncResult<Void>> handler) {
+            ddlService.execute(ddlRequest, handler);
+        }
 
-		@Override
-		public void llr(LlrRequestContext llrRequest, Handler<AsyncResult<QueryResult>> handler) {
+        @Override
+        public void llr(LlrRequestContext llrRequest, Handler<AsyncResult<QueryResult>> handler) {
 
-		}
+        }
 
-		@Override
-		public void mpprKafka(MpprRequestContext mpprRequest, Handler<AsyncResult<QueryResult>> handler) {
+        @Override
+        public void mpprKafka(MpprRequestContext mpprRequest, Handler<AsyncResult<QueryResult>> handler) {
 
-		}
+        }
 
-		@Override
-		public void calcQueryCost(QueryCostRequestContext queryCostRequest, Handler<AsyncResult<Integer>> handler) {
+        @Override
+        public void mppwKafka(MppwRequestContext mppwRequest, Handler<AsyncResult<QueryResult>> handler) {
 
-		}
-	};
+        }
 
-	@Test
-	void testDdl(VertxTestContext testContext) throws Throwable {
-		ClassTable classTable = new ClassTable("test.test_ts3222", Arrays.asList(
-				new ClassField("id", ClassTypes.INT.name(), false, 1, 1, null),
-				new ClassField("name", ClassTypes.VARCHAR.name(), true, null, null, null),
-				new ClassField("dt", ClassTypes.DATETIME.name(), true, null, null, null)
-		));
-		DdlRequest dto = new DdlRequest(null, classTable);
-		DdlRequestContext context = new DdlRequestContext(dto);
-		context.setDdlType(DdlType.CREATE_TABLE);
-		plugin.ddl(context, ar -> {
-			if (ar.succeeded()) {
-				testContext.completeNow();
-			} else {
-				testContext.failNow(ar.cause());
-			}
-		});
-		testContext.awaitCompletion(5, TimeUnit.SECONDS);
-	}
+        @Override
+        public void calcQueryCost(QueryCostRequestContext queryCostRequest, Handler<AsyncResult<Integer>> handler) {
+
+        }
+
+        @Override
+        public void status(StatusRequestContext statusRequestContext, Handler<AsyncResult<StatusQueryResult>> asyncResultHandler) {
+
+        }
+    };
+
+    @Test
+    void testDdl(VertxTestContext testContext) throws Throwable {
+        ClassTable classTable = new ClassTable("test.test_ts3222", Arrays.asList(
+                new ClassField("id", ClassTypes.INT.name(), false, 1, 1, null),
+                new ClassField("name", ClassTypes.VARCHAR.name(), true, null, null, null),
+                new ClassField("dt", ClassTypes.DATETIME.name(), true, null, null, null)
+        ));
+        DdlRequest dto = new DdlRequest(null, classTable);
+        DdlRequestContext context = new DdlRequestContext(dto);
+        context.setDdlType(DdlType.CREATE_TABLE);
+        plugin.ddl(context, ar -> {
+            if (ar.succeeded()) {
+                testContext.completeNow();
+            } else {
+                testContext.failNow(ar.cause());
+            }
+        });
+        testContext.awaitCompletion(5, TimeUnit.SECONDS);
+    }
 }

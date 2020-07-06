@@ -111,7 +111,7 @@ public class MetadataFactoryImpl implements MetadataFactory {
             } else {
                 sb.append(" ");
             }
-            if (!it.getIsNull()) {
+            if (!it.getNullable()) {
                 sb.append("NOT NULL");
             }
             prefix[0] = ", ";

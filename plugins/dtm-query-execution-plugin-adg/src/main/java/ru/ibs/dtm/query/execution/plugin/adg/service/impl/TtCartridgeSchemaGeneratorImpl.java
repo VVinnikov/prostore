@@ -141,7 +141,7 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
 
 	private static List<SpaceIndexPart> getPrimaryKeyParts(List<ClassField> fields) {
 		return ClassFieldUtils.getPrimaryKeyList(fields).stream()
-				.map(f -> new SpaceIndexPart(f.getName(), SpaceAttributeTypeUtil.toAttributeType(f.getType()).getName(), f.getIsNull()))
+				.map(f -> new SpaceIndexPart(f.getName(), SpaceAttributeTypeUtil.toAttributeType(f.getType()).getName(), f.getNullable()))
 				.collect(Collectors.toList());
 	}
 
@@ -199,9 +199,9 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
 		return attributes;
 	}
 
-    private static SpaceAttribute toAttribute(ClassField field) {
-        return new SpaceAttribute(field.getIsNull(), field.getName(), SpaceAttributeTypeUtil.toAttributeType(field.getType()));
-    }
+	private static SpaceAttribute toAttribute(ClassField field) {
+		return new SpaceAttribute(field.getNullable(), field.getName(), SpaceAttributeTypeUtil.toAttributeType(field.getType()));
+	}
 
     private TopicsConfig createTopicConfig(KafkaAdminProperty property, ClassTable classTable) {
         val adgUploadRq = String.format(property.getUpload().getRequestTopic().get(SourceType.ADG.toString().toLowerCase()), classTable.getName(), classTable.getSchema());

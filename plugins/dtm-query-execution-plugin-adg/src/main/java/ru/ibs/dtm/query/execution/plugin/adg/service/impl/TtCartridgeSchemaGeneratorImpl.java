@@ -50,7 +50,7 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
 		}
 		val spaces = yaml.getSpaces();
 		QueryRequest queryRequest = context.getRequest().getQueryRequest();
-		String prefix = queryRequest.getSystemName() + "_" + queryRequest.getDatamartMnemonic() + "_";
+		String prefix = queryRequest.getSystemName() + "__" + queryRequest.getDatamartMnemonic() + "__";
 		ClassTable classTable = context.getRequest().getClassTable();
 		int indexComma = classTable.getName().indexOf(".");
 		String table = classTable.getName().substring(indexComma + 1).toLowerCase();

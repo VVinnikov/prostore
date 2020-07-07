@@ -4,6 +4,10 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlDialect;
 import org.jetbrains.annotations.NotNull;
@@ -24,12 +28,7 @@ import ru.ibs.dtm.query.execution.core.service.edml.EdmlExecutor;
 import ru.ibs.dtm.query.execution.core.service.edml.EdmlUploadExecutor;
 import ru.ibs.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import static ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction.*;
+import static ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction.UPLOAD;
 
 @Service
 @Slf4j
@@ -61,7 +60,7 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
                 serviceDao.getDeltaHotByDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic(), ar -> {
                     if (ar.succeeded()) {
                         DeltaRecord deltaRecord = ar.result();
-                        if (deltaRecord.getStatus() != DeltaLoadStatus.IN_PROCESS) {
+                        if (deltaRecord == null || deltaRecord.getStatus() != DeltaLoadStatus.IN_PROCESS) {
                             promise.fail(new RuntimeException("Не найдена открытая дельта!"));
                         }
                         log.debug("Найдена последняя открытая дельта {}", deltaRecord);

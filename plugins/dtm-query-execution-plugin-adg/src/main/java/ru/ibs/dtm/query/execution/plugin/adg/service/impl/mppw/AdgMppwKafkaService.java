@@ -3,6 +3,9 @@ package ru.ibs.dtm.query.execution.plugin.adg.service.impl.mppw;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import java.util.Collections;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.stereotype.Service;
@@ -16,10 +19,6 @@ import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtTransferD
 import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeClient;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.service.MppwKafkaService;
-
-import java.util.Collections;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service("adgMppwKafkaService")
@@ -66,7 +65,7 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
         } else {
             val request = new TtSubscriptionKafkaRequest(
                     properties.getMaxNumberOfMessagesPerPartition(),
-                    ctx.getSchema(),
+                    null,
                     ctx.getTopicName()
             );
             cartridgeClient.subscribe(request, ar -> {
@@ -86,17 +85,17 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
         val request = new TtLoadDataKafkaRequest(
                 properties.getMaxNumberOfMessagesPerPartition(),
                 Collections.singletonList(ctx.getHelperTableNames().getStaging()),
-                ctx.getSchema(),
+                null,
                 ctx.getTopicName()
         );
         cartridgeClient.loadData(
                 request, ar -> {
                     if (ar.succeeded()) {
-                        log.debug("Load Data completed by [{}]", request);
+                        log.debug("Load Data completed by request [{}] with result: [{}]", request, ar.result());
                         transferData(ctx, handler);
                     } else {
                         log.error("Load Data error:", ar.cause());
-                        cancelByError(ctx, handler, ar.cause());
+                        handler.handle(Future.failedFuture(ar.cause()));
                     }
                 });
     }
@@ -106,35 +105,22 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
         cartridgeClient.transferDataToScdTable(
                 request, ar -> {
                     if (ar.succeeded()) {
-                        log.debug("Transfer Data completed by [{}]", request);
+                        log.debug("Transfer Data completed by request [{}]", request);
                         handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
                     } else {
                         log.error("Transfer Data error: ", ar.cause());
-                        cancelByError(ctx, handler, ar.cause());
+                        handler.handle(Future.failedFuture(ar.cause()));
                     }
                 }
         );
     }
 
-    private void cancelByError(AdgMppwKafkaContext ctx,
-                               Handler<AsyncResult<QueryResult>> handler,
-                               Throwable error) {
-        cancelLoadData(ctx, ar -> {
-            if (ar.succeeded()) {
-                handler.handle(Future.failedFuture(error));
-            } else {
-                log.error("Cancel error", error);
-                handler.handle(Future.failedFuture(ar.cause()));
-            }
-        });
-    }
-
     private void cancelLoadData(AdgMppwKafkaContext ctx, Handler<AsyncResult<QueryResult>> handler) {
         val topicName = ctx.getTopicName();
         cartridgeClient.cancelSubscription(topicName, ar -> {
+            initializedLoadingByTopic.remove(topicName);
             if (ar.succeeded()) {
-                log.debug("Cancel Load Data completed by [{}]", topicName);
-                initializedLoadingByTopic.remove(topicName);
+                log.debug("Cancel Load Data completed by request [{}]", topicName);
                 handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
             } else {
                 log.error("Cancel Load Data error: ", ar.cause());

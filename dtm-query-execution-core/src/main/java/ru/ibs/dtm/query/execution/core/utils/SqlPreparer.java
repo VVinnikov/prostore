@@ -1,18 +1,17 @@
 package ru.ibs.dtm.query.execution.core.utils;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.avatica.util.Quoting;
 import org.springframework.util.StringUtils;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 @Slf4j
 public class SqlPreparer {
 
   private static final Pattern CREATE_TABLE_PATTERN = Pattern.compile("(?<=\\stable\\s)([A-z.0-9\"]+)", Pattern.CASE_INSENSITIVE);
-  private static final Pattern CREATE_DISTRIBUTED_TABLE_PATTERN = Pattern.compile("((.|\\n)*)(DISTRIBUTED BY.+$)", Pattern.CASE_INSENSITIVE);
+  private static final Pattern CREATE_DISTRIBUTED_TABLE_PATTERN = Pattern.compile("(DISTRIBUTED BY.+$)", Pattern.CASE_INSENSITIVE);
   private static final Pattern CREATE_TABLE_EXISTS_PATTERN = Pattern.compile("(?<=\\stable if not exists\\s)([A-z.0-9\"]+)", Pattern.CASE_INSENSITIVE);
   private static final Pattern VIEW_NAME_PATTERN = Pattern.compile("(?i)view\\s+(\\w+)");
   private static final Pattern CHECK_CREATE_OR_REPLACE_PATTERN = Pattern.compile("(?i)^(\\s+)?CREATE\\s+OR\\s+REPLACE");
@@ -74,7 +73,7 @@ public class SqlPreparer {
   public static String removeDistributeBy(String sql) {
     Matcher matcher = CREATE_DISTRIBUTED_TABLE_PATTERN.matcher(sql);
     if (matcher.find()) {
-      return matcher.group(1);
+      return matcher.replaceFirst("");
     }
     return sql;
   }

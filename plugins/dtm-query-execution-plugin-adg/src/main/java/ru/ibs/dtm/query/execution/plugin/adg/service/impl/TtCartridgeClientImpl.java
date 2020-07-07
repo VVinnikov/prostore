@@ -8,6 +8,8 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
+import java.util.HashMap;
+import java.util.List;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -20,9 +22,6 @@ import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.OperationFile;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.*;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response.*;
 import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeClient;
-
-import java.util.HashMap;
-import java.util.List;
 
 @Slf4j
 @Service
@@ -145,7 +144,7 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
     val uri = cartridgeProperties.getUrl() + cartridgeProperties.getTransferDataToScdTableUrl();
     log.debug("send to [{}] request [{}]", uri, request);
     val tableNames = request.getHelperTableNames();
-    webClient.deleteAbs(uri)
+    webClient.getAbs(uri)
             .addQueryParam(STAGE_DATA_TABLE_NAME, tableNames.getStaging())
             .addQueryParam(ACTUAL_DATA_TABLE_NAME, tableNames.getActual())
             .addQueryParam(HISTORICAL_DATA_TABLE_NAME, tableNames.getHistory())
@@ -159,6 +158,9 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
                   handler.handle(Future.succeededFuture());
                 } else if (statusCode == 500) {
                   unexpectedResponse(handler, response);
+                } else {
+                  log.error("transfer data to scd table error: {}", response.statusMessage());
+                  handler.handle(Future.failedFuture(response.statusMessage()));
                 }
               } else {
                 handler.handle(Future.failedFuture(ar.cause()));

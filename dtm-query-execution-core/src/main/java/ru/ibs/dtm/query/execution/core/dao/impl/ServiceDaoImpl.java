@@ -8,6 +8,14 @@ import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.sql.ResultSet;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -39,16 +47,9 @@ import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartInfo;
 import ru.ibs.dtm.query.execution.core.dto.metadata.EntityAttribute;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 import static java.time.temporal.ChronoField.*;
+
 import static org.jooq.generated.dtmservice.Tables.*;
 import static org.jooq.generated.information_schema.Tables.COLUMNS;
 import static org.jooq.generated.information_schema.Tables.KEY_COLUMN_USAGE;
@@ -815,8 +816,14 @@ public class ServiceDaoImpl implements ServiceDao {
                             Future.failedFuture(String.format("Внешняя таблица %s.%s не найдена", schemaName, tableName)));
                     return;
                 }
-                UploadExtTableRecord record = createUploadExternalTableRecord(result);
-                resultHandler.handle(Future.succeededFuture(record));
+                try {
+                    UploadExtTableRecord record = createUploadExternalTableRecord(result);
+                    resultHandler.handle(Future.succeededFuture(record));
+                } catch (Exception ex) {
+                    String msg = "Find UploadExtTableRecord Error from result: " + ex.getMessage();
+                    log.error(msg, ex);
+                    resultHandler.handle(Future.failedFuture(msg));
+                }
             } else {
                 log.error("Поиск внешней таблицы {}.{}, ошибка {}", schemaName, tableName, ar.cause().getMessage());
                 resultHandler.handle(Future.failedFuture(ar.cause()));
@@ -825,6 +832,7 @@ public class ServiceDaoImpl implements ServiceDao {
     }
 
     @NotNull
+    @SneakyThrows
     private UploadExtTableRecord createUploadExternalTableRecord(QueryResult result) {
         final Long uploadExtTableId = result.get(UPLOAD_EXTERNAL_TABLE.ID);
         final Long datamartId = result.get(1, Long.class);
@@ -842,7 +850,7 @@ public class ServiceDaoImpl implements ServiceDao {
         record.setLocationType(Type.values()[locationType]);
         record.setLocationPath(locationPath);
         record.setFormat(Format.values()[format]);
-        record.setTableSchema(JsonObject.mapFrom(schema));
+        record.setTableSchema(new JsonObject(schema));
         record.setMessageLimit(messageLimit);
         return record;
     }

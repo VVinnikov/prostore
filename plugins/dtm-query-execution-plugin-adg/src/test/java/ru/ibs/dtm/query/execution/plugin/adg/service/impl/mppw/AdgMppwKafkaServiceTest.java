@@ -101,7 +101,6 @@ class AdgMppwKafkaServiceTest {
             verify(client, VerificationModeFactory.times(1)).subscribe(any(), any());
             verify(client, VerificationModeFactory.times(1)).loadData(any(), any());
             verify(client, VerificationModeFactory.times(0)).transferDataToScdTable(any(), any());
-            verify(client, VerificationModeFactory.times(1)).cancelSubscription(any(), any());
         });
     }
 
@@ -114,7 +113,6 @@ class AdgMppwKafkaServiceTest {
             verify(client, VerificationModeFactory.times(1)).subscribe(any(), any());
             verify(client, VerificationModeFactory.times(1)).loadData(any(), any());
             verify(client, VerificationModeFactory.times(1)).transferDataToScdTable(any(), any());
-            verify(client, VerificationModeFactory.times(1)).cancelSubscription(any(), any());
         });
     }
 
@@ -128,7 +126,6 @@ class AdgMppwKafkaServiceTest {
             verify(client, VerificationModeFactory.times(0)).subscribe(any(), any());
             verify(client, VerificationModeFactory.times(0)).loadData(any(), any());
             verify(client, VerificationModeFactory.times(0)).transferDataToScdTable(any(), any());
-            verify(client, VerificationModeFactory.times(1)).cancelSubscription(any(), any());
         });
     }
 
@@ -143,7 +140,6 @@ class AdgMppwKafkaServiceTest {
             verify(client, VerificationModeFactory.times(1)).subscribe(any(), any());
             verify(client, VerificationModeFactory.times(2)).loadData(any(), any());
             verify(client, VerificationModeFactory.times(2)).transferDataToScdTable(any(), any());
-            verify(client, VerificationModeFactory.times(1)).cancelSubscription(any(), any());
         });
     }
 
@@ -157,7 +153,6 @@ class AdgMppwKafkaServiceTest {
             verify(client, VerificationModeFactory.times(1)).subscribe(any(), any());
             verify(client, VerificationModeFactory.times(2)).loadData(any(), any());
             verify(client, VerificationModeFactory.times(2)).transferDataToScdTable(any(), any());
-            verify(client, VerificationModeFactory.times(0)).cancelSubscription(any(), any());
         });
     }
 

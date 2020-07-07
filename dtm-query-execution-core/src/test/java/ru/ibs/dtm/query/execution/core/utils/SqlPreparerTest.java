@@ -82,4 +82,15 @@ class SqlPreparerTest {
     assertEquals(expectedResult, SqlPreparer.replaceQuote(input));
   }
 
+  @Test
+  void removeDistributeBy() {
+    String result = SqlPreparer.removeDistributeBy("create table shares.accounts\r\n" +
+            "(\n" +
+            "    account_id bigint,\r\n" +
+            "    account_type varchar(1),\r\n" +
+            "    primary key (account_id)\r\n" +
+            ") distributed by (account_id)");
+    System.out.println(result);
+  }
+
 }

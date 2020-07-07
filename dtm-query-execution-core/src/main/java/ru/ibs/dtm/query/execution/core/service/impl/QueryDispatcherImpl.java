@@ -3,8 +3,7 @@ package ru.ibs.dtm.query.execution.core.service.impl;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryResult;
@@ -19,9 +18,9 @@ import java.util.List;
 import java.util.Map;
 
 @Component
+@Slf4j
 public class QueryDispatcherImpl implements QueryDispatcher {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(QueryDispatcherImpl.class);
     private final Map<SqlProcessingType, DatamartExecutionService<RequestContext<? extends DatamartRequest>, AsyncResult<QueryResult>>> serviceMap = new HashMap<>();
 
     @Autowired
@@ -37,7 +36,7 @@ public class QueryDispatcherImpl implements QueryDispatcher {
             serviceMap.get(context.getProcessingType())
                     .execute(context, asyncResultHandler);
         } catch (Exception e) {
-            LOGGER.error("Произошла ошибка при диспетчеризации запроса", e);
+            log.error("Произошла ошибка при диспетчеризации запроса", e);
             asyncResultHandler.handle(Future.failedFuture(e));
         }
     }

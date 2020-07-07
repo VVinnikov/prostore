@@ -1,11 +1,16 @@
 package ru.ibs.dtm.query.execution.core.dto.eddl;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.RequiredArgsConstructor;
 import ru.ibs.dtm.common.plugin.exload.Format;
 import ru.ibs.dtm.common.plugin.exload.Type;
 
 /**
  * Запрос создания внешней таблицы выгрузки
  */
+@EqualsAndHashCode(callSuper = true)
+@Data
 public class CreateDownloadExternalTableQuery extends EddlQuery {
 
   /**
@@ -42,38 +47,6 @@ public class CreateDownloadExternalTableQuery extends EddlQuery {
     this.locationType = locationType;
     this.locationPath = locationPath;
     this.format = format;
-    this.chunkSize = chunkSize;
-  }
-
-  public Type getLocationType() {
-    return locationType;
-  }
-
-  public void setLocationType(Type locationType) {
-    this.locationType = locationType;
-  }
-
-  public String getLocationPath() {
-    return locationPath;
-  }
-
-  public void setLocationPath(String locationPath) {
-    this.locationPath = locationPath;
-  }
-
-  public Format getFormat() {
-    return format;
-  }
-
-  public void setFormat(Format format) {
-    this.format = format;
-  }
-
-  public Integer getChunkSize() {
-    return chunkSize;
-  }
-
-  public void setChunkSize(Integer chunkSize) {
     this.chunkSize = chunkSize;
   }
 }

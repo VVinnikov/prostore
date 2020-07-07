@@ -1,10 +1,15 @@
 package ru.ibs.dtm.common.model.ddl;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
 import java.util.List;
 
 /**
  * Физическая модель таблицы служебной БД
  */
+@Data
+@EqualsAndHashCode
 public class ClassTable {
 
   private static final String DEFAULT_SCHEMA = "test";
@@ -32,36 +37,5 @@ public class ClassTable {
     this.name = nameWithSchema.substring(indexComma + 1);
   }
 
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public String getSchema() {
-    return schema;
-  }
-
-  public void setSchema(String schema) {
-    this.schema = schema;
-  }
-
-  public String getNameWithSchema() {
-    return nameWithSchema;
-  }
-
-  public void setNameWithSchema(String nameWithSchema) {
-    this.nameWithSchema = nameWithSchema;
-  }
-
-  public List<ClassField> getFields() {
-    return fields;
-  }
-
-  public void setFields(List<ClassField> fields) {
-    this.fields = fields;
-  }
 }
 

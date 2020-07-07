@@ -1,52 +1,39 @@
 package ru.ibs.dtm.query.execution.core.dto.eddl;
 
+import lombok.Data;
+
+import javax.validation.constraints.NotNull;
+
 /**
  * Запрос eddl
  */
+@Data
 public abstract class EddlQuery {
 
-  /**
-   * Тип запроса
-   */
-  private EddlAction action;
+    /**
+     * Тип запроса
+     */
+    @NotNull
+    private EddlAction action;
 
-  /**
-   * Наименование схемы
-   */
-  private String schemaName;
+    /**
+     * Наименование схемы
+     */
+    private String schemaName;
 
-  /**
-   * Наименование таблицы
-   */
-  private String tableName;
+    /**
+     * Наименование таблицы
+     */
+    private String tableName;
 
-  public EddlQuery(EddlAction action) {
-    this.action = action;
-  }
+    public EddlQuery(EddlAction action) {
+        this.action = action;
+    }
 
-  public EddlQuery(EddlAction action, String schemaName, String tableName) {
-    this(action);
-    this.schemaName = schemaName;
-    this.tableName = tableName;
-  }
+    public EddlQuery(EddlAction action, String schemaName, String tableName) {
+        this(action);
+        this.schemaName = schemaName;
+        this.tableName = tableName;
+    }
 
-  public EddlAction getAction() {
-    return action;
-  }
-
-  public String getSchemaName() {
-    return schemaName;
-  }
-
-  public void setSchemaName(String schemaName) {
-    this.schemaName = schemaName;
-  }
-
-  public String getTableName() {
-    return tableName;
-  }
-
-  public void setTableName(String tableName) {
-    this.tableName = tableName;
-  }
 }

@@ -1,7 +1,7 @@
 package ru.ibs.dtm.query.execution.core.dto.eddl;
 
 /**
- * Запрос удаления внешней таблицы выгрузки
+ * Запрос удаления внешней таблицы
  */
 public class DropDownloadExternalTableQuery extends EddlQuery {
 

@@ -33,3 +33,17 @@ databaseChangeLog:
             - column:
                 name: distribute_key_order
                 type: int(1)
+  - changeSet:
+      id:  20200617_150000
+      author: 'Viktor Arkhipov'
+      changes:
+        - sqlFile:
+            path: 0004.sql
+            relativeToChangelogFile:  true
+  - changeSet:
+      id:  20200625_110000
+      author: 'Viktor Arkhipov'
+      changes:
+        - sqlFile:
+            path: 0005.sql
+            relativeToChangelogFile:  true

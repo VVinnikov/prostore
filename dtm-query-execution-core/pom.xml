@@ -291,6 +291,16 @@
                                     <includes>**/application.yml</includes>
                                     <excludes>**/*.class,**/*.xml,**/*test.class</excludes>
                                 </artifactItem>
+                                <artifactItem>
+                                    <groupId>ru.ibs.dtm</groupId>
+                                    <artifactId>dtm-query-execution-plugin-adqm</artifactId>
+                                    <type>jar</type>
+                                    <overWrite>false</overWrite>
+                                    <outputDirectory>${project.build.directory}/classes/config/plugin/adqm
+                                    </outputDirectory>
+                                    <includes>**/application.yml</includes>
+                                    <excludes>**/*.class,**/*.xml,**/*test.class</excludes>
+                                </artifactItem>
                             </artifactItems>
                         </configuration>
                     </execution>
@@ -441,6 +451,8 @@
                                         |download_external_table_attribute
                                         |download_query
                                         |delta_data
+                                        |upload_external_table
+                                        |upload_query
                                         |views_registry
                                     </includes>
                                     <inputSchema>${datasource.service.options.database}</inputSchema>

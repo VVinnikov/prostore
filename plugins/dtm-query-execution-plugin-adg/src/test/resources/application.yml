@@ -1,21 +1,25 @@
 .kafkaUrl: &kafkaUrl ${KAFKA_BOOTSTRAP_SERVERS:kafka-1.dtm.local:9092}
 
 kafka:
-  adg:
-    producer:
-      property:
-        bootstrap.servers: *kafkaUrl
-    consumer:
-      property:
-        bootstrap.servers: *kafkaUrl
-        group.id: adg-query-execution
-    cluster:
-      zookeeperHosts: ${ZOOKEEPER_HOSTS:kafka-1.dtm.local}
-      rootPath: arenadata/cluster/21
-    admin:
-      adgUploadRq: "%s.%s.adg.upload.rq"
-      adgUploadRs: "%s.%s.adg.upload.rs"
-      adgUploadErr: "%s.%s.adg.upload.err"
+  producer:
+    property:
+      bootstrap.servers: *kafkaUrl
+  consumer:
+    adg:
+      bootstrap.servers: *kafkaUrl
+      group.id: adg-query-execution
+  cluster:
+    zookeeperHosts: ${ZOOKEEPER_HOSTS:kafka-1.dtm.local}
+    rootPath: ${KAFKA_CLUSTER_ROOTPATH:arenadata/cluster/21}
+  admin:
+    inputStreamTimeoutMs: ${KAFKA_INPUT_STREAM_TIMEOUT_MS:1000}
+    upload:
+      requestTopic:
+        adg: "%s.%s.adg.upload.rq"
+      responseTopic:
+        adg: "%s.%s.adg.upload.rs"
+      errorTopic:
+        adg: "%s.%s.adg.upload.err"
 
 tarantool:
   db:

@@ -1,10 +1,12 @@
-package ru.ibs.dtm.query.calcite.core.extension.eddl;
+package ru.ibs.dtm.common.calcite.eddl;
 
-import com.google.common.collect.ImmutableList;
-import java.util.List;
-import java.util.Objects;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
+
+import javax.annotation.Nonnull;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 
 public class SqlCreateDatabase extends SqlCreate {
 
@@ -19,9 +21,10 @@ public class SqlCreateDatabase extends SqlCreate {
     this.name = Objects.requireNonNull(name);
   }
 
+  @Nonnull
   @Override
   public List<SqlNode> getOperandList() {
-    return ImmutableList.of(name);
+    return Collections.unmodifiableList(Collections.singletonList(name));
   }
 
   @Override

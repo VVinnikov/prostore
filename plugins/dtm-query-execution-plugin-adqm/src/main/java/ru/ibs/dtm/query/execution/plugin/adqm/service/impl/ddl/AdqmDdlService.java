@@ -3,7 +3,6 @@ package ru.ibs.dtm.query.execution.plugin.adqm.service.impl.ddl;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,23 +28,23 @@ public class AdqmDdlService implements DdlService<Void> {
     private static final Logger LOGGER = LoggerFactory.getLogger(AdqmDdlService.class);
 
     private final MetadataFactory metadataFactory;
+    private final DatabaseDdlService databaseDdlService;
     private final DatabaseExecutor adqmDatabaseExecutor;
     private final KafkaTopicCreatorService kafkaTopicService;
     private final KafkaConfig kafkaProperties;
-    private final Vertx vertx;
 
     @Autowired
     public AdqmDdlService(MetadataFactory metadataFactory,
+                          DatabaseDdlService databaseDdlService,
                           DatabaseExecutor adqmDatabaseExecutor,
                           KafkaTopicCreatorService kafkaTopicService,
-                          @Qualifier("coreKafkaProperties") KafkaConfig kafkaProperties,
-                          @Qualifier("adqmVertx") Vertx vertx
+                          @Qualifier("coreKafkaProperties") KafkaConfig kafkaProperties
     ) {
         this.metadataFactory = metadataFactory;
+        this.databaseDdlService = databaseDdlService;
         this.adqmDatabaseExecutor = adqmDatabaseExecutor;
         this.kafkaTopicService = kafkaTopicService;
         this.kafkaProperties = kafkaProperties;
-        this.vertx = vertx;
     }
 
     @Override
@@ -58,8 +57,10 @@ public class AdqmDdlService implements DdlService<Void> {
                 dropTable(context, handler);
                 return;
             case CREATE_SCHEMA:
+                databaseDdlService.createDatabase(context).setHandler(handler::handle);
+                return;
             case DROP_SCHEMA:
-                applySql(context.getRequest().getQueryRequest().getSql(), handler);
+                databaseDdlService.dropDatabase(context).setHandler(handler::handle);
                 return;
         }
         handler.handle(Future.failedFuture("DDL не опознан: " + context));

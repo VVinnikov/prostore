@@ -1,10 +1,9 @@
-datasource:
-  database: ${SERVICEDB_DB_NAME:dtmservice}
-  user: ${SERVICEDB_USER:dtmuser}
-  password: ${SERVICEDB_PASS:Cat6Gmt7Ncr}
-  host: ${SERVICEDB_HOST:localhost}
-  port: ${SERVICEDB_PORT:3306}
-  maxPoolSize: 1
+database: ${SERVICEDB_DB_NAME:dtmservice}
+username: ${SERVICEDB_USER:dtmuser}
+password: ${SERVICEDB_PASS:Cat6Gmt7Ncr}
+host: ${SERVICEDB_HOST:localhost}
+port: ${SERVICEDB_PORT:3306}
+maxPoolSize: 1
 
 spring:
   liquibase:

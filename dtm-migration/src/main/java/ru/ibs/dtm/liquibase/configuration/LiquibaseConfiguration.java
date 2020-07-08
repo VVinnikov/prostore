@@ -21,7 +21,7 @@ public class LiquibaseConfiguration {
         dataSource.setServerName(properties.getHost());
         dataSource.setPortNumber(properties.getPort());
         dataSource.setPassword(properties.getPassword());
-        dataSource.setUser(properties.getUser());
+        dataSource.setUser(properties.getUsername());
         log.info("Параметры подключения к сервисной бд: database:{}; host:{}; port:{}; user:{}", dataSource.getDatabaseName(),
                 dataSource.getServerName(), dataSource.getPort(), dataSource.getUser());
         return dataSource;

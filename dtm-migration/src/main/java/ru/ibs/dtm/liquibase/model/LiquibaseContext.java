@@ -1,10 +1,14 @@
 package ru.ibs.dtm.liquibase.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import liquibase.Liquibase;
+import lombok.*;
 
 @Data
-@AllArgsConstructor
+@NoArgsConstructor
+@RequiredArgsConstructor
 public class LiquibaseContext {
+    @NonNull
     private LiquibaseCommand command;
+    @NonNull
+    private Liquibase liquibase;
 }

@@ -14,7 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.calcite.CalciteContext;
-import ru.ibs.dtm.query.execution.plugin.adqm.model.metadata.Datamart;
+import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 
 import java.util.ArrayList;
 import java.util.List;

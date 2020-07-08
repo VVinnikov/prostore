@@ -14,7 +14,7 @@ datasource:
     pluginStatusCheckPeriodMs: ${EDML_STATUS_CHECK_PERIOD_MS:1000}
   service:
     options:
-      database: ${SERVICEDB_DB_NAME:dtmservice_ilapa}
+      database: ${SERVICEDB_DB_NAME:dtmservice}
       user: ${SERVICEDB_USER:dtmuser}
       password: ${SERVICEDB_PASS:Cat6Gmt7Ncr}
       host: ${SERVICEDB_HOST:10.92.3.41}

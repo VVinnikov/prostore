@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
-import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
+import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dto.DatamartView;
 import ru.ibs.dtm.query.execution.core.dto.dml.DatamartViewPair;
 import ru.ibs.dtm.query.execution.core.dto.dml.DatamartViewWrap;
@@ -22,8 +22,9 @@ import static java.util.stream.Collectors.toList;
 
 @Component
 @RequiredArgsConstructor
-public class DatamartViewWrapLoaderImpl  implements DatamartViewWrapLoader {
-    private final ServiceDao serviceDao;
+public class DatamartViewWrapLoaderImpl implements DatamartViewWrapLoader {
+
+    private final ServiceDbFacade serviceDbFacade;
 
     @SuppressWarnings("unchecked")
     @Override
@@ -55,7 +56,7 @@ public class DatamartViewWrapLoaderImpl  implements DatamartViewWrapLoader {
                 .map(e -> Future.future((Promise<List<DatamartViewWrap>> viewsByDatamartPromise) -> {
                     val viewNames = getViewNames(e.getValue());
                     val datamart = e.getKey();
-                    serviceDao.findViewsByDatamart(datamart, viewNames, ar -> {
+                    serviceDbFacade.getServiceDbDao().getViewServiceDao().findViewsByDatamart(datamart, viewNames, ar -> {
                         if (ar.succeeded()) {
                             val datamartViews = toDatamartViewWraps(datamart, ar.result());
                             viewsByDatamartPromise.complete(datamartViews);

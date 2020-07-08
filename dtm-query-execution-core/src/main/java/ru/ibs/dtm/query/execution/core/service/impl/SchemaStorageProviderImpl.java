@@ -8,7 +8,7 @@ import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
+import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
 import ru.ibs.dtm.query.execution.core.service.SchemaStorageProvider;
 import ru.ibs.dtm.query.execution.model.metadata.*;
@@ -20,15 +20,15 @@ import java.util.UUID;
 @Service
 @Slf4j
 public class SchemaStorageProviderImpl implements SchemaStorageProvider {
-    private final ServiceDao serviceDao;
+    private final ServiceDbFacade serviceDbFacade;
 
-    public SchemaStorageProviderImpl(ServiceDao serviceDao) {
-        this.serviceDao = serviceDao;
+    public SchemaStorageProviderImpl(ServiceDbFacade serviceDbFacade) {
+        this.serviceDbFacade = serviceDbFacade;
     }
 
     @Override
     public void getLogicalSchema(String datamartMnemonic, Handler<AsyncResult<JsonObject>> asyncResultHandler) {
-        serviceDao.getEntitiesMeta(datamartMnemonic, ar -> {
+        serviceDbFacade.getServiceDbDao().getEntityDao().getEntitiesMeta(datamartMnemonic, ar -> {
             if (ar.succeeded()) {
                 List<DatamartEntity> dmEntity = ar.result();
                 List<DatamartClass> dmClassResult = new ArrayList<>();
@@ -57,7 +57,7 @@ public class SchemaStorageProviderImpl implements SchemaStorageProvider {
             asyncResult.handle(Future.succeededFuture(dmClassResult));
         } else {
             DatamartEntity datamartEntity = dmEntities.get(currentIteration);
-            serviceDao.getAttributesMeta(datamartEntity.getDatamartMnemonic(), datamartEntity.getMnemonic(), ar -> {
+            serviceDbFacade.getServiceDbDao().getAttributeDao().getAttributesMeta(datamartEntity.getDatamartMnemonic(), datamartEntity.getMnemonic(), ar -> {
                 if (ar.succeeded()) {
                     List<ClassAttribute> classAttributes = new ArrayList<>();
                     DatamartClass dmClass = new DatamartClass();

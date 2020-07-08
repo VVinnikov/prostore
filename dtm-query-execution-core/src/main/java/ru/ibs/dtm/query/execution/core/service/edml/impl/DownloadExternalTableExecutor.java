@@ -16,7 +16,7 @@ import ru.ibs.dtm.common.plugin.exload.Type;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.transformer.Transformer;
 import ru.ibs.dtm.query.execution.core.configuration.properties.EdmlProperties;
-import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
+import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dto.edml.*;
 import ru.ibs.dtm.query.execution.core.service.edml.EdmlDownloadExecutor;
 import ru.ibs.dtm.query.execution.core.service.edml.EdmlExecutor;
@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction.*;
+import static ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction.DOWNLOAD;
 
 @Service
 @Slf4j
@@ -36,15 +36,15 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
     private static final SqlDialect SQL_DIALECT = new SqlDialect(SqlDialect.EMPTY_CONTEXT);
     private final Transformer<DownloadExternalTableAttribute, TableAttribute> tableAttributeTransformer;
     private final EdmlProperties edmlProperties;
-    private final ServiceDao serviceDao;
+    private final ServiceDbFacade serviceDbFacade;
     private final Map<Type, EdmlDownloadExecutor> executors;
 
     @Autowired
     public DownloadExternalTableExecutor(Transformer<DownloadExternalTableAttribute, TableAttribute> tableAttributeTransformer,
-                                         EdmlProperties edmlProperties, ServiceDao serviceDao, List<EdmlDownloadExecutor> downloadExecutors) {
+                                         EdmlProperties edmlProperties, ServiceDbFacade serviceDbFacade, List<EdmlDownloadExecutor> downloadExecutors) {
         this.tableAttributeTransformer = tableAttributeTransformer;
         this.edmlProperties = edmlProperties;
-        this.serviceDao = serviceDao;
+        this.serviceDbFacade = serviceDbFacade;
         this.executors = downloadExecutors.stream().collect(Collectors.toMap(EdmlDownloadExecutor::getDownloadType, it -> it));
     }
 
@@ -63,7 +63,7 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
             log.debug("От запроса оставили: {}", context.getRequest().getQueryRequest().getSql());
             context.setExloadParam(createQueryExloadParam(context, extTableRecord));
             DownloadQueryRecord downloadQueryRecord = createDownloadQueryRecord(context, extTableRecord);
-            serviceDao.insertDownloadQuery(downloadQueryRecord, ar -> {
+            serviceDbFacade.getEddlServiceDao().getDownloadQueryDao().insertDownloadQuery(downloadQueryRecord, ar -> {
                 if (ar.succeeded()) {
                     log.debug("Добавлен downloadQuery {}", downloadQueryRecord);
                     promise.complete(extTableRecord);
@@ -76,7 +76,7 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
 
     private Future<List<DownloadExternalTableAttribute>> getDownloadExternalAttributes(DownloadExtTableRecord extTableRecord) {
         return Future.future((Promise<List<DownloadExternalTableAttribute>> promise) ->
-                serviceDao.findDownloadExternalTableAttributes(extTableRecord.getId(), promise));
+                serviceDbFacade.getEddlServiceDao().getDownloadExtTableAttributeDao().findDownloadExtTableAttributes(extTableRecord.getId(), promise));
     }
 
     private Future<QueryResult> executePluginService(EdmlRequestContext context, List<DownloadExternalTableAttribute> attributes,

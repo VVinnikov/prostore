@@ -3,146 +3,178 @@ package ru.ibs.dtm.query.execution.plugin.adqm.factory.impl;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
-import ru.ibs.dtm.common.model.ddl.ClassTypeUtil;
+import ru.ibs.dtm.common.model.ddl.ClassTypes;
+import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import ru.ibs.dtm.query.execution.plugin.adqm.factory.MetadataFactory;
-import ru.ibs.dtm.query.execution.plugin.adqm.service.impl.query.AdqmQueryExecutor;
+import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 
-import java.util.Optional;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 public class MetadataFactoryImpl implements MetadataFactory {
 
-    /**
-     * Название таблицы актуальных данных
-     */
-    public final static String ACTUAL_TABLE = "actual";
-    /**
-     * Название таблицы истории
-     */
-    public final static String HISTORY_TABLE = "history";
-    /**
-     * Название стейджинг таблицы
-     */
-    public final static String STAGING_TABLE = "staging";
-    /**
-     * Системное поле номера дельты
-     */
-    public final static String SYS_FROM_ATTR = "sys_from";
-    /**
-     * Системное поле максимального номера дельты
-     */
-    public final static String SYS_TO_ATTR = "sys_to";
-    /**
-     * Системное поле операции над объектом
-     */
-    public final static String SYS_OP_ATTR = "sys_op";
-    /**
-     * Системное поле идентификатора запроса
-     */
-    public final static String REQ_ID_ATTR = "req_id";
+    private final static String ACTUAL_TABLE = "_actual";
+    private final static String SHARD_TABLE = "_actual_shard";
 
-    private final static String DROP_TABLE = "DROP TABLE IF EXISTS ";
+    private final static String DROP_TABLE_TEMPLATE = "DROP TABLE IF EXISTS %s__%s.%s ON CLUSTER %s";
 
-    private AdqmQueryExecutor adqmQueryExecutor;
+    private final static String CREATE_SHARD_TABLE_TEMPLATE =
+            "CREATE TABLE %s__%s.%s ON CLUSTER %s\n" +
+            "(\n" +
+            "  %s,\n" +
+            "  sys_from   Int64,\n" +
+            "  sys_to     Int64,\n" +
+            "  sys_op     Int8,\n" +
+            "  close_date Int64,\n" +
+            "  sign       Int8\n" +
+            ")\n" +
+            "ENGINE = CollapsingMergeTree(sign)\n" +
+            "ORDER BY (%s)\n" +
+            "TTL close_date + INTERVAL %d SECOND TO DISK '%s'";
 
-    public MetadataFactoryImpl(AdqmQueryExecutor adqmQueryExecutor) {
+    private final static String CREATE_DISTRIBUTED_TABLE_TEMPLATE =
+            "CREATE TABLE %s__%s.%s ON CLUSTER %s\n" +
+            "(\n" +
+            "  %s,\n" +
+            "  sys_from   Int64,\n" +
+            "  sys_to     Int64,\n" +
+            "  sys_op     Int8,\n" +
+            "  close_date Int64,\n" +
+            "  sign       Int8\n" +
+            ")\n" +
+            "Engine = Distributed(%s, %s__%s, %s, %s)";
+
+    private final static String NULLABLE_FIELD = "%s Nullable(%s)";
+    private final static String NOT_NULLABLE_FIELD = "%s %s";
+
+    private final DatabaseExecutor adqmQueryExecutor;
+    private final DdlProperties ddlProperties;
+
+    public MetadataFactoryImpl(DatabaseExecutor adqmQueryExecutor, DdlProperties ddlProperties) {
         this.adqmQueryExecutor = adqmQueryExecutor;
+        this.ddlProperties = ddlProperties;
     }
 
     @Override
     public void apply(ClassTable classTable, Handler<AsyncResult<Void>> handler) {
-        String dropSql = dropTableScript(classTable);
-        adqmQueryExecutor.executeUpdate(dropSql, ar -> {
-            if (ar.succeeded()) {
-                String createSql = createTableScripts(classTable);
-                adqmQueryExecutor.executeUpdate(createSql, handler);
-            } else {
-                log.error("Ошибка исполнения метода apply плагина ADQM", ar.cause());
-                handler.handle(Future.failedFuture(ar.cause()));
-            }
-        });
+        createTable(classTable).onComplete(handler);
     }
 
     @Override
     public void purge(ClassTable classTable, Handler<AsyncResult<Void>> handler) {
-        String dropSql = dropTableScript(classTable);
-        adqmQueryExecutor.executeUpdate(dropSql, handler);
+        dropTable(classTable).onComplete(handler);
     }
 
-    private String createTableScripts(ClassTable classTable) {
-        StringBuilder sb = new StringBuilder()
-                .append(createTableScript(classTable, classTable.getNameWithSchema() + "_" + ACTUAL_TABLE, false))
-                .append("; ")
-                .append(createTableScript(classTable, classTable.getNameWithSchema() + "_" + HISTORY_TABLE, false))
-                .append("; ")
-                .append(createTableScript(classTable, classTable.getNameWithSchema() + "_" + STAGING_TABLE, true))
-                .append("; ");
-        return sb.toString();
+    private Future<Void> createTable(ClassTable classTable) {
+        // FIXME after merging feature/DTM-417 will be used configuration parameter
+        String env = "dev";
+
+        String cluster = ddlProperties.getCluster();
+        String schema = classTable.getSchema();
+        String table = classTable.getName();
+        String columnList = getColumns(classTable.getFields());
+        String orderList = getOrderKeys(classTable.getFields());
+        String shardingList = getShardingKeys(classTable.getFields());
+        Integer ttlSec = ddlProperties.getTtlSec();
+        String archiveDisk = ddlProperties.getArchiveDisk();
+
+        String createShard = String.format(CREATE_SHARD_TABLE_TEMPLATE,
+                env, schema, table + SHARD_TABLE, cluster, columnList, orderList, ttlSec, archiveDisk);
+
+        String createDistributed = String.format(CREATE_DISTRIBUTED_TABLE_TEMPLATE,
+                env, schema, table + ACTUAL_TABLE, cluster, columnList, cluster, env, schema,
+                table + SHARD_TABLE, shardingList);
+
+        return dropTable(classTable)
+                .compose(v ->
+                        execute(createShard))
+                .compose(vv ->
+                        execute(createDistributed));
     }
 
-    private String dropTableScript(ClassTable classTable) {
-        StringBuilder sb = new StringBuilder()
-                .append(DROP_TABLE).append(classTable.getNameWithSchema()).append("_").append(ACTUAL_TABLE)
-                .append("; ")
-                .append(DROP_TABLE).append(classTable.getNameWithSchema()).append("_").append(HISTORY_TABLE)
-                .append("; ")
-                .append(DROP_TABLE).append(classTable.getNameWithSchema()).append("_").append(STAGING_TABLE)
-                .append("; ");
-        return sb.toString();
+    private Future<Void> dropTable(ClassTable classTable) {
+        // FIXME after merging feature/DTM-417 will be used configuration parameter
+        String env = "dev";
+
+        String cluster = ddlProperties.getCluster();
+        String schema = classTable.getSchema();
+        String table = classTable.getName();
+
+        String dropShard = String.format(DROP_TABLE_TEMPLATE, env, schema, table + SHARD_TABLE, cluster);
+        String dropDistributed = String.format(DROP_TABLE_TEMPLATE, env, schema, table + ACTUAL_TABLE, cluster);
+
+        return execute(dropDistributed).compose(v -> execute(dropShard));
     }
 
-    private String createTableScript(ClassTable classTable, String tableName, boolean addRegId) {
-        StringBuilder sb = new StringBuilder()
-                .append("CREATE TABLE ").append(tableName)
-                .append(" (");
-        final String[] prefix = {" "};
-        classTable.getFields().forEach(it -> {
-            sb.append(prefix[0])
-                    .append(it.getName())
-                    .append(" ")
-                    .append(ClassTypeUtil.pgFromMariaType(it.getType().name().toLowerCase()));
-            if (it.getType().name().equalsIgnoreCase("varchar") && it.getSize() != null) {
-                sb.append("(").append(it.getSize()).append(") ");
-            } else {
-                sb.append(" ");
-            }
-            if (!it.getNullable()) {
-                sb.append("NOT NULL");
-            }
-            prefix[0] = ", ";
-        });
-        sb.append(prefix[0])
-                .append(SYS_FROM_ATTR)
-                .append(" ")
-                .append("bigint")
-                .append(prefix[0])
-                .append(SYS_TO_ATTR)
-                .append(" ")
-                .append("bigint")
-                .append(prefix[0])
-                .append(SYS_OP_ATTR)
-                .append(" ")
-                .append("int");
-        if (addRegId) {
-            sb.append(prefix[0])
-                    .append(REQ_ID_ATTR)
-                    .append(" ")
-                    .append("varchar(36)");
+    private String getColumns(List<ClassField> fields) {
+        return fields.stream().map(this::classFieldToString).collect(Collectors.joining(", "));
+    }
+
+    private String getOrderKeys(List<ClassField> fields) {
+        List<String> orderKeys = fields.stream().filter(f -> f.getPrimaryOrder() != null)
+                .map(ClassField::getName).collect(Collectors.toList());
+        orderKeys.add("sys_from");
+        return String.join(", ", orderKeys);
+    }
+
+    private String getShardingKeys(List<ClassField> fields) {
+        // TODO Check against CH, does it support several columns as distributed key?
+        return fields.stream().filter(f -> f.getShardingOrder() != null)
+                .map(ClassField::getName).limit(1).collect(Collectors.joining(", "));
+    }
+
+    private String classFieldToString(ClassField f) {
+        String name = f.getName();
+        String type = mapType(f.getType());
+        String template = f.getNullable() ? NULLABLE_FIELD : NOT_NULLABLE_FIELD;
+
+        return String.format(template, name, type);
+    }
+
+    private String mapType(ClassTypes type) {
+        switch (type) {
+            case UUID: return "UUID";
+
+            case ANY:
+            case CHAR:
+            case VARCHAR: return "String";
+
+            case INT:
+            case INTEGER:
+            case BIGINT:
+            case DATE:
+            case TIME: return "Int64";
+
+            case TINYINT: return "Int8";
+
+            case BOOL:
+            case BOOLEAN: return "UInt8";
+
+            case FLOAT: return "Float32";
+            case DOUBLE: return "Float64";
+
+            case DATETIME: return "DateTime";
+            case TIMESTAMP: return "DateTime64(3)";
+
+            // FIXME will be supported after ClassFiled will support them
+//            case DECIMAL: return "";
+//            case DEC: return "";
+//            case NUMERIC: return "";
+//            case FIXED: return "";
         }
-        Optional<ClassField> primaryKey = classTable.getFields().stream().findAny().filter(f -> f.getPrimaryOrder() != null);
-        primaryKey.ifPresent(classField -> sb.append(prefix[0])
-                .append("constraint ")
-                .append("pk_")
-                .append(tableName.replace('.', '_'))
-                .append(" primary key (")
-                .append(classField.getName())
-                .append(")"));
-        sb.append(")");
-        return sb.toString();
+        return "";
+    }
+
+    private Future<Void> execute(String query) {
+        Promise<Void> result = Promise.promise();
+        adqmQueryExecutor.executeUpdate(query, result);
+        return result.future();
     }
 }

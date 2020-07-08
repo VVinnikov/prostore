@@ -32,7 +32,7 @@ public class MetadataFactoryImpl implements MetadataFactory {
             "  sys_from   Int64,\n" +
             "  sys_to     Int64,\n" +
             "  sys_op     Int8,\n" +
-            "  close_date Int64,\n" +
+            "  close_date DateTime,\n" +
             "  sign       Int8\n" +
             ")\n" +
             "ENGINE = CollapsingMergeTree(sign)\n" +
@@ -46,7 +46,7 @@ public class MetadataFactoryImpl implements MetadataFactory {
             "  sys_from   Int64,\n" +
             "  sys_to     Int64,\n" +
             "  sys_op     Int8,\n" +
-            "  close_date Int64,\n" +
+            "  close_date DateTime,\n" +
             "  sign       Int8\n" +
             ")\n" +
             "Engine = Distributed(%s, %s__%s, %s, %s)";
@@ -126,6 +126,8 @@ public class MetadataFactoryImpl implements MetadataFactory {
 
     private String getShardingKeys(List<ClassField> fields) {
         // TODO Check against CH, does it support several columns as distributed key?
+        // TODO Should we fail if sharding column in metatable of unsupported type?
+        // CH support only not null int types as sharding key
         return fields.stream().filter(f -> f.getShardingOrder() != null)
                 .map(ClassField::getName).limit(1).collect(Collectors.joining(", "));
     }

@@ -67,6 +67,7 @@ public class ServiceDaoImpl implements ServiceDao {
 
     private static final DateTimeFormatter LOCAL_DATE_TIME = new DateTimeFormatterBuilder()
             .parseCaseInsensitive()
+            .appendLiteral('\'')
             .append(ISO_LOCAL_DATE)
             .appendLiteral(' ')
             .appendValue(HOUR_OF_DAY, 2)
@@ -75,6 +76,7 @@ public class ServiceDaoImpl implements ServiceDao {
             .optionalStart()
             .appendLiteral(':')
             .appendValue(SECOND_OF_MINUTE, 2)
+            .appendLiteral('\'')
             .toFormatter();
 
     private final AsyncClassicGenericQueryExecutor executor;

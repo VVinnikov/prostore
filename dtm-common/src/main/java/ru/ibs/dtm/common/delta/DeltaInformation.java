@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.calcite.core.delta.dto;
+package ru.ibs.dtm.common.delta;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

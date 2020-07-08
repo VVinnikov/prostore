@@ -11,10 +11,8 @@ import org.apache.calcite.sql.*;
 @Data
 @Slf4j
 public class SqlSelectTree {
-    public final static String SELECT_AS = "SELECT.AS";
-    public final static String SELECT_AS_IDENTIFIER = "SELECT.AS.IDENTIFIER";
-    public final static String SELECT_IDENTIFIER = "SELECT.IDENTIFIER";
     public final static String SELECT_AS_SNAPSHOT = "SNAPSHOT";
+    public static final String IS_TABLE_OR_SNAPSHOTS_PATTERN = "(?i).*(JOIN|SELECT)\\.(|AS\\.)(SNAPSHOT|IDENTIFIER)$";
     private final Map<Integer, SqlTreeNode> nodeMap;
     private int idCounter;
 
@@ -33,6 +31,12 @@ public class SqlSelectTree {
 
     public List<SqlTreeNode> findSnapshots() {
         return findNodesByPath(SELECT_AS_SNAPSHOT);
+    }
+
+    public List<SqlTreeNode> findNodesByPathRegex(String regex) {
+        return filterChild(nodeMap.values().stream()
+                .filter(n -> n.getKindPath().matches(regex))
+                .collect(Collectors.toList()));
     }
 
     public List<SqlTreeNode> findNodesByPath(String pathPostfix) {
@@ -107,7 +111,9 @@ public class SqlSelectTree {
     }
 
     private void flattenSqlJoin(SqlTreeNode parentTree, SqlJoin parentNode) {
+        parentTree.resetChildPos();
         parentTree.createChild(idCounter++, parentNode.getLeft(), parentNode::setLeft).ifPresent(this::addNodes);
+        parentTree.resetChildPos();
         parentTree.createChild(idCounter++, parentNode.getRight(), parentNode::setRight).ifPresent(this::addNodes);
     }
 
@@ -120,23 +126,13 @@ public class SqlSelectTree {
         }
     }
 
-    public List<SqlTreeNode> getTableOrSnapshots() {
-        return this.findNodes(this::isTableOrSnapshot).stream()
+    public List<SqlTreeNode> findTableOrSnapshots() {
+        return this.findNodesByPathRegex(IS_TABLE_OR_SNAPSHOTS_PATTERN).stream()
                 .collect(Collectors.groupingBy(SqlTreeNode::getParentId))
                 .values().stream()
                 .map(l -> l.get(0))
                 .sorted(Comparator.comparing(SqlTreeNode::getId))
                 .collect(Collectors.toList());
-    }
-
-    private boolean isTableOrSnapshot(SqlTreeNode n) {
-        boolean isSnapshot = n.getNode() instanceof SqlSnapshot;
-        return isSnapshot || isTable(n);
-    }
-
-    private boolean isTable(SqlTreeNode n) {
-        String kindPath = n.getKindPath();
-        return kindPath.endsWith(SELECT_AS_IDENTIFIER) || kindPath.endsWith(SELECT_IDENTIFIER);
     }
 
     private void addNodes(SqlTreeNode... nodes) {

@@ -14,10 +14,10 @@ datasource:
     pluginStatusCheckPeriodMs: ${EDML_STATUS_CHECK_PERIOD_MS:1000}
   service:
     options:
-      database: ${SERVICEDB_DB_NAME:dtmservice}
+      database: ${SERVICEDB_DB_NAME:dtmservice_ilapa}
       user: ${SERVICEDB_USER:dtmuser}
       password: ${SERVICEDB_PASS:Cat6Gmt7Ncr}
-      host: ${SERVICEDB_HOST:localhost}
+      host: ${SERVICEDB_HOST:10.92.3.41}
       port: ${SERVICEDB_PORT:3306}
     poolOptions:
       maxSize: 5

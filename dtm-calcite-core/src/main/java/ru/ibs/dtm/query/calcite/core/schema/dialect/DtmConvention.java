@@ -13,47 +13,47 @@ import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 /**
  * Кастомизированный Relation Trait
  */
-public class DtmConvention extends Convention.Impl {
+public abstract class DtmConvention extends Convention.Impl {
 
-  private Datamart datamart;
-  private Expression schemaExpression;
-  private Collection<String> functions = new ArrayList<>();
-  private Collection<String> aggregateFunctions = new ArrayList<>();
+    protected final Datamart datamart;
+    protected final Expression schemaExpression;
+    protected final Collection<String> functions = new ArrayList<>();
+    protected final Collection<String> aggregateFunctions = new ArrayList<>();
 
-  public DtmConvention(Datamart datamart, Expression schemaExpression) {
-    super("DtmConvention", DtmRelation.class);
-    this.datamart = datamart;
-    this.schemaExpression = schemaExpression;
-  }
+    public DtmConvention(Datamart datamart, Expression schemaExpression) {
+        super("DtmConvention", DtmRelation.class);
+        this.datamart = datamart;
+        this.schemaExpression = schemaExpression;
+    }
 
-  @Override
-  public void register(RelOptPlanner planner) {
-    //TODO: доделать задаче исполнения
-  }
+    public static SqlDialect getDialect() {
+        SqlDialect.Context CONTEXT = SqlDialect.EMPTY_CONTEXT
+                .withDatabaseProduct(SqlDialect.DatabaseProduct.POSTGRESQL)
+                .withIdentifierQuoteString("")
+                .withUnquotedCasing(Casing.TO_LOWER)
+                .withCaseSensitive(false)
+                .withQuotedCasing(Casing.UNCHANGED);
+        return new PostgresqlSqlDialect(CONTEXT);
+    }
 
-  public static SqlDialect getDialect() {
-    SqlDialect.Context CONTEXT = SqlDialect.EMPTY_CONTEXT
-      .withDatabaseProduct(SqlDialect.DatabaseProduct.POSTGRESQL)
-      .withIdentifierQuoteString("")
-      .withUnquotedCasing(Casing.TO_LOWER)
-      .withCaseSensitive(false)
-      .withQuotedCasing(Casing.UNCHANGED);
-    return new PostgresqlSqlDialect(CONTEXT);
-  }
+    @Override
+    public void register(RelOptPlanner planner) {
+        //TODO: доделать задаче исполнения
+    }
 
-  public Datamart getDatamart() {
-    return datamart;
-  }
+    public Datamart getDatamart() {
+        return datamart;
+    }
 
-  public Expression getSchemaExpression() {
-    return schemaExpression;
-  }
+    public Expression getSchemaExpression() {
+        return schemaExpression;
+    }
 
-  public Collection<String> getFunctions() {
-    return functions;
-  }
+    public Collection<String> getFunctions() {
+        return functions;
+    }
 
-  public Collection<String> getAggregateFunctions() {
-    return aggregateFunctions;
-  }
+    public Collection<String> getAggregateFunctions() {
+        return aggregateFunctions;
+    }
 }

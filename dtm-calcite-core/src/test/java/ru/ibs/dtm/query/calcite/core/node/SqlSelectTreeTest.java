@@ -57,4 +57,30 @@ class SqlSelectTreeTest {
         System.out.println(selectTree.findSnapshots());
     }
 
+    @Test
+    public void test3() throws SqlParseException {
+        val sql = "select *, CASE WHEN (account_type = 'D' AND  amount >= 0) OR (account_type = 'C' AND  amount <= 0) THEN 'OK' ELSE 'NOT OK' END\n" +
+                "  from (\n" +
+                "    select a.account_id, coalesce(sum(amount),0) amount, account_type\n" +
+                "    from shares.accounts a\n" +
+                "    left join shares.transactions FOR SYSTEM_TIME AS OF '2020-06-30 16:18:58' t using(account_id)\n" +
+                "    left join shares.transactions2 t2 using(account_id)\n" +
+                "    left join shares.transactions3 using(account_id)\n" +
+                "   group by a.account_id, account_type\n" +
+                ")x";
+        SqlParser.Config config = SqlParser.configBuilder()
+                .setParserFactory(SqlParserImpl.FACTORY)
+                .setConformance(SqlConformanceEnum.DEFAULT)
+                .setLex(Lex.MYSQL)
+                .setCaseSensitive(false)
+                .setUnquotedCasing(Casing.TO_LOWER)
+                .setQuotedCasing(Casing.TO_LOWER)
+                .setQuoting(Quoting.DOUBLE_QUOTE)
+                .build();
+        SqlParser parser = SqlParser.create(sql, config);
+        SqlNode sqlNode = parser.parseQuery();
+        SqlSelectTree selectTree = new SqlSelectTree(sqlNode);
+        System.out.println(selectTree.findTableOrSnapshots());
+    }
+
 }

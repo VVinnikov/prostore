@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.calcite.core.delta.dto;
+package ru.ibs.dtm.common.delta;
 
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -7,6 +7,6 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class DeltaInformationResult {
-    private List<DeltaInformation> deltaInformations;
-    private String sqlWithoutSnapshots;
+    private final List<DeltaInformation> deltaInformations;
+    private final String sqlWithoutSnapshots;
 }

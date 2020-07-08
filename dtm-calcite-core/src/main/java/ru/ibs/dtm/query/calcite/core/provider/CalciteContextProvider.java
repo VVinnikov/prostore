@@ -2,6 +2,7 @@ package ru.ibs.dtm.query.calcite.core.provider;
 
 import java.util.ArrayList;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.adapter.enumerable.EnumerableRules;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelTraitDef;
@@ -10,19 +11,16 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import ru.ibs.dtm.common.calcite.CalciteContext;
 import ru.ibs.dtm.query.calcite.core.factory.impl.CalciteSchemaFactory;
 import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 
-public class CalciteContextProvider {
-    private static final Logger LOGGER = LoggerFactory.getLogger(CalciteContextProvider.class);
-
-    private final List<RelTraitDef> traitDefs;
-    private final RuleSet prepareRules;
-    private final SqlParser.Config configParser;
-    private final CalciteSchemaFactory calciteSchemaFactory;
+@Slf4j
+public abstract class CalciteContextProvider {
+    protected final List<RelTraitDef> traitDefs;
+    protected final RuleSet prepareRules;
+    protected final SqlParser.Config configParser;
+    protected final CalciteSchemaFactory calciteSchemaFactory;
 
     public CalciteContextProvider(SqlParser.Config configParser,
                                   CalciteSchemaFactory calciteSchemaFactory) {
@@ -53,7 +51,7 @@ public class CalciteContextProvider {
             Planner planner = Frameworks.getPlanner(config);
             return new CalciteContext(rootSchema, planner, RelBuilder.create(config));
         } catch (Exception e) {
-            LOGGER.error("Ошибка создания планировщика", e);
+            log.error("Ошибка создания планировщика", e);
         }
         return null;
     }

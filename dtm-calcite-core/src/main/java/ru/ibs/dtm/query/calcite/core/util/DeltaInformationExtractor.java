@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.calcite.core.delta.service;
+package ru.ibs.dtm.query.calcite.core.util;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -13,8 +13,8 @@ import lombok.val;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.calcite.sql.parser.SqlParserPos;
-import ru.ibs.dtm.query.calcite.core.delta.dto.DeltaInformation;
-import ru.ibs.dtm.query.calcite.core.delta.dto.DeltaInformationResult;
+import ru.ibs.dtm.common.delta.DeltaInformation;
+import ru.ibs.dtm.common.delta.DeltaInformationResult;
 import ru.ibs.dtm.query.calcite.core.node.SqlSelectTree;
 import ru.ibs.dtm.query.calcite.core.node.SqlTreeNode;
 
@@ -41,7 +41,7 @@ public class DeltaInformationExtractor {
     public static DeltaInformationResult extract(SqlNode root, String defaultDatamart) {
         try {
             val tree = new SqlSelectTree(root);
-            val nodes = tree.getTableOrSnapshots();
+            val nodes = tree.findTableOrSnapshots();
             nodes.forEach(n -> setDatamart(n, defaultDatamart));
             val deltaInformations = getDeltaInformations(tree, nodes);
             replaceSnapshots(getSnapshots(nodes));

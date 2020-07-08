@@ -6,6 +6,6 @@ import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 
 @Data
 public class QueryParserRequest {
-    private QueryRequest queryRequest;
-    private Datamart schema;
+    private final QueryRequest queryRequest;
+    private final Datamart schema;
 }

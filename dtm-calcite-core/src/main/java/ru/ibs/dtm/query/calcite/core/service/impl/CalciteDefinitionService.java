@@ -5,8 +5,8 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParser;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 
-public class CalciteDefinitionService implements DefinitionService<SqlNode> {
-    private SqlParser.Config config;
+public abstract class CalciteDefinitionService implements DefinitionService<SqlNode> {
+    private final SqlParser.Config config;
 
     public CalciteDefinitionService(SqlParser.Config config) {
         this.config = config;

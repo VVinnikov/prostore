@@ -14,12 +14,12 @@ import org.apache.calcite.schema.TranslatableTable;
 import ru.ibs.dtm.query.calcite.core.util.CalciteUtil;
 import ru.ibs.dtm.query.execution.model.metadata.DatamartClass;
 
-public class CustomTable extends AbstractQueryableTable implements TranslatableTable {
+public abstract class DtmTable extends AbstractQueryableTable implements TranslatableTable {
 
-    private QueryableSchema dtmSchema;
-    private DatamartClass datamartClass;
+    protected final QueryableSchema dtmSchema;
+    protected final DatamartClass datamartClass;
 
-    public CustomTable(QueryableSchema dtmSchema, DatamartClass datamartClass) {
+    public DtmTable(QueryableSchema dtmSchema, DatamartClass datamartClass) {
         super(Object[].class);
         this.dtmSchema = dtmSchema;
         this.datamartClass = datamartClass;

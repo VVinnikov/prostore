@@ -35,6 +35,10 @@ public class SqlTreeNode {
         return (this.kindPath == null ? "" : this.kindPath) + childPos + "." + node.getKind();
     }
 
+    public void resetChildPos() {
+        childPos = 0;
+    }
+
     @SuppressWarnings("unchecked")
     public <T extends SqlNode> T getNode() {
         return (T) node;

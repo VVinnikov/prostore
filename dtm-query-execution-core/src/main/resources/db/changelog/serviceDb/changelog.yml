@@ -1,6 +1,0 @@
-databaseChangeLog:
-  - include:
-      file: src/main/resources/db/changelog/serviceDb/04_2020/index.yml
-  - include:
-      file: src/main/resources/db/changelog/serviceDb/release_2.1/index.yml
-

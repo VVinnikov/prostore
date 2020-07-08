@@ -1,11 +1,11 @@
 databaseChangeLog:
 
   - include:
-      file: src/main/resources/db/changelog/serviceDb/04_2020/0001.sql
+      file: db/changelog/serviceDb/04_2020/0001.sql
   - include:
-      file: src/main/resources/db/changelog/serviceDb/04_2020/0002.sql
+      file: db/changelog/serviceDb/04_2020/0002.sql
   - include:
-      file: src/main/resources/db/changelog/serviceDb/04_2020/0003.sql
+      file: db/changelog/serviceDb/04_2020/0003.sql
   - changeSet:
       id:  20200525_140000
       author:  'Dmitry Voronkov'

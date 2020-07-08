@@ -136,11 +136,6 @@
 
         <!--DataStorage-->
         <dependency>
-            <groupId>org.liquibase</groupId>
-            <artifactId>liquibase-core</artifactId>
-            <version>${liquibase.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.mariadb.jdbc</groupId>
             <artifactId>mariadb-java-client</artifactId>
         </dependency>
@@ -313,20 +308,6 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.liquibase</groupId>
-                <artifactId>liquibase-maven-plugin</artifactId>
-                <version>${liquibase.version}</version>
-                <configuration>
-                    <changeLogDirectory>src/main/resources/db/changelog/serviceDb</changeLogDirectory>
-                    <changeLogFile>src/main/resources/db/changelog/serviceDb/changelog.yml</changeLogFile>
-<!--                    <dataDir>src/main/resources/db/data/serviceDb</dataDir>-->
-                    <!-- log  -->
-                    <verbose>true</verbose>
-                    <logging>info</logging>
-                    <promptOnNonLocalDatabase>true</promptOnNonLocalDatabase>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.drill.tools</groupId>

@@ -6,7 +6,7 @@ import lombok.Data;
 import org.apache.calcite.sql.SqlNode;
 
 @Data
-public class SqlTreeNode {
+public class SqlTreeNode implements Comparable<SqlTreeNode> {
     private final int id;
     private final int parentId;
     private final int level;
@@ -42,5 +42,10 @@ public class SqlTreeNode {
     @SuppressWarnings("unchecked")
     public <T extends SqlNode> T getNode() {
         return (T) node;
+    }
+
+    @Override
+    public int compareTo(SqlTreeNode o) {
+        return Integer.compare(this.getId(), o.getId());
     }
 }

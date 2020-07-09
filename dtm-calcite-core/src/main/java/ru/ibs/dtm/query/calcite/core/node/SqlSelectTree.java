@@ -1,6 +1,9 @@
 package ru.ibs.dtm.query.calcite.core.node;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import lombok.Data;
@@ -11,8 +14,8 @@ import org.apache.calcite.sql.*;
 @Data
 @Slf4j
 public class SqlSelectTree {
-    public final static String SELECT_AS_SNAPSHOT = "SNAPSHOT";
     public static final String IS_TABLE_OR_SNAPSHOTS_PATTERN = "(?i).*(JOIN|SELECT)\\.(|AS\\.)(SNAPSHOT|IDENTIFIER)$";
+    public final static String SELECT_AS_SNAPSHOT = "SNAPSHOT";
     private final Map<Integer, SqlTreeNode> nodeMap;
     private int idCounter;
 
@@ -27,6 +30,13 @@ public class SqlSelectTree {
 
     public Optional<SqlTreeNode> getParentByChild(SqlTreeNode child) {
         return Optional.ofNullable(nodeMap.get(child.getParentId()));
+    }
+
+    public List<SqlTreeNode> findChildren(SqlTreeNode parent) {
+        return nodeMap.values().stream()
+                .filter(n -> n.getParentId() == parent.getId())
+                .sorted()
+                .collect(Collectors.toList());
     }
 
     public List<SqlTreeNode> findSnapshots() {
@@ -54,6 +64,7 @@ public class SqlSelectTree {
     private List<SqlTreeNode> filterChild(List<SqlTreeNode> nodeList) {
         return nodeList.stream()
                 .filter(n1 -> nodeList.stream().noneMatch(n2 -> n1.getParentId() == n2.getId()))
+                .sorted()
                 .collect(Collectors.toList());
     }
 
@@ -99,13 +110,15 @@ public class SqlSelectTree {
 
     private void flattenSqlSelect(SqlTreeNode parentTree, SqlSelect parentNode) {
         parentTree.createChild(idCounter++,
-                parentNode.getFrom(),
-                parentNode::setFrom)
-                .ifPresent(this::addNodes);
-        parentTree.createChild(idCounter++,
                 parentNode.getSelectList(),
                 sqlNode -> parentNode.setSelectList((SqlNodeList) sqlNode))
                 .ifPresent(this::addNodes);
+        parentTree.resetChildPos();
+        parentTree.createChild(idCounter++,
+                parentNode.getFrom(),
+                parentNode::setFrom)
+                .ifPresent(this::addNodes);
+        parentTree.resetChildPos();
         parentTree.createChild(idCounter++, parentNode.getWhere(), parentNode::setWhere)
                 .ifPresent(this::addNodes);
     }
@@ -131,7 +144,7 @@ public class SqlSelectTree {
                 .collect(Collectors.groupingBy(SqlTreeNode::getParentId))
                 .values().stream()
                 .map(l -> l.get(0))
-                .sorted(Comparator.comparing(SqlTreeNode::getId))
+                .sorted()
                 .collect(Collectors.toList());
     }
 

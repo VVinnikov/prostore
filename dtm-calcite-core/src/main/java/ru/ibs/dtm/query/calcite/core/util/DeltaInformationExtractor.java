@@ -170,7 +170,6 @@ public class DeltaInformationExtractor {
                 deltaTime,
                 0L,
                 datamart,
-                tableName,
-                pos == null ? id.getParserPosition() : pos);
+                tableName);
     }
 }

@@ -11,6 +11,7 @@ import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.reader.QuerySourceRequest;
 import ru.ibs.dtm.common.reader.SourceType;
+import ru.ibs.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
 import ru.ibs.dtm.query.execution.core.service.DataSourcePluginService;
 import ru.ibs.dtm.query.execution.core.service.MetadataService;
 import ru.ibs.dtm.query.execution.core.service.SchemaStorageProvider;
@@ -27,6 +28,7 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
 
     private final DataSourcePluginService dataSourcePluginService;
     private final TargetDatabaseDefinitionService targetDatabaseDefinitionService;
+    private final DeltaQueryPreprocessor deltaQueryPreprocessor;
     private final SchemaStorageProvider schemaStorageProvider;
     private final LogicViewReplacer logicViewReplacer;
     private final MetadataService metadataService;
@@ -35,12 +37,13 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
     @Autowired
     public DmlServiceImpl(DataSourcePluginService dataSourcePluginService,
                           TargetDatabaseDefinitionService targetDatabaseDefinitionService,
-                          SchemaStorageProvider schemaStorageProvider,
+                          DeltaQueryPreprocessor deltaQueryPreprocessor, SchemaStorageProvider schemaStorageProvider,
                           LogicViewReplacer logicViewReplacer,
                           MetadataService metadataService,
                           HintExtractor hintExtractor) {
         this.dataSourcePluginService = dataSourcePluginService;
         this.targetDatabaseDefinitionService = targetDatabaseDefinitionService;
+        this.deltaQueryPreprocessor = deltaQueryPreprocessor;
         this.schemaStorageProvider = schemaStorageProvider;
         this.logicViewReplacer = logicViewReplacer;
         this.metadataService = metadataService;
@@ -49,22 +52,35 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
 
     @Override
     public void execute(DmlRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-        val request = context.getRequest().getQueryRequest();
         try {
             val sourceRequest = hintExtractor.extractHint(context.getRequest().getQueryRequest());
-            logicViewReplacer.replace(sourceRequest.getQueryRequest().getSql(), request.getDatamartMnemonic(), ar -> {
-                if (ar.succeeded()) {
-                    QueryRequest withoutViewsRequest = request.copy();
-                    withoutViewsRequest.setSql(ar.result());
-                    sourceRequest.setQueryRequest(withoutViewsRequest);
-                    setTargetSourceAndExecute(sourceRequest, asyncResultHandler);
-                } else {
-                    asyncResultHandler.handle(Future.failedFuture(ar.cause()));
-                }
-            });
+            logicViewReplace(sourceRequest.getQueryRequest())
+                    .compose(deltaQueryPreprocessor::process)
+                    .onComplete(ar -> {
+                        if (ar.succeeded()) {
+                            sourceRequest.setQueryRequest(ar.result());
+                            setTargetSourceAndExecute(sourceRequest, asyncResultHandler);
+                        } else {
+                            asyncResultHandler.handle(Future.failedFuture(ar.cause()));
+                        }
+                    });
         } catch (Exception e) {
             asyncResultHandler.handle(Future.failedFuture(e));
         }
+    }
+
+    private Future<QueryRequest> logicViewReplace(QueryRequest request) {
+        return Future.future(p -> {
+            logicViewReplacer.replace(request.getSql(), request.getDatamartMnemonic(), ar -> {
+                if (ar.succeeded()) {
+                    QueryRequest withoutViewsRequest = request.copy();
+                    withoutViewsRequest.setSql(ar.result());
+                    p.complete(withoutViewsRequest);
+                } else {
+                    p.fail(ar.cause());
+                }
+            });
+        });
     }
 
     private void setTargetSourceAndExecute(QuerySourceRequest request,

@@ -12,9 +12,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
+import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.core.factory.RequestContextFactory;
-import ru.ibs.dtm.query.execution.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.service.QueryAnalyzer;
 import ru.ibs.dtm.query.execution.core.service.QueryDispatcher;
 import ru.ibs.dtm.query.execution.core.utils.DatamartMnemonicExtractor;
@@ -36,7 +36,7 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
 
 	@Autowired
 	public QueryAnalyzerImpl(QueryDispatcher queryDispatcher,
-							 DefinitionService<SqlNode> definitionService,
+							 @Qualifier("coreCalciteDefinitionService") DefinitionService<SqlNode> definitionService,
 							 RequestContextFactory<RequestContext<? extends DatamartRequest>, QueryRequest> requestContextFactory,
 							 @Qualifier("coreVertx") Vertx vertx,
 							 HintExtractor hintExtractor,

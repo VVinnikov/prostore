@@ -10,6 +10,7 @@
 
     <modules>
         <module>dtm-common</module>
+        <module>dtm-calcite-core</module>
         <module>dtm-query-execution-plugin-api</module>
         <module>plugins</module>
         <module>dtm-query-execution-core</module>

@@ -1,11 +1,9 @@
 package ru.ibs.dtm.query.execution.core.calcite.delta;
 
 import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
-
-import javax.annotation.Nonnull;
-import java.util.List;
 
 public class SqlBeginDelta extends SqlCall {
 
@@ -18,7 +16,6 @@ public class SqlBeginDelta extends SqlCall {
         this.deltaNumOperator = new DeltaNumOperator(pos, (SqlNumericLiteral) num);
     }
 
-    @Nonnull
     @Override
     public SqlOperator getOperator() {
         return BEGIN_DELTA_OPERATOR;

@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.plugin.adb.calcite.schema.dialect;
+package ru.ibs.dtm.query.calcite.core.schema.dialect;
 
 import org.apache.calcite.rel.RelNode;
 

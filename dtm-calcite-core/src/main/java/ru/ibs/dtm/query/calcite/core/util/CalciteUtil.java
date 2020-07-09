@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.plugin.adb.calcite;
+package ru.ibs.dtm.query.calcite.core.util;
 
 import org.apache.calcite.sql.type.SqlTypeName;
 import ru.ibs.dtm.query.execution.model.metadata.ColumnType;

@@ -5,6 +5,9 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +18,7 @@ import ru.ibs.dtm.common.plugin.exload.Format;
 import ru.ibs.dtm.common.plugin.exload.Type;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
+import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
 import ru.ibs.dtm.query.execution.core.dao.impl.ServiceDaoImpl;
@@ -22,20 +26,15 @@ import ru.ibs.dtm.query.execution.core.dto.edml.DownloadExtTableRecord;
 import ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction;
 import ru.ibs.dtm.query.execution.core.dto.edml.EdmlQuery;
 import ru.ibs.dtm.query.execution.core.dto.edml.UploadExtTableRecord;
-import ru.ibs.dtm.query.execution.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.service.SchemaStorageProvider;
 import ru.ibs.dtm.query.execution.core.service.edml.impl.DownloadExternalTableExecutor;
 import ru.ibs.dtm.query.execution.core.service.edml.impl.UploadExternalTableExecutor;
-import ru.ibs.dtm.query.execution.core.service.impl.CalciteDefinitionService;
+import ru.ibs.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
 import ru.ibs.dtm.query.execution.core.service.impl.EdmlServiceImpl;
 import ru.ibs.dtm.query.execution.core.service.impl.SchemaStorageProviderImpl;
 import ru.ibs.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
 import ru.ibs.dtm.query.execution.plugin.api.service.EdmlService;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -46,7 +45,7 @@ import static org.mockito.Mockito.when;
 class EdmlServiceImplTest {
     private CalciteConfiguration config = new CalciteConfiguration();
     private DefinitionService<SqlNode> definitionService =
-            new CalciteDefinitionService(config.configEddlParser(config.eddlParserImplFactory()));
+            new CoreCalciteDefinitionService(config.configEddlParser(config.eddlParserImplFactory()));
     private final SchemaStorageProvider schemaStorageProvider = mock(SchemaStorageProviderImpl.class);
     private final ServiceDao serviceDao = mock(ServiceDaoImpl.class);
     private List<EdmlExecutor> edmlExecutors = Arrays.asList(mock(DownloadExternalTableExecutor.class), mock(UploadExternalTableExecutor.class));

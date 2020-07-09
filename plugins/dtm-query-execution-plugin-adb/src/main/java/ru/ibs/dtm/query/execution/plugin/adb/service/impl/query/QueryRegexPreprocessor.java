@@ -3,17 +3,16 @@ package ru.ibs.dtm.query.execution.plugin.adb.service.impl.query;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
-import ru.ibs.dtm.common.reader.QueryRequest;
-import ru.ibs.dtm.query.execution.plugin.adb.dto.RegexPreprocessorResult;
-
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import ru.ibs.dtm.common.reader.QueryRequest;
+import ru.ibs.dtm.query.execution.plugin.adb.dto.RegexPreprocessorResult;
 
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 import static java.time.temporal.ChronoField.*;
@@ -39,9 +38,7 @@ public class QueryRegexPreprocessor {
 
   static final Pattern SELECT_FOR_SYSTEM_TIME = Pattern.compile(
     // select * from test_datamart.pso FOR SYSTEM_TIME AS OF TIMESTAMP '1999-01-08 04:05:06';
-    "\\s*select\\s+(.*)\\s+from\\s+([A-z.0-9\"]+)" +
-      "(\\s+FOR\\s+SYSTEM_TIME\\s+AS\\s+OF\\s+(TIMESTAMP\\s+)?'([0-9\\-]+\\s+[0-9:]+)')?" +
-      "(\\s+where\\s(.*))?.*",
+    "\\s*select\\s+(.*)\\s+from\\s+([A-z.0-9\"]+)(\\s+FOR\\s+SYSTEM_TIME\\s+AS\\s+OF\\s+(TIMESTAMP\\s+)?'([0-9\\-]+\\s+[0-9:]+)')?(\\s+where\\s(.*))?.*",
     Pattern.CASE_INSENSITIVE
   );
 

@@ -4,10 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import lombok.Data;
+import ru.ibs.dtm.common.delta.DeltaInformation;
 
 /**
  * Запрос на извлечение данных
  */
+@Data
 public class QueryRequest {
 
     /**
@@ -37,53 +40,10 @@ public class QueryRequest {
      */
     private List<String> parameters;
 
-    public UUID getRequestId() {
-        return requestId;
-    }
-
-    public void setRequestId(UUID requestId) {
-        this.requestId = requestId;
-    }
-
-    public String getSubRequestId() {
-        return subRequestId;
-    }
-
-    public void setSubRequestId(String subRequestId) {
-        this.subRequestId = subRequestId;
-    }
-
-    public String getDatamartMnemonic() {
-        return datamartMnemonic;
-    }
-
-    public void setDatamartMnemonic(String datamartMnemonic) {
-        this.datamartMnemonic = datamartMnemonic;
-    }
-
-    public String getSql() {
-        return sql;
-    }
-
-    public void setSql(String sql) {
-        this.sql = sql;
-    }
-
-    public List<String> getParameters() {
-        return parameters;
-    }
-
-    public void setParameters(List<String> parameters) {
-        this.parameters = parameters;
-    }
-
-    public String getSystemName() {
-        return systemName;
-    }
-
-    public void setSystemName(String systemName) {
-        this.systemName = systemName;
-    }
+    /**
+     *  Delta Information
+     */
+    private List<DeltaInformation> deltaInformations;
 
     public QueryRequest copy() {
         QueryRequest newQueryRequest = new QueryRequest();
@@ -91,12 +51,12 @@ public class QueryRequest {
         newQueryRequest.setDatamartMnemonic(datamartMnemonic);
         newQueryRequest.setRequestId(requestId);
         newQueryRequest.setSubRequestId(subRequestId);
-        List<String> paramsCopy = null;
         if (parameters != null) {
-            paramsCopy = new ArrayList<>();
-            paramsCopy.addAll(parameters);
+            newQueryRequest.setParameters(new ArrayList<>(parameters));
         }
-        newQueryRequest.setParameters(paramsCopy);
+        if (deltaInformations != null) {
+            newQueryRequest.setDeltaInformations(new ArrayList<>(deltaInformations));
+        }
         newQueryRequest.setSystemName(systemName);
         return newQueryRequest;
     }
@@ -118,14 +78,4 @@ public class QueryRequest {
         return Objects.hash(requestId, subRequestId, datamartMnemonic, sql, parameters);
     }
 
-    @Override
-    public String toString() {
-        return "QueryRequest{" +
-                "requestId=" + requestId +
-                ", subRequestId='" + subRequestId + '\'' +
-                ", datamartMnemonic='" + datamartMnemonic + '\'' +
-                ", sql='" + sql + '\'' +
-                ", parameters=" + parameters +
-                '}';
-    }
 }

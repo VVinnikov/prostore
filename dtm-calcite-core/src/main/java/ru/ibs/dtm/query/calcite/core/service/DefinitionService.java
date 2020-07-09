@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.service;
+package ru.ibs.dtm.query.calcite.core.service;
 
 import lombok.SneakyThrows;
 

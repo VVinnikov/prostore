@@ -139,7 +139,7 @@ public class SqlSelectTree {
         }
     }
 
-    public List<SqlTreeNode> findTableOrSnapshots() {
+    public List<SqlTreeNode> findAllTableAndSnapshots() {
         return this.findNodesByPathRegex(IS_TABLE_OR_SNAPSHOTS_PATTERN).stream()
                 .collect(Collectors.groupingBy(SqlTreeNode::getParentId))
                 .values().stream()

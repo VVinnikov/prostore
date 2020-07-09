@@ -80,7 +80,7 @@ class SqlSelectTreeTest {
         SqlParser parser = SqlParser.create(sql, config);
         SqlNode sqlNode = parser.parseQuery();
         SqlSelectTree selectTree = new SqlSelectTree(sqlNode);
-        System.out.println(selectTree.findTableOrSnapshots());
+        System.out.println(selectTree.findAllTableAndSnapshots());
     }
 
 }

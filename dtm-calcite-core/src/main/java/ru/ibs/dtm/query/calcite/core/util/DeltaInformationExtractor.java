@@ -41,10 +41,10 @@ public class DeltaInformationExtractor {
     public static DeltaInformationResult extract(SqlNode root, String defaultDatamart) {
         try {
             val tree = new SqlSelectTree(root);
-            val nodes = tree.findTableOrSnapshots();
-            nodes.forEach(n -> setDatamart(n, defaultDatamart));
-            val deltaInformations = getDeltaInformations(tree, nodes);
-            replaceSnapshots(getSnapshots(nodes));
+            val allTableAndSnapshots = tree.findAllTableAndSnapshots();
+            allTableAndSnapshots.forEach(n -> setDatamart(n, defaultDatamart));
+            val deltaInformations = getDeltaInformations(tree, allTableAndSnapshots);
+            replaceSnapshots(getSnapshots(allTableAndSnapshots));
             return new DeltaInformationResult(deltaInformations, root.toSqlString(DIALECT).toString());
         } catch (Exception e) {
             log.error("DeltaInformation extracts Error", e);

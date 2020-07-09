@@ -15,7 +15,7 @@ import org.apache.calcite.sql.*;
 @Slf4j
 public class SqlSelectTree {
     public static final String IS_TABLE_OR_SNAPSHOTS_PATTERN = "(?i).*(JOIN|SELECT)\\.(|AS\\.)(SNAPSHOT|IDENTIFIER)$";
-    public final static String SELECT_AS_SNAPSHOT = "SNAPSHOT";
+    public static final String SELECT_AS_SNAPSHOT = "SNAPSHOT";
     private final Map<Integer, SqlTreeNode> nodeMap;
     private int idCounter;
 

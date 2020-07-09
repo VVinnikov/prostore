@@ -42,11 +42,11 @@ class DeltaInformationExtractorTest {
         SqlParser parser = SqlParser.create(sql, config);
         SqlNode sqlNode = parser.parseQuery();
         val deltaInformationResult = DeltaInformationExtractor.extract(sqlNode, "test69");
-        System.out.println(deltaInformationResult);
+        log.info(deltaInformationResult.toString());
         assertEquals(4, deltaInformationResult.getDeltaInformations().size());
         val sqlWithoutForSystemTime = deltaInformationResult
                 .getSqlWithoutSnapshots();
-        System.out.println(sqlWithoutForSystemTime);
+        log.info(sqlWithoutForSystemTime);
         assertFalse(sqlWithoutForSystemTime.contains(FOR_SYSTEM_TIME));
     }
 
@@ -65,12 +65,12 @@ class DeltaInformationExtractorTest {
                 .build();
         SqlParser parser = SqlParser.create(sql, config);
         SqlNode sqlNode = parser.parseQuery();
-        System.out.println(sql);
+        log.info(sql);
         val deltaInformationResult = DeltaInformationExtractor.extract(sqlNode, "test69");
         assertEquals(1, deltaInformationResult.getDeltaInformations().size());
         val sqlWithoutForSystemTime = deltaInformationResult
                 .getSqlWithoutSnapshots();
-        System.out.println(sqlWithoutForSystemTime);
+        log.info(sqlWithoutForSystemTime);
         assertFalse(sqlWithoutForSystemTime.contains(FOR_SYSTEM_TIME));
     }
 
@@ -89,12 +89,12 @@ class DeltaInformationExtractorTest {
                 .build();
         SqlParser parser = SqlParser.create(sql, config);
         SqlNode sqlNode = parser.parseQuery();
-        System.out.println(sql);
+        log.info(sql);
         val deltaInformationResult = DeltaInformationExtractor.extract(sqlNode, "test69");
         assertEquals(1, deltaInformationResult.getDeltaInformations().size());
         val sqlWithoutForSystemTime = deltaInformationResult
                 .getSqlWithoutSnapshots();
-        System.out.println(sqlWithoutForSystemTime);
+        log.info(sqlWithoutForSystemTime);
         assertFalse(sqlWithoutForSystemTime.contains(FOR_SYSTEM_TIME));
     }
 }

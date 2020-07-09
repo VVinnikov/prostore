@@ -1,5 +1,6 @@
 package ru.ibs.dtm.query.calcite.core.node;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
@@ -11,7 +12,7 @@ import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.impl.SqlParserImpl;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.junit.jupiter.api.Test;
-
+@Slf4j
 class SqlSelectTreeTest {
 
     @Test
@@ -30,7 +31,7 @@ class SqlSelectTreeTest {
         SqlParser parser = SqlParser.create(sql, config);
         SqlNode sqlNode = parser.parseQuery();
         SqlSelectTree selectTree = new SqlSelectTree((SqlSelect) sqlNode);
-        System.out.println(selectTree);
+        log.info(selectTree.toString());
     }
 
     @Test
@@ -54,7 +55,7 @@ class SqlSelectTreeTest {
         SqlParser parser = SqlParser.create(sql, config);
         SqlNode sqlNode = parser.parseQuery();
         SqlSelectTree selectTree = new SqlSelectTree(sqlNode);
-        System.out.println(selectTree.findSnapshots());
+        log.info(selectTree.findSnapshots().toString());
     }
 
     @Test
@@ -80,7 +81,7 @@ class SqlSelectTreeTest {
         SqlParser parser = SqlParser.create(sql, config);
         SqlNode sqlNode = parser.parseQuery();
         SqlSelectTree selectTree = new SqlSelectTree(sqlNode);
-        System.out.println(selectTree.findAllTableAndSnapshots());
+        log.info(selectTree.findAllTableAndSnapshots().toString());
     }
 
 }

@@ -51,7 +51,7 @@ public class AdqmQueryExecutor implements DatabaseExecutor {
         sqlClient.getConnection(ar1 -> {
             if (ar1.succeeded()) {
                 SQLConnection conn = ar1.result();
-                conn.query(sql, ar2 -> {
+                conn.execute(sql, ar2 -> {
                     if (ar2.succeeded()) {
                         completionHandler.handle(Future.succeededFuture());
                     } else {

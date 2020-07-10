@@ -6,25 +6,12 @@ import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import ru.ibs.dtm.common.configuration.kafka.KafkaAdminProperty;
-import ru.ibs.dtm.common.configuration.kafka.KafkaConfig;
-import ru.ibs.dtm.common.model.ddl.ClassTable;
-import ru.ibs.dtm.common.reader.SourceType;
-import ru.ibs.dtm.query.execution.plugin.adqm.factory.MetadataFactory;
-import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
-import ru.ibs.dtm.query.execution.plugin.adqm.service.KafkaTopicCreatorService;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
 
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Service("adqmDdlService")

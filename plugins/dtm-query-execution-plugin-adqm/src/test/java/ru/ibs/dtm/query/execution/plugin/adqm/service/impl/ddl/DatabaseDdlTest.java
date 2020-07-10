@@ -4,13 +4,13 @@ import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.springframework.core.env.AbstractEnvironment;
 import ru.ibs.dtm.query.calcite.core.extension.eddl.DropDatabase;
 import ru.ibs.dtm.query.calcite.core.extension.eddl.SqlCreateDatabase;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
-import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.ClickhouseProperties;
+import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockDatabaseExecutor;
+import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockEnvironment;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 
@@ -19,27 +19,12 @@ import java.util.Collections;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DatabaseDdlTest {
-    private static class MockEnvironment extends AbstractEnvironment {
-        @Override
-        public <T> T getProperty(String key, Class<T> targetType) {
-            if (key.equals("env.name")) {
-                return (T) "dev";
-            }
-
-            if (key.equals("env.defaultDatamart")) {
-                return (T) "test_datamart";
-            }
-
-            return super.getProperty(key, targetType);
-        }
-    }
-
-    private static final ClickhouseProperties clickhouseProperties = new ClickhouseProperties();
+    private static final DdlProperties ddlProperties = new DdlProperties();
     private static final AppConfiguration appConfiguration = new AppConfiguration(new MockEnvironment());
 
     @BeforeAll
     public static void setup() {
-        clickhouseProperties.setCluster("test_cluster");
+        ddlProperties.setCluster("test_cluster");
     }
 
     @Test
@@ -54,7 +39,7 @@ class DatabaseDdlTest {
         DatabaseExecutor executor = new MockDatabaseExecutor(
                 Collections.singletonList(t -> t.equalsIgnoreCase("create database if not exists dev__testdb on cluster test_cluster")));
 
-        DdlExecutor<Void> databaseDdlService = new CreateDatabaseExecutor(executor, clickhouseProperties, appConfiguration);
+        DdlExecutor<Void> databaseDdlService = new CreateDatabaseExecutor(executor, ddlProperties, appConfiguration);
 
         databaseDdlService.execute(context, "CREATE", ar -> assertTrue(ar.succeeded()));
 
@@ -67,7 +52,7 @@ class DatabaseDdlTest {
                 Collections.singletonList(
                         t -> t.equalsIgnoreCase("create database  dev__testdb on cluster test_cluster")));
 
-        databaseDdlService = new CreateDatabaseExecutor(executor, clickhouseProperties, appConfiguration);
+        databaseDdlService = new CreateDatabaseExecutor(executor, ddlProperties, appConfiguration);
 
         databaseDdlService.execute(context, "CREATE", ar -> assertTrue(ar.succeeded()));
     }
@@ -83,7 +68,7 @@ class DatabaseDdlTest {
         DatabaseExecutor executor = new MockDatabaseExecutor(
                 Collections.singletonList(t -> t.equalsIgnoreCase("drop database if exists dev__testdb on cluster test_cluster")));
 
-        DdlExecutor<Void> databaseDdlService = new DropDatabaseExecutor(executor, clickhouseProperties, appConfiguration);
+        DdlExecutor<Void> databaseDdlService = new DropDatabaseExecutor(executor, ddlProperties, appConfiguration);
 
         databaseDdlService.execute(context, "DROP", ar -> assertTrue(ar.succeeded()));
     }

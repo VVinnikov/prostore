@@ -8,6 +8,7 @@ import lombok.val;
 import org.apache.commons.lang3.tuple.Pair;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -47,6 +48,14 @@ public class MockDatabaseExecutor implements DatabaseExecutor {
         } else {
             resultHandler.handle(Future.failedFuture(r.getRight()));
         }
+    }
+
+    public List<Predicate<String>> getExpectedCalls() {
+        return Collections.unmodifiableList(expectedCalls);
+    }
+
+    public int getCallCount() {
+        return callCount;
     }
 
     private Pair<Boolean, String> call(String sql) {

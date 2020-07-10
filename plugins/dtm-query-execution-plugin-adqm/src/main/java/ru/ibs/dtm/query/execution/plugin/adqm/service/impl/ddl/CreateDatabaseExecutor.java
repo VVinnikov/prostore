@@ -7,7 +7,7 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import ru.ibs.dtm.query.calcite.core.extension.eddl.SqlCreateDatabase;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
-import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.ClickhouseProperties;
+import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
@@ -16,12 +16,14 @@ public class CreateDatabaseExecutor implements DdlExecutor<Void> {
     private static final String CREATE_TEMPLATE = "CREATE DATABASE %s %s__%s ON CLUSTER %s";
 
     private final DatabaseExecutor databaseExecutor;
-    private final ClickhouseProperties clickhouseProperties;
+    private final DdlProperties ddlProperties;
     private final AppConfiguration appConfiguration;
 
-    public CreateDatabaseExecutor(DatabaseExecutor databaseExecutor, ClickhouseProperties clickhouseProperties, AppConfiguration appConfiguration) {
+    public CreateDatabaseExecutor(DatabaseExecutor databaseExecutor,
+                                  DdlProperties ddlProperties,
+                                  AppConfiguration appConfiguration) {
         this.databaseExecutor = databaseExecutor;
-        this.clickhouseProperties = clickhouseProperties;
+        this.ddlProperties = ddlProperties;
         this.appConfiguration = appConfiguration;
     }
 
@@ -46,7 +48,7 @@ public class CreateDatabaseExecutor implements DdlExecutor<Void> {
 
     private Future<Void> createDatabase(String dbname, boolean ifNotExists) {
         String ifNotExistsKeyword = ifNotExists ? "IF NOT EXISTS" : "";
-        String cluster = clickhouseProperties.getCluster();
+        String cluster = ddlProperties.getCluster();
 
         String createCmd = String.format(CREATE_TEMPLATE, ifNotExistsKeyword, appConfiguration.getSystemName(),
                 dbname, cluster);

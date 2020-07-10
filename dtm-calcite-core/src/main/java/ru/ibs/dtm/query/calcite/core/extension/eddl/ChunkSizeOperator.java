@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.calcite.eddl;
+package ru.ibs.dtm.query.calcite.core.extension.eddl;
 
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;

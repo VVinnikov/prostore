@@ -1,6 +1,5 @@
-package ru.ibs.dtm.query.execution.core.calcite.ddl;
+package ru.ibs.dtm.query.calcite.core.extension.ddl;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.ImmutableNullableList;

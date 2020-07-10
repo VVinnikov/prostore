@@ -4,28 +4,17 @@ import java.util.Arrays;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlSnapshot;
-import org.apache.calcite.sql.ddl.SqlCreateSchema;
-import org.apache.calcite.sql.ddl.SqlDropSchema;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.query.calcite.core.node.SqlSelectTree;
 import ru.ibs.dtm.query.calcite.core.node.SqlTreeNode;
-import ru.ibs.dtm.query.execution.core.calcite.eddl.SqlCreateDatabase;
 
 @Component
 public class DefaultDatamartSetter {
 
     public SqlNode set(SqlNode sqlNode, String datamart) {
-        if (isNotSchemaOrDatabase(sqlNode)) {
-            SqlSelectTree selectTree = new SqlSelectTree(sqlNode);
-            selectTree.findAllTableAndSnapshots().forEach(n -> setDatamart(n, datamart));
-        }
+        SqlSelectTree selectTree = new SqlSelectTree(sqlNode);
+        selectTree.findAllTableAndSnapshots().forEach(n -> setDatamart(n, datamart));
         return sqlNode;
-    }
-
-    private boolean isNotSchemaOrDatabase(SqlNode sqlNode) {
-        return !(sqlNode instanceof SqlDropSchema)
-                && !(sqlNode instanceof SqlCreateSchema)
-                && !(sqlNode instanceof SqlCreateDatabase);
     }
 
     private void setDatamart(SqlTreeNode n, String defaultDatamart) {

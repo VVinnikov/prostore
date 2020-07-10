@@ -13,7 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.core.configuration.jooq.MariaProperties;
-import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
+import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.factory.MetadataFactory;
 import ru.ibs.dtm.query.execution.core.utils.SqlPreparer;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
@@ -25,8 +25,8 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
     @Autowired
     public CreateViewDdlExecutor(MetadataFactory<DdlRequestContext> metadataFactory,
                                  MariaProperties mariaProperties,
-                                 ServiceDao serviceDao) {
-        super(metadataFactory, mariaProperties, serviceDao);
+                                 ServiceDbFacade serviceDbFacade) {
+        super(metadataFactory, mariaProperties, serviceDbFacade);
     }
 
     @Override
@@ -54,7 +54,7 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
     }
 
     private Future<CreateViewContext> findDatamart(CreateViewContext ctx) {
-        return Future.future(p -> serviceDao.findDatamart(ctx.getDatamartName(), ar -> {
+        return Future.future(p -> serviceDbFacade.getServiceDbDao().getDatamartDao().findDatamart(ctx.getDatamartName(), ar -> {
             if (ar.succeeded()) {
                 ctx.setDatamartId(ar.result());
                 p.complete(ctx);
@@ -68,7 +68,7 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
         return Future.future(p -> {
             val datamartId = ctx.getDatamartId();
             val viewName = ctx.getViewName();
-            serviceDao.existsEntity(datamartId, viewName, ar -> {
+            serviceDbFacade.getServiceDbDao().getEntityDao().existsEntity(datamartId, viewName, ar -> {
                 if (ar.succeeded()) {
                     if (ar.result()) {
                         val msg = String.format(
@@ -87,7 +87,7 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
     }
 
     private Future<QueryResult> createOrReplaceView(CreateViewContext ctx) {
-        return Future.future(p -> serviceDao.existsView(ctx.getViewName(), ctx.getDatamartId(), ar -> {
+        return Future.future(p -> serviceDbFacade.getServiceDbDao().getViewServiceDao().existsView(ctx.getViewName(), ctx.getDatamartId(), ar -> {
             if (ar.succeeded()) {
                 if (ar.result()) {
                     if (SqlPreparer.isCreateOrReplace(ctx.getSql())) {
@@ -120,7 +120,7 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
 
     private void insert(CreateViewContext ctx,
                         Handler<AsyncResult<QueryResult>> handler) {
-        serviceDao.insertView(ctx.getViewName(), ctx.getDatamartId(), ctx.getViewQuery(), updateHandler -> {
+        serviceDbFacade.getServiceDbDao().getViewServiceDao().insertView(ctx.getViewName(), ctx.getDatamartId(), ctx.getViewQuery(), updateHandler -> {
             if (updateHandler.succeeded()) {
                 handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
             } else {
@@ -130,7 +130,7 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
     }
 
     private void update(CreateViewContext ctx, Handler<AsyncResult<QueryResult>> handler) {
-        serviceDao.updateView(ctx.getViewName(), ctx.getDatamartId(), ctx.getViewQuery(), updateHandler -> {
+        serviceDbFacade.getServiceDbDao().getViewServiceDao().updateView(ctx.getViewName(), ctx.getDatamartId(), ctx.getViewQuery(), updateHandler -> {
             if (updateHandler.succeeded()) {
                 handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
             } else {

@@ -20,8 +20,14 @@ import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
-import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
-import ru.ibs.dtm.query.execution.core.dao.impl.ServiceDaoImpl;
+import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
+import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacadeImpl;
+import ru.ibs.dtm.query.execution.core.dao.eddl.DownloadExtTableDao;
+import ru.ibs.dtm.query.execution.core.dao.eddl.EddlServiceDao;
+import ru.ibs.dtm.query.execution.core.dao.eddl.UploadExtTableDao;
+import ru.ibs.dtm.query.execution.core.dao.eddl.impl.DownloadExtTableDaoImpl;
+import ru.ibs.dtm.query.execution.core.dao.eddl.impl.EddlServiceDaoImpl;
+import ru.ibs.dtm.query.execution.core.dao.eddl.impl.UploadExtTableDaoImpl;
 import ru.ibs.dtm.query.execution.core.dto.edml.DownloadExtTableRecord;
 import ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction;
 import ru.ibs.dtm.query.execution.core.dto.edml.EdmlQuery;
@@ -43,12 +49,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class EdmlServiceImplTest {
+
+    private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
+    private final EddlServiceDao eddlServiceDao = mock(EddlServiceDaoImpl.class);
+    private final UploadExtTableDao uploadExtTableDao = mock(UploadExtTableDaoImpl.class);
+    private final DownloadExtTableDao downloadExtTableDao = mock(DownloadExtTableDaoImpl.class);
+    private final SchemaStorageProvider schemaStorageProvider = mock(SchemaStorageProviderImpl.class);
+    private final List<EdmlExecutor> edmlExecutors = Arrays.asList(mock(DownloadExternalTableExecutor.class), mock(UploadExternalTableExecutor.class));
     private CalciteConfiguration config = new CalciteConfiguration();
     private DefinitionService<SqlNode> definitionService =
             new CoreCalciteDefinitionService(config.configEddlParser(config.eddlParserImplFactory()));
-    private final SchemaStorageProvider schemaStorageProvider = mock(SchemaStorageProviderImpl.class);
-    private final ServiceDao serviceDao = mock(ServiceDaoImpl.class);
-    private List<EdmlExecutor> edmlExecutors = Arrays.asList(mock(DownloadExternalTableExecutor.class), mock(UploadExternalTableExecutor.class));
     private EdmlService<QueryResult> edmlService;
     private QueryRequest queryRequest;
 
@@ -58,13 +68,16 @@ class EdmlServiceImplTest {
         queryRequest.setDatamartMnemonic("test");
         queryRequest.setRequestId(UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"));
         queryRequest.setSubRequestId("6efad624-b9da-4ba1-9fed-f2da478b08e8");
+        when(serviceDbFacade.getEddlServiceDao()).thenReturn(eddlServiceDao);
+        when(eddlServiceDao.getDownloadExtTableDao()).thenReturn(downloadExtTableDao);
+        when(eddlServiceDao.getUploadExtTableDao()).thenReturn(uploadExtTableDao);
     }
 
     @Test
     void executeDownloadExtTableSuccess() throws Throwable {
         when(edmlExecutors.get(0).getAction()).thenReturn(EdmlAction.DOWNLOAD);
         when(edmlExecutors.get(1).getAction()).thenReturn(EdmlAction.UPLOAD);
-        edmlService = new EdmlServiceImpl(serviceDao, schemaStorageProvider, edmlExecutors);
+        edmlService = new EdmlServiceImpl(serviceDbFacade, schemaStorageProvider, edmlExecutors);
         Promise promise = Promise.promise();
         JsonObject schema = new JsonObject();
         queryRequest.setSql("INSERT INTO test.download_table SELECT id, lst_nam FROM test.pso");
@@ -100,7 +113,7 @@ class EdmlServiceImplTest {
                 handler.handle(Future.succeededFuture(downRecord));
             }
             return null;
-        }).when(serviceDao).findDownloadExternalTable(any(), any(), any());
+        }).when(downloadExtTableDao).findDownloadExternalTable(any(), any(), any());
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<EdmlQuery>> handler = invocation.getArgument(2);
@@ -113,7 +126,7 @@ class EdmlServiceImplTest {
                 handler.handle(Future.succeededFuture());
             }
             return null;
-        }).when(serviceDao).findUploadExternalTable(any(), any(), any());
+        }).when(uploadExtTableDao).findUploadExternalTable(any(), any(), any());
 
 
         Mockito.doAnswer(invocation -> {
@@ -138,7 +151,7 @@ class EdmlServiceImplTest {
     void executeUploadExtTableSuccess() throws Throwable {
         when(edmlExecutors.get(0).getAction()).thenReturn(EdmlAction.DOWNLOAD);
         when(edmlExecutors.get(1).getAction()).thenReturn(EdmlAction.UPLOAD);
-        edmlService = new EdmlServiceImpl(serviceDao, schemaStorageProvider, edmlExecutors);
+        edmlService = new EdmlServiceImpl(serviceDbFacade, schemaStorageProvider, edmlExecutors);
         Promise promise = Promise.promise();
         JsonObject schema = new JsonObject();
         queryRequest.setSql("INSERT INTO test.pso SELECT id, name FROM test.upload_table");
@@ -167,7 +180,7 @@ class EdmlServiceImplTest {
             final Handler<AsyncResult<DownloadExtTableRecord>> handler = invocation.getArgument(2);
             handler.handle(Future.failedFuture(new RuntimeException()));
             return null;
-        }).when(serviceDao).findDownloadExternalTable(any(), any(), any());
+        }).when(downloadExtTableDao).findDownloadExternalTable(any(), any(), any());
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<UploadExtTableRecord>> handler = invocation.getArgument(2);
@@ -180,7 +193,7 @@ class EdmlServiceImplTest {
                 handler.handle(Future.succeededFuture(uploadRecord));
             }
             return null;
-        }).when(serviceDao).findUploadExternalTable(any(), any(), any());
+        }).when(uploadExtTableDao).findUploadExternalTable(any(), any(), any());
 
 
         Mockito.doAnswer(invocation -> {
@@ -206,7 +219,7 @@ class EdmlServiceImplTest {
     void executeDownloadExtTableAsSource() throws Throwable {
         when(edmlExecutors.get(0).getAction()).thenReturn(EdmlAction.DOWNLOAD);
         when(edmlExecutors.get(1).getAction()).thenReturn(EdmlAction.UPLOAD);
-        edmlService = new EdmlServiceImpl(serviceDao, schemaStorageProvider, edmlExecutors);
+        edmlService = new EdmlServiceImpl(serviceDbFacade, schemaStorageProvider, edmlExecutors);
         Promise promise = Promise.promise();
         JsonObject schema = new JsonObject();
         queryRequest.setSql("INSERT INTO test.download_table SELECT id, lst_nam FROM test.pso");
@@ -224,7 +237,7 @@ class EdmlServiceImplTest {
             final Handler<AsyncResult<Void>> handler = invocation.getArgument(2);
             handler.handle(Future.succeededFuture());
             return null;
-        }).when(serviceDao).findDownloadExternalTable(any(), any(), any());
+        }).when(downloadExtTableDao).findDownloadExternalTable(any(), any(), any());
 
         edmlService.execute(context, ar -> {
             if (ar.succeeded()) {
@@ -240,7 +253,7 @@ class EdmlServiceImplTest {
     void executeUploadExtTableAsTarget() throws Throwable {
         when(edmlExecutors.get(0).getAction()).thenReturn(EdmlAction.DOWNLOAD);
         when(edmlExecutors.get(1).getAction()).thenReturn(EdmlAction.UPLOAD);
-        edmlService = new EdmlServiceImpl(serviceDao, schemaStorageProvider, edmlExecutors);
+        edmlService = new EdmlServiceImpl(serviceDbFacade, schemaStorageProvider, edmlExecutors);
         Promise promise = Promise.promise();
         JsonObject schema = new JsonObject();
         queryRequest.setSql("INSERT INTO test.pso SELECT id, name FROM test.upload_table");
@@ -258,13 +271,13 @@ class EdmlServiceImplTest {
             final Handler<AsyncResult<Void>> handler = invocation.getArgument(2);
             handler.handle(Future.failedFuture(new RuntimeException()));
             return null;
-        }).when(serviceDao).findDownloadExternalTable(any(), any(), any());
+        }).when(downloadExtTableDao).findDownloadExternalTable(any(), any(), any());
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<Void>> handler = invocation.getArgument(2);
             handler.handle(Future.succeededFuture());
             return null;
-        }).when(serviceDao).findUploadExternalTable(any(), any(), any());
+        }).when(uploadExtTableDao).findUploadExternalTable(any(), any(), any());
 
         edmlService.execute(context, ar -> {
             if (ar.succeeded()) {

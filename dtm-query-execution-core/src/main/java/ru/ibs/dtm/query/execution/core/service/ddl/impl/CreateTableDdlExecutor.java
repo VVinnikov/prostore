@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.core.configuration.jooq.MariaProperties;
-import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
+import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.factory.MetadataFactory;
 import ru.ibs.dtm.query.execution.core.service.DatabaseSynchronizeService;
 import ru.ibs.dtm.query.execution.core.utils.SqlPreparer;
@@ -25,8 +25,8 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
     public CreateTableDdlExecutor(MetadataFactory<DdlRequestContext> metadataFactory,
                                   DatabaseSynchronizeService databaseSynchronizeService,
                                   MariaProperties mariaProperties,
-                                  ServiceDao serviceDao) {
-        super(metadataFactory, mariaProperties, serviceDao);
+                                  ServiceDbFacade serviceDbFacade) {
+        super(metadataFactory, mariaProperties, serviceDbFacade);
         this.databaseSynchronizeService = databaseSynchronizeService;
     }
 
@@ -38,7 +38,7 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
 
         String tableWithSchema = SqlPreparer.getTableWithSchema(mariaProperties.getOptions().getDatabase(), sqlNodeName);
         String sql = getSql(context, sqlNodeName);
-        serviceDao.executeUpdate(sql, ar2 -> {
+        serviceDbFacade.getDdlServiceDao().executeUpdate(sql, ar2 -> {
             if (ar2.succeeded()) {
                 databaseSynchronizeService.putForRefresh(
                         context,

@@ -9,10 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.delta.DeltaLoadStatus;
 import ru.ibs.dtm.common.reader.QueryResult;
-import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
+import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.factory.DeltaQueryResultFactory;
-import ru.ibs.dtm.query.execution.core.service.delta.DeltaExecutor;
 import ru.ibs.dtm.query.execution.plugin.api.delta.DeltaRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.delta.query.CommitDeltaQuery;
 import ru.ibs.dtm.query.execution.plugin.api.delta.query.DeltaAction;
@@ -25,12 +24,12 @@ import static ru.ibs.dtm.query.execution.plugin.api.delta.query.DeltaAction.COMM
 @Slf4j
 public class CommitDeltaExecutor implements DeltaExecutor {
 
-    private ServiceDao serviceDao;
+    private ServiceDbFacade serviceDbFacade;
     private DeltaQueryResultFactory deltaQueryResultFactory;
 
     @Autowired
-    public CommitDeltaExecutor(ServiceDao serviceDao, DeltaQueryResultFactory deltaQueryResultFactory) {
-        this.serviceDao = serviceDao;
+    public CommitDeltaExecutor(ServiceDbFacade serviceDbFacade, DeltaQueryResultFactory deltaQueryResultFactory) {
+        this.serviceDbFacade = serviceDbFacade;
         this.deltaQueryResultFactory = deltaQueryResultFactory;
     }
 
@@ -45,23 +44,23 @@ public class CommitDeltaExecutor implements DeltaExecutor {
 
     private Future<DeltaRecord> getDeltaHotByDatamart(DeltaRequestContext context) {
         return Future.future((Promise<DeltaRecord> promiseDelta) ->
-                serviceDao.getDeltaHotByDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic(), ar -> {
-            if (ar.succeeded()) {
-                DeltaRecord deltaHotRecord = ar.result();
-                log.debug("Найдена последняя дельта: {} для витрины: {}", deltaHotRecord, context.getRequest().getQueryRequest().getDatamartMnemonic());
-                if (!deltaHotRecord.getStatus().equals(DeltaLoadStatus.IN_PROCESS)) {
-                    promiseDelta.fail(new RuntimeException("По заданной дельте еще не завершена загрузка данных!"));
-                }
-                promiseDelta.complete(deltaHotRecord);
-            } else {
-                promiseDelta.fail(ar.cause());
-            }
-        }));
+                serviceDbFacade.getDeltaServiceDao().getDeltaHotByDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic(), ar -> {
+                    if (ar.succeeded()) {
+                        DeltaRecord deltaHotRecord = ar.result();
+                        log.debug("Найдена последняя дельта: {} для витрины: {}", deltaHotRecord, context.getRequest().getQueryRequest().getDatamartMnemonic());
+                        if (!deltaHotRecord.getStatus().equals(DeltaLoadStatus.IN_PROCESS)) {
+                            promiseDelta.fail(new RuntimeException("По заданной дельте еще не завершена загрузка данных!"));
+                        }
+                        promiseDelta.complete(deltaHotRecord);
+                    } else {
+                        promiseDelta.fail(ar.cause());
+                    }
+                }));
     }
 
     private Future<DeltaRecord> getDeltaActualBySinIdAndDatamart(DeltaRequestContext context, DeltaRecord deltaHotRecord) {
         return Future.future((Promise<DeltaRecord> promiseDelta) ->
-                serviceDao.getDeltaActualBySinIdAndDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic(),
+                serviceDbFacade.getDeltaServiceDao().getDeltaActualBySinIdAndDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic(),
                         deltaHotRecord.getSinId() - 1, ar -> {
                             if (ar.succeeded()) {
                                 DeltaRecord deltaActualRecord = ar.result();
@@ -83,7 +82,7 @@ public class CommitDeltaExecutor implements DeltaExecutor {
     }
 
     private Future<QueryResult> updateActualDelta(DeltaRequestContext context, DeltaRecord deltaHotRecord) {
-        return Future.future((Promise<QueryResult> promiseUpdate) -> serviceDao.updateDelta(deltaHotRecord, ar -> {
+        return Future.future((Promise<QueryResult> promiseUpdate) -> serviceDbFacade.getDeltaServiceDao().updateDelta(deltaHotRecord, ar -> {
             if (ar.succeeded()) {
                 log.debug("Обновлена дельта: {} для витрины: {}", deltaHotRecord, context.getRequest().getQueryRequest().getDatamartMnemonic());
                 QueryResult res = deltaQueryResultFactory.create(context, deltaHotRecord);

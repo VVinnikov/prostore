@@ -41,7 +41,7 @@ class DeltaInformationExtractorTest {
                 .build();
         SqlParser parser = SqlParser.create(sql, config);
         SqlNode sqlNode = parser.parseQuery();
-        val deltaInformationResult = DeltaInformationExtractor.extract(sqlNode, "test69");
+        val deltaInformationResult = DeltaInformationExtractor.extract(sqlNode);
         log.info(deltaInformationResult.toString());
         assertEquals(4, deltaInformationResult.getDeltaInformations().size());
         val sqlWithoutForSystemTime = deltaInformationResult
@@ -66,7 +66,7 @@ class DeltaInformationExtractorTest {
         SqlParser parser = SqlParser.create(sql, config);
         SqlNode sqlNode = parser.parseQuery();
         log.info(sql);
-        val deltaInformationResult = DeltaInformationExtractor.extract(sqlNode, "test69");
+        val deltaInformationResult = DeltaInformationExtractor.extract(sqlNode);
         assertEquals(1, deltaInformationResult.getDeltaInformations().size());
         val sqlWithoutForSystemTime = deltaInformationResult
                 .getSqlWithoutSnapshots();
@@ -90,7 +90,7 @@ class DeltaInformationExtractorTest {
         SqlParser parser = SqlParser.create(sql, config);
         SqlNode sqlNode = parser.parseQuery();
         log.info(sql);
-        val deltaInformationResult = DeltaInformationExtractor.extract(sqlNode, "test69");
+        val deltaInformationResult = DeltaInformationExtractor.extract(sqlNode);
         assertEquals(1, deltaInformationResult.getDeltaInformations().size());
         val sqlWithoutForSystemTime = deltaInformationResult
                 .getSqlWithoutSnapshots();

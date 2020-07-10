@@ -3,7 +3,6 @@ package ru.ibs.dtm.query.calcite.core.util;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -38,11 +37,10 @@ public class DeltaInformationExtractor {
             .appendLiteral("'")
             .toFormatter();
 
-    public static DeltaInformationResult extract(SqlNode root, String defaultDatamart) {
+    public static DeltaInformationResult extract(SqlNode root) {
         try {
             val tree = new SqlSelectTree(root);
             val allTableAndSnapshots = tree.findAllTableAndSnapshots();
-            allTableAndSnapshots.forEach(n -> setDatamart(n, defaultDatamart));
             val deltaInformations = getDeltaInformations(tree, allTableAndSnapshots);
             replaceSnapshots(getSnapshots(allTableAndSnapshots));
             return new DeltaInformationResult(deltaInformations, root.toSqlString(DIALECT).toString());
@@ -50,32 +48,6 @@ public class DeltaInformationExtractor {
             log.error("DeltaInformation extracts Error", e);
             throw e;
         }
-    }
-
-    private static void setDatamart(SqlTreeNode n, String defaultDatamart) {
-        if (n.getNode() instanceof SqlSnapshot) {
-            SqlSnapshot snapshot = n.getNode();
-            if (snapshot.getTableRef() instanceof SqlIdentifier) {
-                SqlIdentifier identifier = (SqlIdentifier) snapshot.getTableRef();
-                snapshot.setOperand(0, getSqlIdentifier(defaultDatamart, identifier));
-            }
-        } else if (n.getNode() instanceof SqlIdentifier) {
-            setDatamartToIdentifier(n, defaultDatamart);
-        }
-    }
-
-    private static void setDatamartToIdentifier(SqlTreeNode n, String defaultDatamart) {
-        SqlIdentifier identifier = getSqlIdentifier(defaultDatamart, n.getNode());
-        n.getSqlNodeSetter().accept(identifier);
-    }
-
-    private static SqlIdentifier getSqlIdentifier(String defaultDatamart, SqlIdentifier node) {
-        SqlIdentifier identifier = node;
-        if (identifier.isSimple()) {
-            identifier = new SqlIdentifier(Arrays.asList(defaultDatamart, identifier.getSimple()),
-                    identifier.getParserPosition());
-        }
-        return identifier;
     }
 
     private static List<DeltaInformation> getDeltaInformations(SqlSelectTree tree, List<SqlTreeNode> nodes) {

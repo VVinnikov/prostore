@@ -18,6 +18,7 @@ import ru.ibs.dtm.query.execution.core.factory.RequestContextFactory;
 import ru.ibs.dtm.query.execution.core.service.QueryAnalyzer;
 import ru.ibs.dtm.query.execution.core.service.QueryDispatcher;
 import ru.ibs.dtm.query.execution.core.utils.DatamartMnemonicExtractor;
+import ru.ibs.dtm.query.execution.core.utils.DefaultDatamartSetter;
 import ru.ibs.dtm.query.execution.core.utils.HintExtractor;
 import ru.ibs.dtm.query.execution.plugin.api.RequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
@@ -33,6 +34,7 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
 	private final RequestContextFactory<RequestContext<? extends DatamartRequest>, QueryRequest> requestContextFactory;
 	private final AppConfiguration configuration;
 	private final DatamartMnemonicExtractor datamartMnemonicExtractor;
+	private final DefaultDatamartSetter defaultDatamartSetter;
 
 	@Autowired
 	public QueryAnalyzerImpl(QueryDispatcher queryDispatcher,
@@ -41,7 +43,8 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
 							 @Qualifier("coreVertx") Vertx vertx,
 							 HintExtractor hintExtractor,
 							 DatamartMnemonicExtractor datamartMnemonicExtractor,
-							 AppConfiguration configuration) {
+							 AppConfiguration configuration,
+							 DefaultDatamartSetter defaultDatamartSetter) {
 		this.queryDispatcher = queryDispatcher;
 		this.definitionService = definitionService;
 		this.requestContextFactory = requestContextFactory;
@@ -49,6 +52,7 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
 		this.hintExtractor = hintExtractor;
 		this.datamartMnemonicExtractor = datamartMnemonicExtractor;
 		this.configuration = configuration;
+		this.defaultDatamartSetter = defaultDatamartSetter;
 	}
 
 	@Override
@@ -60,6 +64,7 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
 				if (queryRequest.getDatamartMnemonic() == null) {
 					datamartMnemonicExtractor.extract(sqlNode).ifPresent(queryRequest::setDatamartMnemonic);
 				}
+				sqlNode = defaultDatamartSetter.set(sqlNode, queryRequest.getDatamartMnemonic());
 				queryDispatcher.dispatch(
 						requestContextFactory.create(queryRequest, sqlNode), asyncResultHandler
 				);

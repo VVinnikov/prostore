@@ -17,7 +17,7 @@ class DatamartMnemonicExtractorTest {
     private final DatamartMnemonicExtractor extractor = new DatamartMnemonicExtractor();
 
     @Test
-    void extractFromSelect() throws Exception {
+    void extractFromSelect() {
         SqlNode sqlNode = definitionService.processingQuery("select * from test.tbl1");
         Optional<String> datamartOpt = extractor.extract(sqlNode);
 
@@ -26,7 +26,7 @@ class DatamartMnemonicExtractorTest {
     }
 
     @Test
-    void extractFromSelectWithoutDatamart() throws Exception {
+    void extractFromSelectWithoutDatamart() {
         SqlNode sqlNode = definitionService.processingQuery("select * from tbl1");
         Optional<String> datamartOpt = extractor.extract(sqlNode);
 
@@ -34,7 +34,7 @@ class DatamartMnemonicExtractorTest {
     }
 
     @Test
-    void extractFromSelectSnapshot() throws Exception {
+    void extractFromSelectSnapshot() {
         SqlNode sqlNode = definitionService.processingQuery("select * from test.tbl1 FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' AS t");
         Optional<String> datamartOpt = extractor.extract(sqlNode);
 
@@ -43,7 +43,7 @@ class DatamartMnemonicExtractorTest {
     }
 
     @Test
-    void extractFromSelectSnapshotWithoutDatamart() throws Exception {
+    void extractFromSelectSnapshotWithoutDatamart() {
         SqlNode sqlNode = definitionService.processingQuery("select * from tbl1 FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' AS t");
         Optional<String> datamartOpt = extractor.extract(sqlNode);
 
@@ -51,7 +51,7 @@ class DatamartMnemonicExtractorTest {
     }
 
     @Test
-    void extractFromInnerSelect() throws Exception {
+    void extractFromInnerSelect() {
         SqlNode sqlNode = definitionService.processingQuery("select * from (select id from test.tbl1) AS t");
         Optional<String> datamartOpt = extractor.extract(sqlNode);
 
@@ -60,7 +60,7 @@ class DatamartMnemonicExtractorTest {
     }
 
     @Test
-    void extractFromInnerSelectSnapshot() throws Exception {
+    void extractFromInnerSelectSnapshot() {
         SqlNode sqlNode = definitionService.processingQuery("select * from (select * from test.tbl1 FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14') AS t");
         Optional<String> datamartOpt = extractor.extract(sqlNode);
 
@@ -69,7 +69,7 @@ class DatamartMnemonicExtractorTest {
     }
 
     @Test
-    void extractFromJoin() throws Exception {
+    void extractFromJoin() {
         SqlNode sqlNode = definitionService.processingQuery("select * from tbl1 JOIN test.view FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59'");
         Optional<String> datamartOpt = extractor.extract(sqlNode);
 
@@ -78,7 +78,7 @@ class DatamartMnemonicExtractorTest {
     }
 
     @Test
-    void extractFromCreateTable() throws Exception {
+    void extractFromCreateTable() {
         SqlNode sqlNode = definitionService.processingQuery("CREATE TABLE test.table_name (col1 datatype1, col2 datatype2, PRIMARY KEY (col1, col2) ) DISTRIBUTED BY (col1, col2)");
         Optional<String> datamartOpt = extractor.extract(sqlNode);
 
@@ -87,7 +87,7 @@ class DatamartMnemonicExtractorTest {
     }
 
     @Test
-    void extractFromCreateTableWithoutDatamart() throws Exception {
+    void extractFromCreateTableWithoutDatamart() {
         SqlNode sqlNode = definitionService.processingQuery("CREATE TABLE table_name (col1 datatype1, col2 datatype2, PRIMARY KEY (col1, col2) ) DISTRIBUTED BY (col1, col2)");
         Optional<String> datamartOpt = extractor.extract(sqlNode);
 
@@ -95,7 +95,7 @@ class DatamartMnemonicExtractorTest {
     }
 
     @Test
-    void extractFromDropTable() throws Exception {
+    void extractFromDropTable() {
         SqlNode sqlNode = definitionService.processingQuery("DROP TABLE test.table_name");
         Optional<String> datamartOpt = extractor.extract(sqlNode);
 
@@ -104,7 +104,7 @@ class DatamartMnemonicExtractorTest {
     }
 
     @Test
-    void extractFromDropTableWithoutDatamart() throws Exception {
+    void extractFromDropTableWithoutDatamart() {
         SqlNode sqlNode = definitionService.processingQuery("DROP TABLE table_name");
         Optional<String> datamartOpt = extractor.extract(sqlNode);
 
@@ -112,7 +112,7 @@ class DatamartMnemonicExtractorTest {
     }
 
     @Test
-    void extractFromCreateView() throws Exception {
+    void extractFromCreateView() {
         SqlNode sqlNode = definitionService.processingQuery("CREATE VIEW test.view1 as select * from test2.tbl1 JOIN test2.view FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59'");
         Optional<String> datamartOpt = extractor.extract(sqlNode);
 
@@ -121,7 +121,7 @@ class DatamartMnemonicExtractorTest {
     }
 
     @Test
-    void extractFromCreateOrReplaceView() throws Exception {
+    void extractFromCreateOrReplaceView() {
         SqlNode sqlNode = definitionService.processingQuery("CREATE OR REPLACE VIEW test.view1 as select * from test2.tbl1 JOIN test2.view FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59'");
         Optional<String> datamartOpt = extractor.extract(sqlNode);
 
@@ -130,7 +130,7 @@ class DatamartMnemonicExtractorTest {
     }
 
     @Test
-    void extractFromCreateViewWithoutDatamart() throws Exception {
+    void extractFromCreateViewWithoutDatamart() {
         SqlNode sqlNode = definitionService.processingQuery("CREATE VIEW view1 as select * from test2.tbl1 JOIN test2.view FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59'");
         Optional<String> datamartOpt = extractor.extract(sqlNode);
 
@@ -138,7 +138,7 @@ class DatamartMnemonicExtractorTest {
     }
 
     @Test
-    void extractFromInsert() throws Exception {
+    void extractFromInsert() {
         SqlNode sqlNode = definitionService.processingQuery("INSERT INTO test.PSO SELECT * FROM test.PSO");
         Optional<String> datamartOpt = extractor.extract(sqlNode);
 

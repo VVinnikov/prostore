@@ -1,11 +1,10 @@
 package ru.ibs.dtm.query.execution.core.calcite.eddl;
 
+import java.util.List;
+import java.util.Optional;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.ImmutableNullableList;
-
-import java.util.List;
-import java.util.Optional;
 
 public class MassageLimitOperator extends SqlCall {
 
@@ -35,7 +34,9 @@ public class MassageLimitOperator extends SqlCall {
 
     @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
-        writer.keyword(this.getOperator().getName());
-        writer.keyword(String.valueOf(this.messageLimit));
+        if (messageLimit != null) {
+            writer.keyword(this.getOperator().getName());
+            writer.keyword(String.valueOf(this.messageLimit));
+        }
     }
 }

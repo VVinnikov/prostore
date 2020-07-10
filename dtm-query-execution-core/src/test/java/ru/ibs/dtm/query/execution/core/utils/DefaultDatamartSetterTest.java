@@ -47,6 +47,19 @@ class DefaultDatamartSetterTest {
     }
 
     @Test
+    void setToSelectWithBetween() {
+        val sql = "select a.account_id from tbl a where a.dt between 1 and 2";
+        String withDatamart = datamartSetter.set(definitionService.processingQuery(sql), "demo").toSqlString(DIALECT).getSql();
+        DeltaInformationResult result = DeltaInformationExtractor.extract(definitionService.processingQuery(withDatamart));
+        List<DeltaInformation> deltaInformations = result.getDeltaInformations();
+        long countByExpectedSchema = deltaInformations.stream()
+                .filter(d -> d.getSchemaName().equals(EXPECTED_SCHEMA))
+                .count();
+        log.info(withDatamart);
+        assertEquals(1L, countByExpectedSchema);
+    }
+
+    @Test
     void setToInsert() {
         val sql = "INSERT INTO PSO1 SELECT * FROM PSO2 P2 WHERE EXISTS (SELECT * FROM tbl2 t2 WHERE t2.id = P2.id)";
         String withDatamart = datamartSetter.set(definitionService.processingQuery(sql), "demo").toSqlString(DIALECT).getSql();
@@ -178,7 +191,7 @@ class DefaultDatamartSetterTest {
 
     @Test
     void setToCREATE_TABLE() {
-        val sql = "CREATE TABLE test.table_name (col1 datatype1, col2 datatype2, PRIMARY KEY (col1, col2) )";
+        val sql = "CREATE TABLE table_name (col1 datatype1, col2 datatype2, PRIMARY KEY (col1, col2) )";
         String withDatamart = datamartSetter.set(definitionService.processingQuery(sql), "demo").toSqlString(DIALECT).getSql();
         log.info(withDatamart);
         DeltaInformationResult result = DeltaInformationExtractor.extract(definitionService.processingQuery(withDatamart));
@@ -186,6 +199,6 @@ class DefaultDatamartSetterTest {
         long countByExpectedSchema = deltaInformations.stream()
                 .filter(d -> d.getSchemaName().equals(EXPECTED_SCHEMA))
                 .count();
-        assertEquals(2L, countByExpectedSchema);
+        assertEquals(1L, countByExpectedSchema);
     }
 }

@@ -1,11 +1,10 @@
 package ru.ibs.dtm.query.execution.core.calcite.delta;
 
+import java.util.List;
+import java.util.Optional;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.ImmutableNullableList;
-
-import java.util.List;
-import java.util.Optional;
 
 public class DeltaNumOperator extends SqlCall {
 
@@ -31,8 +30,10 @@ public class DeltaNumOperator extends SqlCall {
 
     @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
-        writer.keyword(this.getOperator().getName());
-        writer.keyword(String.valueOf(this.num));
+        if (num != null) {
+            writer.keyword(this.getOperator().getName());
+            writer.keyword(String.valueOf(this.num));
+        }
     }
 
     public Long getNum() {

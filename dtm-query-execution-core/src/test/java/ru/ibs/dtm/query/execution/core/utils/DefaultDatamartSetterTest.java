@@ -125,32 +125,6 @@ class DefaultDatamartSetterTest {
     }
 
     @Test
-    void setToDROP_SCHEMA() {
-        val sql = "DROP SCHEMA datamart1";
-        String withDatamart = datamartSetter.set(definitionService.processingQuery(sql), "demo").toSqlString(DIALECT).getSql();
-        DeltaInformationResult result = DeltaInformationExtractor.extract(definitionService.processingQuery(withDatamart));
-        List<DeltaInformation> deltaInformations = result.getDeltaInformations();
-        long countByExpectedSchema = deltaInformations.stream()
-                .filter(d -> d.getSchemaName().equals(EXPECTED_SCHEMA))
-                .count();
-        log.info(withDatamart);
-        assertEquals(0L, countByExpectedSchema);
-    }
-
-    @Test
-    void setToCREATE_SCHEMA() {
-        val sql = "CREATE SCHEMA datamart1";
-        String withDatamart = datamartSetter.set(definitionService.processingQuery(sql), "demo").toSqlString(DIALECT).getSql();
-        DeltaInformationResult result = DeltaInformationExtractor.extract(definitionService.processingQuery(withDatamart));
-        List<DeltaInformation> deltaInformations = result.getDeltaInformations();
-        long countByExpectedSchema = deltaInformations.stream()
-                .filter(d -> d.getSchemaName().equals(EXPECTED_SCHEMA))
-                .count();
-        log.info(withDatamart);
-        assertEquals(0L, countByExpectedSchema);
-    }
-
-    @Test
     void setToBEGIN_DELTA() {
         val sql = "BEGIN DELTA";
         String withDatamart = datamartSetter.set(definitionService.processingQuery(sql), "demo").toSqlString(DIALECT).getSql();

@@ -32,4 +32,12 @@ public class SqlCreateDatabase extends SqlCreate {
     }
     name.unparse(writer, leftPrec, rightPrec);
   }
+
+  public SqlIdentifier getName() {
+    return name;
+  }
+
+  public boolean ifNotExists() {
+    return this.ifNotExists;
+  }
 }

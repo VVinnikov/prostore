@@ -7,8 +7,6 @@ import ru.ibs.dtm.query.execution.plugin.api.RequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
 import ru.ibs.dtm.query.execution.plugin.api.service.SqlProcessingType;
 
-import java.util.List;
-
 import static ru.ibs.dtm.query.execution.plugin.api.ddl.DdlType.UNKNOWN;
 import static ru.ibs.dtm.query.execution.plugin.api.service.SqlProcessingType.DDL;
 

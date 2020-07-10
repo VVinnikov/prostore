@@ -6,12 +6,7 @@ datasource:
     user: ${ADQM_USERNAME:}
     password: ${ADQM_PASS:}
     hosts: ${ADQM_HOSTS:10.92.3.24:8123}
-
-connector:
-  adqm:
-    host: ${ADQM_MPPR_CONNECTOR_HOST:10.18.84.18}
-    port: ${ADQM_MPPR_CONNECTOR_PORT:8086}
-    url: ${ADQM_MPPR_CONNECTOR_URL:/query}
+    cluster: ${ADQM_CLUSTER:test_arenadata}
 
 kafka:
   adqm:

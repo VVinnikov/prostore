@@ -8,10 +8,11 @@ import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.env.AbstractEnvironment;
 import ru.ibs.dtm.query.execution.plugin.adqm.calcite.CalciteContextProvider;
 import ru.ibs.dtm.query.execution.plugin.adqm.calcite.CalciteSchemaFactory;
+import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.CalciteConfiguration;
-import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.QueryEnrichmentProperties;
 import ru.ibs.dtm.query.execution.plugin.adqm.dto.DeltaInformation;
 import ru.ibs.dtm.query.execution.plugin.adqm.factory.impl.SchemaFactoryImpl;
 
@@ -23,8 +24,23 @@ import java.util.regex.Pattern;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class QueryRewriterTest {
-    private static final QueryEnrichmentProperties queryEnrichmentProperties = new QueryEnrichmentProperties();
+    private static AppConfiguration appConfiguration;
     private static CalciteContextProvider calciteContextProvider;
+
+    private static class MockEnvironment extends AbstractEnvironment {
+        @Override
+        public <T> T getProperty(String key, Class<T> targetType) {
+            if (key.equals("env.name")) {
+                return (T) "dev";
+            }
+
+            if (key.equals("env.defaultDatamart")) {
+                return (T) "test_datamart";
+            }
+
+            return super.getProperty(key, targetType);
+        }
+    }
 
     @BeforeAll
     public static void setup() {
@@ -38,13 +54,12 @@ class QueryRewriterTest {
                 parserConfig,
                 new CalciteSchemaFactory(new SchemaFactoryImpl()));
 
-        queryEnrichmentProperties.setDefaultDatamart("test_datamart");
-        queryEnrichmentProperties.setName("dev");
+        appConfiguration = new AppConfiguration(new MockEnvironment());
     }
 
     @Test
     public void testQueryRewrite() {
-        QueryRewriter rewriter = new QueryRewriter(calciteContextProvider, queryEnrichmentProperties);
+        QueryRewriter rewriter = new QueryRewriter(calciteContextProvider, appConfiguration);
 
         String query = "select *, " +
                 "       CASE " +
@@ -74,16 +89,16 @@ class QueryRewriterTest {
             assertGrep(modifiedQuery, "UNION ALL");
 
             // where with delta filters
-            assertGrep(modifiedQuery, "101 between asymmetric `a`.`sys_from` and `a`.`sys_to`");
-            assertGrep(modifiedQuery, "102 between asymmetric `b`.`sys_from` and `b`.`sys_to`");
-            assertGrep(modifiedQuery, "103 between asymmetric `transactions`.`sys_from` and `transactions`.`sys_to`");
+            assertGrep(modifiedQuery, "101 between\\s+`a`.`sys_from` and `a`.`sys_to`");
+            assertGrep(modifiedQuery, "102 between\\s+ `b`.`sys_from` and `b`.`sys_to`");
+            assertGrep(modifiedQuery, "103 between\\s+`transactions_actual_shard`.`sys_from` and `transactions_actual_shard`.`sys_to`");
         });
     }
 
     @SneakyThrows
     @Test
     public void testFinalKeywordRewrite() {
-        QueryRewriter rewriter = new QueryRewriter(calciteContextProvider, queryEnrichmentProperties);
+        QueryRewriter rewriter = new QueryRewriter(calciteContextProvider, appConfiguration);
 
         String query = "select * from shares.account_actual_final t";
         SqlNode root = calciteContextProvider.context(null).getPlanner().parse(query);

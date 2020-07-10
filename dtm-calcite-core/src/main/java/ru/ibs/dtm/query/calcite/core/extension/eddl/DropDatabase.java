@@ -29,4 +29,8 @@ public class DropDatabase extends SqlDrop {
     }
     name.unparse(writer, leftPrec, rightPrec);
   }
+
+  public SqlIdentifier getName() {
+    return name;
+  }
 }

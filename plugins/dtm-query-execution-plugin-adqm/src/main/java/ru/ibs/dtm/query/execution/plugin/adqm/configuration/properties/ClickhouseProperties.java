@@ -8,6 +8,15 @@ public class ClickhouseProperties {
     private String hosts;
     private String user;
     private String password;
+    private String cluster;
+
+    public String getCluster() {
+        return cluster;
+    }
+
+    public void setCluster(String cluster) {
+        this.cluster = cluster;
+    }
 
     public String getDatabase() {
         return database;

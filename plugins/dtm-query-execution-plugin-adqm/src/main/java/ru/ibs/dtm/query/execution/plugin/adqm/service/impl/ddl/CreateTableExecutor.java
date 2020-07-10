@@ -1,81 +1,89 @@
-package ru.ibs.dtm.query.execution.plugin.adqm.factory.impl;
+package ru.ibs.dtm.query.execution.plugin.adqm.service.impl.ddl;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
+import org.apache.calcite.sql.SqlKind;
+import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.model.ddl.ClassTypes;
+import ru.ibs.dtm.common.reader.QueryRequest;
+import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
-import ru.ibs.dtm.query.execution.plugin.adqm.factory.MetadataFactory;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
+import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
+import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Service
+@Component
 @Slf4j
-public class MetadataFactoryImpl implements MetadataFactory {
-
+public class CreateTableExecutor implements DdlExecutor<Void> {
     private final static String ACTUAL_TABLE = "_actual";
     private final static String SHARD_TABLE = "_actual_shard";
 
-    private final static String DROP_TABLE_TEMPLATE = "DROP TABLE IF EXISTS %s__%s.%s ON CLUSTER %s";
-
     private final static String CREATE_SHARD_TABLE_TEMPLATE =
             "CREATE TABLE %s__%s.%s ON CLUSTER %s\n" +
-            "(\n" +
-            "  %s,\n" +
-            "  sys_from   Int64,\n" +
-            "  sys_to     Int64,\n" +
-            "  sys_op     Int8,\n" +
-            "  close_date DateTime,\n" +
-            "  sign       Int8\n" +
-            ")\n" +
-            "ENGINE = CollapsingMergeTree(sign)\n" +
-            "ORDER BY (%s)\n" +
-            "TTL close_date + INTERVAL %d SECOND TO DISK '%s'";
+                    "(\n" +
+                    "  %s,\n" +
+                    "  sys_from   Int64,\n" +
+                    "  sys_to     Int64,\n" +
+                    "  sys_op     Int8,\n" +
+                    "  close_date DateTime,\n" +
+                    "  sign       Int8\n" +
+                    ")\n" +
+                    "ENGINE = CollapsingMergeTree(sign)\n" +
+                    "ORDER BY (%s)\n" +
+                    "TTL close_date + INTERVAL %d SECOND TO DISK '%s'";
 
     private final static String CREATE_DISTRIBUTED_TABLE_TEMPLATE =
             "CREATE TABLE %s__%s.%s ON CLUSTER %s\n" +
-            "(\n" +
-            "  %s,\n" +
-            "  sys_from   Int64,\n" +
-            "  sys_to     Int64,\n" +
-            "  sys_op     Int8,\n" +
-            "  close_date DateTime,\n" +
-            "  sign       Int8\n" +
-            ")\n" +
-            "Engine = Distributed(%s, %s__%s, %s, %s)";
+                    "(\n" +
+                    "  %s,\n" +
+                    "  sys_from   Int64,\n" +
+                    "  sys_to     Int64,\n" +
+                    "  sys_op     Int8,\n" +
+                    "  close_date DateTime,\n" +
+                    "  sign       Int8\n" +
+                    ")\n" +
+                    "Engine = Distributed(%s, %s__%s, %s, %s)";
 
     private final static String NULLABLE_FIELD = "%s Nullable(%s)";
     private final static String NOT_NULLABLE_FIELD = "%s %s";
 
-    private final DatabaseExecutor adqmQueryExecutor;
+    private final DatabaseExecutor databaseExecutor;
     private final DdlProperties ddlProperties;
+    private final AppConfiguration appConfiguration;
+    private final DropTableExecutor dropTableExecutor;
 
-    public MetadataFactoryImpl(DatabaseExecutor adqmQueryExecutor, DdlProperties ddlProperties) {
-        this.adqmQueryExecutor = adqmQueryExecutor;
+    public CreateTableExecutor(DatabaseExecutor databaseExecutor,
+                               DdlProperties ddlProperties,
+                               AppConfiguration appConfiguration, DropTableExecutor dropTableExecutor) {
+        this.databaseExecutor = databaseExecutor;
         this.ddlProperties = ddlProperties;
+        this.appConfiguration = appConfiguration;
+        this.dropTableExecutor = dropTableExecutor;
     }
 
     @Override
-    public void apply(ClassTable classTable, Handler<AsyncResult<Void>> handler) {
-        createTable(classTable).onComplete(handler);
+    public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<Void>> handler) {
+        ClassTable tbl = context.getRequest().getClassTable();
+        DdlRequestContext dropCtx = new DdlRequestContext(new DdlRequest(new QueryRequest(), tbl));
+
+        dropTableExecutor.execute(dropCtx, "DROP", ar -> createTable(tbl).onComplete(handler));
     }
 
     @Override
-    public void purge(ClassTable classTable, Handler<AsyncResult<Void>> handler) {
-        dropTable(classTable).onComplete(handler);
+    public SqlKind getSqlKind() {
+        return SqlKind.CREATE_TABLE;
     }
 
     private Future<Void> createTable(ClassTable classTable) {
-        // FIXME after merging feature/DTM-417 will be used configuration parameter
-        String env = "dev";
-
+        String env = appConfiguration.getSystemName();
         String cluster = ddlProperties.getCluster();
         String schema = classTable.getSchema();
         String table = classTable.getName();
@@ -92,25 +100,9 @@ public class MetadataFactoryImpl implements MetadataFactory {
                 env, schema, table + ACTUAL_TABLE, cluster, columnList, cluster, env, schema,
                 table + SHARD_TABLE, shardingList);
 
-        return dropTable(classTable)
+        return databaseExecutor.executeUpdate(createShard)
                 .compose(v ->
-                        execute(createShard))
-                .compose(vv ->
-                        execute(createDistributed));
-    }
-
-    private Future<Void> dropTable(ClassTable classTable) {
-        // FIXME after merging feature/DTM-417 will be used configuration parameter
-        String env = "dev";
-
-        String cluster = ddlProperties.getCluster();
-        String schema = classTable.getSchema();
-        String table = classTable.getName();
-
-        String dropShard = String.format(DROP_TABLE_TEMPLATE, env, schema, table + SHARD_TABLE, cluster);
-        String dropDistributed = String.format(DROP_TABLE_TEMPLATE, env, schema, table + ACTUAL_TABLE, cluster);
-
-        return execute(dropDistributed).compose(v -> execute(dropShard));
+                        databaseExecutor.executeUpdate(createDistributed));
     }
 
     private String getColumns(List<ClassField> fields) {
@@ -174,9 +166,4 @@ public class MetadataFactoryImpl implements MetadataFactory {
         return "";
     }
 
-    private Future<Void> execute(String query) {
-        Promise<Void> result = Promise.promise();
-        adqmQueryExecutor.executeUpdate(query, result);
-        return result.future();
-    }
 }

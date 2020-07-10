@@ -170,6 +170,7 @@ public class DeltaInformationExtractor {
                 deltaTime,
                 0L,
                 datamart,
-                tableName);
+                tableName,
+                pos);
     }
 }

@@ -13,8 +13,14 @@ import ru.ibs.dtm.common.delta.DeltaLoadStatus;
 import ru.ibs.dtm.common.delta.QueryDeltaResult;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
-import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
-import ru.ibs.dtm.query.execution.core.dao.impl.ServiceDaoImpl;
+import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
+import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacadeImpl;
+import ru.ibs.dtm.query.execution.core.dao.delta.DeltaServiceDao;
+import ru.ibs.dtm.query.execution.core.dao.delta.impl.DeltaServiceDaoImpl;
+import ru.ibs.dtm.query.execution.core.dao.eddl.EddlServiceDao;
+import ru.ibs.dtm.query.execution.core.dao.eddl.UploadQueryDao;
+import ru.ibs.dtm.query.execution.core.dao.eddl.impl.EddlServiceDaoImpl;
+import ru.ibs.dtm.query.execution.core.dao.eddl.impl.UploadQueryDaoImpl;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import ru.ibs.dtm.query.execution.core.factory.impl.DeltaQueryResultFactoryImpl;
@@ -26,16 +32,16 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class CommitBeginDeltaExecutorTest {
 
-    private ServiceDao serviceDao = mock(ServiceDaoImpl.class);
-    private DeltaQueryResultFactory deltaQueryResultFactory = mock(DeltaQueryResultFactoryImpl.class);
+    private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
+    private final DeltaServiceDao deltaServiceDao = mock(DeltaServiceDaoImpl.class);
+    private final DeltaQueryResultFactory deltaQueryResultFactory = mock(DeltaQueryResultFactoryImpl.class);
     private CommitDeltaExecutor commitDeltaExecutor;
     private QueryRequest req = new QueryRequest();
     private DeltaRecord delta = new DeltaRecord();
@@ -48,12 +54,13 @@ class CommitBeginDeltaExecutorTest {
         delta.setLoadId(0L);
         delta.setLoadProcId("load-proc-1");
         delta.setDatamartMnemonic(req.getDatamartMnemonic());
+        when(serviceDbFacade.getDeltaServiceDao()).thenReturn(deltaServiceDao);
     }
 
     @Test
     void executeDeltaWithInProgressStatus() {
         req.setSql("COMMIT DELTA '2020-06-11T14:00:11'");
-        commitDeltaExecutor = new CommitDeltaExecutor(serviceDao, deltaQueryResultFactory);
+        commitDeltaExecutor = new CommitDeltaExecutor(serviceDbFacade, deltaQueryResultFactory);
         Promise promise = Promise.promise();
         String deltaDate = "2020-06-12T18:00:01";
 
@@ -70,7 +77,7 @@ class CommitBeginDeltaExecutorTest {
             final Handler<AsyncResult<DeltaRecord>> handler = invocation.getArgument(1);
             handler.handle(Future.failedFuture(exception));
             return null;
-        }).when(serviceDao).getDeltaHotByDatamart(any(), any());
+        }).when(deltaServiceDao).getDeltaHotByDatamart(any(), any());
 
         commitDeltaExecutor.execute(context, handler -> {
             if (handler.succeeded()) {
@@ -85,7 +92,7 @@ class CommitBeginDeltaExecutorTest {
     @Test
     void executeDeltaWithDateTimeBeforeThanDeltaOk() {
         req.setSql("COMMIT DELTA '2020-06-10T14:00:11'");
-        commitDeltaExecutor = new CommitDeltaExecutor(serviceDao, deltaQueryResultFactory);
+        commitDeltaExecutor = new CommitDeltaExecutor(serviceDbFacade, deltaQueryResultFactory);
         Promise promise = Promise.promise();
         String deltaDate = "2020-06-15T18:00:01";
         String deltaInputDate = "2020-06-10T14:00:11";
@@ -106,13 +113,13 @@ class CommitBeginDeltaExecutorTest {
             delta.setSysDate(LocalDateTime.parse(deltaDate, DateTimeFormatter.ISO_DATE_TIME));
             handler.handle(Future.succeededFuture(delta));
             return null;
-        }).when(serviceDao).getDeltaHotByDatamart(any(), any());
+        }).when(deltaServiceDao).getDeltaHotByDatamart(any(), any());
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<DeltaRecord>> handler = invocation.getArgument(2);
             handler.handle(Future.failedFuture(exception));
             return null;
-        }).when(serviceDao).getDeltaActualBySinIdAndDatamart(any(), any(), any());
+        }).when(deltaServiceDao).getDeltaActualBySinIdAndDatamart(any(), any(), any());
 
         commitDeltaExecutor.execute(context, handler -> {
             if (handler.succeeded()) {
@@ -127,7 +134,7 @@ class CommitBeginDeltaExecutorTest {
     @Test
     void executeDeltaWithDateTimeAfterDeltaOk() {
         req.setSql("COMMIT DELTA '2020-06-15T14:00:11'");
-        commitDeltaExecutor = new CommitDeltaExecutor(serviceDao, deltaQueryResultFactory);
+        commitDeltaExecutor = new CommitDeltaExecutor(serviceDbFacade, deltaQueryResultFactory);
         Promise promise = Promise.promise();
         String deltaInputDate = "2020-06-15T14:00:11";
         String deltaDate = "2020-06-10T18:00:01";
@@ -154,7 +161,7 @@ class CommitBeginDeltaExecutorTest {
             delta.setSysDate(LocalDateTime.parse(deltaDate, DateTimeFormatter.ISO_DATE_TIME));
             handler.handle(Future.succeededFuture(delta));
             return null;
-        }).when(serviceDao).getDeltaHotByDatamart(any(), any());
+        }).when(deltaServiceDao).getDeltaHotByDatamart(any(), any());
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<DeltaRecord>> handler = invocation.getArgument(2);
@@ -165,13 +172,13 @@ class CommitBeginDeltaExecutorTest {
             deltaRecord.setSinId(1L);
             handler.handle(Future.succeededFuture(deltaRecord));
             return null;
-        }).when(serviceDao).getDeltaActualBySinIdAndDatamart(any(), any(), any());
+        }).when(deltaServiceDao).getDeltaActualBySinIdAndDatamart(any(), any(), any());
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
             handler.handle(Future.succeededFuture(queryDeltaResult));
             return null;
-        }).when(serviceDao).updateDelta(any(), any());
+        }).when(deltaServiceDao).updateDelta(any(), any());
 
         when(deltaQueryResultFactory.create(any(), any())).thenReturn(queryDeltaResult);
 

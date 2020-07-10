@@ -23,8 +23,18 @@ import ru.ibs.dtm.common.transformer.Transformer;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import ru.ibs.dtm.query.execution.core.configuration.properties.EdmlProperties;
-import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
-import ru.ibs.dtm.query.execution.core.dao.impl.ServiceDaoImpl;
+import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
+import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacadeImpl;
+import ru.ibs.dtm.query.execution.core.dao.delta.DeltaServiceDao;
+import ru.ibs.dtm.query.execution.core.dao.delta.impl.DeltaServiceDaoImpl;
+import ru.ibs.dtm.query.execution.core.dao.eddl.DownloadExtTableAttributeDao;
+import ru.ibs.dtm.query.execution.core.dao.eddl.DownloadQueryDao;
+import ru.ibs.dtm.query.execution.core.dao.eddl.EddlServiceDao;
+import ru.ibs.dtm.query.execution.core.dao.eddl.UploadQueryDao;
+import ru.ibs.dtm.query.execution.core.dao.eddl.impl.DownloadExtTableAttributeDaoImpl;
+import ru.ibs.dtm.query.execution.core.dao.eddl.impl.DownloadQueryDaoImpl;
+import ru.ibs.dtm.query.execution.core.dao.eddl.impl.EddlServiceDaoImpl;
+import ru.ibs.dtm.query.execution.core.dao.eddl.impl.UploadQueryDaoImpl;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.dto.edml.DownloadExtTableRecord;
 import ru.ibs.dtm.query.execution.core.dto.edml.DownloadExternalTableAttribute;
@@ -40,13 +50,17 @@ import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class DownloadExternalTableExecutorTest {
 
-    private ServiceDao serviceDao = mock(ServiceDaoImpl.class);
-    private Transformer<DownloadExternalTableAttribute, TableAttribute> tableAttributeTransformer = mock(DownloadExtTableAttributeTransformer.class);
-    private EdmlProperties edmlProperties = mock(EdmlProperties.class);
-    private List<EdmlDownloadExecutor> downloadExecutors = Arrays.asList(mock(DownloadKafkaExecutor.class));
+    private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
+    private final EddlServiceDao eddlServiceDao = mock(EddlServiceDaoImpl.class);
+    private final DownloadQueryDao downloadQueryDao = mock(DownloadQueryDaoImpl.class);
+    private final DownloadExtTableAttributeDao downloadExtTableAttributeDao = mock(DownloadExtTableAttributeDaoImpl.class);
+    private final Transformer<DownloadExternalTableAttribute, TableAttribute> tableAttributeTransformer = mock(DownloadExtTableAttributeTransformer.class);
+    private final EdmlProperties edmlProperties = mock(EdmlProperties.class);
+    private final List<EdmlDownloadExecutor> downloadExecutors = Arrays.asList(mock(DownloadKafkaExecutor.class));
     private DownloadExternalTableExecutor downloadExternalTableExecutor;
     private CalciteConfiguration config = new CalciteConfiguration();
     private DefinitionService<SqlNode> definitionService =
@@ -57,7 +71,7 @@ class DownloadExternalTableExecutorTest {
     @BeforeEach
     void setUp() {
         downloadExternalTableExecutor = new DownloadExternalTableExecutor(tableAttributeTransformer,
-                edmlProperties, serviceDao, downloadExecutors);
+                edmlProperties, serviceDbFacade, downloadExecutors);
         queryRequest = new QueryRequest();
         queryRequest.setDatamartMnemonic("test");
         queryRequest.setRequestId(UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"));
@@ -71,6 +85,9 @@ class DownloadExternalTableExecutorTest {
         downRecord.setLocationType(Type.KAFKA_TOPIC);
         downRecord.setLocationPath("kafka://kafka-1.dtm.local:9092/topic");
         downRecord.setChunkSize(1000);
+        when(serviceDbFacade.getEddlServiceDao()).thenReturn(eddlServiceDao);
+        when(eddlServiceDao.getDownloadQueryDao()).thenReturn(downloadQueryDao);
+        when(eddlServiceDao.getDownloadExtTableAttributeDao()).thenReturn(downloadExtTableAttributeDao);
     }
 
     @Test
@@ -95,13 +112,13 @@ class DownloadExternalTableExecutorTest {
             final Handler<AsyncResult<DeltaRecord>> handler = invocation.getArgument(3);
             handler.handle(Future.succeededFuture());
             return null;
-        }).when(serviceDao).insertDownloadQuery(any(), any());
+        }).when(downloadQueryDao).insertDownloadQuery(any(), any());
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<List<DownloadExternalTableAttribute>>> handler = invocation.getArgument(1);
             handler.handle(Future.succeededFuture(attrs));
             return null;
-        }).when(serviceDao).findDownloadExternalTableAttributes(any(), any());
+        }).when(downloadExtTableAttributeDao).findDownloadExtTableAttributes(any(), any());
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
@@ -146,7 +163,7 @@ class DownloadExternalTableExecutorTest {
             final Handler<AsyncResult<DeltaRecord>> handler = invocation.getArgument(1);
             handler.handle(Future.failedFuture(exception));
             return null;
-        }).when(serviceDao).insertDownloadQuery(any(), any());
+        }).when(downloadQueryDao).insertDownloadQuery(any(), any());
 
         downloadExternalTableExecutor.execute(context, edmlQuery, ar -> {
             if (ar.succeeded()) {

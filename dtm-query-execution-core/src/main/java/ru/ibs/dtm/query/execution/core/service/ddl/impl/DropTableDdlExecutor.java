@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.core.configuration.jooq.MariaProperties;
-import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
+import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.factory.MetadataFactory;
 import ru.ibs.dtm.query.execution.core.service.DatabaseSynchronizeService;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
@@ -23,8 +23,8 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
     public DropTableDdlExecutor(MetadataFactory<DdlRequestContext> metadataFactory,
                                 DatabaseSynchronizeService databaseSynchronizeService,
                                 MariaProperties mariaProperties,
-                                ServiceDao serviceDao) {
-        super(metadataFactory, mariaProperties, serviceDao);
+                                ServiceDbFacade serviceDbFacade) {
+        super(metadataFactory, mariaProperties, serviceDbFacade);
         this.databaseSynchronizeService = databaseSynchronizeService;
     }
 
@@ -41,9 +41,9 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
     }
 
     protected void dropTable(DdlRequestContext context, String tableName, boolean ifExists, Handler<AsyncResult<QueryResult>> handler) {
-        serviceDao.findDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic(), datamartResult -> {
+        serviceDbFacade.getServiceDbDao().getDatamartDao().findDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic(), datamartResult -> {
             if (datamartResult.succeeded()) {
-                serviceDao.findEntity(datamartResult.result(), tableName, entityResult -> {
+                serviceDbFacade.getServiceDbDao().getEntityDao().findEntity(datamartResult.result(), tableName, entityResult -> {
                     if (entityResult.succeeded()) {
                         databaseSynchronizeService.removeTable(context, datamartResult.result(), tableName, removeResult -> {
                             if (removeResult.succeeded()) {

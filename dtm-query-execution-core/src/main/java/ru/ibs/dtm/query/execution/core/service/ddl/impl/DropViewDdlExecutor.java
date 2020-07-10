@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.core.configuration.jooq.MariaProperties;
-import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
+import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.factory.MetadataFactory;
 import ru.ibs.dtm.query.execution.core.utils.SqlPreparer;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
@@ -21,8 +21,8 @@ public class DropViewDdlExecutor extends QueryResultDdlExecutor {
     @Autowired
     public DropViewDdlExecutor(MetadataFactory<DdlRequestContext> metadataFactory,
                                MariaProperties mariaProperties,
-                               ServiceDao serviceDao) {
-        super(metadataFactory, mariaProperties, serviceDao);
+                               ServiceDbFacade serviceDbFacade) {
+        super(metadataFactory, mariaProperties, serviceDbFacade);
     }
 
     @Override
@@ -34,13 +34,13 @@ public class DropViewDdlExecutor extends QueryResultDdlExecutor {
             findDatamart(schema)
                     .compose(datamartId -> dropView(viewName, datamartId))
                     .onComplete(handler);
-        } catch (Exception e){
+        } catch (Exception e) {
             handler.handle(Future.failedFuture(e));
         }
     }
 
     private Future<Long> findDatamart(String datamartName) {
-        return Future.future(p -> serviceDao.findDatamart(datamartName, ar -> {
+        return Future.future(p -> serviceDbFacade.getServiceDbDao().getDatamartDao().findDatamart(datamartName, ar -> {
             if (ar.succeeded()) {
                 p.complete(ar.result());
             } else {
@@ -50,10 +50,10 @@ public class DropViewDdlExecutor extends QueryResultDdlExecutor {
     }
 
     private Future<QueryResult> dropView(String viewName, Long datamartId) {
-        return Future.future(p -> serviceDao.existsView(viewName, datamartId, existsHandler -> {
+        return Future.future(p -> serviceDbFacade.getServiceDbDao().getViewServiceDao().existsView(viewName, datamartId, existsHandler -> {
             if (existsHandler.succeeded()) {
                 if (existsHandler.result()) {
-                    serviceDao.dropView(viewName, datamartId, updateHandler -> {
+                    serviceDbFacade.getServiceDbDao().getViewServiceDao().dropView(viewName, datamartId, updateHandler -> {
                         if (updateHandler.succeeded()) {
                             p.complete(QueryResult.emptyResult());
                         } else {

@@ -5,6 +5,8 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
@@ -16,6 +18,7 @@ import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
 import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
+import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -80,6 +83,12 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
     @Override
     public SqlKind getSqlKind() {
         return SqlKind.CREATE_TABLE;
+    }
+
+    @Override
+    @Autowired
+    public void registration(@Qualifier("adqmDdlService") DdlService<Void> service) {
+        service.addExecutor(this);
     }
 
     private Future<Void> createTable(ClassTable classTable) {

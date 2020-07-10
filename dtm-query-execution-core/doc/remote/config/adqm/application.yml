@@ -7,5 +7,5 @@ datasource:
 
 ddl:
   cluster: ${ADQM_CLUSTER:test_arenadata}
-  ttl_sec: ${ADQM_TTL_SEC:3600}
+  ttlSec: ${ADQM_TTL_SEC:3600}
   archiveDisk: ${ADQM_ARCHIVE_DISK:default}

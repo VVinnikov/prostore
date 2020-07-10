@@ -5,6 +5,8 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
@@ -12,6 +14,7 @@ import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProper
 import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
+import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
 
 @Component
 @Slf4j
@@ -42,6 +45,12 @@ public class DropTableExecutor implements DdlExecutor<Void> {
     @Override
     public SqlKind getSqlKind() {
         return SqlKind.DROP_TABLE;
+    }
+
+    @Override
+    @Autowired
+    public void registration(@Qualifier("adqmDdlService") DdlService<Void> service) {
+        service.addExecutor(this);
     }
 
     private Future<Void> dropTable(ClassTable classTable) {

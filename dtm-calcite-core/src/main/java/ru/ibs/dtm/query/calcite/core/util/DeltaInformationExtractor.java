@@ -71,7 +71,7 @@ public class DeltaInformationExtractor {
         }
     }
 
-    private static DeltaInformation getDeltaInformation(SqlSelectTree tree, SqlTreeNode n) {
+    public static DeltaInformation getDeltaInformation(SqlSelectTree tree, SqlTreeNode n) {
         Optional<SqlTreeNode> optParent = tree.getParentByChild(n);
         if (optParent.isPresent()) {
             SqlTreeNode parent = optParent.get();

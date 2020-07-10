@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
+import ru.ibs.dtm.query.calcite.core.extension.eddl.DropDatabase;
 import ru.ibs.dtm.query.calcite.core.extension.eddl.SqlCreateDatabase;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.configuration.AppConfiguration;
@@ -113,7 +114,8 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
 	private boolean isNotSchemaOrDatabase(SqlNode sqlNode) {
 		return !(sqlNode instanceof SqlDropSchema)
 				&& !(sqlNode instanceof SqlCreateSchema)
-				&& !(sqlNode instanceof SqlCreateDatabase);
+				&& !(sqlNode instanceof SqlCreateDatabase)
+				&& !(sqlNode instanceof DropDatabase);
 	}
 
 }

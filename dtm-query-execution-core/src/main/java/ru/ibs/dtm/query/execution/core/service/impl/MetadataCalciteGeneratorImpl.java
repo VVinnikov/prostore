@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
-import ru.ibs.dtm.query.execution.core.calcite.eddl.SqlNodeUtils;
+import ru.ibs.dtm.query.calcite.core.extension.eddl.SqlNodeUtils;
 import ru.ibs.dtm.query.execution.core.service.MetadataCalciteGenerator;
 import ru.ibs.dtm.query.execution.core.utils.ColumnTypeUtil;
 

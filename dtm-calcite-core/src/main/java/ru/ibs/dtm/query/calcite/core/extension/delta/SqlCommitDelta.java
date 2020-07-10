@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.calcite.delta;
+package ru.ibs.dtm.query.calcite.core.extension.delta;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;

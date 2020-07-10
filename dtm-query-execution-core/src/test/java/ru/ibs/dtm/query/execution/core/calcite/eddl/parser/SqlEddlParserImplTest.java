@@ -2,7 +2,6 @@ package ru.ibs.dtm.query.execution.core.calcite.eddl.parser;
 
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
-import org.apache.calcite.sql.ddl.SqlCreateTable;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.tools.FrameworkConfig;
@@ -11,7 +10,8 @@ import org.apache.calcite.tools.Planner;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.plugin.exload.Format;
 import ru.ibs.dtm.common.plugin.exload.Type;
-import ru.ibs.dtm.query.execution.core.calcite.eddl.*;
+import ru.ibs.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
+import ru.ibs.dtm.query.calcite.core.extension.eddl.*;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 
 import java.util.HashMap;
@@ -207,8 +207,8 @@ public class SqlEddlParserImplTest {
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
         Planner planner = Frameworks.getPlanner(frameworkConfig);
 
-        ru.ibs.dtm.query.execution.core.calcite.ddl.SqlCreateTable node = (ru.ibs.dtm.query.execution.core.calcite.ddl.SqlCreateTable) planner.parse("CREATE TABLE a(\"index\" integer)");
-        assertTrue(node instanceof ru.ibs.dtm.query.execution.core.calcite.ddl.SqlCreateTable);
+        SqlCreateTable node = (SqlCreateTable) planner.parse("CREATE TABLE a(\"index\" integer)");
+        assertTrue(node instanceof SqlCreateTable);
         assertEquals("a", SqlNodeUtils.getOne(node, SqlIdentifier.class).getSimple());
         assertEquals("index",
                 SqlNodeUtils.getOne(

@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.calcite.eddl;
+package ru.ibs.dtm.query.calcite.core.extension.eddl;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.sql.*;

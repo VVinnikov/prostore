@@ -4,6 +4,8 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -13,27 +15,24 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.reader.QueryResult;
-import ru.ibs.dtm.query.execution.core.service.impl.CalciteDefinitionService;
+import ru.ibs.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @Slf4j
 @Service("coreDdlService")
 public class DdlServiceImpl implements DdlService<QueryResult> {
 
-    private final CalciteDefinitionService calciteDefinitionService;
+    private final CoreCalciteDefinitionService coreCalciteDefinitionService;
     private final Map<SqlKind, DdlExecutor<QueryResult>> executorMap;
     private final Vertx vertx;
 
     @Autowired
-    public DdlServiceImpl(CalciteDefinitionService calciteDefinitionService,
+    public DdlServiceImpl(CoreCalciteDefinitionService coreCalciteDefinitionService,
                           @Qualifier("coreVertx") Vertx vertx
     ) {
-        this.calciteDefinitionService = calciteDefinitionService;
+        this.coreCalciteDefinitionService = coreCalciteDefinitionService;
         this.vertx = vertx;
         executorMap = new HashMap<>();
     }
@@ -42,7 +41,7 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
     public void execute(DdlRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
         vertx.executeBlocking(it -> {
             try {
-                SqlNode node = calciteDefinitionService.processingQuery(context.getRequest().getQueryRequest().getSql());
+                SqlNode node = coreCalciteDefinitionService.processingQuery(context.getRequest().getQueryRequest().getSql());
                 it.complete(node);
             } catch (Exception e) {
                 log.error("Ошибка парсинга запроса", e);

@@ -4,6 +4,9 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +18,7 @@ import ru.ibs.dtm.common.plugin.exload.Format;
 import ru.ibs.dtm.common.plugin.exload.Type;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
+import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import ru.ibs.dtm.query.execution.core.configuration.properties.EdmlProperties;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
@@ -31,16 +35,15 @@ import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction;
 import ru.ibs.dtm.query.execution.core.dto.edml.EdmlQuery;
 import ru.ibs.dtm.query.execution.core.dto.edml.UploadExtTableRecord;
+import ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction;
+import ru.ibs.dtm.query.execution.core.dto.edml.EdmlQuery;
+import ru.ibs.dtm.query.execution.core.dto.edml.UploadExtTableRecord;
 import ru.ibs.dtm.query.execution.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.service.edml.impl.UploadExternalTableExecutor;
 import ru.ibs.dtm.query.execution.core.service.edml.impl.UploadKafkaExecutor;
-import ru.ibs.dtm.query.execution.core.service.impl.CalciteDefinitionService;
+import ru.ibs.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
 import ru.ibs.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -59,7 +62,7 @@ class UploadExternalTableExecutorTest {
     private UploadExternalTableExecutor uploadExternalTableExecutor;
     private CalciteConfiguration config = new CalciteConfiguration();
     private DefinitionService<SqlNode> definitionService =
-            new CalciteDefinitionService(config.configEddlParser(config.eddlParserImplFactory()));
+            new CoreCalciteDefinitionService(config.configEddlParser(config.eddlParserImplFactory()));
     private QueryRequest queryRequest;
     private UploadExtTableRecord uploadRecord;
 
@@ -102,7 +105,6 @@ class UploadExternalTableExecutorTest {
         deltaRecord.setStatus(DeltaLoadStatus.IN_PROCESS);
 
         EdmlQuery edmlQuery = new EdmlQuery(EdmlAction.UPLOAD, uploadRecord);
-
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<DeltaRecord>> handler = invocation.getArgument(1);

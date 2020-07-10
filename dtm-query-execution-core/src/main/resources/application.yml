@@ -17,7 +17,7 @@ datasource:
       database: ${SERVICEDB_DB_NAME:dtmservice}
       user: ${SERVICEDB_USER:dtmuser}
       password: ${SERVICEDB_PASS:Cat6Gmt7Ncr}
-      host: ${SERVICEDB_HOST:localhost}
+      host: ${SERVICEDB_HOST:10.92.3.41}
       port: ${SERVICEDB_PORT:3306}
     poolOptions:
       maxSize: 5
@@ -51,14 +51,6 @@ kafka:
       errorTopic:
         adb: "%s.%s.adb.upload.err"
         adg: "%s.%s.adg.upload.err"
-
-spring:
-  liquibase:
-    enabled: false
-
-liquibase:
-  change-log-location:
-    serviceDb: classpath:db/changelog/serviceDb/changelog.yml
 
 logging:
   level:

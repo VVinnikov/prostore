@@ -4,12 +4,17 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.junit5.VertxTestContext;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacadeImpl;
@@ -20,13 +25,7 @@ import ru.ibs.dtm.query.execution.core.dao.servicedb.ViewDao;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.impl.ServiceDbDaoImpl;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.impl.ViewDaoImpl;
 import ru.ibs.dtm.query.execution.core.dto.DatamartView;
-import ru.ibs.dtm.query.execution.core.service.DefinitionService;
-import ru.ibs.dtm.query.execution.core.service.impl.CalciteDefinitionService;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+import ru.ibs.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -84,7 +83,7 @@ class LogicViewReplacerImplTest {
 
     private final CalciteConfiguration config = new CalciteConfiguration();
     private final DefinitionService<SqlNode> definitionService =
-            new CalciteDefinitionService(config.configEddlParser(config.eddlParserImplFactory()));
+            new CoreCalciteDefinitionService(config.configEddlParser(config.eddlParserImplFactory()));
     private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
     private final ServiceDbDao serviceDbDao = mock(ServiceDbDaoImpl.class);
     private final ViewDao viewDao = mock(ViewDaoImpl.class);

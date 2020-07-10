@@ -1,17 +1,15 @@
 package ru.ibs.dtm.query.calcite.core.extension.delta;
 
+import java.util.List;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.ImmutableNullableList;
 
-import java.util.List;
-
 public class DeltaDateTimeOperator extends SqlCall {
-
-    private final String deltaDateTime;
 
     private static final SqlOperator OPERATOR_DELTA =
             new SqlSpecialOperator("SET", SqlKind.OTHER_DDL);
+    private final String deltaDateTime;
 
     public DeltaDateTimeOperator(SqlParserPos pos, SqlCharStringLiteral dateTime) {
         super(pos);
@@ -30,8 +28,10 @@ public class DeltaDateTimeOperator extends SqlCall {
 
     @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
-        writer.keyword(this.getOperator().getName());
-        writer.keyword(String.valueOf(this.deltaDateTime));
+        if (deltaDateTime != null) {
+            writer.keyword(this.getOperator().getName());
+            writer.keyword(String.valueOf(this.deltaDateTime));
+        }
     }
 
     public String getDeltaDateTime() {

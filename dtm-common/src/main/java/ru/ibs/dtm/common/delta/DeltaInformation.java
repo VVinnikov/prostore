@@ -14,6 +14,7 @@ public class DeltaInformation {
     private String tableName;
     private SqlParserPos pos;
 
+
     public static DeltaInformation copy(DeltaInformation s) {
         return new DeltaInformation(
                 s.tableAlias,
@@ -25,10 +26,6 @@ public class DeltaInformation {
     }
 
     public DeltaInformation withDeltaNum(long deltaNum) {
-        return withDeltaNum(pos, deltaNum);
-    }
-
-    public DeltaInformation withDeltaNum(SqlParserPos pos, long deltaNum) {
         return new DeltaInformation(
                 tableAlias,
                 deltaTimestamp,

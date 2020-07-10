@@ -1,12 +1,10 @@
 package ru.ibs.dtm.query.calcite.core.extension.eddl;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.calcite.sql.*;
-import org.apache.calcite.sql.parser.SqlParserPos;
-
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import org.apache.calcite.sql.*;
+import org.apache.calcite.sql.parser.SqlParserPos;
 
 public class SqlCreateDownloadExternalTable extends SqlCreate {
 
@@ -42,9 +40,7 @@ public class SqlCreateDownloadExternalTable extends SqlCreate {
         name.unparse(writer, leftPrec, rightPrec);
         if (this.columnList != null) {
             SqlWriter.Frame frame = writer.startList("(", ")");
-            Iterator columnIterator = this.columnList.iterator();
-            while (columnIterator.hasNext()) {
-                SqlNode c = (SqlNode) columnIterator.next();
+            for (SqlNode c : this.columnList) {
                 writer.sep(",");
                 c.unparse(writer, 0, 0);
             }

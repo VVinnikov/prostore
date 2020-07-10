@@ -37,7 +37,7 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
                     handler.fail(String.format("Неопределен запрос %s", request));
                 } else {
                     val sqlNode = definitionService.processingQuery(request.getSql());
-                    val deltaInfoRes = DeltaInformationExtractor.extract(sqlNode, request.getDatamartMnemonic());
+                    val deltaInfoRes = DeltaInformationExtractor.extract(sqlNode);
                     calculateDeltaValues(deltaInfoRes.getDeltaInformations(), ar -> {
                         if (ar.succeeded()) {
                             try {

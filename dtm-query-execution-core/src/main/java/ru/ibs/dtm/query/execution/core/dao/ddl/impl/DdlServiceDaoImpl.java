@@ -13,8 +13,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
-import ru.ibs.dtm.query.execution.core.calcite.ddl.DistributedOperator;
-import ru.ibs.dtm.query.execution.core.calcite.ddl.SqlCreateTable;
+import ru.ibs.dtm.query.calcite.core.extension.ddl.DistributedOperator;
+import ru.ibs.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
 import ru.ibs.dtm.query.execution.core.dao.ddl.DdlServiceDao;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 

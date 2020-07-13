@@ -14,6 +14,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
+import ru.ibs.dtm.query.calcite.core.extension.delta.SqlBeginDelta;
+import ru.ibs.dtm.query.calcite.core.extension.delta.SqlCommitDelta;
 import ru.ibs.dtm.query.calcite.core.extension.eddl.DropDatabase;
 import ru.ibs.dtm.query.calcite.core.extension.eddl.SqlCreateDatabase;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
@@ -66,7 +68,7 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
 				try {
 					queryRequest.setSystemName(configuration.getSystemName());
 					SqlNode sqlNode = parseResult.result();
-					if (isNotSchemaOrDatabase(sqlNode)) {
+					if (existsDatamart(sqlNode)) {
 						if (queryRequest.getDatamartMnemonic() == null) {
 							val datamartMnemonic = datamartMnemonicExtractor.extract(sqlNode);
 							queryRequest.setDatamartMnemonic(datamartMnemonic);
@@ -111,11 +113,13 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
 		});
 	}
 
-	private boolean isNotSchemaOrDatabase(SqlNode sqlNode) {
+	private boolean existsDatamart(SqlNode sqlNode) {
 		return !(sqlNode instanceof SqlDropSchema)
 				&& !(sqlNode instanceof SqlCreateSchema)
 				&& !(sqlNode instanceof SqlCreateDatabase)
-				&& !(sqlNode instanceof DropDatabase);
+				&& !(sqlNode instanceof DropDatabase)
+				&& !(sqlNode instanceof SqlBeginDelta)
+				&& !(sqlNode instanceof SqlCommitDelta);
 	}
 
 }

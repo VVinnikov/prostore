@@ -23,12 +23,12 @@ import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static ru.ibs.dtm.query.execution.plugin.adqm.service.impl.Constants.ACTUAL_POSTFIX;
+import static ru.ibs.dtm.query.execution.plugin.adqm.service.impl.Constants.ACTUAL_SHARD_POSTFIX;
+
 @Component
 @Slf4j
 public class CreateTableExecutor implements DdlExecutor<Void> {
-    private final static String ACTUAL_TABLE = "_actual";
-    private final static String SHARD_TABLE = "_actual_shard";
-
     private final static String CREATE_SHARD_TABLE_TEMPLATE =
             "CREATE TABLE %s__%s.%s ON CLUSTER %s\n" +
                     "(\n" +
@@ -103,11 +103,11 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
         String archiveDisk = ddlProperties.getArchiveDisk();
 
         String createShard = String.format(CREATE_SHARD_TABLE_TEMPLATE,
-                env, schema, table + SHARD_TABLE, cluster, columnList, orderList, ttlSec, archiveDisk);
+                env, schema, table + ACTUAL_SHARD_POSTFIX, cluster, columnList, orderList, ttlSec, archiveDisk);
 
         String createDistributed = String.format(CREATE_DISTRIBUTED_TABLE_TEMPLATE,
-                env, schema, table + ACTUAL_TABLE, cluster, columnList, cluster, env, schema,
-                table + SHARD_TABLE, shardingList);
+                env, schema, table + ACTUAL_POSTFIX, cluster, columnList, cluster, env, schema,
+                table + ACTUAL_SHARD_POSTFIX, shardingList);
 
         return databaseExecutor.executeUpdate(createShard)
                 .compose(v ->

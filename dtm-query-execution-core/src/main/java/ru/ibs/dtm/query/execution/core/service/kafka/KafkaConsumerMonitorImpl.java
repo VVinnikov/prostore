@@ -173,16 +173,23 @@ public class KafkaConsumerMonitorImpl implements KafkaConsumerMonitor {
                         OffsetAndMetadata offsetAndMetadata =
                                 GroupMetadataManager.readOffsetMessageValue(byteBuffer);
 
-                        KafkaTopicCommitedOffset lastMeta = lastCommitedOffsets.get(offsetKey.key());
-                        long last = 0L;
-                        if (lastMeta != null)
-                            last = lastMeta.getLastCommitTimestamp();
-                        if (offsetAndMetadata.commitTimestamp() > last) {
+                        lastCommitedOffsets.computeIfPresent(offsetKey.key(),(k,v) -> {
+                            Long last = v.getLastCommitTimestamp();
+                            if (offsetAndMetadata.commitTimestamp() > last) {
+                                KafkaTopicCommitedOffset kafkaTopicCommitedOffset = new KafkaTopicCommitedOffset();
+                                kafkaTopicCommitedOffset.setLastCommitTimestamp(offsetAndMetadata.commitTimestamp());
+                                kafkaTopicCommitedOffset.setOffset(offsetAndMetadata.offset());
+                                return kafkaTopicCommitedOffset;
+                            }
+                            return v;
+                        });
+
+                        lastCommitedOffsets.computeIfAbsent(offsetKey.key(),v -> {
                             KafkaTopicCommitedOffset kafkaTopicCommitedOffset = new KafkaTopicCommitedOffset();
                             kafkaTopicCommitedOffset.setLastCommitTimestamp(offsetAndMetadata.commitTimestamp());
                             kafkaTopicCommitedOffset.setOffset(offsetAndMetadata.offset());
-                            lastCommitedOffsets.put(offsetKey.key(), kafkaTopicCommitedOffset);
-                        }
+                            return kafkaTopicCommitedOffset;
+                        });
                     }
                 }
             }

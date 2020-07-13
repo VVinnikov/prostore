@@ -1,9 +1,6 @@
 package ru.ibs.dtm.common.plugin.status.kafka;
 
 import lombok.Data;
-import org.apache.kafka.common.protocol.types.Field;
-
-import java.time.LocalDateTime;
 import java.util.Date;
 
 @Data

@@ -5,7 +5,7 @@ import ru.ibs.dtm.query.calcite.core.factory.SchemaFactory;
 import ru.ibs.dtm.query.calcite.core.schema.DtmTable;
 import ru.ibs.dtm.query.calcite.core.schema.QueryableSchema;
 import ru.ibs.dtm.query.execution.model.metadata.Datamart;
-import ru.ibs.dtm.query.execution.model.metadata.DatamartClass;
+import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;
 
 public abstract class CalciteSchemaFactory {
     private final SchemaFactory schemaFactory;
@@ -17,10 +17,10 @@ public abstract class CalciteSchemaFactory {
     public SchemaPlus addSchema(SchemaPlus parent, Datamart root) {
         QueryableSchema dtmSchema = schemaFactory.create(parent, root);
         SchemaPlus schemaPlus = parent.add(root.getMnemonic(), dtmSchema);
-        root.getDatamartClassess().forEach(it -> {
+        root.getDatamartTableClassesses().forEach(it -> {
             try {
                 DtmTable table = createTable(dtmSchema, it);
-                schemaPlus.add(it.getMnemonic(), table);
+                schemaPlus.add(it.getSchema(), table);
             } catch (Exception e) {
                 throw new RuntimeException("Ошибка инициализации таблицы $metaTable", e);
             }
@@ -28,5 +28,5 @@ public abstract class CalciteSchemaFactory {
         return schemaPlus;
     }
 
-    protected abstract DtmTable createTable(QueryableSchema schema, DatamartClass datamartClass);
+    protected abstract DtmTable createTable(QueryableSchema schema, DatamartTable datamartTable);
 }

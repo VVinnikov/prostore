@@ -31,13 +31,13 @@ public class SchemaStorageProviderImpl implements SchemaStorageProvider {
         serviceDbFacade.getServiceDbDao().getEntityDao().getEntitiesMeta(datamartMnemonic, ar -> {
             if (ar.succeeded()) {
                 List<DatamartEntity> dmEntity = ar.result();
-                List<DatamartClass> dmClassResult = new ArrayList<>();
+                List<DatamartTable> dmClassResult = new ArrayList<>();
                 fillDmArray(dmEntity.size() - 1, dmEntity, dmClassResult, ar2 -> {
                     if (ar2.succeeded()) {
                         Datamart datamart = new Datamart();
                         datamart.setId(UUID.randomUUID());
                         datamart.setMnemonic(datamartMnemonic);
-                        datamart.setDatamartClassess(ar2.result());
+                        datamart.setDatamartTableClassesses(ar2.result());
                         JsonObject jsonResult = new JsonObject(Json.encode(datamart));
                         log.info("Метаданные для запроса получены. Схема: {}", datamartMnemonic);
                         log.trace("Метаданные: [{}]", jsonResult.toString());
@@ -52,26 +52,26 @@ public class SchemaStorageProviderImpl implements SchemaStorageProvider {
         });
     }
 
-    private void fillDmArray(int currentIteration, List<DatamartEntity> dmEntities, List<DatamartClass> dmClassResult, Handler<AsyncResult<List<DatamartClass>>> asyncResult) {
+    private void fillDmArray(int currentIteration, List<DatamartEntity> dmEntities, List<DatamartTable> dmClassResult, Handler<AsyncResult<List<DatamartTable>>> asyncResult) {
         if (currentIteration < 0) {
             asyncResult.handle(Future.succeededFuture(dmClassResult));
         } else {
             DatamartEntity datamartEntity = dmEntities.get(currentIteration);
             serviceDbFacade.getServiceDbDao().getAttributeDao().getAttributesMeta(datamartEntity.getDatamartMnemonic(), datamartEntity.getMnemonic(), ar -> {
                 if (ar.succeeded()) {
-                    List<ClassAttribute> classAttributes = new ArrayList<>();
-                    DatamartClass dmClass = new DatamartClass();
+                    List<TableAttribute> tableAttributes = new ArrayList<>();
+                    DatamartTable dmClass = new DatamartTable();
                     dmClass.setId(UUID.randomUUID());
-                    dmClass.setMnemonic(datamartEntity.getMnemonic());
+                    dmClass.setSchema(datamartEntity.getMnemonic());
                     dmClass.setLabel(datamartEntity.getMnemonic());
                     ar.result().forEach(attr -> {
-                        ClassAttribute classAttribute = new ClassAttribute();
-                        classAttribute.setId(UUID.randomUUID());
-                        classAttribute.setMnemonic(attr.getMnemonic());
-                        classAttribute.setType(mapColumnType(attr.getDataType()));
-                        classAttributes.add(classAttribute);
+                        TableAttribute tableAttribute = new TableAttribute();
+                        tableAttribute.setId(UUID.randomUUID());
+                        tableAttribute.setMnemonic(attr.getMnemonic());
+                        tableAttribute.setType(mapColumnType(attr.getDataType()));
+                        tableAttributes.add(tableAttribute);
                     });
-                    dmClass.setClassAttributes(classAttributes);
+                    dmClass.setTableAttributes(tableAttributes);
                     dmClassResult.add(dmClass);
                     fillDmArray(currentIteration - 1, dmEntities, dmClassResult, asyncResult);
                 } else {
@@ -81,9 +81,9 @@ public class SchemaStorageProviderImpl implements SchemaStorageProvider {
         }
     }
 
-    private TypeMessage mapColumnType(String dataType) {
-        TypeMessage typeMessage = new TypeMessage();
-        typeMessage.setId(UUID.randomUUID());
+    private AttributeType mapColumnType(String dataType) {
+        AttributeType attributeType = new AttributeType();
+        attributeType.setId(UUID.randomUUID());
         ColumnType type = null;
         switch (dataType.toLowerCase()) {
             case "varchar":
@@ -122,7 +122,7 @@ public class SchemaStorageProviderImpl implements SchemaStorageProvider {
                 type = ColumnType.ANY;
                 break;
         }
-        typeMessage.setValue(type);
-        return typeMessage;
+        attributeType.setValue(type);
+        return attributeType;
     }
 }

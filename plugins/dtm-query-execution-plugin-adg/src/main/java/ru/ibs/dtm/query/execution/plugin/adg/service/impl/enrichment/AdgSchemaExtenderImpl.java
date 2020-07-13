@@ -23,53 +23,53 @@ public class AdgSchemaExtenderImpl implements SchemaExtender {
     Datamart extendedSchema = new Datamart();
     extendedSchema.setMnemonic(datamart.getMnemonic());
     extendedSchema.setId(UUID.randomUUID());
-    List<DatamartClass> extendedDatamartClasses = new ArrayList<>();
+    List<DatamartTable> extendedDatamartTables = new ArrayList<>();
     String prefix = queryRequest.getSystemName() + "_" + queryRequest.getDatamartMnemonic() + "_";
 
-    datamart.getDatamartClassess().forEach(dmClass -> {
-      dmClass.setMnemonic(dmClass.getMnemonic());
-      dmClass.getClassAttributes().addAll(getExtendedColumns());
-      extendedDatamartClasses.add(dmClass);
-      extendedDatamartClasses.add(getExtendedSchema(dmClass, prefix, HISTORY_POSTFIX));
-      extendedDatamartClasses.add(getExtendedSchema(dmClass, prefix, STAGING_POSTFIX));
-      extendedDatamartClasses.add(getExtendedSchema(dmClass, prefix, ACTUAL_POSTFIX));
+    datamart.getDatamartTableClassesses().forEach(dmClass -> {
+      dmClass.setSchema(dmClass.getSchema());
+      dmClass.getTableAttributes().addAll(getExtendedColumns());
+      extendedDatamartTables.add(dmClass);
+      extendedDatamartTables.add(getExtendedSchema(dmClass, prefix, HISTORY_POSTFIX));
+      extendedDatamartTables.add(getExtendedSchema(dmClass, prefix, STAGING_POSTFIX));
+      extendedDatamartTables.add(getExtendedSchema(dmClass, prefix, ACTUAL_POSTFIX));
     });
-    extendedSchema.setDatamartClassess(extendedDatamartClasses);
+    extendedSchema.setDatamartTableClassesses(extendedDatamartTables);
 
     return extendedSchema;
   }
 
-  private DatamartClass getExtendedSchema(DatamartClass datamartClass, String prefix, String tablePostfix) {
-    DatamartClass datamartClassExtended = new DatamartClass();
-    datamartClassExtended.setLabel(datamartClass.getLabel());
-    datamartClassExtended.setMnemonic(prefix + datamartClass.getLabel() + tablePostfix);
-    datamartClassExtended.setId(UUID.randomUUID());
-    List<ClassAttribute> classAttributeList = new ArrayList<>();
-    datamartClass.getClassAttributes().forEach(classAttr -> {
-      ClassAttribute classAttribute = new ClassAttribute();
-      classAttribute.setId(UUID.randomUUID());
-      classAttribute.setMnemonic(classAttr.getMnemonic());
-      classAttribute.setType(classAttr.getType());
-      classAttributeList.add(classAttribute);
+  private DatamartTable getExtendedSchema(DatamartTable datamartTable, String prefix, String tablePostfix) {
+    DatamartTable datamartTableExtended = new DatamartTable();
+    datamartTableExtended.setLabel(datamartTable.getLabel());
+    datamartTableExtended.setSchema(prefix + datamartTable.getLabel() + tablePostfix);
+    datamartTableExtended.setId(UUID.randomUUID());
+    List<TableAttribute> tableAttributeList = new ArrayList<>();
+    datamartTable.getTableAttributes().forEach(classAttr -> {
+      TableAttribute tableAttribute = new TableAttribute();
+      tableAttribute.setId(UUID.randomUUID());
+      tableAttribute.setMnemonic(classAttr.getMnemonic());
+      tableAttribute.setType(classAttr.getType());
+      tableAttributeList.add(tableAttribute);
     });
-    datamartClassExtended.setClassAttributes(classAttributeList);
-    return datamartClassExtended;
+    datamartTableExtended.setTableAttributes(tableAttributeList);
+    return datamartTableExtended;
   }
 
-  private List<ClassAttribute> getExtendedColumns() {
-    List<ClassAttribute> classAttributeList = new ArrayList<>();
-    classAttributeList.add(generateNewField(SYS_OP_FIELD, ColumnType.INTEGER));
-    classAttributeList.add(generateNewField(SYS_TO_FIELD, ColumnType.INTEGER));
-    classAttributeList.add(generateNewField(SYS_FROM_FIELD, ColumnType.INTEGER));
-    return classAttributeList;
+  private List<TableAttribute> getExtendedColumns() {
+    List<TableAttribute> tableAttributeList = new ArrayList<>();
+    tableAttributeList.add(generateNewField(SYS_OP_FIELD, ColumnType.INTEGER));
+    tableAttributeList.add(generateNewField(SYS_TO_FIELD, ColumnType.INTEGER));
+    tableAttributeList.add(generateNewField(SYS_FROM_FIELD, ColumnType.INTEGER));
+    return tableAttributeList;
   }
 
-  private ClassAttribute generateNewField(String mnemonic, ColumnType columnType) {
-    ClassAttribute classAttribute = new ClassAttribute();
-    classAttribute.setId(UUID.randomUUID());
-    classAttribute.setMnemonic(mnemonic);
-    classAttribute.setType(new TypeMessage(UUID.randomUUID(), columnType));
-    return classAttribute;
+  private TableAttribute generateNewField(String mnemonic, ColumnType columnType) {
+    TableAttribute tableAttribute = new TableAttribute();
+    tableAttribute.setId(UUID.randomUUID());
+    tableAttribute.setMnemonic(mnemonic);
+    tableAttribute.setType(new AttributeType(UUID.randomUUID(), columnType));
+    return tableAttribute;
   }
 
 }

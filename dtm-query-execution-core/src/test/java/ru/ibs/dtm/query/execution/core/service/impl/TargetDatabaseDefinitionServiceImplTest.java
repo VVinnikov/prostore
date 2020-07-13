@@ -29,7 +29,6 @@ public class TargetDatabaseDefinitionServiceImplTest {
 
     private TargetDatabaseDefinitionService targetDatabaseDefinitionService =
             new TargetDatabaseDefinitionServiceImpl(
-                    mock(SchemaStorageProvider.class),
                     new DataSourcePluginServiceImpl(
                             SimplePluginRegistry.of(
                                     new DtmDataSourcePlugin() {

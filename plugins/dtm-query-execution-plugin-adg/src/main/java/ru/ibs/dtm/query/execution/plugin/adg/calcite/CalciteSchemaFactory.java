@@ -20,10 +20,10 @@ public class CalciteSchemaFactory {
 
   public Schema addRootSchema(SchemaPlus parent, Datamart schema) {
     QueryableSchema dtmSchema = schemaFactory.create(parent, schema);
-    schema.getDatamartClassess().forEach(it -> {
+    schema.getDatamartTableClassesses().forEach(it -> {
       try {
         CustomTable table = new CustomTable(dtmSchema, it);
-        parent.add(it.getMnemonic(), table);
+        parent.add(it.getSchema(), table);
       } catch (Exception e) {
         throw new RuntimeException("Ошибка инициализации таблицы $metaTable", e);
       }
@@ -34,10 +34,10 @@ public class CalciteSchemaFactory {
   public Schema addSubSchema(SchemaPlus parent, Datamart root) {
     QueryableSchema dtmSchema = schemaFactory.create(parent, root);
     SchemaPlus rootSchema = parent.add(root.getMnemonic(), dtmSchema);
-    root.getDatamartClassess().forEach(it -> {
+    root.getDatamartTableClassesses().forEach(it -> {
       try {
         CustomTable table = new CustomTable(dtmSchema, it);
-        rootSchema.add(it.getMnemonic(), table);
+        rootSchema.add(it.getSchema(), table);
       } catch (Exception e) {
         throw new RuntimeException("Ошибка инициализации таблицы $metaTable", e);
       }

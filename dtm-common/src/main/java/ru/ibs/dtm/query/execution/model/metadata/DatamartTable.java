@@ -3,7 +3,6 @@ package ru.ibs.dtm.query.execution.model.metadata;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.ibs.dtm.query.execution.model.metadata.ClassAttribute;
 
 import java.util.List;
 import java.util.UUID;
@@ -14,12 +13,12 @@ import java.util.UUID;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class DatamartClass {
+public class DatamartTable {
   private UUID id;
   /*Имя схемы*/
-  private String mnemonic;
+  private String schema;
   private String label;
   /*Атрибуты таблиц*/
-  private List<ClassAttribute> classAttributes;
-  private List<ClassAttribute> primaryKey;
+  private List<TableAttribute> tableAttributes;
+  private List<TableAttribute> primaryKey;
 }

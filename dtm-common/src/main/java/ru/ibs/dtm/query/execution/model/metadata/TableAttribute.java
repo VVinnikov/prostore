@@ -7,12 +7,12 @@ import lombok.NoArgsConstructor;
 import java.util.UUID;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
-public class TypeMessage {
+@NoArgsConstructor
+public class TableAttribute {
   private UUID id;
-  /**
-   * Тип данных в колонке
-   */
-  private ColumnType value;
+  /*Имя атрибута*/
+  private String mnemonic;
+  /*Тип атрибута*/
+  private AttributeType type;
 }

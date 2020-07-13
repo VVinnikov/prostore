@@ -2,10 +2,9 @@ package ru.ibs.dtm.query.execution.core.dto.dml;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
-import lombok.Data;
-import org.apache.calcite.sql.SqlSelect;
-
 import java.util.*;
+import lombok.Data;
+import org.apache.calcite.sql.SqlNode;
 
 @Data
 public class ReplaceContext {
@@ -14,10 +13,10 @@ public class ReplaceContext {
     private final List<ViewReplaceAction> resultActions;
     private final List<ViewReplaceAction> tempActions;
     private final Set<DatamartViewPair> tables;
-    private final SqlSelect rootSqlNode;
+    private final SqlNode rootSqlNode;
     private final String defaultDatamart;
 
-    public ReplaceContext(SqlSelect rootSqlNode,
+    public ReplaceContext(SqlNode rootSqlNode,
                           String defaultDatamart,
                           Handler<AsyncResult<String>> resultHandler) {
         this.rootSqlNode = rootSqlNode;

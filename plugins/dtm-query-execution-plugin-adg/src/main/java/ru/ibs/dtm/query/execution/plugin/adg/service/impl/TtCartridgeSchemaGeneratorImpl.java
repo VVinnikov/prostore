@@ -12,6 +12,7 @@ import ru.ibs.dtm.common.configuration.kafka.KafkaConfig;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassFieldUtils;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
+import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.OperationFile;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.OperationYaml;
@@ -48,7 +49,8 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
 			yaml.setSpaces(new LinkedHashMap<>());
 		}
 		val spaces = yaml.getSpaces();
-		String prefix = context.getSystemName() + "_" + context.getRequest().getQueryRequest().getDatamartMnemonic() + "_";
+		QueryRequest queryRequest = context.getRequest().getQueryRequest();
+		String prefix = queryRequest.getSystemName() + "__" + queryRequest.getDatamartMnemonic() + "__";
 		ClassTable classTable = context.getRequest().getClassTable();
 		int indexComma = classTable.getName().indexOf(".");
 		String table = classTable.getName().substring(indexComma + 1).toLowerCase();
@@ -139,7 +141,7 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
 
 	private static List<SpaceIndexPart> getPrimaryKeyParts(List<ClassField> fields) {
 		return ClassFieldUtils.getPrimaryKeyList(fields).stream()
-				.map(f -> new SpaceIndexPart(f.getName(), SpaceAttributeTypeUtil.toAttributeType(f.getType()).getName(), f.getIsNull()))
+				.map(f -> new SpaceIndexPart(f.getName(), SpaceAttributeTypeUtil.toAttributeType(f.getType()).getName(), f.getNullable()))
 				.collect(Collectors.toList());
 	}
 
@@ -197,9 +199,9 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
 		return attributes;
 	}
 
-    private static SpaceAttribute toAttribute(ClassField field) {
-        return new SpaceAttribute(field.getIsNull(), field.getName(), SpaceAttributeTypeUtil.toAttributeType(field.getType()));
-    }
+	private static SpaceAttribute toAttribute(ClassField field) {
+		return new SpaceAttribute(field.getNullable(), field.getName(), SpaceAttributeTypeUtil.toAttributeType(field.getType()));
+	}
 
     private TopicsConfig createTopicConfig(KafkaAdminProperty property, ClassTable classTable) {
         val adgUploadRq = String.format(property.getUpload().getRequestTopic().get(SourceType.ADG.toString().toLowerCase()), classTable.getName(), classTable.getSchema());

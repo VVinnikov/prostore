@@ -76,7 +76,7 @@ public class AdgQueryEnrichmentServiceImpl implements QueryEnrichmentService {
           queryParserService.parse(regexPreprocessorResult.getActualQueryRequest(), schemaDescription, calciteContext, parsedQueryResult -> {
             if (parsedQueryResult.succeeded()) {
               // формируем новый sql-запрос
-              adgQueryGenerator.mutateQuery(parsedQueryResult.result(), deltaResult.result(), schemaDescription, calciteContext, enrichedQueryResult -> {
+              adgQueryGenerator.mutateQuery(parsedQueryResult.result(), deltaResult.result(), schemaDescription, calciteContext, request.getQueryRequest(), enrichedQueryResult -> {
                 if (enrichedQueryResult.succeeded()) {
                   log.trace("Сформирован запрос: {}", enrichedQueryResult.result());
                   asyncHandler.handle(Future.succeededFuture(enrichedQueryResult.result()));

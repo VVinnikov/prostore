@@ -47,4 +47,5 @@ public class AppConfiguration {
     public AvroEncoder avroEncoder() {
         return new AvroEncoder();
     }
+
 }

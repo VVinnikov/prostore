@@ -1,24 +1,131 @@
 package ru.ibs.dtm.query.execution.plugin.adg.service.impl.mppw;
 
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import lombok.RequiredArgsConstructor;
+import java.util.Collections;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.reader.QueryResult;
+import ru.ibs.dtm.query.execution.plugin.adg.configuration.AdgMppwKafkaProperties;
+import ru.ibs.dtm.query.execution.plugin.adg.dto.mppw.AdgMppwKafkaContext;
+import ru.ibs.dtm.query.execution.plugin.adg.factory.AdgMppwKafkaContextFactory;
+import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtLoadDataKafkaRequest;
+import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtSubscriptionKafkaRequest;
+import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtTransferDataEtlRequest;
+import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeClient;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
-import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 import ru.ibs.dtm.query.execution.plugin.api.service.MppwKafkaService;
 
 @Slf4j
-@RequiredArgsConstructor
 @Service("adgMppwKafkaService")
 public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
 
-    @Override
-    public void execute(MppwRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-        MppwRequest request = context.getRequest();
-        //TODO реализовать
+    private final AdgMppwKafkaContextFactory contextFactory;
+    private final Map<String, String> initializedLoadingByTopic;
+    private final AdgMppwKafkaProperties properties;
+    private final TtCartridgeClient cartridgeClient;
+
+    public AdgMppwKafkaService(AdgMppwKafkaContextFactory contextFactory,
+                               TtCartridgeClient cartridgeClient,
+                               AdgMppwKafkaProperties properties) {
+        this.contextFactory = contextFactory;
+        this.cartridgeClient = cartridgeClient;
+        this.properties = properties;
+        initializedLoadingByTopic = new ConcurrentHashMap<>();
     }
 
+    @Override
+    public void execute(MppwRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
+        val mppwKafkaContext = contextFactory.create(context.getRequest());
+        if (context.getRequest().getLoadStart()) {
+            initializeLoading(mppwKafkaContext, asyncResultHandler);
+        } else {
+            cancelLoadData(mppwKafkaContext, asyncResultHandler);
+        }
+    }
+
+    private void initializeLoading(AdgMppwKafkaContext ctx, Handler<AsyncResult<QueryResult>> handler) {
+        if (initializedLoadingByTopic.containsKey(ctx.getTopicName())) {
+            val expectedTableName = initializedLoadingByTopic.get(ctx.getTopicName());
+            if (expectedTableName.equals(ctx.getConsumerTableName())) {
+                loadData(ctx, handler);
+            } else {
+                val msg = String.format(
+                        "Tables must be the same within a single load by topic [%s]. Actual [%s], but expected [%s]"
+                        , ctx.getConsumerTableName()
+                        , expectedTableName
+                        , ctx.getTopicName());
+                log.error(msg);
+                handler.handle(Future.failedFuture(msg));
+            }
+        } else {
+            val request = new TtSubscriptionKafkaRequest(
+                    properties.getMaxNumberOfMessagesPerPartition(),
+                    null,
+                    ctx.getTopicName()
+            );
+            cartridgeClient.subscribe(request, ar -> {
+                if (ar.succeeded()) {
+                    log.debug("Loading initialize completed by [{}]", request);
+                    initializedLoadingByTopic.put(ctx.getTopicName(), ctx.getConsumerTableName());
+                    loadData(ctx, handler);
+                } else {
+                    log.error("Loading initialize error:", ar.cause());
+                    handler.handle(Future.failedFuture(ar.cause()));
+                }
+            });
+        }
+    }
+
+    private void loadData(AdgMppwKafkaContext ctx, Handler<AsyncResult<QueryResult>> handler) {
+        val request = new TtLoadDataKafkaRequest(
+                properties.getMaxNumberOfMessagesPerPartition(),
+                Collections.singletonList(ctx.getHelperTableNames().getStaging()),
+                null,
+                ctx.getTopicName()
+        );
+        cartridgeClient.loadData(
+                request, ar -> {
+                    if (ar.succeeded()) {
+                        log.debug("Load Data completed by request [{}] with result: [{}]", request, ar.result());
+                        transferData(ctx, handler);
+                    } else {
+                        log.error("Load Data error:", ar.cause());
+                        handler.handle(Future.failedFuture(ar.cause()));
+                    }
+                });
+    }
+
+    private void transferData(AdgMppwKafkaContext ctx, Handler<AsyncResult<QueryResult>> handler) {
+        val request = new TtTransferDataEtlRequest(ctx.getHelperTableNames(), ctx.getHotDelta());
+        cartridgeClient.transferDataToScdTable(
+                request, ar -> {
+                    if (ar.succeeded()) {
+                        log.debug("Transfer Data completed by request [{}]", request);
+                        handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
+                    } else {
+                        log.error("Transfer Data error: ", ar.cause());
+                        handler.handle(Future.failedFuture(ar.cause()));
+                    }
+                }
+        );
+    }
+
+    private void cancelLoadData(AdgMppwKafkaContext ctx, Handler<AsyncResult<QueryResult>> handler) {
+        val topicName = ctx.getTopicName();
+        cartridgeClient.cancelSubscription(topicName, ar -> {
+            initializedLoadingByTopic.remove(topicName);
+            if (ar.succeeded()) {
+                log.debug("Cancel Load Data completed by request [{}]", topicName);
+                handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
+            } else {
+                log.error("Cancel Load Data error: ", ar.cause());
+                handler.handle(Future.failedFuture(ar.cause()));
+            }
+        });
+    }
 }

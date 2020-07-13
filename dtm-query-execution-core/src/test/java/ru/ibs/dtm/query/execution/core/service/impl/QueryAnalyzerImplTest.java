@@ -10,15 +10,19 @@ import io.vertx.reactivex.ext.unit.Async;
 import io.vertx.reactivex.ext.unit.TestSuite;
 import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.env.Environment;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
+import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
+import ru.ibs.dtm.query.execution.core.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import ru.ibs.dtm.query.execution.core.dto.ParsedQueryRequest;
 import ru.ibs.dtm.query.execution.core.factory.RequestContextFactory;
 import ru.ibs.dtm.query.execution.core.factory.impl.RequestContextFactoryImpl;
-import ru.ibs.dtm.query.execution.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.service.QueryAnalyzer;
 import ru.ibs.dtm.query.execution.core.service.QueryDispatcher;
+import ru.ibs.dtm.query.execution.core.utils.DatamartMnemonicExtractor;
+import ru.ibs.dtm.query.execution.core.utils.DefaultDatamartSetter;
 import ru.ibs.dtm.query.execution.core.utils.HintExtractor;
 import ru.ibs.dtm.query.execution.plugin.api.RequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
@@ -34,14 +38,14 @@ class QueryAnalyzerImplTest {
 
 	private CalciteConfiguration config = new CalciteConfiguration();
 	private DefinitionService<SqlNode> definitionService =
-			new CalciteDefinitionService(config.configEddlParser(config.eddlParserImplFactory()));
+			new CoreCalciteDefinitionService(config.configEddlParser(config.eddlParserImplFactory()));
 	private Vertx vertx = Vertx.vertx();
 	private RequestContextFactory<RequestContext<? extends DatamartRequest>, QueryRequest> requestContextFactory = new RequestContextFactoryImpl();
 	private QueryDispatcher queryDispatcher = mock(QueryDispatcher.class);
 	private QueryAnalyzer queryAnalyzer = new QueryAnalyzerImpl(queryDispatcher,
 			definitionService,
 			requestContextFactory,
-			vertx, new HintExtractor());
+			vertx, new HintExtractor(), new DatamartMnemonicExtractor(), new AppConfiguration(mock(Environment.class)), new DefaultDatamartSetter());
 
 	@Test
 	void parsedSelect() {
@@ -80,6 +84,10 @@ class QueryAnalyzerImplTest {
 		analyzeAndExecute(testData, queryRequest);
 
 		assertThat(testData.getResult()).isEqualToIgnoringCase("complete");
+		assertEquals("test_datamart"
+				, testData.getParsedQueryRequests()
+						.getQueryRequest()
+						.getDatamartMnemonic());
 		assertEquals(SqlProcessingType.DML, testData.getParsedQueryRequests().getProcessingType());
 	}
 

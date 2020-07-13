@@ -47,7 +47,7 @@ public class AdgCalciteDmlQueryParserServiceImpl implements QueryParserService {
         try {
           Datamart datamartLogicalSchema = schemaDescription.getLogicalSchema();
           schemaFactory.addSubSchema(context.getSchema(), datamartLogicalSchema);
-          Datamart datamartPhysicalSchema = schemaExtender.generatePhysicalSchema(datamartLogicalSchema);
+          Datamart datamartPhysicalSchema = schemaExtender.generatePhysicalSchema(datamartLogicalSchema, querySourceRequest);
           schemaDescription.setPhysicalSchema(datamartPhysicalSchema);
 
           schemaFactory.addRootSchema(context.getSchema(), datamartPhysicalSchema);

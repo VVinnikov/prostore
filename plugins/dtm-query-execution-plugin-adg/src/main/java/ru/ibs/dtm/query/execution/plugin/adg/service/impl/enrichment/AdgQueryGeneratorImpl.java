@@ -13,6 +13,7 @@ import org.apache.calcite.util.Util;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.calcite.CalciteContext;
+import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.calcite.schema.dialect.DtmConvention;
 import ru.ibs.dtm.query.execution.plugin.adg.dto.schema.SchemaDescription;
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryExtendService;
@@ -30,7 +31,7 @@ public class AdgQueryGeneratorImpl implements QueryGenerator {
   }
 
   @Override
-  public void mutateQuery(RelRoot relNode, List<Long> selectOn, SchemaDescription schemaDescription, CalciteContext calciteContext, Handler<AsyncResult<String>> handler) {
+  public void mutateQuery(RelRoot relNode, List<Long> selectOn, SchemaDescription schemaDescription, CalciteContext calciteContext, QueryRequest queryRequest, Handler<AsyncResult<String>> handler) {
     if (schemaDescription.getLogicalSchema() == null) {
       handler.handle(Future.failedFuture(String.format("Ошибка определения схемы для запроса %s", relNode.toString())));
       return;
@@ -41,7 +42,7 @@ public class AdgQueryGeneratorImpl implements QueryGenerator {
       queryExtendService.addOption(selectOnDelta == null ? -1 : selectOnDelta);
     }
     try {
-      RelNode extendedQuery = queryExtendService.extendQuery(relNode.rel);
+      RelNode extendedQuery = queryExtendService.extendQuery(queryRequest, relNode.rel);
       RelNode planAfter = calciteContext.getPlanner().transform(0, extendedQuery.getTraitSet().replace(EnumerableConvention.INSTANCE), extendedQuery);
       SqlNode sqlNodeResult = new RelToSqlConverter(DtmConvention.getDialect()).visitChild(0, planAfter).asStatement();
       String queryResult = Util.toLinux(sqlNodeResult.toSqlString(DtmConvention.getDialect()).getSql()).replaceAll("\n", " ");

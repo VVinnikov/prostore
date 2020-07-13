@@ -4,6 +4,12 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlDialect;
 import org.jetbrains.annotations.NotNull;
@@ -14,7 +20,7 @@ import ru.ibs.dtm.common.plugin.exload.QueryLoadParam;
 import ru.ibs.dtm.common.plugin.exload.Type;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.core.configuration.properties.EdmlProperties;
-import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
+import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction;
 import ru.ibs.dtm.query.execution.core.dto.edml.EdmlQuery;
@@ -24,25 +30,20 @@ import ru.ibs.dtm.query.execution.core.service.edml.EdmlExecutor;
 import ru.ibs.dtm.query.execution.core.service.edml.EdmlUploadExecutor;
 import ru.ibs.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import static ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction.*;
+import static ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction.UPLOAD;
 
 @Service
 @Slf4j
 public class UploadExternalTableExecutor implements EdmlExecutor {
 
     private static final SqlDialect SQL_DIALECT = new SqlDialect(SqlDialect.EMPTY_CONTEXT);
-    private final ServiceDao serviceDao;
+    private final ServiceDbFacade serviceDbFacade;
     private final EdmlProperties edmlProperties;
     private final Map<Type, EdmlUploadExecutor> executors;
 
     @Autowired
-    public UploadExternalTableExecutor(ServiceDao serviceDao, EdmlProperties edmlProperties, List<EdmlUploadExecutor> uploadExecutors) {
-        this.serviceDao = serviceDao;
+    public UploadExternalTableExecutor(ServiceDbFacade serviceDbFacade, EdmlProperties edmlProperties, List<EdmlUploadExecutor> uploadExecutors) {
+        this.serviceDbFacade = serviceDbFacade;
         this.edmlProperties = edmlProperties;
         this.executors = uploadExecutors.stream()
                 .collect(Collectors.toMap(EdmlUploadExecutor::getUploadType, it -> it));
@@ -58,10 +59,10 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
 
     private Future<DeltaRecord> getDeltaHotInProcess(EdmlRequestContext context) {
         return Future.future((Promise<DeltaRecord> promise) ->
-                serviceDao.getDeltaHotByDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic(), ar -> {
+                serviceDbFacade.getDeltaServiceDao().getDeltaHotByDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic(), ar -> {
                     if (ar.succeeded()) {
                         DeltaRecord deltaRecord = ar.result();
-                        if (deltaRecord.getStatus() != DeltaLoadStatus.IN_PROCESS) {
+                        if (deltaRecord == null || deltaRecord.getStatus() != DeltaLoadStatus.IN_PROCESS) {
                             promise.fail(new RuntimeException("Не найдена открытая дельта!"));
                         }
                         log.debug("Найдена последняя открытая дельта {}", deltaRecord);
@@ -78,7 +79,7 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
             QueryLoadParam queryLoadParam = createQueryLoadParam(context, (UploadExtTableRecord) edmlQuery.getRecord(), deltaRecord);
             context.setLoadParam(queryLoadParam);
             context.setSchema(((UploadExtTableRecord) edmlQuery.getRecord()).getTableSchema());
-            serviceDao.inserUploadQuery(uploadQueryRecord, ar -> {
+            serviceDbFacade.getEddlServiceDao().getUploadQueryDao().inserUploadQuery(uploadQueryRecord, ar -> {
                 if (ar.succeeded()) {
                     log.debug("Добавлен uploadQuery {}", uploadQueryRecord);
                     promise.complete(uploadQueryRecord);

@@ -1,13 +1,12 @@
 package ru.ibs.dtm.query.execution.core.utils;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QuerySourceRequest;
 import ru.ibs.dtm.common.reader.SourceType;
-
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Определение типа запроса по хинту DATASOURCE_TYPE = ''
@@ -16,7 +15,7 @@ import java.util.regex.Pattern;
 @Component
 public class HintExtractor {
     private final Pattern HINT_PATTERN = Pattern.compile(
-            "((.|\\n)*)(DATASOURCE_TYPE[\\s]*=[\\s]*')([^\\s]+)('[\\s]*$)",
+            "((.|\\r\\n|\\n)*)(DATASOURCE_TYPE[\\s]*=[\\s]*')([^\\s]+)('[\\s]*$)",
             Pattern.CASE_INSENSITIVE);
 
     public QuerySourceRequest extractHint(QueryRequest request) {

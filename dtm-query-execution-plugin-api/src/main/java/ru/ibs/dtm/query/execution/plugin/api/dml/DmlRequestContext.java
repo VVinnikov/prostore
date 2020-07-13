@@ -30,4 +30,5 @@ public class DmlRequestContext extends RequestContext<DatamartRequest> {
 	public SqlNode getQuery() {
 		return query;
 	}
+
 }

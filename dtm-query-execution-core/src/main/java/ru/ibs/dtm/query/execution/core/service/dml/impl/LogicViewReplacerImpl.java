@@ -3,38 +3,46 @@ package ru.ibs.dtm.query.execution.core.service.dml.impl;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.dto.dml.DatamartViewPair;
 import ru.ibs.dtm.query.execution.core.dto.dml.DatamartViewWrap;
 import ru.ibs.dtm.query.execution.core.dto.dml.ReplaceContext;
 import ru.ibs.dtm.query.execution.core.dto.dml.ViewReplaceAction;
-import ru.ibs.dtm.query.execution.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.service.dml.DatamartViewWrapLoader;
 import ru.ibs.dtm.query.execution.core.service.dml.LogicViewReplacer;
 import ru.ibs.dtm.query.execution.core.service.dml.SqlSnapshotReplacer;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class LogicViewReplacerImpl implements LogicViewReplacer {
     private static final SqlDialect SQL_DIALECT = new SqlDialect(SqlDialect.EMPTY_CONTEXT);
     private final DefinitionService<SqlNode> definitionService;
     private final SqlSnapshotReplacer snapshotReplacer;
     private final DatamartViewWrapLoader viewLoader;
+
+    public LogicViewReplacerImpl(
+            @Qualifier("coreCalciteDefinitionService") DefinitionService<SqlNode> definitionService,
+            SqlSnapshotReplacer snapshotReplacer,
+            DatamartViewWrapLoader viewLoader
+    ) {
+        this.definitionService = definitionService;
+        this.snapshotReplacer = snapshotReplacer;
+        this.viewLoader = viewLoader;
+    }
 
     @SneakyThrows
     @Override
@@ -95,8 +103,8 @@ public class LogicViewReplacerImpl implements LogicViewReplacer {
         return actions.stream()
                 .map(ViewReplaceAction::getViewPair)
                 .peek(pair -> setDefaultDatamart(ctx, pair))
-                .filter(pair -> ! ctx.getTables().contains(pair))
-                .filter(pair -> ! ctx.getViewMap().containsKey(pair))
+                .filter(pair -> !ctx.getTables().contains(pair))
+                .filter(pair -> !ctx.getViewMap().containsKey(pair))
                 .collect(Collectors.toSet());
     }
 

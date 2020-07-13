@@ -7,13 +7,19 @@ import io.vertx.junit5.VertxTestContext;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlNode;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
-import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
+import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
+import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacadeImpl;
+import ru.ibs.dtm.query.execution.core.dao.servicedb.ServiceDbDao;
+import ru.ibs.dtm.query.execution.core.dao.servicedb.ViewDao;
+import ru.ibs.dtm.query.execution.core.dao.servicedb.impl.ServiceDbDaoImpl;
+import ru.ibs.dtm.query.execution.core.dao.servicedb.impl.ViewDaoImpl;
 import ru.ibs.dtm.query.execution.core.dto.DatamartView;
-import ru.ibs.dtm.query.execution.core.service.DefinitionService;
-import ru.ibs.dtm.query.execution.core.service.impl.CalciteDefinitionService;
+import ru.ibs.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -24,6 +30,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @Slf4j
 class LogicViewReplacerImplTest {
@@ -75,12 +82,21 @@ class LogicViewReplacerImplTest {
 
     private final CalciteConfiguration config = new CalciteConfiguration();
     private final DefinitionService<SqlNode> definitionService =
-            new CalciteDefinitionService(config.configEddlParser(config.eddlParserImplFactory()));
+            new CoreCalciteDefinitionService(config.configEddlParser(config.eddlParserImplFactory()));
+    private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
+    private final ServiceDbDao serviceDbDao = mock(ServiceDbDaoImpl.class);
+    private final ViewDao viewDao = mock(ViewDaoImpl.class);
+
+    @BeforeEach
+    void setUp() {
+        when(serviceDbFacade.getServiceDbDao()).thenReturn(serviceDbDao);
+        when(serviceDbDao.getViewServiceDao()).thenReturn(viewDao);
+    }
 
     @Test
     void withoutJoin() throws InterruptedException {
         val testContext = new VertxTestContext();
-        val serviceDao = mock(ServiceDao.class);
+        val serviceDao = mock(ServiceDbFacade.class);
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<List<DatamartView>>> handler = invocation.getArgument(2);
             val vq1 = "SELECT Col4, Col5 \n" +
@@ -89,7 +105,7 @@ class LogicViewReplacerImplTest {
             val v1 = new DatamartView("view", 1, vq1);
             handler.handle(Future.succeededFuture(Collections.singletonList(v1)));
             return null;
-        }).when(serviceDao).findViewsByDatamart(any(), any(), any());
+        }).when(viewDao).findViewsByDatamart(any(), any(), any());
         val loader = new DatamartViewWrapLoaderImpl(serviceDao);
         val replacer = new LogicViewReplacerImpl(definitionService, new SqlSnapshotReplacerImpl(), loader);
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
@@ -108,7 +124,6 @@ class LogicViewReplacerImplTest {
     @Test
     void withDatamart() throws InterruptedException {
         val testContext = new VertxTestContext();
-        val serviceDao = mock(ServiceDao.class);
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<List<DatamartView>>> handler = invocation.getArgument(2);
             val vq1 = "SELECT Col4, Col5 \n" +
@@ -117,8 +132,8 @@ class LogicViewReplacerImplTest {
             val v1 = new DatamartView("view", 1, vq1);
             handler.handle(Future.succeededFuture(Collections.singletonList(v1)));
             return null;
-        }).when(serviceDao).findViewsByDatamart(any(), any(), any());
-        val loader = new DatamartViewWrapLoaderImpl(serviceDao);
+        }).when(viewDao).findViewsByDatamart(any(), any(), any());
+        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade);
         val replacer = new LogicViewReplacerImpl(definitionService, new SqlSnapshotReplacerImpl(), loader);
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
                 "FROM test.view v";
@@ -136,7 +151,6 @@ class LogicViewReplacerImplTest {
     @Test
     void withoutJoin_withoutAlias() throws InterruptedException {
         val testContext = new VertxTestContext();
-        val serviceDao = mock(ServiceDao.class);
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<List<DatamartView>>> handler = invocation.getArgument(2);
             val vq1 = "SELECT Col4, Col5 \n" +
@@ -145,8 +159,8 @@ class LogicViewReplacerImplTest {
             val v1 = new DatamartView("view", 1, vq1);
             handler.handle(Future.succeededFuture(Collections.singletonList(v1)));
             return null;
-        }).when(serviceDao).findViewsByDatamart(any(), any(), any());
-        val loader = new DatamartViewWrapLoaderImpl(serviceDao);
+        }).when(viewDao).findViewsByDatamart(any(), any(), any());
+        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade);
         val replacer = new LogicViewReplacerImpl(definitionService, new SqlSnapshotReplacerImpl(), loader);
         val sql = "SELECT view.Col1 as c, view.Col2 r\n" +
                 "FROM view";
@@ -164,7 +178,6 @@ class LogicViewReplacerImplTest {
     @Test
     void withJoin() throws InterruptedException {
         val testContext = new VertxTestContext();
-        val serviceDao = mock(ServiceDao.class);
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<List<DatamartView>>> handler = invocation.getArgument(2);
             val vq1 = "SELECT Col4, Col5 \n" +
@@ -173,8 +186,8 @@ class LogicViewReplacerImplTest {
             val v1 = new DatamartView("view", 1, vq1);
             handler.handle(Future.succeededFuture(Collections.singletonList(v1)));
             return null;
-        }).when(serviceDao).findViewsByDatamart(any(), any(), any());
-        val loader = new DatamartViewWrapLoaderImpl(serviceDao);
+        }).when(viewDao).findViewsByDatamart(any(), any(), any());
+        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade);
         val replacer = new LogicViewReplacerImpl(definitionService, new SqlSnapshotReplacerImpl(), loader);
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
                 "FROM tbl FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' t\n" +
@@ -194,7 +207,6 @@ class LogicViewReplacerImplTest {
     @Test
     void withJoinAndWhere() throws InterruptedException {
         val testContext = new VertxTestContext();
-        val serviceDao = mock(ServiceDao.class);
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<List<DatamartView>>> handler = invocation.getArgument(2);
             val vq1 = "SELECT Col4, Col5 \n" +
@@ -203,8 +215,8 @@ class LogicViewReplacerImplTest {
             val v1 = new DatamartView("view", 1, vq1);
             handler.handle(Future.succeededFuture(Collections.singletonList(v1)));
             return null;
-        }).when(serviceDao).findViewsByDatamart(any(), any(), any());
-        val loader = new DatamartViewWrapLoaderImpl(serviceDao);
+        }).when(viewDao).findViewsByDatamart(any(), any(), any());
+        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade);
         val replacer = new LogicViewReplacerImpl(definitionService, new SqlSnapshotReplacerImpl(), loader);
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
                 "FROM tbl FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' t\n" +
@@ -225,7 +237,6 @@ class LogicViewReplacerImplTest {
     @Test
     void withJoinAndSelect() throws InterruptedException {
         val testContext = new VertxTestContext();
-        val serviceDao = mock(ServiceDao.class);
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<List<DatamartView>>> handler = invocation.getArgument(2);
             val vq1 = "SELECT Col4, Col5 \n" +
@@ -234,8 +245,8 @@ class LogicViewReplacerImplTest {
             val v1 = new DatamartView("view", 1, vq1);
             handler.handle(Future.succeededFuture(Collections.singletonList(v1)));
             return null;
-        }).when(serviceDao).findViewsByDatamart(any(), any(), any());
-        val loader = new DatamartViewWrapLoaderImpl(serviceDao);
+        }).when(viewDao).findViewsByDatamart(any(), any(), any());
+        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade);
         val replacer = new LogicViewReplacerImpl(definitionService, new SqlSnapshotReplacerImpl(), loader);
         val sql = "SELECT t.Col1 as c, (select id from view limit 1) r\n" +
                 "FROM tblt t";
@@ -253,7 +264,6 @@ class LogicViewReplacerImplTest {
     @Test
     void viewInView() throws InterruptedException {
         val testContext = new VertxTestContext();
-        val serviceDao = mock(ServiceDao.class);
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<List<DatamartView>>> handler = invocation.getArgument(2);
             val views = new ArrayList<DatamartView>();
@@ -267,8 +277,8 @@ class LogicViewReplacerImplTest {
                     "WHERE tblC.Col9 = 0"));
             handler.handle(Future.succeededFuture(views));
             return null;
-        }).when(serviceDao).findViewsByDatamart(any(), any(), any());
-        val loader = new DatamartViewWrapLoaderImpl(serviceDao);
+        }).when(viewDao).findViewsByDatamart(any(), any(), any());
+        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade);
         val replacer = new LogicViewReplacerImpl(definitionService, new SqlSnapshotReplacerImpl(), loader);
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
                 "FROM view FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' v";

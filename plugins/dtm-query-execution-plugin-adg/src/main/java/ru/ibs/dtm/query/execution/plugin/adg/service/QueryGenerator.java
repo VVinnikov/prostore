@@ -4,6 +4,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import org.apache.calcite.rel.RelRoot;
 import ru.ibs.dtm.common.calcite.CalciteContext;
+import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.dto.schema.SchemaDescription;
 
 import java.util.List;
@@ -15,5 +16,5 @@ public interface QueryGenerator {
   /**
    * Преобразовать запрос
    */
-  void mutateQuery(RelRoot sqlNode, List<Long> selectOn, SchemaDescription schemaDescription, CalciteContext calciteContext, Handler<AsyncResult<String>> handler);
+  void mutateQuery(RelRoot sqlNode, List<Long> selectOn, SchemaDescription schemaDescription, CalciteContext calciteContext, QueryRequest queryRequest, Handler<AsyncResult<String>> handler);
 }

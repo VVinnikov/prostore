@@ -25,7 +25,6 @@ public class DeltaInformationExtractor {
     private static final SqlDialect DIALECT = new SqlDialect(CalciteSqlDialect.EMPTY_CONTEXT);
     private static final DateTimeFormatter LOCAL_DATE_TIME = new DateTimeFormatterBuilder()
             .parseCaseInsensitive()
-            .appendLiteral("'")
             .append(ISO_LOCAL_DATE)
             .appendLiteral(' ')
             .appendValue(HOUR_OF_DAY, 2)
@@ -34,7 +33,6 @@ public class DeltaInformationExtractor {
             .optionalStart()
             .appendLiteral(':')
             .appendValue(SECOND_OF_MINUTE, 2)
-            .appendLiteral("'")
             .toFormatter();
 
     public static DeltaInformationResult extract(SqlNode root) {
@@ -135,7 +133,9 @@ public class DeltaInformationExtractor {
             aliasVal = alias.names.get(0);
         }
 
-        String deltaTime = snapshotTime == null ? LOCAL_DATE_TIME.format(LocalDateTime.now()) : snapshotTime;
+        String deltaTime = snapshotTime == null
+                ? LOCAL_DATE_TIME.format(LocalDateTime.now())
+                : snapshotTime.replaceAll("'", "");
 
         return new DeltaInformation(
                 aliasVal,

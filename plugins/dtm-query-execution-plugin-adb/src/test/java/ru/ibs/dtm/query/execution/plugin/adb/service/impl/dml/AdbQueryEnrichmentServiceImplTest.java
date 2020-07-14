@@ -51,7 +51,7 @@ public class AdbQueryEnrichmentServiceImplTest {
                 parserConfig,
                 new AdbCalciteSchemaFactory(new AdbSchemaFactory()));
 
-        AdbQueryGeneratorImpl adbQueryGeneratorimpl = new AdbQueryGeneratorImpl(queryExtender);
+        AdbQueryGeneratorImpl adbQueryGeneratorimpl = new AdbQueryGeneratorImpl(queryExtender, calciteConfiguration.adbSqlDialect());
         QueryParserService queryParserService = new AdbCalciteDMLQueryParserService(contextProvider, Vertx.vertx());
         adbQueryEnrichmentService = new AdbQueryEnrichmentServiceImpl(
                 queryParserService,

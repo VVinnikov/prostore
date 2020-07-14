@@ -1,13 +1,14 @@
 package ru.ibs.dtm.query.execution.plugin.adg.service.impl.enrichment;
 
-import org.springframework.stereotype.Service;
-import ru.ibs.dtm.common.reader.QueryRequest;
-import ru.ibs.dtm.query.execution.model.metadata.*;
-import ru.ibs.dtm.query.execution.plugin.adg.service.SchemaExtender;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import lombok.val;
+import org.springframework.stereotype.Service;
+import ru.ibs.dtm.common.reader.QueryRequest;
+import ru.ibs.dtm.query.execution.model.metadata.*;
+import ru.ibs.dtm.query.execution.plugin.adg.factory.AdgHelperTableNamesFactory;
+import ru.ibs.dtm.query.execution.plugin.adg.service.SchemaExtender;
 
 import static ru.ibs.dtm.query.execution.plugin.adg.constants.ColumnFields.*;
 
@@ -17,6 +18,11 @@ import static ru.ibs.dtm.query.execution.plugin.adg.constants.ColumnFields.*;
  */
 @Service("adgSchemaExtender")
 public class AdgSchemaExtenderImpl implements SchemaExtender {
+  private final AdgHelperTableNamesFactory helperTableNamesFactory;
+
+  public AdgSchemaExtenderImpl(AdgHelperTableNamesFactory helperTableNamesFactory) {
+    this.helperTableNamesFactory = helperTableNamesFactory;
+  }
 
   @Override
   public Datamart generatePhysicalSchema(Datamart datamart, QueryRequest queryRequest) {
@@ -24,25 +30,26 @@ public class AdgSchemaExtenderImpl implements SchemaExtender {
     extendedSchema.setMnemonic(datamart.getMnemonic());
     extendedSchema.setId(UUID.randomUUID());
     List<DatamartClass> extendedDatamartClasses = new ArrayList<>();
-    String prefix = queryRequest.getSystemName() + "_" + queryRequest.getDatamartMnemonic() + "_";
-
     datamart.getDatamartClassess().forEach(dmClass -> {
+      val helperTableNames = helperTableNamesFactory.create(queryRequest.getSystemName(),
+              queryRequest.getDatamartMnemonic(),
+              dmClass.getLabel());
       dmClass.setMnemonic(dmClass.getMnemonic());
       dmClass.getClassAttributes().addAll(getExtendedColumns());
       extendedDatamartClasses.add(dmClass);
-      extendedDatamartClasses.add(getExtendedSchema(dmClass, prefix, HISTORY_POSTFIX));
-      extendedDatamartClasses.add(getExtendedSchema(dmClass, prefix, STAGING_POSTFIX));
-      extendedDatamartClasses.add(getExtendedSchema(dmClass, prefix, ACTUAL_POSTFIX));
+      extendedDatamartClasses.add(getExtendedSchema(dmClass, helperTableNames.getHistory()));
+      extendedDatamartClasses.add(getExtendedSchema(dmClass, helperTableNames.getStaging()));
+      extendedDatamartClasses.add(getExtendedSchema(dmClass, helperTableNames.getActual()));
     });
     extendedSchema.setDatamartClassess(extendedDatamartClasses);
 
     return extendedSchema;
   }
 
-  private DatamartClass getExtendedSchema(DatamartClass datamartClass, String prefix, String tablePostfix) {
+  private DatamartClass getExtendedSchema(DatamartClass datamartClass, String tableName) {
     DatamartClass datamartClassExtended = new DatamartClass();
     datamartClassExtended.setLabel(datamartClass.getLabel());
-    datamartClassExtended.setMnemonic(prefix + datamartClass.getLabel() + tablePostfix);
+    datamartClassExtended.setMnemonic(tableName);
     datamartClassExtended.setId(UUID.randomUUID());
     List<ClassAttribute> classAttributeList = new ArrayList<>();
     datamartClass.getClassAttributes().forEach(classAttr -> {

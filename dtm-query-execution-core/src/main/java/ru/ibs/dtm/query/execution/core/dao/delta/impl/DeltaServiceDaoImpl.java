@@ -85,7 +85,8 @@ public class DeltaServiceDaoImpl implements DeltaServiceDao {
                 .where(DELTA_DATA.DATAMART_MNEMONICS.equalIgnoreCase(actualDeltaRequest.getDatamart()))
                 .and(DELTA_DATA.STATUS.eq(1));
         if (actualDeltaRequest.getDateTime() != null) {
-            return query.and(DELTA_DATA.SYS_DATE.le(LocalDateTime.from(LOCAL_DATE_TIME.parse(actualDeltaRequest.getDateTime()))));
+            String adt = actualDeltaRequest.getDateTime().replaceAll("'", "");
+            return query.and(DELTA_DATA.SYS_DATE.le(LocalDateTime.from(LOCAL_DATE_TIME.parse(adt))));
         }
         return query;
     }

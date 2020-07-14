@@ -1,4 +1,15 @@
-package ru.ibs.dtm.query.calcite.core.util;
+package ru.ibs.dtm.query.execution.core.service.delta;
+
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.apache.calcite.sql.*;
+import org.apache.calcite.sql.dialect.CalciteSqlDialect;
+import org.apache.calcite.sql.parser.SqlParserPos;
+import ru.ibs.dtm.common.delta.DeltaInformation;
+import ru.ibs.dtm.common.delta.DeltaInformationResult;
+import ru.ibs.dtm.query.calcite.core.extension.snapshot.SqlSnapshot;
+import ru.ibs.dtm.query.calcite.core.node.SqlSelectTree;
+import ru.ibs.dtm.query.calcite.core.node.SqlTreeNode;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -7,15 +18,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-import org.apache.calcite.sql.*;
-import org.apache.calcite.sql.dialect.CalciteSqlDialect;
-import org.apache.calcite.sql.parser.SqlParserPos;
-import ru.ibs.dtm.common.delta.DeltaInformation;
-import ru.ibs.dtm.common.delta.DeltaInformationResult;
-import ru.ibs.dtm.query.calcite.core.node.SqlSelectTree;
-import ru.ibs.dtm.query.calcite.core.node.SqlTreeNode;
 
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 import static java.time.temporal.ChronoField.*;
@@ -80,10 +82,10 @@ public class DeltaInformationExtractor {
             }
         }
         if (n.getNode() instanceof SqlIdentifier) {
-            return fromIdentifier(n.getNode(), null, null, null);
+            return fromIdentifier(n.getNode(), null, null, false, null);
         }
         if (n.getNode() instanceof SqlBasicCall) {
-            return fromIdentifier(n.getNode(), null, null, null);
+            return fromIdentifier(n.getNode(), null, null, false, null);
         } else {
             return fromSnapshot(n.getNode(), null);
         }
@@ -104,7 +106,7 @@ public class DeltaInformationExtractor {
                     basicCall.operands[0] = newId;
                     deltaInformation = fromSnapshot((SqlSnapshot) left, (SqlIdentifier) right);
                 } else if (left instanceof SqlIdentifier) {
-                    deltaInformation = fromIdentifier((SqlIdentifier) left, (SqlIdentifier) right, null, null);
+                    deltaInformation = fromIdentifier((SqlIdentifier) left, (SqlIdentifier) right, null, false, null);
                 }
             }
         }
@@ -113,13 +115,14 @@ public class DeltaInformationExtractor {
 
 
     private static DeltaInformation fromSnapshot(SqlSnapshot snapshot, SqlIdentifier alias) {
-        val snapshotTime = snapshot.getPeriod().toString().trim();
-        return fromIdentifier((SqlIdentifier) snapshot.getTableRef(), alias, snapshotTime, snapshot.getParserPosition());
+        val snapshotTime = snapshot.getPeriod() != null ? snapshot.getPeriod().toString().trim() : null;
+        return fromIdentifier((SqlIdentifier) snapshot.getTableRef(), alias, snapshotTime, snapshot.getLatestUncommitedDelta(), snapshot.getParserPosition());
     }
 
     private static DeltaInformation fromIdentifier(SqlIdentifier id,
                                                    SqlIdentifier alias,
                                                    String snapshotTime,
+                                                   boolean isLatestUncommitedDelta,
                                                    SqlParserPos pos) {
         String datamart = "";
         String tableName;
@@ -134,12 +137,15 @@ public class DeltaInformationExtractor {
         if (alias != null) {
             aliasVal = alias.names.get(0);
         }
-
-        String deltaTime = snapshotTime == null ? LOCAL_DATE_TIME.format(LocalDateTime.now()) : snapshotTime;
+        String deltaTime = null;
+        if (!isLatestUncommitedDelta) {
+            deltaTime = snapshotTime == null ? LOCAL_DATE_TIME.format(LocalDateTime.now()) : snapshotTime;
+        }
 
         return new DeltaInformation(
                 aliasVal,
                 deltaTime,
+                isLatestUncommitedDelta,
                 0L,
                 datamart,
                 tableName,

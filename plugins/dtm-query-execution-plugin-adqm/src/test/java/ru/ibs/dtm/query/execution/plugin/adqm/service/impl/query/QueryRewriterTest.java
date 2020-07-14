@@ -9,11 +9,11 @@ import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.env.AbstractEnvironment;
+import ru.ibs.dtm.common.delta.DeltaInformation;
 import ru.ibs.dtm.query.execution.plugin.adqm.calcite.CalciteContextProvider;
 import ru.ibs.dtm.query.execution.plugin.adqm.calcite.CalciteSchemaFactory;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.CalciteConfiguration;
-import ru.ibs.dtm.query.execution.plugin.adqm.dto.DeltaInformation;
 import ru.ibs.dtm.query.execution.plugin.adqm.factory.impl.SchemaFactoryImpl;
 
 import java.util.Arrays;
@@ -128,9 +128,9 @@ class QueryRewriterTest {
 
     private static List<DeltaInformation> mockDeltas() {
         return Arrays.asList(
-                new DeltaInformation("shares", "accounts", "a", "2019-12-23 15:15:14", 101L),
-                new DeltaInformation("", "balances", "b", "2019-12-23 15:15:14", 102L),
-                new DeltaInformation("shares", "transactions", "", "2020-06-10 23:59:59", 103L)
+                new DeltaInformation("a", "2019-12-23 15:15:14", false, 101L, "shares", "accounts", null),
+                new DeltaInformation("b", "2019-12-23 15:15:14", false, 102L, "shares", "balances", null),
+                new DeltaInformation("", "2020-06-10 23:59:59", false, 103L, "shares", "transactions", null)
         );
     }
 

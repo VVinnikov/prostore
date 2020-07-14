@@ -1,6 +1,7 @@
 package ru.ibs.dtm.query.execution.core.service.impl;
 
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -9,6 +10,8 @@ import ru.ibs.dtm.common.service.DeltaService;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 public class DeltaServiceImpl implements DeltaService {
@@ -27,6 +30,21 @@ public class DeltaServiceImpl implements DeltaService {
 
     @Override
     public void getDeltasOnDateTimes(List<ActualDeltaRequest> actualDeltaRequests, Handler<AsyncResult<List<Long>>> resultHandler) {
-        serviceDbFacade.getDeltaServiceDao().getDeltasOnDateTimes(actualDeltaRequests, resultHandler);
+        serviceDbFacade.getDeltaServiceDao().getDeltasOnDateTimes(actualDeltaRequests, ar -> {
+            if (ar.succeeded()) {
+                List<Long> deltas = ar.result();
+                List<Long> deltaResult = IntStream.range(0, actualDeltaRequests.size())
+                        .mapToObj(i -> {
+                            if (actualDeltaRequests.get(i).isLatestUncommitedDelta()) {
+                                return deltas.get(i) == -1 ? 0 : deltas.get(i) + 1;
+                            } else {
+                                return deltas.get(i);
+                            }
+                        }).collect(Collectors.toList());
+                resultHandler.handle(Future.succeededFuture(deltaResult));
+            } else {
+                resultHandler.handle(Future.failedFuture(ar.cause()));
+            }
+        });
     }
 }

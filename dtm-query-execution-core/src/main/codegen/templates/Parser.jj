@@ -2768,7 +2768,7 @@ SqlNode Snapshot(SqlNode tableRef) :
     { s = span();
     }
     period = Expression(ExprContext.ACCEPT_NON_QUERY) {
-        return new ru.ibs.dtm.query.execution.core.calcite.snapshot.SqlSnapshot(s.end(this), tableRef, period);
+        return new ru.ibs.dtm.query.calcite.core.extension.snapshot.SqlSnapshot(s.end(this), tableRef, period);
     }
 }
 

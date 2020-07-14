@@ -101,7 +101,7 @@ public class AdgQueryEnrichmentServiceImpl implements QueryEnrichmentService {
     String datamartMnemonic = request.getDatamartMnemonic();
     final List<ActualDeltaRequest> deltaRequests =
       tableToDateTime.values().stream()
-        .map(dateTime -> new ActualDeltaRequest(datamartMnemonic, dateTime))
+        .map(dateTime -> new ActualDeltaRequest(datamartMnemonic, dateTime, false))
         .collect(Collectors.toList());
     deltaService.getDeltasOnDateTimes(deltaRequests, handler);
   }

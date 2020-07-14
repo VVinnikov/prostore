@@ -147,7 +147,7 @@ class ServiceDaoImplIT {
 
     @Test
     void getDeltaOnDateTime(VertxTestContext testContext) throws Throwable {
-        serviceDbFacade.getDeltaServiceDao().getDeltaOnDateTime(new ActualDeltaRequest("test_datamart", "2020-03-26 11:30:26"), ar -> {
+        serviceDbFacade.getDeltaServiceDao().getDeltaOnDateTime(new ActualDeltaRequest("test_datamart", "2020-03-26 11:30:26", false), ar -> {
             if (ar.succeeded()) {
                 testContext.completeNow();
             } else {
@@ -160,10 +160,10 @@ class ServiceDaoImplIT {
     @Test
     void getDeltasOnDateTimes(VertxTestContext testContext) throws Throwable {
         final List<ActualDeltaRequest> requests = Arrays.asList(
-                new ActualDeltaRequest("dm2", "2020-04-15 07:00:00"),
-                new ActualDeltaRequest("dm3", "2020-04-01 07:00:00"),
-                new ActualDeltaRequest("dm2", "2020-03-01 07:00:00"),
-                new ActualDeltaRequest("dmX", "2020-04-01 07:00:00")
+                new ActualDeltaRequest("dm2", "2020-04-15 07:00:00", false),
+                new ActualDeltaRequest("dm3", "2020-04-01 07:00:00", false),
+                new ActualDeltaRequest("dm2", "2020-03-01 07:00:00", false),
+                new ActualDeltaRequest("dmX", "2020-04-01 07:00:00", false)
         );
         serviceDbFacade.getDeltaServiceDao().getDeltasOnDateTimes(requests, ar -> {
             if (ar.succeeded()) {

@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.delta.DeltaInformation;
 import ru.ibs.dtm.common.delta.DeltaInformationResult;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
-import ru.ibs.dtm.query.calcite.core.util.DeltaInformationExtractor;
+import ru.ibs.dtm.query.execution.core.service.delta.DeltaInformationExtractor;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import ru.ibs.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
 

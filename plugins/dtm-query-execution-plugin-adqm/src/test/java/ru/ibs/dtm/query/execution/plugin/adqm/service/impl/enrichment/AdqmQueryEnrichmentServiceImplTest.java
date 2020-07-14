@@ -5,9 +5,9 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import ru.ibs.dtm.common.delta.DeltaInformation;
 import ru.ibs.dtm.common.dto.ActualDeltaRequest;
 import ru.ibs.dtm.common.service.DeltaService;
-import ru.ibs.dtm.query.execution.plugin.adqm.dto.DeltaInformation;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -51,9 +51,9 @@ class AdqmQueryEnrichmentServiceImplTest {
     @Test
     public void testCalcDeltaValues() {
         List<DeltaInformation> deltas = Arrays.asList(
-                new DeltaInformation("test", "table1", "t1", "2020-01-01 16:00:00", 0L),
-                new DeltaInformation("test", "table1", "t2", "2020-02-01 16:00:00", 0L),
-                new DeltaInformation("test", "table2", "t3", "2020-03-01 16:00:00", 0L)
+                new DeltaInformation("t1", "2020-01-01 16:00:00", false, 0L, "test", "table1", null),
+                new DeltaInformation("t2", "2020-02-01 16:00:00", false, 0L, "test", "table1", null),
+                new DeltaInformation("t3", "2020-03-01 16:00:00", false, 0L, "test", "table2", null)
         );
 
         enrichmentService.calculateDeltaValues(deltas, ar -> {

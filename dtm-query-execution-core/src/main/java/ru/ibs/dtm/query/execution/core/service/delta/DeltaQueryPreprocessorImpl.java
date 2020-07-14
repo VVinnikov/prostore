@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.calcite.core.service.impl;
+package ru.ibs.dtm.query.execution.core.service.delta;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -16,7 +16,6 @@ import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.service.DeltaService;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
-import ru.ibs.dtm.query.calcite.core.util.DeltaInformationExtractor;
 
 @Slf4j
 public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
@@ -64,7 +63,7 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
     private void calculateDeltaValues(List<DeltaInformation> deltas,
                                       Handler<AsyncResult<List<DeltaInformation>>> handler) {
         val requests = deltas.stream()
-                .map(d -> new ActualDeltaRequest(d.getSchemaName(), d.getDeltaTimestamp()))
+                .map(d -> new ActualDeltaRequest(d.getSchemaName(), d.getDeltaTimestamp(), d.isLatestUncommitedDelta()))
                 .collect(Collectors.toList());
 
         deltaService.getDeltasOnDateTimes(requests, ar -> {

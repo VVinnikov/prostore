@@ -5,9 +5,9 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import ru.ibs.dtm.common.delta.DeltaInformation;
 import ru.ibs.dtm.common.dto.ActualDeltaRequest;
 import ru.ibs.dtm.common.service.DeltaService;
-import ru.ibs.dtm.query.execution.plugin.adqm.dto.DeltaInformation;
 import ru.ibs.dtm.query.execution.plugin.adqm.dto.EnrichQueryRequest;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.QueryEnrichmentService;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.impl.query.QueryPreprocessor;
@@ -65,7 +65,7 @@ public class AdqmQueryEnrichmentServiceImpl implements QueryEnrichmentService {
                               Handler<AsyncResult<List<DeltaInformation>>> handler) {
 
         List<ActualDeltaRequest> requests = deltas.stream()
-                .map(d -> new ActualDeltaRequest(d.getSchemaName(), d.getDeltaTimestamp()))
+                .map(d -> new ActualDeltaRequest(d.getSchemaName(), d.getDeltaTimestamp(), d.isLatestUncommitedDelta()))
                 .collect(Collectors.toList());
 
         deltaService.getDeltasOnDateTimes(requests, ar -> {

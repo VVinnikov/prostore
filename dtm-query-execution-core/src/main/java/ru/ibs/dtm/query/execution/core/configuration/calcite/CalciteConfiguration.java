@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Configuration;
 import ru.ibs.dtm.common.service.DeltaService;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
-import ru.ibs.dtm.query.calcite.core.service.impl.DeltaQueryPreprocessorImpl;
+import ru.ibs.dtm.query.execution.core.service.delta.DeltaQueryPreprocessorImpl;
 import ru.ibs.dtm.query.execution.core.calcite.eddl.parser.SqlEddlParserImpl;
 
 @Configuration

@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.calcite.snapshot;
+package ru.ibs.dtm.query.calcite.core.extension.snapshot;
 
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -24,7 +24,7 @@ public class SnapshotOperator extends SqlOperator {
     public SqlCall createCall(SqlLiteral functionQualifier, SqlParserPos pos, SqlNode... operands) {
         assert functionQualifier == null;
         assert operands.length == 2;
-        return new ru.ibs.dtm.query.execution.core.calcite.snapshot.SqlSnapshot(pos, operands[0], operands[1]);
+        return new ru.ibs.dtm.query.calcite.core.extension.snapshot.SqlSnapshot(pos, operands[0], operands[1]);
     }
 
     public <R> void acceptCall(SqlVisitor<R> visitor, SqlCall call, boolean onlyExpressions, SqlBasicVisitor.ArgHandler<R> argHandler) {
@@ -40,8 +40,8 @@ public class SnapshotOperator extends SqlOperator {
     }
 
     public void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
-        ru.ibs.dtm.query.execution.core.calcite.snapshot.SqlSnapshot snapshot =
-                (ru.ibs.dtm.query.execution.core.calcite.snapshot.SqlSnapshot) call;
+        ru.ibs.dtm.query.calcite.core.extension.snapshot.SqlSnapshot snapshot =
+                (ru.ibs.dtm.query.calcite.core.extension.snapshot.SqlSnapshot) call;
         snapshot.getTableRef().unparse(writer, 0, 0);
     }
 }

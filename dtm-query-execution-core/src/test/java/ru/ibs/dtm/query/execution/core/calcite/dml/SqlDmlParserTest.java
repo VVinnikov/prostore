@@ -10,7 +10,7 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Planner;
 import org.junit.jupiter.api.Test;
-import ru.ibs.dtm.query.execution.core.calcite.snapshot.SqlSnapshot;
+import ru.ibs.dtm.query.calcite.core.extension.snapshot.SqlSnapshot;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 
 import static org.junit.jupiter.api.Assertions.*;

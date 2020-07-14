@@ -1,6 +1,9 @@
-package ru.ibs.dtm.query.execution.core.calcite.snapshot;
+package ru.ibs.dtm.query.calcite.core.extension.snapshot;
 
-import org.apache.calcite.sql.*;
+import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.ImmutableNullableList;
 import ru.ibs.dtm.common.calcite.SnapshotType;
@@ -10,7 +13,7 @@ import java.util.Objects;
 
 public class SqlSnapshot extends SqlCall {
 
-    private final SnapshotOperator snapshotOperator;
+    private final ru.ibs.dtm.query.calcite.core.extension.snapshot.SnapshotOperator snapshotOperator;
     private SqlNode tableRef;
     private SqlNode period;
     private Boolean isLatestUncommitedDelta;
@@ -20,7 +23,7 @@ public class SqlSnapshot extends SqlCall {
         this.tableRef = (SqlNode) Objects.requireNonNull(tableRef);
         this.period = (SqlNode) Objects.requireNonNull(period);
         this.isLatestUncommitedDelta = isLatestUncommitedDelta(this.period);
-        this.snapshotOperator = new SnapshotOperator();
+        this.snapshotOperator = new ru.ibs.dtm.query.calcite.core.extension.snapshot.SnapshotOperator();
     }
 
     @Override
@@ -47,16 +50,24 @@ public class SqlSnapshot extends SqlCall {
                 this.tableRef = (SqlNode) Objects.requireNonNull(operand);
                 break;
             case 1:
-                this.period = (SqlNode) Objects.requireNonNull(operand);
-                this.isLatestUncommitedDelta = isLatestUncommitedDelta(this.period);
+                this.isLatestUncommitedDelta = isLatestUncommitedDelta((SqlNode) Objects.requireNonNull(operand));
+                this.period = getPeriod(operand, this.isLatestUncommitedDelta);
                 break;
             default:
                 throw new AssertionError(i);
         }
     }
 
-    private Boolean isLatestUncommitedDelta(SqlNode period){
+    private Boolean isLatestUncommitedDelta(SqlNode period) {
         return period.toString().equals(SnapshotType.LATEST_UNCOMMITED_DELTA.toString().toLowerCase());
+    }
+
+    private SqlNode getPeriod(SqlNode operand, Boolean isLatestUncommitedDelta) {
+        if (isLatestUncommitedDelta) {
+            return null;
+        } else {
+            return (SqlNode) Objects.requireNonNull(operand);
+        }
     }
 
     public Boolean getLatestUncommitedDelta() {

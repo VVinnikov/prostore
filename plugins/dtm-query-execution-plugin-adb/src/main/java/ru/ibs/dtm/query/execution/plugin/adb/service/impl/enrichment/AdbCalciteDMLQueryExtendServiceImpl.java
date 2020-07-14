@@ -20,9 +20,6 @@ import static ru.ibs.dtm.query.execution.plugin.adb.factory.impl.MetadataSqlFact
 public class AdbCalciteDMLQueryExtendServiceImpl implements QueryExtendService {
     @Override
     public RelNode extendQuery(QueryGeneratorContext context) {
-        if (!context.getDeltaIterator().hasNext()) {
-            throw new RuntimeException("Не определены параметры для обогащения запроса");
-        }
         context.getRelBuilder().clear();
         val relNode = iterateTree(context, context.getRelNode().rel);
         context.getRelBuilder().clear();
@@ -35,7 +32,12 @@ public class AdbCalciteDMLQueryExtendServiceImpl implements QueryExtendService {
         val newInput = new ArrayList<RelNode>();
         if (node.getInputs() == null || node.getInputs().isEmpty()) {
             if (node instanceof TableScan) {
+                if (!context.getDeltaIterator().hasNext()) {
+                    throw new RuntimeException("Не определены параметры для обогащения запроса");
+                }
                 relBuilder.push(insertModifiedTableScan(relBuilder, node, deltaIterator.next().getDeltaNum()));
+            } else {
+                relBuilder.push(node);
             }
             return relBuilder.build();
         }

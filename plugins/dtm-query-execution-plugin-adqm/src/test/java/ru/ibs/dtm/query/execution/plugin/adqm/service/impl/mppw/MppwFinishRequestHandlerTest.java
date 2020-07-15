@@ -59,8 +59,8 @@ class MppwFinishRequestHandlerTest {
         loadParam.setTableName("accounts");
         loadParam.setDeltaHot(101L);
 
-        MppwRequest request = new MppwRequest(null, loadParam, null);
+        MppwRequest request = new MppwRequest(null, loadParam, new JsonObject());
 
-        handler.execute(request).onComplete(ar -> Assertions.assertTrue(ar.succeeded()));
+        handler.execute(request).onComplete(ar -> Assertions.assertTrue(ar.succeeded(), ar.cause() != null ? ar.cause().getMessage() : ""));
     }
 }

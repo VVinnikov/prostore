@@ -7,7 +7,6 @@ import io.vertx.core.Promise;
 import io.vertx.core.json.JsonArray;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * Сервис исполнения запросов

@@ -68,13 +68,13 @@ class LogicalSchemaServiceImplTest {
                 " join test_datamart.doc t2 on t1.id = t2.id");
         DatamartTable pso = new DatamartTable();
         pso.setLabel("pso");
-        pso.setSchema("test_datamart");
+        pso.setMnemonic("test_datamart");
         List<TableAttribute> psoAttrs = Arrays.asList(new TableAttribute(UUID.randomUUID(), "id",
                 new AttributeType(UUID.randomUUID(), ColumnType.INTEGER), 0, 0, 1, null));
         pso.setTableAttributes(psoAttrs);
         DatamartTable doc = new DatamartTable();
         doc.setLabel("doc");
-        doc.setSchema("test_datamart");
+        doc.setMnemonic("test_datamart");
         List<TableAttribute> docAttrs = Arrays.asList(new TableAttribute(UUID.randomUUID(), "id",
                 new AttributeType(UUID.randomUUID(), ColumnType.INTEGER), 0, 0, null, 1));
         doc.setTableAttributes(docAttrs);
@@ -124,7 +124,7 @@ class LogicalSchemaServiceImplTest {
         assertNotNull(schemaMap);
         schemaMap.forEach((k, v) -> {
             assertEquals(resultSchemaMap.get(k).getLabel(), v.getLabel());
-            assertEquals(resultSchemaMap.get(k).getSchema(), v.getSchema());
+            assertEquals(resultSchemaMap.get(k).getMnemonic(), v.getMnemonic());
             assertEquals(resultSchemaMap.get(k).getTableAttributes().get(0).getMnemonic(), v.getTableAttributes().get(0).getMnemonic());
             assertEquals(resultSchemaMap.get(k).getTableAttributes().get(0).getType().getValue(), v.getTableAttributes().get(0).getType().getValue());
             assertEquals(resultSchemaMap.get(k).getTableAttributes().get(0).getPrimaryKeyOrder(), v.getTableAttributes().get(0).getPrimaryKeyOrder());

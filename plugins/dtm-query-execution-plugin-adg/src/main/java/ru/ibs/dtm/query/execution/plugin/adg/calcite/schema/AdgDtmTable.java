@@ -9,10 +9,10 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import ru.ibs.dtm.query.calcite.core.schema.DtmTable;
 import ru.ibs.dtm.query.calcite.core.schema.QueryableSchema;
-import ru.ibs.dtm.query.execution.model.metadata.DatamartClass;
+import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;
 
 public class AdgDtmTable extends DtmTable {
-    public AdgDtmTable(QueryableSchema dtmSchema, DatamartClass datamartClass) {
+    public AdgDtmTable(QueryableSchema dtmSchema, DatamartTable datamartClass) {
         super(dtmSchema, datamartClass);
     }
 

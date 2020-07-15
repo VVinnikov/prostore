@@ -33,37 +33,27 @@ public class AdqmQueryEnrichmentServiceImpl implements QueryEnrichmentService {
     @Override
     public void enrich(EnrichQueryRequest request, Handler<AsyncResult<String>> asyncHandler) {
         // FIXME rewrite to the Future's compose instead of callback hell
-        try {
-            Datamart logicalSchema;
-            try {
-                logicalSchema = request.getSchema().mapTo(Datamart.class);
-            } catch (Exception ex) {
-                log.error("Ошибка десериализации схемы");
-                asyncHandler.handle(Future.failedFuture(ex));
-                return;
+        //FIXME исправить после реализации использования нескольких схем
+        Datamart logicalSchema = request.getSchema().get(0);
+        queryParserService.parse(new QueryParserRequest(request.getQueryRequest(), logicalSchema), ar -> {
+            if (ar.succeeded()) {
+                val parserResponse = ar.result();
+                contextProvider.enrichContext(parserResponse.getCalciteContext(), logicalSchema);
+
+                // 2. Modify query - add filter for sys_from/sys_to columns based on deltas
+                // 3. Modify query - duplicate via union all (with sub queries) and rename table names to physical names
+                // 4. Modify query - rename schemas to physical name
+                queryRewriter.rewrite(request.getQueryRequest().getSql(), parserResponse.getQueryRequest().getDeltaInformations(), ar3 -> {
+                    if (ar3.failed()) {
+                        asyncHandler.handle(Future.failedFuture(ar3.cause()));
+                    }
+
+                    asyncHandler.handle(Future.succeededFuture(ar3.result()));
+                });
+
+            } else {
+                asyncHandler.handle(Future.failedFuture(ar.cause()));
             }
-            queryParserService.parse(new QueryParserRequest(request.getQueryRequest(), logicalSchema), ar -> {
-                if (ar.succeeded()) {
-                    val parserResponse = ar.result();
-                    contextProvider.enrichContext(parserResponse.getCalciteContext(), logicalSchema);
-
-                    // 2. Modify query - add filter for sys_from/sys_to columns based on deltas
-                    // 3. Modify query - duplicate via union all (with sub queries) and rename table names to physical names
-                    // 4. Modify query - rename schemas to physical name
-                    queryRewriter.rewrite(request.getQueryRequest().getSql(), parserResponse.getQueryRequest().getDeltaInformations(), ar3 -> {
-                        if (ar3.failed()) {
-                            asyncHandler.handle(Future.failedFuture(ar3.cause()));
-                        }
-
-                        asyncHandler.handle(Future.succeededFuture(ar3.result()));
-                    });
-
-                } else {
-                    asyncHandler.handle(Future.failedFuture(ar.cause()));
-                }
-            });
-        } catch (Exception ex) {
-            asyncHandler.handle(Future.failedFuture(ex));
-        }
+        });
     }
 }

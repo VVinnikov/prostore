@@ -163,14 +163,15 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
 
     @NotNull
     private DatamartSchemaKey createDatamartSchemaKey(DatamartTable datamartTable) {
-        return new DatamartSchemaKey(datamartTable.getSchema(), datamartTable.getLabel());
+        return new DatamartSchemaKey(datamartTable.getDatamartMnemonic(), datamartTable.getLabel());
     }
 
     @NotNull
     private DatamartTable createDatamartTable(DatamartEntity table) {
         final DatamartTable dmTable = new DatamartTable();
         dmTable.setId(UUID.randomUUID());
-        dmTable.setSchema(table.getDatamartMnemonic());
+        dmTable.setDatamartMnemonic(table.getDatamartMnemonic());
+        dmTable.setMnemonic(table.getMnemonic());
         dmTable.setLabel(table.getMnemonic());
         dmTable.setTableAttributes(new ArrayList<>());
         return dmTable;

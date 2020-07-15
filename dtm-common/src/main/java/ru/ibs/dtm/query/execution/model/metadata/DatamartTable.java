@@ -16,11 +16,15 @@ import java.util.UUID;
 public class DatamartTable {
     private UUID id;
     /**
+     * Имя таблицы
+     */
+    private String mnemonic;
+    /**
      * Имя схемы
      */
-    private String schema;
+    private String datamartMnemonic;
     /**
-     * Имя таблицы
+     * Label таблицы
      */
     private String label;
     /**

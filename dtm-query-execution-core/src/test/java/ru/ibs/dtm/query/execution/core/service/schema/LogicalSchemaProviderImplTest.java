@@ -41,7 +41,7 @@ class LogicalSchemaProviderImplTest {
         final Map<DatamartSchemaKey, DatamartTable> datamartTableMap = new HashMap<>();
         DatamartTable table1 = new DatamartTable();
         table1.setId(UUID.randomUUID());
-        table1.setSchema("test");
+        table1.setMnemonic("test");
         table1.setLabel("pso");
         TableAttribute attr = new TableAttribute();
         attr.setId(UUID.randomUUID());
@@ -60,7 +60,7 @@ class LogicalSchemaProviderImplTest {
         attr2.setDistributeKeyOrder(1);
         DatamartTable table2 = new DatamartTable();
         table2.setId(UUID.randomUUID());
-        table2.setSchema("test");
+        table2.setMnemonic("test");
         table2.setLabel("doc");
         table2.setTableAttributes(Collections.singletonList(attr2));
         datamartTableMap.put(new DatamartSchemaKey("test", "doc"), table2);

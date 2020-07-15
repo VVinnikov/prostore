@@ -38,7 +38,7 @@ public class AdbSchemaExtenderImpl implements SchemaExtender {
   private DatamartTable getExtendedSchema(DatamartTable datamartTable, String tablePostfix) {
     DatamartTable datamartTableExtended = new DatamartTable();
     datamartTableExtended.setLabel(datamartTable.getLabel());
-    datamartTableExtended.setSchema(datamartTable.getLabel() + tablePostfix);
+    datamartTableExtended.setMnemonic(datamartTable.getLabel() + tablePostfix);
     datamartTableExtended.setId(UUID.randomUUID());
     List<TableAttribute> tableAttributeList = new ArrayList<>();
     datamartTable.getTableAttributes().forEach(classAttr -> {

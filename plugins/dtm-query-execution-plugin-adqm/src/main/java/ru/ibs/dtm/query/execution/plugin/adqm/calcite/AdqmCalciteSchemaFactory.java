@@ -6,7 +6,7 @@ import ru.ibs.dtm.query.calcite.core.factory.SchemaFactory;
 import ru.ibs.dtm.query.calcite.core.factory.impl.CalciteSchemaFactory;
 import ru.ibs.dtm.query.calcite.core.schema.DtmTable;
 import ru.ibs.dtm.query.calcite.core.schema.QueryableSchema;
-import ru.ibs.dtm.query.execution.model.metadata.DatamartClass;
+import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;
 import ru.ibs.dtm.query.execution.plugin.adqm.calcite.schema.AdqmDtmTable;
 
 @Service("adqmCalciteSchemaFactory")
@@ -17,7 +17,7 @@ public class AdqmCalciteSchemaFactory extends CalciteSchemaFactory {
     }
 
     @Override
-    protected DtmTable createTable(QueryableSchema schema, DatamartClass datamartClass) {
+    protected DtmTable createTable(QueryableSchema schema, DatamartTable datamartClass) {
         return new AdqmDtmTable(schema, datamartClass);
     }
 }

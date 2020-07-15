@@ -30,22 +30,14 @@ public class AdgSchemaExtenderImpl implements SchemaExtender {
     extendedSchema.setMnemonic(datamart.getMnemonic());
     extendedSchema.setId(UUID.randomUUID());
     List<DatamartTable> extendedDatamartTables = new ArrayList<>();
-    String prefix = queryRequest.getSystemName() + "_" + queryRequest.getDatamartMnemonic() + "_";
 
+    List<DatamartTable> extendedDatamartClasses = new ArrayList<>();
     datamart.getDatamartTables().forEach(dmClass -> {
-      dmClass.setSchema(dmClass.getSchema());
-      dmClass.getTableAttributes().addAll(getExtendedColumns());
-      extendedDatamartTables.add(dmClass);
-      extendedDatamartTables.add(getExtendedSchema(dmClass, prefix, HISTORY_POSTFIX));
-      extendedDatamartTables.add(getExtendedSchema(dmClass, prefix, STAGING_POSTFIX));
-      extendedDatamartTables.add(getExtendedSchema(dmClass, prefix, ACTUAL_POSTFIX));
-    List<DatamartClass> extendedDatamartClasses = new ArrayList<>();
-    datamart.getDatamartClassess().forEach(dmClass -> {
       val helperTableNames = helperTableNamesFactory.create(queryRequest.getSystemName(),
               queryRequest.getDatamartMnemonic(),
               dmClass.getLabel());
       dmClass.setMnemonic(dmClass.getMnemonic());
-      dmClass.getClassAttributes().addAll(getExtendedColumns());
+      dmClass.getTableAttributes().addAll(getExtendedColumns());
       extendedDatamartClasses.add(dmClass);
       extendedDatamartClasses.add(getExtendedSchema(dmClass, helperTableNames.getHistory()));
       extendedDatamartClasses.add(getExtendedSchema(dmClass, helperTableNames.getStaging()));
@@ -56,10 +48,10 @@ public class AdgSchemaExtenderImpl implements SchemaExtender {
     return extendedSchema;
   }
 
-  private DatamartTable getExtendedSchema(DatamartTable datamartTable, String prefix, String tablePostfix) {
+  private DatamartTable getExtendedSchema(DatamartTable datamartTable, String tableName) {
     DatamartTable datamartTableExtended = new DatamartTable();
     datamartTableExtended.setLabel(datamartTable.getLabel());
-    datamartTableExtended.setSchema(prefix + datamartTable.getLabel() + tablePostfix);
+    datamartTableExtended.setMnemonic(tableName);
     datamartTableExtended.setId(UUID.randomUUID());
     List<TableAttribute> tableAttributeList = new ArrayList<>();
     datamartTable.getTableAttributes().forEach(classAttr -> {

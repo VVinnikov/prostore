@@ -9,6 +9,8 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestOptions;
 import io.vertx.ext.unit.TestSuite;
 import io.vertx.ext.unit.report.ReportOptions;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;

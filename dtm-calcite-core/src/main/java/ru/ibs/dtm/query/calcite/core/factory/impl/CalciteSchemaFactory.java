@@ -20,7 +20,7 @@ public abstract class CalciteSchemaFactory {
         root.getDatamartTables().forEach(it -> {
             try {
                 DtmTable table = createTable(dtmSchema, it);
-                schemaPlus.add(it.getSchema(), table);
+                schemaPlus.add(it.getMnemonic(), table);
             } catch (Exception e) {
                 throw new RuntimeException("Ошибка инициализации таблицы $metaTable", e);
             }

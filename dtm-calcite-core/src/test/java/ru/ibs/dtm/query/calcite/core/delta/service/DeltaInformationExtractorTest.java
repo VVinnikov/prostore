@@ -1,32 +1,44 @@
-package ru.ibs.dtm.query.execution.core.service.delta;
+package ru.ibs.dtm.query.calcite.core.delta.service;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.calcite.avatica.util.Casing;
+import org.apache.calcite.avatica.util.Quoting;
+import org.apache.calcite.config.Lex;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Planner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.delta.DeltaInformationResult;
-import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
+import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
+import ru.ibs.dtm.query.calcite.core.util.DeltaInformationExtractor;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 class DeltaInformationExtractorTest {
 
-    private CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
-    private SqlParser.Config parserConfig = calciteConfiguration.configEddlParser(
-            calciteConfiguration.eddlParserImplFactory()
-    );
+    private CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
+    private SqlParser.Config parserConfig;
     public static final String FOR_SYSTEM_TIME = "FOR SYSTEM_TIME";
     private Planner planner;
 
     @BeforeEach
     void setUp() {
+        parserConfig = SqlParser.configBuilder()
+                .setParserFactory(calciteCoreConfiguration.eddlParserImplFactory())
+                .setConformance(SqlConformanceEnum.DEFAULT)
+                .setLex(Lex.MYSQL)
+                .setCaseSensitive(false)
+                .setUnquotedCasing(Casing.TO_LOWER)
+                .setQuotedCasing(Casing.TO_LOWER)
+                .setQuoting(Quoting.DOUBLE_QUOTE)
+                .build();
         Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
         planner = Frameworks.getPlanner(frameworkConfig);

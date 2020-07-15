@@ -8,7 +8,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.query.calcite.core.node.SqlSelectTree;
-import ru.ibs.dtm.query.execution.core.service.delta.DeltaInformationExtractor;
+import ru.ibs.dtm.query.calcite.core.util.DeltaInformationExtractor;
 
 @Slf4j
 @Component

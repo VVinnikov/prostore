@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.service.delta;
+package ru.ibs.dtm.query.calcite.core.service.impl;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -16,6 +16,7 @@ import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.service.DeltaService;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
+import ru.ibs.dtm.query.calcite.core.util.DeltaInformationExtractor;
 
 @Slf4j
 public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {

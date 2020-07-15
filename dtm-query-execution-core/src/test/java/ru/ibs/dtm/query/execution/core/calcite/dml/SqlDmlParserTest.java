@@ -10,6 +10,7 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Planner;
 import org.junit.jupiter.api.Test;
+import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import ru.ibs.dtm.query.calcite.core.extension.snapshot.SqlSnapshot;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 
@@ -18,8 +19,9 @@ import static org.junit.jupiter.api.Assertions.*;
 public class SqlDmlParserTest {
     private static final SqlDialect SQL_DIALECT = new SqlDialect(SqlDialect.EMPTY_CONTEXT);
     private CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
+    private CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private SqlParser.Config parserConfig = calciteConfiguration.configEddlParser(
-            calciteConfiguration.eddlParserImplFactory()
+            calciteCoreConfiguration.eddlParserImplFactory()
     );
 
     @Test

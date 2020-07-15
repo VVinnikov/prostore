@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.service.delta;
+package ru.ibs.dtm.query.calcite.core.util;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -27,7 +27,6 @@ public class DeltaInformationExtractor {
     private static final SqlDialect DIALECT = new SqlDialect(CalciteSqlDialect.EMPTY_CONTEXT);
     private static final DateTimeFormatter LOCAL_DATE_TIME = new DateTimeFormatterBuilder()
             .parseCaseInsensitive()
-            .appendLiteral("'")
             .append(ISO_LOCAL_DATE)
             .appendLiteral(' ')
             .appendValue(HOUR_OF_DAY, 2)
@@ -36,7 +35,6 @@ public class DeltaInformationExtractor {
             .optionalStart()
             .appendLiteral(':')
             .appendValue(SECOND_OF_MINUTE, 2)
-            .appendLiteral("'")
             .toFormatter();
 
     public static DeltaInformationResult extract(SqlNode root) {

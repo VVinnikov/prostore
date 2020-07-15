@@ -18,9 +18,9 @@ import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.util.Pair;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.calcite.CalciteContext;
+import ru.ibs.dtm.common.delta.DeltaInformation;
 import ru.ibs.dtm.query.execution.plugin.adqm.calcite.CalciteContextProvider;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
-import ru.ibs.dtm.query.execution.plugin.adqm.dto.DeltaInformation;
 
 import java.util.ArrayList;
 import java.util.Arrays;

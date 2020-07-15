@@ -8,8 +8,8 @@ import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.calcite.CalciteContext;
+import ru.ibs.dtm.common.delta.DeltaInformation;
 import ru.ibs.dtm.query.execution.plugin.adqm.calcite.CalciteContextProvider;
-import ru.ibs.dtm.query.execution.plugin.adqm.dto.DeltaInformation;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -65,8 +65,8 @@ public class QueryPreprocessor {
         }
 
         if (from instanceof SqlBasicCall) {
-           SqlKind kind = from.getKind();
-           if (kind == SqlKind.AS) {
+            SqlKind kind = from.getKind();
+            if (kind == SqlKind.AS) {
                 if (((SqlBasicCall) from).operands.length != 2) {
                     log.warn("Suspicious AS relation {}", from);
                     return;
@@ -80,21 +80,21 @@ public class QueryPreprocessor {
                     return;
                 }
 
-               if (left instanceof SqlSelect) {
-                   log.debug("Going to the next level, {}", left);
-                   processFrom(((SqlSelect) left).getFrom(), accum);
-               }
+                if (left instanceof SqlSelect) {
+                    log.debug("Going to the next level, {}", left);
+                    processFrom(((SqlSelect) left).getFrom(), accum);
+                }
 
-               if (left instanceof SqlSnapshot) {
-                   SqlIdentifier newId = (SqlIdentifier) ((SqlSnapshot) left).getTableRef();
-                   ((SqlBasicCall) from).operands[0] = newId;
-                   accum.add(fromSnapshot((SqlSnapshot) left, (SqlIdentifier) right));
-               }
+                if (left instanceof SqlSnapshot) {
+                    SqlIdentifier newId = (SqlIdentifier) ((SqlSnapshot) left).getTableRef();
+                    ((SqlBasicCall) from).operands[0] = newId;
+                    accum.add(fromSnapshot((SqlSnapshot) left, (SqlIdentifier) right));
+                }
 
-               if (left instanceof SqlIdentifier) {
-                   accum.add(fromIdentifier((SqlIdentifier) left, (SqlIdentifier) right, null));
-               }
-           }
+                if (left instanceof SqlIdentifier) {
+                    accum.add(fromIdentifier((SqlIdentifier) left, (SqlIdentifier) right, null));
+                }
+            }
 
         }
 
@@ -133,7 +133,6 @@ public class QueryPreprocessor {
         }
 
         String deltaTime = snapshotTime == null ? LOCAL_DATE_TIME.format(LocalDateTime.now()) : snapshotTime;
-
-        return new DeltaInformation(datamart, tableName, aliasVal, deltaTime, 0L);
+        return new DeltaInformation(aliasVal,  deltaTime, false, 0L, datamart, tableName, null);
     }
 }

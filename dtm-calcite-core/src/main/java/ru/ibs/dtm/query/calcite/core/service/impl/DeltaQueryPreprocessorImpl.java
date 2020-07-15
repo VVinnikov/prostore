@@ -64,7 +64,7 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
     private void calculateDeltaValues(List<DeltaInformation> deltas,
                                       Handler<AsyncResult<List<DeltaInformation>>> handler) {
         val requests = deltas.stream()
-                .map(d -> new ActualDeltaRequest(d.getSchemaName(), d.getDeltaTimestamp()))
+                .map(d -> new ActualDeltaRequest(d.getSchemaName(), d.getDeltaTimestamp(), d.isLatestUncommitedDelta()))
                 .collect(Collectors.toList());
 
         deltaService.getDeltasOnDateTimes(requests, ar -> {

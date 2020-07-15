@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.model.ddl.ClassTypes;
+import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import ru.ibs.dtm.query.execution.core.service.MetadataCalciteGenerator;
 
@@ -26,7 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class MetadataCalciteGeneratorImplTest {
 
     private CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
-    private SqlParser.Config parserConfig = calciteConfiguration.configEddlParser(calciteConfiguration.eddlParserImplFactory());
+    private CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
+    private SqlParser.Config parserConfig = calciteConfiguration.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory());
     private Planner planner;
     private MetadataCalciteGenerator metadataCalciteGenerator;
     private ClassTable table;

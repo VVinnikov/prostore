@@ -10,6 +10,7 @@ import org.apache.calcite.tools.Planner;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.plugin.exload.Format;
 import ru.ibs.dtm.common.plugin.exload.Type;
+import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import ru.ibs.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
 import ru.ibs.dtm.query.calcite.core.extension.eddl.*;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
@@ -22,8 +23,9 @@ import static org.junit.jupiter.api.Assertions.*;
 public class SqlEddlParserImplTest {
 
     private CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
+    private CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private SqlParser.Config parserConfig = calciteConfiguration.configEddlParser(
-            calciteConfiguration.eddlParserImplFactory()
+            calciteCoreConfiguration.eddlParserImplFactory()
     );
 
     @Test

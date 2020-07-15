@@ -11,6 +11,7 @@ import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 public class MockDatabaseExecutor implements DatabaseExecutor {
@@ -38,6 +39,13 @@ public class MockDatabaseExecutor implements DatabaseExecutor {
 
     @Override
     public void execute(String sql, Handler<AsyncResult<JsonArray>> resultHandler) {
+        // if we provide results, this calls are not treated as expected
+        val result = findResult(sql);
+        if (result.isPresent()) {
+            resultHandler.handle(Future.succeededFuture(result.get()));
+            return;
+        }
+
         val r = call(sql);
         if (r.getLeft()) {
             resultHandler.handle(Future.succeededFuture());
@@ -83,5 +91,15 @@ public class MockDatabaseExecutor implements DatabaseExecutor {
         Predicate<String> expected = expectedCalls.get(callCount - 1);
         return expected.test(sql) ? Pair.of(true, "")
                 : Pair.of(false, String.format("Unexpected SQL: %s", sql));
+    }
+
+    private Optional<JsonArray> findResult(String sql) {
+        for (val e: mockData.entrySet()) {
+            if (e.getKey().test(sql)) {
+                return Optional.of(e.getValue());
+            }
+        }
+
+        return Optional.empty();
     }
 }

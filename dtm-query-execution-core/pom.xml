@@ -35,28 +35,28 @@
         </dependency>
 
         <!-- Plugins -->
-<!--        <dependency>-->
-<!--            <groupId>ru.ibs.dtm</groupId>-->
-<!--            <artifactId>dtm-query-execution-plugin-adg</artifactId>-->
-<!--            <version>${project.version}</version>-->
-<!--            <exclusions>-->
-<!--                <exclusion>-->
-<!--                    <groupId>org.springframework.boot</groupId>-->
-<!--                    <artifactId>spring-boot-starter</artifactId>-->
-<!--                </exclusion>-->
-<!--            </exclusions>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>ru.ibs.dtm</groupId>-->
-<!--            <artifactId>dtm-query-execution-plugin-adb</artifactId>-->
-<!--            <version>${project.version}</version>-->
-<!--            <exclusions>-->
-<!--                <exclusion>-->
-<!--                    <groupId>org.springframework.boot</groupId>-->
-<!--                    <artifactId>spring-boot-starter</artifactId>-->
-<!--                </exclusion>-->
-<!--            </exclusions>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>ru.ibs.dtm</groupId>
+            <artifactId>dtm-query-execution-plugin-adg</artifactId>
+            <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>ru.ibs.dtm</groupId>
+            <artifactId>dtm-query-execution-plugin-adb</artifactId>
+            <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <dependency>
             <groupId>ru.ibs.dtm</groupId>
             <artifactId>dtm-query-execution-plugin-adqm</artifactId>

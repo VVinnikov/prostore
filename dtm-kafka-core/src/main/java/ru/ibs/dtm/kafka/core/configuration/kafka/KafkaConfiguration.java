@@ -6,6 +6,7 @@ import io.vertx.kafka.admin.KafkaAdminClient;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 import ru.ibs.dtm.kafka.core.configuration.properties.KafkaProperties;
 import ru.ibs.dtm.kafka.core.factory.KafkaConsumerFactory;
 import ru.ibs.dtm.kafka.core.factory.KafkaProducerFactory;
@@ -14,6 +15,7 @@ import ru.ibs.dtm.kafka.core.factory.impl.VertxKafkaProducerFactory;
 
 
 @Configuration
+@DependsOn("coreKafkaProperties")
 public class KafkaConfiguration {
 
 

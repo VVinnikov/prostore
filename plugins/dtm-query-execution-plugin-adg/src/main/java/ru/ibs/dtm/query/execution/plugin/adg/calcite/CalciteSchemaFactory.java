@@ -20,7 +20,7 @@ public class CalciteSchemaFactory {
 
   public Schema addRootSchema(SchemaPlus parent, Datamart schema) {
     QueryableSchema dtmSchema = schemaFactory.create(parent, schema);
-    schema.getDatamartTableClassesses().forEach(it -> {
+    schema.getDatamartTables().forEach(it -> {
       try {
         CustomTable table = new CustomTable(dtmSchema, it);
         parent.add(it.getSchema(), table);
@@ -34,7 +34,7 @@ public class CalciteSchemaFactory {
   public Schema addSubSchema(SchemaPlus parent, Datamart root) {
     QueryableSchema dtmSchema = schemaFactory.create(parent, root);
     SchemaPlus rootSchema = parent.add(root.getMnemonic(), dtmSchema);
-    root.getDatamartTableClassesses().forEach(it -> {
+    root.getDatamartTables().forEach(it -> {
       try {
         CustomTable table = new CustomTable(dtmSchema, it);
         rootSchema.add(it.getSchema(), table);

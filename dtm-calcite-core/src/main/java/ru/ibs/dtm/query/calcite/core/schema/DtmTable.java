@@ -1,6 +1,5 @@
 package ru.ibs.dtm.query.calcite.core.schema;
 
-import java.util.ArrayList;
 import org.apache.calcite.adapter.java.AbstractQueryableTable;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
@@ -13,6 +12,8 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.TranslatableTable;
 import ru.ibs.dtm.query.calcite.core.util.CalciteUtil;
 import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;
+
+import java.util.ArrayList;
 
 public abstract class DtmTable extends AbstractQueryableTable implements TranslatableTable {
 
@@ -38,7 +39,10 @@ public abstract class DtmTable extends AbstractQueryableTable implements Transla
                 .forEach(it -> builder.add(
                         it.getMnemonic(),
                         CalciteUtil.valueOf(it.getType().getValue())
-                ).nullable(true));
+                        //FIXME реализовать выставление атрибутов precision и scale из length и accuracy
+                        //it.getLength(),
+                        //it.getAccuracy()
+                ).nullable(true));//FIXME добавить выставление признака nullable из атрибутов
         return builder.build();
     }
 

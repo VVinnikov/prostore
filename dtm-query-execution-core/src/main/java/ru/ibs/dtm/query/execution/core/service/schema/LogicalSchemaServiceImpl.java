@@ -4,15 +4,25 @@ import io.vertx.core.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlNode;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.dto.DatamartInfo;
 import ru.ibs.dtm.common.dto.schema.DatamartSchemaKey;
+import ru.ibs.dtm.common.reader.QueryRequest;
+import ru.ibs.dtm.query.calcite.core.node.SqlSelectTree;
+import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
 import ru.ibs.dtm.query.execution.core.dto.metadata.EntityAttribute;
-import ru.ibs.dtm.query.execution.model.metadata.*;
+import ru.ibs.dtm.query.execution.model.metadata.AttributeType;
+import ru.ibs.dtm.query.execution.model.metadata.ColumnType;
+import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;
+import ru.ibs.dtm.query.execution.model.metadata.TableAttribute;
 
 import java.util.*;
 
@@ -21,20 +31,22 @@ import java.util.*;
 public class LogicalSchemaServiceImpl implements LogicalSchemaService {
 
     private final ServiceDbFacade serviceDbFacade;
+    private final DefinitionService<SqlNode> definitionService;
 
     @Autowired
-    public LogicalSchemaServiceImpl(ServiceDbFacade serviceDbFacade) {
+    public LogicalSchemaServiceImpl(ServiceDbFacade serviceDbFacade,
+                                    @Qualifier("coreCalciteDefinitionService") DefinitionService<SqlNode> definitionService) {
         this.serviceDbFacade = serviceDbFacade;
+        this.definitionService = definitionService;
     }
 
     @Override
-    public void createSchema(List<DatamartInfo> tableInfoList, Handler<AsyncResult<Map<DatamartSchemaKey, DatamartTable>>> resultHandler) {
+    public void createSchema(QueryRequest request, Handler<AsyncResult<Map<DatamartSchemaKey, DatamartTable>>> resultHandler) {
         try {
             final List<Future> datamartTableFutures = new ArrayList<>();
             final Map<DatamartSchemaKey, DatamartTable> datamartSchemaMap = new HashMap<>();
-            tableInfoList.forEach(datamart -> {
-                datamartTableFutures.add(getDatamartFuture(datamart));
-            });
+            final List<DatamartInfo> tableInfoList = getDatamartInfoListFromQuery(request.getSql());
+            tableInfoList.forEach(datamart -> datamartTableFutures.add(getDatamartFuture(datamart)));
             CompositeFuture.join(datamartTableFutures)
                     .onComplete(ar -> {
                         if (ar.succeeded()) {
@@ -44,14 +56,34 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
                             CompositeFuture.join(attributeFutures)
                                     .onComplete(getDatamartTables(datamartSchemaMap, tableMap, resultHandler))
                                     .onFailure(Future::failedFuture);
-                        } else {
-                            resultHandler.handle(Future.failedFuture(ar.cause()));//TODO проверить
                         }
                     })
                     .onFailure(fail -> resultHandler.handle(Future.failedFuture(fail)));
         } catch (Exception e) {
             resultHandler.handle(Future.failedFuture(e));
         }
+    }
+
+    @NotNull
+    private List<DatamartInfo> getDatamartInfoListFromQuery(String sql) {
+        val sqlNode = definitionService.processingQuery(sql);
+        val tree = new SqlSelectTree(sqlNode);
+        val allTableAndSnapshots = tree.findAllTableAndSnapshots();
+        Map<String, DatamartInfo> datamartMap = new HashMap<>();
+        allTableAndSnapshots.forEach(node -> {
+            if (node.getNode() instanceof SqlIdentifier) {
+                //подразумевается, что на данном этапе в запросе уже будет проставлен defaultDatamart там, где требуется
+                String schemaName = ((SqlIdentifier) node.getNode()).names.get(0);
+                String tableName = ((SqlIdentifier) node.getNode()).names.get(1);
+                DatamartInfo datamartInfo = datamartMap.getOrDefault(schemaName, new DatamartInfo(schemaName, new HashSet<>()));
+                datamartInfo.getTables().add(tableName);
+                datamartMap.putIfAbsent(datamartInfo.getSchemaName(), datamartInfo);
+            } else {
+                throw new RuntimeException(String.format("Некорректный тип sqlNode: %s; ожидается: %s!",
+                        node.getNode().getClass().getName(), SqlIdentifier.class.getName()));
+            }
+        });
+        return new ArrayList<>(datamartMap.values());
     }
 
     private Future<DatamartFuture> getDatamartFuture(DatamartInfo datamartInfo) {
@@ -91,7 +123,7 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
                     resultHandler.handle(Future.failedFuture(atr.cause()));
                 }
             } else {
-                resultHandler.handle(Future.failedFuture(atr.cause()));//TODO проверить
+                resultHandler.handle(Future.failedFuture(atr.cause()));
             }
         };
     }
@@ -121,6 +153,7 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
             List<EntityAttribute> entityAttributes = (List<EntityAttribute>) entAttr;
             if (!entityAttributes.isEmpty()) {
                 String tableLabel = entityAttributes.get(0).getEntityMnemonic();
+                //FIXME доделать выставление primaryKeys, после добавления признака PK в таблице attributes_registry
                 tableMap.get(tableLabel).setTableAttributes(createTableAttributes(entityAttributes));
             } else {
                 throw new RuntimeException("Список атрибутов должен быть не пустой!");
@@ -131,15 +164,6 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
     @NotNull
     private DatamartSchemaKey createDatamartSchemaKey(DatamartTable datamartTable) {
         return new DatamartSchemaKey(datamartTable.getSchema(), datamartTable.getLabel());
-    }
-
-    @NotNull
-    private Datamart createDatamart(DatamartInfo dm) {
-        Datamart datamart = new Datamart();
-        datamart.setId(UUID.randomUUID());
-        datamart.setMnemonic(dm.getSchemaName());
-        datamart.setDatamartTableClassesses(new ArrayList<>());
-        return datamart;
     }
 
     @NotNull
@@ -160,13 +184,17 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
             tableAttribute.setId(UUID.randomUUID());
             tableAttribute.setMnemonic(attr.getMnemonic());
             tableAttribute.setType(mapColumnType(attr.getDataType()));
+            tableAttribute.setLength(attr.getLength());
+            tableAttribute.setAccuracy(attr.getAccuracy());
+            tableAttribute.setPrimaryKeyOrder(attr.getPrimaryKeyOrder());
+            tableAttribute.setDistributeKeyOrder(attr.getDistributeKeykOrder());
             attributeList.add(tableAttribute);
         });
         return attributeList;
     }
 
     private AttributeType mapColumnType(String dataType) {
-        //FIXME переделать
+        //FIXME привести в соответствие значение типов в attributes_registry и ColumnType
         AttributeType attributeType = new AttributeType();
         attributeType.setId(UUID.randomUUID());
         ColumnType type = null;

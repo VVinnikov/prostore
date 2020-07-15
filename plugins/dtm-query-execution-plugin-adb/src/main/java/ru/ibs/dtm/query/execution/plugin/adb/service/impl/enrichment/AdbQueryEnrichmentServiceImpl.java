@@ -41,7 +41,8 @@ public class AdbQueryEnrichmentServiceImpl implements QueryEnrichmentService {
         try {
             Datamart logicalSchema;
             try {
-                logicalSchema = request.getSchema().mapTo(Datamart.class);
+                //FIXME доделать обработку нескольких схем
+                logicalSchema = request.getSchema().get(0);
             } catch (Exception ex) {
                 log.error("Ошибка десериализации схемы");
                 asyncHandler.handle(Future.failedFuture(ex));

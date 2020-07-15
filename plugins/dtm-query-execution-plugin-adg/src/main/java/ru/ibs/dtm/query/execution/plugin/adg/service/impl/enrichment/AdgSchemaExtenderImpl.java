@@ -26,7 +26,7 @@ public class AdgSchemaExtenderImpl implements SchemaExtender {
     List<DatamartTable> extendedDatamartTables = new ArrayList<>();
     String prefix = queryRequest.getSystemName() + "_" + queryRequest.getDatamartMnemonic() + "_";
 
-    datamart.getDatamartTableClassesses().forEach(dmClass -> {
+    datamart.getDatamartTables().forEach(dmClass -> {
       dmClass.setSchema(dmClass.getSchema());
       dmClass.getTableAttributes().addAll(getExtendedColumns());
       extendedDatamartTables.add(dmClass);
@@ -34,7 +34,7 @@ public class AdgSchemaExtenderImpl implements SchemaExtender {
       extendedDatamartTables.add(getExtendedSchema(dmClass, prefix, STAGING_POSTFIX));
       extendedDatamartTables.add(getExtendedSchema(dmClass, prefix, ACTUAL_POSTFIX));
     });
-    extendedSchema.setDatamartTableClassesses(extendedDatamartTables);
+    extendedSchema.setDatamartTables(extendedDatamartTables);
 
     return extendedSchema;
   }

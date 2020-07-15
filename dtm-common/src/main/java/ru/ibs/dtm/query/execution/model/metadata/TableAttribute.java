@@ -10,9 +10,32 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 public class TableAttribute {
+  /**
+   * Uuid
+   */
   private UUID id;
-  /*Имя атрибута*/
+  /**
+   * Имя атрибута
+   */
   private String mnemonic;
-  /*Тип атрибута*/
+  /**
+   * Тип атрибута
+   */
   private AttributeType type;
+  /**
+   * Длина атрибута
+   */
+  private Integer length;
+  /**
+   * Размерность атрибута
+   */
+  private Integer accuracy;
+  /**
+   * Порядковый номер первичного ключа
+   */
+  private Integer primaryKeyOrder;
+  /**
+   * Порядковый номер distribute ключа
+   */
+  private Integer distributeKeyOrder;
 }

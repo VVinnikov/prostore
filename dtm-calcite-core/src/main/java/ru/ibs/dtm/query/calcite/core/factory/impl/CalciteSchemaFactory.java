@@ -17,7 +17,7 @@ public abstract class CalciteSchemaFactory {
     public SchemaPlus addSchema(SchemaPlus parent, Datamart root) {
         QueryableSchema dtmSchema = schemaFactory.create(parent, root);
         SchemaPlus schemaPlus = parent.add(root.getMnemonic(), dtmSchema);
-        root.getDatamartTableClassesses().forEach(it -> {
+        root.getDatamartTables().forEach(it -> {
             try {
                 DtmTable table = createTable(dtmSchema, it);
                 schemaPlus.add(it.getSchema(), table);

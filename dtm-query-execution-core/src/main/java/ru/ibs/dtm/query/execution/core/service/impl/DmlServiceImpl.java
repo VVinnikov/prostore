@@ -34,7 +34,6 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
     private final DataSourcePluginService dataSourcePluginService;
     private final TargetDatabaseDefinitionService targetDatabaseDefinitionService;
     private final DeltaQueryPreprocessor deltaQueryPreprocessor;
-    private final LogicalSchemaProvider logicalSchemaProvider;
     private final LogicViewReplacer logicViewReplacer;
     private final MetadataService metadataService;
     private final HintExtractor hintExtractor;
@@ -42,12 +41,11 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
     @Autowired
     public DmlServiceImpl(DataSourcePluginService dataSourcePluginService,
                           TargetDatabaseDefinitionService targetDatabaseDefinitionService,
-                          DeltaQueryPreprocessor deltaQueryPreprocessor, LogicalSchemaProvider logicalSchemaProvider,
-                          LogicViewReplacer logicViewReplacer, MetadataService metadataService, HintExtractor hintExtractor) {
+                          DeltaQueryPreprocessor deltaQueryPreprocessor, LogicViewReplacer logicViewReplacer,
+                          MetadataService metadataService, HintExtractor hintExtractor) {
         this.dataSourcePluginService = dataSourcePluginService;
         this.targetDatabaseDefinitionService = targetDatabaseDefinitionService;
         this.deltaQueryPreprocessor = deltaQueryPreprocessor;
-        this.logicalSchemaProvider = logicalSchemaProvider;
         this.logicViewReplacer = logicViewReplacer;
         this.metadataService = metadataService;
         this.hintExtractor = hintExtractor;
@@ -59,10 +57,10 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
             val sourceRequest = hintExtractor.extractHint(context.getRequest().getQueryRequest());
             logicViewReplace(sourceRequest.getQueryRequest())
                     .compose(deltaQueryPreprocessor::process)
-                    .compose(this::initLogicalDatamartSchema)
+                    //.compose(queryRequest -> initLogicalDatamartSchema(sourceRequest, queryRequest))
                     .onComplete(ar -> {
                         if (ar.succeeded()) {
-                            sourceRequest.setQueryRequest(ar.result().getQueryRequest());
+                            sourceRequest.setQueryRequest(ar.result());
                             setTargetSourceAndExecute(sourceRequest, asyncResultHandler);
                         } else {
                             asyncResultHandler.handle(Future.failedFuture(ar.cause()));
@@ -82,22 +80,6 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
                     p.complete(withoutViewsRequest);
                 } else {
                     p.fail(ar.cause());
-                }
-            });
-        });
-    }
-
-    private Future<QuerySourceRequest> initLogicalDatamartSchema(QueryRequest request) {
-        return Future.future((Promise<QuerySourceRequest> promise) -> {
-            QuerySourceRequest sourceRequest = new QuerySourceRequest(request, null);
-            logicalSchemaProvider.getSchema(sourceRequest.getQueryRequest(), ar -> {
-                if (ar.succeeded()) {
-                    List<Datamart> datamarts = ar.result();
-                    JsonObject jsonSchema = new JsonObject(Json.encode(datamarts));//TODO проверить
-                    sourceRequest.setLogicalSchema(jsonSchema);
-                    promise.complete(sourceRequest);
-                } else {
-                    promise.fail(ar.cause());
                 }
             });
         });

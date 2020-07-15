@@ -7,6 +7,7 @@ import io.vertx.core.Handler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
+import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.factory.MetadataFactory;
 import ru.ibs.dtm.query.execution.core.service.DataSourcePluginService;

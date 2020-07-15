@@ -23,14 +23,14 @@ public class AdbSchemaExtenderImpl implements SchemaExtender {
     extendedSchema.setMnemonic(datamart.getMnemonic());
     extendedSchema.setId(UUID.randomUUID());
     List<DatamartTable> extendedDatamartTables = new ArrayList<>();
-    datamart.getDatamartTableClassesses().forEach(dmClass -> {
+    datamart.getDatamartTables().forEach(dmClass -> {
       dmClass.getTableAttributes().addAll(getExtendedColumns());
       extendedDatamartTables.add(dmClass);
       extendedDatamartTables.add(getExtendedSchema(dmClass, "_".concat(HISTORY_TABLE)));
       extendedDatamartTables.add(getExtendedSchema(dmClass, "_".concat(STAGING_TABLE)));
       extendedDatamartTables.add(getExtendedSchema(dmClass, "_".concat(ACTUAL_TABLE)));
     });
-    extendedSchema.setDatamartTableClassesses(extendedDatamartTables);
+    extendedSchema.setDatamartTables(extendedDatamartTables);
 
     return extendedSchema;
   }

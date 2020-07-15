@@ -63,7 +63,7 @@ public class AdqmQueryEnrichmentServiceImpl implements QueryEnrichmentService {
 
     void calculateDeltaValues(List<DeltaInformation> deltas,
                               Handler<AsyncResult<List<DeltaInformation>>> handler) {
-
+        //FIXME использовать полученные дельты из core
         List<ActualDeltaRequest> requests = deltas.stream()
                 .map(d -> new ActualDeltaRequest(d.getSchemaName(), d.getDeltaTimestamp()))
                 .collect(Collectors.toList());

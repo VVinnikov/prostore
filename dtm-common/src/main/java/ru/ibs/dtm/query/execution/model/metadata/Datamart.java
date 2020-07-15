@@ -18,7 +18,7 @@ public class Datamart {
   /*Имя схемы*/
   private String mnemonic;
   /*Описание таблиц в схеме*/
-  private List<DatamartTable> datamartTableClassesses;
+  private List<DatamartTable> datamartTables;
 }
 
 

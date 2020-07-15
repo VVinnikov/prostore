@@ -1,9 +1,6 @@
 package ru.ibs.dtm.query.execution.core.service.impl;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.CompositeFuture;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
+import io.vertx.core.*;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.apache.commons.lang3.tuple.Pair;
@@ -13,7 +10,9 @@ import ru.ibs.dtm.common.reader.QuerySourceRequest;
 import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.query.execution.core.service.DataSourcePluginService;
 import ru.ibs.dtm.query.execution.core.service.TargetDatabaseDefinitionService;
+import ru.ibs.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import ru.ibs.dtm.query.execution.core.utils.MetaDataQueryPreparer;
+import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 import ru.ibs.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.QueryCostRequest;
 
@@ -25,6 +24,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefinitionService {
 
+    private final LogicalSchemaProvider logicalSchemaProvider;
     private final DataSourcePluginService pluginService;
 
     @Override
@@ -38,23 +38,36 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
 
     private void getTargetSourceWithoutHint(QuerySourceRequest request, Handler<AsyncResult<QuerySourceRequest>> handler) {
         if (CollectionUtils.isEmpty(MetaDataQueryPreparer.findInformationSchemaViews(request.getQueryRequest().getSql()))) {
-            getTargetSourceFromCost(request, ar -> {
-                if (ar.succeeded()) {
-                    handler.handle(Future.succeededFuture(
-                            new QuerySourceRequest(
-                                    request.getQueryRequest().copy(),
-                                    request.getLogicalSchema(),
-                                    ar.result())));
-                } else {
-                    handler.handle(Future.failedFuture(ar.cause()));
-                }
-            });
+            getLogicalSchema(request)
+                    .onComplete(ar -> {
+                        if (ar.succeeded()) {
+                            request.setLogicalSchema(ar.result());
+                            getTargetSourceFromCost(request, tr -> {
+                                if (tr.succeeded()) {
+                                    handler.handle(Future.succeededFuture(
+                                            new QuerySourceRequest(
+                                                    request.getQueryRequest().copy(),
+                                                    request.getLogicalSchema(),
+                                                    tr.result())));
+                                } else {
+                                    handler.handle(Future.failedFuture(tr.cause()));
+                                }
+                            });
+                        } else {
+                            handler.handle(Future.failedFuture(ar.cause()));
+                        }
+                    })
+                    .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
         } else {
             handler.handle(Future.succeededFuture(
                     new QuerySourceRequest(
                             request.getQueryRequest().copy(),
                             SourceType.INFORMATION_SCHEMA)));
         }
+    }
+
+    private Future<List<Datamart>> getLogicalSchema(QuerySourceRequest request) {
+        return Future.future((Promise<List<Datamart>> promise) -> logicalSchemaProvider.getSchema(request.getQueryRequest(), promise));
     }
 
     private void getTargetSourceFromCost(QuerySourceRequest request, Handler<AsyncResult<SourceType>> handler) {

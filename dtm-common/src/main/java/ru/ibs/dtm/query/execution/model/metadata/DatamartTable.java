@@ -14,11 +14,21 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 public class DatamartTable {
-  private UUID id;
-  /*Имя схемы*/
-  private String schema;
-  private String label;
-  /*Атрибуты таблиц*/
-  private List<TableAttribute> tableAttributes;
-  private List<TableAttribute> primaryKey;
+    private UUID id;
+    /**
+     * Имя схемы
+     */
+    private String schema;
+    /**
+     * Имя таблицы
+     */
+    private String label;
+    /**
+     * Атрибуты таблиц
+     */
+    private List<TableAttribute> tableAttributes;
+    /**
+     * Первичные ключи таблицы
+     */
+    private List<TableAttribute> primaryKeys;
 }

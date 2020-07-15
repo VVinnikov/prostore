@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.dto.ActualDeltaRequest;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.service.DeltaService;
+import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 import ru.ibs.dtm.query.execution.plugin.adg.calcite.AdgCalciteContextProvider;
 import ru.ibs.dtm.query.execution.plugin.adg.calcite.CalciteSchemaFactory;
 import ru.ibs.dtm.query.execution.plugin.adg.configuration.CalciteConfiguration;
@@ -26,6 +27,7 @@ import ru.ibs.dtm.query.execution.plugin.adg.service.QueryParserService;
 import ru.ibs.dtm.query.execution.plugin.adg.service.impl.query.AdgQueryRegexPreprocessor;
 import ru.ibs.dtm.query.execution.plugin.adg.utils.JsonUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -112,8 +114,9 @@ public class AdgQueryEnrichmentServiceImplTest {
         queryRequest.setSql(sql);
         queryRequest.setRequestId(UUID.randomUUID());
         queryRequest.setDatamartMnemonic("test_datamart");
-        final JsonObject schema = JsonUtils.init("meta_data.json", "test_datamart");
-
+        final JsonObject jsonSchema = JsonUtils.init("meta_data.json", "test_datamart");
+        List<Datamart> schema = new ArrayList<>();
+        schema.add(jsonSchema.mapTo(Datamart.class));
         String expectedSql = "SELECT * FROM \"reg_cxt_history\" WHERE \"sys_from\" <= 2 AND \"sys_to\" >= 2 UNION ALL SELECT * FROM \"reg_cxt_actual\" WHERE \"sys_from\" <= 2";
         String[] sqlResult = {""};
 

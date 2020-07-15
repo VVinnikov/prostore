@@ -4,8 +4,6 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
-import io.vertx.core.json.Json;
-import io.vertx.core.json.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlSelect;
@@ -49,11 +47,9 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
 
     @Override
     public void execute(EdmlRequestContext context, Handler<AsyncResult<QueryResult>> resultHandler) {
-        //TODO переделать на генерацию схемы из списка атрибутов
         logicalSchemaProvider.getSchema(context.getRequest().getQueryRequest(), schemaAr -> {
             if (schemaAr.succeeded()) {
-                JsonObject jsonSchema = new JsonObject(Json.encode(schemaAr.result()));//TODO проверить
-                context.setSchema(jsonSchema);
+                context.setLogicalSchema(schemaAr.result());
                 executeRequest(context, resultHandler);
             } else {
                 resultHandler.handle(Future.failedFuture(schemaAr.cause()));

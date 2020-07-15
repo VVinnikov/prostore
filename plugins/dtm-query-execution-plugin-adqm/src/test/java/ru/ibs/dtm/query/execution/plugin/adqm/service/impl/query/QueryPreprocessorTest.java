@@ -4,10 +4,10 @@ import org.apache.calcite.sql.parser.SqlParser;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.StringUtils;
+import ru.ibs.dtm.common.delta.DeltaInformation;
 import ru.ibs.dtm.query.execution.plugin.adqm.calcite.CalciteContextProvider;
 import ru.ibs.dtm.query.execution.plugin.adqm.calcite.CalciteSchemaFactory;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.CalciteConfiguration;
-import ru.ibs.dtm.query.execution.plugin.adqm.dto.DeltaInformation;
 import ru.ibs.dtm.query.execution.plugin.adqm.factory.impl.SchemaFactoryImpl;
 
 import java.util.List;

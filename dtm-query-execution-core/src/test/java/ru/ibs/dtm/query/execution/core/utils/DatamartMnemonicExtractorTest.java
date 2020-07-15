@@ -2,13 +2,13 @@ package ru.ibs.dtm.query.execution.core.utils;
 
 import lombok.val;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import ru.ibs.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 class DatamartMnemonicExtractorTest {
     public static final String EXPECTED_DATAMART = "test";
@@ -37,6 +37,7 @@ class DatamartMnemonicExtractorTest {
         val sqlNode = definitionService.processingQuery("select * from test.tbl1 FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' AS t");
         val datamart = extractor.extract(sqlNode);
         assertEquals(EXPECTED_DATAMART, datamart);
+        assertTrue(sqlNode.toSqlString(CalciteSqlDialect.DEFAULT).getSql().contains("FOR SYSTEM_TIME AS OF "));
     }
 
     @Test

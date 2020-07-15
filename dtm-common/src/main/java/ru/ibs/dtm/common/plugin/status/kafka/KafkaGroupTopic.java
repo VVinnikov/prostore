@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class KafkaTopicCommitedOffset {
-    private Long offset;
-    private Long lastCommitTimestamp;
+public class KafkaGroupTopic {
+    private String consumerGroup;
+    private String topic;
 }

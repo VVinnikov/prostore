@@ -1,7 +1,8 @@
 package ru.ibs.dtm.common.plugin.status.kafka;
 
 import lombok.Data;
-import java.util.Date;
+
+import java.time.LocalDateTime;
 
 @Data
 public class KafkaPartitionInfo {
@@ -12,5 +13,5 @@ public class KafkaPartitionInfo {
     private Long end;
     private Long offset;
     private Long lag;
-    private Date lastCommitTime;
+    private LocalDateTime lastCommitTime;
 }

@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.service.kafka;
+package ru.ibs.dtm.kafka.core.service.kafka;
 
 import io.vertx.core.*;
 import io.vertx.kafka.admin.ConsumerGroupListing;
@@ -15,14 +15,15 @@ import kafka.common.OffsetAndMetadata;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+import ru.ibs.dtm.common.plugin.status.kafka.KafkaGroupTopic;
 import ru.ibs.dtm.common.plugin.status.kafka.KafkaPartitionInfo;
 import ru.ibs.dtm.common.plugin.status.kafka.KafkaTopicCommitedOffset;
 import ru.ibs.dtm.common.plugin.status.kafka.KafkaTopicOffset;
-import ru.ibs.dtm.query.execution.core.factory.KafkaConsumerFactory;
+import ru.ibs.dtm.kafka.core.service.kafka.KafkaConsumerMonitor;
+import ru.ibs.dtm.kafka.core.factory.KafkaConsumerFactory;
 
 import java.nio.ByteBuffer;
-import java.time.Instant;
-import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -200,7 +201,7 @@ public class KafkaConsumerMonitorImpl implements KafkaConsumerMonitor {
             if (ar.succeeded())
                 log.info("Subscribed to system topic");
             else
-                log.error("Subscription to system topic error");
+                log.error("Subscription to system topic error",ar.cause());
         });
     }
 
@@ -229,7 +230,7 @@ public class KafkaConsumerMonitorImpl implements KafkaConsumerMonitor {
                                         );
                                     }
                                     else {
-                                        log.error("Can't refresh kafka topic offsets");
+                                        log.error("Can't refresh kafka topic offsets",offsetAr.cause());
                                     }
 
                                 }));
@@ -259,86 +260,55 @@ public class KafkaConsumerMonitorImpl implements KafkaConsumerMonitor {
     }
 
     @Override
-    public List<KafkaPartitionInfo> getGroupConsumerInfo() {
-         return new ArrayList<>(lastOffsets.entrySet().stream().collect(toMap(
-                 Map.Entry::getKey,
-                 e -> {
-                     KafkaPartitionInfo kafkaPartitionInfo = new KafkaPartitionInfo();
-                     kafkaPartitionInfo.setConsumerGroup(e.getKey().group().toString());
-                     kafkaPartitionInfo.setTopic(e.getKey().topicPartition().topic());
-                     kafkaPartitionInfo.setPartition(e.getKey().topicPartition().partition());
-                     kafkaPartitionInfo.setStart(e.getValue().getStart());
-                     kafkaPartitionInfo.setEnd(e.getValue().getEnd());
-                     KafkaTopicCommitedOffset lastCommitedOffset = lastCommitedOffsets.get(e.getKey());
-                     if (lastCommitedOffset != null) {
-                         kafkaPartitionInfo.setOffset(lastCommitedOffset.getOffset());
-                         kafkaPartitionInfo.setLastCommitTime(new Date(lastCommitedOffset.getLastCommitTimestamp()));
-                         kafkaPartitionInfo.setLag(Math.max(0L, e.getValue().getEnd() - lastCommitedOffset.getOffset()));
-                     }
-                     return kafkaPartitionInfo;
-                 }
-         )).values());
-
+    public Map<KafkaGroupTopic, List<KafkaPartitionInfo>> getGroupConsumerInfo() {
+        return lastOffsets.entrySet().stream().collect(groupingBy(e -> {
+            KafkaGroupTopic kafkaGroupTopic = new KafkaGroupTopic();
+            kafkaGroupTopic.setConsumerGroup(e.getKey().group().toString());
+            kafkaGroupTopic.setTopic(e.getKey().topicPartition().topic());
+            return kafkaGroupTopic;
+        }, mapping(e -> {
+            KafkaPartitionInfo kafkaPartitionInfo = new KafkaPartitionInfo();
+            kafkaPartitionInfo.setPartition(e.getKey().topicPartition().partition());
+            kafkaPartitionInfo.setStart(e.getValue().getStart());
+            kafkaPartitionInfo.setEnd(e.getValue().getEnd());
+            KafkaTopicCommitedOffset lastCommitedOffset = lastCommitedOffsets.getOrDefault(e.getKey(),
+                    new KafkaTopicCommitedOffset(0L,0L));
+            if (lastCommitedOffset != null) {
+                kafkaPartitionInfo.setOffset(lastCommitedOffset.getOffset());
+                kafkaPartitionInfo.setLastCommitTime(new Date(lastCommitedOffset.getLastCommitTimestamp()).toInstant()
+                .atZone(ZoneId.systemDefault()).toLocalDateTime());
+                kafkaPartitionInfo.setLag(Math.max(0L, e.getValue().getEnd() - lastCommitedOffset.getOffset()));
+            }
+            return kafkaPartitionInfo;
+        }, toList())));
     }
 
-    /*
     @Override
-    public Future<List<Future<List<KafkaPartitionInfo>>>> getGroupConsumerInfo() {
-        return Future.future(handler ->
-                getConsumerGroupNames().compose(this::getConsumerGroupTopicPartitions).onComplete(
-                        ar -> {
-                            if (ar.failed()) {
-                                log.error("Can't get Group Consumer Info", ar.cause());
-                                handler.complete(new ArrayList<>());
-                            } else {
+    public KafkaPartitionInfo getAggregateGroupConsumerInfo(String consumerGroup, String topic) {
 
-                                Map<String, Future<Map<TopicPartition, KafkaTopicOffset>>> offsets =
-                                        ar.result().entrySet().stream()
-                                                .filter(e-> !e.getValue().isEmpty()).collect(toMap(
-                                                Map.Entry::getKey,
-                                                e -> getBeginEndOffsets(e.getValue())
-                                        ));
+        KafkaPartitionInfo result = new KafkaPartitionInfo();
+        result.setConsumerGroup(consumerGroup);
+        result.setTopic(topic);
+        result.setPartition(0);
+        result.setStart(0L);
+        result.setEnd(0L);
+        result.setOffset(0L);
+        result.setLag(0L);
+        result.setLastCommitTime(new Date(0L).toInstant()
+                .atZone(ZoneId.systemDefault()).toLocalDateTime());
 
-                                Map<String, Map<TopicPartition, KafkaTopicCommitedOffset>> commitedOffsets =
-                                        transformCommitedOffsets();
-
-
-                                /// merge?
-                                /// hack?
-                                List<Future<List<KafkaPartitionInfo>>> result =
-                                        new ArrayList<>(offsets.entrySet().stream().collect(toMap(
-                                        Map.Entry::getKey,
-                                        e -> e.getValue().map(fut -> fut.entrySet().stream().map(ie -> {
-                                                    KafkaPartitionInfo info = new KafkaPartitionInfo();
-                                                    info.setConsumerGroup(e.getKey());
-                                                    info.setTopic(ie.getKey().getTopic());
-                                                    info.setPartition(ie.getKey().getPartition());
-                                                    info.setStart(ie.getValue().getStart());
-                                                    info.setEnd(ie.getValue().getEnd());
-                                                    ///
-                                                    if (commitedOffsets.get(e.getKey()) != null)
-                                                        if (commitedOffsets.get(e.getKey()).get(ie.getKey()) != null) {
-                                                            info.setOffset(commitedOffsets.get(e.getKey())
-                                                                    .get(ie.getKey()).getOffset());
-                                                            long timestamp = commitedOffsets.get(e.getKey())
-                                                                    .get(ie.getKey()).getLastCommitTimestamp();
-                                                            info.setLastCommitTime
-                                                                    (LocalDateTime.ofInstant
-                                                                            (Instant.ofEpochSecond(timestamp),
-                                                                                    TimeZone.getDefault().toZoneId()));
-                                                        }
-                                                    return info;
-                                                }
-                                        ).collect(toList())))).values());
-
-                                //.entrySet().stream().flatMap(Map.Entry::getValue).collect(toList());
-                                handler.complete(result);
-                            }
-
-                        }
-                ));
-
-    } */
+        return getGroupConsumerInfo().getOrDefault(new KafkaGroupTopic(consumerGroup,topic),new ArrayList<>())
+                .stream().reduce(result,(l,r) -> {
+                    l.setPartition(l.getPartition() + r.getPartition());
+                    l.setStart(Math.min(l.getStart(),r.getStart()));
+                    l.setEnd(Math.max(l.getEnd(),r.getEnd()));
+                    l.setOffset(Math.max(l.getOffset(),r.getOffset()));
+                    l.setLag(l.getLag() + r.getLag());
+                    if(l.getLastCommitTime().compareTo(r.getLastCommitTime()) < 0)
+                        l.setLastCommitTime(r.getLastCommitTime());
+                    return l;
+                });
+    }
 
 
 }

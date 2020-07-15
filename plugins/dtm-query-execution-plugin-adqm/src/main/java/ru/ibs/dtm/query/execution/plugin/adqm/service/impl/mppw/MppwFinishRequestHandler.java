@@ -6,10 +6,10 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
-import ru.ibs.dtm.common.plugin.exload.QueryLoadParam;
 import ru.ibs.dtm.common.reader.QueryResult;
+import ru.ibs.dtm.query.execution.plugin.adqm.common.DdlUtils;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
@@ -19,10 +19,11 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static ru.ibs.dtm.query.execution.plugin.adqm.service.impl.Constants.*;
+import static ru.ibs.dtm.query.execution.plugin.adqm.common.Constants.*;
+import static ru.ibs.dtm.query.execution.plugin.adqm.common.DdlUtils.sequenceAll;
+import static ru.ibs.dtm.query.execution.plugin.adqm.common.DdlUtils.splitQualifiedTableName;
 
 @Component("adqmMppwFinishRequestHandler")
 @Slf4j
@@ -58,24 +59,13 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
 
     @Override
     public Future<QueryResult> execute(final MppwRequest request) {
-        if (request == null) {
-            return Future.failedFuture("MppwRequest should not be null");
+        val err = DdlUtils.validateRequest(request);
+        if (err.isPresent()) {
+            return Future.failedFuture(err.get());
         }
 
-        QueryLoadParam loadParam = request.getQueryLoadParam();
-        if (loadParam == null) {
-            return Future.failedFuture("MppwRequest.QueryLoadParam should not be null");
-        }
-
-        String tableName = loadParam.getTableName();
-        String schema = loadParam.getDatamart();
-        if (StringUtils.isEmpty(schema)) {
-            schema = appConfiguration.getDefaultDatamart();
-        }
-        String env = appConfiguration.getSystemName();
-        String fullName = env + "__" + schema + "." + tableName;
-
-        Long deltaHot = loadParam.getDeltaHot();
+        String fullName = DdlUtils.getQualifiedTableName(request, appConfiguration);
+        Long deltaHot = request.getQueryLoadParam().getDeltaHot();
 
         return sequenceAll(Arrays.asList(  // 1. drop shard tables
                     fullName + EXT_SHARD_POSTFIX,
@@ -92,20 +82,6 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
                         fullName + BUFFER_SHARD_POSTFIX), this::dropTable))
                 .compose(v -> optimizeTable(fullName + ACTUAL_SHARD_POSTFIX))  // 6. merge shards
                 .flatMap(v -> Future.succeededFuture(QueryResult.emptyResult()));
-    }
-
-    private <T, E> Future<T> sequenceAll(@NonNull final List<E> actions,
-                                         @NonNull final Function<E, Future<T>> action) {
-        Future<T> result = null;
-        for (E a: actions) {
-            if (result == null) {
-                result = action.apply(a);
-            } else {
-                result = result.compose(v -> action.apply(a));
-            }
-        }
-
-        return result == null ? Future.succeededFuture() : result;
     }
 
     private Future<Void> dropTable(@NonNull String table) {
@@ -144,12 +120,12 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
     }
 
     private Future<List<String>> fetchColumnNames(@NonNull String table) {
-        String[] parts = table.split("\\.");
-        if (parts.length != 2) {
+        val parts = splitQualifiedTableName(table);
+        if (!parts.isPresent()) {
             return Future.failedFuture(String.format("Incorrect table name, cannot split to schema.table: %s", table));
         }
 
-        String query = String.format(SELECT_COLUMNS_QUERY, parts[0], parts[1]);
+        String query = String.format(SELECT_COLUMNS_QUERY, parts.get().getLeft(), parts.get().getRight());
 
         Promise<List<String>> promise = Promise.promise();
         databaseExecutor.execute(query, ar -> {

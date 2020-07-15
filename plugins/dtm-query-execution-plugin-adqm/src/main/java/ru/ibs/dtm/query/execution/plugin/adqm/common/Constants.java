@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.plugin.adqm.service.impl;
+package ru.ibs.dtm.query.execution.plugin.adqm.common;
 
 import java.util.Arrays;
 import java.util.HashSet;

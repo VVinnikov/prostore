@@ -10,8 +10,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
-import ru.ibs.dtm.common.model.ddl.ClassTypes;
 import ru.ibs.dtm.common.reader.QueryRequest;
+import ru.ibs.dtm.query.execution.plugin.adqm.common.DdlUtils;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
@@ -23,8 +23,8 @@ import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static ru.ibs.dtm.query.execution.plugin.adqm.service.impl.Constants.ACTUAL_POSTFIX;
-import static ru.ibs.dtm.query.execution.plugin.adqm.service.impl.Constants.ACTUAL_SHARD_POSTFIX;
+import static ru.ibs.dtm.query.execution.plugin.adqm.common.Constants.ACTUAL_POSTFIX;
+import static ru.ibs.dtm.query.execution.plugin.adqm.common.Constants.ACTUAL_SHARD_POSTFIX;
 
 @Component
 @Slf4j
@@ -54,9 +54,6 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
                     "  sign       Int8\n" +
                     ")\n" +
                     "Engine = Distributed(%s, %s__%s, %s, %s)";
-
-    private final static String NULLABLE_FIELD = "%s Nullable(%s)";
-    private final static String NOT_NULLABLE_FIELD = "%s %s";
 
     private final DatabaseExecutor databaseExecutor;
     private final DdlProperties ddlProperties;
@@ -115,7 +112,7 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
     }
 
     private String getColumns(List<ClassField> fields) {
-        return fields.stream().map(this::classFieldToString).collect(Collectors.joining(", "));
+        return fields.stream().map(DdlUtils::classFieldToString).collect(Collectors.joining(", "));
     }
 
     private String getOrderKeys(List<ClassField> fields) {
@@ -132,47 +129,4 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
         return fields.stream().filter(f -> f.getShardingOrder() != null)
                 .map(ClassField::getName).limit(1).collect(Collectors.joining(", "));
     }
-
-    private String classFieldToString(ClassField f) {
-        String name = f.getName();
-        String type = mapType(f.getType());
-        String template = f.getNullable() ? NULLABLE_FIELD : NOT_NULLABLE_FIELD;
-
-        return String.format(template, name, type);
-    }
-
-    private String mapType(ClassTypes type) {
-        switch (type) {
-            case UUID: return "UUID";
-
-            case ANY:
-            case CHAR:
-            case VARCHAR: return "String";
-
-            case INT:
-            case INTEGER:
-            case BIGINT:
-            case DATE:
-            case TIME: return "Int64";
-
-            case TINYINT: return "Int8";
-
-            case BOOL:
-            case BOOLEAN: return "UInt8";
-
-            case FLOAT: return "Float32";
-            case DOUBLE: return "Float64";
-
-            case DATETIME: return "DateTime";
-            case TIMESTAMP: return "DateTime64(3)";
-
-            // FIXME will be supported after ClassFiled will support them
-//            case DECIMAL: return "";
-//            case DEC: return "";
-//            case NUMERIC: return "";
-//            case FIXED: return "";
-        }
-        return "";
-    }
-
 }

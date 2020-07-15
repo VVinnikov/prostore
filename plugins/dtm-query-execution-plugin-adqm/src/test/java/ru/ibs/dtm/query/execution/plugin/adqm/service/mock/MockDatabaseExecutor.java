@@ -88,9 +88,15 @@ public class MockDatabaseExecutor implements DatabaseExecutor {
             return Pair.of(false, String.format("Extra call. Expected %d, got %d", expectedCalls.size(), callCount));
         }
 
-        Predicate<String> expected = expectedCalls.get(callCount - 1);
-        return expected.test(sql) ? Pair.of(true, "")
-                : Pair.of(false, String.format("Unexpected SQL: %s", sql));
+        if (isStrictOrder) {
+            Predicate<String> expected = expectedCalls.get(callCount - 1);
+            return expected.test(sql) ? Pair.of(true, "")
+                    : Pair.of(false, String.format("Unexpected SQL: %s", sql));
+        } else {
+            return expectedCalls.stream().filter(e -> e.test(sql)).findFirst()
+                    .map(v -> Pair.of(true, ""))
+                    .orElse(Pair.of(false, String.format("Unexpected SQL: %s", sql)));
+        }
     }
 
     private Optional<JsonArray> findResult(String sql) {

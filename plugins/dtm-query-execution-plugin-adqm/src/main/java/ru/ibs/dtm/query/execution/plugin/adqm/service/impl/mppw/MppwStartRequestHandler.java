@@ -4,7 +4,6 @@ import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.json.DecodeException;
-import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -46,11 +45,11 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
             ")\n" +
             "%s\n";
     private static final String BUFFER_SHARD_TEMPLATE =
-            "CREATE TABLE %s ON CLUSTER %s (%s, sys_op Nullable(Int8)) ENGINE = Join(ANY, INNER, %s)\n";
+            "CREATE TABLE %s ON CLUSTER %s (%s, sys_op Nullable(Int8)) ENGINE = Join(ANY, INNER, %s)";
     private static final String BUFFER_TEMPLATE =
             "CREATE TABLE %s ON CLUSTER %s AS %s ENGINE=%s";
     private static final String BUFFER_LOADER_TEMPLATE = "CREATE MATERIALIZED VIEW %s ON CLUSTER %s TO %s\n" +
-            "  AS SELECT %s, sys_op FROM %s";
+            "  AS SELECT %s FROM %s";
     private static final String ACTUAL_LOADER_TEMPLATE = "CREATE MATERIALIZED VIEW %s ON CLUSTER %s TO %s\n" +
             "AS SELECT %s, %d AS sys_from, 9223372036854775807 as sys_to, 0 as sys_op, '9999-12-31 00:00:00' as close_date, 1 AS sign " +
             " FROM %s WHERE sys_op <> 1";
@@ -142,7 +141,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
 
     private Optional<DatamartClass> findTableSchema(@NonNull String table, @NonNull final JsonObject schema) {
         try {
-            Datamart dm = Json.decodeValue(schema.encode(), Datamart.class);
+            Datamart dm = schema.mapTo(Datamart.class);
             return dm.getDatamartClassess().stream()
                     .filter(c -> c.getMnemonic().equalsIgnoreCase(table))
                     .findFirst();
@@ -181,7 +180,12 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
                 .map(c -> format("%s %s", c, findTypeForColumn(c, schema)))
                 .collect(Collectors.joining(", "));
 
-        String query = format(BUFFER_SHARD_TEMPLATE, tableName, ddlProperties.getCluster(), colString, columns);
+        String joinString = Arrays.stream(cols)
+                .filter(c -> !c.equalsIgnoreCase("sys_from"))
+                .collect(Collectors.joining(", "));
+
+        String query = format(BUFFER_SHARD_TEMPLATE, tableName, ddlProperties.getCluster(), colString,
+                joinString);
         return databaseExecutor.executeUpdate(query);
     }
 

@@ -36,6 +36,10 @@ public class DdlUtils {
             return Optional.of("MppwRequest.QueryLoadParam should not be null");
         }
 
+        if (request.getSchema() == null) {
+            return Optional.of("MppwRequest.schema should not be null");
+        }
+
         return Optional.empty();
     }
 

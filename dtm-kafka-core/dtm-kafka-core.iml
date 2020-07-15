@@ -5,6 +5,8 @@
       <configuration>
         <fileset id="fileset" name="VertxConfiguration" removed="false">
           <file>file://$MODULE_DIR$/src/main/java/ru/ibs/dtm/kafka/core/configuration/vertx/VertxConfiguration.java</file>
+        </fileset>
+        <fileset id="fileset2" name="KafkaConfiguration" removed="false">
           <file>file://$MODULE_DIR$/src/main/java/ru/ibs/dtm/kafka/core/configuration/kafka/KafkaConfiguration.java</file>
         </fileset>
       </configuration>

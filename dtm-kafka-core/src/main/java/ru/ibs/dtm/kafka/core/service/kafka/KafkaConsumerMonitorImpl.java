@@ -47,7 +47,7 @@ public class KafkaConsumerMonitorImpl implements KafkaConsumerMonitor {
     @Autowired
     public KafkaConsumerMonitorImpl(@Qualifier("coreKafkaAdminClient") KafkaAdminClient adminClient,
                                     @Qualifier("coreKafkaConsumerFactory") KafkaConsumerFactory<byte[], byte[]> consumerFactory,
-                                    @Qualifier("coreVertx") Vertx vertx) /*core??*/ {
+                                    @Qualifier("kafkaVertx") Vertx vertx) /*core??*/ {
         this.adminClient = adminClient;
 
         // Set Properties

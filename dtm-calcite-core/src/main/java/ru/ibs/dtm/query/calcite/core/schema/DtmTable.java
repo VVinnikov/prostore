@@ -48,12 +48,6 @@ public abstract class DtmTable extends AbstractQueryableTable implements Transla
 
     @Override
     public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
-
-//    RelTraitSet traitSet = RelTraitSet.createEmpty();
-//    traitSet.plus(dtmSchema.getConvention());
-        //Создаем реляционный оператор сканирования таблицы
-        //return new DtmTableScan(context.getCluster(), relOptTable, dtmSchema.getConvention(), datamartClass.getMnemonic());
-        //На текущий этап сделано через LogicalTableScan
-        return LogicalTableScan.create(context.getCluster(), relOptTable, new ArrayList());
+        return LogicalTableScan.create(context.getCluster(), relOptTable, new ArrayList<>());
     }
 }

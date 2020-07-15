@@ -60,13 +60,12 @@ public class LogicViewReplacerImpl implements LogicViewReplacer {
                                              String datamart,
                                              Handler<AsyncResult<String>> resultHandler) {
         val sqlNode = definitionService.processingQuery(sql);
-        val sqlSelect = (SqlSelect) sqlNode;
-        return new ReplaceContext(sqlSelect, datamart, resultHandler);
+        return new ReplaceContext(sqlNode, datamart, resultHandler);
     }
 
     private void preparing(ReplaceContext ctx) {
         val tempActions = ctx.getTempActions();
-        processSqlSelect(ctx.getRootSqlNode(), tempActions);
+        processSqlNode(ctx.getRootSqlNode(), false, tempActions, ignore());
     }
 
     private void replace(ReplaceContext ctx) {

@@ -1,13 +1,14 @@
 package ru.ibs.dtm.query.execution.plugin.adg.service.impl.enrichment;
 
-import org.springframework.stereotype.Service;
-import ru.ibs.dtm.common.reader.QueryRequest;
-import ru.ibs.dtm.query.execution.model.metadata.*;
-import ru.ibs.dtm.query.execution.plugin.adg.service.SchemaExtender;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import lombok.val;
+import org.springframework.stereotype.Service;
+import ru.ibs.dtm.common.reader.QueryRequest;
+import ru.ibs.dtm.query.execution.model.metadata.*;
+import ru.ibs.dtm.query.execution.plugin.adg.factory.AdgHelperTableNamesFactory;
+import ru.ibs.dtm.query.execution.plugin.adg.service.SchemaExtender;
 
 import static ru.ibs.dtm.query.execution.plugin.adg.constants.ColumnFields.*;
 
@@ -17,6 +18,11 @@ import static ru.ibs.dtm.query.execution.plugin.adg.constants.ColumnFields.*;
  */
 @Service("adgSchemaExtender")
 public class AdgSchemaExtenderImpl implements SchemaExtender {
+  private final AdgHelperTableNamesFactory helperTableNamesFactory;
+
+  public AdgSchemaExtenderImpl(AdgHelperTableNamesFactory helperTableNamesFactory) {
+    this.helperTableNamesFactory = helperTableNamesFactory;
+  }
 
   @Override
   public Datamart generatePhysicalSchema(Datamart datamart, QueryRequest queryRequest) {
@@ -33,6 +39,17 @@ public class AdgSchemaExtenderImpl implements SchemaExtender {
       extendedDatamartTables.add(getExtendedSchema(dmClass, prefix, HISTORY_POSTFIX));
       extendedDatamartTables.add(getExtendedSchema(dmClass, prefix, STAGING_POSTFIX));
       extendedDatamartTables.add(getExtendedSchema(dmClass, prefix, ACTUAL_POSTFIX));
+    List<DatamartClass> extendedDatamartClasses = new ArrayList<>();
+    datamart.getDatamartClassess().forEach(dmClass -> {
+      val helperTableNames = helperTableNamesFactory.create(queryRequest.getSystemName(),
+              queryRequest.getDatamartMnemonic(),
+              dmClass.getLabel());
+      dmClass.setMnemonic(dmClass.getMnemonic());
+      dmClass.getClassAttributes().addAll(getExtendedColumns());
+      extendedDatamartClasses.add(dmClass);
+      extendedDatamartClasses.add(getExtendedSchema(dmClass, helperTableNames.getHistory()));
+      extendedDatamartClasses.add(getExtendedSchema(dmClass, helperTableNames.getStaging()));
+      extendedDatamartClasses.add(getExtendedSchema(dmClass, helperTableNames.getActual()));
     });
     extendedSchema.setDatamartTables(extendedDatamartTables);
 

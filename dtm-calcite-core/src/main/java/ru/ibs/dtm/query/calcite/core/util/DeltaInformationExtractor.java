@@ -3,7 +3,6 @@ package ru.ibs.dtm.query.calcite.core.util;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -26,7 +25,6 @@ public class DeltaInformationExtractor {
     private static final SqlDialect DIALECT = new SqlDialect(CalciteSqlDialect.EMPTY_CONTEXT);
     private static final DateTimeFormatter LOCAL_DATE_TIME = new DateTimeFormatterBuilder()
             .parseCaseInsensitive()
-            .appendLiteral("'")
             .append(ISO_LOCAL_DATE)
             .appendLiteral(' ')
             .appendValue(HOUR_OF_DAY, 2)
@@ -35,14 +33,12 @@ public class DeltaInformationExtractor {
             .optionalStart()
             .appendLiteral(':')
             .appendValue(SECOND_OF_MINUTE, 2)
-            .appendLiteral("'")
             .toFormatter();
 
-    public static DeltaInformationResult extract(SqlNode root, String defaultDatamart) {
+    public static DeltaInformationResult extract(SqlNode root) {
         try {
             val tree = new SqlSelectTree(root);
             val allTableAndSnapshots = tree.findAllTableAndSnapshots();
-            allTableAndSnapshots.forEach(n -> setDatamart(n, defaultDatamart));
             val deltaInformations = getDeltaInformations(tree, allTableAndSnapshots);
             replaceSnapshots(getSnapshots(allTableAndSnapshots));
             return new DeltaInformationResult(deltaInformations, root.toSqlString(DIALECT).toString());
@@ -50,32 +46,6 @@ public class DeltaInformationExtractor {
             log.error("DeltaInformation extracts Error", e);
             throw e;
         }
-    }
-
-    private static void setDatamart(SqlTreeNode n, String defaultDatamart) {
-        if (n.getNode() instanceof SqlSnapshot) {
-            SqlSnapshot snapshot = n.getNode();
-            if (snapshot.getTableRef() instanceof SqlIdentifier) {
-                SqlIdentifier identifier = (SqlIdentifier) snapshot.getTableRef();
-                snapshot.setOperand(0, getSqlIdentifier(defaultDatamart, identifier));
-            }
-        } else if (n.getNode() instanceof SqlIdentifier) {
-            setDatamartToIdentifier(n, defaultDatamart);
-        }
-    }
-
-    private static void setDatamartToIdentifier(SqlTreeNode n, String defaultDatamart) {
-        SqlIdentifier identifier = getSqlIdentifier(defaultDatamart, n.getNode());
-        n.getSqlNodeSetter().accept(identifier);
-    }
-
-    private static SqlIdentifier getSqlIdentifier(String defaultDatamart, SqlIdentifier node) {
-        SqlIdentifier identifier = node;
-        if (identifier.isSimple()) {
-            identifier = new SqlIdentifier(Arrays.asList(defaultDatamart, identifier.getSimple()),
-                    identifier.getParserPosition());
-        }
-        return identifier;
     }
 
     private static List<DeltaInformation> getDeltaInformations(SqlSelectTree tree, List<SqlTreeNode> nodes) {
@@ -99,7 +69,7 @@ public class DeltaInformationExtractor {
         }
     }
 
-    private static DeltaInformation getDeltaInformation(SqlSelectTree tree, SqlTreeNode n) {
+    public static DeltaInformation getDeltaInformation(SqlSelectTree tree, SqlTreeNode n) {
         Optional<SqlTreeNode> optParent = tree.getParentByChild(n);
         if (optParent.isPresent()) {
             SqlTreeNode parent = optParent.get();
@@ -163,7 +133,9 @@ public class DeltaInformationExtractor {
             aliasVal = alias.names.get(0);
         }
 
-        String deltaTime = snapshotTime == null ? LOCAL_DATE_TIME.format(LocalDateTime.now()) : snapshotTime;
+        String deltaTime = snapshotTime == null
+                ? LOCAL_DATE_TIME.format(LocalDateTime.now())
+                : snapshotTime.replaceAll("'", "");
 
         return new DeltaInformation(
                 aliasVal,

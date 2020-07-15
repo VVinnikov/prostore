@@ -17,7 +17,7 @@ public class AdqmDataSourcePluginConfig {
             @Qualifier("adqmDdlService") DdlService<Void> ddlService,
             @Qualifier("adqmLlrService") LlrService<QueryResult> llrService,
             @Qualifier("adqmMpprKafkaService") MpprKafkaService<QueryResult> mpprKafkaService,
-            @Qualifier("adbMppwKafkaService") MppwKafkaService<QueryResult> mppwKafkaService,
+            @Qualifier("adqmMppwKafkaService") MppwKafkaService<QueryResult> mppwKafkaService,
             @Qualifier("adqmQueryCostService") QueryCostService<Integer> queryCostService,
             @Qualifier("adqmStatusService") StatusService<StatusQueryResult> statusService) {
         return new AdqmDtmDataSourcePlugin(

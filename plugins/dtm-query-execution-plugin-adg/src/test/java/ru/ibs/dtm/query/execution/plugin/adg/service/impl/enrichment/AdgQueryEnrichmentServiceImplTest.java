@@ -9,28 +9,24 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestOptions;
 import io.vertx.ext.unit.TestSuite;
 import io.vertx.ext.unit.report.ReportOptions;
-import io.vertx.junit5.VertxTestContext;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-import ru.ibs.dtm.common.dto.ActualDeltaRequest;
-import ru.ibs.dtm.common.reader.QueryRequest;
-import ru.ibs.dtm.common.service.DeltaService;
-import ru.ibs.dtm.query.execution.model.metadata.Datamart;
-import ru.ibs.dtm.query.execution.plugin.adg.calcite.AdgCalciteContextProvider;
-import ru.ibs.dtm.query.execution.plugin.adg.calcite.CalciteSchemaFactory;
-import ru.ibs.dtm.query.execution.plugin.adg.configuration.CalciteConfiguration;
-import ru.ibs.dtm.query.execution.plugin.adg.dto.EnrichQueryRequest;
-import ru.ibs.dtm.query.execution.plugin.adg.factory.SchemaFactoryImpl;
-import ru.ibs.dtm.query.execution.plugin.adg.service.QueryEnrichmentService;
-import ru.ibs.dtm.query.execution.plugin.adg.service.QueryExtendService;
-import ru.ibs.dtm.query.execution.plugin.adg.service.QueryParserService;
-import ru.ibs.dtm.query.execution.plugin.adg.service.impl.query.AdgQueryRegexPreprocessor;
-import ru.ibs.dtm.query.execution.plugin.adg.utils.JsonUtils;
-
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import lombok.val;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import ru.ibs.dtm.common.reader.QueryRequest;
+import ru.ibs.dtm.query.calcite.core.service.QueryParserService;
+import ru.ibs.dtm.common.service.DeltaService;
+import ru.ibs.dtm.query.execution.model.metadata.Datamart;
+import ru.ibs.dtm.query.execution.plugin.adg.calcite.AdgCalciteContextProvider;
+import ru.ibs.dtm.query.execution.plugin.adg.calcite.AdgCalciteSchemaFactory;
+import ru.ibs.dtm.query.execution.plugin.adg.configuration.AdgCalciteConfiguration;
+import ru.ibs.dtm.query.execution.plugin.adg.dto.EnrichQueryRequest;
+import ru.ibs.dtm.query.execution.plugin.adg.factory.AdgSchemaFactory;
+import ru.ibs.dtm.query.execution.plugin.adg.factory.impl.AdgHelperTableNamesFactoryImpl;
+import ru.ibs.dtm.query.execution.plugin.adg.service.QueryEnrichmentService;
+import ru.ibs.dtm.query.execution.plugin.adg.utils.JsonUtils;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -39,30 +35,29 @@ import static org.mockito.Mockito.mock;
 
 public class AdgQueryEnrichmentServiceImplTest {
 
-    private QueryEnrichmentService enrichService;
-    private VertxTestContext testContext = new VertxTestContext();
-    private QueryParserService queryParserService;
-    private DeltaService deltaService = mock(DeltaService.class);
+    private final QueryEnrichmentService enrichService;
+    private final QueryParserService queryParserService = mock(QueryParserService.class);
 
     public AdgQueryEnrichmentServiceImplTest() {
-        CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
-        AdgCalciteContextProvider contextProvider = new AdgCalciteContextProvider(
-                calciteConfiguration.configDdlParser(calciteConfiguration.ddlParserImplFactory()));
-        AdgQueryRegexPreprocessor regexPreprocessor = new AdgQueryRegexPreprocessor();
+        val calciteConfiguration = new AdgCalciteConfiguration();
+        calciteConfiguration.init();
+        val parserConfig = calciteConfiguration.configDdlParser(
+                calciteConfiguration.ddlParserImplFactory()
+        );
+        val contextProvider = new AdgCalciteContextProvider(
+                parserConfig,
+                new AdgCalciteSchemaFactory(new AdgSchemaFactory()));
 
-        queryParserService = new AdgCalciteDmlQueryParserServiceImpl(
-                new AdgSchemaExtenderImpl(),
-                Vertx.vertx(),
-                new CalciteSchemaFactory(
-                        new SchemaFactoryImpl()));
-        QueryExtendService queryExtendService = new AdgCalciteDmlQueryExtendServiceImpl();
+        val queryParserService = new AdgCalciteDMLQueryParserService(contextProvider, Vertx.vertx());
+        val helperTableNamesFactory = new AdgHelperTableNamesFactoryImpl();
+        val queryExtendService = new AdgCalciteDmlQueryExtendServiceImpl(helperTableNamesFactory);
 
         enrichService = new AdgQueryEnrichmentServiceImpl(
-                deltaService,
-                regexPreprocessor,
-                contextProvider,
                 queryParserService,
-                new AdgQueryGeneratorImpl(queryExtendService));
+                contextProvider,
+                new AdgQueryGeneratorImpl(queryExtendService,
+                        calciteConfiguration.adgSqlDialect()),
+                new AdgSchemaExtenderImpl(helperTableNamesFactory));
     }
 
     @Test
@@ -70,7 +65,7 @@ public class AdgQueryEnrichmentServiceImplTest {
     void enrichWithoutTimestamp() throws Throwable {
         //FIXME
         enrich("SELECT id " +
-                "FROM test_datamart.reg_cxt FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14'");
+                "FROM test_datamart.reg_cxt");
     }
 
     @Test
@@ -78,7 +73,7 @@ public class AdgQueryEnrichmentServiceImplTest {
     void enrichWithTimestamp() throws Throwable {
         //FIXME
         enrich("SELECT id " +
-                "FROM test_datamart.reg_cxt FOR SYSTEM_TIME AS OF TIMESTAMP '2019-12-23 15:15:14'");
+                "FROM test_datamart.reg_cxt");
     }
 
     @Test
@@ -86,29 +81,16 @@ public class AdgQueryEnrichmentServiceImplTest {
     void enrichWithQuotes() throws Throwable {
         //FIXME
         enrich("SELECT \"id\" " +
-                "FROM \"test_datamart\".\"reg_cxt\" FOR SYSTEM_TIME AS OF TIMESTAMP '2019-12-23 15:15:14'");
-    }
-
-    @Test
-    @Disabled
-    void enrichWithoutSchema() throws Throwable {
-        //FIXME
-        enrich("SELECT id " +
-                "FROM reg_cxt FOR SYSTEM_TIME AS OF TIMESTAMP '2019-12-23 15:15:14'");
+                "FROM \"test_datamart\".\"reg_cxt\"");
     }
 
     private void enrich(String sql) throws Throwable {
-        class EnrichResultOk {
-            private List<ActualDeltaRequest> deltaRequests;
-        }
-        final EnrichResultOk enrichResultOk = new EnrichResultOk();
-
         doAnswer(invocation -> {
-            enrichResultOk.deltaRequests = invocation.getArgument(0);
+            // FIXME
             final Handler<AsyncResult<List<Long>>> handler = invocation.getArgument(1);
             handler.handle(Future.succeededFuture(Arrays.asList(2L, 1L)));
             return null;
-        }).when(deltaService).getDeltasOnDateTimes(any(), any());
+        }).when(queryParserService).parse(any(), any());
 
         final QueryRequest queryRequest = new QueryRequest();
         queryRequest.setSql(sql);

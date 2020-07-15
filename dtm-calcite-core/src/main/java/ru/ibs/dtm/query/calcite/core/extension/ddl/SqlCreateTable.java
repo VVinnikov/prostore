@@ -1,10 +1,9 @@
 package ru.ibs.dtm.query.calcite.core.extension.ddl;
 
+import java.util.List;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.ImmutableNullableList;
-
-import java.util.List;
 
 public class SqlCreateTable extends SqlCreate {
 	private final SqlIdentifier name;
@@ -45,8 +44,6 @@ public class SqlCreateTable extends SqlCreate {
 			writer.endList(frame);
 		}
 		if (distributedBy != null) {
-			writer.keyword("DISTRIBUTED BY");
-			writer.newlineAndIndent();
 			distributedBy.unparse(writer, 0, 0);
 		}
 		if (query != null) {

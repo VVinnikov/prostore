@@ -1,30 +1,31 @@
 package ru.ibs.dtm.query.execution.plugin.adqm.service.impl.query;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.SneakyThrows;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import ru.ibs.dtm.query.execution.plugin.adqm.calcite.CalciteContextProvider;
-import ru.ibs.dtm.query.execution.plugin.adqm.calcite.CalciteSchemaFactory;
+import org.springframework.core.env.AbstractEnvironment;
+import ru.ibs.dtm.common.delta.DeltaInformation;
+import ru.ibs.dtm.query.execution.plugin.adqm.calcite.AdqmCalciteContextProvider;
+import ru.ibs.dtm.query.execution.plugin.adqm.calcite.AdqmCalciteSchemaFactory;
+import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.CalciteConfiguration;
-import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.QueryEnrichmentProperties;
-import ru.ibs.dtm.query.execution.plugin.adqm.dto.DeltaInformation;
-import ru.ibs.dtm.query.execution.plugin.adqm.factory.impl.SchemaFactoryImpl;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import ru.ibs.dtm.query.execution.plugin.adqm.factory.impl.AdqmSchemaFactory;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class QueryRewriterTest {
-    private static final QueryEnrichmentProperties queryEnrichmentProperties = new QueryEnrichmentProperties();
-    private static CalciteContextProvider calciteContextProvider;
+    private static AppConfiguration appConfiguration;
+    private static AdqmCalciteContextProvider calciteContextProvider;
 
     @BeforeAll
     public static void setup() {
@@ -34,17 +35,31 @@ class QueryRewriterTest {
                 calciteConfiguration.ddlParserImplFactory()
         );
 
-        calciteContextProvider = new CalciteContextProvider(
+        calciteContextProvider = new AdqmCalciteContextProvider(
                 parserConfig,
-                new CalciteSchemaFactory(new SchemaFactoryImpl()));
+                new AdqmCalciteSchemaFactory(new AdqmSchemaFactory()));
 
-        queryEnrichmentProperties.setDefaultDatamart("test_datamart");
-        queryEnrichmentProperties.setName("dev");
+        appConfiguration = new AppConfiguration(new MockEnvironment());
+    }
+
+    private static void assertGrep(String data, String regexp) {
+        Pattern pattern = Pattern.compile(regexp, Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(data);
+        assertTrue(matcher.find(), String.format("Expected: %s, Received: %s", regexp, data));
+    }
+
+    private static List<DeltaInformation> mockDeltas() {
+        SqlParserPos pos = new SqlParserPos(0, 0);
+        return Arrays.asList(
+                new DeltaInformation("a", "2019-12-23 15:15:14", 101L, "shares", "accounts", pos),
+                new DeltaInformation("b", "2019-12-23 15:15:14", 102L, "test_datamart", "balances", pos),
+                new DeltaInformation("", "2020-06-10 23:59:59", 103L, "shares", "transactions", pos)
+        );
     }
 
     @Test
     public void testQueryRewrite() {
-        QueryRewriter rewriter = new QueryRewriter(calciteContextProvider, queryEnrichmentProperties);
+        QueryRewriter rewriter = new QueryRewriter(calciteContextProvider, appConfiguration);
 
         String query = "select *, " +
                 "       CASE " +
@@ -54,9 +69,9 @@ class QueryRewriterTest {
                 "       END " +
                 " from (\n" +
                 "    select a.account_id, coalesce(sum(amount),0) amount, a.account_type\n" +
-                "    from shares.accounts FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' a " +
+                "    from shares.accounts a " +
                 "    join balances b on b.account_id = a.account_id\n" +
-                "    left join shares.transactions FOR SYSTEM_TIME AS OF '2020-06-10 23:59:59'" +
+                "    left join shares.transactions" +
                 "       using(account_id)\n" +
                 "    group by a.account_id, a.account_type\n" +
                 ") x";
@@ -74,16 +89,16 @@ class QueryRewriterTest {
             assertGrep(modifiedQuery, "UNION ALL");
 
             // where with delta filters
-            assertGrep(modifiedQuery, "101 between asymmetric `a`.`sys_from` and `a`.`sys_to`");
-            assertGrep(modifiedQuery, "102 between asymmetric `b`.`sys_from` and `b`.`sys_to`");
-            assertGrep(modifiedQuery, "103 between asymmetric `transactions`.`sys_from` and `transactions`.`sys_to`");
+            assertGrep(modifiedQuery, "101 between\\s+`a`.`sys_from` and `a`.`sys_to`");
+            assertGrep(modifiedQuery, "102 between\\s+`b`.`sys_from` and `b`.`sys_to`");
+            assertGrep(modifiedQuery, "103 between\\s+`transactions_actual_shard`.`sys_from` and `transactions_actual_shard`.`sys_to`");
         });
     }
 
     @SneakyThrows
     @Test
     public void testFinalKeywordRewrite() {
-        QueryRewriter rewriter = new QueryRewriter(calciteContextProvider, queryEnrichmentProperties);
+        QueryRewriter rewriter = new QueryRewriter(calciteContextProvider, appConfiguration);
 
         String query = "select * from shares.account_actual_final t";
         SqlNode root = calciteContextProvider.context(null).getPlanner().parse(query);
@@ -105,20 +120,6 @@ class QueryRewriterTest {
         assertGrep(result, "`transactions_actual`\\s+FINAL\\s+USING");
     }
 
-    private static void assertGrep(String data, String regexp) {
-        Pattern pattern = Pattern.compile(regexp, Pattern.CASE_INSENSITIVE);
-        Matcher matcher = pattern.matcher(data);
-        assertTrue(matcher.find(), String.format("Expected: %s, Received: %s", regexp, data));
-    }
-
-    private static List<DeltaInformation> mockDeltas() {
-        return Arrays.asList(
-                new DeltaInformation("shares", "accounts", "a", "2019-12-23 15:15:14", 101L),
-                new DeltaInformation("", "balances", "b", "2019-12-23 15:15:14", 102L),
-                new DeltaInformation("shares", "transactions", "", "2020-06-10 23:59:59", 103L)
-        );
-    }
-
     // Default Parser implementation uses \" for quoting, but default internal formatting is backtick `
     // So when we translate SqlNode.toString, and try to parse it, we should use another parser config
     private SqlParser.Config internalRepresentationConfig() {
@@ -135,5 +136,20 @@ class QueryRewriterTest {
     private SqlNode parseInternalRepresentation(String sql) {
         SqlParser parser = SqlParser.create(sql, internalRepresentationConfig());
         return parser.parseQuery();
+    }
+
+    private static class MockEnvironment extends AbstractEnvironment {
+        @Override
+        public <T> T getProperty(String key, Class<T> targetType) {
+            if (key.equals("env.name")) {
+                return (T) "dev";
+            }
+
+            if (key.equals("env.defaultDatamart")) {
+                return (T) "test_datamart";
+            }
+
+            return super.getProperty(key, targetType);
+        }
     }
 }

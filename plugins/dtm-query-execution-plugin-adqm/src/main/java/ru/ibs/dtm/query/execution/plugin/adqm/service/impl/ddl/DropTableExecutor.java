@@ -12,13 +12,12 @@ import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
-import ru.ibs.dtm.query.execution.plugin.adqm.service.impl.Constants;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
 
-import static ru.ibs.dtm.query.execution.plugin.adqm.service.impl.Constants.ACTUAL_POSTFIX;
-import static ru.ibs.dtm.query.execution.plugin.adqm.service.impl.Constants.ACTUAL_SHARD_POSTFIX;
+import static ru.ibs.dtm.query.execution.plugin.adqm.common.Constants.ACTUAL_POSTFIX;
+import static ru.ibs.dtm.query.execution.plugin.adqm.common.Constants.ACTUAL_SHARD_POSTFIX;
 
 @Component
 @Slf4j

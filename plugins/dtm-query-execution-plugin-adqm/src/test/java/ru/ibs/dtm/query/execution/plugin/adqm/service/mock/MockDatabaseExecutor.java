@@ -10,14 +10,30 @@ import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 
 public class MockDatabaseExecutor implements DatabaseExecutor {
     private final List<Predicate<String>> expectedCalls;
+    private final Map<Predicate<String>, JsonArray> mockData;
     private int callCount;
+    private boolean isStrictOrder;
 
-    public MockDatabaseExecutor(List<Predicate<String>> expectedCalls) {
+    public MockDatabaseExecutor(final List<Predicate<String>> expectedCalls,
+                                final Map<Predicate<String>, JsonArray> mockData,
+                                boolean isStrictOrder) {
         this.expectedCalls = expectedCalls;
+        this.mockData = mockData;
+        this.isStrictOrder = isStrictOrder;
+    }
+
+    public MockDatabaseExecutor(final List<Predicate<String>> expectedCalls) {
+        this(expectedCalls, Collections.emptyMap(), true);
+    }
+
+    public MockDatabaseExecutor(final List<Predicate<String>> expectedCalls,
+                                final Map<Predicate<String>, JsonArray> mockData) {
+        this(expectedCalls, mockData, true);
     }
 
     @Override

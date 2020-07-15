@@ -1,117 +1,93 @@
 package ru.ibs.dtm.query.execution.plugin.adg.service.impl.enrichment;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
-import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
 import org.springframework.stereotype.Service;
-import ru.ibs.dtm.common.reader.QueryRequest;
+import ru.ibs.dtm.query.execution.plugin.adg.dto.QueryGeneratorContext;
+import ru.ibs.dtm.query.execution.plugin.adg.factory.AdgHelperTableNamesFactory;
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryExtendService;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.stream.IntStream;
-
-import static ru.ibs.dtm.query.execution.plugin.adg.constants.ColumnFields.*;
+import static ru.ibs.dtm.query.execution.plugin.adg.constants.ColumnFields.SYS_FROM_FIELD;
+import static ru.ibs.dtm.query.execution.plugin.adg.constants.ColumnFields.SYS_TO_FIELD;
 
 
-@Service("adgCalciteDmlQueryExtendService")
 @Slf4j
+@Service("adgCalciteDmlQueryExtendService")
 public class AdgCalciteDmlQueryExtendServiceImpl implements QueryExtendService {
-  private LinkedList<Object> options = new LinkedList<>();
-  private RelBuilder relBuilder;
+    private final AdgHelperTableNamesFactory helperTableNamesFactory;
 
-  public void setRequestBuilder(RelBuilder relBuilder, boolean clearOptions) {
-    // TODO refactor this, do not hold the relBuilder state, it will cause
-    // issues in concurrent execution
-    this.relBuilder = relBuilder;
-    if (clearOptions) {
-      options = new LinkedList<>();
-    }
-  }
-
-  public void addOption(Object option) {
-    options.add(option);
-  }
-
-  public RelNode extendQuery(QueryRequest queryRequest, RelNode queryTree) {
-    if (options.isEmpty()) {
-      throw new RuntimeException("Не определены параметры для обогащения запроса");
-    }
-    relBuilder.clear();
-    RelNode relNode = iterateTree(queryRequest, queryTree);
-    relBuilder.clear();
-    return relNode;
-  }
-
-  RelNode iterateTree(QueryRequest queryRequest, RelNode node) {
-    List<RelNode> newInput = new ArrayList();
-    if (node.getInputs() == null || node.getInputs().isEmpty()) {
-      if (node instanceof TableScan) {
-        relBuilder.push(insertModifiedTableScan(queryRequest, node, (Long) options.getFirst()));
-        removeOption();
-      }
-      return relBuilder.build();
-    }
-    node.getInputs().forEach(input -> {
-      newInput.add(iterateTree(queryRequest, input));
-    });
-    relBuilder.push(node.copy(node.getTraitSet(), newInput));
-    return relBuilder.build();
-  }
-
-  private void removeOption() {
-    options.removeFirst();
-  }
-
-  RelNode insertModifiedTableScan(QueryRequest queryRequest, RelNode tableScan, Long selectOnDelta) {
-    RelBuilder relBuilder = RelBuilder.proto(tableScan.getCluster().getPlanner().getContext()).create(tableScan.getCluster(), this.relBuilder.getRelOptSchema());
-
-    RexBuilder rexBuilder = relBuilder.getCluster().getRexBuilder();
-    List<RexNode> rexNodes = new ArrayList<>();
-    IntStream.range(0, tableScan.getTable().getRowType().getFieldList().size()).forEach(index ->
-      {
-        rexNodes.add(rexBuilder.makeInputRef(tableScan, index));
-      }
-    );
-
-    if (selectOnDelta == null) {
-      log.warn("Параметр selectOn = null использовано значение 0");
-      selectOnDelta = 0L;
+    public AdgCalciteDmlQueryExtendServiceImpl(AdgHelperTableNamesFactory helperTableNamesFactory) {
+        this.helperTableNamesFactory = helperTableNamesFactory;
     }
 
-    String prefix = queryRequest.getSystemName() + "_" + queryRequest.getDatamartMnemonic() + "_";
-    String physicalActualTableName = createPhysicalTableName(tableScan.getTable().getQualifiedName(), prefix, ACTUAL_POSTFIX);
-    String physicalHistoryTableName = createPhysicalTableName(tableScan.getTable().getQualifiedName(), prefix, HISTORY_POSTFIX);
+    public RelNode extendQuery(QueryGeneratorContext context) {
+        context.getRelBuilder().clear();
+        RelNode relNode = iterateTree(context, context.getRelNode().rel);
+        context.getRelBuilder().clear();
+        return relNode;
+    }
 
-    RelNode topRelNode = relBuilder.scan(physicalHistoryTableName).filter(
-      relBuilder.call(SqlStdOperatorTable.AND,
-        relBuilder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
-          relBuilder.field(SYS_FROM_FIELD),
-          relBuilder.literal(selectOnDelta)),
-        relBuilder.call(SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
-          relBuilder.field(SYS_TO_FIELD),
-          relBuilder.literal(selectOnDelta))
-      )
-    ).project(rexNodes).build();
-    RelNode bottomRelNode = relBuilder.scan(physicalActualTableName).filter(
-      relBuilder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
-        relBuilder.field(SYS_FROM_FIELD),
-        relBuilder.literal(selectOnDelta))).project(rexNodes).build();
+    RelNode iterateTree(QueryGeneratorContext context, RelNode node) {
+        List<RelNode> newInput = new ArrayList<>();
+        if (node.getInputs() == null || node.getInputs().isEmpty()) {
+            if (node instanceof TableScan) {
+                context.getRelBuilder().push(insertModifiedTableScan(context, node, context.getDeltaIterator().next().getDeltaNum()));
+            }
+            return context.getRelBuilder().build();
+        }
+        node.getInputs().forEach(input -> {
+            newInput.add(iterateTree(context, input));
+        });
+        context.getRelBuilder().push(node.copy(node.getTraitSet(), newInput));
+        return context.getRelBuilder().build();
+    }
 
-    RelNode subQueryNode = relBuilder.push(topRelNode).push(bottomRelNode).union(true).build();
-    return subQueryNode;
-  }
+    RelNode insertModifiedTableScan(QueryGeneratorContext context, RelNode tableScan, Long selectOnDelta) {
+        val relBuilder = RelBuilder.proto(tableScan.getCluster().getPlanner().getContext())
+                .create(tableScan.getCluster(), context.getRelBuilder().getRelOptSchema());
 
-  private String createPhysicalTableName(List<String> qualifiedName, String prefix, String postfix) {
-    List<String> mutableQualifiedName = new ArrayList<>(qualifiedName);
-    //формирует имя физической таблицы, к примеру DOC_ACTUAL или OBJ_HISTORY
-    //TODO будет переделываться на <имя среды>_<имя схемы>__<имя таблицы>_<суффикс>
-    return prefix + mutableQualifiedName.get(mutableQualifiedName.size() > 1 ? 1 : 0) + postfix;
-  }
+        val rexBuilder = relBuilder.getCluster().getRexBuilder();
+        List<RexNode> rexNodes = new ArrayList<>();
+        IntStream.range(0, tableScan.getTable().getRowType().getFieldList().size()).forEach(index ->
+                {
+                    rexNodes.add(rexBuilder.makeInputRef(tableScan, index));
+                }
+        );
+
+        if (selectOnDelta == null) {
+            log.warn("Параметр selectOn = null использовано значение 0");
+            selectOnDelta = 0L;
+        }
+        val qualifiedName = tableScan.getTable().getQualifiedName();
+        val tableName = qualifiedName.get(qualifiedName.size() > 1 ? 1 : 0);
+        val queryRequest = context.getQueryRequest();
+        val tableNames = helperTableNamesFactory.create(queryRequest.getSystemName(),
+                queryRequest.getDatamartMnemonic(),
+                tableName);
+        val topRelNode = relBuilder.scan(tableNames.getHistory()).filter(
+                relBuilder.call(SqlStdOperatorTable.AND,
+                        relBuilder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
+                                relBuilder.field(SYS_FROM_FIELD),
+                                relBuilder.literal(selectOnDelta)),
+                        relBuilder.call(SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
+                                relBuilder.field(SYS_TO_FIELD),
+                                relBuilder.literal(selectOnDelta))
+                )
+        ).project(rexNodes).build();
+        val bottomRelNode = relBuilder.scan(tableNames.getActual()).filter(
+                relBuilder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
+                        relBuilder.field(SYS_FROM_FIELD),
+                        relBuilder.literal(selectOnDelta))).project(rexNodes).build();
+
+        return relBuilder.push(topRelNode).push(bottomRelNode).union(true).build();
+    }
 
 }

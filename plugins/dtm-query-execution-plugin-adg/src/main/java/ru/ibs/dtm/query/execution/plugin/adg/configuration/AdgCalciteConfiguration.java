@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.plugin.adb.configuration;
+package ru.ibs.dtm.query.execution.plugin.adg.configuration;
 
 import javax.annotation.PostConstruct;
 import org.apache.calcite.avatica.util.Casing;
@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class CalciteConfiguration {
+public class AdgCalciteConfiguration {
 
     @PostConstruct
     public void init() {
@@ -24,8 +24,8 @@ public class CalciteConfiguration {
         System.setProperty("calcite.default.collation.name", "UTF-8$ru_RU");
     }
 
-    @Bean("adbParserConfig")
-    public SqlParser.Config configDdlParser(@Qualifier("adbParser") SqlParserImplFactory factory) {
+    @Bean("adgParserConfig")
+    public SqlParser.Config configDdlParser(@Qualifier("adgParser") SqlParserImplFactory factory) {
         return SqlParser.configBuilder()
                 .setParserFactory(factory)
                 .setConformance(SqlConformanceEnum.DEFAULT)
@@ -36,7 +36,7 @@ public class CalciteConfiguration {
                 .build();
     }
 
-    @Bean("adbParser")
+    @Bean("adgParser")
     public SqlParserImplFactory ddlParserImplFactory() {
         return reader -> {
             final SqlDdlParserImpl parser = new SqlDdlParserImpl(reader);
@@ -48,11 +48,11 @@ public class CalciteConfiguration {
         };
     }
 
-    @Bean("adbSqlDialect")
-    public SqlDialect adbSqlDialect() {
+    @Bean("adgSqlDialect")
+    public SqlDialect adgSqlDialect() {
         SqlDialect.Context CONTEXT = SqlDialect.EMPTY_CONTEXT
-                .withDatabaseProduct(SqlDialect.DatabaseProduct.POSTGRESQL)
-                .withIdentifierQuoteString("")
+                .withDatabaseProduct(SqlDialect.DatabaseProduct.UNKNOWN)
+                .withIdentifierQuoteString("\"")
                 .withUnquotedCasing(Casing.TO_LOWER)
                 .withCaseSensitive(false)
                 .withQuotedCasing(Casing.UNCHANGED);

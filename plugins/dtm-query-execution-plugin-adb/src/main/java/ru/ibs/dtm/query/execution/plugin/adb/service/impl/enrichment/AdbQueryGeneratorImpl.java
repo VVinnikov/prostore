@@ -9,11 +9,12 @@ import lombok.val;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
+import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.util.Util;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.calcite.CalciteContext;
 import ru.ibs.dtm.common.delta.DeltaInformation;
-import ru.ibs.dtm.query.execution.plugin.adb.calcite.schema.dialect.AdbDtmConvention;
 import ru.ibs.dtm.query.execution.plugin.adb.dto.QueryGeneratorContext;
 import ru.ibs.dtm.query.execution.plugin.adb.service.QueryExtendService;
 import ru.ibs.dtm.query.execution.plugin.adb.service.QueryGenerator;
@@ -23,9 +24,12 @@ import ru.ibs.dtm.query.execution.plugin.adb.service.QueryGenerator;
 public class AdbQueryGeneratorImpl implements QueryGenerator {
 
     private final QueryExtendService queryExtendService;
+    private final SqlDialect sqlDialect;
 
-    public AdbQueryGeneratorImpl(QueryExtendService queryExtendService) {
+    public AdbQueryGeneratorImpl(QueryExtendService queryExtendService,
+                                 @Qualifier("adbSqlDialect") SqlDialect sqlDialect) {
         this.queryExtendService = queryExtendService;
+        this.sqlDialect = sqlDialect;
     }
 
     @Override
@@ -42,8 +46,8 @@ public class AdbQueryGeneratorImpl implements QueryGenerator {
             val planAfter = calciteContext.getPlanner().transform(0,
                     extendedQuery.getTraitSet().replace(EnumerableConvention.INSTANCE),
                     extendedQuery);
-            val sqlNodeResult = new RelToSqlConverter(AdbDtmConvention.getDialect()).visitChild(0, planAfter).asStatement();
-            val queryResult = Util.toLinux(sqlNodeResult.toSqlString(AdbDtmConvention.getDialect()).getSql()).replaceAll("\n", " ");
+            val sqlNodeResult = new RelToSqlConverter(sqlDialect).visitChild(0, planAfter).asStatement();
+            val queryResult = Util.toLinux(sqlNodeResult.toSqlString(sqlDialect).getSql()).replaceAll("\n", " ");
             log.debug("sql = " + queryResult);
             handler.handle(Future.succeededFuture(queryResult));
         } catch (Exception e) {

@@ -12,3 +12,4 @@ ddl:
 
 mppw:
   consumerGroup: ${ADQM_CONSUMER_GROUP:adqm}
+  kafkaBrokers: {$ADQM_BROKERS:10.92.6.44:9092}

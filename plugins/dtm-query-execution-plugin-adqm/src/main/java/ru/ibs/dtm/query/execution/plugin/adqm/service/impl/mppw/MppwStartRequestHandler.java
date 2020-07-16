@@ -155,8 +155,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     }
 
     private String genKafkaEngine(@NonNull final MppwRequest request, @NonNull String tableName) {
-        // FIXME Actually we receive ZK host/port, but for consumer we should provide list of the brokers host:port
-        String brokers = request.getZookeeperHost() + ":9092";
+        String brokers = mppwProperties.getKafkaBrokers();
         String topic = request.getTopic();
         String consumerGroup = mppwProperties.getConsumerGroup() + tableName;
         // FIXME Support other formats (Text, CSV, Json?)

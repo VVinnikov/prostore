@@ -4,6 +4,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlNode;
@@ -15,6 +16,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
+import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.query.calcite.core.extension.delta.SqlBeginDelta;
 import ru.ibs.dtm.query.calcite.core.extension.delta.SqlCommitDelta;
 import ru.ibs.dtm.query.calcite.core.extension.eddl.DropDatabase;
@@ -68,7 +70,9 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
 			if (parseResult.succeeded()) {
 				try {
 					queryRequest.setSystemName(configuration.getSystemName());
-					SqlNode sqlNode = parseResult.result();
+					ParsedQueryResponse parsedQueryResponse = parseResult.result();
+					SqlNode sqlNode = parsedQueryResponse.getSqlNode();
+					queryRequest.setSourceType(parsedQueryResponse.getSourceType());
 					if (existsDatamart(sqlNode)) {
 						if (Strings.isEmpty(queryRequest.getDatamartMnemonic())) {
 							val datamartMnemonic = datamartMnemonicExtractor.extract(sqlNode);
@@ -91,15 +95,15 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
 	}
 
 	private void getParsedQuery(QueryRequest queryRequest,
-								Handler<AsyncResult<SqlNode>> asyncResultHandler) {
-		vertx.executeBlocking(it ->
+								Handler<AsyncResult<ParsedQueryResponse>> asyncResultHandler) {
+		vertx.executeBlocking( it ->
 			{
 				try {
 					val hint = hintExtractor.extractHint(queryRequest);
 					val query = hint.getQueryRequest().getSql();
 					log.debug("Предпарсинг запроса: {}", query);
 					val node = definitionService.processingQuery(query);
-					it.complete(node);
+					it.complete(new ParsedQueryResponse(node, query, hint.getSourceType()));
 				} catch (Exception e){
 					log.error("Ошибка парсинга запроса", e);
 					it.fail(e);
@@ -107,7 +111,7 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
 			}
 				, ar -> {
 			if (ar.succeeded()) {
-				asyncResultHandler.handle(Future.succeededFuture((SqlNode) ar.result()));
+				asyncResultHandler.handle(Future.succeededFuture((ParsedQueryResponse) ar.result()));
 			} else {
 				asyncResultHandler.handle(Future.failedFuture(ar.cause()));
 			}
@@ -121,6 +125,13 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
 				&& !(sqlNode instanceof DropDatabase)
 				&& !(sqlNode instanceof SqlBeginDelta)
 				&& !(sqlNode instanceof SqlCommitDelta);
+	}
+
+	@Data
+	private final static class ParsedQueryResponse {
+		private final SqlNode sqlNode;
+		private final String sqlWithoutHint;
+		private final SourceType sourceType;
 	}
 
 }

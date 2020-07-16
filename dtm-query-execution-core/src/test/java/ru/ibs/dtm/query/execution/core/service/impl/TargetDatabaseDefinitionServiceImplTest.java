@@ -4,6 +4,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.plugin.core.SimplePluginRegistry;
 import ru.ibs.dtm.common.plugin.status.StatusQueryResult;
@@ -25,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
+@Disabled
 public class TargetDatabaseDefinitionServiceImplTest {
 
     private TargetDatabaseDefinitionService targetDatabaseDefinitionService =

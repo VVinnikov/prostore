@@ -1,14 +1,15 @@
 package ru.ibs.dtm.common.reader;
 
-import lombok.*;
-import ru.ibs.dtm.query.execution.model.metadata.Datamart;
-
 import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 
 /*Дто с модифицированным sql запросом, из которого извлечен хинт*/
 @Data
 @NoArgsConstructor
-@RequiredArgsConstructor
 @AllArgsConstructor
 public class QuerySourceRequest {
     @NonNull
@@ -16,4 +17,9 @@ public class QuerySourceRequest {
     private List<Datamart> logicalSchema;
     @NonNull
     private SourceType sourceType;
+
+    public QuerySourceRequest(@NonNull QueryRequest queryRequest, @NonNull SourceType sourceType) {
+        this.queryRequest = queryRequest;
+        this.sourceType = sourceType;
+    }
 }

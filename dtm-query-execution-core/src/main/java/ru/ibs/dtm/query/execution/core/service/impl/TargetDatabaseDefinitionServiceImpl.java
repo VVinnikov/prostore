@@ -30,7 +30,16 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
     @Override
     public void getTargetSource(QuerySourceRequest request, Handler<AsyncResult<QuerySourceRequest>> handler) {
         if (request.getSourceType() != null) {
-            handler.handle(Future.succeededFuture(request));
+            getLogicalSchema(request)
+                    .onComplete(ar -> {
+                        if (ar.succeeded()) {
+                            request.setLogicalSchema(ar.result());
+                            handler.handle(Future.succeededFuture(request));
+                        } else {
+                            handler.handle(Future.failedFuture(ar.cause()));
+                        }
+                    })
+                    .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
         } else {
             getTargetSourceWithoutHint(request, handler);
         }

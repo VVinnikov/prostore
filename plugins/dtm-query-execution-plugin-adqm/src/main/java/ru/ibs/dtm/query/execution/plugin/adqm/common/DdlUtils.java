@@ -8,16 +8,14 @@ import org.springframework.util.StringUtils;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTypes;
 import ru.ibs.dtm.common.plugin.exload.QueryLoadParam;
-import ru.ibs.dtm.query.execution.model.metadata.ClassAttribute;
 import ru.ibs.dtm.query.execution.model.metadata.ColumnType;
+import ru.ibs.dtm.query.execution.model.metadata.TableAttribute;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
-
-import static ru.ibs.dtm.query.execution.model.metadata.ColumnType.INTEGER;
 
 @Slf4j
 public class DdlUtils {
@@ -129,7 +127,7 @@ public class DdlUtils {
         return String.format(template, name, type);
     }
 
-    public static String classAttributeToString(@NonNull ClassAttribute f, boolean isNullable) {
+    public static String classAttributeToString(@NonNull TableAttribute f, boolean isNullable) {
         String name = f.getMnemonic();
         String type = columnTypeToNative(f.getType().getValue());
         String template = isNullable ? NULLABLE_FIELD : NOT_NULLABLE_FIELD;

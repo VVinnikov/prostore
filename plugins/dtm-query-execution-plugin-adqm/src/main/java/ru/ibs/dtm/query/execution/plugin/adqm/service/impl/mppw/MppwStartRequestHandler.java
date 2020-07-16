@@ -10,9 +10,9 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryResult;
-import ru.ibs.dtm.query.execution.model.metadata.ClassAttribute;
 import ru.ibs.dtm.query.execution.model.metadata.Datamart;
-import ru.ibs.dtm.query.execution.model.metadata.DatamartClass;
+import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;
+import ru.ibs.dtm.query.execution.model.metadata.TableAttribute;
 import ru.ibs.dtm.query.execution.plugin.adqm.common.DdlUtils;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
@@ -139,10 +139,10 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         return result.future();
     }
 
-    private Optional<DatamartClass> findTableSchema(@NonNull String table, @NonNull final JsonObject schema) {
+    private Optional<DatamartTable> findTableSchema(@NonNull String table, @NonNull final JsonObject schema) {
         try {
             Datamart dm = schema.mapTo(Datamart.class);
-            return dm.getDatamartClassess().stream()
+            return dm.getDatamartTables().stream()
                     .filter(c -> c.getMnemonic().equalsIgnoreCase(table))
                     .findFirst();
         } catch (DecodeException e) {
@@ -162,9 +162,9 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     }
 
     private Future<Void> createExternalTable(@NonNull String table,
-                                             @NonNull DatamartClass schema,
+                                             @NonNull DatamartTable schema,
                                              @NonNull String kafkaSettings) {
-        String columns = schema.getClassAttributes().stream()
+        String columns = schema.getTableAttributes().stream()
                 .map(f -> classAttributeToString(f, true))
                 .collect(Collectors.joining(", "));
         String query = format(EXT_SHARD_TEMPLATE, table, ddlProperties.getCluster(), columns, kafkaSettings);
@@ -173,7 +173,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
 
     private Future<Void> createBufferShardTable(@NonNull String tableName,
                                                 @NonNull String columns,
-                                                @NonNull DatamartClass schema) {
+                                                @NonNull DatamartTable schema) {
         String[] cols = columns.split(",\\s*");
         String colString = Arrays.stream(cols)
                 .filter(c -> !c.equalsIgnoreCase("sys_from"))
@@ -205,9 +205,9 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     }
 
     private Future<Void> createActualLoaderTable(@NonNull String table,
-                                                 @NonNull DatamartClass schema,
+                                                 @NonNull DatamartTable schema,
                                                  long deltaHot) {
-        String columns = schema.getClassAttributes().stream().map(ClassAttribute::getMnemonic)
+        String columns = schema.getTableAttributes().stream().map(TableAttribute::getMnemonic)
                 .filter(c -> !c.equalsIgnoreCase("sys_op")).collect(Collectors.joining(", "));
 
         String query = format(ACTUAL_LOADER_TEMPLATE, table, ddlProperties.getCluster(),
@@ -217,9 +217,9 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         return databaseExecutor.executeUpdate(query);
     }
 
-    private String findTypeForColumn(@NonNull String columnName, @NonNull DatamartClass schema) {
+    private String findTypeForColumn(@NonNull String columnName, @NonNull DatamartTable schema) {
         // Sub-optimal find via full scan of schema
-        val typ = schema.getClassAttributes().stream().filter(a -> a.getMnemonic().equalsIgnoreCase(columnName)).findFirst();
+        val typ = schema.getTableAttributes().stream().filter(a -> a.getMnemonic().equalsIgnoreCase(columnName)).findFirst();
         return typ.map(classAttribute -> columnTypeToNative(classAttribute.getType().getValue())).orElse("Int64");
     }
 }

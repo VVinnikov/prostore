@@ -10,6 +10,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
@@ -81,8 +82,9 @@ class LogicViewReplacerImplTest {
             "WHERE tblz.col6 = 0) AS v";
 
     private final CalciteConfiguration config = new CalciteConfiguration();
+    private CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private final DefinitionService<SqlNode> definitionService =
-            new CoreCalciteDefinitionService(config.configEddlParser(config.eddlParserImplFactory()));
+            new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
     private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
     private final ServiceDbDao serviceDbDao = mock(ServiceDbDaoImpl.class);
     private final ViewDao viewDao = mock(ViewDaoImpl.class);

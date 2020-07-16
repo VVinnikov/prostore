@@ -143,11 +143,6 @@
             <artifactId>calcite-core</artifactId>
             <version>${calcite.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.calcite</groupId>
-            <artifactId>calcite-server</artifactId>
-            <version>${calcite.version}</version>
-        </dependency>
 
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -231,27 +226,6 @@
                 </executions>
             </plugin>
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>javacc-maven-plugin</artifactId>
-                <version>2.6</version>
-                <executions>
-                    <execution>
-                        <id>javacc</id>
-                        <goals>
-                            <goal>javacc</goal>
-                        </goals>
-                        <configuration>
-                            <sourceDirectory>${project.build.directory}/generated-sources/fmpp</sourceDirectory>
-                            <includes>
-                                <include>**/Parser.jj</include>
-                            </includes>
-                            <lookAhead>2</lookAhead>
-                            <isStatic>false</isStatic>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
@@ -263,16 +237,6 @@
                         </goals>
                         <configuration>
                             <artifactItems>
-                                <artifactItem>
-                                    <groupId>org.apache.calcite</groupId>
-                                    <artifactId>calcite-core</artifactId>
-                                    <version>${calcite.version}</version>
-                                    <type>jar</type>
-                                    <overWrite>false</overWrite>
-                                    <outputDirectory>${project.build.directory}</outputDirectory>
-                                    <includes>**/Parser.jj</includes>
-                                    <excludes>**/*.class,**/*.xml,**/*test.class</excludes>
-                                </artifactItem>
                                 <artifactItem>
                                     <groupId>ru.ibs.dtm</groupId>
                                     <artifactId>dtm-query-execution-plugin-adb</artifactId>
@@ -305,25 +269,6 @@
                                 </artifactItem>
                             </artifactItems>
                         </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.drill.tools</groupId>
-                <artifactId>drill-fmpp-maven-plugin</artifactId>
-                <version>1.17.0</version>
-                <executions>
-                    <execution>
-                        <configuration>
-                            <config>src/main/codegen/config.fmpp</config>
-                            <output>${project.build.directory}/generated-sources/fmpp</output>
-                            <templates>${project.build.directory}/codegen/templates</templates>
-                        </configuration>
-                        <id>generate-fmpp-sources</id>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
                     </execution>
                 </executions>
             </plugin>

@@ -3,6 +3,7 @@ package ru.ibs.dtm.query.execution.core.utils;
 import lombok.val;
 import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.Test;
+import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import ru.ibs.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
@@ -13,8 +14,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class DatamartMnemonicExtractorTest {
     public static final String EXPECTED_DATAMART = "test";
     private final CalciteConfiguration config = new CalciteConfiguration();
+    private CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private final DefinitionService<SqlNode> definitionService =
-            new CoreCalciteDefinitionService(config.configEddlParser(config.eddlParserImplFactory()));
+            new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
     private final DatamartMnemonicExtractor extractor = new DatamartMnemonicExtractor();
 
     @Test

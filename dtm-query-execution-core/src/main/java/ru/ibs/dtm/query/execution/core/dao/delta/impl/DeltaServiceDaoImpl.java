@@ -72,18 +72,11 @@ public class DeltaServiceDaoImpl implements DeltaServiceDao {
         });
     }
 
-    private Select<Record1<Long>> getUnionOfDeltaByDatamartAndDateSelects(DSLContext dsl, List<ActualDeltaRequest> actualDeltaRequests) {
-        return actualDeltaRequests.stream()
-                .map(adr -> getDeltaByDatamartAndDateSelect(dsl, adr))
-                .reduce(Select::unionAll)
-                .get();
-    }
-
     private Select<Record1<Long>> getDeltaByDatamartAndDateSelect(DSLContext dsl, ActualDeltaRequest actualDeltaRequest) {
         SelectConditionStep<Record1<Long>> query = dsl.select(max(DELTA_DATA.SIN_ID))
                 .from(DELTA_DATA)
                 .where(DELTA_DATA.DATAMART_MNEMONICS.equalIgnoreCase(actualDeltaRequest.getDatamart()))
-                .and(DELTA_DATA.STATUS.eq(1));
+                .and(DELTA_DATA.STATUS.eq(DeltaLoadStatus.SUCCESS.ordinal()));
         if (actualDeltaRequest.getDateTime() != null) {
             //TODO убрать replace
             return query.and(DELTA_DATA.SYS_DATE.le(LocalDateTime.from(LOCAL_DATE_TIME.parse(actualDeltaRequest.getDateTime().replace("'","")))));
@@ -113,6 +106,13 @@ public class DeltaServiceDaoImpl implements DeltaServiceDao {
                 resultHandler.handle(Future.failedFuture(ar.cause()));
             }
         });
+    }
+
+    private Select<Record1<Long>> getUnionOfDeltaByDatamartAndDateSelects(DSLContext dsl, List<ActualDeltaRequest> actualDeltaRequests) {
+        return actualDeltaRequests.stream()
+                .map(adr -> getDeltaByDatamartAndDateSelect(dsl, adr))
+                .reduce(Select::unionAll)
+                .get();
     }
 
     @Override

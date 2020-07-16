@@ -19,8 +19,6 @@ import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 import java.util.*;
 import java.util.function.Predicate;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 class MppwStartRequestHandlerTest {
     private static final DdlProperties ddlProperties = new DdlProperties();
     private static final AppConfiguration appConfiguration = new AppConfiguration(new MockEnvironment());
@@ -81,24 +79,24 @@ class MppwStartRequestHandlerTest {
         Datamart dm = new Datamart();
         dm.setMnemonic("shares");
 
-        DatamartClass accounts = new DatamartClass();
+        DatamartTable accounts = new DatamartTable();
         accounts.setMnemonic("accounts");
-        ClassAttribute col1 = new ClassAttribute();
+        TableAttribute col1 = new TableAttribute();
         col1.setMnemonic("column1");
-        col1.setType(new TypeMessage(UUID.randomUUID(), ColumnType.INTEGER));
-        ClassAttribute col2 = new ClassAttribute();
+        col1.setType(new AttributeType(UUID.randomUUID(), ColumnType.INTEGER));
+        TableAttribute col2 = new TableAttribute();
         col2.setMnemonic("column2");
-        col2.setType(new TypeMessage(UUID.randomUUID(), ColumnType.INTEGER));
-        ClassAttribute col3 = new ClassAttribute();
+        col2.setType(new AttributeType(UUID.randomUUID(), ColumnType.INTEGER));
+        TableAttribute col3 = new TableAttribute();
         col3.setMnemonic("column3");
-        col3.setType(new TypeMessage(UUID.randomUUID(), ColumnType.STRING));
-        accounts.setClassAttributes(Arrays.asList(col1, col2, col3));
-        ClassAttribute col4 = new ClassAttribute();
+        col3.setType(new AttributeType(UUID.randomUUID(), ColumnType.STRING));
+        accounts.setTableAttributes(Arrays.asList(col1, col2, col3));
+        TableAttribute col4 = new TableAttribute();
         col4.setMnemonic("sys_op");
-        col4.setType(new TypeMessage(UUID.randomUUID(), ColumnType.INTEGER));
-        accounts.setClassAttributes(Arrays.asList(col1, col2, col3, col4));
+        col4.setType(new AttributeType(UUID.randomUUID(), ColumnType.INTEGER));
+        accounts.setTableAttributes(Arrays.asList(col1, col2, col3, col4));
 
-        dm.setDatamartClassess(Collections.singletonList(accounts));
+        dm.setDatamartTables(Collections.singletonList(accounts));
 
         return JsonObject.mapFrom(dm);
     }

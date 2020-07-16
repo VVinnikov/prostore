@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.dto.DatamartInfo;
 import ru.ibs.dtm.common.dto.schema.DatamartSchemaKey;
 import ru.ibs.dtm.common.reader.QueryRequest;
+import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
@@ -38,8 +39,9 @@ import static org.mockito.Mockito.*;
 class LogicalSchemaServiceImplTest {
 
     private final CalciteConfiguration config = new CalciteConfiguration();
+    private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private final DefinitionService<SqlNode> definitionService =
-            new CoreCalciteDefinitionService(config.configEddlParser(config.eddlParserImplFactory()));
+            new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
     private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
     private final ServiceDbDao serviceDbDao = mock(ServiceDbDaoImpl.class);
     private final EntityDao entityDao = mock(EntityDaoImpl.class);

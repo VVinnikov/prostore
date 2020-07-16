@@ -92,7 +92,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
             return Future.failedFuture(e);
         }
 
-        String kafkaSettings = genKafkaEngine(request);
+        String kafkaSettings = genKafkaEngine(request, fullName);
         Future<Void> extTableF = createExternalTable(fullName + EXT_SHARD_POSTFIX, schema, kafkaSettings);
 
         // 4. Create _buffer_shard
@@ -154,11 +154,11 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         }
     }
 
-    private String genKafkaEngine(@NonNull final MppwRequest request) {
+    private String genKafkaEngine(@NonNull final MppwRequest request, @NonNull String tableName) {
         // FIXME Actually we receive ZK host/port, but for consumer we should provide list of the brokers host:port
         String brokers = request.getZookeeperHost() + ":9092";
         String topic = request.getTopic();
-        String consumerGroup = mppwProperties.getConsumerGroup();
+        String consumerGroup = mppwProperties.getConsumerGroup() + tableName;
         // FIXME Support other formats (Text, CSV, Json?)
         String format = "Avro";
         return format(KAFKA_ENGINE_TEMPLATE, brokers, topic, consumerGroup, format);

@@ -51,9 +51,9 @@ class QueryRewriterTest {
     private static List<DeltaInformation> mockDeltas() {
         SqlParserPos pos = new SqlParserPos(0, 0);
         return Arrays.asList(
-                new DeltaInformation("a", "2019-12-23 15:15:14", 101L, "shares", "accounts", pos),
-                new DeltaInformation("b", "2019-12-23 15:15:14", 102L, "test_datamart", "balances", pos),
-                new DeltaInformation("", "2020-06-10 23:59:59", 103L, "shares", "transactions", pos)
+                new DeltaInformation("a", "2019-12-23 15:15:14", false, 101L, "shares", "accounts", pos),
+                new DeltaInformation("b", "2019-12-23 15:15:14", false, 102L, "test_datamart", "balances", pos),
+                new DeltaInformation("", "2020-06-10 23:59:59", false, 103L, "shares", "transactions", pos)
         );
     }
 

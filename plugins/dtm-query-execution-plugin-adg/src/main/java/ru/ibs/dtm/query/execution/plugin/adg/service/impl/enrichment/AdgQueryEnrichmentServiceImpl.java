@@ -37,44 +37,34 @@ public class AdgQueryEnrichmentServiceImpl implements QueryEnrichmentService {
 
     @Override
     public void enrich(EnrichQueryRequest request, Handler<AsyncResult<String>> asyncHandler) {
-        try {
-            Datamart logicalSchema;
-            try {
-                logicalSchema = request.getSchema().mapTo(Datamart.class);
-            } catch (Exception ex) {
-                log.error("Ошибка десериализации схемы");
-                asyncHandler.handle(Future.failedFuture(ex));
-                return;
+        //FIXME исправить после реализации использования нескольких схем
+        Datamart logicalSchema = request.getSchema().get(0);
+        queryParserService.parse(new QueryParserRequest(request.getQueryRequest(), request.getSchema().get(0)), ar -> {
+            if (ar.succeeded()) {
+                val parserResponse = ar.result();
+                contextProvider.enrichContext(parserResponse.getCalciteContext(), logicalSchema);
+                val schemaDescription = new SchemaDescription();
+                schemaDescription.setLogicalSchema(logicalSchema);
+                val physicalSchema = schemaExtender.generatePhysicalSchema(logicalSchema, parserResponse.getQueryRequest());
+                contextProvider.enrichContext(parserResponse.getCalciteContext(), physicalSchema);
+                // формируем новый sql-запрос
+                adgQueryGenerator.mutateQuery(parserResponse.getRelNode(),
+                        parserResponse.getQueryRequest().getDeltaInformations(),
+                        schemaDescription,
+                        parserResponse.getCalciteContext(),
+                        request.getQueryRequest(),
+                        enrichedQueryResult -> {
+                            if (enrichedQueryResult.succeeded()) {
+                                log.info("Сформирован запрос: {}", enrichedQueryResult.result());
+                                asyncHandler.handle(Future.succeededFuture(enrichedQueryResult.result()));
+                            } else {
+                                log.debug("Ошибка при обогащении запроса", enrichedQueryResult.cause());
+                                asyncHandler.handle(Future.failedFuture(enrichedQueryResult.cause()));
+                            }
+                        });
+            } else {
+                asyncHandler.handle(Future.failedFuture(ar.cause()));
             }
-            queryParserService.parse(new QueryParserRequest(request.getQueryRequest(), logicalSchema), ar -> {
-                if (ar.succeeded()) {
-                    val parserResponse = ar.result();
-                    contextProvider.enrichContext(parserResponse.getCalciteContext(), logicalSchema);
-                    val schemaDescription = new SchemaDescription();
-                    schemaDescription.setLogicalSchema(logicalSchema);
-                    val physicalSchema = schemaExtender.generatePhysicalSchema(logicalSchema, parserResponse.getQueryRequest());
-                    contextProvider.enrichContext(parserResponse.getCalciteContext(), physicalSchema);
-                    // формируем новый sql-запрос
-                    adgQueryGenerator.mutateQuery(parserResponse.getRelNode(),
-                            parserResponse.getQueryRequest().getDeltaInformations(),
-                            schemaDescription,
-                            parserResponse.getCalciteContext(),
-                            request.getQueryRequest(),
-                            enrichedQueryResult -> {
-                                if (enrichedQueryResult.succeeded()) {
-                                    log.info("Сформирован запрос: {}", enrichedQueryResult.result());
-                                    asyncHandler.handle(Future.succeededFuture(enrichedQueryResult.result()));
-                                } else {
-                                    log.debug("Ошибка при обогащении запроса", enrichedQueryResult.cause());
-                                    asyncHandler.handle(Future.failedFuture(enrichedQueryResult.cause()));
-                                }
-                            });
-                } else {
-                    asyncHandler.handle(Future.failedFuture(ar.cause()));
-                }
-            });
-        } catch (Exception ex) {
-            asyncHandler.handle(Future.failedFuture(ex));
-        }
+        });
     }
 }

@@ -3,10 +3,17 @@ package ru.ibs.dtm.query.execution.plugin.adqm.service.impl.query;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.sql.*;
@@ -19,23 +26,13 @@ import org.apache.calcite.util.Pair;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.calcite.CalciteContext;
 import ru.ibs.dtm.common.delta.DeltaInformation;
-import ru.ibs.dtm.query.execution.plugin.adqm.calcite.CalciteContextProvider;
+import ru.ibs.dtm.query.calcite.core.node.SqlSelectTree;
+import ru.ibs.dtm.query.execution.plugin.adqm.calcite.AdqmCalciteContextProvider;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Component
 @Slf4j
 public class QueryRewriter {
-
-    private final CalciteContextProvider calciteContextProvider;
-    private final AppConfiguration appConfiguration;
 
     private final static String SUBQUERY_TEMPLATE = "select 1 from %s where sign < 0 limit 1";
     private final static String SUBQUERY_NOT_NULL_CHECK = "select 1 from dual where (select 1 from dual) is not null";
@@ -43,9 +40,10 @@ public class QueryRewriter {
     private final static Pattern FINAL_PATTERN = Pattern.compile("`(\\w+)_final`", Pattern.CASE_INSENSITIVE);
     private final static Pattern TABLE_ALIAS_PATTERN = Pattern.compile("^\\s+(AS\\s+`\\w+`)");
     private final static String UNION_ALL_TEMPLATE = "select * from (select 1 from dual) union all select * from (select 1 from dual)";
-    private final static String SNAPSHOT_PATTERN = "FOR SYSTEM_TIME AS OF '\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}'";
+    private final AdqmCalciteContextProvider calciteContextProvider;
+    private final AppConfiguration appConfiguration;
 
-    public QueryRewriter(CalciteContextProvider calciteContextProvider, AppConfiguration appConfiguration) {
+    public QueryRewriter(AdqmCalciteContextProvider calciteContextProvider, AppConfiguration appConfiguration) {
         this.calciteContextProvider = calciteContextProvider;
         this.appConfiguration = appConfiguration;
     }
@@ -67,8 +65,7 @@ public class QueryRewriter {
         SqlNode union = createUnionAll(root, deltas);
         handler.handle(Future.succeededFuture(
                 replaceAnsiToSpecific(
-                        replaceFinalToKeyword(
-                                removeSnapshots(union.toString())))));
+                        replaceFinalToKeyword(union.toString()))));
     }
 
     private SqlNode addDeltaFilters(SqlNode root, List<DeltaInformation> deltas) {
@@ -78,8 +75,8 @@ public class QueryRewriter {
         List<ParseTableContext> ctxs = new ArrayList<>();
         scanForTables(root, ctxs);
 
-        for (ParseTableContext ctx: ctxs) {
-            for (TableWithAlias t: ctx.tables) {
+        for (ParseTableContext ctx : ctxs) {
+            for (TableWithAlias t : ctx.tables) {
                 Long delta = findDelta(deltas, t.id, t.alias);
                 if (delta != null) {
                     Pair<String, String> parsed = fromSqlIdentifier(t.id);
@@ -136,20 +133,6 @@ public class QueryRewriter {
         }
     }
 
-    @AllArgsConstructor
-    @NoArgsConstructor
-    private static class ParseTableContext {
-        SqlSelect current;
-        List<TableWithAlias> tables = new ArrayList<>();
-    }
-
-    @AllArgsConstructor
-    @NoArgsConstructor
-    private static class TableWithAlias {
-        SqlIdentifier id;
-        String alias;
-    }
-
     private TableWithAlias tableFromNode(SqlNode node, List<ParseTableContext> accum) {
         if (node instanceof SqlIdentifier) { // select from table
             return new TableWithAlias((SqlIdentifier) node, "");
@@ -179,69 +162,6 @@ public class QueryRewriter {
         }
 
         return null;
-    }
-
-    private void setPhysicalNames(SqlNode root, List<DeltaInformation> deltas,
-                                  boolean withFinalModifiers, LevelCounter counter,
-                                  List<String> physicalNames) {
-        if (root instanceof SqlIdentifier) {
-            boolean updated = setPhysicalName(root, deltas, withFinalModifiers, counter.counter == 0, physicalNames);
-            if (updated) {
-                counter.counter++;
-            }
-        } else {
-            List<SqlNode> childs = getChilds(root);
-            childs.forEach(n -> setPhysicalNames(n, deltas, withFinalModifiers, counter, physicalNames));
-        }
-    }
-
-    private List<SqlNode> getChilds(SqlNode root) {
-        if (root instanceof SqlBasicCall) {
-            return ((SqlBasicCall) root).getOperandList();
-        }
-
-        if (root instanceof SqlSelect) {
-            return Collections.singletonList(((SqlSelect) root).getFrom());
-        }
-
-        if (root instanceof SqlSnapshot) {
-            return Collections.singletonList(((SqlSnapshot) root).getTableRef());
-        }
-
-        if (root instanceof SqlJoin) {
-            return ((SqlJoin) root).getOperandList();
-        }
-
-        return Collections.emptyList();
-    }
-
-    private boolean setPhysicalName(SqlNode root, List<DeltaInformation> deltas,
-                                    boolean withFinalModifiers, boolean firstInQuery,
-                                    List<String> physicalNames) {
-        Pair<String, String> parsed = fromSqlIdentifier((SqlIdentifier) root);
-        String schema = parsed.left;
-        String id = parsed.right;
-
-        if (containsDelta(deltas, schema, id)) {
-            String envPrefix = appConfiguration.getSystemName() + "__";
-            if (schema.equals("")) {
-                schema = appConfiguration.getDefaultDatamart();
-            }
-            schema = envPrefix + schema;
-            String postfix = firstInQuery ? "_actual" : "_actual_shard";
-            if (withFinalModifiers) {
-                postfix = postfix + "_final";
-            }
-
-            id = id + postfix;
-            ((SqlIdentifier) root).setNames(Arrays.asList(schema, id), Arrays.asList(root.getParserPosition(), root.getParserPosition()));
-            physicalNames.add(schema + "." + id);
-            updateDelta(deltas, parsed, Pair.of(schema, id.replaceAll("_final", "")));
-
-            return true;
-        }
-
-        return false;
     }
 
     private Pair<String, String> fromSqlIdentifier(SqlIdentifier node) {
@@ -278,10 +198,10 @@ public class QueryRewriter {
     private Long findDelta(List<DeltaInformation> deltas, SqlIdentifier table, String alias) {
         Pair<String, String> parsed = fromSqlIdentifier(table);
         // It's better to convert List to Map, but for typical uses (less then 10 tables) full list scan is possible
-        for (DeltaInformation d: deltas) {
+        for (DeltaInformation d : deltas) {
             if (d.getSchemaName().equals(parsed.left) &&
-                d.getTableName().equals(parsed.right.replaceAll("_final", "")) &&
-                d.getTableAlias().equals(alias)) {
+                    d.getTableName().equals(parsed.right.replaceAll("_final", "")) &&
+                    d.getTableAlias().equals(alias)) {
                 return d.getDeltaNum();
             }
         }
@@ -303,7 +223,7 @@ public class QueryRewriter {
 
         return new SqlBasicCall(
                 SqlStdOperatorTable.BETWEEN,
-                new SqlNode[] {
+                new SqlNode[]{
                         deltaLit,
                         createId(tableAlias, "sys_from", pos),
                         createId(tableAlias, "sys_to", pos)
@@ -321,26 +241,64 @@ public class QueryRewriter {
         // select * from (<query> FINAL) where <subquery filters> is not null
         // union all
         // select * from (<query>) where <subquery filters> is null
-        SqlNode unionTemplate = calciteContextProvider.context(null).getPlanner().parse(UNION_ALL_TEMPLATE);
-        SqlBasicCall union = (SqlBasicCall) unionTemplate;
+        val unionTemplate = calciteContextProvider.context(null).getPlanner().parse(UNION_ALL_TEMPLATE);
+        val union = (SqlBasicCall) unionTemplate;
         // This is hack because SqlNode.clone performs only top-level copying
-        String sourceQuery = query.toString();
+        val sourceQuery = query.toString();
 
         for (int i = 0; i < union.operands.length; i++) {
             // Because we mutates original deltas to physical table names
-            List<DeltaInformation> localDeltas = deltas.stream().map(DeltaInformation::copy).collect(Collectors.toList());
-
-            SqlSelect unionPart = (SqlSelect) union.operands[i];
-            SqlNode part = parseInternalRepresentation(sourceQuery);
-            boolean firstUnionPart = i == 0;
-            List<String> physicalNames = new ArrayList<>();
-            setPhysicalNames(part, localDeltas, firstUnionPart, new LevelCounter(), physicalNames);
-            SqlNode withDeltaFilters = addDeltaFilters(part, localDeltas);
-
+            val localDeltas = deltas.stream().map(DeltaInformation::copy).collect(Collectors.toList());
+            val unionPart = (SqlSelect) union.operands[i];
+            val part = parseInternalRepresentation(sourceQuery);
+            val firstUnionPart = i == 0;
+            val physicalNames = new ArrayList<String>();
+            setPhysicalName(part,
+                    firstUnionPart,
+                    physicalNames,
+                    localDeltas.iterator());
+            val withDeltaFilters = addDeltaFilters(part, localDeltas);
             unionPart.setFrom(withDeltaFilters);
             unionPart.setWhere(addSubqueryFilters(physicalNames, firstUnionPart));
         }
         return union;
+    }
+
+    private void setPhysicalName(SqlNode part,
+                                 boolean firstUnionPart,
+                                 List<String> physicalNames,
+                                 Iterator<DeltaInformation> deltaIterator) {
+        val tables = new SqlSelectTree(part)
+                .findAllTableAndSnapshots();
+        for (int tablePos = 0; tablePos < tables.size(); tablePos++) {
+            val table = tables.get(tablePos);
+            setPhysicalName(table.getNode(),
+                    deltaIterator.next(),
+                    firstUnionPart,
+                    tablePos == 0,
+                    physicalNames);
+        }
+    }
+
+    private void setPhysicalName(SqlIdentifier root, DeltaInformation delta,
+                                 boolean withFinalModifiers, boolean firstInQuery,
+                                 List<String> physicalNames) {
+        String schema = delta.getSchemaName();
+        String id = delta.getTableName();
+        String envPrefix = appConfiguration.getSystemName() + "__";
+        if (schema.equals("")) {
+            schema = appConfiguration.getDefaultDatamart();
+        }
+        schema = envPrefix + schema;
+        String postfix = firstInQuery ? "_actual" : "_actual_shard";
+        if (withFinalModifiers) {
+            postfix = postfix + "_final";
+        }
+        id = id + postfix;
+        root.setNames(Arrays.asList(schema, id), Arrays.asList(root.getParserPosition(), root.getParserPosition()));
+        physicalNames.add(schema + "." + id);
+        delta.setSchemaName(schema);
+        delta.setTableName(id.replaceAll("_final", ""));
     }
 
     @SneakyThrows
@@ -349,7 +307,7 @@ public class QueryRewriter {
         String template = isNotNullCheck ? SUBQUERY_NOT_NULL_CHECK : SUBQUERY_NULL_CHECK;
         SqlNode where = null;
 
-        for (String table: tablesToCheck) {
+        for (String table : tablesToCheck) {
             SqlNode subq = createSubquery(table.replaceAll("_final", ""));
             // This is sub-optimal, but required, because SqlNode.clone performs only top-level copying
             SqlBasicCall nullCheck = (SqlBasicCall) ((SqlSelect) calciteContextProvider.context(null)
@@ -410,23 +368,10 @@ public class QueryRewriter {
         return m.find() ? m.group(0) : "";
     }
 
-    // Cut FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14'
-    // FIXME Use SqlSnapshot -> SqlIdentifier instead of regexp
-    private String removeSnapshots(String query) {
-        return query.replaceAll(SNAPSHOT_PATTERN, "");
-    }
-
     private String replaceAnsiToSpecific(String query) {
-        // Remove asymmetric from between
         // Change fetch 1 next to limit 1
         return query
-                .replaceAll("ASYMMETRIC", "")
                 .replaceAll("FETCH NEXT 1 ROWS ONLY", "LIMIT 1");
-    }
-
-    // mutable counter for recursion calls
-    private static class LevelCounter {
-        public int counter = 0;
     }
 
     // Default Parser implementation uses \" for quoting, but default internal formatting is backtick `
@@ -445,5 +390,19 @@ public class QueryRewriter {
     private SqlNode parseInternalRepresentation(String sql) {
         SqlParser parser = SqlParser.create(sql, internalRepresentationConfig());
         return parser.parseQuery();
+    }
+
+    @AllArgsConstructor
+    @NoArgsConstructor
+    private static class ParseTableContext {
+        SqlSelect current;
+        List<TableWithAlias> tables = new ArrayList<>();
+    }
+
+    @AllArgsConstructor
+    @NoArgsConstructor
+    private static class TableWithAlias {
+        SqlIdentifier id;
+        String alias;
     }
 }

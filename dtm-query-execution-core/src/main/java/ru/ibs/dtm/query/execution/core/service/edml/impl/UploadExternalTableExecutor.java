@@ -4,12 +4,6 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
-
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlDialect;
 import org.jetbrains.annotations.NotNull;
@@ -29,6 +23,11 @@ import ru.ibs.dtm.query.execution.core.dto.edml.UploadQueryRecord;
 import ru.ibs.dtm.query.execution.core.service.edml.EdmlExecutor;
 import ru.ibs.dtm.query.execution.core.service.edml.EdmlUploadExecutor;
 import ru.ibs.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
+
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction.UPLOAD;
 
@@ -78,7 +77,7 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
             UploadQueryRecord uploadQueryRecord = createUploadQueryRecord(context, edmlQuery);
             QueryLoadParam queryLoadParam = createQueryLoadParam(context, (UploadExtTableRecord) edmlQuery.getRecord(), deltaRecord);
             context.setLoadParam(queryLoadParam);
-            context.setSchema(((UploadExtTableRecord) edmlQuery.getRecord()).getTableSchema());
+            context.setAvroSchema(((UploadExtTableRecord) edmlQuery.getRecord()).getTableSchema());
             serviceDbFacade.getEddlServiceDao().getUploadQueryDao().inserUploadQuery(uploadQueryRecord, ar -> {
                 if (ar.succeeded()) {
                     log.debug("Добавлен uploadQuery {}", uploadQueryRecord);

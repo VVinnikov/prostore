@@ -13,7 +13,7 @@ public class MppwKafkaRequestFactoryImpl implements MppwKafkaRequestFactory {
 
     @Override
     public MppwRequestContext create(EdmlRequestContext context) {
-        val request = new MppwRequest(context.getRequest().getQueryRequest(), context.getLoadParam(), context.getSchema());
+        val request = new MppwRequest(context.getRequest().getQueryRequest(), context.getLoadParam(), context.getAvroSchema());
         LocationUriParser.KafkaTopicUri kafkaTopicUri = LocationUriParser.parseKafkaLocationPath(context.getLoadParam().getLocationPath());
         request.setTopic(kafkaTopicUri.getTopic());
         request.setZookeeperHost(kafkaTopicUri.getHost());

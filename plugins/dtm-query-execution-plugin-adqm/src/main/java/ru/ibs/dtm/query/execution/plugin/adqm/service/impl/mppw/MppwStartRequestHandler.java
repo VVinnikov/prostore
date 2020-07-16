@@ -41,17 +41,17 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
             "    kafka_group_name = '%s',\n" +
             "    kafka_format = '%s'";
     private static final String EXT_SHARD_TEMPLATE =
-            "CREATE TABLE %s ON CLUSTER %s (\n" +
+            "CREATE TABLE IF NOT EXISTS %s ON CLUSTER %s (\n" +
             "  %s\n" +
             ")\n" +
             "%s\n";
     private static final String BUFFER_SHARD_TEMPLATE =
-            "CREATE TABLE %s ON CLUSTER %s (%s, sys_op Nullable(Int8)) ENGINE = Join(ANY, INNER, %s)";
+            "CREATE TABLE IF NOT EXISTS %s ON CLUSTER %s (%s, sys_op_buffer Nullable(Int8)) ENGINE = Join(ANY, INNER, %s)";
     private static final String BUFFER_TEMPLATE =
-            "CREATE TABLE %s ON CLUSTER %s AS %s ENGINE=%s";
-    private static final String BUFFER_LOADER_TEMPLATE = "CREATE MATERIALIZED VIEW %s ON CLUSTER %s TO %s\n" +
+            "CREATE TABLE IF NOT EXISTS %s ON CLUSTER %s AS %s ENGINE=%s";
+    private static final String BUFFER_LOADER_TEMPLATE = "CREATE MATERIALIZED VIEW IF NOT EXISTS %s ON CLUSTER %s TO %s\n" +
             "  AS SELECT %s FROM %s";
-    private static final String ACTUAL_LOADER_TEMPLATE = "CREATE MATERIALIZED VIEW %s ON CLUSTER %s TO %s\n" +
+    private static final String ACTUAL_LOADER_TEMPLATE = "CREATE MATERIALIZED VIEW IF NOT EXISTS %s ON CLUSTER %s TO %s\n" +
             "AS SELECT %s, %d AS sys_from, 9223372036854775807 as sys_to, 0 as sys_op, '9999-12-31 00:00:00' as close_date, 1 AS sign " +
             " FROM %s WHERE sys_op <> 1";
 
@@ -92,7 +92,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
             return Future.failedFuture(e);
         }
 
-        String kafkaSettings = genKafkaEngine(request);
+        String kafkaSettings = genKafkaEngine(request, fullName);
         Future<Void> extTableF = createExternalTable(fullName + EXT_SHARD_POSTFIX, schema, kafkaSettings);
 
         // 4. Create _buffer_shard
@@ -154,11 +154,11 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         }
     }
 
-    private String genKafkaEngine(@NonNull final MppwRequest request) {
+    private String genKafkaEngine(@NonNull final MppwRequest request, @NonNull String tableName) {
         // FIXME Actually we receive ZK host/port, but for consumer we should provide list of the brokers host:port
         String brokers = request.getZookeeperHost() + ":9092";
         String topic = request.getTopic();
-        String consumerGroup = mppwProperties.getConsumerGroup();
+        String consumerGroup = mppwProperties.getConsumerGroup() + tableName;
         // FIXME Support other formats (Text, CSV, Json?)
         String format = "Avro";
         return format(KAFKA_ENGINE_TEMPLATE, brokers, topic, consumerGroup, format);
@@ -202,7 +202,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     private Future<Void> createBufferLoaderTable(@NonNull String table, @NonNull String columns) {
         String query = format(BUFFER_LOADER_TEMPLATE, table, ddlProperties.getCluster(),
                 table.replaceAll(BUFFER_LOADER_SHARD_POSTFIX, BUFFER_POSTFIX),
-                columns.replaceAll("sys_from", "sys_op"),
+                columns.replaceAll("sys_from", "sys_op AS sys_op_buffer"),
                 table.replaceAll(BUFFER_LOADER_SHARD_POSTFIX, EXT_SHARD_POSTFIX));
         return databaseExecutor.executeUpdate(query);
     }

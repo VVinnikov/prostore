@@ -46,14 +46,14 @@ class MppwStartRequestHandlerTest {
         )));
 
         DatabaseExecutor executor = new MockDatabaseExecutor(Arrays.asList(
-                t -> t.contains("CREATE TABLE dev__shares.accounts_ext_shard ON CLUSTER test_arenadata") &&
+                t -> t.contains("CREATE TABLE IF NOT EXISTS dev__shares.accounts_ext_shard ON CLUSTER test_arenadata") &&
                         t.contains("column1 Nullable(Int64), column2 Nullable(Int64), column3 Nullable(String), sys_op Nullable(Int32)") &&
                         t.contains("ENGINE = Kafka()"),
-                t -> t.equalsIgnoreCase("CREATE TABLE dev__shares.accounts_buffer_shard ON CLUSTER test_arenadata (column1 Int64, column2 Int64, sys_op Nullable(Int8)) ENGINE = Join(ANY, INNER, column1, column2)"),
-                t -> t.equalsIgnoreCase("CREATE TABLE dev__shares.accounts_buffer ON CLUSTER test_arenadata AS dev__shares.accounts_buffer_shard ENGINE=Distributed('test_arenadata', 'shares', 'accounts_buffer_shard', column1)"),
-                t -> t.equalsIgnoreCase("CREATE MATERIALIZED VIEW dev__shares.accounts_buffer_loader_shard ON CLUSTER test_arenadata TO dev__shares.accounts_buffer\n" +
-                        "  AS SELECT column1, column2, sys_op FROM dev__shares.accounts_ext_shard"),
-                t -> t.equalsIgnoreCase("CREATE MATERIALIZED VIEW dev__shares.accounts_actual_loader_shard ON CLUSTER test_arenadata TO dev__shares.accounts_actual\n" +
+                t -> t.equalsIgnoreCase("CREATE TABLE IF NOT EXISTS dev__shares.accounts_buffer_shard ON CLUSTER test_arenadata (column1 Int64, column2 Int64, sys_op_buffer Nullable(Int8)) ENGINE = Join(ANY, INNER, column1, column2)"),
+                t -> t.equalsIgnoreCase("CREATE TABLE IF NOT EXISTS dev__shares.accounts_buffer ON CLUSTER test_arenadata AS dev__shares.accounts_buffer_shard ENGINE=Distributed('test_arenadata', 'shares', 'accounts_buffer_shard', column1)"),
+                t -> t.equalsIgnoreCase("CREATE MATERIALIZED VIEW IF NOT EXISTS dev__shares.accounts_buffer_loader_shard ON CLUSTER test_arenadata TO dev__shares.accounts_buffer\n" +
+                        "  AS SELECT column1, column2, sys_op AS sys_op_buffer FROM dev__shares.accounts_ext_shard"),
+                t -> t.equalsIgnoreCase("CREATE MATERIALIZED VIEW IF NOT EXISTS dev__shares.accounts_actual_loader_shard ON CLUSTER test_arenadata TO dev__shares.accounts_actual\n" +
                         "AS SELECT column1, column2, column3, 101 AS sys_from, 9223372036854775807 as sys_to, 0 as sys_op, '9999-12-31 00:00:00' as close_date, 1 AS sign  FROM dev__shares.accounts_ext_shard WHERE sys_op <> 1")
         ), mockData, false);
 

@@ -32,7 +32,7 @@ import static ru.ibs.dtm.query.execution.plugin.adqm.common.DdlUtils.*;
 @Component("adqmMppwStartRequestHandler")
 @Slf4j
 public class MppwStartRequestHandler implements MppwRequestHandler {
-    private static final String QUERY_TABLE_SETTINGS = "select %s from system.tables where database = %s and name = %s";
+    private static final String QUERY_TABLE_SETTINGS = "select %s from system.tables where database = '%s' and name = '%s'";
     private static final String KAFKA_ENGINE_TEMPLATE = "ENGINE = Kafka()\n" +
             "  SETTINGS\n" +
             "    kafka_broker_list = '%s',\n" +

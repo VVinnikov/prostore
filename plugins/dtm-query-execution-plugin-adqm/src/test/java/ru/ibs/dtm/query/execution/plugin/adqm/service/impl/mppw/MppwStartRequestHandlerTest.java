@@ -19,8 +19,6 @@ import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 import java.util.*;
 import java.util.function.Predicate;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 class MppwStartRequestHandlerTest {
     private static final DdlProperties ddlProperties = new DdlProperties();
     private static final AppConfiguration appConfiguration = new AppConfiguration(new MockEnvironment());

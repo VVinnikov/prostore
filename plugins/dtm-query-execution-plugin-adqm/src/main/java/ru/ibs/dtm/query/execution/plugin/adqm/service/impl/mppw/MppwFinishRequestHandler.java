@@ -32,13 +32,13 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
     private static final String FLUSH_TEMPLATE = "SYSTEM FLUSH DISTRIBUTED %s";
     private static final String OPTIMIZE_TEMPLATE = "OPTIMIZE TABLE %s ON CLUSTER %s FINAL";
     private static final String INSERT_TEMPLATE = "INSERT INTO %s\n" +
-            "  SELECT %s, sys_from, %d - 1 AS sys_to, 0 as sys_op, %s AS close_date, arrayJoin(-1, 1) AS sign\n" +
+            "  SELECT %s, sys_from, %d - 1 AS sys_to, 0 as sys_op, '%s' AS close_date, arrayJoin(-1, 1) AS sign\n" +
             "  FROM %s\n" +
             "  WHERE bid in (select bid from %s where sys_op <> 1)\n" +
             "    AND sys_from < %d\n" +
             "    AND sys_to > %d\n" +
             "  UNION ALL\n" +
-            "  SELECT %s, sys_from, %d - 1 AS sys_to, 1 as sys_op, %s AS close_date, arrayJoin(-1, 1) AS sign\n" +
+            "  SELECT %s, sys_from, %d - 1 AS sys_to, 1 as sys_op, '%s' AS close_date, arrayJoin(-1, 1) AS sign\n" +
             "  FROM %s\n" +
             "  WHERE bid in (select bid from %s where sys_op = 1)\n" +
             "    AND sys_from < %d\n" +

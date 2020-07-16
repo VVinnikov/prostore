@@ -8,6 +8,7 @@ import io.vertx.core.json.JsonObject;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.avro.Schema;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.model.metadata.Datamart;
@@ -84,17 +85,19 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         Future<String> sortingKey = getTableSetting(fullName + ACTUAL_SHARD_POSTFIX, "sorting_key");
 
         // 3. Create _ext_shard based on schema from request
-        val schema = findTableSchema(request.getQueryLoadParam().getTableName(), request.getSchema());
-        if (!schema.isPresent()) {
-            return Future.failedFuture(format("Cannot find schema for the table in request %s", request));
+        final Schema schema;
+        try {
+            schema = new Schema.Parser().parse(request.getSchema().encode());
+        } catch (Exception e) {
+            return Future.failedFuture(e);
         }
 
         String kafkaSettings = genKafkaEngine(request);
-        Future<Void> extTableF = createExternalTable(fullName + EXT_SHARD_POSTFIX, schema.get(), kafkaSettings);
+        Future<Void> extTableF = createExternalTable(fullName + EXT_SHARD_POSTFIX, schema, kafkaSettings);
 
         // 4. Create _buffer_shard
         Future<Void> buffShardF = sortingKey.compose(keys ->
-                createBufferShardTable(fullName + BUFFER_SHARD_POSTFIX, keys, schema.get()));
+                createBufferShardTable(fullName + BUFFER_SHARD_POSTFIX, keys, schema));
 
         // 5. Create _buffer
         Future<Void> buffF = CompositeFuture.all(engineFull, buffShardF).compose(r ->
@@ -106,7 +109,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
 
         // 7. Create _actual_loader_shard
         Future<Void> actualLoaderF = extTableF.compose(v ->
-                createActualLoaderTable(fullName + ACTUAL_LOADER_SHARD_POSTFIX, schema.get(), request.getQueryLoadParam().getDeltaHot()));
+                createActualLoaderTable(fullName + ACTUAL_LOADER_SHARD_POSTFIX, schema, request.getQueryLoadParam().getDeltaHot()));
 
         return CompositeFuture.all(extTableF, buffShardF, buffF, buffLoaderF, actualLoaderF)
                 .flatMap(v -> Future.succeededFuture(QueryResult.emptyResult()));
@@ -162,10 +165,10 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     }
 
     private Future<Void> createExternalTable(@NonNull String table,
-                                             @NonNull DatamartTable schema,
+                                             @NonNull Schema schema,
                                              @NonNull String kafkaSettings) {
-        String columns = schema.getTableAttributes().stream()
-                .map(f -> classAttributeToString(f, true))
+        String columns = schema.getFields().stream()
+                .map(DdlUtils::avroFieldToString)
                 .collect(Collectors.joining(", "));
         String query = format(EXT_SHARD_TEMPLATE, table, ddlProperties.getCluster(), columns, kafkaSettings);
         return databaseExecutor.executeUpdate(query);
@@ -173,7 +176,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
 
     private Future<Void> createBufferShardTable(@NonNull String tableName,
                                                 @NonNull String columns,
-                                                @NonNull DatamartTable schema) {
+                                                @NonNull Schema schema) {
         String[] cols = columns.split(",\\s*");
         String colString = Arrays.stream(cols)
                 .filter(c -> !c.equalsIgnoreCase("sys_from"))
@@ -205,9 +208,9 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     }
 
     private Future<Void> createActualLoaderTable(@NonNull String table,
-                                                 @NonNull DatamartTable schema,
+                                                 @NonNull Schema schema,
                                                  long deltaHot) {
-        String columns = schema.getTableAttributes().stream().map(TableAttribute::getMnemonic)
+        String columns = schema.getFields().stream().map(Schema.Field::name)
                 .filter(c -> !c.equalsIgnoreCase("sys_op")).collect(Collectors.joining(", "));
 
         String query = format(ACTUAL_LOADER_TEMPLATE, table, ddlProperties.getCluster(),
@@ -217,9 +220,9 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         return databaseExecutor.executeUpdate(query);
     }
 
-    private String findTypeForColumn(@NonNull String columnName, @NonNull DatamartTable schema) {
+    private String findTypeForColumn(@NonNull String columnName, @NonNull Schema schema) {
         // Sub-optimal find via full scan of schema
-        val typ = schema.getTableAttributes().stream().filter(a -> a.getMnemonic().equalsIgnoreCase(columnName)).findFirst();
-        return typ.map(classAttribute -> columnTypeToNative(classAttribute.getType().getValue())).orElse("Int64");
+        val field = schema.getFields().stream().filter(a -> a.name().equalsIgnoreCase(columnName)).findFirst();
+        return field.map(f -> avroTypeToNative(f.schema())).orElse("Int64");
     }
 }

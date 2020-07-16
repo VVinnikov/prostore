@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.plugin.exload.QueryLoadParam;
-import ru.ibs.dtm.query.execution.model.metadata.*;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.MppwProperties;
@@ -16,7 +15,10 @@ import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockDatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockEnvironment;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Predicate;
 
 class MppwStartRequestHandlerTest {
@@ -45,7 +47,7 @@ class MppwStartRequestHandlerTest {
 
         DatabaseExecutor executor = new MockDatabaseExecutor(Arrays.asList(
                 t -> t.contains("CREATE TABLE dev__shares.accounts_ext_shard ON CLUSTER test_arenadata") &&
-                        t.contains("column1 Nullable(Int64), column2 Nullable(Int64), column3 Nullable(String), sys_op Nullable(Int64)") &&
+                        t.contains("column1 Nullable(Int64), column2 Nullable(Int64), column3 Nullable(String), sys_op Nullable(Int32)") &&
                         t.contains("ENGINE = Kafka()"),
                 t -> t.equalsIgnoreCase("CREATE TABLE dev__shares.accounts_buffer_shard ON CLUSTER test_arenadata (column1 Int64, column2 Int64, sys_op Nullable(Int8)) ENGINE = Join(ANY, INNER, column1, column2)"),
                 t -> t.equalsIgnoreCase("CREATE TABLE dev__shares.accounts_buffer ON CLUSTER test_arenadata AS dev__shares.accounts_buffer_shard ENGINE=Distributed('test_arenadata', 'shares', 'accounts_buffer_shard', column1)"),
@@ -76,28 +78,8 @@ class MppwStartRequestHandlerTest {
     }
 
     private JsonObject createSchema() {
-        Datamart dm = new Datamart();
-        dm.setMnemonic("shares");
+        String jsonSchema = "{\"type\":\"record\",\"name\":\"accounts\",\"namespace\":\"dm2\",\"fields\":[{\"name\":\"column1\",\"type\":[\"null\",\"long\"],\"default\":null,\"defaultValue\":\"null\"},{\"name\":\"column2\",\"type\":[\"null\",\"long\"],\"default\":null,\"defaultValue\":\"null\"},{\"name\":\"column3\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}],\"default\":null,\"defaultValue\":\"null\"},{\"name\":\"sys_op\",\"type\":\"int\",\"default\":0}]}";
 
-        DatamartTable accounts = new DatamartTable();
-        accounts.setMnemonic("accounts");
-        TableAttribute col1 = new TableAttribute();
-        col1.setMnemonic("column1");
-        col1.setType(new AttributeType(UUID.randomUUID(), ColumnType.INTEGER));
-        TableAttribute col2 = new TableAttribute();
-        col2.setMnemonic("column2");
-        col2.setType(new AttributeType(UUID.randomUUID(), ColumnType.INTEGER));
-        TableAttribute col3 = new TableAttribute();
-        col3.setMnemonic("column3");
-        col3.setType(new AttributeType(UUID.randomUUID(), ColumnType.STRING));
-        accounts.setTableAttributes(Arrays.asList(col1, col2, col3));
-        TableAttribute col4 = new TableAttribute();
-        col4.setMnemonic("sys_op");
-        col4.setType(new AttributeType(UUID.randomUUID(), ColumnType.INTEGER));
-        accounts.setTableAttributes(Arrays.asList(col1, col2, col3, col4));
-
-        dm.setDatamartTables(Collections.singletonList(accounts));
-
-        return JsonObject.mapFrom(dm);
+        return new JsonObject(jsonSchema);
     }
 }

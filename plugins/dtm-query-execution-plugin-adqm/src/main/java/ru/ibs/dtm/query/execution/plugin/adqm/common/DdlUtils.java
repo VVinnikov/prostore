@@ -3,6 +3,8 @@ package ru.ibs.dtm.query.execution.plugin.adqm.common;
 import io.vertx.core.Future;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.apache.avro.Schema;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.util.StringUtils;
 import ru.ibs.dtm.common.model.ddl.ClassField;
@@ -16,6 +18,7 @@ import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class DdlUtils {
@@ -88,35 +91,44 @@ public class DdlUtils {
             case DATETIME: return "DateTime";
             case TIMESTAMP: return "DateTime64(3)";
 
+            default: return "";
             // FIXME will be supported after ClassFiled will support them
 //            case DECIMAL: return "";
 //            case DEC: return "";
 //            case NUMERIC: return "";
 //            case FIXED: return "";
         }
-        return "";
     }
 
-    public static String columnTypeToNative(@NonNull ColumnType type) {
-        switch (type) {
-            case STRING: return "String";
-
-            case DATE:
+    public static String avroTypeToNative(@NonNull Schema f) {
+        // we support UNION schema (with nullable option) and primitive type schemas
+        switch (f.getType()) {
+            case UNION:
+                val fields = f.getTypes();
+                val types = fields.stream().map(DdlUtils::avroTypeToNative).collect(Collectors.toList());
+                if (types.size() == 2) { // We support only union (null, type)
+                    int realTypeIdx = types.get(0).equalsIgnoreCase("NULL") ? 1 : 0;
+                    return avroTypeToNative(fields.get(realTypeIdx));
+                } else {
+                    return "";
+                }
+            case STRING:
+                return "String";
+            case INT:
+                return "Int32";
             case LONG:
-            case INTEGER: return "Int64";
-
-            case UUID: return "UUID";
-            case DOUBLE: return "Float64";
-            case FLOAT: return "Float32";
-            case TIMESTAMP: return "DateTime64(3)";
-            case BOOLEAN: return "UInt8";
-
-            // FIXME add support for the rest of the types
-//            case BLOB:
-//            case BIG_DECIMAL:
-//            case ANY:
+                return "Int64";
+            case FLOAT:
+                return "Float32";
+            case DOUBLE:
+                return "Float64";
+            case BOOLEAN:
+                return "UInt8";
+            case NULL:
+                return "NULL";
+            default:
+                return "";
         }
-        return "";
     }
 
     public static String classFieldToString(@NonNull ClassField f) {
@@ -127,10 +139,10 @@ public class DdlUtils {
         return String.format(template, name, type);
     }
 
-    public static String classAttributeToString(@NonNull TableAttribute f, boolean isNullable) {
-        String name = f.getMnemonic();
-        String type = columnTypeToNative(f.getType().getValue());
-        String template = isNullable ? NULLABLE_FIELD : NOT_NULLABLE_FIELD;
+    public static String avroFieldToString(@NonNull Schema.Field f) {
+        String name = f.name();
+        String type = avroTypeToNative(f.schema());
+        String template = NULLABLE_FIELD; // FIXME Actually it's ok, because all schema fields are union (type, nullable)
 
         return String.format(template, name, type);
     }

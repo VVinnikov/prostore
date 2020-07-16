@@ -9,6 +9,7 @@ import lombok.val;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.ddl.SqlCreateSchema;
 import org.apache.calcite.sql.ddl.SqlDropSchema;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -69,7 +70,7 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
 					queryRequest.setSystemName(configuration.getSystemName());
 					SqlNode sqlNode = parseResult.result();
 					if (existsDatamart(sqlNode)) {
-						if (queryRequest.getDatamartMnemonic() == null) {
+						if (Strings.isEmpty(queryRequest.getDatamartMnemonic())) {
 							val datamartMnemonic = datamartMnemonicExtractor.extract(sqlNode);
 							queryRequest.setDatamartMnemonic(datamartMnemonic);
 						} else {

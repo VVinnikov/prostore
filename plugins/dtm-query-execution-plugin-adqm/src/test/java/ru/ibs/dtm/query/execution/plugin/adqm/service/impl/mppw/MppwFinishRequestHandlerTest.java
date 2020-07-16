@@ -14,6 +14,7 @@ import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockEnvironment;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -35,7 +36,16 @@ class MppwFinishRequestHandlerTest {
         mockData.put(t -> t.contains(" from system.columns"), new JsonArray(Arrays.asList(
                 new JsonObject("{\"name\": \"column1\"}"),
                 new JsonObject("{\"name\": \"column2\"}"),
-                new JsonObject("{\"name\": \"column3\"}")
+                new JsonObject("{\"name\": \"column3\"}"),
+                new JsonObject("{\"name\": \"sys_from\"}"),
+                new JsonObject("{\"name\": \"sys_to\"}"),
+                new JsonObject("{\"name\": \"sys_op\"}"),
+                new JsonObject("{\"name\": \"close_date\"}"),
+                new JsonObject("{\"name\": \"sign\"}")
+        )));
+
+        mockData.put(t -> t.contains("select sorting_key from system.tables"), new JsonArray(Collections.singletonList(
+                new JsonObject("{\"sorting_key\": \"column1, column2\"}")
         )));
 
         DatabaseExecutor executor = new MockDatabaseExecutor(Arrays.asList(
@@ -44,8 +54,8 @@ class MppwFinishRequestHandlerTest {
                 t -> t.equalsIgnoreCase("DROP TABLE IF EXISTS dev__shares.accounts_buffer_loader_shard ON CLUSTER test_arenadata"),
                 t -> t.equalsIgnoreCase("SYSTEM FLUSH DISTRIBUTED dev__shares.accounts_buffer"),
                 t -> t.equalsIgnoreCase("SYSTEM FLUSH DISTRIBUTED dev__shares.accounts_actual"),
-                t -> t.contains("column1, column2, column3") && t.contains("dev__shares.accounts_actual") &&
-                        t.contains("select bid from dev__shares.accounts_buffer_shard") &&
+                t -> t.contains("a.column1, a.column2, a.column3, a.sys_from, 101") && t.contains("dev__shares.accounts_actual") &&
+                        t.contains("ANY INNER JOIN dev__shares.accounts_buffer_shard b USING(column1, column2)") &&
                         t.contains("sys_from < 101"),
                 t -> t.contains("SYSTEM FLUSH DISTRIBUTED dev__shares.accounts_actual"),
                 t -> t.equalsIgnoreCase("DROP TABLE IF EXISTS dev__shares.accounts_buffer ON CLUSTER test_arenadata"),

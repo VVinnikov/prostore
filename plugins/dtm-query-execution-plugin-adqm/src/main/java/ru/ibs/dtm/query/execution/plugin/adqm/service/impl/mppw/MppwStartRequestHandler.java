@@ -130,7 +130,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
             @SuppressWarnings("unchecked")
             List<JsonObject> rows = ar.result().getList();
             if (rows.size() == 0) {
-                result.fail(format("Cannot find table engine for %s", table));
+                result.fail(format("Cannot find %s for %s", settingKey, table));
                 return;
             }
 

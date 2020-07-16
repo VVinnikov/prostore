@@ -9,6 +9,7 @@ import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.delta.DeltaInformation;
 import ru.ibs.dtm.common.delta.DeltaInformationResult;
+import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.calcite.core.util.DeltaInformationExtractor;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
@@ -21,8 +22,9 @@ class DefaultDatamartSetterTest {
     private static final SqlDialect DIALECT = new SqlDialect(CalciteSqlDialect.EMPTY_CONTEXT);
     private static final String EXPECTED_SCHEMA = "demo";
     private final CalciteConfiguration config = new CalciteConfiguration();
+    private CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private final DefinitionService<SqlNode> definitionService =
-            new CoreCalciteDefinitionService(config.configEddlParser(config.eddlParserImplFactory()));
+            new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
     private final DefaultDatamartSetter datamartSetter = new DefaultDatamartSetter();
 
     @Test

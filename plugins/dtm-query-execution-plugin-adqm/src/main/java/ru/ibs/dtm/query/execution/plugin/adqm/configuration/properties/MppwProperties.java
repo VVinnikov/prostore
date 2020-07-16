@@ -12,5 +12,14 @@ public class MppwProperties {
         this.consumerGroup = consumerGroup;
     }
 
+    public String getKafkaBrokers() {
+        return kafkaBrokers;
+    }
+
+    public void setKafkaBrokers(String kafkaBrokers) {
+        this.kafkaBrokers = kafkaBrokers;
+    }
+
     private String consumerGroup;
+    private String kafkaBrokers;
 }

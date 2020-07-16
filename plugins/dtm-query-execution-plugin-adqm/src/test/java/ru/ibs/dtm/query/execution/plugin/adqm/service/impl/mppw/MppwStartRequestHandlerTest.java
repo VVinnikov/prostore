@@ -33,6 +33,7 @@ class MppwStartRequestHandlerTest {
         ddlProperties.setArchiveDisk("default");
 
         mppwProperties.setConsumerGroup("adqm_group");
+        mppwProperties.setKafkaBrokers("localhost:9092");
     }
 
     @Test

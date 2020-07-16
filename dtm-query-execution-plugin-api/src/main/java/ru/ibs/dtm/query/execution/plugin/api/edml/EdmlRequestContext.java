@@ -8,9 +8,12 @@ import org.apache.calcite.sql.SqlInsert;
 import ru.ibs.dtm.common.dto.TableInfo;
 import ru.ibs.dtm.common.plugin.exload.QueryExloadParam;
 import ru.ibs.dtm.common.plugin.exload.QueryLoadParam;
+import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 import ru.ibs.dtm.query.execution.plugin.api.RequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
 import ru.ibs.dtm.query.execution.plugin.api.service.SqlProcessingType;
+
+import java.util.List;
 
 import static ru.ibs.dtm.query.execution.plugin.api.service.SqlProcessingType.EDML;
 
@@ -21,7 +24,8 @@ public class EdmlRequestContext extends RequestContext<DatamartRequest> {
     private TableInfo sourceTable;
     private TableInfo targetTable;
     private final SqlInsert sqlNode;
-    private JsonObject schema;
+    private List<Datamart> logicalSchema;
+    private JsonObject avroSchema;
     private QueryExloadParam exloadParam;
     private QueryLoadParam loadParam;
 

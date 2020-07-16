@@ -9,7 +9,7 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class TypeMessage {
+public class AttributeType {
   private UUID id;
   /**
    * Тип данных в колонке

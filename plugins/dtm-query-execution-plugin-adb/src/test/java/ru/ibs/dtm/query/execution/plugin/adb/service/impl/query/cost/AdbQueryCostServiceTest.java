@@ -12,6 +12,7 @@ import lombok.val;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 import ru.ibs.dtm.common.reader.QueryRequest;
+import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 import ru.ibs.dtm.query.execution.plugin.adb.service.QueryEnrichmentService;
 import ru.ibs.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.QueryCostRequest;
@@ -69,7 +70,9 @@ class AdbQueryCostServiceTest {
     }
 
     private QueryCostRequestContext getQueryCostRequestContext() {
-        JsonObject schema = JsonUtils.init("meta_data.json", "TEST_DATAMART");
+        JsonObject jsonSchema = JsonUtils.init("meta_data.json", "TEST_DATAMART");
+        List<Datamart> schema = new ArrayList<>();
+        schema.add(jsonSchema.mapTo(Datamart.class));
         QueryRequest queryRequest = new QueryRequest();
         queryRequest.setSql("SELECT * from PSO");
         queryRequest.setRequestId(UUID.randomUUID());

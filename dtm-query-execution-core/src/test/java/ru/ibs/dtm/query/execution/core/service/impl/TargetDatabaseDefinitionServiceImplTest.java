@@ -11,8 +11,8 @@ import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.reader.QuerySourceRequest;
 import ru.ibs.dtm.common.reader.SourceType;
-import ru.ibs.dtm.query.execution.core.service.SchemaStorageProvider;
 import ru.ibs.dtm.query.execution.core.service.TargetDatabaseDefinitionService;
+import ru.ibs.dtm.query.execution.core.service.schema.LogicalSchemaProviderImpl;
 import ru.ibs.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
 import ru.ibs.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
@@ -29,7 +29,7 @@ public class TargetDatabaseDefinitionServiceImplTest {
 
     private TargetDatabaseDefinitionService targetDatabaseDefinitionService =
             new TargetDatabaseDefinitionServiceImpl(
-                    mock(SchemaStorageProvider.class),
+                    mock(LogicalSchemaProviderImpl.class),
                     new DataSourcePluginServiceImpl(
                             SimplePluginRegistry.of(
                                     new DtmDataSourcePlugin() {

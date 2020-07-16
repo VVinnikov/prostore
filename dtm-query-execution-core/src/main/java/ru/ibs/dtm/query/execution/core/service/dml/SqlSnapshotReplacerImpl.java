@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.service.dml.impl;
+package ru.ibs.dtm.query.execution.core.service.dml;
 
 import io.vertx.core.Handler;
 import lombok.val;

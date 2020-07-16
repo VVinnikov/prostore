@@ -1,6 +1,5 @@
 package ru.ibs.dtm.query.calcite.core.schema;
 
-import java.util.ArrayList;
 import org.apache.calcite.adapter.java.AbstractQueryableTable;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
@@ -12,17 +11,19 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.TranslatableTable;
 import ru.ibs.dtm.query.calcite.core.util.CalciteUtil;
-import ru.ibs.dtm.query.execution.model.metadata.DatamartClass;
+import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;
+
+import java.util.ArrayList;
 
 public abstract class DtmTable extends AbstractQueryableTable implements TranslatableTable {
 
     protected final QueryableSchema dtmSchema;
-    protected final DatamartClass datamartClass;
+    protected final DatamartTable datamartTable;
 
-    public DtmTable(QueryableSchema dtmSchema, DatamartClass datamartClass) {
+    public DtmTable(QueryableSchema dtmSchema, DatamartTable datamartTable) {
         super(Object[].class);
         this.dtmSchema = dtmSchema;
-        this.datamartClass = datamartClass;
+        this.datamartTable = datamartTable;
     }
 
     @Override
@@ -34,11 +35,14 @@ public abstract class DtmTable extends AbstractQueryableTable implements Transla
     @Override
     public RelDataType getRowType(RelDataTypeFactory typeFactory) {
         RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(typeFactory);
-        datamartClass.getClassAttributes()
+        datamartTable.getTableAttributes()
                 .forEach(it -> builder.add(
                         it.getMnemonic(),
                         CalciteUtil.valueOf(it.getType().getValue())
-                ).nullable(true));
+                        //FIXME реализовать выставление атрибутов precision и scale из length и accuracy
+                        //it.getLength(),
+                        //it.getAccuracy()
+                ).nullable(true));//FIXME добавить выставление признака nullable из атрибутов
         return builder.build();
     }
 

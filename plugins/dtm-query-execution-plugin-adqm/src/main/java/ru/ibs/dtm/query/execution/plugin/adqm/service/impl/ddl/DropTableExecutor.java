@@ -16,12 +16,12 @@ import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
 
+import static ru.ibs.dtm.query.execution.plugin.adqm.common.Constants.ACTUAL_POSTFIX;
+import static ru.ibs.dtm.query.execution.plugin.adqm.common.Constants.ACTUAL_SHARD_POSTFIX;
+
 @Component
 @Slf4j
 public class DropTableExecutor implements DdlExecutor<Void> {
-    private final static String ACTUAL_TABLE = "_actual";
-    private final static String SHARD_TABLE = "_actual_shard";
-
     private final static String DROP_TABLE_TEMPLATE = "DROP TABLE IF EXISTS %s__%s.%s ON CLUSTER %s";
 
     private final DatabaseExecutor databaseExecutor;
@@ -60,8 +60,8 @@ public class DropTableExecutor implements DdlExecutor<Void> {
         String schema = classTable.getSchema();
         String table = classTable.getName();
 
-        String dropShard = String.format(DROP_TABLE_TEMPLATE, env, schema, table + SHARD_TABLE, cluster);
-        String dropDistributed = String.format(DROP_TABLE_TEMPLATE, env, schema, table + ACTUAL_TABLE, cluster);
+        String dropShard = String.format(DROP_TABLE_TEMPLATE, env, schema, table + ACTUAL_SHARD_POSTFIX, cluster);
+        String dropDistributed = String.format(DROP_TABLE_TEMPLATE, env, schema, table + ACTUAL_POSTFIX, cluster);
 
         return databaseExecutor.executeUpdate(dropDistributed)
                 .compose(v ->

@@ -17,5 +17,5 @@ public interface DdlServiceDao {
 
     void executeQuery(String sql, Handler<AsyncResult<ResultSet>> resultHandler);
 
-    void dropTable(ClassTable classTable, Handler<AsyncResult<Void>> resultHandler);
+    void dropTable(ClassTable classTable, Handler<AsyncResult<ClassTable>> resultHandler);
 }

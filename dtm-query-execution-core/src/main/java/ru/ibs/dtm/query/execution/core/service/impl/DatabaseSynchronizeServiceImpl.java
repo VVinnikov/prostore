@@ -3,6 +3,7 @@ package ru.ibs.dtm.query.execution.core.service.impl;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -64,37 +65,26 @@ public class DatabaseSynchronizeServiceImpl implements DatabaseSynchronizeServic
 
     @Override
     public void removeTable(DdlRequestContext context, Long datamartId, String tableName, Handler<AsyncResult<Void>> handler) {
-        metadataFactory.reflect(context, tableName, ar1 -> {
-            if (ar1.succeeded()) {
-                ClassTable classTable = ar1.result();
-                serviceDbFacade.getDdlServiceDao().dropTable(classTable, dropTableResult -> {
-                    if (dropTableResult.succeeded()) {
-                        QueryRequest queryRequest = context.getRequest().getQueryRequest();
-                        classTable.setSchema(queryRequest.getDatamartMnemonic());
-                        classTable.setNameWithSchema(queryRequest.getDatamartMnemonic() + "." + classTable.getName());
-
-                        context.setDdlType(DROP_TABLE);
-                        context.getRequest().setClassTable(classTable);
-                        metadataFactory.apply(context, result -> {
-                            if (result.succeeded()) {
-                                log.trace("Удаление сущности {} из схемы {}", tableName, queryRequest.getDatamartMnemonic());
-                                serviceDbFacade.getServiceDbDao().getEntityDao().dropEntity(datamartId, tableName)
-                                        .onSuccess(s -> handler.handle(Future.succeededFuture()))
-                                        .onFailure(f -> handler.handle(Future.failedFuture(f)));
-                            } else {
-                                handler.handle(Future.failedFuture(result.cause()));
-                            }
-                        });
-                    } else {
-                        log.debug("Ошибка удаления таблицы в сервисной БД", dropTableResult.cause());
-                        handler.handle(Future.failedFuture(dropTableResult.cause()));
-                    }
-                });
-            } else {
-                log.debug("Ошибка получения данных о таблицах из сервисной БД", ar1.cause());
-                handler.handle(Future.failedFuture(ar1.cause()));
-            }
-        });
+        Future.future((Promise<ClassTable> promise) -> metadataFactory.reflect(context, tableName, promise))
+                .compose(classTable -> Future.future((Promise<ClassTable> p) -> serviceDbFacade.getDdlServiceDao().dropTable(classTable, p)))
+                .compose(classTable -> Future.future((Promise<Void> p) -> {
+                    QueryRequest queryRequest = context.getRequest().getQueryRequest();
+                    classTable.setSchema(queryRequest.getDatamartMnemonic());
+                    classTable.setNameWithSchema(queryRequest.getDatamartMnemonic() + "." + classTable.getName());
+                    context.setDdlType(DROP_TABLE);
+                    context.getRequest().setClassTable(classTable);
+                    metadataFactory.apply(context, p);
+                }))
+                .compose(a -> Future.future((Promise<Long> p) ->
+                        serviceDbFacade.getServiceDbDao().getEntityDao().findEntity(datamartId, tableName, p)))
+                .compose(entityId -> Future.future((Promise<Void> p) ->
+                                serviceDbFacade.getServiceDbDao().getAttributeDao().dropAttribute(entityId, p)))
+                .compose(a -> {
+                    log.trace("Удаление сущности {} из схемы {}", tableName, context.getRequest().getQueryRequest().getDatamartMnemonic());
+                    return serviceDbFacade.getServiceDbDao().getEntityDao().dropEntity(datamartId, tableName);
+                })
+                .onSuccess(s -> handler.handle(Future.succeededFuture()))
+                .onFailure(f -> handler.handle(Future.failedFuture(f)));
     }
 
     private void applyMetadata(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {

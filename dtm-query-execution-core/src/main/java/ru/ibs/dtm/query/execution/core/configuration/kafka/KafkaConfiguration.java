@@ -20,6 +20,12 @@ public class KafkaConfiguration {
         return new VertxKafkaProducerFactory<>(vertx, kafkaProperties.getProducer().getProperty());
     }
 
+    @Bean("coreKafkaConsumerFactory")
+    public KafkaConsumerFactory<byte[],byte[]> coreKafkaConsumerFactory(KafkaProperties kafkaProperties,
+                                                                        @Qualifier("coreVertx") Vertx vertx) {
+        return new VertxKafkaConsumerFactory<>(vertx, kafkaProperties.getConsumer().getCore());
+    }
+
     @Bean("adbKafkaConsumerFactory")
     public KafkaConsumerFactory<String, String> adbKafkaConsumerFactory(KafkaProperties kafkaProperties,
                                                                         @Qualifier("coreVertx") Vertx vertx) {
@@ -60,6 +66,12 @@ public class KafkaConfiguration {
     public KafkaConsumerFactory<String, Byte[]> adqmByteArrayKafkaConsumerFactory(KafkaProperties kafkaProperties,
                                                                                   @Qualifier("coreVertx") Vertx vertx) {
         return new VertxKafkaConsumerFactory<>(vertx, kafkaProperties.getConsumer().getAdqm());
+    }
+
+    @Bean("coreKafkaAdminClient")
+    public KafkaAdminClient coreKafkaAdminClient(KafkaProperties kafkaProperties,
+                                                 @Qualifier("coreVertx") Vertx vertx) {
+        return KafkaAdminClient.create(vertx, kafkaProperties.getConsumer().getCore());
     }
 
     @Bean("adbKafkaAdminClient")

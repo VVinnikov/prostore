@@ -9,3 +9,7 @@ ddl:
   cluster: ${ADQM_CLUSTER:test_arenadata}
   ttlSec: ${ADQM_TTL_SEC:3600}
   archiveDisk: ${ADQM_ARCHIVE_DISK:default}
+
+mppw:
+  consumerGroup: ${ADQM_CONSUMER_GROUP:adqm}
+  kafkaBrokers: {$ADQM_BROKERS:10.92.6.44:9092}

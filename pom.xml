@@ -15,6 +15,7 @@
         <module>plugins</module>
         <module>dtm-query-execution-core</module>
         <module>dtm-migration</module>
+        <module>dtm-kafka-core</module>
     </modules>
 
     <properties>

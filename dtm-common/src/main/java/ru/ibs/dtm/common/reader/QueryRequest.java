@@ -44,6 +44,7 @@ public class QueryRequest {
      *  Delta Information
      */
     private List<DeltaInformation> deltaInformations;
+    private SourceType sourceType;
 
     public QueryRequest copy() {
         QueryRequest newQueryRequest = new QueryRequest();
@@ -58,6 +59,7 @@ public class QueryRequest {
             newQueryRequest.setDeltaInformations(new ArrayList<>(deltaInformations));
         }
         newQueryRequest.setSystemName(systemName);
+        newQueryRequest.setSourceType(sourceType);
         return newQueryRequest;
     }
 
@@ -77,5 +79,4 @@ public class QueryRequest {
     public int hashCode() {
         return Objects.hash(requestId, subRequestId, datamartMnemonic, sql, parameters);
     }
-
 }

@@ -1,11 +1,12 @@
-package ru.ibs.dtm.query.execution.plugin.adqm.factory;
+package ru.ibs.dtm.kafka.core.factory.impl;
 
 import io.vertx.core.Vertx;
 import io.vertx.kafka.client.consumer.KafkaConsumer;
+import ru.ibs.dtm.kafka.core.factory.KafkaConsumerFactory;
 
 import java.util.Map;
 
-public class VertxKafkaConsumerFactory<T, S> implements KafkaConsumerFactory<T, S> {
+public class VertxKafkaConsumerFactory<T,S> implements KafkaConsumerFactory<T,S> {
 
     private final Vertx vertx;
     private final Map<String, String> defaultProps;
@@ -16,7 +17,7 @@ public class VertxKafkaConsumerFactory<T, S> implements KafkaConsumerFactory<T, 
     }
 
     @Override
-    public KafkaConsumer<T, S> create(Map<String, String> config) {
+    public KafkaConsumer<T, S>  create(Map<String, String> config) {
         defaultProps.forEach(config::putIfAbsent);
         return KafkaConsumer.create(vertx, defaultProps);
     }

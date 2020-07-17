@@ -122,11 +122,11 @@ public class DdlServiceDaoImpl implements DdlServiceDao {
     }
 
     @Override
-    public void dropTable(ClassTable classTable, Handler<AsyncResult<Void>> resultHandler) {
+    public void dropTable(ClassTable classTable, Handler<AsyncResult<ClassTable>> resultHandler) {
         executor.execute(dsl -> dsl.dropTableIfExists(classTable.getName())).setHandler(ar -> {
             if (ar.succeeded()) {
                 log.debug("Удаление таблицы [{}] успешно завершено", classTable.getNameWithSchema());
-                resultHandler.handle(Future.succeededFuture());
+                resultHandler.handle(Future.succeededFuture(classTable));
             } else {
                 log.error("Ошибка удаления таблицы [{}]", classTable.getNameWithSchema(), ar.cause());
                 resultHandler.handle(Future.failedFuture(ar.cause()));

@@ -371,6 +371,7 @@ public class QueryRewriter {
     private String replaceAnsiToSpecific(String query) {
         // Change fetch 1 next to limit 1
         return query
+                .replaceAll("ASYMMETRIC", "")
                 .replaceAll("FETCH NEXT 1 ROWS ONLY", "LIMIT 1");
     }
 

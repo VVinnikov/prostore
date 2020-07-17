@@ -44,6 +44,7 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
                                 QueryRequest copyRequest = request.copy();
                                 copyRequest.setDeltaInformations(deltaInfoRes.getDeltaInformations());
                                 copyRequest.setSql(deltaInfoRes.getSqlWithoutSnapshots());
+                                copyRequest.setDeltaInformations(ar.result());
                                 handler.complete(copyRequest);
                             } catch (Exception e) {
                                 log.error("Ошибка разбора запроса", e);

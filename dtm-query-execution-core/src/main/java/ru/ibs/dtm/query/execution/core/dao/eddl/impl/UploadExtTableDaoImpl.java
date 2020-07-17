@@ -6,6 +6,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -89,7 +90,7 @@ public class UploadExtTableDaoImpl implements UploadExtTableDao {
         record.setLocationType(Type.values()[locationType]);
         record.setLocationPath(locationPath);
         record.setFormat(Format.values()[format]);
-        record.setTableSchema(JsonObject.mapFrom(schema));
+        record.setTableSchema(JsonObject.mapFrom(Json.decodeValue(schema)));
         record.setMessageLimit(messageLimit);
         return record;
     }

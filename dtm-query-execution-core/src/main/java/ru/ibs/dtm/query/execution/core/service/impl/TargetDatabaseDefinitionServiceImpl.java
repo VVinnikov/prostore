@@ -1,6 +1,9 @@
 package ru.ibs.dtm.query.execution.core.service.impl;
 
 import io.vertx.core.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.apache.commons.lang3.tuple.Pair;
@@ -16,10 +19,6 @@ import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 import ru.ibs.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.QueryCostRequest;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefinitionService {
@@ -29,7 +28,7 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
 
     @Override
     public void getTargetSource(QuerySourceRequest request, Handler<AsyncResult<QuerySourceRequest>> handler) {
-        if (request.getSourceType() != null) {
+        if (request.getQueryRequest().getSourceType() != null) {
             getLogicalSchema(request)
                     .onComplete(ar -> {
                         if (ar.succeeded()) {
@@ -53,11 +52,14 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
                             request.setLogicalSchema(ar.result());
                             getTargetSourceFromCost(request, tr -> {
                                 if (tr.succeeded()) {
+                                    val sourceType = tr.result();
+                                    val queryRequestWithSourceType = request.getQueryRequest().copy();
+                                    queryRequestWithSourceType.setSourceType(sourceType);
                                     handler.handle(Future.succeededFuture(
                                             new QuerySourceRequest(
-                                                    request.getQueryRequest().copy(),
+                                                    queryRequestWithSourceType,
                                                     request.getLogicalSchema(),
-                                                    tr.result())));
+                                                    sourceType)));
                                 } else {
                                     handler.handle(Future.failedFuture(tr.cause()));
                                 }

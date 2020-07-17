@@ -47,6 +47,7 @@ public class AdgQueryEnrichmentServiceImpl implements QueryEnrichmentService {
                 schemaDescription.setLogicalSchema(logicalSchema);
                 val physicalSchema = schemaExtender.generatePhysicalSchema(logicalSchema, parserResponse.getQueryRequest());
                 contextProvider.enrichContext(parserResponse.getCalciteContext(), physicalSchema);
+                schemaDescription.setPhysicalSchema(physicalSchema);
                 // формируем новый sql-запрос
                 adgQueryGenerator.mutateQuery(parserResponse.getRelNode(),
                         parserResponse.getQueryRequest().getDeltaInformations(),

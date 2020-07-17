@@ -5,6 +5,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.plugin.exload.QueryLoadParam;
@@ -17,7 +18,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
-@RequiredArgsConstructor
 @Service("adqmMppwKafkaService")
 public class AdqmMppwKafkaService implements MppwKafkaService<QueryResult> {
     private enum LoadType {
@@ -37,6 +37,7 @@ public class AdqmMppwKafkaService implements MppwKafkaService<QueryResult> {
 
     private static final Map<LoadType, MppwRequestHandler> handlers = new HashMap<>();
 
+    @Autowired
     public AdqmMppwKafkaService(
             @Qualifier("adqmMppwStartRequestHandler") MppwRequestHandler startRequestHandler,
             @Qualifier("adqmMppwFinishRequestHandler") MppwRequestHandler finishRequestHandler

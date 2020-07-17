@@ -80,8 +80,8 @@ public class SqlSelectTree {
             flattenSqlJoin(treeNode, (SqlJoin) node);
         } else if (node instanceof SqlIdentifier) {
             flattenSqlIdentifier(treeNode, (SqlIdentifier) node);
-        } else if (node instanceof SqlSnapshot) {
-            flattenSqlSnapshot(treeNode, (SqlSnapshot) node);
+        } else if (node instanceof ru.ibs.dtm.query.calcite.core.extension.snapshot.SqlSnapshot) {
+            flattenSqlSnapshot(treeNode, (ru.ibs.dtm.query.calcite.core.extension.snapshot.SqlSnapshot) node);
         } else if (node instanceof SqlBasicCall) {
             flattenSqlBasicCall(treeNode, (SqlBasicCall) node);
         } else if (node instanceof SqlInsert) {
@@ -150,7 +150,7 @@ public class SqlSelectTree {
         flattenSqlCall(parentTree, parentNode);
     }
 
-    private void flattenSqlSnapshot(SqlTreeNode parent, SqlSnapshot parentNode) {
+    private void flattenSqlSnapshot(SqlTreeNode parent, ru.ibs.dtm.query.calcite.core.extension.snapshot.SqlSnapshot parentNode) {
         flattenSqlCall(parent, parentNode);
     }
 

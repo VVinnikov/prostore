@@ -20,6 +20,9 @@ import ru.ibs.dtm.query.execution.core.dao.servicedb.ViewDao;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.impl.ServiceDbDaoImpl;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.impl.ViewDaoImpl;
 import ru.ibs.dtm.query.execution.core.dto.DatamartView;
+import ru.ibs.dtm.query.execution.core.service.dml.impl.DatamartViewWrapLoaderImpl;
+import ru.ibs.dtm.query.execution.core.service.dml.impl.LogicViewReplacerImpl;
+import ru.ibs.dtm.query.execution.core.service.dml.impl.SqlSnapshotReplacerImpl;
 import ru.ibs.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
 
 import java.util.ArrayList;

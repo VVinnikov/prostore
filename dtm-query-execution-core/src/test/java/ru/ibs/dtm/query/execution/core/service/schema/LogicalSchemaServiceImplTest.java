@@ -24,6 +24,7 @@ import ru.ibs.dtm.query.execution.core.dao.servicedb.impl.ServiceDbDaoImpl;
 import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
 import ru.ibs.dtm.query.execution.core.dto.metadata.EntityAttribute;
 import ru.ibs.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
+import ru.ibs.dtm.query.execution.core.service.schema.impl.LogicalSchemaServiceImpl;
 import ru.ibs.dtm.query.execution.model.metadata.AttributeType;
 import ru.ibs.dtm.query.execution.model.metadata.ColumnType;
 import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;

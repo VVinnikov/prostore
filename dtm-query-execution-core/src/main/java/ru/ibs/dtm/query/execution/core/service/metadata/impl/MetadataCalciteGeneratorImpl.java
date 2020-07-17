@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.service.impl;
+package ru.ibs.dtm.query.execution.core.service.metadata.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.*;
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.query.calcite.core.extension.eddl.SqlNodeUtils;
-import ru.ibs.dtm.query.execution.core.service.MetadataCalciteGenerator;
+import ru.ibs.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
 import ru.ibs.dtm.query.execution.core.utils.ColumnTypeUtil;
 
 import java.util.ArrayList;
@@ -34,6 +34,7 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
         final List<ClassField> fields = new ArrayList<>();
         final SqlNodeList columnList = (SqlNodeList) sqlCreate.getOperandList().get(1);
         columnList.getList().forEach(col -> {
+            //FIXME добавить обработку distributedKey
             if (col.getKind().equals(SqlKind.COLUMN_DECL)) {
                 final ClassField field = createField((SqlColumnDeclaration) col);
                 fieldMap.put(field.getName(), field);

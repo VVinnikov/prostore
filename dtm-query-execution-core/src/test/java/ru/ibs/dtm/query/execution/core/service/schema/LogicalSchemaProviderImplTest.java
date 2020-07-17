@@ -9,6 +9,8 @@ import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.dto.schema.DatamartSchemaKey;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
+import ru.ibs.dtm.query.execution.core.service.schema.impl.LogicalSchemaProviderImpl;
+import ru.ibs.dtm.query.execution.core.service.schema.impl.LogicalSchemaServiceImpl;
 import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;
 import ru.ibs.dtm.query.execution.model.metadata.TableAttribute;

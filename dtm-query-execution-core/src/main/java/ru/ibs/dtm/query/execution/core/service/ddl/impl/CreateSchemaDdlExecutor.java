@@ -10,7 +10,8 @@ import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.core.configuration.jooq.MariaProperties;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
-import ru.ibs.dtm.query.execution.core.factory.MetadataFactory;
+import ru.ibs.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
+import ru.ibs.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 
 import static ru.ibs.dtm.query.execution.plugin.api.ddl.DdlType.CREATE_SCHEMA;
@@ -18,39 +19,51 @@ import static ru.ibs.dtm.query.execution.plugin.api.ddl.DdlType.CREATE_SCHEMA;
 @Slf4j
 @Component
 public class CreateSchemaDdlExecutor extends QueryResultDdlExecutor {
+
     @Autowired
-    public CreateSchemaDdlExecutor(MetadataFactory<DdlRequestContext> metadataFactory,
+    public CreateSchemaDdlExecutor(MetadataExecutor<DdlRequestContext> metadataExecutor,
                                    MariaProperties mariaProperties,
                                    ServiceDbFacade serviceDbFacade) {
-        super(metadataFactory, mariaProperties, serviceDbFacade);
+        super(metadataExecutor, mariaProperties, serviceDbFacade);
     }
 
     @Override
     public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<QueryResult>> handler) {
-        context.getRequest().setQueryRequest(replaceDatabaseInSql(context.getRequest().getQueryRequest()));
-        context.setDdlType(CREATE_SCHEMA);
-        metadataFactory.apply(context, result -> {
-            if (result.succeeded()) {
-                createDatamart(sqlNodeName, handler);
-            } else {
-                handler.handle(Future.failedFuture(result.cause()));
-            }
-        });
+        try {
+            context.getRequest().setQueryRequest(replaceDatabaseInSql(context.getRequest().getQueryRequest()));
+            context.setDdlType(CREATE_SCHEMA);
+            metadataExecutor.execute(context, ar -> {
+                if (ar.succeeded()) {
+                    createDatamart(context, cr -> {
+                        if (cr.succeeded()) {
+                            handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
+                        } else {
+                            log.error("Error creating datamart [{}]", context.getDatamartName(), cr.cause());
+                            handler.handle(Future.failedFuture(cr.cause()));
+                        }
+                    });
+                } else {
+                    handler.handle(Future.failedFuture(ar.cause()));
+                }
+            });
+        } catch (Exception e) {
+            log.error("Error in creating datamart!", e);
+            handler.handle(Future.failedFuture(e));
+        }
     }
 
-    private void createDatamart(String datamartName, Handler<AsyncResult<QueryResult>> handler) {
-        serviceDbFacade.getServiceDbDao().getDatamartDao().findDatamart(datamartName, datamartResult -> {
+    private void createDatamart(DdlRequestContext context, Handler<AsyncResult<Void>> resultHandler) {
+        serviceDbFacade.getServiceDbDao().getDatamartDao().findDatamart(context.getDatamartName(), datamartResult -> {
             if (datamartResult.succeeded()) {
-                log.error("База данных {} уже существует", datamartName);
-                handler.handle(Future.failedFuture(String.format("База данных [%s] уже существует", datamartName)));
+                resultHandler.handle(Future.failedFuture(new RuntimeException(
+                        String.format("Datamart [%s] is already exists", context.getDatamartName()))));
             } else {
-                serviceDbFacade.getServiceDbDao().getDatamartDao().insertDatamart(datamartName, insertResult -> {
+                serviceDbFacade.getServiceDbDao().getDatamartDao().insertDatamart(context.getDatamartName(), insertResult -> {
                     if (insertResult.succeeded()) {
-                        log.debug("Создана новая витрина {}", datamartName);
-                        handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
+                        log.debug("Datamart [{}] successfully created", context.getDatamartName());
+                        resultHandler.handle(Future.succeededFuture());
                     } else {
-                        log.error("Ошибка при создании витрины {}", datamartName, insertResult.cause());
-                        handler.handle(Future.failedFuture(insertResult.cause()));
+                        resultHandler.handle(Future.failedFuture(insertResult.cause()));
                     }
                 });
             }

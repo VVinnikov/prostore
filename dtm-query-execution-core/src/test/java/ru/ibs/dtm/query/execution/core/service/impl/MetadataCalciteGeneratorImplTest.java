@@ -14,10 +14,9 @@ import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.model.ddl.ClassTypes;
 import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
-import ru.ibs.dtm.query.execution.core.service.MetadataCalciteGenerator;
+import ru.ibs.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
+import ru.ibs.dtm.query.execution.core.service.metadata.impl.MetadataCalciteGeneratorImpl;
 
-import java.time.LocalTime;
-import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;

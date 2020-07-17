@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.service.delta;
+package ru.ibs.dtm.query.execution.core.service.delta.impl;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;

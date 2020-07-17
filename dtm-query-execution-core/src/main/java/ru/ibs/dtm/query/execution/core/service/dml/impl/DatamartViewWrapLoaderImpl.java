@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.service.dml;
+package ru.ibs.dtm.query.execution.core.service.dml.impl;
 
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;

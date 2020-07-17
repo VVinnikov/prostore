@@ -37,6 +37,9 @@ kafka:
     adqm:
       bootstrap.servers: *kafkaUrl
       group.id: adqm-query-execution
+    core:
+      bootstrap.servers: *kafkaUrl
+      group.id: core-query-execution
   cluster:
     zookeeperHosts: ${ZOOKEEPER_HOSTS:kafka-1.dtm.local}
     rootPath: ${KAFKA_CLUSTER_ROOTPATH:arenadata/cluster/21}

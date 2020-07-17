@@ -18,7 +18,7 @@ public class QuerySourceRequest {
     @NonNull
     private SourceType sourceType;
 
-    public QuerySourceRequest(@NonNull QueryRequest queryRequest, @NonNull SourceType sourceType) {
+    public QuerySourceRequest(@NonNull QueryRequest queryRequest, SourceType sourceType) {
         this.queryRequest = queryRequest;
         this.sourceType = sourceType;
     }

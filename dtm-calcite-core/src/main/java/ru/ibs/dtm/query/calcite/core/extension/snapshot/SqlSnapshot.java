@@ -1,6 +1,7 @@
 package ru.ibs.dtm.query.calcite.core.extension.snapshot;
 
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import ru.ibs.dtm.common.calcite.SnapshotType;
@@ -20,6 +21,11 @@ public class SqlSnapshot extends org.apache.calcite.sql.SqlSnapshot {
         this.period = (SqlNode) Objects.requireNonNull(period);
         this.isLatestUncommitedDelta = isLatestUncommitedDelta(this.period);
         this.snapshotOperator = new ru.ibs.dtm.query.calcite.core.extension.snapshot.SnapshotOperator();
+    }
+
+    @Override
+    public SqlOperator getOperator() {
+        return this.snapshotOperator;
     }
 
     public SqlNode getTableRef() {

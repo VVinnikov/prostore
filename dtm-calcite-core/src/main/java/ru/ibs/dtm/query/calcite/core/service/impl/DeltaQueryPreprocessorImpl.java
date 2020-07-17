@@ -37,13 +37,14 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
                     handler.fail(String.format("Неопределен запрос %s", request));
                 } else {
                     val sqlNode = definitionService.processingQuery(request.getSql());
-                    val deltaInfoRes = DeltaInformationExtractor.extract(sqlNode, request.getDatamartMnemonic());
+                    val deltaInfoRes = DeltaInformationExtractor.extract(sqlNode);
                     calculateDeltaValues(deltaInfoRes.getDeltaInformations(), ar -> {
                         if (ar.succeeded()) {
                             try {
                                 QueryRequest copyRequest = request.copy();
                                 copyRequest.setDeltaInformations(deltaInfoRes.getDeltaInformations());
                                 copyRequest.setSql(deltaInfoRes.getSqlWithoutSnapshots());
+                                copyRequest.setDeltaInformations(ar.result());
                                 handler.complete(copyRequest);
                             } catch (Exception e) {
                                 log.error("Ошибка разбора запроса", e);
@@ -64,7 +65,7 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
     private void calculateDeltaValues(List<DeltaInformation> deltas,
                                       Handler<AsyncResult<List<DeltaInformation>>> handler) {
         val requests = deltas.stream()
-                .map(d -> new ActualDeltaRequest(d.getSchemaName(), d.getDeltaTimestamp()))
+                .map(d -> new ActualDeltaRequest(d.getSchemaName(), d.getDeltaTimestamp(), d.isLatestUncommitedDelta()))
                 .collect(Collectors.toList());
 
         deltaService.getDeltasOnDateTimes(requests, ar -> {

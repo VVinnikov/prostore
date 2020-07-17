@@ -78,7 +78,7 @@
                 <activeByDefault>false</activeByDefault>
             </activation>
             <properties>
-                <datasource.service.options.host>10.18.84.17</datasource.service.options.host>
+                <datasource.service.options.host>10.92.3.41</datasource.service.options.host>
                 <datasource.service.options.port>3306</datasource.service.options.port>
                 <datasource.service.options.database>dtmservice</datasource.service.options.database>
                 <datasource.service.options.user>dtmuser</datasource.service.options.user>

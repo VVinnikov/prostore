@@ -1,13 +1,14 @@
 package ru.ibs.dtm.query.execution.plugin.adg.service.impl.enrichment;
 
-import org.springframework.stereotype.Service;
-import ru.ibs.dtm.common.reader.QueryRequest;
-import ru.ibs.dtm.query.execution.model.metadata.*;
-import ru.ibs.dtm.query.execution.plugin.adg.service.SchemaExtender;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import lombok.val;
+import org.springframework.stereotype.Service;
+import ru.ibs.dtm.common.reader.QueryRequest;
+import ru.ibs.dtm.query.execution.model.metadata.*;
+import ru.ibs.dtm.query.execution.plugin.adg.factory.AdgHelperTableNamesFactory;
+import ru.ibs.dtm.query.execution.plugin.adg.service.SchemaExtender;
 
 import static ru.ibs.dtm.query.execution.plugin.adg.constants.ColumnFields.*;
 
@@ -17,59 +18,65 @@ import static ru.ibs.dtm.query.execution.plugin.adg.constants.ColumnFields.*;
  */
 @Service("adgSchemaExtender")
 public class AdgSchemaExtenderImpl implements SchemaExtender {
+  private final AdgHelperTableNamesFactory helperTableNamesFactory;
+
+  public AdgSchemaExtenderImpl(AdgHelperTableNamesFactory helperTableNamesFactory) {
+    this.helperTableNamesFactory = helperTableNamesFactory;
+  }
 
   @Override
   public Datamart generatePhysicalSchema(Datamart datamart, QueryRequest queryRequest) {
     Datamart extendedSchema = new Datamart();
     extendedSchema.setMnemonic(datamart.getMnemonic());
     extendedSchema.setId(UUID.randomUUID());
-    List<DatamartClass> extendedDatamartClasses = new ArrayList<>();
-    String prefix = queryRequest.getSystemName() + "_" + queryRequest.getDatamartMnemonic() + "_";
-
-    datamart.getDatamartClassess().forEach(dmClass -> {
+    List<DatamartTable> extendedDatamartClasses = new ArrayList<>();
+    datamart.getDatamartTables().forEach(dmClass -> {
+      val helperTableNames = helperTableNamesFactory.create(queryRequest.getSystemName(),
+              queryRequest.getDatamartMnemonic(),
+              dmClass.getLabel());
       dmClass.setMnemonic(dmClass.getMnemonic());
-      dmClass.getClassAttributes().addAll(getExtendedColumns());
+      dmClass.getTableAttributes().addAll(getExtendedColumns());
       extendedDatamartClasses.add(dmClass);
-      extendedDatamartClasses.add(getExtendedSchema(dmClass, prefix, HISTORY_POSTFIX));
-      extendedDatamartClasses.add(getExtendedSchema(dmClass, prefix, STAGING_POSTFIX));
-      extendedDatamartClasses.add(getExtendedSchema(dmClass, prefix, ACTUAL_POSTFIX));
+      extendedDatamartClasses.add(getExtendedSchema(dmClass, helperTableNames.getHistory()));
+      extendedDatamartClasses.add(getExtendedSchema(dmClass, helperTableNames.getStaging()));
+      extendedDatamartClasses.add(getExtendedSchema(dmClass, helperTableNames.getActual()));
     });
-    extendedSchema.setDatamartClassess(extendedDatamartClasses);
+    extendedSchema.setDatamartTables(extendedDatamartClasses);
 
     return extendedSchema;
   }
 
-  private DatamartClass getExtendedSchema(DatamartClass datamartClass, String prefix, String tablePostfix) {
-    DatamartClass datamartClassExtended = new DatamartClass();
-    datamartClassExtended.setLabel(datamartClass.getLabel());
-    datamartClassExtended.setMnemonic(prefix + datamartClass.getLabel() + tablePostfix);
-    datamartClassExtended.setId(UUID.randomUUID());
-    List<ClassAttribute> classAttributeList = new ArrayList<>();
-    datamartClass.getClassAttributes().forEach(classAttr -> {
-      ClassAttribute classAttribute = new ClassAttribute();
-      classAttribute.setId(UUID.randomUUID());
-      classAttribute.setMnemonic(classAttr.getMnemonic());
-      classAttribute.setType(classAttr.getType());
-      classAttributeList.add(classAttribute);
+  private DatamartTable getExtendedSchema(DatamartTable datamartTable, String tableName) {
+    DatamartTable datamartTableExtended = new DatamartTable();
+    datamartTableExtended.setLabel(tableName);
+    datamartTableExtended.setMnemonic(tableName);
+    datamartTableExtended.setId(UUID.randomUUID());
+    List<TableAttribute> tableAttributeList = new ArrayList<>();
+    datamartTable.getTableAttributes().forEach(classAttr -> {
+      TableAttribute tableAttribute = new TableAttribute();
+      tableAttribute.setId(UUID.randomUUID());
+      tableAttribute.setMnemonic(classAttr.getMnemonic());
+      tableAttribute.setType(classAttr.getType());
+      tableAttributeList.add(tableAttribute);
     });
-    datamartClassExtended.setClassAttributes(classAttributeList);
-    return datamartClassExtended;
+    datamartTableExtended.setTableAttributes(tableAttributeList);
+    return datamartTableExtended;
   }
 
-  private List<ClassAttribute> getExtendedColumns() {
-    List<ClassAttribute> classAttributeList = new ArrayList<>();
-    classAttributeList.add(generateNewField(SYS_OP_FIELD, ColumnType.INTEGER));
-    classAttributeList.add(generateNewField(SYS_TO_FIELD, ColumnType.INTEGER));
-    classAttributeList.add(generateNewField(SYS_FROM_FIELD, ColumnType.INTEGER));
-    return classAttributeList;
+  private List<TableAttribute> getExtendedColumns() {
+    List<TableAttribute> tableAttributeList = new ArrayList<>();
+    tableAttributeList.add(generateNewField(SYS_OP_FIELD, ColumnType.INTEGER));
+    tableAttributeList.add(generateNewField(SYS_TO_FIELD, ColumnType.INTEGER));
+    tableAttributeList.add(generateNewField(SYS_FROM_FIELD, ColumnType.INTEGER));
+    return tableAttributeList;
   }
 
-  private ClassAttribute generateNewField(String mnemonic, ColumnType columnType) {
-    ClassAttribute classAttribute = new ClassAttribute();
-    classAttribute.setId(UUID.randomUUID());
-    classAttribute.setMnemonic(mnemonic);
-    classAttribute.setType(new TypeMessage(UUID.randomUUID(), columnType));
-    return classAttribute;
+  private TableAttribute generateNewField(String mnemonic, ColumnType columnType) {
+    TableAttribute tableAttribute = new TableAttribute();
+    tableAttribute.setId(UUID.randomUUID());
+    tableAttribute.setMnemonic(mnemonic);
+    tableAttribute.setType(new AttributeType(UUID.randomUUID(), columnType));
+    return tableAttribute;
   }
 
 }

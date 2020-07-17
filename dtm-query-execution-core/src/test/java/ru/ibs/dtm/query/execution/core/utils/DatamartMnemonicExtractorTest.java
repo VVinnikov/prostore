@@ -1,148 +1,141 @@
 package ru.ibs.dtm.query.execution.core.utils;
 
-import java.util.Optional;
+import lombok.val;
 import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.Test;
+import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import ru.ibs.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class DatamartMnemonicExtractorTest {
     public static final String EXPECTED_DATAMART = "test";
     private final CalciteConfiguration config = new CalciteConfiguration();
+    private CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private final DefinitionService<SqlNode> definitionService =
-            new CoreCalciteDefinitionService(config.configEddlParser(config.eddlParserImplFactory()));
+            new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
     private final DatamartMnemonicExtractor extractor = new DatamartMnemonicExtractor();
 
     @Test
-    void extractFromSelect() throws Exception {
-        SqlNode sqlNode = definitionService.processingQuery("select * from test.tbl1");
-        Optional<String> datamartOpt = extractor.extract(sqlNode);
-
-        assertTrue(datamartOpt.isPresent());
-        assertEquals(EXPECTED_DATAMART, datamartOpt.get());
+    void extractFromSelect() {
+        val sqlNode = definitionService.processingQuery("select * from test.tbl1");
+        val datamart = extractor.extract(sqlNode);
+        assertEquals(EXPECTED_DATAMART, datamart);
     }
 
     @Test
-    void extractFromSelectWithoutDatamart() throws Exception {
-        SqlNode sqlNode = definitionService.processingQuery("select * from tbl1");
-        Optional<String> datamartOpt = extractor.extract(sqlNode);
-
-        assertFalse(datamartOpt.isPresent());
+    void extractFromSelectWithoutDatamart() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            SqlNode sqlNode = definitionService.processingQuery("select * from tbl1");
+            extractor.extract(sqlNode);
+        });
     }
 
     @Test
-    void extractFromSelectSnapshot() throws Exception {
-        SqlNode sqlNode = definitionService.processingQuery("select * from test.tbl1 FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' AS t");
-        Optional<String> datamartOpt = extractor.extract(sqlNode);
-
-        assertTrue(datamartOpt.isPresent());
-        assertEquals(EXPECTED_DATAMART, datamartOpt.get());
+    void extractFromSelectSnapshot() {
+        val sqlNode = definitionService.processingQuery("select * from test.tbl1 FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' AS t");
+        val datamart = extractor.extract(sqlNode);
+        assertEquals(EXPECTED_DATAMART, datamart);
     }
 
     @Test
-    void extractFromSelectSnapshotWithoutDatamart() throws Exception {
-        SqlNode sqlNode = definitionService.processingQuery("select * from tbl1 FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' AS t");
-        Optional<String> datamartOpt = extractor.extract(sqlNode);
-
-        assertFalse(datamartOpt.isPresent());
+    void extractFromSelectSnapshotWithoutDatamart() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            val sqlNode = definitionService.processingQuery("select * from tbl1 FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' AS t");
+            extractor.extract(sqlNode);
+        });
     }
 
     @Test
-    void extractFromInnerSelect() throws Exception {
-        SqlNode sqlNode = definitionService.processingQuery("select * from (select id from test.tbl1) AS t");
-        Optional<String> datamartOpt = extractor.extract(sqlNode);
-
-        assertTrue(datamartOpt.isPresent());
-        assertEquals(EXPECTED_DATAMART, datamartOpt.get());
+    void extractFromInnerSelect() {
+        val sqlNode = definitionService.processingQuery("select * from (select id from test.tbl1) AS t");
+        val datamart = extractor.extract(sqlNode);
+        assertEquals(EXPECTED_DATAMART, datamart);
     }
 
     @Test
-    void extractFromInnerSelectSnapshot() throws Exception {
-        SqlNode sqlNode = definitionService.processingQuery("select * from (select * from test.tbl1 FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14') AS t");
-        Optional<String> datamartOpt = extractor.extract(sqlNode);
-
-        assertTrue(datamartOpt.isPresent());
-        assertEquals(EXPECTED_DATAMART, datamartOpt.get());
+    void extractFromInnerSelectSnapshot() {
+        val sqlNode = definitionService.processingQuery("select * from (select * from test.tbl1" +
+                " FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14') AS t");
+        val datamart = extractor.extract(sqlNode);
+        assertEquals(EXPECTED_DATAMART, datamart);
     }
 
     @Test
-    void extractFromJoin() throws Exception {
-        SqlNode sqlNode = definitionService.processingQuery("select * from tbl1 JOIN test.view FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59'");
-        Optional<String> datamartOpt = extractor.extract(sqlNode);
-
-        assertTrue(datamartOpt.isPresent());
-        assertEquals(EXPECTED_DATAMART, datamartOpt.get());
+    void extractFromJoin() {
+        val sqlNode = definitionService.processingQuery("select * from test.tbl1 " +
+                "JOIN test.view FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59'");
+        val datamart = extractor.extract(sqlNode);
+        assertEquals(EXPECTED_DATAMART, datamart);
     }
 
     @Test
-    void extractFromCreateTable() throws Exception {
-        SqlNode sqlNode = definitionService.processingQuery("CREATE TABLE test.table_name (col1 datatype1, col2 datatype2, PRIMARY KEY (col1, col2) ) DISTRIBUTED BY (col1, col2)");
-        Optional<String> datamartOpt = extractor.extract(sqlNode);
-
-        assertTrue(datamartOpt.isPresent());
-        assertEquals(EXPECTED_DATAMART, datamartOpt.get());
+    void extractFromCreateTable() {
+        val sqlNode = definitionService.processingQuery("CREATE TABLE test.table_name " +
+                "(col1 datatype1, col2 datatype2, PRIMARY KEY (col1, col2) )" +
+                " DISTRIBUTED BY (col1, col2)");
+        val datamart = extractor.extract(sqlNode);
+        assertEquals(EXPECTED_DATAMART, datamart);
     }
 
     @Test
-    void extractFromCreateTableWithoutDatamart() throws Exception {
-        SqlNode sqlNode = definitionService.processingQuery("CREATE TABLE table_name (col1 datatype1, col2 datatype2, PRIMARY KEY (col1, col2) ) DISTRIBUTED BY (col1, col2)");
-        Optional<String> datamartOpt = extractor.extract(sqlNode);
-
-        assertFalse(datamartOpt.isPresent());
+    void extractFromCreateTableWithoutDatamart() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            val sqlNode = definitionService.processingQuery(
+                    "CREATE TABLE table_name (col1 datatype1, col2 datatype2, PRIMARY KEY (col1, col2) )" +
+                            " DISTRIBUTED BY (col1, col2)"
+            );
+            extractor.extract(sqlNode);
+        });
     }
 
     @Test
-    void extractFromDropTable() throws Exception {
-        SqlNode sqlNode = definitionService.processingQuery("DROP TABLE test.table_name");
-        Optional<String> datamartOpt = extractor.extract(sqlNode);
-
-        assertTrue(datamartOpt.isPresent());
-        assertEquals(EXPECTED_DATAMART, datamartOpt.get());
+    void extractFromDropTable() {
+        val sqlNode = definitionService.processingQuery("DROP TABLE test.table_name");
+        val datamart = extractor.extract(sqlNode);
+        assertEquals(EXPECTED_DATAMART, datamart);
     }
 
     @Test
-    void extractFromDropTableWithoutDatamart() throws Exception {
-        SqlNode sqlNode = definitionService.processingQuery("DROP TABLE table_name");
-        Optional<String> datamartOpt = extractor.extract(sqlNode);
-
-        assertFalse(datamartOpt.isPresent());
+    void extractFromDropTableWithoutDatamart() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            val sqlNode = definitionService.processingQuery("DROP TABLE table_name");
+            extractor.extract(sqlNode);
+        });
     }
 
     @Test
-    void extractFromCreateView() throws Exception {
-        SqlNode sqlNode = definitionService.processingQuery("CREATE VIEW test.view1 as select * from test2.tbl1 JOIN test2.view FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59'");
-        Optional<String> datamartOpt = extractor.extract(sqlNode);
-
-        assertTrue(datamartOpt.isPresent());
-        assertEquals(EXPECTED_DATAMART, datamartOpt.get());
+    void extractFromCreateView() {
+        val sqlNode = definitionService.processingQuery("CREATE VIEW test.view1 as select * from test2.tbl1" +
+                " JOIN test2.view FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59'");
+        val datamart = extractor.extract(sqlNode);
+        assertEquals(EXPECTED_DATAMART, datamart);
     }
 
     @Test
-    void extractFromCreateOrReplaceView() throws Exception {
-        SqlNode sqlNode = definitionService.processingQuery("CREATE OR REPLACE VIEW test.view1 as select * from test2.tbl1 JOIN test2.view FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59'");
-        Optional<String> datamartOpt = extractor.extract(sqlNode);
-
-        assertTrue(datamartOpt.isPresent());
-        assertEquals(EXPECTED_DATAMART, datamartOpt.get());
+    void extractFromCreateOrReplaceView() {
+        val sqlNode = definitionService.processingQuery("CREATE OR REPLACE VIEW test.view1 as select * from test2.tbl1" +
+                " JOIN test2.view FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59'");
+        val datamart = extractor.extract(sqlNode);
+        assertEquals(EXPECTED_DATAMART, datamart);
     }
 
     @Test
-    void extractFromCreateViewWithoutDatamart() throws Exception {
-        SqlNode sqlNode = definitionService.processingQuery("CREATE VIEW view1 as select * from test2.tbl1 JOIN test2.view FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59'");
-        Optional<String> datamartOpt = extractor.extract(sqlNode);
-
-        assertFalse(datamartOpt.isPresent());
+    void extractFromCreateViewWithoutDatamart() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            val sqlNode = definitionService.processingQuery("CREATE VIEW view1 as select * from test2.tbl1 " +
+                    "JOIN test2.view FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59'");
+            extractor.extract(sqlNode);
+        });
     }
 
     @Test
-    void extractFromInsert() throws Exception {
-        SqlNode sqlNode = definitionService.processingQuery("INSERT INTO test.PSO SELECT * FROM test.PSO");
-        Optional<String> datamartOpt = extractor.extract(sqlNode);
-
-        assertTrue(datamartOpt.isPresent());
-        assertEquals(EXPECTED_DATAMART, datamartOpt.get());
+    void extractFromInsert() {
+        val sqlNode = definitionService.processingQuery("INSERT INTO test.PSO SELECT * FROM test.PSO");
+        val datamart = extractor.extract(sqlNode);
+        assertEquals(EXPECTED_DATAMART, datamart);
     }
 }

@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.service.DeltaService;
+import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 import ru.ibs.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adb.service.QueryEnrichmentService;
 import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
@@ -68,12 +69,14 @@ public class AdbLlrServiceTest {
 		TestSuite suite = TestSuite.create("the_test_suite");
 		suite.test("executeQuery", context -> {
 			Async async = context.async();
-			JsonObject test_datamart = JsonUtils.init("meta_data.json", "TEST_DATAMART");
+			JsonObject jsonSchema = JsonUtils.init("meta_data.json", "TEST_DATAMART");
+			List<Datamart> schema = new ArrayList<>();
+			schema.add(jsonSchema.mapTo(Datamart.class));
 			QueryRequest queryRequest = new QueryRequest();
 			queryRequest.setSql("SELECT * from PSO");
 			queryRequest.setRequestId(UUID.randomUUID());
 			queryRequest.setDatamartMnemonic("TEST_DATAMART");
-			LlrRequest llrRequest = new LlrRequest(queryRequest, test_datamart);
+			LlrRequest llrRequest = new LlrRequest(queryRequest, schema);
 			adbLLRService.execute(new LlrRequestContext(llrRequest), ar -> {
 				log.debug(ar.toString());
 				result.add("OK");

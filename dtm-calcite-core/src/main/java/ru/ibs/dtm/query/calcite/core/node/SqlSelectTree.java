@@ -1,20 +1,23 @@
 package ru.ibs.dtm.query.calcite.core.node;
 
+import lombok.Data;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.apache.calcite.sql.*;
+import org.apache.commons.lang3.reflect.FieldUtils;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-import org.apache.calcite.sql.*;
 
 @Data
 @Slf4j
 public class SqlSelectTree {
-    public static final String IS_TABLE_OR_SNAPSHOTS_PATTERN = "(?i).*(JOIN|SELECT)\\.(|AS\\.)(SNAPSHOT|IDENTIFIER)$";
+    public static final String IS_TABLE_OR_SNAPSHOTS_PATTERN = "(?i).*(^\\w+|JOIN|SELECT)\\.(|AS\\.)(SNAPSHOT|IDENTIFIER)$";
     public static final String SELECT_AS_SNAPSHOT = "SNAPSHOT";
     private final Map<Integer, SqlTreeNode> nodeMap;
     private int idCounter;
@@ -82,9 +85,66 @@ public class SqlSelectTree {
             flattenSqlSnapshot(treeNode, (SqlSnapshot) node);
         } else if (node instanceof SqlBasicCall) {
             flattenSqlBasicCall(treeNode, (SqlBasicCall) node);
+        } else if (node instanceof SqlInsert) {
+            flattenSqlInsert(treeNode, (SqlCall) node);
+        } else if (node instanceof SqlCreate) {
+            flattenSqlCreate(treeNode, (SqlDdl) node);
+        } else if (node instanceof SqlDrop) {
+            flattenSqlDrop(treeNode, (SqlDdl) node);
         } else if (node instanceof SqlCall) {
             flattenSqlCall(treeNode, (SqlCall) node);
         }
+    }
+
+    private void flattenSqlCreate(SqlTreeNode parentTree, SqlDdl parentNode) {
+        flattenSqlDrop(parentTree, parentNode);
+        parentTree.resetChildPos();
+        addReflectNode(parentTree, parentNode, "columnList");
+        parentTree.resetChildPos();
+        addReflectNode(parentTree, parentNode, "query");
+    }
+
+    private void addReflectNode(SqlTreeNode parentTree, SqlNode parentNode, String fieldName) {
+        parentTree.createChild(idCounter++,
+                readNode(parentNode, fieldName),
+                node -> writeNode(parentNode, node, fieldName))
+                .ifPresent(this::addNodes);
+    }
+
+    private void flattenSqlDrop(SqlTreeNode parentTree, SqlDdl parentNode) {
+        addReflectNode(parentTree, parentNode, "name");
+    }
+
+    @SneakyThrows
+    private SqlNode readNode(SqlNode o, String fieldName) {
+        try {
+            return (SqlNode) FieldUtils.readField(o, fieldName, true);
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    @SneakyThrows
+    private void writeNode(SqlNode parent, SqlNode child, String fieldName) {
+        FieldUtils.writeField(parent, fieldName, child, true);
+    }
+
+    private void flattenSqlInsert(SqlTreeNode parentTree, SqlCall parentNode) {
+        val nodes = parentNode.getOperandList();
+        for (int i = 0; i < nodes.size(); i++) {
+            val itemNode = nodes.get(i);
+            int finalI = i;
+            parentTree.resetChildPos();
+            parentTree.createChild(idCounter++, itemNode, n -> parentNode.setOperand(finalI, n))
+                    .ifPresent(this::addNodes);
+        }
+    }
+
+    private void flattenSqlUpdate(SqlTreeNode parentTree, SqlNode parentNode) {
+        addReflectNode(parentTree, parentNode, "query");
+        addReflectNode(parentTree, parentNode, "query");
+        addReflectNode(parentTree, parentNode, "query");
+        addReflectNode(parentTree, parentNode, "query");
     }
 
     private void flattenSqlBasicCall(SqlTreeNode parentTree, SqlBasicCall parentNode) {
@@ -104,7 +164,8 @@ public class SqlSelectTree {
         for (int i = 0; i < nodes.size(); i++) {
             val itemNode = nodes.get(i);
             int finalI = i;
-            parentTree.createChild(idCounter++, itemNode, n -> parentNode.setOperand(finalI, n)).ifPresent(this::addNodes);
+            parentTree.createChild(idCounter++, itemNode, n -> parentNode.setOperand(finalI, n))
+                    .ifPresent(this::addNodes);
         }
     }
 
@@ -141,9 +202,6 @@ public class SqlSelectTree {
 
     public List<SqlTreeNode> findAllTableAndSnapshots() {
         return this.findNodesByPathRegex(IS_TABLE_OR_SNAPSHOTS_PATTERN).stream()
-                .collect(Collectors.groupingBy(SqlTreeNode::getParentId))
-                .values().stream()
-                .map(l -> l.get(0))
                 .sorted()
                 .collect(Collectors.toList());
     }

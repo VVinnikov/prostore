@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.core.configuration.jooq.MariaProperties;
-import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
+import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.factory.MetadataFactory;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 
@@ -21,8 +21,8 @@ public class CreateSchemaDdlExecutor extends QueryResultDdlExecutor {
     @Autowired
     public CreateSchemaDdlExecutor(MetadataFactory<DdlRequestContext> metadataFactory,
                                    MariaProperties mariaProperties,
-                                   ServiceDao serviceDao) {
-        super(metadataFactory, mariaProperties, serviceDao);
+                                   ServiceDbFacade serviceDbFacade) {
+        super(metadataFactory, mariaProperties, serviceDbFacade);
     }
 
     @Override
@@ -39,12 +39,12 @@ public class CreateSchemaDdlExecutor extends QueryResultDdlExecutor {
     }
 
     private void createDatamart(String datamartName, Handler<AsyncResult<QueryResult>> handler) {
-        serviceDao.findDatamart(datamartName, datamartResult -> {
+        serviceDbFacade.getServiceDbDao().getDatamartDao().findDatamart(datamartName, datamartResult -> {
             if (datamartResult.succeeded()) {
                 log.error("База данных {} уже существует", datamartName);
                 handler.handle(Future.failedFuture(String.format("База данных [%s] уже существует", datamartName)));
             } else {
-                serviceDao.insertDatamart(datamartName, insertResult -> {
+                serviceDbFacade.getServiceDbDao().getDatamartDao().insertDatamart(datamartName, insertResult -> {
                     if (insertResult.succeeded()) {
                         log.debug("Создана новая витрина {}", datamartName);
                         handler.handle(Future.succeededFuture(QueryResult.emptyResult()));

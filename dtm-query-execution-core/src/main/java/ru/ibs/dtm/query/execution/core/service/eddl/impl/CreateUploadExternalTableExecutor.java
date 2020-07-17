@@ -5,7 +5,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
+import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dto.eddl.CreateUploadExternalTableQuery;
 import ru.ibs.dtm.query.execution.core.dto.eddl.EddlAction;
 import ru.ibs.dtm.query.execution.core.dto.eddl.EddlQuery;
@@ -14,11 +14,11 @@ import ru.ibs.dtm.query.execution.core.service.eddl.EddlExecutor;
 @Component
 public class CreateUploadExternalTableExecutor implements EddlExecutor {
 
-    private final ServiceDao serviceDao;
+    private final ServiceDbFacade serviceDbFacade;
 
     @Autowired
-    public CreateUploadExternalTableExecutor(ServiceDao serviceDao) {
-        this.serviceDao = serviceDao;
+    public CreateUploadExternalTableExecutor(ServiceDbFacade serviceDbFacade) {
+        this.serviceDbFacade = serviceDbFacade;
     }
 
     @Override
@@ -39,6 +39,6 @@ public class CreateUploadExternalTableExecutor implements EddlExecutor {
     }
 
     private void executeInternal(CreateUploadExternalTableQuery query, Handler<AsyncResult<Void>> asyncResultHandler) {
-        serviceDao.insertUploadExternalTable(query, asyncResultHandler);
+        serviceDbFacade.getEddlServiceDao().getUploadExtTableDao().insertUploadExternalTable(query, asyncResultHandler);
     }
 }

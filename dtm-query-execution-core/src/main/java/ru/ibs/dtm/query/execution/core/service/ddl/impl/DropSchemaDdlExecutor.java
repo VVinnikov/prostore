@@ -10,7 +10,7 @@ import org.springframework.util.CollectionUtils;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.core.configuration.jooq.MariaProperties;
-import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
+import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
 import ru.ibs.dtm.query.execution.core.factory.MetadataFactory;
 import ru.ibs.dtm.query.execution.core.service.DatabaseSynchronizeService;
@@ -29,8 +29,8 @@ public class DropSchemaDdlExecutor extends DropTableDdlExecutor {
             MetadataFactory<DdlRequestContext> metadataFactory,
             DatabaseSynchronizeService databaseSynchronizeService,
             MariaProperties mariaProperties,
-            ServiceDao serviceDao) {
-        super(metadataFactory, databaseSynchronizeService, mariaProperties, serviceDao);
+            ServiceDbFacade serviceDbFacade) {
+        super(metadataFactory, databaseSynchronizeService, mariaProperties, serviceDbFacade);
     }
 
 
@@ -41,9 +41,9 @@ public class DropSchemaDdlExecutor extends DropTableDdlExecutor {
     }
 
     private void dropDatamart(DdlRequestContext context, String datamartName, Handler<AsyncResult<QueryResult>> handler) {
-        serviceDao.findDatamart(datamartName, datamartResult -> {
+        serviceDbFacade.getServiceDbDao().getDatamartDao().findDatamart(datamartName, datamartResult -> {
             if (datamartResult.succeeded()) {
-                serviceDao.getEntitiesMeta(datamartName, entitiesMetaResult -> {
+                serviceDbFacade.getServiceDbDao().getEntityDao().getEntitiesMeta(datamartName, entitiesMetaResult -> {
                     if (entitiesMetaResult.succeeded()) {
                         //удаляем все таблицы
                         dropAllTables(entitiesMetaResult.result(), resultTableDelete -> {
@@ -54,7 +54,7 @@ public class DropSchemaDdlExecutor extends DropTableDdlExecutor {
                                 metadataFactory.apply(context, result -> {
                                     if (result.succeeded()) {
                                         //удаляем логическую витрину
-                                        serviceDao.dropDatamart(datamartResult.result(), ar2 -> {
+                                        serviceDbFacade.getServiceDbDao().getDatamartDao().dropDatamart(datamartResult.result(), ar2 -> {
                                             if (ar2.succeeded()) {
                                                 handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
                                             } else {

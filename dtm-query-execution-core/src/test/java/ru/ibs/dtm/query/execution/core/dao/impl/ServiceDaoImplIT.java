@@ -12,7 +12,7 @@ import ru.ibs.dtm.common.dto.ActualDeltaRequest;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.query.execution.core.CoreTestConfiguration;
-import ru.ibs.dtm.query.execution.core.dao.ServiceDao;
+import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dto.edml.DownloadExtTableRecord;
 import ru.ibs.dtm.query.execution.core.dto.edml.DownloadQueryRecord;
 
@@ -36,11 +36,11 @@ class ServiceDaoImplIT {
     private List<Long> deltas;
 
     @Autowired
-    ServiceDao serviceDao;
+    ServiceDbFacade serviceDbFacade;
 
     @Test
     void insertDatamart(VertxTestContext testContext) throws Throwable {
-        serviceDao.insertDatamart(datamart, ar -> {
+        serviceDbFacade.getServiceDbDao().getDatamartDao().insertDatamart(datamart, ar -> {
             if (ar.succeeded()) {
                 testContext.completeNow();
             } else {
@@ -52,7 +52,7 @@ class ServiceDaoImplIT {
 
     @Test
     void findDatamart(VertxTestContext testContext) throws Throwable {
-        serviceDao.findDatamart(datamart, ar -> {
+        serviceDbFacade.getServiceDbDao().getDatamartDao().findDatamart(datamart, ar -> {
             if (ar.succeeded()) {
                 datamartId = ar.result();
                 testContext.completeNow();
@@ -65,7 +65,7 @@ class ServiceDaoImplIT {
 
     @Test
     void insertEntity(VertxTestContext testContext) throws Throwable {
-        serviceDao.insertEntity(datamartId, entity, ar -> {
+        serviceDbFacade.getServiceDbDao().getEntityDao().insertEntity(datamartId, entity, ar -> {
             if (ar.succeeded()) {
                 testContext.completeNow();
             } else {
@@ -77,7 +77,7 @@ class ServiceDaoImplIT {
 
     @Test
     void findEntity(VertxTestContext testContext) throws Throwable {
-        serviceDao.findEntity(datamartId, entity, ar -> {
+        serviceDbFacade.getServiceDbDao().getEntityDao().findEntity(datamartId, entity, ar -> {
             if (ar.succeeded()) {
                 entityId = ar.result();
                 testContext.completeNow();
@@ -88,22 +88,10 @@ class ServiceDaoImplIT {
         testContext.awaitCompletion(5, TimeUnit.SECONDS);
     }
 
-  @Test
-  void insertAttribute(VertxTestContext testContext) throws Throwable {
-    ClassField cf = new ClassField(attrName, null, null, null, null, null);
-    serviceDao.insertAttribute(entityId, cf, 1,  ar -> {
-      if (ar.succeeded()) {
-        testContext.completeNow();
-      } else {
-        testContext.failNow(ar.cause());
-      }
-    });
-    testContext.awaitCompletion(5, TimeUnit.SECONDS);
-  }
-
     @Test
-    void dropAttribute(VertxTestContext testContext) throws Throwable {
-        serviceDao.dropAttribute(entityId, ar -> {
+    void insertAttribute(VertxTestContext testContext) throws Throwable {
+        ClassField cf = new ClassField(attrName, null, null, null, null, null);
+        serviceDbFacade.getServiceDbDao().getAttributeDao().insertAttribute(entityId, cf, 1, ar -> {
             if (ar.succeeded()) {
                 testContext.completeNow();
             } else {
@@ -113,17 +101,29 @@ class ServiceDaoImplIT {
         testContext.awaitCompletion(5, TimeUnit.SECONDS);
     }
 
-  @Test
-  void dropEntity(VertxTestContext testContext) throws Throwable {
-    serviceDao.dropEntity(datamartId, entity)
-            .onSuccess(s -> testContext.completeNow())
-            .onFailure(testContext::failNow);
-    testContext.awaitCompletion(5, TimeUnit.SECONDS);
-  }
+    @Test
+    void dropAttribute(VertxTestContext testContext) throws Throwable {
+        serviceDbFacade.getServiceDbDao().getAttributeDao().dropAttribute(entityId, ar -> {
+            if (ar.succeeded()) {
+                testContext.completeNow();
+            } else {
+                testContext.failNow(ar.cause());
+            }
+        });
+        testContext.awaitCompletion(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    void dropEntity(VertxTestContext testContext) throws Throwable {
+        serviceDbFacade.getServiceDbDao().getEntityDao().dropEntity(datamartId, entity)
+                .onSuccess(s -> testContext.completeNow())
+                .onFailure(testContext::failNow);
+        testContext.awaitCompletion(5, TimeUnit.SECONDS);
+    }
 
     @Test
     void dropDatamart(VertxTestContext testContext) throws Throwable {
-        serviceDao.dropDatamart(datamartId, ar -> {
+        serviceDbFacade.getServiceDbDao().getDatamartDao().dropDatamart(datamartId, ar -> {
             if (ar.succeeded()) {
                 testContext.completeNow();
             } else {
@@ -135,7 +135,7 @@ class ServiceDaoImplIT {
 
     @Test
     void selectType(VertxTestContext testContext) throws Throwable {
-        serviceDao.selectType("varchar", ar -> {
+        serviceDbFacade.getServiceDbDao().getAttributeTypeDao().findTypeIdByDatamartName("varchar", ar -> {
             if (ar.succeeded()) {
                 testContext.completeNow();
             } else {
@@ -147,7 +147,7 @@ class ServiceDaoImplIT {
 
     @Test
     void getDeltaOnDateTime(VertxTestContext testContext) throws Throwable {
-        serviceDao.getDeltaOnDateTime(new ActualDeltaRequest("test_datamart", "2020-03-26 11:30:26"), ar -> {
+        serviceDbFacade.getDeltaServiceDao().getDeltaOnDateTime(new ActualDeltaRequest("test_datamart", "2020-03-26 11:30:26", false), ar -> {
             if (ar.succeeded()) {
                 testContext.completeNow();
             } else {
@@ -160,12 +160,12 @@ class ServiceDaoImplIT {
     @Test
     void getDeltasOnDateTimes(VertxTestContext testContext) throws Throwable {
         final List<ActualDeltaRequest> requests = Arrays.asList(
-                new ActualDeltaRequest("dm2", "2020-04-15 07:00:00"),
-                new ActualDeltaRequest("dm3", "2020-04-01 07:00:00"),
-                new ActualDeltaRequest("dm2", "2020-03-01 07:00:00"),
-                new ActualDeltaRequest("dmX", "2020-04-01 07:00:00")
+                new ActualDeltaRequest("dm2", "2020-04-15 07:00:00", false),
+                new ActualDeltaRequest("dm3", "2020-04-01 07:00:00", false),
+                new ActualDeltaRequest("dm2", "2020-03-01 07:00:00", false),
+                new ActualDeltaRequest("dmX", "2020-04-01 07:00:00", false)
         );
-        serviceDao.getDeltasOnDateTimes(requests, ar -> {
+        serviceDbFacade.getDeltaServiceDao().getDeltasOnDateTimes(requests, ar -> {
             if (ar.succeeded()) {
                 deltas = ar.result();
                 testContext.completeNow();
@@ -180,7 +180,7 @@ class ServiceDaoImplIT {
     @Test
     void findDownloadExternalTable(VertxTestContext testContext) throws Throwable {
         String externalTable = "tblExt";
-        serviceDao.findDownloadExternalTable(datamart, externalTable, ar -> {
+        serviceDbFacade.getEddlServiceDao().getDownloadExtTableDao().findDownloadExternalTable(datamart, externalTable, ar -> {
             if (ar.succeeded()) {
                 downloadExtTableRecord = ar.result();
                 testContext.completeNow();
@@ -197,7 +197,7 @@ class ServiceDaoImplIT {
     void insertDownloadQuery(VertxTestContext testContext) throws Throwable {
         DownloadQueryRecord record = new DownloadQueryRecord(UUID.randomUUID().toString(), 1L,
                 "ext_table", "select 1", 0);
-        serviceDao.insertDownloadQuery(record, ar -> {
+        serviceDbFacade.getEddlServiceDao().getDownloadQueryDao().insertDownloadQuery(record, ar -> {
             if (ar.succeeded()) {
                 testContext.completeNow();
             } else {
@@ -211,9 +211,9 @@ class ServiceDaoImplIT {
     void dropTable(VertxTestContext testContext) throws Throwable {
         ClassTable classTable = new ClassTable("dtmservice.test_doc", Collections.emptyList());
         String createScript = String.format("create table if not exists %s (id integer not null, gnr varchar(25) not null)", classTable.getNameWithSchema());
-        serviceDao.executeUpdate(createScript, ar1 -> {
+        serviceDbFacade.getDdlServiceDao().executeUpdate(createScript, ar1 -> {
             if (ar1.succeeded()) {
-                serviceDao.dropTable(classTable, ar2 -> {
+                serviceDbFacade.getDdlServiceDao().dropTable(classTable, ar2 -> {
                     if (ar2.succeeded()) {
                         testContext.completeNow();
                     } else {

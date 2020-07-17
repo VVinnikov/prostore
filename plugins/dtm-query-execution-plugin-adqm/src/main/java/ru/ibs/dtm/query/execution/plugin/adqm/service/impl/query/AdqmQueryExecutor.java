@@ -25,6 +25,7 @@ public class AdqmQueryExecutor implements DatabaseExecutor {
 
     @Override
     public void execute(String sql, Handler<AsyncResult<JsonArray>> resultHandler) {
+        log.debug(String.format("ADQM. Execute %s", sql));
 
         sqlClient.getConnection(ar1 -> {
             if (ar1.succeeded()) {
@@ -48,10 +49,12 @@ public class AdqmQueryExecutor implements DatabaseExecutor {
 
     @Override
     public void executeUpdate(String sql, Handler<AsyncResult<Void>> completionHandler) {
+        log.debug(String.format("ADQM. Execute update %s", sql));
+
         sqlClient.getConnection(ar1 -> {
             if (ar1.succeeded()) {
                 SQLConnection conn = ar1.result();
-                conn.query(sql, ar2 -> {
+                conn.execute(sql, ar2 -> {
                     if (ar2.succeeded()) {
                         completionHandler.handle(Future.succeededFuture());
                     } else {
@@ -68,6 +71,8 @@ public class AdqmQueryExecutor implements DatabaseExecutor {
 
     @Override
     public void executeWithParams(String sql, List<Object> params, Handler<AsyncResult<?>> resultHandler) {
+        log.debug(String.format("ADQM. Execute with params %s", sql));
+
         sqlClient.getConnection(ar1 -> {
             if (ar1.succeeded()) {
                 SQLConnection conn = ar1.result();

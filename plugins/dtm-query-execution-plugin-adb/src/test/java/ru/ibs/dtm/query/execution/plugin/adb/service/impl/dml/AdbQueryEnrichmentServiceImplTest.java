@@ -18,6 +18,7 @@ import org.mockito.stubbing.Answer;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.service.DeltaService;
 import ru.ibs.dtm.query.calcite.core.service.QueryParserService;
+import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 import ru.ibs.dtm.query.execution.plugin.adb.calcite.AdbCalciteContextProvider;
 import ru.ibs.dtm.query.execution.plugin.adb.calcite.AdbCalciteSchemaFactory;
 import ru.ibs.dtm.query.execution.plugin.adb.configuration.CalciteConfiguration;
@@ -51,7 +52,7 @@ public class AdbQueryEnrichmentServiceImplTest {
                 parserConfig,
                 new AdbCalciteSchemaFactory(new AdbSchemaFactory()));
 
-        AdbQueryGeneratorImpl adbQueryGeneratorimpl = new AdbQueryGeneratorImpl(queryExtender);
+        AdbQueryGeneratorImpl adbQueryGeneratorimpl = new AdbQueryGeneratorImpl(queryExtender, calciteConfiguration.adbSqlDialect());
         QueryParserService queryParserService = new AdbCalciteDMLQueryParserService(contextProvider, Vertx.vertx());
         adbQueryEnrichmentService = new AdbQueryEnrichmentServiceImpl(
                 queryParserService,
@@ -123,12 +124,14 @@ public class AdbQueryEnrichmentServiceImplTest {
     }
 
     private EnrichQueryRequest prepareRequest(String sql) {
-        JsonObject test_datamart = JsonUtils.init("meta_data.json", "TEST_DATAMART");
+        JsonObject jsonSchema = JsonUtils.init("meta_data.json", "TEST_DATAMART");
+        List<Datamart> schema = new ArrayList<>();
+        schema.add(jsonSchema.mapTo(Datamart.class));
         QueryRequest queryRequest = new QueryRequest();
         queryRequest.setSql(sql);
         queryRequest.setRequestId(UUID.randomUUID());
         queryRequest.setDatamartMnemonic("TEST_DATAMART");
-        LlrRequest llrRequest = new LlrRequest(queryRequest, test_datamart);
+        LlrRequest llrRequest = new LlrRequest(queryRequest, schema);
         return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
     }
 }

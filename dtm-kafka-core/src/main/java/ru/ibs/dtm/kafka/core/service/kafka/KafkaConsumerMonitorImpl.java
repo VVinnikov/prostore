@@ -1,17 +1,19 @@
 package ru.ibs.dtm.kafka.core.service.kafka;
 
-import io.vertx.core.*;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
+import io.vertx.core.Vertx;
 import io.vertx.kafka.admin.ConsumerGroupListing;
 import io.vertx.kafka.admin.KafkaAdminClient;
 import io.vertx.kafka.admin.MemberDescription;
+import io.vertx.kafka.client.common.TopicPartition;
 import io.vertx.kafka.client.consumer.KafkaConsumer;
+import kafka.common.OffsetAndMetadata;
 import kafka.coordinator.group.GroupMetadataManager;
 import kafka.coordinator.group.GroupTopicPartition;
 import kafka.coordinator.group.OffsetKey;
 import lombok.extern.slf4j.Slf4j;
-import io.vertx.kafka.client.common.TopicPartition;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import kafka.common.OffsetAndMetadata;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -27,7 +29,6 @@ import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-
 
 import static java.util.stream.Collectors.*;
 

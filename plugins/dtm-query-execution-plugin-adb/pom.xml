@@ -37,6 +37,17 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>ru.ibs.dtm</groupId>
+            <artifactId>dtm-calcite-core</artifactId>
+            <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>ru.ibs</groupId>
+                    <artifactId>dtm-common</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
         <!--Spring-->
         <dependency>

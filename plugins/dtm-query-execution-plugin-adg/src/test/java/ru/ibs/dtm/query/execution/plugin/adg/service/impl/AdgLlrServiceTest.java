@@ -22,6 +22,7 @@ import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.LlrRequest;
 import ru.ibs.dtm.query.execution.plugin.api.service.LlrService;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.UUID;
 
@@ -54,7 +55,7 @@ public class AdgLlrServiceTest {
 
 		prepare(queryRequest, queryResultItem);
 
-		llrService.execute(new LlrRequestContext(new LlrRequest(queryRequest, new JsonObject())), handler -> {
+		llrService.execute(new LlrRequestContext(new LlrRequest(queryRequest, new ArrayList<>())), handler -> {
 			assertTrue(handler.succeeded());
 			assertEquals(expectedResult, handler.result());
 		});
@@ -75,7 +76,7 @@ public class AdgLlrServiceTest {
 
 		prepare(queryRequest, queryResultItem);
 
-		llrService.execute(new LlrRequestContext(new LlrRequest(queryRequest, new JsonObject())), handler -> {
+		llrService.execute(new LlrRequestContext(new LlrRequest(queryRequest, new ArrayList<>())), handler -> {
 			assertTrue(handler.succeeded());
 			assertEquals(expectedResult, handler.result());
 		});

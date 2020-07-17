@@ -1,10 +1,11 @@
-kafkaUrl: &kafkaUrl ${KAFKA_BOOTSTRAP_SERVERS:kafka-1.dtm.local:9092}
+.kafkaUrl: &kafkaUrl ${KAFKA_BOOTSTRAP_SERVERS:kafka-1.dtm.local:9092}
 
 http:
   port: ${SERVER_PORT:8080}
 
 env:
   name: ${DTM_NAME:local}
+  defaultDatamart: ${DEFAULT_DATAMART:shares}
 
 datasource:
   edml:
@@ -17,7 +18,7 @@ datasource:
       database: ${SERVICEDB_DB_NAME:dtmservice}
       user: ${SERVICEDB_USER:dtmuser}
       password: ${SERVICEDB_PASS:Cat6Gmt7Ncr}
-      host: ${SERVICEDB_HOST:10.92.3.41}
+      host: ${SERVICEDB_HOST:localhost}
       port: ${SERVICEDB_PORT:3306}
     poolOptions:
       maxSize: 5
@@ -36,6 +37,9 @@ kafka:
     adqm:
       bootstrap.servers: *kafkaUrl
       group.id: adqm-query-execution
+    core:
+      bootstrap.servers: *kafkaUrl
+      group.id: core-query-execution
   cluster:
     zookeeperHosts: ${ZOOKEEPER_HOSTS:kafka-1.dtm.local}
     rootPath: ${KAFKA_CLUSTER_ROOTPATH:arenadata/cluster/21}

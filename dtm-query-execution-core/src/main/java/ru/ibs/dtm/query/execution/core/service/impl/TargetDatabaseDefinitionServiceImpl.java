@@ -52,11 +52,14 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
                             request.setLogicalSchema(ar.result());
                             getTargetSourceFromCost(request, tr -> {
                                 if (tr.succeeded()) {
+                                    val sourceType = tr.result();
+                                    val queryRequestWithSourceType = request.getQueryRequest().copy();
+                                    queryRequestWithSourceType.setSourceType(sourceType);
                                     handler.handle(Future.succeededFuture(
                                             new QuerySourceRequest(
-                                                    request.getQueryRequest().copy(),
+                                                    queryRequestWithSourceType,
                                                     request.getLogicalSchema(),
-                                                    tr.result())));
+                                                    sourceType)));
                                 } else {
                                     handler.handle(Future.failedFuture(tr.cause()));
                                 }

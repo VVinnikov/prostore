@@ -1,17 +1,14 @@
 package ru.ibs.dtm.query.calcite.core.extension.snapshot;
 
-import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
-import org.apache.calcite.util.ImmutableNullableList;
 import ru.ibs.dtm.common.calcite.SnapshotType;
 
-import java.util.List;
 import java.util.Objects;
 
-public class SqlSnapshot extends SqlCall {
+public class SqlSnapshot extends org.apache.calcite.sql.SqlSnapshot {
 
     private final ru.ibs.dtm.query.calcite.core.extension.snapshot.SnapshotOperator snapshotOperator;
     private SqlNode tableRef;
@@ -19,7 +16,7 @@ public class SqlSnapshot extends SqlCall {
     private Boolean isLatestUncommitedDelta;
 
     public SqlSnapshot(SqlParserPos pos, SqlNode tableRef, SqlNode period) {
-        super(pos);
+        super(pos, tableRef, period);
         this.tableRef = (SqlNode) Objects.requireNonNull(tableRef);
         this.period = (SqlNode) Objects.requireNonNull(period);
         this.isLatestUncommitedDelta = isLatestUncommitedDelta(this.period);
@@ -29,11 +26,6 @@ public class SqlSnapshot extends SqlCall {
     @Override
     public SqlOperator getOperator() {
         return this.snapshotOperator;
-    }
-
-    @Override
-    public List<SqlNode> getOperandList() {
-        return ImmutableNullableList.of(this.tableRef, this.period);
     }
 
     public SqlNode getTableRef() {

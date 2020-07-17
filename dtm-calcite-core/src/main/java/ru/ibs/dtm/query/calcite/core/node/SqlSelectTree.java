@@ -1,17 +1,18 @@
 package ru.ibs.dtm.query.calcite.core.node;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.TreeMap;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.*;
 import org.apache.commons.lang3.reflect.FieldUtils;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 @Data
 @Slf4j
@@ -80,8 +81,8 @@ public class SqlSelectTree {
             flattenSqlJoin(treeNode, (SqlJoin) node);
         } else if (node instanceof SqlIdentifier) {
             flattenSqlIdentifier(treeNode, (SqlIdentifier) node);
-        } else if (node instanceof ru.ibs.dtm.query.calcite.core.extension.snapshot.SqlSnapshot) {
-            flattenSqlSnapshot(treeNode, (ru.ibs.dtm.query.calcite.core.extension.snapshot.SqlSnapshot) node);
+        } else if (node instanceof SqlSnapshot) {
+            flattenSqlSnapshot(treeNode, (SqlSnapshot) node);
         } else if (node instanceof SqlBasicCall) {
             flattenSqlBasicCall(treeNode, (SqlBasicCall) node);
         } else if (node instanceof SqlInsert) {
@@ -150,7 +151,7 @@ public class SqlSelectTree {
         flattenSqlCall(parentTree, parentNode);
     }
 
-    private void flattenSqlSnapshot(SqlTreeNode parent, ru.ibs.dtm.query.calcite.core.extension.snapshot.SqlSnapshot parentNode) {
+    private void flattenSqlSnapshot(SqlTreeNode parent, SqlSnapshot parentNode) {
         flattenSqlCall(parent, parentNode);
     }
 

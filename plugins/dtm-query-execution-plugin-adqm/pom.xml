@@ -18,7 +18,6 @@
     <properties>
         <dtm.common.version>2.2.1-SNAPSHOT</dtm.common.version>
         <dtm.plugin.api.version>2.2.1-SNAPSHOT</dtm.plugin.api.version>
-        <dtm.calcite.core.version>1.0.0-SNAPSHOT</dtm.calcite.core.version>
     </properties>
 
     <dependencies>
@@ -32,6 +31,23 @@
             <groupId>ru.ibs.dtm</groupId>
             <artifactId>dtm-calcite-core</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>ru.ibs</groupId>
+                    <artifactId>dtm-common</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>ru.ibs.dtm</groupId>
+            <artifactId>dtm-kafka-core</artifactId>
+            <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>ru.ibs</groupId>
+                    <artifactId>dtm-common</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>ru.ibs.dtm</groupId>

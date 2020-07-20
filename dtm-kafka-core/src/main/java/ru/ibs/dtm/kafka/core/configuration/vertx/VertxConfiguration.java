@@ -9,7 +9,6 @@ import org.springframework.context.annotation.Configuration;
 public class VertxConfiguration {
 
     @Bean("kafkaVertx")
-    @ConditionalOnMissingBean(Vertx.class)
     public Vertx vertx() {
         return Vertx.vertx();
     }

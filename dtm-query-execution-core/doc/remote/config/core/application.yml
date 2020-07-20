@@ -42,6 +42,8 @@ kafka:
     core:
       bootstrap.servers: *kafkaUrl
       group.id: core-query-execution
+      key.deserializer: io.vertx.kafka.client.serialization.BufferDeserializer
+      value.deserializer: io.vertx.kafka.client.serialization.BufferDeserializer
     adb:
       bootstrap.servers: *kafkaUrl
       group.id: adb-query-execution

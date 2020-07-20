@@ -57,7 +57,7 @@ class KafkaConsumerMonitorImplTest {
     private final KafkaProperties kafkaProperties = new KafkaProperties();
 
     private final KafkaAdminClient adminClient = KafkaAdminClient.create(vertx, coreKafkaConfig );
-    KafkaConsumerFactory<Buffer, Buffer> kafkaConsumerFactory =
+    KafkaConsumerFactory<byte[], byte[]> kafkaConsumerFactory =
             new VertxKafkaConsumerFactory(vertx,coreKafkaConfig);
 
     KafkaConsumerMonitorImpl monitor = new KafkaConsumerMonitorImpl(adminClient,kafkaConsumerFactory,vertx,kafkaProperties);

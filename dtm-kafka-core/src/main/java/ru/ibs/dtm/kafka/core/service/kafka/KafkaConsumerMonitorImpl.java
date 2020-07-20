@@ -3,7 +3,6 @@ package ru.ibs.dtm.kafka.core.service.kafka;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.kafka.admin.ConsumerGroupListing;
 import io.vertx.kafka.admin.KafkaAdminClient;
 import io.vertx.kafka.admin.MemberDescription;
@@ -39,7 +38,7 @@ public class KafkaConsumerMonitorImpl implements KafkaConsumerMonitor {
 
     private static final String SYSTEM_TOPIC = "__consumer_offsets";
     private final KafkaAdminClient adminClient;
-    private final KafkaConsumer<Buffer, Buffer> consumer;
+    private final KafkaConsumer<byte[], byte[]> consumer;
     private final Vertx vertx;
     private final ConcurrentHashMap<GroupTopicPartition, KafkaTopicCommitedOffset> lastCommitedOffsets;
     private final ConcurrentHashMap<GroupTopicPartition, KafkaTopicOffset> lastOffsets;
@@ -48,7 +47,7 @@ public class KafkaConsumerMonitorImpl implements KafkaConsumerMonitor {
 
     @Autowired
     public KafkaConsumerMonitorImpl(@Qualifier("coreKafkaAdminClient") KafkaAdminClient adminClient,
-                                    @Qualifier("coreKafkaConsumerFactory") KafkaConsumerFactory<Buffer, Buffer> consumerFactory,
+                                    @Qualifier("coreKafkaConsumerFactory") KafkaConsumerFactory<byte[], byte[]> consumerFactory,
                                     @Qualifier("kafkaVertx") Vertx vertx,
                                     KafkaProperties kafkaProperties) {
 
@@ -166,13 +165,13 @@ public class KafkaConsumerMonitorImpl implements KafkaConsumerMonitor {
 
     private void initSystemTopicConsumer() {
         consumer.handler(record -> {
-            byte[] key = record.key().getBytes();
+            byte[] key = record.key();
             byte[] value;
             if (key != null) {
                 Object o = GroupMetadataManager.readMessageKey(ByteBuffer.wrap(key));
                 if (o instanceof OffsetKey) {
                     OffsetKey offsetKey = (OffsetKey) o;
-                    value = record.value().getBytes();
+                    value = record.value();
                     if (value != null) {
                         ByteBuffer byteBuffer = ByteBuffer.wrap(value);
                         OffsetAndMetadata offsetAndMetadata =

@@ -38,38 +38,29 @@ public class AdbQueryEnrichmentServiceImpl implements QueryEnrichmentService {
 
     @Override
     public void enrich(EnrichQueryRequest request, Handler<AsyncResult<String>> asyncHandler) {
-        try {
-            Datamart logicalSchema;
-            try {
-                logicalSchema = request.getSchema().mapTo(Datamart.class);
-            } catch (Exception ex) {
-                log.error("Ошибка десериализации схемы");
-                asyncHandler.handle(Future.failedFuture(ex));
-                return;
+        //FIXME исправить после реализации использования нескольких схем
+        Datamart logicalSchema = request.getSchema().get(0);
+        queryParserService.parse(new QueryParserRequest(request.getQueryRequest(), logicalSchema), ar -> {
+            if (ar.succeeded()) {
+                val parserResponse = ar.result();
+                contextProvider.enrichContext(parserResponse.getCalciteContext(), schemaExtender.generatePhysicalSchema(logicalSchema));
+                // формируем новый sql-запрос
+                adbQueryGenerator.mutateQuery(parserResponse.getRelNode(),
+                        parserResponse.getQueryRequest().getDeltaInformations(),
+                        parserResponse.getCalciteContext(),
+                        enrichedQueryResult -> {
+                            if (enrichedQueryResult.succeeded()) {
+                                log.trace("Сформирован запрос: {}", enrichedQueryResult.result());
+                                asyncHandler.handle(Future.succeededFuture(enrichedQueryResult.result()));
+                            } else {
+                                log.debug("Ошибка при обогащении запроса", enrichedQueryResult.cause());
+                                asyncHandler.handle(Future.failedFuture(enrichedQueryResult.cause()));
+                            }
+                        });
+            } else {
+                asyncHandler.handle(Future.failedFuture(ar.cause()));
             }
-            queryParserService.parse(new QueryParserRequest(request.getQueryRequest(), logicalSchema), ar -> {
-                if (ar.succeeded()) {
-                    val parserResponse = ar.result();
-                    contextProvider.enrichContext(parserResponse.getCalciteContext(), schemaExtender.generatePhysicalSchema(logicalSchema));
-                    // формируем новый sql-запрос
-                    adbQueryGenerator.mutateQuery(parserResponse.getRelNode(),
-                            parserResponse.getQueryRequest().getDeltaInformations(),
-                            parserResponse.getCalciteContext(),
-                            enrichedQueryResult -> {
-                                if (enrichedQueryResult.succeeded()) {
-                                    log.trace("Сформирован запрос: {}", enrichedQueryResult.result());
-                                    asyncHandler.handle(Future.succeededFuture(enrichedQueryResult.result()));
-                                } else {
-                                    log.debug("Ошибка при обогащении запроса", enrichedQueryResult.cause());
-                                    asyncHandler.handle(Future.failedFuture(enrichedQueryResult.cause()));
-                                }
-                            });
-                } else {
-                    asyncHandler.handle(Future.failedFuture(ar.cause()));
-                }
-            });
-        } catch (Exception ex) {
-            asyncHandler.handle(Future.failedFuture(ex));
-        }
+        });
+
     }
 }

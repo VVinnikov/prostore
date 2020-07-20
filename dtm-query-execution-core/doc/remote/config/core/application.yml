@@ -1,7 +1,7 @@
-.kafkaUrl: &kafkaUrl ${KAFKA_BOOTSTRAP_SERVERS:kafka-1.dtm.local:9092}
+.kafkaUrl: &kafkaUrl ${KAFKA_BOOTSTRAP_SERVERS:10.92.3.31:9092}
 
 http:
-  port: ${SERVER_PORT:8080}
+  port: ${SERVER_PORT:8088}
 
 env:
   name: ${DTM_NAME:test}
@@ -11,6 +11,8 @@ datasource:
   edml:
     sourceType: ${EDML_DATASOURCE:ADB}
     defaultChunkSize: ${EDML_DEFAULT_CHUNK_SIZE:1000}
+    defaultMessageLimit: ${EDML_DEFAULT_MESSAGE_LIMIT:1000}
+    pluginStatusCheckPeriodMs: ${EDML_STATUS_CHECK_PERIOD_MS:1000}
   service:
     options:
       database: ${SERVICEDB_DB_NAME:dtmservice}
@@ -37,6 +39,9 @@ kafka:
     property:
       bootstrap.servers: *kafkaUrl
   consumer:
+    core:
+      bootstrap.servers: *kafkaUrl
+      group.id: core-query-execution
     adb:
       bootstrap.servers: *kafkaUrl
       group.id: adb-query-execution
@@ -47,7 +52,7 @@ kafka:
       bootstrap.servers: *kafkaUrl
       group.id: adqm-query-execution
   cluster:
-    zookeeperHosts: ${ZOOKEEPER_HOSTS:kafka-1.dtm.local}
+    zookeeperHosts: ${ZOOKEEPER_HOSTS:10.92.3.31}
     rootPath: ${KAFKA_CLUSTER_ROOTPATH:arenadata/cluster/21}
   admin:
     inputStreamTimeoutMs: ${KAFKA_INPUT_STREAM_TIMEOUT_MS:1000}

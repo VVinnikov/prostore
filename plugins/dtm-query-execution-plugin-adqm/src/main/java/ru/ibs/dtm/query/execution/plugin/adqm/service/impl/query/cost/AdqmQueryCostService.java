@@ -12,7 +12,7 @@ public class AdqmQueryCostService implements QueryCostService<Integer> {
 
     @Override
     public void calc(QueryCostRequestContext context, Handler<AsyncResult<Integer>> handler) {
-        handler.handle(Future.succeededFuture(0));
+        handler.handle(Future.succeededFuture(1));
     }
 
     @Override

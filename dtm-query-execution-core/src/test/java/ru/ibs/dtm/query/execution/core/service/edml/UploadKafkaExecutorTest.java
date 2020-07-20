@@ -131,7 +131,7 @@ class UploadKafkaExecutorTest {
             adbKafkaInfo.setLag(0L);
             adbKafkaInfo.setOffset(0L);
             adbKafkaInfo.setLastCommitTime(adbLastCommitTime);
-            adbKafkaInfo.setPartition("p_1");
+            adbKafkaInfo.setPartition(1);
 
             KafkaPartitionInfo adgKafkaInfo = new KafkaPartitionInfo();
             adgKafkaInfo.setTopic("topic");
@@ -140,7 +140,7 @@ class UploadKafkaExecutorTest {
             adgKafkaInfo.setLag(0L);
             adgKafkaInfo.setOffset(0L);
             adgKafkaInfo.setLastCommitTime(adgLastCommitTime);
-            adgKafkaInfo.setPartition("p_1");
+            adgKafkaInfo.setPartition(1);
 
             adbStatusResult.setPartitionInfo(adbKafkaInfo);
             adgStatusResult.setPartitionInfo(adgKafkaInfo);
@@ -259,7 +259,7 @@ class UploadKafkaExecutorTest {
             adbKafkaInfo.setLag(0L);
             adbKafkaInfo.setOffset(0L);
             adbKafkaInfo.setLastCommitTime(adbLastCommitTime);
-            adbKafkaInfo.setPartition("p_1");
+            adbKafkaInfo.setPartition(1);
 
             KafkaPartitionInfo adgKafkaInfo = new KafkaPartitionInfo();
             adgKafkaInfo.setTopic("topic");
@@ -268,7 +268,7 @@ class UploadKafkaExecutorTest {
             adgKafkaInfo.setLag(0L);
             adgKafkaInfo.setOffset(0L);
             adgKafkaInfo.setLastCommitTime(adgLastCommitTime);
-            adgKafkaInfo.setPartition("p_1");
+            adgKafkaInfo.setPartition(1);
 
             adbStatusResult.setPartitionInfo(adbKafkaInfo);
             adgStatusResult.setPartitionInfo(adgKafkaInfo);
@@ -383,7 +383,7 @@ class UploadKafkaExecutorTest {
             adbKafkaInfo.setLag(0L);
             adbKafkaInfo.setOffset(0L);
             adbKafkaInfo.setLastCommitTime(adbLastCommitTime);
-            adbKafkaInfo.setPartition("p_1");
+            adbKafkaInfo.setPartition(1);
 
             KafkaPartitionInfo adgKafkaInfo = new KafkaPartitionInfo();
             adgKafkaInfo.setTopic("topic");
@@ -392,7 +392,7 @@ class UploadKafkaExecutorTest {
             adgKafkaInfo.setLag(0L);
             adgKafkaInfo.setOffset(100L);
             adgKafkaInfo.setLastCommitTime(adgLastCommitTime);
-            adgKafkaInfo.setPartition("p_1");
+            adgKafkaInfo.setPartition(1);
 
             adbStatusResult.setPartitionInfo(adbKafkaInfo);
             adgStatusResult.setPartitionInfo(adgKafkaInfo);
@@ -507,7 +507,7 @@ class UploadKafkaExecutorTest {
             adbKafkaInfo.setLag(0L);
             adbKafkaInfo.setOffset(0L);
             adbKafkaInfo.setLastCommitTime(adbLastCommitTime);
-            adbKafkaInfo.setPartition("p_1");
+            adbKafkaInfo.setPartition(1);
 
             KafkaPartitionInfo adgKafkaInfo = new KafkaPartitionInfo();
             adgKafkaInfo.setTopic("topic");
@@ -516,7 +516,7 @@ class UploadKafkaExecutorTest {
             adgKafkaInfo.setLag(0L);
             adgKafkaInfo.setOffset(100L);
             adgKafkaInfo.setLastCommitTime(adgLastCommitTime);
-            adgKafkaInfo.setPartition("p_1");
+            adgKafkaInfo.setPartition(1);
 
             adbStatusResult.setPartitionInfo(adbKafkaInfo);
             adgStatusResult.setPartitionInfo(adgKafkaInfo);

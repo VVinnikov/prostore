@@ -30,7 +30,7 @@ public class DownloadKafkaExecutor implements EdmlDownloadExecutor {
     @Override
     public void execute(EdmlRequestContext context, Handler<AsyncResult<QueryResult>> resultHandler) {
         pluginService.mpprKafka(edmlProperties.getSourceType(), mpprKafkaRequestFactory.create(context.getRequest().getQueryRequest(),
-                context.getExloadParam(), context.getSchema()), resultHandler);
+                context.getExloadParam(), context.getLogicalSchema()), resultHandler);
     }
 
     @Override

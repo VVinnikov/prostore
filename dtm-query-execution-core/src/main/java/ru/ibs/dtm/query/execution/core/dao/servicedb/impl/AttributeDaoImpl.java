@@ -38,7 +38,9 @@ public class AttributeDaoImpl implements AttributeDao {
                         ATTRIBUTES_REGISTRY.ACCURACY,
                         DATA_TYPES_REGISTRY.DATA_TYPE_MNEMONICS,
                         DATAMARTS_REGISTRY.DATAMART_MNEMONICS,
-                        ENTITIES_REGISTRY.ENTITY_MNEMONICS
+                        ENTITIES_REGISTRY.ENTITY_MNEMONICS,
+                        ATTRIBUTES_REGISTRY.PRIMARY_KEY_ORDER,
+                        ATTRIBUTES_REGISTRY.DISTRIBUTE_KEY_ORDER
                 )
                 .from(ATTRIBUTES_REGISTRY)
                 .join(DATA_TYPES_REGISTRY).on(ATTRIBUTES_REGISTRY.DATA_TYPE_ID.eq(DATA_TYPES_REGISTRY.DATA_TYPE_ID))
@@ -58,7 +60,9 @@ public class AttributeDaoImpl implements AttributeDao {
                                 it.getInteger(ATTRIBUTES_REGISTRY.LENGTH.getName()),
                                 it.getInteger(ATTRIBUTES_REGISTRY.ACCURACY.getName()),
                                 it.getString(ENTITIES_REGISTRY.ENTITY_MNEMONICS.getName()),
-                                it.getString(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.getName())
+                                it.getString(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.getName()),
+                                it.getInteger(ATTRIBUTES_REGISTRY.PRIMARY_KEY_ORDER.getName()),
+                                it.getInteger(ATTRIBUTES_REGISTRY.DISTRIBUTE_KEY_ORDER.getName())
                         ))
                 );
                 log.info("Найдено {} атрибутов для сущности: '{}' схемы: '{}'.", res.size(), entityMnemonic, datamartMnemonic);

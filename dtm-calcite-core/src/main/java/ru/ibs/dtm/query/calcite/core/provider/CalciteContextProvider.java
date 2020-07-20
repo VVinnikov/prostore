@@ -1,7 +1,5 @@
 package ru.ibs.dtm.query.calcite.core.provider;
 
-import java.util.ArrayList;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.adapter.enumerable.EnumerableRules;
 import org.apache.calcite.plan.ConventionTraitDef;
@@ -14,6 +12,9 @@ import org.apache.calcite.tools.*;
 import ru.ibs.dtm.common.calcite.CalciteContext;
 import ru.ibs.dtm.query.calcite.core.factory.impl.CalciteSchemaFactory;
 import ru.ibs.dtm.query.execution.model.metadata.Datamart;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 public abstract class CalciteContextProvider {
@@ -38,14 +39,12 @@ public abstract class CalciteContextProvider {
     public CalciteContext context(Datamart defaultDatamart) {
         try {
             final SchemaPlus rootSchema = Frameworks.createRootSchema(true);
+            final SchemaPlus defaultSchema = defaultDatamart == null ?
+                    rootSchema : calciteSchemaFactory.addSchema(rootSchema, defaultDatamart);
             FrameworkConfig config = Frameworks.newConfigBuilder()
                     .parserConfig(configParser)
-                    .defaultSchema(
-                            defaultDatamart == null ? rootSchema :
-                                    calciteSchemaFactory.addSchema(rootSchema, defaultDatamart))
-                    .traitDefs(traitDefs).programs(
-                            Programs.of(prepareRules)
-                    )
+                    .defaultSchema(defaultSchema)
+                    .traitDefs(traitDefs).programs(Programs.of(prepareRules))
                     .sqlToRelConverterConfig(SqlToRelConverter.configBuilder().withExpand(false).build())
                     .build();
             Planner planner = Frameworks.getPlanner(config);

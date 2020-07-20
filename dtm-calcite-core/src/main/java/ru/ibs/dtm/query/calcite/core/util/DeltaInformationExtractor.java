@@ -52,7 +52,7 @@ public class DeltaInformationExtractor {
 
     private static List<DeltaInformation> getDeltaInformations(SqlSelectTree tree, List<SqlTreeNode> nodes) {
         return nodes.stream()
-                .map(n -> getDeltaInformation(tree, n))
+                .map(n -> getDeltaInformationAndReplace(tree, n))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
@@ -76,9 +76,24 @@ public class DeltaInformationExtractor {
         if (optParent.isPresent()) {
             SqlTreeNode parent = optParent.get();
             if (parent.getNode() instanceof SqlBasicCall) {
-                return fromSqlBasicCall(parent.getNode());
+                return fromSqlBasicCall(parent.getNode(), false);
             }
         }
+        return getDeltaInformation(n);
+    }
+
+    public static DeltaInformation getDeltaInformationAndReplace(SqlSelectTree tree, SqlTreeNode n) {
+        Optional<SqlTreeNode> optParent = tree.getParentByChild(n);
+        if (optParent.isPresent()) {
+            SqlTreeNode parent = optParent.get();
+            if (parent.getNode() instanceof SqlBasicCall) {
+                return fromSqlBasicCall(parent.getNode(), true);
+            }
+        }
+        return getDeltaInformation(n);
+    }
+
+    private static DeltaInformation getDeltaInformation(SqlTreeNode n) {
         if (n.getNode() instanceof SqlIdentifier) {
             return fromIdentifier(n.getNode(), null, null, false, null);
         }
@@ -89,7 +104,7 @@ public class DeltaInformationExtractor {
         }
     }
 
-    private static DeltaInformation fromSqlBasicCall(SqlBasicCall basicCall) {
+    private static DeltaInformation fromSqlBasicCall(SqlBasicCall basicCall, boolean replace) {
         DeltaInformation deltaInformation = null;
         if (basicCall.getKind() == SqlKind.AS) {
             if (basicCall.operands.length != 2) {
@@ -100,8 +115,10 @@ public class DeltaInformationExtractor {
                 if (!(right instanceof SqlIdentifier)) {
                     log.warn("Expecting Sql;Identifier as alias, got {}", right);
                 } else if (left instanceof SqlSnapshot) {
-                    SqlIdentifier newId = (SqlIdentifier) ((SqlSnapshot) left).getTableRef();
-                    basicCall.operands[0] = newId;
+                    if (replace) {
+                        SqlIdentifier newId = (SqlIdentifier) ((SqlSnapshot) left).getTableRef();
+                        basicCall.operands[0] = newId;
+                    }
                     deltaInformation = fromSnapshot((SqlSnapshot) left, (SqlIdentifier) right);
                 } else if (left instanceof SqlIdentifier) {
                     deltaInformation = fromIdentifier((SqlIdentifier) left, (SqlIdentifier) right, null, false, null);

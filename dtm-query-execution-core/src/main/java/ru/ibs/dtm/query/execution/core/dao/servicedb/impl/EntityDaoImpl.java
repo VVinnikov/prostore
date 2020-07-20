@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
+import ru.ibs.dtm.common.dto.DatamartInfo;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.EntityDao;
 import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
 
@@ -31,6 +32,7 @@ public class EntityDaoImpl implements EntityDao {
 
     @Override
     public void getEntitiesMeta(String datamartMnemonic, Handler<AsyncResult<List<DatamartEntity>>> resultHandler) {
+        //FIXME заменить на findEntitiesByDatamartAndTableNames
         executor.query(dsl -> dsl
                 .select(ENTITIES_REGISTRY.ENTITY_ID, ENTITIES_REGISTRY.ENTITY_MNEMONICS, DATAMARTS_REGISTRY.DATAMART_MNEMONICS)
                 .from(ENTITIES_REGISTRY)
@@ -114,5 +116,36 @@ public class EntityDaoImpl implements EntityDao {
                 .deleteFrom(ENTITIES_REGISTRY)
                 .where(ENTITIES_REGISTRY.DATAMART_ID.eq(datamartId))
                 .and(ENTITIES_REGISTRY.ENTITY_MNEMONICS.equalIgnoreCase(name)));
+    }
+
+    @Override
+    public void findEntitiesByDatamartAndTableNames(DatamartInfo datamartInfo, Handler<AsyncResult<List<DatamartEntity>>> resultHandler) {
+        executor.query(dsl -> dsl
+                .select(ENTITIES_REGISTRY.ENTITY_ID, ENTITIES_REGISTRY.ENTITY_MNEMONICS, DATAMARTS_REGISTRY.DATAMART_MNEMONICS)
+                .from(DATAMARTS_REGISTRY)
+                .join(ENTITIES_REGISTRY)
+                .on(ENTITIES_REGISTRY.DATAMART_ID.eq(DATAMARTS_REGISTRY.DATAMART_ID))
+                .where(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.eq(datamartInfo.getSchemaName()))
+                .and(ENTITIES_REGISTRY.ENTITY_MNEMONICS.in(datamartInfo.getTables()))
+        ).setHandler(ar -> {
+            if (ar.succeeded()) {
+                if (ar.result().unwrap() instanceof ResultSet) {
+                    List<DatamartEntity> datamartEntityList = new ArrayList<>();
+                    ResultSet rows = ar.result().unwrap();
+                    rows.getRows().forEach(it ->
+                            datamartEntityList.add(new DatamartEntity(
+                                    it.getInteger(ENTITIES_REGISTRY.ENTITY_ID.getName()),
+                                    it.getString(ENTITIES_REGISTRY.ENTITY_MNEMONICS.getName()),
+                                    it.getString(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.getName())
+                            ))
+                    );
+                    log.info("Найдено {} сущностей для витрины: {}", datamartEntityList.size(), datamartInfo.getSchemaName());
+                    resultHandler.handle(Future.succeededFuture(datamartEntityList));
+                } else {
+                    resultHandler.handle(Future.failedFuture(String.format("Невозможно получить сущности для витрины %s", datamartInfo.getSchemaName())));
+                }
+            } else
+                resultHandler.handle(Future.failedFuture(ar.cause()));
+        });
     }
 }

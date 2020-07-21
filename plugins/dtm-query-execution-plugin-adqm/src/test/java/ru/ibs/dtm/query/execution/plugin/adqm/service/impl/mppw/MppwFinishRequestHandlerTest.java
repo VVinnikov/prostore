@@ -2,7 +2,6 @@ package ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.plugin.exload.QueryLoadParam;
@@ -11,6 +10,7 @@ import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProper
 import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockDatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockEnvironment;
+import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockStatusReporter;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 
 import java.util.Arrays;
@@ -19,9 +19,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Predicate;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 class MppwFinishRequestHandlerTest {
     private static final DdlProperties ddlProperties = new DdlProperties();
     private static final AppConfiguration appConfiguration = new AppConfiguration(new MockEnvironment());
+    private static final String TEST_TOPIC = "adqm_topic";
 
     @BeforeAll
     public static void setup() {
@@ -63,14 +66,26 @@ class MppwFinishRequestHandlerTest {
                 t -> t.equalsIgnoreCase("OPTIMIZE TABLE dev__shares.accounts_actual_shard ON CLUSTER test_arenadata FINAL")
         ), mockData);
 
-        MppwRequestHandler handler = new MppwFinishRequestHandler(executor, ddlProperties, appConfiguration);
+        MockStatusReporter mockReporter = getMockReporter();
+        MppwRequestHandler handler = new MppwFinishRequestHandler(executor, ddlProperties, appConfiguration, mockReporter);
         QueryLoadParam loadParam = new QueryLoadParam();
         loadParam.setDatamart("shares");
         loadParam.setTableName("accounts");
         loadParam.setDeltaHot(101L);
 
         MppwRequest request = new MppwRequest(null, loadParam, new JsonObject());
+        request.setTopic(TEST_TOPIC);
 
-        handler.execute(request).onComplete(ar -> Assertions.assertTrue(ar.succeeded(), ar.cause() != null ? ar.cause().getMessage() : ""));
+        handler.execute(request).onComplete(ar -> {
+            assertTrue(ar.succeeded(), ar.cause() != null ? ar.cause().getMessage() : "");
+            assertTrue(mockReporter.wasCalled("finish"));
+        });
+    }
+
+    private MockStatusReporter getMockReporter() {
+        Map<String, JsonObject> expected = new HashMap<>();
+        expected.put("finish", new JsonObject(String.format("{\"topic\": \"%s\"}", TEST_TOPIC)));
+        expected.put("error", new JsonObject(String.format("{\"topic\": \"%s\"}", TEST_TOPIC)));
+        return new MockStatusReporter(expected);
     }
 }

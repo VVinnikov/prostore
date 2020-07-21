@@ -30,8 +30,7 @@ import java.util.*;
 
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.IntStream.range;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 @Slf4j
@@ -258,6 +257,8 @@ class KafkaConsumerMonitorImplTest {
         assertTrue(monitor.getAggregateGroupConsumerInfo("test_consumer_5","TEST_INFO")
                 .getLastCommitTime().compareTo(prev) > 0);
 
+        assertNotNull(monitor.getAggregateGroupConsumerInfo("test_non_existent_consumer","TEST_INFO"));
+        assertNotNull(monitor.getAggregateGroupConsumerInfo("test_non_existent_consumer","non_existent_topic"));
 
     }
 

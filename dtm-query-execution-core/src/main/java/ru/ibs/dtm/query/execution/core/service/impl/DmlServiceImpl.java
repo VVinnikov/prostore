@@ -3,6 +3,7 @@ package ru.ibs.dtm.query.execution.core.service.impl;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import lombok.SneakyThrows;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -97,6 +98,7 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
         });
     }
 
+    @SneakyThrows
     private Future<QueryResult> pluginExecute(QuerySourceRequest request) {
         return Future.future(p -> dataSourcePluginService.llr(
                 request.getQueryRequest().getSourceType(),
@@ -110,6 +112,7 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
             columnMetadataService.getColumnMetadata(request, ar ->{
                 if (ar.succeeded()) {
                     queryResult.setMetadata(ar.result());
+                    p.complete(queryResult);
                 } else {
                     p.fail(ar.cause());
                 }

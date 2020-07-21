@@ -1,10 +1,12 @@
 package ru.ibs.dtm.common.reader;
 
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import org.apache.commons.lang3.SerializationUtils;
 import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 
 /*Дто с модифицированным sql запросом, из которого извлечен хинт*/
@@ -16,6 +18,12 @@ public class QuerySourceRequest {
     private QueryRequest queryRequest;
     private List<Datamart> logicalSchema;
     private SourceType sourceType;
+
+    public List<Datamart> getLogicalSchema() {
+        return logicalSchema.stream()
+                .map(SerializationUtils::clone)
+                .collect(Collectors.toList());
+    }
 
     public QuerySourceRequest(@NonNull QueryRequest queryRequest, SourceType sourceType) {
         this.queryRequest = queryRequest;

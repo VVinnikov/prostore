@@ -15,7 +15,6 @@ public class QuerySourceRequest {
     @NonNull
     private QueryRequest queryRequest;
     private List<Datamart> logicalSchema;
-    @NonNull
     private SourceType sourceType;
 
     public QuerySourceRequest(@NonNull QueryRequest queryRequest, SourceType sourceType) {

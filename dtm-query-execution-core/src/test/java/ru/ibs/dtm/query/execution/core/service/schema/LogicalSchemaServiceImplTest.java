@@ -4,6 +4,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+import java.util.*;
 import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,8 +29,6 @@ import ru.ibs.dtm.query.execution.model.metadata.AttributeType;
 import ru.ibs.dtm.query.execution.model.metadata.ColumnType;
 import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;
 import ru.ibs.dtm.query.execution.model.metadata.TableAttribute;
-
-import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -72,13 +71,13 @@ class LogicalSchemaServiceImplTest {
         pso.setLabel("pso");
         pso.setMnemonic("test_datamart");
         List<TableAttribute> psoAttrs = Arrays.asList(new TableAttribute(UUID.randomUUID(), "id",
-                new AttributeType(UUID.randomUUID(), ColumnType.INTEGER), 0, 0, 1, null));
+                new AttributeType(UUID.randomUUID(), ColumnType.INT), 0, 0, 1, null));
         pso.setTableAttributes(psoAttrs);
         DatamartTable doc = new DatamartTable();
         doc.setLabel("doc");
         doc.setMnemonic("test_datamart");
         List<TableAttribute> docAttrs = Arrays.asList(new TableAttribute(UUID.randomUUID(), "id",
-                new AttributeType(UUID.randomUUID(), ColumnType.INTEGER), 0, 0, null, 1));
+                new AttributeType(UUID.randomUUID(), ColumnType.INT), 0, 0, null, 1));
         doc.setTableAttributes(docAttrs);
         resultSchemaMap.put(new DatamartSchemaKey("test_datamart", "pso"), pso);
         resultSchemaMap.put(new DatamartSchemaKey("test_datamart", "doc"), doc);

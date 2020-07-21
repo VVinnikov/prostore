@@ -1,8 +1,12 @@
-package ru.ibs.dtm.query.execution.core.service.dml;
+package ru.ibs.dtm.query.execution.core.service.dml.impl;
 
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.jetbrains.annotations.NotNull;
@@ -12,11 +16,6 @@ import ru.ibs.dtm.query.execution.core.dto.DatamartView;
 import ru.ibs.dtm.query.execution.core.dto.dml.DatamartViewPair;
 import ru.ibs.dtm.query.execution.core.dto.dml.DatamartViewWrap;
 import ru.ibs.dtm.query.execution.core.service.dml.DatamartViewWrapLoader;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 

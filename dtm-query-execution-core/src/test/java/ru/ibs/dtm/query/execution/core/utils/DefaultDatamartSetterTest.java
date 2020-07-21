@@ -50,7 +50,7 @@ class DefaultDatamartSetterTest {
 
     @Test
     void setToSelectWithBetween() {
-        val sql = "select a.account_id from tbl a where a.dt between 1 and 2";
+        val sql = "select * from accounts FOR SYSTEM_TIME AS OF '2020-06-30 16:18:58'";
         String withDatamart = datamartSetter.set(definitionService.processingQuery(sql), "demo").toSqlString(DIALECT).getSql();
         DeltaInformationResult result = DeltaInformationExtractor.extract(definitionService.processingQuery(withDatamart));
         List<DeltaInformation> deltaInformations = result.getDeltaInformations();

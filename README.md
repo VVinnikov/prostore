@@ -21,6 +21,7 @@ Add `127.0.0.1	kafka-1.dtm.local` to `/etc/hosts`. It is required for tests and 
 Also you need local or remote ADB, ADG and ADQM.
 
 ### Load initial data
+
 To load schema changes build sub-project [dtm-migration](dtm-migration/README.md) and run:
 ```
 cd dtm-migration
@@ -28,7 +29,7 @@ mvn package
 java -jar target/dtm-migration-<version>.jar
 ```
 
-### Build & run main service as a single jar
+### Build project using maven
 
 ```
 # without any tests
@@ -38,8 +39,17 @@ mvn package -P local -D skipTests
 mvn verify -P local
 ```
 
+### Run main service as a single jar
+
 ```
-java -Dspring.config.location=classpath:/application.yml,<path-to-adb-config>/applicati.yml,<path-to-adg-config>/application.yml,<path-to-adqm-config>/application.yml -jar target/dtm-query-execution-core-2.2.1-SNAPSHOT.jar
+java -Dspring.config.location=classpath:/application.yml,<path-to-adb-config>/application.yml,<path-to-adg-config>/application.yml,<path-to-adqm-config>/application.yml -jar target/dtm-query-execution-core-2.2.1-SNAPSHOT.jar
+```
+
+### Run main service as a docker container
+
+```
+docker-compose -f dtm-query-execution-core/environment/docker-compose-dev.yml up -d
+docker logs -f dtm-query-execution-core
 ```
 
 ### Setup IDE
@@ -58,7 +68,7 @@ Setup run configuration for core application:
     - ADQM_HOSTS=10.92.3.24:8123,10.92.3.34:8123
     - ...
 
-###Setup JDBC test client
+##Setup JDBC test client
 
 Use [DTM JDBC driver](https://github.com/arenadata/dtm-jdbc-driver).
 URL is `jdbc:adtm://<host>:<port>/`:

@@ -47,8 +47,8 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
                 if (ar.succeeded()) {
                     createTable(context, handler);
                 } else {
-                    log.error("Error executing drop table query!", ar.cause());//TODO скорее всего лишний лог
-                    handler.handle(Future.failedFuture(ar.cause()));//TODO проверить корректность проброса исключения
+                    log.error("Error executing drop table query!", ar.cause());
+                    handler.handle(Future.failedFuture(ar.cause()));
                 }
             });
         } catch (Exception e) {

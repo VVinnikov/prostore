@@ -70,6 +70,7 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
     }
 
     @Override
+    @Autowired
     public void register(@Qualifier("adgDdlService") DdlService<Void> service) {
         service.addExecutor(this);
     }

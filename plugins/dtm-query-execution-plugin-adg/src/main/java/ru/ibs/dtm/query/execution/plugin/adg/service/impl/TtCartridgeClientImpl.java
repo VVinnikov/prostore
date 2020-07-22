@@ -69,7 +69,6 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
     executeGetRequest(new GetRequest(cartridgeProperties.getSendQueryUrl(), queryParamMap), handler);
   }
 
-
   @Override
   public void subscribe(TtSubscriptionKafkaRequest request, Handler<AsyncResult<Void>> handler) {
     val uri = cartridgeProperties.getUrl() + cartridgeProperties.getKafkaSubscriptionUrl();

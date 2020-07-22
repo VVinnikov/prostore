@@ -12,8 +12,8 @@ import ru.ibs.dtm.common.reader.QuerySourceRequest;
 import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
 import ru.ibs.dtm.query.execution.core.service.DataSourcePluginService;
-import ru.ibs.dtm.query.execution.core.service.dml.InformationSchemaExecutor;
 import ru.ibs.dtm.query.execution.core.service.TargetDatabaseDefinitionService;
+import ru.ibs.dtm.query.execution.core.service.dml.InformationSchemaExecutor;
 import ru.ibs.dtm.query.execution.core.service.dml.LogicViewReplacer;
 import ru.ibs.dtm.query.execution.core.utils.HintExtractor;
 import ru.ibs.dtm.query.execution.plugin.api.dml.DmlRequestContext;
@@ -29,7 +29,6 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
     private final DeltaQueryPreprocessor deltaQueryPreprocessor;
     private final LogicViewReplacer logicViewReplacer;
     private final InformationSchemaExecutor informationSchemaExecutor;
-    private final HintExtractor hintExtractor;
 
     @Autowired
     public DmlServiceImpl(DataSourcePluginService dataSourcePluginService,
@@ -41,8 +40,6 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
         this.deltaQueryPreprocessor = deltaQueryPreprocessor;
         this.logicViewReplacer = logicViewReplacer;
         this.informationSchemaExecutor = informationSchemaExecutor;
-        this.hintExtractor = hintExtractor;
-        this.metadataService = metadataService;
     }
 
     @Override
@@ -85,7 +82,7 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
             if (ar.succeeded()) {
                 QuerySourceRequest querySourceRequest = ar.result();
                 if (querySourceRequest.getQueryRequest().getSourceType() == SourceType.INFORMATION_SCHEMA) {
-                    metadataService.executeQuery(querySourceRequest.getQueryRequest(), asyncResultHandler);
+                    informationSchemaExecutor.execute(querySourceRequest.getQueryRequest(), asyncResultHandler);
                 } else {
                     pluginExecute(querySourceRequest, asyncResultHandler);
                 }

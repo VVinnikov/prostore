@@ -1,7 +1,7 @@
 # DTM core services & plugins
 Main project of data mart for NSUD.
 
-## Local development
+## Local deployment
 
 ### Run internal DB & kafka
 
@@ -22,11 +22,10 @@ Also you need local or remote ADB, ADG and ADQM.
 
 ### Load initial data
 
-To load schema changes build sub-project [dtm-migration](dtm-migration/README.md) and run:
+To load schema changes use sub-project [dtm-migration](dtm-migration/README.md) and run:
 ```
 cd dtm-migration
-mvn package
-java -jar target/dtm-migration-<version>.jar
+mvn spring-boot:run
 ```
 
 ### Build project using maven
@@ -42,6 +41,7 @@ mvn verify -P local
 ### Run main service as a single jar
 
 ```
+cd dtm-query-execution-core
 java -Dspring.config.location=classpath:/application.yml,<path-to-adb-config>/application.yml,<path-to-adg-config>/application.yml,<path-to-adqm-config>/application.yml -jar target/dtm-query-execution-core-2.2.1-SNAPSHOT.jar
 ```
 
@@ -52,7 +52,7 @@ docker-compose -f dtm-query-execution-core/environment/docker-compose-dev.yml up
 docker logs -f dtm-query-execution-core
 ```
 
-### Setup IDE
+## Setup IDE
 
 Use profile `local` for project builder.
 

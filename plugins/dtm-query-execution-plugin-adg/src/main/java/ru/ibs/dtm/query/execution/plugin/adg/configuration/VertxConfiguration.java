@@ -5,13 +5,14 @@ import io.vertx.core.VertxOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.spi.cluster.zookeeper.ZookeeperClusterManager;
+import java.util.concurrent.CompletableFuture;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import ru.ibs.dtm.common.configuration.kafka.KafkaConfig;
 
-import java.util.concurrent.CompletableFuture;
-
+@Slf4j
 @Configuration
 public class VertxConfiguration {
 
@@ -28,7 +29,8 @@ public class VertxConfiguration {
             if (event.succeeded()) {
                 future.complete(event.result());
             } else {
-                future.complete(null);
+                log.error("adgVertx init error: ", event.cause());
+                throw new RuntimeException(event.cause());
             }
         });
         return future.join();

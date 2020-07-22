@@ -8,6 +8,7 @@ import io.vertx.ext.unit.TestOptions;
 import io.vertx.ext.unit.report.ReportOptions;
 import io.vertx.reactivex.ext.unit.Async;
 import io.vertx.reactivex.ext.unit.TestSuite;
+import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.env.Environment;
@@ -42,7 +43,7 @@ class QueryAnalyzerImplTest {
 	private DefinitionService<SqlNode> definitionService =
 			new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
 	private Vertx vertx = Vertx.vertx();
-	private RequestContextFactory<RequestContext<? extends DatamartRequest>, QueryRequest> requestContextFactory = new RequestContextFactoryImpl();
+	private RequestContextFactory<RequestContext<? extends DatamartRequest>, QueryRequest> requestContextFactory = new RequestContextFactoryImpl(new SqlDialect(SqlDialect.EMPTY_CONTEXT));
 	private QueryDispatcher queryDispatcher = mock(QueryDispatcher.class);
 	private QueryAnalyzer queryAnalyzer = new QueryAnalyzerImpl(queryDispatcher,
 			definitionService,

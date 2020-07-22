@@ -42,15 +42,16 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
         this.logicViewReplacer = logicViewReplacer;
         this.informationSchemaExecutor = informationSchemaExecutor;
         this.hintExtractor = hintExtractor;
+        this.metadataService = metadataService;
     }
 
     @Override
     public void execute(DmlRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
         try {
-            val sourceRequest = hintExtractor.extractHint(context.getRequest().getQueryRequest());
+            val queryRequest = context.getRequest().getQueryRequest();
+            val sourceRequest = new QuerySourceRequest(queryRequest, queryRequest.getSourceType());
             logicViewReplace(sourceRequest.getQueryRequest())
                     .compose(deltaQueryPreprocessor::process)
-                    //.compose(queryRequest -> initLogicalDatamartSchema(sourceRequest, queryRequest))
                     .onComplete(ar -> {
                         if (ar.succeeded()) {
                             sourceRequest.setQueryRequest(ar.result());
@@ -83,8 +84,8 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
         targetDatabaseDefinitionService.getTargetSource(request, ar -> {
             if (ar.succeeded()) {
                 QuerySourceRequest querySourceRequest = ar.result();
-                if (querySourceRequest.getSourceType() == SourceType.INFORMATION_SCHEMA) {
-                    informationSchemaExecutor.execute(querySourceRequest.getQueryRequest(), asyncResultHandler);
+                if (querySourceRequest.getQueryRequest().getSourceType() == SourceType.INFORMATION_SCHEMA) {
+                    metadataService.executeQuery(querySourceRequest.getQueryRequest(), asyncResultHandler);
                 } else {
                     pluginExecute(querySourceRequest, asyncResultHandler);
                 }
@@ -97,7 +98,7 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
     private void pluginExecute(QuerySourceRequest request,
                                Handler<AsyncResult<QueryResult>> asyncResultHandler) {
         dataSourcePluginService.llr(
-                request.getSourceType(),
+                request.getQueryRequest().getSourceType(),
                 new LlrRequestContext(new LlrRequest(request.getQueryRequest(), request.getLogicalSchema())),
                 asyncResultHandler);
     }

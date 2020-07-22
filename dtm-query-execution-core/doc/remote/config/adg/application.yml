@@ -19,10 +19,10 @@ kafka:
 
 tarantool:
   db:
-    host: ${TARANTOOL_DB_HOST:10.92.3.21}
-    port: ${TARANTOOL_DB_PORT:3311}
+    host: ${TARANTOOL_DB_HOST:10.92.3.12}
+    port: ${TARANTOOL_DB_PORT:3301}
     user: ${TARANTOOL_DB_USER:admin}
-    password: ${TARANTOOL_DB_PASS:cluster-cookie}
+    password: ${TARANTOOL_DB_PASS:memstorage-cluster-cookie}
     operationTimeout: ${TARANTOOL_DB_OPER_TIMEOUT:60000}
   cartridge:
-    url: ${TARANTOOL_CATRIDGE_URL:http://10.92.3.21:8811}
+    url: ${TARANTOOL_CATRIDGE_URL:http://10.92.3.12:8081}

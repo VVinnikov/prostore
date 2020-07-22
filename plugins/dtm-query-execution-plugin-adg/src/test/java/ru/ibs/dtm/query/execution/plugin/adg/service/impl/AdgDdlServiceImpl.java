@@ -11,6 +11,7 @@ import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.SourceType;
+import ru.ibs.dtm.query.execution.plugin.adg.factory.AdgHelperTableNamesFactory;
 import ru.ibs.dtm.query.execution.plugin.adg.service.AvroSchemaGenerator;
 import ru.ibs.dtm.query.execution.plugin.adg.service.KafkaTopicService;
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryExecutorService;

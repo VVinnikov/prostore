@@ -29,8 +29,6 @@ public class AdgSchemaExtenderImpl implements SchemaExtender {
     Datamart extendedSchema = new Datamart();
     extendedSchema.setMnemonic(datamart.getMnemonic());
     extendedSchema.setId(UUID.randomUUID());
-    List<DatamartTable> extendedDatamartTables = new ArrayList<>();
-
     List<DatamartTable> extendedDatamartClasses = new ArrayList<>();
     datamart.getDatamartTables().forEach(dmClass -> {
       val helperTableNames = helperTableNamesFactory.create(queryRequest.getSystemName(),
@@ -43,14 +41,14 @@ public class AdgSchemaExtenderImpl implements SchemaExtender {
       extendedDatamartClasses.add(getExtendedSchema(dmClass, helperTableNames.getStaging()));
       extendedDatamartClasses.add(getExtendedSchema(dmClass, helperTableNames.getActual()));
     });
-    extendedSchema.setDatamartTables(extendedDatamartTables);
+    extendedSchema.setDatamartTables(extendedDatamartClasses);
 
     return extendedSchema;
   }
 
   private DatamartTable getExtendedSchema(DatamartTable datamartTable, String tableName) {
     DatamartTable datamartTableExtended = new DatamartTable();
-    datamartTableExtended.setLabel(datamartTable.getLabel());
+    datamartTableExtended.setLabel(tableName);
     datamartTableExtended.setMnemonic(tableName);
     datamartTableExtended.setId(UUID.randomUUID());
     List<TableAttribute> tableAttributeList = new ArrayList<>();

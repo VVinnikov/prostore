@@ -43,5 +43,7 @@ public class SnapshotOperator extends SqlOperator {
         ru.ibs.dtm.query.calcite.core.extension.snapshot.SqlSnapshot snapshot =
                 (ru.ibs.dtm.query.calcite.core.extension.snapshot.SqlSnapshot) call;
         snapshot.getTableRef().unparse(writer, 0, 0);
+        writer.keyword("FOR SYSTEM_TIME AS OF");
+        snapshot.getPeriod().unparse(writer, 0, 0);
     }
 }

@@ -1,11 +1,12 @@
 package ru.ibs.dtm.query.execution.core.service.schema.impl;
 
 import io.vertx.core.*;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,7 @@ import ru.ibs.dtm.common.dto.schema.DatamartSchemaKey;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.calcite.core.node.SqlSelectTree;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
+import ru.ibs.dtm.query.calcite.core.util.DeltaInformationExtractor;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
 import ru.ibs.dtm.query.execution.core.dto.metadata.EntityAttribute;
@@ -24,8 +26,6 @@ import ru.ibs.dtm.query.execution.model.metadata.AttributeType;
 import ru.ibs.dtm.query.execution.model.metadata.ColumnType;
 import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;
 import ru.ibs.dtm.query.execution.model.metadata.TableAttribute;
-
-import java.util.*;
 
 @Service
 @Slf4j
@@ -69,21 +69,19 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
     private List<DatamartInfo> getDatamartInfoListFromQuery(String sql) {
         val sqlNode = definitionService.processingQuery(sql);
         val tree = new SqlSelectTree(sqlNode);
-        val allTableAndSnapshots = tree.findAllTableAndSnapshots();
         Map<String, DatamartInfo> datamartMap = new HashMap<>();
-        allTableAndSnapshots.forEach(node -> {
-            if (node.getNode() instanceof SqlIdentifier) {
-                //подразумевается, что на данном этапе в запросе уже будет проставлен defaultDatamart там, где требуется
-                String schemaName = ((SqlIdentifier) node.getNode()).names.get(0);
-                String tableName = ((SqlIdentifier) node.getNode()).names.get(1);
-                DatamartInfo datamartInfo = datamartMap.getOrDefault(schemaName, new DatamartInfo(schemaName, new HashSet<>()));
-                datamartInfo.getTables().add(tableName);
-                datamartMap.putIfAbsent(datamartInfo.getSchemaName(), datamartInfo);
-            } else {
-                throw new RuntimeException(String.format("Некорректный тип sqlNode: %s; ожидается: %s!",
-                        node.getNode().getClass().getName(), SqlIdentifier.class.getName()));
-            }
-        });
+        tree.findAllTableAndSnapshots().stream()
+                .map(node -> DeltaInformationExtractor.getDeltaInformation(tree, node))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList())
+                .forEach(node -> {
+                        //подразумевается, что на данном этапе в запросе уже будет проставлен defaultDatamart там, где требуется
+                        String schemaName = node.getSchemaName();
+                        String tableName = node.getTableName();
+                        DatamartInfo datamartInfo = datamartMap.getOrDefault(schemaName, new DatamartInfo(schemaName, new HashSet<>()));
+                        datamartInfo.getTables().add(tableName);
+                        datamartMap.putIfAbsent(datamartInfo.getSchemaName(), datamartInfo);
+                });
         return new ArrayList<>(datamartMap.values());
     }
 

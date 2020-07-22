@@ -6,8 +6,9 @@ import java.time.LocalDateTime;
 
 @Data
 public class KafkaPartitionInfo {
+    private String consumerGroup;
     private String topic;
-    private String partition;
+    private int partition;
     private Long start;
     private Long end;
     private Long offset;

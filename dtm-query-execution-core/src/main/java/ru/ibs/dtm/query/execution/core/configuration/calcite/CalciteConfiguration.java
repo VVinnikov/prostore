@@ -1,8 +1,10 @@
 package ru.ibs.dtm.query.execution.core.configuration.calcite;
 
+import javax.annotation.PostConstruct;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.config.Lex;
+import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.SqlParserImplFactory;
@@ -16,8 +18,6 @@ import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
 import ru.ibs.dtm.query.calcite.core.service.impl.DeltaQueryPreprocessorImpl;
 
-import javax.annotation.PostConstruct;
-
 @Configuration
 public class CalciteConfiguration {
 
@@ -29,7 +29,7 @@ public class CalciteConfiguration {
     }
 
     @Bean("coreParser")
-    public SqlParserImplFactory getSqlParserFactory(){
+    public SqlParserImplFactory getSqlParserFactory() {
         return new CalciteCoreConfiguration().eddlParserImplFactory();
     }
 
@@ -52,6 +52,11 @@ public class CalciteConfiguration {
             DeltaService deltaService
     ) {
         return new DeltaQueryPreprocessorImpl(definitionService, deltaService);
+    }
+
+    @Bean("coreSqlDialect")
+    public SqlDialect coreSqlDialect() {
+        return new SqlDialect(SqlDialect.EMPTY_CONTEXT);
     }
 
 }

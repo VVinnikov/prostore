@@ -40,6 +40,7 @@ class MppwStartRequestHandlerTest {
 
         mppwProperties.setConsumerGroup(TEST_CONSUMER_GROUP);
         mppwProperties.setKafkaBrokers("localhost:9092");
+        mppwProperties.setLoadType("KAFKA");
     }
 
     @Test

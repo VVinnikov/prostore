@@ -13,3 +13,4 @@ ddl:
 mppw:
   consumerGroup: ${ADQM_CONSUMER_GROUP:adqm}
   kafkaBrokers: ${ADQM_BROKERS:10.92.3.31:9092}
+  loadType: ${ADQM_MPPW_LOAD_TYPE:REST}

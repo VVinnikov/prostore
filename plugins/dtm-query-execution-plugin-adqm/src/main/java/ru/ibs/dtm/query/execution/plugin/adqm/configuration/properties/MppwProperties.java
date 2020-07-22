@@ -20,6 +20,15 @@ public class MppwProperties {
         this.kafkaBrokers = kafkaBrokers;
     }
 
+    public String getLoadType() {
+        return loadType;
+    }
+
+    public void setLoadType(String loadType) {
+        this.loadType = loadType;
+    }
+
     private String consumerGroup;
     private String kafkaBrokers;
+    private String loadType;
 }

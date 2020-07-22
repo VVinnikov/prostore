@@ -235,7 +235,7 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
             if (CollectionUtils.isEmpty(res.getErrors())) {
               handler.handle(Future.succeededFuture(res));
             } else {
-              handler.handle(Future.failedFuture(res.getErrors().get(0).getMessage()));
+              handler.handle(Future.failedFuture(new RuntimeException(res.getErrors().get(0).getMessage())));
             }
           } catch (Exception e) {
             handler.handle(Future.failedFuture(e));

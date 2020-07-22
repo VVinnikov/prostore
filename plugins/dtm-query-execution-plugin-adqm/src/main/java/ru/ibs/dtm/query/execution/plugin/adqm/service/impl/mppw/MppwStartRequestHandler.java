@@ -16,10 +16,7 @@ import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProper
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.MppwProperties;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.StatusReporter;
-import ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw.load.ExtTableCreator;
-import ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw.load.KafkaExtTableCreator;
-import ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw.load.LoadType;
-import ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw.load.RestExtTableCreator;
+import ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw.load.*;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 
 import java.util.Arrays;
@@ -32,6 +29,7 @@ import static java.lang.String.format;
 import static ru.ibs.dtm.query.execution.plugin.adqm.common.Constants.*;
 import static ru.ibs.dtm.query.execution.plugin.adqm.common.DdlUtils.avroTypeToNative;
 import static ru.ibs.dtm.query.execution.plugin.adqm.common.DdlUtils.splitQualifiedTableName;
+import static ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw.load.LoadType.KAFKA;
 
 @Component("adqmMppwStartRequestHandler")
 @Slf4j
@@ -53,18 +51,22 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     private final MppwProperties mppwProperties;
     private final StatusReporter statusReporter;
     private final Map<LoadType, ExtTableCreator> extTableCreators = new HashMap<>();
+    private final RestLoadInitiator restLoadInitiator;
 
     public MppwStartRequestHandler(final DatabaseExecutor databaseExecutor,
                                    final DdlProperties ddlProperties,
                                    final AppConfiguration appConfiguration,
-                                   final MppwProperties mppwProperties, StatusReporter statusReporter) {
+                                   final MppwProperties mppwProperties,
+                                   final StatusReporter statusReporter,
+                                   final RestLoadInitiator restLoadInitiator) {
         this.databaseExecutor = databaseExecutor;
         this.ddlProperties = ddlProperties;
         this.appConfiguration = appConfiguration;
         this.mppwProperties = mppwProperties;
         this.statusReporter = statusReporter;
+        this.restLoadInitiator = restLoadInitiator;
 
-        extTableCreators.put(LoadType.KAFKA, new KafkaExtTableCreator(ddlProperties, mppwProperties));
+        extTableCreators.put(KAFKA, new KafkaExtTableCreator(ddlProperties, mppwProperties));
         extTableCreators.put(LoadType.REST, new RestExtTableCreator(ddlProperties));
     }
 
@@ -110,6 +112,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
                 createActualLoaderTable(fullName + ACTUAL_LOADER_SHARD_POSTFIX, schema, request.getQueryLoadParam().getDeltaHot()));
 
         return CompositeFuture.all(extTableF, buffShardF, buffF, buffLoaderF, actualLoaderF)
+                .compose(v -> createRestInitiator(request))
                 .compose(v -> Future.succeededFuture(QueryResult.emptyResult()), f -> {
                     reportError(request.getTopic());
                     return Future.failedFuture(f.getCause());
@@ -145,7 +148,9 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
 
     @NonNull
     private String getConsumerGroupName(@NonNull String tableName) {
-        return mppwProperties.getConsumerGroup() + tableName;
+        return mppwProperties.getLoadType().equals(KAFKA.name()) ?
+                mppwProperties.getConsumerGroup() + tableName :
+                mppwProperties.getRestLoadConsumerGroup();
     }
 
     private Future<Void> createExternalTable(@NonNull String topic,
@@ -206,6 +211,30 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
                 columns, deltaHot,
                 table.replaceAll(ACTUAL_LOADER_SHARD_POSTFIX, EXT_SHARD_POSTFIX));
         return databaseExecutor.executeUpdate(query);
+    }
+
+    private Future<Void> createRestInitiator(MppwRequest mppwRequest) {
+        LoadType loadType = LoadType.valueOf(mppwProperties.getLoadType());
+        if (loadType == KAFKA) {
+            return Future.succeededFuture();
+        }
+
+        RestLoadRequest request = new RestLoadRequest();
+        request.setHotDelta(mppwRequest.getQueryLoadParam().getDeltaHot());
+        request.setDatamart(mppwRequest.getQueryLoadParam().getDatamart());
+        request.setTableName(mppwRequest.getQueryLoadParam().getTableName());
+        request.setZookeeperHost(mppwRequest.getZookeeperHost());
+        request.setZookeeperPort(mppwRequest.getZookeeperPort());
+        request.setKafkaTopic(mppwRequest.getTopic());
+        request.setFormat(mppwRequest.getQueryLoadParam().getFormat().getName());
+
+        try {
+            val schema = new Schema.Parser().parse(mppwRequest.getSchema().encode());
+            request.setSchema(schema);
+            return restLoadInitiator.initiateLoading(request);
+        } catch (Exception e) {
+            return Future.failedFuture(e);
+        }
     }
 
     private String findTypeForColumn(@NonNull String columnName, @NonNull Schema schema) {

@@ -9,44 +9,43 @@ import ru.ibs.dtm.common.model.ddl.ClassTypeUtil;
 import ru.ibs.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
 
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.toList;
 
 @Component
 public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
     /**
      * Name of the table of actual data
      */
-    public final static String ACTUAL_TABLE = "actual";
+    public static final String ACTUAL_TABLE = "actual";
     /**
      * History table name
      */
-    public final static String HISTORY_TABLE = "history";
+    public static final String HISTORY_TABLE = "history";
     /**
      * Name staging table
      */
-    public final static String STAGING_TABLE = "staging";
+    public static final String STAGING_TABLE = "staging";
     /**
      * Delta Number System Field
      */
-    public final static String SYS_FROM_ATTR = "sys_from";
+    public static final String SYS_FROM_ATTR = "sys_from";
     /**
      * System field of maximum delta number
      */
-    public final static String SYS_TO_ATTR = "sys_to";
+    public static final String SYS_TO_ATTR = "sys_to";
     /**
      * System field of operation on an object
      */
-    public final static String SYS_OP_ATTR = "sys_op";
+    public static final String SYS_OP_ATTR = "sys_op";
     /**
      * Request ID system field
      */
-    public final static String REQ_ID_ATTR = "req_id";
+    public static final String REQ_ID_ATTR = "req_id";
     public static final String DELIMITER = ", ";
-    private final static String DROP_TABLE = "DROP TABLE IF EXISTS ";
+    private static final String DROP_TABLE = "DROP TABLE IF EXISTS ";
+    private static final String DROP_SCHEMA = "DROP SCHEMA IF EXISTS %s";
+    private static final String CREATE_SCHEMA = "CREATE SCHEMA %s";
 
     @Override
     public String createDropTableScript(ClassTable classTable) {
@@ -70,6 +69,16 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
                 .append(createTableScript(classTable, classTable.getNameWithSchema() + "_" + STAGING_TABLE, true))
                 .append("; ")
                 .toString();
+    }
+
+    @Override
+    public String createSchemaSqlQuery(String schemaName) {
+        return String.format(CREATE_SCHEMA, schemaName);
+    }
+
+    @Override
+    public String dropSchemaSqlQuery(String schemaName) {
+        return String.format(DROP_SCHEMA, schemaName);
     }
 
     private String createTableScript(ClassTable classTable, String tableName, boolean addReqId) {

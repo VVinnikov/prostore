@@ -33,6 +33,10 @@ public abstract class QueryResultDdlExecutor implements DdlExecutor<QueryResult>
         return sqlNodeName.substring(indexComma + 1);
     }
 
+    protected String getTableNameWithSchema(String schema, String tableName){
+        return schema + "." + tableName;
+    }
+
     @NotNull
     protected String getSql(DdlRequestContext context, String sqlNodeName) {
         QueryRequest request = context.getRequest().getQueryRequest();

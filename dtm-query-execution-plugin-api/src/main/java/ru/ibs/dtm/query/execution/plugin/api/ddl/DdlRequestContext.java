@@ -16,12 +16,10 @@ import static ru.ibs.dtm.query.execution.plugin.api.service.SqlProcessingType.DD
 public class DdlRequestContext extends RequestContext<DdlRequest> {
 
 	private DdlType ddlType;
-	private String tableName;
 	private String datamartName;
 	private Long datamartId;
 	private SqlNode query;
 	private String systemName;
-	private ClassTable classTable;
 
 	public DdlRequestContext(final DdlRequest request) {
 		this(request, null);

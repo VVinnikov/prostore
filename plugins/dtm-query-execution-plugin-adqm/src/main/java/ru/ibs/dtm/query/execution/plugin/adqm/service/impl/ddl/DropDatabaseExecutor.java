@@ -54,7 +54,7 @@ public class DropDatabaseExecutor implements DdlExecutor<Void> {
 
     @Override
     @Autowired
-    public void registration(@Qualifier("adqmDdlService") DdlService<Void> service) {
+    public void register(@Qualifier("adqmDdlService") DdlService<Void> service) {
         service.addExecutor(this);
     }
 

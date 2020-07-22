@@ -35,8 +35,7 @@ public class AdgDdlServiceImpl {
     private AvroSchemaGenerator schemaGenerator = mock(AvroSchemaGenerator.class);
     private final QueryExecutorService executorService = mock(QueryExecutorService.class);
 
-    private AdgDdlService adgDdlService = new AdgDdlService(cartridgeProvider, kafkaTopicService, kafkaProperties,
-            schemaGenerator, executorService);
+    private AdgDdlService adgDdlService = new AdgDdlService();
 
     @Test
     void testExecuteNotEmptyOk() {

@@ -10,4 +10,8 @@ public interface MetadataSqlFactory {
     String createDropTableScript(ClassTable classTable);
 
     String createTableScripts(ClassTable classTable);
+
+    String createSchemaSqlQuery(String schemaName);
+
+    String dropSchemaSqlQuery(String schemaName);
 }

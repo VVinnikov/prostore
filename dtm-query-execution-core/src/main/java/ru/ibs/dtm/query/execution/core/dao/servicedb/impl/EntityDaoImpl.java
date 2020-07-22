@@ -1,11 +1,13 @@
 package ru.ibs.dtm.query.execution.core.dao.servicedb.impl;
 
 import io.github.jklingsporn.vertx.jooq.classic.async.AsyncClassicGenericQueryExecutor;
+import io.github.jklingsporn.vertx.jooq.shared.internal.QueryResult;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.ext.sql.ResultSet;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
@@ -42,15 +44,7 @@ public class EntityDaoImpl implements EntityDao {
         ).setHandler(ar -> {
             if (ar.succeeded()) {
                 if (ar.result().unwrap() instanceof ResultSet) {
-                    List<DatamartEntity> datamartEntityList = new ArrayList<>();
-                    ResultSet rows = ar.result().unwrap();
-                    rows.getRows().forEach(it ->
-                            datamartEntityList.add(new DatamartEntity(
-                                    it.getInteger(ENTITIES_REGISTRY.ENTITY_ID.getName()),
-                                    it.getString(ENTITIES_REGISTRY.ENTITY_MNEMONICS.getName()),
-                                    it.getString(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.getName())
-                            ))
-                    );
+                    List<DatamartEntity> datamartEntityList = initDatamartEntities(ar);
                     log.info("Найдено {} сущностей для витрины: {}", datamartEntityList.size(), datamartMnemonic);
                     resultHandler.handle(Future.succeededFuture(datamartEntityList));
                 } else {
@@ -95,7 +89,7 @@ public class EntityDaoImpl implements EntityDao {
     }
 
     @Override
-    public void existsEntity(Long datamartId, String name, Handler<AsyncResult<Boolean>> resultHandler) {
+    public void isEntityExists(Long datamartId, String name, Handler<AsyncResult<Boolean>> resultHandler) {
         executor.query(dsl -> dsl
                 .select(ENTITIES_REGISTRY.ENTITY_ID)
                 .from(ENTITIES_REGISTRY)
@@ -111,11 +105,18 @@ public class EntityDaoImpl implements EntityDao {
     }
 
     @Override
-    public Future<Integer> dropEntity(Long datamartId, String name) {
-        return executor.execute(dsl -> dsl
+    public void dropEntity(Long datamartId, String name, Handler<AsyncResult<Integer>> resultHandler) {
+        executor.execute(dsl -> dsl
                 .deleteFrom(ENTITIES_REGISTRY)
                 .where(ENTITIES_REGISTRY.DATAMART_ID.eq(datamartId))
-                .and(ENTITIES_REGISTRY.ENTITY_MNEMONICS.equalIgnoreCase(name)));
+                .and(ENTITIES_REGISTRY.ENTITY_MNEMONICS.equalIgnoreCase(name)))
+                .setHandler(ar -> {
+                    if (ar.succeeded()) {
+                        resultHandler.handle(Future.succeededFuture(ar.result()));
+                    } else {
+                        resultHandler.handle(Future.failedFuture(ar.cause()));
+                    }
+                });
     }
 
     @Override
@@ -130,15 +131,7 @@ public class EntityDaoImpl implements EntityDao {
         ).setHandler(ar -> {
             if (ar.succeeded()) {
                 if (ar.result().unwrap() instanceof ResultSet) {
-                    List<DatamartEntity> datamartEntityList = new ArrayList<>();
-                    ResultSet rows = ar.result().unwrap();
-                    rows.getRows().forEach(it ->
-                            datamartEntityList.add(new DatamartEntity(
-                                    it.getInteger(ENTITIES_REGISTRY.ENTITY_ID.getName()),
-                                    it.getString(ENTITIES_REGISTRY.ENTITY_MNEMONICS.getName()),
-                                    it.getString(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.getName())
-                            ))
-                    );
+                    List<DatamartEntity> datamartEntityList = initDatamartEntities(ar);
                     log.info("Найдено {} сущностей для витрины: {}", datamartEntityList.size(), datamartInfo.getSchemaName());
                     resultHandler.handle(Future.succeededFuture(datamartEntityList));
                 } else {
@@ -147,5 +140,19 @@ public class EntityDaoImpl implements EntityDao {
             } else
                 resultHandler.handle(Future.failedFuture(ar.cause()));
         });
+    }
+
+    @NotNull
+    private List<DatamartEntity> initDatamartEntities(AsyncResult<QueryResult> ar) {
+        List<DatamartEntity> datamartEntityList = new ArrayList<>();
+        ResultSet rows = ar.result().unwrap();
+        rows.getRows().forEach(it ->
+                datamartEntityList.add(new DatamartEntity(
+                        it.getLong(ENTITIES_REGISTRY.ENTITY_ID.getName()),
+                        it.getString(ENTITIES_REGISTRY.ENTITY_MNEMONICS.getName()),
+                        it.getString(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.getName())
+                ))
+        );
+        return datamartEntityList;
     }
 }

@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
-import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.core.configuration.jooq.MariaProperties;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
@@ -16,6 +15,7 @@ import ru.ibs.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import ru.ibs.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
 import ru.ibs.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlType;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -38,123 +38,151 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
     public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<QueryResult>> handler) {
         try {
             String schema = getSchemaName(context.getRequest().getQueryRequest(), sqlNodeName);
-            QueryRequest request = context.getRequest().getQueryRequest();
-            request.setDatamartMnemonic(schema);
+            context.getRequest().getQueryRequest().setDatamartMnemonic(schema);
+            context.setDdlType(DdlType.CREATE_TABLE);
             ClassTable classTable = metadataCalciteGenerator.generateTableMetadata((SqlCreate) context.getQuery());
+            classTable.setNameWithSchema(getTableNameWithSchema(schema, classTable.getName()));
+            context.getRequest().setClassTable(classTable);
+            context.setDatamartName(schema);
             getDatamartId(classTable)
-                    .compose(datamartId -> isDatamartTableExists(datamartId, classTable.getName()))
+                    .compose(datamartId -> isDatamartTableExists(datamartId, context))
                     .onComplete(isExists -> {
                         if (isExists.succeeded()) {
-                            if (isExists.result()) {
-                                handler.handle(Future.failedFuture(
-                                        new RuntimeException(String.format("Table [%s] is already exists in datamart [%s]!",
-                                                classTable.getName(), classTable.getSchema()))));
-                            } else {
-                                createTable(context, classTable, handler);
-                            }
+                            final Boolean isTableExists = isExists.result();
+                            createTableIfNotExists(context, isTableExists, handler);
                         }
                     })
                     .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
         } catch (Exception e) {
-            log.error("Error in creating table!", e);
+            log.error("Error creating table by query request: {}!", context.getRequest().getQueryRequest(), e);
             handler.handle(Future.failedFuture(e));
         }
     }
 
-    private void createTable(DdlRequestContext context, ClassTable classTable, Handler<AsyncResult<QueryResult>> handler) {
-        context.setClassTable(classTable);
+    private void createTableIfNotExists(DdlRequestContext context, Boolean isTableExists, Handler<AsyncResult<QueryResult>> handler) {
+        if (isTableExists) {
+            final RuntimeException existsException =
+                    new RuntimeException(String.format("Table [%s] is already exists in datamart [%s]!",
+                            context.getRequest().getClassTable().getName(),
+                            context.getRequest().getClassTable().getSchema()));
+            log.error("Error creating table [{}] in datamart [{}]!",
+                    context.getRequest().getClassTable().getName(),
+                    context.getRequest().getClassTable().getSchema(),
+                    existsException);
+            handler.handle(Future.failedFuture(
+                    existsException));
+        } else {
+            createTable(context, handler);
+        }
+    }
+
+    private Future<Long> getDatamartId(ClassTable classTable) {
+        return Future.future((Promise<Long> promise) ->
+                serviceDbFacade.getServiceDbDao().getDatamartDao().findDatamart(classTable.getSchema(), ar -> {
+                    if (ar.succeeded()) {
+                        promise.complete(ar.result());
+                    } else {
+                        log.error("Error finding datamart [{}]", classTable.getSchema(), ar.cause());
+                        promise.fail(ar.cause());
+                    }
+                }));
+    }
+
+    private Future<Boolean> isDatamartTableExists(Long datamartId, DdlRequestContext context) {
+        return Future.future((Promise<Boolean> promise) -> {
+            context.setDatamartId(datamartId);
+            serviceDbFacade.getServiceDbDao().getEntityDao().isEntityExists(datamartId,
+                    context.getRequest().getClassTable().getName(), ar -> {
+                        if (ar.succeeded()) {
+                            promise.complete(ar.result());
+                        } else {
+                            log.error("Error receive status isExists for datamart [{}]",
+                                    context.getDatamartName(), ar.cause());
+                            promise.fail(ar.cause());
+                        }
+                    });
+        });
+    }
+
+    private void createTable(DdlRequestContext context, Handler<AsyncResult<QueryResult>> handler) {
         //создание таблиц в источниках данных через плагины
         metadataExecutor.execute(context, ar -> {
             if (ar.succeeded()) {
-                //создание метаданных для логической таблицы и ее атрибутов
-                createEntity(context, cr -> {
-                    if (cr.succeeded()) {
-                        handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
+                createEntity(context)
+                        .onComplete(ar2 -> {
+                            if (ar2.succeeded()) {
+                                log.debug("Table [{}] in datamart [{}] successfully created",
+                                        context.getRequest().getClassTable().getName(),
+                                        context.getDatamartName());
+                                handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
+                            } else {
+                                log.error("Error creating table [{}] in datamart [{}]!",
+                                        context.getRequest().getClassTable().getName(),
+                                        context.getDatamartName(), ar2.cause());
+                                handler.handle(Future.failedFuture(ar2.cause()));
+                            }
+                        })
+                        .onFailure(Future::failedFuture);
+            } else {
+                log.error("Error creating table [{}], datamart [{}] in datasources!",
+                        context.getRequest().getClassTable().getName(),
+                        context.getDatamartName(),
+                        ar.cause());
+                handler.handle(Future.failedFuture(ar.cause()));
+            }
+        });
+    }
+
+    private Future<Void> createEntity(DdlRequestContext context) {
+        return insertEntity(context.getRequest().getClassTable().getName(), context.getDatamartId())
+                .compose(entityId -> createAttributes(entityId, context.getRequest().getClassTable().getFields()));
+    }
+
+    private Future<Long> insertEntity(String table, Long datamartId) {
+        return Future.future((Promise<Void> promise) ->
+                serviceDbFacade.getServiceDbDao().getEntityDao().insertEntity(datamartId, table, promise))
+                .compose(result -> Future.future((Promise<Long> promise) ->
+                        serviceDbFacade.getServiceDbDao().getEntityDao().findEntity(datamartId, table, promise)));
+    }
+
+    private Future<Void> createAttributes(Long entityId, List<ClassField> fields) {
+        return Future.future((Promise<Void> promise) -> {
+            List<Future> futures = fields.stream().map(it -> Future.future(p -> createAttribute(entityId, it, ar -> {
+                if (ar.succeeded()) {
+                    p.complete();
+                } else {
+                    p.fail(ar.cause());
+                }
+            }))).collect(Collectors.toList());
+
+            CompositeFuture.join(futures)
+                    .onComplete(ar -> {
+                        if (ar.succeeded()) {
+                            promise.complete();
+                        } else {
+                            promise.fail(ar.cause());
+                        }
+                    })
+                    .onFailure(promise::fail);
+        });
+    }
+
+    private void createAttribute(Long entityId, ClassField field, Handler<AsyncResult<Void>> handler) {
+        //TODO Можно оптимизировать
+        serviceDbFacade.getServiceDbDao().getAttributeTypeDao().findTypeIdByTypeMnemonic(field.getType().name(), ar -> {
+            if (ar.succeeded()) {
+                serviceDbFacade.getServiceDbDao().getAttributeDao().insertAttribute(entityId, field, ar.result(), ar2 -> {
+                    if (ar2.succeeded()) {
+                        handler.handle(Future.succeededFuture());
                     } else {
-                        handler.handle(Future.failedFuture(cr.cause()));
+                        log.error("Error creating table attribute: {} for entityId={}!", field, entityId, ar2.cause());
+                        handler.handle(Future.failedFuture(ar2.cause()));
                     }
                 });
             } else {
                 handler.handle(Future.failedFuture(ar.cause()));
             }
         });
-    }
-
-    private Future<Long> getDatamartId(ClassTable classTable) {
-        return Future.future((Promise<Long> promise) ->
-                serviceDbFacade.getServiceDbDao().getDatamartDao().findDatamart(classTable.getSchema(), promise));
-    }
-
-    private Future<Boolean> isDatamartTableExists(Long datamartId, String tableName) {
-        return Future.future((Promise<Boolean> promise) ->
-                serviceDbFacade.getServiceDbDao().getEntityDao().existsEntity(datamartId, tableName, promise));
-    }
-
-    private void createEntity(DdlRequestContext context, Handler<AsyncResult<Void>> resultHandler) {
-        insertEntity(context.getClassTable().getName(), context.getDatamartId())
-                .compose(tableId -> Future.future((Promise<Void> promise) -> createAttributes(tableId, context.getClassTable().getFields(), promise)))
-                .onComplete(ar -> {
-                    if (ar.succeeded()) {
-                        resultHandler.handle(Future.succeededFuture());
-                    } else {
-                        resultHandler.handle(Future.failedFuture(ar.cause()));//TODO проверить
-                    }
-                })
-                .onFailure(fail -> resultHandler.handle(Future.failedFuture(fail.getCause())));
-    }
-
-    private void createAttributes(Long entityId, List<ClassField> fields, Promise promise) {
-        List<Future> futures = fields.stream().map(it -> Future.future(p -> createAttribute(entityId, it, ar -> {
-            if (ar.succeeded()) {
-                p.complete();
-            } else {
-                p.fail(ar.cause());
-            }
-        }))).collect(Collectors.toList());
-        CompositeFuture.join(futures).onComplete(ar -> {
-            if (ar.succeeded()) {
-                promise.complete();
-            } else {
-                log.error("Error generating table attributes for entityId={}", entityId, ar.cause());
-                promise.fail(ar.cause());
-            }
-        });
-    }
-
-    private void createAttribute(Long entityId, ClassField field, Handler<AsyncResult<Void>> handler) {
-        serviceDbFacade.getServiceDbDao().getAttributeTypeDao().findTypeIdByDatamartName(field.getType().name(), ar1 -> {
-            if (ar1.succeeded()) {
-                serviceDbFacade.getServiceDbDao().getAttributeDao().insertAttribute(entityId, field, ar1.result(), ar2 -> {
-                    if (ar2.succeeded()) {
-                        handler.handle(Future.succeededFuture());
-                    } else {
-                        handler.handle(Future.failedFuture(ar2.cause()));
-                    }
-                });
-            } else {
-                handler.handle(Future.failedFuture(ar1.cause()));
-            }
-        });
-    }
-
-    private Future<Long> insertEntity(String table, Long datamartId) {
-        Promise<Long> promise = Promise.promise();
-        serviceDbFacade.getServiceDbDao().getEntityDao().insertEntity(datamartId, table, ar1 -> {
-            if (ar1.succeeded()) {
-                serviceDbFacade.getServiceDbDao().getEntityDao().findEntity(datamartId, table, ar2 -> {
-                    if (ar2.succeeded()) {
-                        promise.complete(ar2.result());
-                    } else {
-                        log.error("", table, ar2.cause());
-                        promise.fail(ar2.cause());
-                    }
-                });
-            } else {
-                log.error("Error adding table [{}] with datamartId={}", table, ar1.cause());
-                promise.fail(ar1.cause());
-            }
-        });
-        return promise.future();
     }
 
     @Override

@@ -3,14 +3,21 @@ package ru.ibs.dtm.query.execution.core.service.ddl.impl;
 import io.vertx.core.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlNode;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
+import ru.ibs.dtm.query.calcite.core.extension.eddl.DropDatabase;
+import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.configuration.jooq.MariaProperties;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
 import ru.ibs.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlType;
 import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
 
 import java.util.ArrayList;
@@ -22,90 +29,155 @@ import static ru.ibs.dtm.query.execution.plugin.api.ddl.DdlType.DROP_SCHEMA;
 @Component
 public class DropSchemaDdlExecutor extends DropTableDdlExecutor {
 
+    private final DefinitionService<SqlNode> definitionService;
+
     public DropSchemaDdlExecutor(
             MetadataExecutor<DdlRequestContext> metadataExecutor,
             MariaProperties mariaProperties,
-            ServiceDbFacade serviceDbFacade) {
+            ServiceDbFacade serviceDbFacade,
+            @Qualifier("coreCalciteDefinitionService") DefinitionService<SqlNode> definitionService) {
         super(metadataExecutor, mariaProperties, serviceDbFacade);
+        this.definitionService = definitionService;
     }
 
     @Override
     public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<QueryResult>> handler) {
         try {
-            context.getRequest().getQueryRequest().setDatamartMnemonic(sqlNodeName);
-            context.setDatamartName(sqlNodeName);
+            String schemaName = ((DropDatabase) context.getQuery()).getName().names.get(0);
+            context.getRequest().getQueryRequest().setDatamartMnemonic(schemaName);
+            context.setDatamartName(schemaName);
             getDatamart(context)
                     .compose(datamartId -> getDatamartEntities(context, datamartId))
-                    .onComplete(ar -> dropTablesAndSchema(context, ar, handler))
+                    .compose(entities -> dropDatamartObjects(context, entities))
+                    .onComplete(ar -> {
+                        if (ar.succeeded()) {
+                            dropSchema(context)
+                                    .onComplete(dr -> {
+                                        if (dr.succeeded()) {
+                                            handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
+                                        }
+                                    })
+                                    .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
+                        }
+                    })
                     .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
         } catch (Exception e) {
-            log.error("Error in deleting datamart!", e);
+            log.error("Error deleting datamart!", e);
             handler.handle(Future.failedFuture(e));
         }
     }
 
     private Future<Long> getDatamart(DdlRequestContext context) {
         return Future.future((Promise<Long> promise) ->
-                serviceDbFacade.getServiceDbDao().getDatamartDao().findDatamart(context.getDatamartName(), promise));
+                serviceDbFacade.getServiceDbDao().getDatamartDao().findDatamart(context.getDatamartName(), ar -> {
+                    if (ar.succeeded()) {
+                        promise.complete(ar.result());
+                    } else {
+                        log.error("Error finding datamart [{}]!", context.getDatamartName(), ar.cause());
+                        promise.fail(ar.cause());
+                    }
+                }));
     }
 
     private Future<List<DatamartEntity>> getDatamartEntities(DdlRequestContext context, Long datamartId) {
         return Future.future((Promise<List<DatamartEntity>> promise) -> {
             context.setDatamartId(datamartId);
-            serviceDbFacade.getServiceDbDao().getEntityDao().getEntitiesMeta(context.getDatamartName(), promise);
+            serviceDbFacade.getServiceDbDao().getEntityDao().getEntitiesMeta(context.getDatamartName(), ar -> {
+                if (ar.succeeded()) {
+                    promise.complete(ar.result());
+                } else {
+                    log.error("Error receiving entities for datamart [{}]!", context.getDatamartName(), ar.cause());
+                    promise.fail(ar.cause());
+                }
+            });
         });
     }
 
-    private void dropTablesAndSchema(DdlRequestContext context, AsyncResult<List<DatamartEntity>> ar,
-                                     Handler<AsyncResult<QueryResult>> handler) {
-        if (ar.succeeded()) {
-            //удаляем все таблицы
-            List<DatamartEntity> entities = ar.result();
-            List<Future> dropTableFutures = new ArrayList<>();
-            entities.forEach(e -> dropTableFutures.add(createDropTableFuture(e)));
-            CompositeFuture.join(dropTableFutures)
-                    .onComplete(dr -> dropDatamart(context, dr, handler))
-                    .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
-        } else {
-            handler.handle(Future.failedFuture(ar.cause()));
-        }
+    private Future<QueryResult> dropDatamartObjects(DdlRequestContext context, List<DatamartEntity> entities) {
+        return Future.future((Promise<QueryResult> promise) -> {
+            List<Future> dropTablesAndViewsFutures = new ArrayList<>();
+            dropTablesAndViewsFutures.add(createDropViewsFuture(context));
+            entities.forEach(e -> dropTablesAndViewsFutures.add(createDropTableFuture(e)));
+            CompositeFuture.join(dropTablesAndViewsFutures)
+                    .onComplete(dr -> {
+                        if (dr.succeeded()) {
+                            promise.complete();
+                        } else {
+                            promise.fail(dr.cause());
+                        }
+                    })
+                    .onFailure(promise::fail);
+        });
+    }
+
+    private Future<Void> createDropViewsFuture(DdlRequestContext context) {
+        return Future.future((Promise<Void> promise) ->
+                serviceDbFacade.getServiceDbDao().getViewServiceDao().dropViewsByDatamartId(context.getDatamartId(), ar -> {
+                    if (ar.succeeded()) {
+                        log.debug("Deleted views in datamart [{}]", context.getDatamartName());
+                        promise.complete();
+                    } else {
+                        log.error("Error deleting views in datamart [{}]!", context.getDatamartName(), ar.cause());
+                        promise.fail(ar.cause());
+                    }
+                }));
     }
 
     private Future<Void> createDropTableFuture(DatamartEntity entity) {
-        QueryRequest requestDeleteTable = new QueryRequest();
-        requestDeleteTable.setDatamartMnemonic(entity.getDatamartMnemonic());
-        requestDeleteTable.setSql("DROP TABLE IF EXISTS " + entity.getDatamartMnemonic() + "." + entity.getMnemonic());
-        DdlRequestContext context = new DdlRequestContext(new DdlRequest(requestDeleteTable));
+        String nameWithSchema = entity.getDatamartMnemonic() + "." + entity.getMnemonic();
+        //формируем context для удаления физических таблиц
+        DdlRequestContext context = createDropTableRequestContext(entity, nameWithSchema);
         log.debug("Send drop table request for table [{}] and datamart [{}]", entity.getMnemonic(),
                 entity.getDatamartMnemonic());
         return dropTable(context, true);
     }
 
-    private void dropDatamart(DdlRequestContext context, AsyncResult<CompositeFuture> dr,
-                              Handler<AsyncResult<QueryResult>> handler) {
-        if (dr.succeeded()) {
+    @NotNull
+    private DdlRequestContext createDropTableRequestContext(DatamartEntity entity, String nameWithSchema) {
+        DdlRequestContext context = new DdlRequestContext(new DdlRequest(createQueryRequest(entity, nameWithSchema)));
+        context.getRequest().setClassTable(new ClassTable(nameWithSchema, null));
+        context.setDatamartName(entity.getDatamartMnemonic());
+        context.setDdlType(DdlType.DROP_TABLE);
+        //FIXME переделать без повторного парсинга запроса
+        context.setQuery(definitionService.processingQuery(context.getRequest().getQueryRequest().getSql()));
+        return context;
+    }
+
+    @NotNull
+    private QueryRequest createQueryRequest(DatamartEntity entity, String nameWithSchema) {
+        QueryRequest requestDropTable = new QueryRequest();
+        requestDropTable.setDatamartMnemonic(entity.getDatamartMnemonic());
+        requestDropTable.setSql("DROP TABLE IF EXISTS " + nameWithSchema);
+        return requestDropTable;
+    }
+
+    private Future<Void> dropSchema(DdlRequestContext context) {
+        try {
             context.getRequest().setQueryRequest(replaceDatabaseInSql(context.getRequest().getQueryRequest()));
             context.setDdlType(DROP_SCHEMA);
             //удаляем физическую витрину
-            metadataExecutor.execute(context, result -> {
-                if (result.succeeded()) {
-                    log.debug("Deleted schema [{}] in data sources", context.getDatamartName());
-                    //удаляем логическую витрину
-                    serviceDbFacade.getServiceDbDao().getDatamartDao().dropDatamart(context.getDatamartId(), ar2 -> {
-                        if (ar2.succeeded()) {
-                            log.debug("Deleted datamart [{}] in metadata", context.getDatamartName());
-                            handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
-                        } else {
-                            handler.handle(Future.failedFuture(ar2.cause()));
-                        }
-                    });
+            return Future.future((Promise<Void> promise) -> metadataExecutor.execute(context, promise))
+                    .compose(result -> dropDatamart(context));
+        } catch (Exception e) {
+            log.error("Error in dropping schema [{}]", context.getDatamartName(), e);
+            return Future.failedFuture(e);
+        }
+    }
+
+    private Future<Void> dropDatamart(DdlRequestContext context) {
+        return Future.future((Promise<Void> promise) -> {
+            log.debug("Deleted schema [{}] in data sources", context.getDatamartName());
+            //удаляем логическую витрину
+            serviceDbFacade.getServiceDbDao().getDatamartDao().dropDatamart(context.getDatamartId(), ar -> {
+                if (ar.succeeded()) {
+                    log.debug("Deleted datamart [{}] from metadata", context.getDatamartName());
+                    promise.complete();
                 } else {
-                    handler.handle(Future.failedFuture(result.cause()));
+                    log.error("Error deleting datamart [{}] from metadata!", context.getDatamartName(), ar.cause());
+                    promise.fail(ar.cause());
                 }
             });
-        } else {
-            handler.handle(Future.failedFuture(dr.cause()));
-        }
+        });
     }
 
     @Override

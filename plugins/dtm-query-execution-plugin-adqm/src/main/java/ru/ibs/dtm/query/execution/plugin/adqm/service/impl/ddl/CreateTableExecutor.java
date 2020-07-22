@@ -77,7 +77,7 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
         ClassTable tbl = context.getRequest().getClassTable();
         DdlRequestContext dropCtx = new DdlRequestContext(new DdlRequest(new QueryRequest(), tbl));
 
-        dropTableExecutor.execute(dropCtx, "DROP", ar -> createTable(tbl).onComplete(handler));
+        dropTableExecutor.execute(dropCtx, SqlKind.DROP_TABLE.lowerName, ar -> createTable(tbl).onComplete(handler));
     }
 
     @Override
@@ -87,7 +87,7 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
 
     @Override
     @Autowired
-    public void registration(@Qualifier("adqmDdlService") DdlService<Void> service) {
+    public void register(@Qualifier("adqmDdlService") DdlService<Void> service) {
         service.addExecutor(this);
     }
 

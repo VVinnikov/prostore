@@ -115,9 +115,13 @@ class ServiceDaoImplIT {
 
     @Test
     void dropEntity(VertxTestContext testContext) throws Throwable {
-        serviceDbFacade.getServiceDbDao().getEntityDao().dropEntity(datamartId, entity)
-                .onSuccess(s -> testContext.completeNow())
-                .onFailure(testContext::failNow);
+        serviceDbFacade.getServiceDbDao().getEntityDao().dropEntity(datamartId, entity, ar -> {
+            if (ar.succeeded()) {
+                testContext.completeNow();
+            } else {
+                testContext.failNow(ar.cause());
+            }
+        });
         testContext.awaitCompletion(5, TimeUnit.SECONDS);
     }
 
@@ -135,7 +139,7 @@ class ServiceDaoImplIT {
 
     @Test
     void selectType(VertxTestContext testContext) throws Throwable {
-        serviceDbFacade.getServiceDbDao().getAttributeTypeDao().findTypeIdByDatamartName("varchar", ar -> {
+        serviceDbFacade.getServiceDbDao().getAttributeTypeDao().findTypeIdByTypeMnemonic("varchar", ar -> {
             if (ar.succeeded()) {
                 testContext.completeNow();
             } else {

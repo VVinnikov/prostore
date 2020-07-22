@@ -36,59 +36,6 @@ public class DdlServiceDaoImpl implements DdlServiceDao {
     }
 
     @Override
-    public void getMetadataByTableName(DdlRequestContext context, String tableName, Handler<AsyncResult<List<ClassField>>> resultHandler) {
-        //FIXME вынести логику получения объекта <schema> + <таблица> на уровень сервиса
-        int indexComma = tableName.indexOf(".");
-        String schema = indexComma != -1 ? tableName.substring(0, indexComma) : "test";
-        String table = tableName.substring(indexComma + 1);
-        executor.query(dsl -> dsl.select(COLUMNS.COLUMN_NAME, COLUMNS.COLUMN_TYPE,
-                COLUMNS.IS_NULLABLE, COLUMNS.COLUMN_DEFAULT, KEY_COLUMN_USAGE.ORDINAL_POSITION, KEY_COLUMN_USAGE.CONSTRAINT_NAME)
-                .from(COLUMNS)
-                .leftJoin(KEY_COLUMN_USAGE).on(COLUMNS.TABLE_SCHEMA.eq(KEY_COLUMN_USAGE.CONSTRAINT_SCHEMA).and(COLUMNS.TABLE_NAME.eq(KEY_COLUMN_USAGE.TABLE_NAME))
-                        .and(COLUMNS.COLUMN_NAME.eq(KEY_COLUMN_USAGE.COLUMN_NAME)))
-                .where(COLUMNS.TABLE_NAME.eq(table))
-                .and(COLUMNS.TABLE_SCHEMA.equalIgnoreCase(schema))
-                .orderBy(KEY_COLUMN_USAGE.ORDINAL_POSITION)
-        ).setHandler(ar -> {
-            if (ar.succeeded()) {
-                QueryResult result = ar.result();
-                ResultSet resultSet = result.unwrap();
-                List<ClassField> classFieldList = new ArrayList<>();
-                resultSet.getRows().forEach(row -> {
-                    boolean isPrimary = "PRIMARY".equals(row.getString(KEY_COLUMN_USAGE.CONSTRAINT_NAME.getName()));
-                    Integer ordinal = row.getInteger(KEY_COLUMN_USAGE.ORDINAL_POSITION.getName());
-                    classFieldList.add(
-                            new ClassField(row.getString(COLUMNS.COLUMN_NAME.getName()),
-                                    row.getString(COLUMNS.COLUMN_TYPE.getName()),
-                                    row.getString(COLUMNS.IS_NULLABLE.getName()).contains("YES"),
-                                    isPrimary ? ordinal : null,
-                                    isInDistributedKey(context, row.getString(COLUMNS.COLUMN_NAME.getName())),
-                                    row.getString(COLUMNS.COLUMN_DEFAULT.getName())));
-                });
-                resultHandler.handle(Future.succeededFuture(classFieldList));
-            } else {
-                log.error("Невозможно получить метаданные таблицы: {}", ar.cause().getMessage());
-                resultHandler.handle(Future.failedFuture(ar.cause()));
-            }
-        });
-    }
-
-    private Integer isInDistributedKey(final DdlRequestContext context, final String field) {
-        if (context.getQuery() instanceof SqlCreateTable) {
-            int ind = ((SqlCreateTable) context.getQuery()).getOperandList().stream()
-                    .filter(e -> e instanceof DistributedOperator)
-                    .map(d -> ((DistributedOperator) d).getDistributedBy())
-                    .flatMap(n -> n.getList().stream())
-                    .filter(f -> f instanceof SqlIdentifier)
-                    .map(i -> ((SqlIdentifier) i).names.indexOf(field))
-                    .findFirst()
-                    .orElse(-1);
-            return (ind == -1) ? null : ind + 1;
-        }
-        return null;
-    }
-
-    @Override
     public void executeUpdate(String sql, Handler<AsyncResult<List<Void>>> resultHandler) {
         executor.execute(dsl -> dsl.query(sql)
         ).setHandler(ar -> {

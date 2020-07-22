@@ -69,7 +69,7 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
         return Future.future(p -> {
             val datamartId = ctx.getDatamartId();
             val viewName = ctx.getViewName();
-            serviceDbFacade.getServiceDbDao().getEntityDao().existsEntity(datamartId, viewName, ar -> {
+            serviceDbFacade.getServiceDbDao().getEntityDao().isEntityExists(datamartId, viewName, ar -> {
                 if (ar.succeeded()) {
                     if (ar.result()) {
                         val msg = String.format(

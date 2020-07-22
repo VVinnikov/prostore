@@ -31,6 +31,7 @@ class MetadataCalciteGeneratorImplTest {
     private Planner planner;
     private MetadataCalciteGenerator metadataCalciteGenerator;
     private ClassTable table;
+    private ClassTable table2;
 
     @BeforeEach
     void setUp() {
@@ -38,11 +39,24 @@ class MetadataCalciteGeneratorImplTest {
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
         planner = Frameworks.getPlanner(frameworkConfig);
         metadataCalciteGenerator = new MetadataCalciteGeneratorImpl();
-        List<ClassField> fields = createFields();
+        final List<ClassField> fields = createFieldsForUplTable();
+        final List<ClassField> fields2 = createFieldsForTable();
         table = new ClassTable("uplexttab", null, fields);
+        table2 = new ClassTable("accounts", "shares", fields2);
     }
 
-    private List<ClassField> createFields() {
+    private List<ClassField> createFieldsForTable() {
+        ClassField f1 = new ClassField("id", ClassTypes.INT, false, true);
+        ClassField f2 = new ClassField("name", ClassTypes.VARCHAR, true, false);
+        f2.setSize(100);
+        ClassField f3 = new ClassField("account_id", ClassTypes.INT, false, true);
+        f1.setPrimaryOrder(1);
+        f3.setPrimaryOrder(2);
+        f3.setShardingOrder(1);
+        return new ArrayList<>(Arrays.asList(f1, f2, f3));
+    }
+
+    private List<ClassField> createFieldsForUplTable() {
         ClassField f1 = new ClassField("id", ClassTypes.INT, false, true);
         ClassField f2 = new ClassField("name", ClassTypes.VARCHAR, true, false);
         f2.setSize(100);
@@ -97,4 +111,14 @@ class MetadataCalciteGeneratorImplTest {
         ClassTable classTable = metadataCalciteGenerator.generateTableMetadata((SqlCreate) sqlNode);
         assertEquals(table, classTable);
     }
+
+    @Test
+    void generateTableMetadata() throws SqlParseException {
+        String sql = "create table shares.accounts (id integer not null, name varchar(100)," +
+                " account_id integer not null, primary key(id, account_id)) distributed by (account_id)";
+        SqlNode sqlNode = planner.parse(sql);
+        ClassTable classTable = metadataCalciteGenerator.generateTableMetadata((SqlCreate) sqlNode);
+        assertEquals(table2, classTable);
+    }
+
 }

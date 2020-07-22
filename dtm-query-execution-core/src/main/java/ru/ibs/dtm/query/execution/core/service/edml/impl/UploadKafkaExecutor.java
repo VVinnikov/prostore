@@ -73,6 +73,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
             if (ar.succeeded()) {
                 log.debug("Отправлен запрос для плагина: {} на старт загрузки mppw: {}", ds, mppwRequestContext.getRequest());
                 final StatusRequestContext statusRequestContext = new StatusRequestContext(new StatusRequest(context.getRequest().getQueryRequest()));
+                statusRequestContext.getRequest().setTopic(mppwRequestContext.getRequest().getTopic());
                 vertx.setPeriodic(edmlProperties.getPluginStatusCheckPeriodMs(), timerId -> {
                     log.trace("Запрос статуса плагина: {} mppw загрузки", ds);
                     checkMppwStatus(ds, statusRequestContext, timerId)

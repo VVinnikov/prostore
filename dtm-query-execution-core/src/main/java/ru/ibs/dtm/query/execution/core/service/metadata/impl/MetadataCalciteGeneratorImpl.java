@@ -1,6 +1,7 @@
 package ru.ibs.dtm.query.execution.core.service.metadata.impl;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.apache.calcite.sql.ddl.SqlKeyConstraint;
@@ -9,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
+import ru.ibs.dtm.common.model.ddl.ClassTypes;
 import ru.ibs.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
 import ru.ibs.dtm.query.calcite.core.extension.eddl.SqlNodeUtils;
 import ru.ibs.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
@@ -34,9 +36,10 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
         final Map<String, ClassField> fieldMap = new HashMap<>();
         final List<ClassField> fields = new ArrayList<>();
         final SqlNodeList columnList = (SqlNodeList) sqlCreate.getOperandList().get(1);
-        columnList.getList().forEach(col -> {
+        for (int ordinalPos = 0; ordinalPos < columnList.getList().size(); ordinalPos++) {
+            SqlNode col = columnList.getList().get(ordinalPos);
             if (col.getKind().equals(SqlKind.COLUMN_DECL)) {
-                final ClassField field = createField((SqlColumnDeclaration) col);
+                final ClassField field = createField((SqlColumnDeclaration) col, ordinalPos);
                 fieldMap.put(field.getName(), field);
                 fields.add(field);
             } else if (col.getKind().equals(SqlKind.PRIMARY_KEY)) {
@@ -44,7 +47,7 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
             } else {
                 throw new RuntimeException("Тип атрибута " + col.getKind() + " не поддерживается!");
             }
-        });
+        }
         initDistributedKeyColumns(sqlCreate, fieldMap);
         return fields;
     }
@@ -58,15 +61,26 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
     }
 
     @NotNull
-    private ClassField createField(SqlColumnDeclaration columnValue) {
-        final SqlIdentifier column = getColumn(columnValue);
-        final SqlDataTypeSpec columnType = getColumnType(columnValue);
-        final ClassField field = new ClassField(column.getSimple(),
-                ColumnTypeUtil.valueOf(SqlTypeName.get(columnType.getTypeName().getSimple().toUpperCase())),
-                columnType.getNullable(), false);
+    private ClassField createField(SqlColumnDeclaration columnValue, int ordinalPos) {
+        val column = getColumn(columnValue);
+        val columnType = getColumnType(columnValue);
+        val typeName = columnType.getTypeName().getSimple().toUpperCase();
+        val sqlType = SqlTypeName.get(typeName);
+        final ClassField field = new ClassField(
+            ordinalPos,
+            column.getSimple(),
+            ColumnTypeUtil.valueOf(sqlType),
+            columnType.getNullable(),
+            false
+        );
         if (columnType.getTypeNameSpec() instanceof SqlBasicTypeNameSpec) {
-            field.setSize(getPrecision(((SqlBasicTypeNameSpec) columnType.getTypeNameSpec())));
-            field.setAccuracy(getScale(((SqlBasicTypeNameSpec) columnType.getTypeNameSpec())));
+            val basicTypeNameSpec = (SqlBasicTypeNameSpec) columnType.getTypeNameSpec();
+            if (field.getType() == ClassTypes.TIMESTAMP || field.getType() == ClassTypes.TIME) {
+                field.setAccuracy(getPrecision(basicTypeNameSpec));
+            } else {
+                field.setSize(getPrecision(basicTypeNameSpec));
+                field.setAccuracy(getScale(basicTypeNameSpec));
+            }
         }
         return field;
     }
@@ -79,6 +93,7 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
             ClassField keyfield = fieldMap.get(pkIdent.getSimple());
             keyfield.setPrimaryOrder(pkOrder);
             keyfield.setIsPrimary(true);
+            keyfield.setNullable(false);
             pkOrder++;
         }
     }

@@ -6,6 +6,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.ext.sql.ResultSet;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
@@ -40,7 +41,9 @@ public class AttributeDaoImpl implements AttributeDao {
                         DATAMARTS_REGISTRY.DATAMART_MNEMONICS,
                         ENTITIES_REGISTRY.ENTITY_MNEMONICS,
                         ATTRIBUTES_REGISTRY.PRIMARY_KEY_ORDER,
-                        ATTRIBUTES_REGISTRY.DISTRIBUTE_KEY_ORDER
+                        ATTRIBUTES_REGISTRY.DISTRIBUTE_KEY_ORDER,
+                        ATTRIBUTES_REGISTRY.ORDINAL_POSITION,
+                        ATTRIBUTES_REGISTRY.NULLABLE
                 )
                 .from(ATTRIBUTES_REGISTRY)
                 .join(DATA_TYPES_REGISTRY).on(ATTRIBUTES_REGISTRY.DATA_TYPE_ID.eq(DATA_TYPES_REGISTRY.DATA_TYPE_ID))
@@ -49,24 +52,30 @@ public class AttributeDaoImpl implements AttributeDao {
                 .where(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.equalIgnoreCase(datamartMnemonic)).and(ENTITIES_REGISTRY.ENTITY_MNEMONICS.equalIgnoreCase(entityMnemonic))
         ).setHandler(ar -> {
             if (ar.succeeded() && ar.result().unwrap() instanceof ResultSet) {
-                List<EntityAttribute> res = new ArrayList<>();
-                ResultSet rows;
-                rows = ar.result().unwrap();
-                rows.getRows().forEach(it ->
-                        res.add(new EntityAttribute(
-                                it.getInteger(ATTRIBUTES_REGISTRY.ATTR_ID.getName()),
-                                it.getString(ATTRIBUTES_REGISTRY.ATTR_MNEMONICS.getName()),
-                                it.getString(DATA_TYPES_REGISTRY.DATA_TYPE_MNEMONICS.getName()),
-                                it.getInteger(ATTRIBUTES_REGISTRY.LENGTH.getName()),
-                                it.getInteger(ATTRIBUTES_REGISTRY.ACCURACY.getName()),
-                                it.getString(ENTITIES_REGISTRY.ENTITY_MNEMONICS.getName()),
-                                it.getString(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.getName()),
-                                it.getInteger(ATTRIBUTES_REGISTRY.PRIMARY_KEY_ORDER.getName()),
-                                it.getInteger(ATTRIBUTES_REGISTRY.DISTRIBUTE_KEY_ORDER.getName())
-                        ))
-                );
-                log.info("Найдено {} атрибутов для сущности: '{}' схемы: '{}'.", res.size(), entityMnemonic, datamartMnemonic);
-                resultHandler.handle(Future.succeededFuture(res));
+                try {
+                    List<EntityAttribute> res = new ArrayList<>();
+                    ResultSet rows;
+                    rows = ar.result().unwrap();
+                    rows.getRows().forEach(it ->
+                            res.add(new EntityAttribute(
+                                    it.getInteger(ATTRIBUTES_REGISTRY.ATTR_ID.getName()),
+                                    it.getString(ATTRIBUTES_REGISTRY.ATTR_MNEMONICS.getName()),
+                                    it.getString(DATA_TYPES_REGISTRY.DATA_TYPE_MNEMONICS.getName()),
+                                    it.getInteger(ATTRIBUTES_REGISTRY.LENGTH.getName()),
+                                    it.getInteger(ATTRIBUTES_REGISTRY.ACCURACY.getName()),
+                                    it.getString(ENTITIES_REGISTRY.ENTITY_MNEMONICS.getName()),
+                                    it.getString(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.getName()),
+                                    it.getInteger(ATTRIBUTES_REGISTRY.PRIMARY_KEY_ORDER.getName()),
+                                    it.getInteger(ATTRIBUTES_REGISTRY.DISTRIBUTE_KEY_ORDER.getName()),
+                                    it.getInteger(ATTRIBUTES_REGISTRY.ORDINAL_POSITION.getName()),
+                                    BooleanUtils.toBooleanObject(it.getInteger(ATTRIBUTES_REGISTRY.DISTRIBUTE_KEY_ORDER.getName()))
+                            ))
+                    );
+                    log.info("Найдено {} атрибутов для сущности: '{}' схемы: '{}'.", res.size(), entityMnemonic, datamartMnemonic);
+                    resultHandler.handle(Future.succeededFuture(res));
+                } catch (Exception ex) {
+                    resultHandler.handle(Future.failedFuture(ex));
+                }
             } else {
                 log.error("Невозможно получить атрибуты метаданных: {}", ar.cause().getMessage());
                 resultHandler.handle(Future.failedFuture(ar.cause()));
@@ -81,9 +90,12 @@ public class AttributeDaoImpl implements AttributeDao {
                 .set(ATTRIBUTES_REGISTRY.ENTITY_ID, entityId)
                 .set(ATTRIBUTES_REGISTRY.ATTR_MNEMONICS, field.getName())
                 .set(ATTRIBUTES_REGISTRY.LENGTH, field.getSize())
+                .set(ATTRIBUTES_REGISTRY.ACCURACY, field.getAccuracy())
                 .set(ATTRIBUTES_REGISTRY.DATA_TYPE_ID, typeId)
                 .set(ATTRIBUTES_REGISTRY.PRIMARY_KEY_ORDER, field.getPrimaryOrder())
                 .set(ATTRIBUTES_REGISTRY.DISTRIBUTE_KEY_ORDER, field.getShardingOrder())
+                .set(ATTRIBUTES_REGISTRY.ORDINAL_POSITION, field.getOrdinalPosition())
+                .set(ATTRIBUTES_REGISTRY.NULLABLE, getNullable(field.getNullable()))
         ).setHandler(ar -> {
             if (ar.succeeded()) {
                 resultHandler.handle(Future.succeededFuture());
@@ -91,6 +103,10 @@ public class AttributeDaoImpl implements AttributeDao {
                 resultHandler.handle(Future.failedFuture(ar.cause()));
             }
         });
+    }
+
+    private Byte getNullable(Boolean nullable) {
+        return (nullable == null || !nullable ? (byte) 0 : 1);
     }
 
     @Override

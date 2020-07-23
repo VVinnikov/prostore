@@ -1,8 +1,6 @@
 package ru.ibs.dtm.query.execution.core.service.schema.impl;
 
 import io.vertx.core.*;
-import java.util.*;
-import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +25,9 @@ import ru.ibs.dtm.query.execution.model.metadata.ColumnType;
 import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;
 import ru.ibs.dtm.query.execution.model.metadata.TableAttribute;
 
+import java.util.*;
+import java.util.stream.Collectors;
+
 @Service
 @Slf4j
 public class LogicalSchemaServiceImpl implements LogicalSchemaService {
@@ -49,17 +50,17 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
             final List<DatamartInfo> tableInfoList = getDatamartInfoListFromQuery(request.getSql());
             tableInfoList.forEach(datamart -> datamartTableFutures.add(getDatamartFuture(datamart)));
             CompositeFuture.join(datamartTableFutures)
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            CompositeFuture tabFuture = ar.result();
-                            final Map<String, DatamartTable> tableMap = new HashMap<>();
-                            final List<Future> attributeFutures = initDatamartTables(tabFuture, datamartSchemaMap, tableMap);
-                            CompositeFuture.join(attributeFutures)
-                                    .onComplete(getDatamartTables(datamartSchemaMap, tableMap, resultHandler))
-                                    .onFailure(Future::failedFuture);
-                        }
-                    })
-                    .onFailure(fail -> resultHandler.handle(Future.failedFuture(fail)));
+                .onComplete(ar -> {
+                    if (ar.succeeded()) {
+                        CompositeFuture tabFuture = ar.result();
+                        final Map<String, DatamartTable> tableMap = new HashMap<>();
+                        final List<Future> attributeFutures = initDatamartTables(tabFuture, datamartSchemaMap, tableMap);
+                        CompositeFuture.join(attributeFutures)
+                            .onComplete(getDatamartTables(datamartSchemaMap, tableMap, resultHandler))
+                            .onFailure(Future::failedFuture);
+                    }
+                })
+                .onFailure(fail -> resultHandler.handle(Future.failedFuture(fail)));
         } catch (Exception e) {
             resultHandler.handle(Future.failedFuture(e));
         }
@@ -71,17 +72,17 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
         val tree = new SqlSelectTree(sqlNode);
         Map<String, DatamartInfo> datamartMap = new HashMap<>();
         tree.findAllTableAndSnapshots().stream()
-                .map(node -> DeltaInformationExtractor.getDeltaInformation(tree, node))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList())
-                .forEach(node -> {
-                        //подразумевается, что на данном этапе в запросе уже будет проставлен defaultDatamart там, где требуется
-                        String schemaName = node.getSchemaName();
-                        String tableName = node.getTableName();
-                        DatamartInfo datamartInfo = datamartMap.getOrDefault(schemaName, new DatamartInfo(schemaName, new HashSet<>()));
-                        datamartInfo.getTables().add(tableName);
-                        datamartMap.putIfAbsent(datamartInfo.getSchemaName(), datamartInfo);
-                });
+            .map(node -> DeltaInformationExtractor.getDeltaInformation(tree, node))
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList())
+            .forEach(node -> {
+                //подразумевается, что на данном этапе в запросе уже будет проставлен defaultDatamart там, где требуется
+                String schemaName = node.getSchemaName();
+                String tableName = node.getTableName();
+                DatamartInfo datamartInfo = datamartMap.getOrDefault(schemaName, new DatamartInfo(schemaName, new HashSet<>()));
+                datamartInfo.getTables().add(tableName);
+                datamartMap.putIfAbsent(datamartInfo.getSchemaName(), datamartInfo);
+            });
         return new ArrayList<>(datamartMap.values());
     }
 
@@ -92,7 +93,7 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
                     List<DatamartEntity> entities = ar.result();
                     final List<DatamartTableFuture> datamartTableFutures = new ArrayList<>();
                     entities.forEach(entity -> datamartTableFutures.add(new DatamartTableFuture(entity,
-                            getDtatmartEntityAttributes(entity))));
+                        getDtatmartEntityAttributes(entity))));
                     promise.complete(new DatamartFuture(datamartInfo, datamartTableFutures));
                 } else {
                     promise.fail(ar.cause());
@@ -103,8 +104,8 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
 
     private Future<List<EntityAttribute>> getDtatmartEntityAttributes(DatamartEntity datamartEntity) {
         return Future.future((Promise<List<EntityAttribute>> promise) ->
-                serviceDbFacade.getServiceDbDao().getAttributeDao().getAttributesMeta(datamartEntity.getDatamartMnemonic(),
-                        datamartEntity.getMnemonic(), promise));
+            serviceDbFacade.getServiceDbDao().getAttributeDao().getAttributesMeta(datamartEntity.getDatamartMnemonic(),
+                datamartEntity.getMnemonic(), promise));
     }
 
     @NotNull
@@ -178,19 +179,18 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
 
     @NotNull
     private List<TableAttribute> createTableAttributes(List<EntityAttribute> attrs) {
-        final List<TableAttribute> attributeList = new ArrayList<>();
-        attrs.forEach(attr -> {
-            final TableAttribute tableAttribute = new TableAttribute();
-            tableAttribute.setId(UUID.randomUUID());
-            tableAttribute.setMnemonic(attr.getMnemonic());
-            tableAttribute.setType(mapColumnType(attr.getDataType()));
-            tableAttribute.setLength(attr.getLength());
-            tableAttribute.setAccuracy(attr.getAccuracy());
-            tableAttribute.setPrimaryKeyOrder(attr.getPrimaryKeyOrder());
-            tableAttribute.setDistributeKeyOrder(attr.getDistributeKeykOrder());
-            attributeList.add(tableAttribute);
-        });
-        return attributeList;
+        return attrs.stream()
+            .sorted(Comparator.comparing(EntityAttribute::getOrdinalPosition)).map(attr -> {
+                final TableAttribute tableAttribute = new TableAttribute();
+                tableAttribute.setId(UUID.randomUUID());
+                tableAttribute.setMnemonic(attr.getMnemonic());
+                tableAttribute.setType(mapColumnType(attr.getDataType()));
+                tableAttribute.setLength(attr.getLength());
+                tableAttribute.setAccuracy(attr.getAccuracy());
+                tableAttribute.setPrimaryKeyOrder(attr.getPrimaryKeyOrder());
+                tableAttribute.setDistributeKeyOrder(attr.getDistributeKeykOrder());
+                return tableAttribute;
+            }).collect(Collectors.toList());
     }
 
     private AttributeType mapColumnType(String dataType) {

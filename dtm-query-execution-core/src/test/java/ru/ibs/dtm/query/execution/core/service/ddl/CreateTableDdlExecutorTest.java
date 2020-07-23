@@ -87,8 +87,8 @@ class CreateTableDdlExecutorTest {
         context.getRequest().setQueryRequest(queryRequest);
         context.setQuery(query);
         datamartId = 1L;
-        ClassField f1 = new ClassField("id", ClassTypes.INT, false, true);
-        ClassField f2 = new ClassField("name", ClassTypes.VARCHAR, true, false);
+        ClassField f1 = new ClassField(0,"id", ClassTypes.INT, false, true);
+        ClassField f2 = new ClassField(1, "name", ClassTypes.VARCHAR, true, false);
         f2.setSize(100);
         String sqlNodeName = "accounts";
         classTable = new ClassTable(sqlNodeName, schema, Arrays.asList(f1, f2));

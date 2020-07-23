@@ -19,4 +19,6 @@ public class EntityAttribute {
     private String datamartMnemonic;
     private Integer primaryKeyOrder;
     private Integer distributeKeykOrder;
+    private int ordinalPosition;
+    private Boolean nullable;
 }

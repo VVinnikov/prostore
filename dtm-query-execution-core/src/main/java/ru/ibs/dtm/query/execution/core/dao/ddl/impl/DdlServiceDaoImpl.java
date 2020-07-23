@@ -1,28 +1,18 @@
 package ru.ibs.dtm.query.execution.core.dao.ddl.impl;
 
 import io.github.jklingsporn.vertx.jooq.classic.async.AsyncClassicGenericQueryExecutor;
-import io.github.jklingsporn.vertx.jooq.shared.internal.QueryResult;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.ext.sql.ResultSet;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.sql.SqlIdentifier;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
-import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
-import ru.ibs.dtm.query.calcite.core.extension.ddl.DistributedOperator;
-import ru.ibs.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
 import ru.ibs.dtm.query.execution.core.dao.ddl.DdlServiceDao;
-import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 
-import java.util.ArrayList;
 import java.util.List;
-
-import static org.jooq.generated.information_schema.Tables.COLUMNS;
-import static org.jooq.generated.information_schema.Tables.KEY_COLUMN_USAGE;
 
 @Repository
 @Slf4j

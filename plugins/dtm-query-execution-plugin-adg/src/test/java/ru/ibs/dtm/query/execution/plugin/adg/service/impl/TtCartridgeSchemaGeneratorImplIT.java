@@ -42,8 +42,8 @@ class TtCartridgeSchemaGeneratorImplIT {
   private ObjectMapper yamlMapper;
 
   private ClassTable classTable = new ClassTable("test.test_", Arrays.asList(
-    new ClassField("id", ClassTypes.INT.name(), false, 1, 1, null),
-    new ClassField("test", ClassTypes.VARCHAR.name(), true, null, null, null)
+    new ClassField(0,"id", ClassTypes.INT.name(), false, 1, 1, null),
+    new ClassField(1, "test", ClassTypes.VARCHAR.name(), true, null, null, null)
   ));
 
   @Test

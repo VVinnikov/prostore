@@ -17,7 +17,6 @@ import ru.ibs.dtm.query.execution.core.service.TargetDatabaseDefinitionService;
 import ru.ibs.dtm.query.execution.core.service.dml.ColumnMetadataService;
 import ru.ibs.dtm.query.execution.core.service.dml.InformationSchemaExecutor;
 import ru.ibs.dtm.query.execution.core.service.dml.LogicViewReplacer;
-import ru.ibs.dtm.query.execution.core.utils.HintExtractor;
 import ru.ibs.dtm.query.execution.plugin.api.dml.DmlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.LlrRequest;
@@ -30,7 +29,6 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
     private final TargetDatabaseDefinitionService targetDatabaseDefinitionService;
     private final DeltaQueryPreprocessor deltaQueryPreprocessor;
     private final LogicViewReplacer logicViewReplacer;
-    private final MetadataService metadataService;
     private final ColumnMetadataService columnMetadataService;
     private final InformationSchemaExecutor informationSchemaExecutor;
 
@@ -38,16 +36,13 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
     public DmlServiceImpl(DataSourcePluginService dataSourcePluginService,
                           TargetDatabaseDefinitionService targetDatabaseDefinitionService,
                           DeltaQueryPreprocessor deltaQueryPreprocessor, LogicViewReplacer logicViewReplacer,
-                          MetadataService metadataService,
-                          ColumnMetadataService columnMetadataService
-                          InformationSchemaExecutor informationSchemaExecutor,
-                          HintExtractor hintExtractor) {
+                          ColumnMetadataService columnMetadataService,
+                          InformationSchemaExecutor informationSchemaExecutor) {
         this.dataSourcePluginService = dataSourcePluginService;
         this.targetDatabaseDefinitionService = targetDatabaseDefinitionService;
         this.deltaQueryPreprocessor = deltaQueryPreprocessor;
         this.logicViewReplacer = logicViewReplacer;
         this.informationSchemaExecutor = informationSchemaExecutor;
-        this.metadataService = metadataService;
         this.columnMetadataService = columnMetadataService;
     }
 
@@ -57,15 +52,15 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
             val queryRequest = context.getRequest().getQueryRequest();
             val sourceRequest = new QuerySourceRequest(queryRequest, queryRequest.getSourceType());
             logicViewReplace(sourceRequest.getQueryRequest())
-                    .compose(deltaQueryPreprocessor::process)
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            sourceRequest.setQueryRequest(ar.result());
-                            setTargetSourceAndExecute(sourceRequest, asyncResultHandler);
-                        } else {
-                            asyncResultHandler.handle(Future.failedFuture(ar.cause()));
-                        }
-                    });
+                .compose(deltaQueryPreprocessor::process)
+                .onComplete(ar -> {
+                    if (ar.succeeded()) {
+                        sourceRequest.setQueryRequest(ar.result());
+                        setTargetSourceAndExecute(sourceRequest, asyncResultHandler);
+                    } else {
+                        asyncResultHandler.handle(Future.failedFuture(ar.cause()));
+                    }
+                });
         } catch (Exception e) {
             asyncResultHandler.handle(Future.failedFuture(e));
         }
@@ -94,8 +89,8 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
                     informationSchemaExecutor.execute(querySourceRequest.getQueryRequest(), asyncResultHandler);
                 } else {
                     pluginExecute(querySourceRequest)
-                    .compose(queryResult -> setColumnMetaData(querySourceRequest, queryResult))
-                    .onComplete(asyncResultHandler);
+                        .compose(queryResult -> setColumnMetaData(querySourceRequest, queryResult))
+                        .onComplete(asyncResultHandler);
                 }
             } else {
                 asyncResultHandler.handle(Future.failedFuture(ar.cause()));
@@ -106,15 +101,15 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
     @SneakyThrows
     private Future<QueryResult> pluginExecute(QuerySourceRequest request) {
         return Future.future(p -> dataSourcePluginService.llr(
-                request.getQueryRequest().getSourceType(),
-                new LlrRequestContext(new LlrRequest(request.getQueryRequest(), request.getLogicalSchema())),
-                p));
+            request.getQueryRequest().getSourceType(),
+            new LlrRequestContext(new LlrRequest(request.getQueryRequest(), request.getLogicalSchema())),
+            p));
 
     }
 
     private Future<QueryResult> setColumnMetaData(QuerySourceRequest request, QueryResult queryResult) {
         return Future.future(p -> {
-            columnMetadataService.getColumnMetadata(request, ar ->{
+            columnMetadataService.getColumnMetadata(request, ar -> {
                 if (ar.succeeded()) {
                     queryResult.setMetadata(ar.result());
                     p.complete(queryResult);

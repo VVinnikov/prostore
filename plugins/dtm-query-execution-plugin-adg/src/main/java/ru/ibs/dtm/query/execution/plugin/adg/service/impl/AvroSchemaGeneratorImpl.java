@@ -8,6 +8,7 @@ import ru.ibs.dtm.common.model.ddl.ClassTypes;
 import ru.ibs.dtm.query.execution.plugin.adg.service.AvroSchemaGenerator;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -18,7 +19,10 @@ public class AvroSchemaGeneratorImpl implements AvroSchemaGenerator {
 
   @Override
   public Schema generate(ClassTable classTable) {
-    List<Schema.Field> fields = classTable.getFields().stream().map(AvroSchemaGeneratorImpl::toSchemaField).collect(Collectors.toList());
+    List<Schema.Field> fields = classTable.getFields().stream()
+        .sorted(Comparator.comparing(ClassField::getOrdinalPosition))
+        .map(AvroSchemaGeneratorImpl::toSchemaField)
+        .collect(Collectors.toList());
     fields.addAll(addSystemFields());
     Schema recordSchema = Schema.createRecord(classTable.getNameWithSchema(), null, null, false, fields);
     return Schema.createArray(recordSchema);
@@ -44,14 +48,9 @@ public class AvroSchemaGeneratorImpl implements AvroSchemaGenerator {
     {
       switch (classType) {
         case DATE:
-        case DATETIME:
         case TIMESTAMP:
         case CHAR:
         case VARCHAR:
-        case DECIMAL:
-        case DEC:
-        case NUMERIC:
-        case FIXED:
         case ANY:
           return Schema.Type.STRING;
         case FLOAT:
@@ -59,13 +58,10 @@ public class AvroSchemaGeneratorImpl implements AvroSchemaGenerator {
         case DOUBLE:
           return Schema.Type.DOUBLE;
         case INT:
-        case INTEGER:
           return Schema.Type.INT;
         case BIGINT:
           return Schema.Type.LONG;
-        case BOOL:
         case BOOLEAN:
-        case TINYINT:
           return Schema.Type.BOOLEAN;
         default:
           throw new UnsupportedOperationException(String.format("Не поддержан тип: %s", classType));

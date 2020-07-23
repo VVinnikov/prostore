@@ -14,6 +14,7 @@ import ru.ibs.dtm.query.execution.plugin.adqm.common.DdlUtils;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.MppwProperties;
+import ru.ibs.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.StatusReporter;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw.load.*;
@@ -30,6 +31,7 @@ import static ru.ibs.dtm.query.execution.plugin.adqm.common.Constants.*;
 import static ru.ibs.dtm.query.execution.plugin.adqm.common.DdlUtils.avroTypeToNative;
 import static ru.ibs.dtm.query.execution.plugin.adqm.common.DdlUtils.splitQualifiedTableName;
 import static ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw.load.LoadType.KAFKA;
+import static ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw.load.LoadType.REST;
 
 @Component("adqmMppwStartRequestHandler")
 @Slf4j
@@ -67,7 +69,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         this.restLoadInitiator = restLoadInitiator;
 
         extTableCreators.put(KAFKA, new KafkaExtTableCreator(ddlProperties, mppwProperties));
-        extTableCreators.put(LoadType.REST, new RestExtTableCreator(ddlProperties));
+        extTableCreators.put(REST, new RestExtTableCreator(ddlProperties));
     }
 
     @Override
@@ -148,7 +150,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
 
     @NonNull
     private String getConsumerGroupName(@NonNull String tableName) {
-        return mppwProperties.getLoadType().equals(KAFKA.name()) ?
+        return mppwProperties.getLoadType() == KAFKA ?
                 mppwProperties.getConsumerGroup() + tableName :
                 mppwProperties.getRestLoadConsumerGroup();
     }
@@ -157,14 +159,10 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
                                              @NonNull String table,
                                              @NonNull Schema schema,
                                              @NonNull String sortingKey) {
-        try {
-            LoadType loadType = LoadType.valueOf(mppwProperties.getLoadType());
-            ExtTableCreator creator = extTableCreators.get(loadType);
-            String query = creator.generate(topic, table, schema, sortingKey);
-            return databaseExecutor.executeUpdate(query);
-        } catch (IllegalArgumentException e) {
-            return Future.failedFuture(e);
-        }
+        LoadType loadType = mppwProperties.getLoadType();
+        ExtTableCreator creator = extTableCreators.get(loadType);
+        String query = creator.generate(topic, table, schema, sortingKey);
+        return databaseExecutor.executeUpdate(query);
     }
 
     private Future<Void> createBufferShardTable(@NonNull String tableName,
@@ -214,7 +212,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     }
 
     private Future<Void> createRestInitiator(MppwRequest mppwRequest) {
-        LoadType loadType = LoadType.valueOf(mppwProperties.getLoadType());
+        LoadType loadType = mppwProperties.getLoadType();
         if (loadType == KAFKA) {
             return Future.succeededFuture();
         }
@@ -244,21 +242,17 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     }
 
     private void reportStart(String topic, String fullName) {
-        JsonObject start = new JsonObject();
-        start.put("topic", topic);
-        start.put("consumerGroup", getConsumerGroupName(fullName));
+        StatusReportDto start = new StatusReportDto(topic, getConsumerGroupName(fullName));
         statusReporter.onStart(start);
     }
 
     private void reportFinish(String topic) {
-        JsonObject start = new JsonObject();
-        start.put("topic", topic);
+        StatusReportDto start = new StatusReportDto(topic);
         statusReporter.onFinish(start);
     }
 
     private void reportError(String topic) {
-        JsonObject start = new JsonObject();
-        start.put("topic", topic);
+        StatusReportDto start = new StatusReportDto(topic);
         statusReporter.onError(start);
     }
 }

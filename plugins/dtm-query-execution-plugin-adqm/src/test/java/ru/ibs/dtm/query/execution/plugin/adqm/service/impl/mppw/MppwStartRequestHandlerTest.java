@@ -12,7 +12,9 @@ import ru.ibs.dtm.common.plugin.exload.QueryLoadParam;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.MppwProperties;
+import ru.ibs.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
+import ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw.load.LoadType;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw.load.RestLoadInitiator;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockDatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockEnvironment;
@@ -29,6 +31,8 @@ import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw.load.LoadType.KAFKA;
+import static ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw.load.LoadType.REST;
 
 class MppwStartRequestHandlerTest {
     private static final DdlProperties ddlProperties = new DdlProperties();
@@ -69,7 +73,7 @@ class MppwStartRequestHandlerTest {
         MockStatusReporter mockReporter = createMockReporter(TEST_CONSUMER_GROUP + "dev__shares.accounts");
         RestLoadInitiator mockInitiator = Mockito.mock(RestLoadInitiator.class);
         MppwRequestHandler handler = new MppwStartRequestHandler(executor, ddlProperties, appConfiguration,
-                createMppwProperties("KAFKA"),
+                createMppwProperties(KAFKA),
                 mockReporter, mockInitiator);
         QueryLoadParam loadParam = createQueryLoadParam();
         JsonObject schema = createSchema();
@@ -113,7 +117,7 @@ class MppwStartRequestHandlerTest {
         when(mockInitiator.initiateLoading(any())).thenReturn(Future.succeededFuture());
 
         MppwRequestHandler handler = new MppwStartRequestHandler(executor, ddlProperties, appConfiguration,
-                createMppwProperties("REST"),
+                createMppwProperties(REST),
                 mockReporter, mockInitiator);
         QueryLoadParam loadParam = createQueryLoadParam();
         JsonObject schema = createSchema();
@@ -130,9 +134,8 @@ class MppwStartRequestHandlerTest {
     }
 
     private MockStatusReporter createMockReporter(String expectedConsumerGroup) {
-        Map<String, JsonObject> expected = new HashMap<>();
-        expected.put("start", new JsonObject(format("{\"topic\": \"%s\", \"consumerGroup\": \"%s\"}", TEST_TOPIC,
-                expectedConsumerGroup)));
+        Map<String, StatusReportDto> expected = new HashMap<>();
+        expected.put("start", new StatusReportDto(TEST_TOPIC, expectedConsumerGroup));
         return new MockStatusReporter(expected);
     }
 
@@ -152,7 +155,7 @@ class MppwStartRequestHandlerTest {
         return new JsonObject(jsonSchema);
     }
 
-    private MppwProperties createMppwProperties(String loadType) {
+    private MppwProperties createMppwProperties(LoadType loadType) {
         MppwProperties mppwProperties = new MppwProperties();
         mppwProperties.setConsumerGroup(TEST_CONSUMER_GROUP);
         mppwProperties.setKafkaBrokers("localhost:9092");

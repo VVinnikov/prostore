@@ -7,13 +7,13 @@ public class ColumnTypeUtil {
   public static ColumnType columnTypeFromTtColumnType(String columnType) {
     switch (columnType) {
       case "unsigned":
-        return ColumnType.LONG;
+        return ColumnType.BIGINT;
       case "number":
-        return ColumnType.BIG_DECIMAL;
+        return ColumnType.DOUBLE;
       case "boolean":
         return ColumnType.BOOLEAN;
       case "string":
-        return ColumnType.STRING;
+        return ColumnType.VARCHAR;
       default:
         return ColumnType.ANY;
     }

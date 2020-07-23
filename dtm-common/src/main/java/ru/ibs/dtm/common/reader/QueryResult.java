@@ -1,69 +1,44 @@
 package ru.ibs.dtm.common.reader;
 
 import io.vertx.core.json.JsonArray;
-
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import lombok.Data;
+import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
 
 /**
  * Результат выполнения запроса.
  */
+@Data
 public class QueryResult {
-  private UUID requestId;
-  private JsonArray result;
-  private static final QueryResult emptyResult = new QueryResult(null, new JsonArray());
+    private static final QueryResult emptyResult = new QueryResult(null, new JsonArray());
+    private UUID requestId;
+    private JsonArray result;
+    private List<ColumnMetadata> metadata;
 
-  public static QueryResult emptyResult() {
-    return emptyResult;
-  }
+    public QueryResult(UUID requestId, JsonArray result) {
+        this.requestId = requestId;
+        this.result = result;
+    }
 
-  public QueryResult(UUID requestId, JsonArray result) {
-    this.requestId = requestId;
-    this.result = result;
-  }
+    public QueryResult() {
+    }
 
-  public QueryResult() {
-  }
+    public static QueryResult emptyResult() {
+        return emptyResult;
+    }
 
-  public boolean isEmpty() {
-    return result == null || result.isEmpty();
-  }
+    public boolean isEmpty() {
+        return result == null || result.isEmpty();
+    }
 
-  public UUID getRequestId() {
-    return requestId;
-  }
-
-  public void setRequestId(UUID requestId) {
-    this.requestId = requestId;
-  }
-
-  public JsonArray getResult() {
-    return result;
-  }
-
-  public void setResult(JsonArray result) {
-    this.result = result;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    QueryResult result1 = (QueryResult) o;
-    return Objects.equals(getRequestId(), result1.getRequestId()) &&
-      Objects.equals(getResult(), result1.getResult());
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(getRequestId(), getResult());
-  }
-
-  @Override
-  public String toString() {
-    return "QueryResult{" +
-            "requestId=" + requestId +
-            ", result=" + result +
-            '}';
-  }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        QueryResult result1 = (QueryResult) o;
+        return Objects.equals(getRequestId(), result1.getRequestId()) &&
+                Objects.equals(getResult(), result1.getResult());
+    }
 }

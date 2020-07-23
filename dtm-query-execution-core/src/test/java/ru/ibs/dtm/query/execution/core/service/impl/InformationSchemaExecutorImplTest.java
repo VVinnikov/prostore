@@ -9,7 +9,8 @@ import io.vertx.ext.sql.ResultSet;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
-import ru.ibs.dtm.query.execution.core.service.MetadataService;
+import ru.ibs.dtm.query.execution.core.service.dml.InformationSchemaExecutor;
+import ru.ibs.dtm.query.execution.core.service.dml.impl.InformationSchemaExecutorImpl;
 
 import java.util.Collections;
 import java.util.UUID;
@@ -20,10 +21,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
-public class MetadataServiceImplTest {
+public class InformationSchemaExecutorImplTest {
 
     private ServiceDbFacade serviceDbFacade = mock(ServiceDbFacade.class);
-    private MetadataService metadataService = new MetadataServiceImpl(serviceDbFacade);
+    private InformationSchemaExecutor informationSchemaExecutor = new InformationSchemaExecutorImpl(serviceDbFacade);
 
     @Test
     void executeQuery() {
@@ -44,7 +45,7 @@ public class MetadataServiceImplTest {
             return null;
         }).when(serviceDbFacade.getDdlServiceDao()).executeQuery(any(), any());
 
-        metadataService.executeQuery(queryRequest, ar -> {
+        informationSchemaExecutor.execute(queryRequest, ar -> {
             assertTrue(ar.succeeded());
             assertEquals(new JsonObject().put("schema_name", "test_datamart"),
                     ar.result().getResult().getList().get(0));

@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.service.delta;
+package ru.ibs.dtm.query.execution.core.service.delta.impl;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -15,6 +15,7 @@ import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.calcite.core.extension.delta.SqlBeginDelta;
 import ru.ibs.dtm.query.calcite.core.extension.delta.SqlCommitDelta;
+import ru.ibs.dtm.query.execution.core.service.delta.DeltaQueryParamExtractor;
 import ru.ibs.dtm.query.execution.plugin.api.delta.query.BeginDeltaQuery;
 import ru.ibs.dtm.query.execution.plugin.api.delta.query.CommitDeltaQuery;
 import ru.ibs.dtm.query.execution.plugin.api.delta.query.DeltaQuery;

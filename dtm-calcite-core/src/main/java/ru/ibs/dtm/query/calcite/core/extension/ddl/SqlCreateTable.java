@@ -27,6 +27,10 @@ public class SqlCreateTable extends SqlCreate {
 		return ImmutableNullableList.of(name, columnList, query, distributedBy);
 	}
 
+	public DistributedOperator getDistributedBy() {
+		return distributedBy;
+	}
+
 	@Override
 	public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
 		writer.keyword("CREATE");

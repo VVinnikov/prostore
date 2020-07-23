@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.service.schema;
+package ru.ibs.dtm.query.execution.core.service.schema.impl;
 
 import io.vertx.core.*;
 import java.util.*;
@@ -21,6 +21,7 @@ import ru.ibs.dtm.query.calcite.core.util.DeltaInformationExtractor;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
 import ru.ibs.dtm.query.execution.core.dto.metadata.EntityAttribute;
+import ru.ibs.dtm.query.execution.core.service.schema.LogicalSchemaService;
 import ru.ibs.dtm.query.execution.model.metadata.AttributeType;
 import ru.ibs.dtm.query.execution.model.metadata.ColumnType;
 import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;

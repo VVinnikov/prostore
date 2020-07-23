@@ -16,9 +16,9 @@ public interface EntityDao {
 
     void findEntity(Long datamartId, String name, Handler<AsyncResult<Long>> resultHandler);
 
-    void existsEntity(Long datamartId, String name, Handler<AsyncResult<Boolean>> resultHandler);
+    void isEntityExists(Long datamartId, String name, Handler<AsyncResult<Boolean>> resultHandler);
 
-    Future<Integer> dropEntity(Long datamartId, String name);
+    void dropEntity(Long datamartId, String name, Handler<AsyncResult<Integer>> resultHandler);
 
     void findEntitiesByDatamartAndTableNames(DatamartInfo datamartInfo, Handler<AsyncResult<List<DatamartEntity>>> resultHandler);
 }

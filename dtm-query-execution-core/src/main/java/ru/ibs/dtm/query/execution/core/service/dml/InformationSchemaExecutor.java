@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.service;
+package ru.ibs.dtm.query.execution.core.service.dml;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -8,7 +8,7 @@ import ru.ibs.dtm.common.reader.QueryResult;
 /**
  * Сервис выполнения запросов к информационной схеме
  */
-public interface MetadataService {
+public interface InformationSchemaExecutor {
 
-  void executeQuery(QueryRequest request, Handler<AsyncResult<QueryResult>> asyncResultHandler);
+  void execute(QueryRequest request, Handler<AsyncResult<QueryResult>> asyncResultHandler);
 }

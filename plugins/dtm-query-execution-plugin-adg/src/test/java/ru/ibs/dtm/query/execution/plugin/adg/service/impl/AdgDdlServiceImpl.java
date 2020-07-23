@@ -35,10 +35,8 @@ public class AdgDdlServiceImpl {
     private KafkaConfig kafkaProperties = mock(KafkaConfig.class);
     private AvroSchemaGenerator schemaGenerator = mock(AvroSchemaGenerator.class);
     private final QueryExecutorService executorService = mock(QueryExecutorService.class);
-    private final AdgHelperTableNamesFactory namesFactory = mock(AdgHelperTableNamesFactory.class);
 
-    private AdgDdlService adgDdlService = new AdgDdlService(cartridgeProvider, kafkaTopicService, kafkaProperties,
-            schemaGenerator, executorService, namesFactory);
+    private AdgDdlService adgDdlService = new AdgDdlService();
 
     @Test
     void testExecuteNotEmptyOk() {

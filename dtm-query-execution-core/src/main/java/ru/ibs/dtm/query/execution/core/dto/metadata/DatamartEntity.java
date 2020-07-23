@@ -9,22 +9,22 @@ import java.util.Objects;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class DatamartEntity {
   @JsonIgnore
-  private Integer id;
+  private Long id;
   private String mnemonic;
   private String datamartMnemonic;
   private List<EntityAttribute> attributes;
 
-  public DatamartEntity(Integer id, String mnemonic, String datamartMnemonic) {
+  public DatamartEntity(Long id, String mnemonic, String datamartMnemonic) {
     this.id = id;
     this.mnemonic = mnemonic;
     this.datamartMnemonic = datamartMnemonic;
   }
 
-  public Integer getId() {
+  public Long getId() {
     return id;
   }
 
-  public void setId(Integer id) {
+  public void setId(Long id) {
     this.id = id;
   }
 

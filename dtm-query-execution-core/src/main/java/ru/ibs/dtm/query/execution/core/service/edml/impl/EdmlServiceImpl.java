@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.service.impl;
+package ru.ibs.dtm.query.execution.core.service.edml.impl;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;

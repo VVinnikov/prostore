@@ -180,7 +180,8 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
     @NotNull
     private List<TableAttribute> createTableAttributes(List<EntityAttribute> attrs) {
         return attrs.stream()
-            .sorted(Comparator.comparing(EntityAttribute::getOrdinalPosition)).map(attr -> {
+            .sorted(Comparator.comparing(EntityAttribute::getOrdinalPosition))
+            .map(attr -> {
                 final TableAttribute tableAttribute = new TableAttribute();
                 tableAttribute.setId(UUID.randomUUID());
                 tableAttribute.setMnemonic(attr.getMnemonic());
@@ -189,6 +190,8 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
                 tableAttribute.setAccuracy(attr.getAccuracy());
                 tableAttribute.setPrimaryKeyOrder(attr.getPrimaryKeyOrder());
                 tableAttribute.setDistributeKeyOrder(attr.getDistributeKeykOrder());
+                tableAttribute.setOrdinalPosition(attr.getOrdinalPosition());
+                tableAttribute.setNullable(attr.getNullable());
                 return tableAttribute;
             }).collect(Collectors.toList());
     }

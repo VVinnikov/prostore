@@ -2,6 +2,7 @@ package ru.ibs.dtm.common.model.ddl;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.RequiredArgsConstructor;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -11,10 +12,12 @@ import java.util.regex.Pattern;
  */
 @Data
 @EqualsAndHashCode
+@RequiredArgsConstructor
 public class ClassField {
 
 	private final static Pattern nameWithSizePtn = Pattern.compile("\\w*(\\d)");
 
+	private final int ordinalPosition;
 	private String name;
 	private ClassTypes type;
 	private Integer size;
@@ -26,7 +29,8 @@ public class ClassField {
 	private String defaultValue;
 	private String typeWithSize;
 
-	public ClassField(String name, String typeWithSize, Boolean nullable, Integer primaryOrder,
+
+	public ClassField(int ordinalPosition, String name, String typeWithSize, Boolean nullable, Integer primaryOrder,
 					  Integer shardingOrder, String defaultValue) {
 		this.name = name;
 		this.nullable = nullable;
@@ -34,21 +38,24 @@ public class ClassField {
 		this.shardingOrder = shardingOrder;
 		this.defaultValue = defaultValue;
 		parseType(typeWithSize);
-	}
+        this.ordinalPosition = ordinalPosition;
+    }
 
-    public ClassField(String name, ClassTypes type, Boolean isNull, Boolean isPrimary) {
+    public ClassField(int ordinalPosition, String name, ClassTypes type, Boolean isNull, Boolean isPrimary) {
         this.name = name;
         this.type = type;
         this.nullable = isNull;
         this.isPrimary = isPrimary;
+        this.ordinalPosition = ordinalPosition;
     }
 
-    public ClassField(String name, String typeWithSize, Boolean nullable, Boolean isPrimary, String defaultValue) {
+    public ClassField(int ordinalPosition, String name, String typeWithSize, Boolean nullable, Boolean isPrimary, String defaultValue) {
         this.name = name;
         this.nullable = nullable;
         this.isPrimary = isPrimary;
         this.defaultValue = defaultValue;
         parseType(typeWithSize);
+        this.ordinalPosition = ordinalPosition;
     }
 
     private void parseType(String typeWithSize) {

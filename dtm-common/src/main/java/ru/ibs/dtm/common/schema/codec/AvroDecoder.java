@@ -7,14 +7,13 @@ import org.apache.avro.file.DataFileReader;
 import org.apache.avro.file.SeekableByteArrayInput;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.specific.SpecificData;
-import org.apache.avro.specific.SpecificDatumReader;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
 public class AvroDecoder extends AvroSerdeHelper {
-    private final SpecificDatumReader<GenericRecord> datumReader = new SpecificDatumReader<>(SpecificData.get());
+    private final DtmSpecificDatumReader<GenericRecord> datumReader = new DtmSpecificDatumReader<>(SpecificData.get());
 
     @SneakyThrows
     public List<GenericRecord> decode(byte[] encodedData) {

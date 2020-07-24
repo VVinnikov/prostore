@@ -65,9 +65,9 @@ public class AdgSchemaExtenderImpl implements SchemaExtender {
 
   private List<TableAttribute> getExtendedColumns() {
     List<TableAttribute> tableAttributeList = new ArrayList<>();
-    tableAttributeList.add(generateNewField(SYS_OP_FIELD, ColumnType.INTEGER));
-    tableAttributeList.add(generateNewField(SYS_TO_FIELD, ColumnType.INTEGER));
-    tableAttributeList.add(generateNewField(SYS_FROM_FIELD, ColumnType.INTEGER));
+    tableAttributeList.add(generateNewField(SYS_OP_FIELD, ColumnType.INT));
+    tableAttributeList.add(generateNewField(SYS_TO_FIELD, ColumnType.INT));
+    tableAttributeList.add(generateNewField(SYS_FROM_FIELD, ColumnType.INT));
     return tableAttributeList;
   }
 

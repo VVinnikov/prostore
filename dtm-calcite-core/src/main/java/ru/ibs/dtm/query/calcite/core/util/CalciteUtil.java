@@ -10,24 +10,48 @@ public class CalciteUtil {
         switch (type) {
             case BOOLEAN:
                 return BOOLEAN;
-            case INTEGER:
+            case INT:
                 return INTEGER;
-            case LONG:
+            case BIGINT:
                 return BIGINT;
             case FLOAT:
                 return FLOAT;
             case DOUBLE:
                 return DOUBLE;
-            case BIG_DECIMAL:
-                return DECIMAL;
             case DATE:
                 return DATE;
             case TIMESTAMP:
                 return TIMESTAMP;
-            case STRING:
+            case VARCHAR:
+            case UUID:
                 return VARCHAR;
             default:
                 return ANY;
+        }
+    }
+
+    public static ColumnType toColumnType(SqlTypeName type) {
+        switch (type) {
+            case BOOLEAN:
+                return ColumnType.BOOLEAN;
+            case INTEGER:
+                return ColumnType.INT;
+            case BIGINT:
+                return ColumnType.BIGINT;
+            case FLOAT:
+                return ColumnType.FLOAT;
+            case DOUBLE:
+                return ColumnType.DOUBLE;
+            case DATE:
+                return ColumnType.DATE;
+            case TIME:
+                return ColumnType.TIME;
+            case TIMESTAMP:
+                return ColumnType.TIMESTAMP;
+            case VARCHAR:
+                return ColumnType.VARCHAR;
+            default:
+                return ColumnType.ANY;
         }
     }
 }

@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
-import ru.ibs.dtm.common.model.ddl.ClassTypes;
+import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.common.schema.codec.AvroEncoder;
 
 import java.util.ArrayList;
@@ -29,16 +29,16 @@ class AvroSchemaGeneratorImplTest {
     }
 
     private List<ClassField> createFields() {
-        ClassField f1 = new ClassField(0, "id", ClassTypes.INT, false, true);
-        ClassField f2 = new ClassField(1, "name", ClassTypes.VARCHAR, true, false);
+        ClassField f1 = new ClassField(0, "id", ColumnType.INT, false, true);
+        ClassField f2 = new ClassField(1, "name", ColumnType.VARCHAR, true, false);
         f2.setSize(100);
-        ClassField f3 = new ClassField(2, "booleanvalue", ClassTypes.BOOLEAN, true, false);
-        ClassField f4 = new ClassField(3, "charvalue", ClassTypes.CHAR, true, false);
-        ClassField f5 = new ClassField(4, "bgintvalue", ClassTypes.BIGINT, true, false);
-        ClassField f6 = new ClassField(5, "dbvalue", ClassTypes.DOUBLE, true, false);
-        ClassField f7 = new ClassField(6, "flvalue", ClassTypes.FLOAT, true, false);
-        ClassField f8 = new ClassField(7, "datevalue", ClassTypes.DATE, true, false);
-        ClassField f9 = new ClassField(8, "datetimevalue", ClassTypes.TIMESTAMP, true, false);
+        ClassField f3 = new ClassField(2, "booleanvalue", ColumnType.BOOLEAN, true, false);
+        ClassField f4 = new ClassField(3, "charvalue", ColumnType.CHAR, true, false);
+        ClassField f5 = new ClassField(4, "bgintvalue", ColumnType.BIGINT, true, false);
+        ClassField f6 = new ClassField(5, "dbvalue", ColumnType.DOUBLE, true, false);
+        ClassField f7 = new ClassField(6, "flvalue", ColumnType.FLOAT, true, false);
+        ClassField f8 = new ClassField(7, "datevalue", ColumnType.DATE, true, false);
+        ClassField f9 = new ClassField(8, "datetimevalue", ColumnType.TIMESTAMP, true, false);
         return new ArrayList<>(Arrays.asList(f1, f2, f3, f4, f5, f6, f7, f8, f9));
     }
 
@@ -63,7 +63,7 @@ class AvroSchemaGeneratorImplTest {
 
     @Test
     void generateTableSchemaUnsupportedType() {
-        table.getFields().add(new ClassField(0, "uuid", ClassTypes.UUID, true, false));
+        table.getFields().add(new ClassField(0, "uuid", ColumnType.UUID, true, false));
         Executable executable = () -> avroSchemaGenerator.generateTableSchema(table);
         assertThrows(IllegalArgumentException.class,
             executable, "Unsupported data type: UUID");

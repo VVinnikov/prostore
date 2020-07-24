@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
-import ru.ibs.dtm.common.model.ddl.ClassTypes;
+import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
 import ru.ibs.dtm.query.calcite.core.extension.eddl.SqlNodeUtils;
 import ru.ibs.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
@@ -75,7 +75,7 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
         );
         if (columnType.getTypeNameSpec() instanceof SqlBasicTypeNameSpec) {
             val basicTypeNameSpec = (SqlBasicTypeNameSpec) columnType.getTypeNameSpec();
-            if (field.getType() == ClassTypes.TIMESTAMP || field.getType() == ClassTypes.TIME) {
+            if (field.getType() == ColumnType.TIMESTAMP || field.getType() == ColumnType.TIME) {
                 field.setAccuracy(getPrecision(basicTypeNameSpec));
             } else {
                 field.setSize(getPrecision(basicTypeNameSpec));

@@ -4,7 +4,7 @@ import org.apache.avro.Schema;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
-import ru.ibs.dtm.common.model.ddl.ClassTypes;
+import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.query.execution.plugin.adg.service.AvroSchemaGenerator;
 
 import java.util.Arrays;
@@ -44,7 +44,7 @@ public class AvroSchemaGeneratorImpl implements AvroSchemaGenerator {
    * Конвертация в соответстии с требованиями:
    * https://conf.ibs.ru/pages/viewpage.action?pageId=113453625
    */
-  private static Schema.Type toSchemaType(ClassTypes classType) {
+  private static Schema.Type toSchemaType(ColumnType classType) {
     {
       switch (classType) {
         case DATE:

@@ -8,7 +8,7 @@ import org.apache.avro.Schema;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.util.StringUtils;
 import ru.ibs.dtm.common.model.ddl.ClassField;
-import ru.ibs.dtm.common.model.ddl.ClassTypes;
+import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.common.plugin.exload.QueryLoadParam;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
@@ -64,7 +64,7 @@ public class DdlUtils {
         return Optional.of(Pair.of(parts[0], parts[1]));
     }
 
-    public static String classTypeToNative(@NonNull ClassTypes type) {
+    public static String classTypeToNative(@NonNull ColumnType type) {
         switch (type) {
             case UUID: return "UUID";
 

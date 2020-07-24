@@ -5,5 +5,5 @@ import io.vertx.core.Handler;
 
 public interface AttributeTypeDao {
 
-    void findTypeIdByTypeMnemonic(String datamartMnemonic, Handler<AsyncResult<Integer>> resultHandler);
+    void findTypeIdByTypeMnemonic(String typeMnemonic, Handler<AsyncResult<Integer>> resultHandler);
 }

@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.dto.DatamartInfo;
 import ru.ibs.dtm.common.dto.schema.DatamartSchemaKey;
+import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.calcite.core.node.SqlSelectTree;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
@@ -21,7 +22,6 @@ import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
 import ru.ibs.dtm.query.execution.core.dto.metadata.EntityAttribute;
 import ru.ibs.dtm.query.execution.core.service.schema.LogicalSchemaService;
 import ru.ibs.dtm.query.execution.model.metadata.AttributeType;
-import ru.ibs.dtm.query.execution.model.metadata.ColumnType;
 import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;
 import ru.ibs.dtm.query.execution.model.metadata.TableAttribute;
 
@@ -196,47 +196,10 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
             }).collect(Collectors.toList());
     }
 
-    private AttributeType mapColumnType(String dataType) {
-        //FIXME привести в соответствие значение типов в attributes_registry и ColumnType
+    private AttributeType mapColumnType(ColumnType dataType) {
         AttributeType attributeType = new AttributeType();
         attributeType.setId(UUID.randomUUID());
-        ColumnType type = null;
-        switch (dataType.toLowerCase()) {
-            case "varchar":
-            case "char":
-                type = ColumnType.VARCHAR;
-                break;
-            case "bigint":
-                type = ColumnType.BIGINT;
-                break;
-            case "int":
-            case "integer":
-            case "tinyint":
-                type = ColumnType.INT;
-                break;
-            case "date":
-                type = ColumnType.DATE;
-                break;
-            case "datetime":
-            case "timestamp":
-                type = ColumnType.TIMESTAMP;
-                break;
-            case "double":
-            case "decimal":
-            case "numeric":
-                type = ColumnType.DOUBLE;
-                break;
-            case "float":
-                type = ColumnType.FLOAT;
-                break;
-            case "boolean":
-                type = ColumnType.BOOLEAN;
-                break;
-            default:
-                type = ColumnType.ANY;
-                break;
-        }
-        attributeType.setValue(type);
+        attributeType.setValue(dataType);
         return attributeType;
     }
 

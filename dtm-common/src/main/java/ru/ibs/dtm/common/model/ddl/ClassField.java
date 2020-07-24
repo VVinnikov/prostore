@@ -19,7 +19,7 @@ public class ClassField {
 
 	private final int ordinalPosition;
 	private String name;
-	private ClassTypes type;
+	private ColumnType type;
 	private Integer size;
     private Integer accuracy;
     private Boolean isPrimary;
@@ -41,7 +41,7 @@ public class ClassField {
         this.ordinalPosition = ordinalPosition;
     }
 
-    public ClassField(int ordinalPosition, String name, ClassTypes type, Boolean isNull, Boolean isPrimary) {
+    public ClassField(int ordinalPosition, String name, ColumnType type, Boolean isNull, Boolean isPrimary) {
         this.name = name;
         this.type = type;
         this.nullable = isNull;
@@ -62,9 +62,9 @@ public class ClassField {
         Matcher matcher = nameWithSizePtn.matcher(typeWithSize);
         if (matcher.find()) {
             this.size = Integer.parseInt(typeWithSize.substring(matcher.start(), matcher.end()));
-            this.type = ClassTypes.valueOf(typeWithSize.substring(0, matcher.start() - 1).toUpperCase());
+            this.type = ColumnType.valueOf(typeWithSize.substring(0, matcher.start() - 1).toUpperCase());
         } else {
-            this.type = ClassTypes.valueOf(typeWithSize.toUpperCase());
+            this.type = ColumnType.valueOf(typeWithSize.toUpperCase());
         }
         this.typeWithSize = typeWithSize;
     }

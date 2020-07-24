@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
-import ru.ibs.dtm.common.model.ddl.ClassTypes;
+import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.common.plugin.status.StatusQueryResult;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.reader.SourceType;
@@ -81,8 +81,8 @@ public class DtmDataSourcePluginIT {
     @Test
     void testDdl(VertxTestContext testContext) throws Throwable {
         ClassTable classTable = new ClassTable("test.test_", Arrays.asList(
-                new ClassField(0,"id", ClassTypes.INT.name(), false, 1, 1, null),
-                new ClassField(1, "test", ClassTypes.VARCHAR.name(), true, 1, 1, null)
+                new ClassField(0,"id", ColumnType.INT.name(), false, 1, 1, null),
+                new ClassField(1, "test", ColumnType.VARCHAR.name(), true, 1, 1, null)
         ));
         DdlRequest dto = new DdlRequest(null, classTable);
         DdlRequestContext context = new DdlRequestContext(dto);

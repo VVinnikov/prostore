@@ -1,8 +1,8 @@
 package ru.ibs.dtm.common.model.ddl;
 
 /**
- * Типы данных физической модели
+ * Logical model data types
  */
-public enum ClassTypes {
+public enum ColumnType {
     VARCHAR, CHAR, BIGINT, INT, DOUBLE, FLOAT, DATE, TIME, TIMESTAMP, BOOLEAN, BLOB, UUID, ANY
 }

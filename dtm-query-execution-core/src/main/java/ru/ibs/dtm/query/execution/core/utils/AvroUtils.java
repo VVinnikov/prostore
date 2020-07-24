@@ -4,7 +4,7 @@ import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.specific.SpecificData;
 import ru.ibs.dtm.common.model.ddl.ClassField;
-import ru.ibs.dtm.common.model.ddl.ClassTypes;
+import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.common.schema.codec.type.LocalDateLogicalType;
 import ru.ibs.dtm.common.schema.codec.type.LocalDateTimeLogicalType;
 import ru.ibs.dtm.common.schema.codec.type.LocalTimeLogicalType;
@@ -21,7 +21,7 @@ public class AvroUtils {
         return field;
     }
 
-    public static Schema metadataColumnTypeToAvroSchema(ClassTypes columnType) {
+    public static Schema metadataColumnTypeToAvroSchema(ColumnType columnType) {
         Schema schema;
         switch (columnType) {
             case VARCHAR:

@@ -1,6 +1,6 @@
 package ru.ibs.dtm.query.execution.plugin.adg.model.metadata;
 
-import ru.ibs.dtm.query.execution.model.metadata.ColumnType;
+import ru.ibs.dtm.common.model.ddl.ColumnType;
 
 public class ColumnTypeUtil {
 

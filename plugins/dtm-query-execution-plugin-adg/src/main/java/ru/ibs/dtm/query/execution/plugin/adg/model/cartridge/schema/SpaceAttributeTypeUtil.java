@@ -1,13 +1,13 @@
 package ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.schema;
 
-import ru.ibs.dtm.common.model.ddl.ClassTypes;
+import ru.ibs.dtm.common.model.ddl.ColumnType;
 
 /**
  * Конвертация физического типа в тип Tarantool
  */
 public class SpaceAttributeTypeUtil {
 
-  public static SpaceAttributeTypes toAttributeType(ClassTypes type) {
+  public static SpaceAttributeTypes toAttributeType(ColumnType type) {
     switch (type) {
       case TIMESTAMP:
       case DATE:

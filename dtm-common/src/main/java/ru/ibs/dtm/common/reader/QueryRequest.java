@@ -5,12 +5,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import ru.ibs.dtm.common.delta.DeltaInformation;
 
 /**
  * Запрос на извлечение данных
  */
 @Data
+@NoArgsConstructor
 public class QueryRequest {
 
     /**
@@ -45,6 +47,12 @@ public class QueryRequest {
      */
     private List<DeltaInformation> deltaInformations;
     private SourceType sourceType;
+
+    public QueryRequest(UUID requestId, String datamartMnemonic, String sql) {
+        this.requestId = requestId;
+        this.datamartMnemonic = datamartMnemonic;
+        this.sql = sql;
+    }
 
     public QueryRequest copy() {
         QueryRequest newQueryRequest = new QueryRequest();

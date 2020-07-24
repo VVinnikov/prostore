@@ -2,24 +2,24 @@ version: '3.7'
 
 services:
   dtm-query-execution-core:
-    image: ${IMAGE}
+    build: ..
     container_name: dtm-query-execution-core
     network_mode: bridge
     restart: always
     ports:
-      - "8085:8080"
+      - "8080:8080"
     environment:
       - SERVICEDB_DB_NAME=dtmservice
       - SERVICEDB_USER=dtmuser
       - SERVICEDB_PASS=Cat6Gmt7Ncr
-      - SERVICEDB_HOST=10.18.84.17
+      - SERVICEDB_HOST=172.17.0.1
       - SERVICEDB_PORT=3306
       - WRITER_LOG_LEVEL=TRACE
       - EDML_DATASOURCE=ADB
       - EDML_DEFAULT_CHUNK_SIZE=1000
       - EDML_STATUS_CHECK_PERIOD_MS=1000
-      - ZOOKEEPER_HOSTS=kafka-1.dtm.local
-      - KAFKA_BOOTSTRAP_SERVERS=kafka-1.dtm.local:9092
+      - ZOOKEEPER_HOSTS=172.17.0.1
+      - KAFKA_BOOTSTRAP_SERVERS=172.17.0.1:9092
       - KAFKA_CLUSTER_ROOTPATH=arenadata/cluster/21
       - KAFKA_INPUT_STREAM_TIMEOUT_MS=1000
     # For ADB plugin

@@ -1,12 +1,11 @@
 package ru.ibs.dtm.query.execution.plugin.adb.service.impl.enrichment;
 
-import org.springframework.stereotype.Service;
-import ru.ibs.dtm.query.execution.model.metadata.*;
-import ru.ibs.dtm.query.execution.plugin.adb.service.SchemaExtender;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.stereotype.Service;
+import ru.ibs.dtm.query.execution.model.metadata.*;
+import ru.ibs.dtm.query.execution.plugin.adb.service.SchemaExtender;
 
 import static ru.ibs.dtm.query.execution.plugin.adb.factory.impl.MetadataSqlFactoryImpl.*;
 
@@ -54,9 +53,9 @@ public class AdbSchemaExtenderImpl implements SchemaExtender {
 
   private List<TableAttribute> getExtendedColumns() {
     List<TableAttribute> tableAttributeList = new ArrayList<>();
-    tableAttributeList.add(generateNewField(SYS_OP_ATTR, ColumnType.INTEGER));
-    tableAttributeList.add(generateNewField(SYS_TO_ATTR, ColumnType.INTEGER));
-    tableAttributeList.add(generateNewField(SYS_FROM_ATTR, ColumnType.INTEGER));
+    tableAttributeList.add(generateNewField(SYS_OP_ATTR, ColumnType.INT));
+    tableAttributeList.add(generateNewField(SYS_TO_ATTR, ColumnType.INT));
+    tableAttributeList.add(generateNewField(SYS_FROM_ATTR, ColumnType.INT));
     return tableAttributeList;
   }
 

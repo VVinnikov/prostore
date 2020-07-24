@@ -3,6 +3,7 @@ package ru.ibs.dtm.query.execution.core.service.dml.impl;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import lombok.SneakyThrows;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,8 +15,8 @@ import ru.ibs.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
 import ru.ibs.dtm.query.execution.core.service.DataSourcePluginService;
 import ru.ibs.dtm.query.execution.core.service.TargetDatabaseDefinitionService;
 import ru.ibs.dtm.query.execution.core.service.dml.InformationSchemaExecutor;
+import ru.ibs.dtm.query.execution.core.service.dml.ColumnMetadataService;
 import ru.ibs.dtm.query.execution.core.service.dml.LogicViewReplacer;
-import ru.ibs.dtm.query.execution.core.utils.HintExtractor;
 import ru.ibs.dtm.query.execution.plugin.api.dml.DmlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.LlrRequest;
@@ -29,17 +30,20 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
     private final DeltaQueryPreprocessor deltaQueryPreprocessor;
     private final LogicViewReplacer logicViewReplacer;
     private final InformationSchemaExecutor informationSchemaExecutor;
+    private final ColumnMetadataService columnMetadataService;
 
     @Autowired
     public DmlServiceImpl(DataSourcePluginService dataSourcePluginService,
                           TargetDatabaseDefinitionService targetDatabaseDefinitionService,
                           DeltaQueryPreprocessor deltaQueryPreprocessor, LogicViewReplacer logicViewReplacer,
-                          InformationSchemaExecutor informationSchemaExecutor, HintExtractor hintExtractor) {
+                          InformationSchemaExecutor informationSchemaExecutor,
+                          ColumnMetadataService columnMetadataService) {
         this.dataSourcePluginService = dataSourcePluginService;
         this.targetDatabaseDefinitionService = targetDatabaseDefinitionService;
         this.deltaQueryPreprocessor = deltaQueryPreprocessor;
         this.logicViewReplacer = logicViewReplacer;
         this.informationSchemaExecutor = informationSchemaExecutor;
+        this.columnMetadataService = columnMetadataService;
     }
 
     @Override
@@ -84,7 +88,9 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
                 if (querySourceRequest.getQueryRequest().getSourceType() == SourceType.INFORMATION_SCHEMA) {
                     informationSchemaExecutor.execute(querySourceRequest.getQueryRequest(), asyncResultHandler);
                 } else {
-                    pluginExecute(querySourceRequest, asyncResultHandler);
+                    pluginExecute(querySourceRequest)
+                    .compose(queryResult -> setColumnMetaData(querySourceRequest, queryResult))
+                    .onComplete(asyncResultHandler);
                 }
             } else {
                 asyncResultHandler.handle(Future.failedFuture(ar.cause()));
@@ -92,11 +98,25 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
         });
     }
 
-    private void pluginExecute(QuerySourceRequest request,
-                               Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-        dataSourcePluginService.llr(
+    @SneakyThrows
+    private Future<QueryResult> pluginExecute(QuerySourceRequest request) {
+        return Future.future(p -> dataSourcePluginService.llr(
                 request.getQueryRequest().getSourceType(),
                 new LlrRequestContext(new LlrRequest(request.getQueryRequest(), request.getLogicalSchema())),
-                asyncResultHandler);
+                p));
+
+    }
+
+    private Future<QueryResult> setColumnMetaData(QuerySourceRequest request, QueryResult queryResult) {
+        return Future.future(p -> {
+            columnMetadataService.getColumnMetadata(request, ar ->{
+                if (ar.succeeded()) {
+                    queryResult.setMetadata(ar.result());
+                    p.complete(queryResult);
+                } else {
+                    p.fail(ar.cause());
+                }
+            });
+        });
     }
 }

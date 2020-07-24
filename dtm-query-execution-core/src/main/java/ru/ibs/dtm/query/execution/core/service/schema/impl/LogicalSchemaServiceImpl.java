@@ -201,15 +201,15 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
         switch (dataType.toLowerCase()) {
             case "varchar":
             case "char":
-                type = ColumnType.STRING;
+                type = ColumnType.VARCHAR;
                 break;
             case "bigint":
-                type = ColumnType.LONG;
+                type = ColumnType.BIGINT;
                 break;
             case "int":
             case "integer":
             case "tinyint":
-                type = ColumnType.INTEGER;
+                type = ColumnType.INT;
                 break;
             case "date":
                 type = ColumnType.DATE;
@@ -218,15 +218,13 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
             case "timestamp":
                 type = ColumnType.TIMESTAMP;
                 break;
+            case "double":
             case "decimal":
             case "numeric":
-                type = ColumnType.BIG_DECIMAL;
+                type = ColumnType.DOUBLE;
                 break;
             case "float":
                 type = ColumnType.FLOAT;
-                break;
-            case "double":
-                type = ColumnType.DOUBLE;
                 break;
             case "boolean":
                 type = ColumnType.BOOLEAN;

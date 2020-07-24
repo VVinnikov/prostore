@@ -1,15 +1,14 @@
 package ru.ibs.dtm.query.execution.core.service.dml.impl;
 
 import io.vertx.core.Handler;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.val;
 import org.apache.calcite.sql.*;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.query.execution.core.dto.dml.SnapshotReplaceAction;
 import ru.ibs.dtm.query.execution.core.service.dml.SqlSnapshotReplacer;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Component
 public class SqlSnapshotReplacerImpl implements SqlSnapshotReplacer {

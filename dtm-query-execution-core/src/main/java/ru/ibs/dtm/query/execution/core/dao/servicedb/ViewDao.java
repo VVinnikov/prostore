@@ -17,4 +17,6 @@ public interface ViewDao {
     void updateView(String viewName, Long datamartId, String query, Handler<AsyncResult<Void>> resultHandler);
 
     void dropView(String viewName, Long datamartId, Handler<AsyncResult<Void>> resultHandler);
+
+    void dropViewsByDatamartId(Long datamartId, Handler<AsyncResult<Void>> resultHandler);
 }

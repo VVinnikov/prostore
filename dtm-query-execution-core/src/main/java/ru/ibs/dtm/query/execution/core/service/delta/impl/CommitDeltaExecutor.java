@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.service.delta;
+package ru.ibs.dtm.query.execution.core.service.delta.impl;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -12,6 +12,7 @@ import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.factory.DeltaQueryResultFactory;
+import ru.ibs.dtm.query.execution.core.service.delta.DeltaExecutor;
 import ru.ibs.dtm.query.execution.plugin.api.delta.DeltaRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.delta.query.CommitDeltaQuery;
 import ru.ibs.dtm.query.execution.plugin.api.delta.query.DeltaAction;

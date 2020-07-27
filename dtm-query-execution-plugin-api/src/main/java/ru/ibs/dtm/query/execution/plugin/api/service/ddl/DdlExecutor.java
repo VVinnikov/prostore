@@ -12,7 +12,7 @@ public interface DdlExecutor<T> {
     SqlKind getSqlKind();
 
     @Autowired
-    default void registration(DdlService<T> service) {
+    default void register(DdlService<T> service) {
         service.addExecutor(this);
     }
 }

@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.service;
+package ru.ibs.dtm.query.execution.core.service.metadata;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;

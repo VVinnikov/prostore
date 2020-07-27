@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.service.impl;
+package ru.ibs.dtm.query.execution.core.service.metadata.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.*;
@@ -9,8 +9,9 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
+import ru.ibs.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
 import ru.ibs.dtm.query.calcite.core.extension.eddl.SqlNodeUtils;
-import ru.ibs.dtm.query.execution.core.service.MetadataCalciteGenerator;
+import ru.ibs.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
 import ru.ibs.dtm.query.execution.core.utils.ColumnTypeUtil;
 
 import java.util.ArrayList;
@@ -39,12 +40,12 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
                 fieldMap.put(field.getName(), field);
                 fields.add(field);
             } else if (col.getKind().equals(SqlKind.PRIMARY_KEY)) {
-                final SqlIdentifier columnPrimaryKey = getPrimaryKey((SqlKeyConstraint) col);
-                fieldMap.get(columnPrimaryKey.getSimple()).setIsPrimary(true);
+                initPrimaryKeyColumns((SqlKeyConstraint) col, fieldMap);
             } else {
                 throw new RuntimeException("Тип атрибута " + col.getKind() + " не поддерживается!");
             }
         });
+        initDistributedKeyColumns(sqlCreate, fieldMap);
         return fields;
     }
 
@@ -70,6 +71,18 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
         return field;
     }
 
+    private void initPrimaryKeyColumns(SqlKeyConstraint col, Map<String, ClassField> fieldMap) {
+        final List<SqlNode> pks = getPrimaryKeys(col);
+        Integer pkOrder = 1;
+        for (SqlNode pk : pks) {
+            SqlIdentifier pkIdent = (SqlIdentifier) pk;
+            ClassField keyfield = fieldMap.get(pkIdent.getSimple());
+            keyfield.setPrimaryOrder(pkOrder);
+            keyfield.setIsPrimary(true);
+            pkOrder++;
+        }
+    }
+
     @NotNull
     private SqlIdentifier getColumn(SqlColumnDeclaration col) {
         return ((SqlIdentifier) col.getOperandList().get(0));
@@ -83,9 +96,9 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
         }
     }
 
-    private SqlIdentifier getPrimaryKey(SqlKeyConstraint col) {
+    private List<SqlNode> getPrimaryKeys(SqlKeyConstraint col) {
         if (col.getOperandList().size() > 0) {
-            return (SqlIdentifier) ((SqlNodeList) col.getOperandList().get(1)).getList().get(0);
+            return ((SqlNodeList) col.getOperandList().get(1)).getList();
         } else {
             throw new RuntimeException("Ошибка определения первичного ключа!");
         }
@@ -97,5 +110,31 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
 
     private Integer getScale(SqlBasicTypeNameSpec columnType) {
         return columnType.getScale() != -1 ? columnType.getScale() : null;
+    }
+
+    private void initDistributedKeyColumns(SqlCreate sqlCreate, Map<String, ClassField> fieldMap) {
+        if (sqlCreate instanceof SqlCreateTable) {
+            SqlCreateTable createTable = (SqlCreateTable) sqlCreate;
+            SqlNodeList distributedBy = createTable.getDistributedBy().getDistributedBy();
+            if (distributedBy != null) {
+                List<SqlNode> distrColumnList = distributedBy.getList();
+                if (distrColumnList != null) {
+                    initDistributedOrderAttr(distrColumnList, fieldMap);
+                }
+            }
+        }
+    }
+
+    private void initDistributedOrderAttr(List<SqlNode> distrColumnList, Map<String, ClassField> fieldMap) {
+        Integer dkOrder = 1;
+        for (SqlNode sqlNode : distrColumnList) {
+            SqlIdentifier node = (SqlIdentifier) sqlNode;
+            final ClassField field = fieldMap.get(node.getSimple());
+            if (field == null) {
+                throw new RuntimeException(String.format("Incorrect distributed key column name %s!", node.getSimple()));
+            }
+            field.setShardingOrder(dkOrder);
+            dkOrder++;
+        }
     }
 }

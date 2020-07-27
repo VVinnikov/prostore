@@ -14,7 +14,8 @@ import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.core.configuration.jooq.MariaProperties;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
-import ru.ibs.dtm.query.execution.core.factory.MetadataFactory;
+import ru.ibs.dtm.query.execution.core.service.metadata.MetadataExecutor;
+import ru.ibs.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import ru.ibs.dtm.query.execution.core.utils.SqlPreparer;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 
@@ -23,10 +24,10 @@ import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
 
     @Autowired
-    public CreateViewDdlExecutor(MetadataFactory<DdlRequestContext> metadataFactory,
+    public CreateViewDdlExecutor(MetadataExecutor<DdlRequestContext> metadataExecutor,
                                  MariaProperties mariaProperties,
                                  ServiceDbFacade serviceDbFacade) {
-        super(metadataFactory, mariaProperties, serviceDbFacade);
+        super(metadataExecutor, mariaProperties, serviceDbFacade);
     }
 
     @Override
@@ -68,7 +69,7 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
         return Future.future(p -> {
             val datamartId = ctx.getDatamartId();
             val viewName = ctx.getViewName();
-            serviceDbFacade.getServiceDbDao().getEntityDao().existsEntity(datamartId, viewName, ar -> {
+            serviceDbFacade.getServiceDbDao().getEntityDao().isEntityExists(datamartId, viewName, ar -> {
                 if (ar.succeeded()) {
                     if (ar.result()) {
                         val msg = String.format(

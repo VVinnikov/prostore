@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.service.schema;
+package ru.ibs.dtm.query.execution.core.service.schema.impl;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.dto.schema.DatamartSchemaKey;
 import ru.ibs.dtm.common.reader.QueryRequest;
+import ru.ibs.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
+import ru.ibs.dtm.query.execution.core.service.schema.LogicalSchemaService;
 import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;
 

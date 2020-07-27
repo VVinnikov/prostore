@@ -25,6 +25,7 @@ import ru.ibs.dtm.query.execution.core.dao.servicedb.impl.ServiceDbDaoImpl;
 import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
 import ru.ibs.dtm.query.execution.core.dto.metadata.EntityAttribute;
 import ru.ibs.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
+import ru.ibs.dtm.query.execution.core.service.schema.impl.LogicalSchemaServiceImpl;
 import ru.ibs.dtm.query.execution.model.metadata.AttributeType;
 import ru.ibs.dtm.query.execution.model.metadata.ColumnType;
 import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;
@@ -84,8 +85,8 @@ class LogicalSchemaServiceImplTest {
 
         final DatamartInfo datamartInfo = new DatamartInfo("test_datamart", new HashSet<>(Arrays.asList("pso", "doc")));
         final List<DatamartEntity> entities = new ArrayList<>();
-        entities.add(new DatamartEntity(1, "pso", "test_datamart"));
-        entities.add(new DatamartEntity(2, "doc", "test_datamart"));
+        entities.add(new DatamartEntity(1L, "pso", "test_datamart"));
+        entities.add(new DatamartEntity(2L, "doc", "test_datamart"));
 
         final List<EntityAttribute> psoAttributes = new ArrayList<>();
         psoAttributes.add(new EntityAttribute(1, "id", "integer",
@@ -161,8 +162,8 @@ class LogicalSchemaServiceImplTest {
         queryRequest.setSql("select t1.id, cast(t2.id as varchar(10)) as tt from test_datamart.pso t1 \n" +
                 " join test_datamart.doc t2 on t1.id = t2.id");
         final List<DatamartEntity> entities = new ArrayList<>();
-        entities.add(new DatamartEntity(1, "pso", "test_datamart"));
-        entities.add(new DatamartEntity(2, "doc", "test_datamart"));
+        entities.add(new DatamartEntity(1L, "pso", "test_datamart"));
+        entities.add(new DatamartEntity(2L, "doc", "test_datamart"));
         final List<EntityAttribute> psoAttributes = new ArrayList<>();
         psoAttributes.add(new EntityAttribute(1, "id", "integer",
                 0, 0, "pso", "test_datamart", null, null));

@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.service.impl;
+package ru.ibs.dtm.query.execution.core.service.metadata.impl;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -10,7 +10,7 @@ import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
 import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartInfo;
 import ru.ibs.dtm.query.execution.core.dto.metadata.EntityAttribute;
-import ru.ibs.dtm.query.execution.core.service.DatamartMetaService;
+import ru.ibs.dtm.query.execution.core.service.metadata.DatamartMetaService;
 
 import java.util.List;
 

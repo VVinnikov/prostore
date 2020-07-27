@@ -4,8 +4,6 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import java.util.HashMap;
-import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -20,6 +18,9 @@ import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Slf4j
 @Service("coreDdlService")
 public class DdlServiceImpl implements DdlService<QueryResult> {
@@ -30,11 +31,10 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
 
     @Autowired
     public DdlServiceImpl(CoreCalciteDefinitionService coreCalciteDefinitionService,
-                          @Qualifier("coreVertx") Vertx vertx
-    ) {
+                          @Qualifier("coreVertx") Vertx vertx) {
         this.coreCalciteDefinitionService = coreCalciteDefinitionService;
         this.vertx = vertx;
-        executorMap = new HashMap<>();
+        this.executorMap = new HashMap<>();
     }
 
     @Override

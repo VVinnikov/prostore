@@ -57,7 +57,7 @@ public class DatamartDaoImpl implements DatamartDao {
                     );
                     resultHandler.handle(Future.succeededFuture(datamartInfoList));
                 } else {
-                    resultHandler.handle(Future.failedFuture("Невозможно получить метаданные"));
+                    resultHandler.handle(Future.failedFuture("Unable to get metadata!"));
                 }
             } else
                 resultHandler.handle(Future.failedFuture(ar.cause()));
@@ -73,7 +73,7 @@ public class DatamartDaoImpl implements DatamartDao {
             if (ar.succeeded()) {
                 resultHandler.handle(ar.result().hasResults()
                         ? Future.succeededFuture(ar.result().get(DATAMARTS_REGISTRY.DATAMART_ID))
-                        : Future.failedFuture(String.format("Витрина не найдена: [%s]", name)));
+                        : Future.failedFuture(String.format("Datamart [%s] not found!", name)));
             } else {
                 resultHandler.handle(Future.failedFuture(ar.cause()));
             }
@@ -88,6 +88,21 @@ public class DatamartDaoImpl implements DatamartDao {
         ).setHandler(ar -> {
             if (ar.succeeded()) {
                 resultHandler.handle(Future.succeededFuture());
+            } else {
+                resultHandler.handle(Future.failedFuture(ar.cause()));
+            }
+        });
+    }
+
+    @Override
+    public void isDatamartExists(String name, Handler<AsyncResult<Boolean>> resultHandler) {
+        executor.query(dsl -> dsl
+                .select(DATAMARTS_REGISTRY.DATAMART_ID)
+                .from(DATAMARTS_REGISTRY)
+                .where(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.eq(name))
+        ).setHandler(ar -> {
+            if (ar.succeeded()) {
+                resultHandler.handle(Future.succeededFuture(ar.result().hasResults()));
             } else {
                 resultHandler.handle(Future.failedFuture(ar.cause()));
             }

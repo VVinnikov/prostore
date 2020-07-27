@@ -49,17 +49,9 @@ public class DropSchemaDdlExecutor extends DropTableDdlExecutor {
             getDatamart(context)
                     .compose(datamartId -> getDatamartEntities(context, datamartId))
                     .compose(entities -> dropDatamartObjects(context, entities))
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            dropSchema(context)
-                                    .onComplete(dr -> {
-                                        if (dr.succeeded()) {
-                                            handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
-                                        }
-                                    })
-                                    .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
-                        }
-                    })
+                    .onSuccess(ar -> dropSchema(context)
+                            .onSuccess(success -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
+                            .onFailure(fail -> handler.handle(Future.failedFuture(fail))))
                     .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
         } catch (Exception e) {
             log.error("Error deleting datamart!", e);
@@ -99,13 +91,7 @@ public class DropSchemaDdlExecutor extends DropTableDdlExecutor {
             dropTablesAndViewsFutures.add(createDropViewsFuture(context));
             entities.forEach(e -> dropTablesAndViewsFutures.add(createDropTableFuture(e)));
             CompositeFuture.join(dropTablesAndViewsFutures)
-                    .onComplete(dr -> {
-                        if (dr.succeeded()) {
-                            promise.complete();
-                        } else {
-                            promise.fail(dr.cause());
-                        }
-                    })
+                    .onSuccess(dr -> promise.complete())
                     .onFailure(promise::fail);
         });
     }
@@ -138,7 +124,7 @@ public class DropSchemaDdlExecutor extends DropTableDdlExecutor {
         context.getRequest().setClassTable(new ClassTable(nameWithSchema, null));
         context.setDatamartName(entity.getDatamartMnemonic());
         context.setDdlType(DdlType.DROP_TABLE);
-        //FIXME переделать без повторного парсинга запроса
+        //FIXME redo without re-parsing request
         context.setQuery(definitionService.processingQuery(context.getRequest().getQueryRequest().getSql()));
         return context;
     }

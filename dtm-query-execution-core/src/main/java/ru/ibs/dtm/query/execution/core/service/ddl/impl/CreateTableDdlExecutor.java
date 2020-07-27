@@ -47,10 +47,10 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
             getDatamartId(classTable)
                     .compose(datamartId -> isDatamartTableExists(datamartId, context))
                     .onComplete(isExists -> {
-                        if (isExists.succeeded()) {
-                            final Boolean isTableExists = isExists.result();
-                            createTableIfNotExists(context, isTableExists, handler);
-                        }
+                        final Boolean isTableExists = isExists.result();
+                        createTableIfNotExists(context, isTableExists)
+                                .onSuccess(success -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
+                                .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
                     })
                     .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
         } catch (Exception e) {
@@ -59,7 +59,8 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
         }
     }
 
-    private void createTableIfNotExists(DdlRequestContext context, Boolean isTableExists, Handler<AsyncResult<QueryResult>> handler) {
+    private Future<Void> createTableIfNotExists(DdlRequestContext context,
+                                                Boolean isTableExists) {
         if (isTableExists) {
             final RuntimeException existsException =
                     new RuntimeException(String.format("Table [%s] is already exists in datamart [%s]!",
@@ -69,10 +70,9 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
                     context.getRequest().getClassTable().getName(),
                     context.getRequest().getClassTable().getSchema(),
                     existsException);
-            handler.handle(Future.failedFuture(
-                    existsException));
+            return Future.failedFuture(existsException);
         } else {
-            createTable(context, handler);
+            return createTable(context);
         }
     }
 
@@ -104,32 +104,32 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
         });
     }
 
-    private void createTable(DdlRequestContext context, Handler<AsyncResult<QueryResult>> handler) {
+    private Future<Void> createTable(DdlRequestContext context) {
         //создание таблиц в источниках данных через плагины
-        metadataExecutor.execute(context, ar -> {
-            if (ar.succeeded()) {
-                createEntity(context)
-                        .onComplete(ar2 -> {
-                            if (ar2.succeeded()) {
+        return Future.future((Promise<Void> promise) -> {
+            metadataExecutor.execute(context, ar -> {
+                if (ar.succeeded()) {
+                    createEntity(context)
+                            .onSuccess(ar2 -> {
                                 log.debug("Table [{}] in datamart [{}] successfully created",
                                         context.getRequest().getClassTable().getName(),
                                         context.getDatamartName());
-                                handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
-                            } else {
+                                promise.complete();
+                            })
+                            .onFailure(fail -> {
                                 log.error("Error creating table [{}] in datamart [{}]!",
                                         context.getRequest().getClassTable().getName(),
-                                        context.getDatamartName(), ar2.cause());
-                                handler.handle(Future.failedFuture(ar2.cause()));
-                            }
-                        })
-                        .onFailure(Future::failedFuture);
-            } else {
-                log.error("Error creating table [{}], datamart [{}] in datasources!",
-                        context.getRequest().getClassTable().getName(),
-                        context.getDatamartName(),
-                        ar.cause());
-                handler.handle(Future.failedFuture(ar.cause()));
-            }
+                                        context.getDatamartName(), fail);
+                                promise.fail(fail);
+                            });
+                } else {
+                    log.error("Error creating table [{}], datamart [{}] in datasources!",
+                            context.getRequest().getClassTable().getName(),
+                            context.getDatamartName(),
+                            ar.cause());
+                    promise.fail(ar.cause());
+                }
+            });
         });
     }
 
@@ -156,19 +156,13 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
             }))).collect(Collectors.toList());
 
             CompositeFuture.join(futures)
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            promise.complete();
-                        } else {
-                            promise.fail(ar.cause());
-                        }
-                    })
+                    .onSuccess(ar -> promise.complete())
                     .onFailure(promise::fail);
         });
     }
 
     private void createAttribute(Long entityId, ClassField field, Handler<AsyncResult<Void>> handler) {
-        //TODO Можно оптимизировать
+        //TODO this code could be improved
         serviceDbFacade.getServiceDbDao().getAttributeTypeDao().findTypeIdByTypeMnemonic(field.getType().name(), ar -> {
             if (ar.succeeded()) {
                 serviceDbFacade.getServiceDbDao().getAttributeDao().insertAttribute(entityId, field, ar.result(), ar2 -> {

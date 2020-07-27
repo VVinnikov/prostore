@@ -17,6 +17,7 @@ import ru.ibs.dtm.query.execution.core.service.TargetDatabaseDefinitionService;
 import ru.ibs.dtm.query.execution.core.service.dml.ColumnMetadataService;
 import ru.ibs.dtm.query.execution.core.service.dml.InformationSchemaExecutor;
 import ru.ibs.dtm.query.execution.core.service.dml.LogicViewReplacer;
+import ru.ibs.dtm.query.execution.core.utils.HintExtractor;
 import ru.ibs.dtm.query.execution.plugin.api.dml.DmlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.LlrRequest;

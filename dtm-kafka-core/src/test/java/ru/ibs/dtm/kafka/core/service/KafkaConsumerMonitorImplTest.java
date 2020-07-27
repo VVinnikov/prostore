@@ -2,8 +2,8 @@ package ru.ibs.dtm.kafka.core.service;
 
 import com.salesforce.kafka.test.KafkaTestUtils;
 import com.salesforce.kafka.test.junit5.SharedKafkaTestResource;
-import com.salesforce.kafka.test.listeners.PlainListener;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.kafka.admin.KafkaAdminClient;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.RandomStringUtils;
@@ -20,8 +20,8 @@ import ru.ibs.dtm.common.plugin.status.kafka.KafkaGroupTopic;
 import ru.ibs.dtm.common.plugin.status.kafka.KafkaPartitionInfo;
 import ru.ibs.dtm.kafka.core.configuration.properties.KafkaProperties;
 import ru.ibs.dtm.kafka.core.factory.KafkaConsumerFactory;
+import ru.ibs.dtm.kafka.core.factory.impl.VertxKafkaConsumerFactory;
 import ru.ibs.dtm.kafka.core.service.kafka.KafkaConsumerMonitorImpl;
-import ru.ibs.dtm.kafka.core.factory.impl.*;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -56,7 +56,7 @@ class KafkaConsumerMonitorImplTest {
     private final KafkaProperties kafkaProperties = new KafkaProperties();
 
     private final KafkaAdminClient adminClient = KafkaAdminClient.create(vertx, coreKafkaConfig );
-    KafkaConsumerFactory<byte[],byte[]> kafkaConsumerFactory =
+    KafkaConsumerFactory<byte[], byte[]> kafkaConsumerFactory =
             new VertxKafkaConsumerFactory(vertx,coreKafkaConfig);
 
     KafkaConsumerMonitorImpl monitor = new KafkaConsumerMonitorImpl(adminClient,kafkaConsumerFactory,vertx,kafkaProperties);
@@ -257,6 +257,8 @@ class KafkaConsumerMonitorImplTest {
         assertTrue(monitor.getAggregateGroupConsumerInfo("test_consumer_5","TEST_INFO")
                 .getLastCommitTime().compareTo(prev) > 0);
 
+        assertNotNull(monitor.getAggregateGroupConsumerInfo("test_non_existent_consumer","TEST_INFO"));
+        assertNotNull(monitor.getAggregateGroupConsumerInfo("test_non_existent_consumer","non_existent_topic"));
 
     }
 

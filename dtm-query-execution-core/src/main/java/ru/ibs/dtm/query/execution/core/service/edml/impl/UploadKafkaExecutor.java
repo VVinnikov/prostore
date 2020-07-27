@@ -14,8 +14,8 @@ import ru.ibs.dtm.common.plugin.exload.Type;
 import ru.ibs.dtm.common.plugin.status.StatusQueryResult;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.reader.SourceType;
+import ru.ibs.dtm.kafka.core.configuration.properties.KafkaProperties;
 import ru.ibs.dtm.query.execution.core.configuration.properties.EdmlProperties;
-import ru.ibs.dtm.query.execution.core.configuration.properties.KafkaProperties;
 import ru.ibs.dtm.query.execution.core.factory.MppwKafkaRequestFactory;
 import ru.ibs.dtm.query.execution.core.service.DataSourcePluginService;
 import ru.ibs.dtm.query.execution.core.service.edml.EdmlUploadExecutor;
@@ -73,6 +73,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
             if (ar.succeeded()) {
                 log.debug("Отправлен запрос для плагина: {} на старт загрузки mppw: {}", ds, mppwRequestContext.getRequest());
                 final StatusRequestContext statusRequestContext = new StatusRequestContext(new StatusRequest(context.getRequest().getQueryRequest()));
+                statusRequestContext.getRequest().setTopic(mppwRequestContext.getRequest().getTopic());
                 vertx.setPeriodic(edmlProperties.getPluginStatusCheckPeriodMs(), timerId -> {
                     log.trace("Запрос статуса плагина: {} mppw загрузки", ds);
                     checkMppwStatus(ds, statusRequestContext, timerId)

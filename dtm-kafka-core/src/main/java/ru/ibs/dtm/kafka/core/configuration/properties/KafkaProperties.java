@@ -5,7 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.configuration.kafka.*;
 
-@Component
+@Component("coreKafkaProperties")
 @ConfigurationProperties(prefix = "kafka")
 @Data
 public class KafkaProperties implements KafkaConfig {

@@ -12,4 +12,4 @@ ddl:
 
 mppw:
   consumerGroup: ${ADQM_CONSUMER_GROUP:adqm}
-  kafkaBrokers: {$ADQM_BROKERS:localhost:9092}
+  kafkaBrokers: ${ADQM_BROKERS:localhost:9092}

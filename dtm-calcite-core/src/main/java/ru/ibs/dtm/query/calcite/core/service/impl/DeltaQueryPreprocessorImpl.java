@@ -64,6 +64,9 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
 
     private void calculateDeltaValues(List<DeltaInformation> deltas,
                                       Handler<AsyncResult<List<DeltaInformation>>> handler) {
+        //FIXME do initialize ActualRequests which must contains attrs: isLatestUncommited, deltaNum, deltaDateTime,
+        //deltaStartedIn, deltaFinishedIn
+
         val requests = deltas.stream()
                 .map(d -> new ActualDeltaRequest(d.getSchemaName(), d.getDeltaTimestamp(), d.isLatestUncommitedDelta()))
                 .collect(Collectors.toList());

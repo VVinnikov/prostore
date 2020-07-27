@@ -11,6 +11,8 @@ public class DeltaInformation {
     private final String deltaTimestamp;
     private final boolean isLatestUncommitedDelta;
     private final long deltaNum;
+    private final DeltaInterval startedIn;
+    private final DeltaInterval finishedIn;
     private String schemaName;
     private String tableName;
     private SqlParserPos pos;
@@ -21,6 +23,8 @@ public class DeltaInformation {
                 s.deltaTimestamp,
                 s.isLatestUncommitedDelta,
                 s.deltaNum,
+                s.startedIn,
+                s.finishedIn,
                 s.schemaName,
                 s.tableName,
                 s.pos);
@@ -32,6 +36,8 @@ public class DeltaInformation {
                 deltaTimestamp,
                 isLatestUncommitedDelta,
                 deltaNum,
+                startedIn,
+                finishedIn,
                 schemaName,
                 tableName,
                 pos);

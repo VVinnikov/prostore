@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.delta.DeltaLoadStatus;
 import ru.ibs.dtm.common.reader.QueryResult;
+import ru.ibs.dtm.common.status.StatusEventCode;
+import ru.ibs.dtm.query.execution.core.aspect.status.StatusEventPublisher;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.factory.DeltaQueryResultFactory;
@@ -26,7 +28,7 @@ import static ru.ibs.dtm.query.execution.plugin.api.delta.query.DeltaAction.BEGI
 
 @Component
 @Slf4j
-public class BeginDeltaExecutor implements DeltaExecutor {
+public class BeginDeltaExecutor implements DeltaExecutor, StatusEventPublisher {
 
     private ServiceDbFacade serviceDbFacade;
     private DeltaQueryResultFactory deltaQueryResultFactory;
@@ -71,6 +73,7 @@ public class BeginDeltaExecutor implements DeltaExecutor {
                         log.debug("Создана новая дельта: {} для витрины: {}", newDelta,
                                 context.getRequest().getQueryRequest().getDatamartMnemonic());
                         QueryResult res = deltaQueryResultFactory.create(context, newDelta);
+                        publishStatus(StatusEventCode.DELTA_OPEN, newDelta.getDatamartMnemonic(), newDelta);
                         promiseDelta.complete(res);
                     } else {
                         promiseDelta.fail(ar.cause());

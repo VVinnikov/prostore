@@ -1,0 +1,1 @@
+package ru.ibs.dtm.query.execution.core.aspect.status;import ru.ibs.dtm.common.status.StatusEventCode;public interface StatusEventPublisher {    default void publishStatus(StatusEventCode eventCode, String datamart, Object eventData) {    }}

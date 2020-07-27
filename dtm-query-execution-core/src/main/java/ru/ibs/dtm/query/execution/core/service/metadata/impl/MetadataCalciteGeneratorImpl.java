@@ -29,7 +29,30 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
     public ClassTable generateTableMetadata(SqlCreate sqlCreate) {
         final List<String> names = SqlNodeUtils.getTableNames(sqlCreate);
         final List<ClassField> fields = createTableFields(sqlCreate);
+        checkRequiredKeys(fields);
         return new ClassTable(getTableName(names), getSchema(names), fields);
+    }
+
+    private void checkRequiredKeys(List<ClassField> fields) {
+        val notExistsKeys = new ArrayList<String>();
+        val notExistsPrimaryKeys = fields.stream()
+            .noneMatch(f -> f.getPrimaryOrder() != null);
+        if (notExistsPrimaryKeys) {
+            notExistsKeys.add("primary key(s)");
+        }
+
+        val notExistsShardingKey = fields.stream()
+            .noneMatch(f -> f.getShardingOrder() != null);
+        if (notExistsShardingKey) {
+            notExistsKeys.add("sharding key(s)");
+        }
+
+        if (! notExistsKeys.isEmpty()) {
+            throw new IllegalArgumentException(
+                "Primary keys and Sharding keys are required. The following keys do not exist: " + String.join(",", notExistsKeys)
+            );
+        }
+
     }
 
     private List<ClassField> createTableFields(SqlCreate sqlCreate) {

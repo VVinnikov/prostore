@@ -4,12 +4,12 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
-import java.util.*;
 import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.dto.DatamartInfo;
 import ru.ibs.dtm.common.dto.schema.DatamartSchemaKey;
+import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
@@ -27,9 +27,10 @@ import ru.ibs.dtm.query.execution.core.dto.metadata.EntityAttribute;
 import ru.ibs.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
 import ru.ibs.dtm.query.execution.core.service.schema.impl.LogicalSchemaServiceImpl;
 import ru.ibs.dtm.query.execution.model.metadata.AttributeType;
-import ru.ibs.dtm.query.execution.model.metadata.ColumnType;
 import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;
 import ru.ibs.dtm.query.execution.model.metadata.TableAttribute;
+
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -72,13 +73,13 @@ class LogicalSchemaServiceImplTest {
         pso.setLabel("pso");
         pso.setMnemonic("test_datamart");
         List<TableAttribute> psoAttrs = Arrays.asList(new TableAttribute(UUID.randomUUID(), "id",
-                new AttributeType(UUID.randomUUID(), ColumnType.INT), 0, 0, 1, null));
+                new AttributeType(UUID.randomUUID(), ColumnType.INT), 0, 0, 1, null, 0,  false));
         pso.setTableAttributes(psoAttrs);
         DatamartTable doc = new DatamartTable();
         doc.setLabel("doc");
         doc.setMnemonic("test_datamart");
         List<TableAttribute> docAttrs = Arrays.asList(new TableAttribute(UUID.randomUUID(), "id",
-                new AttributeType(UUID.randomUUID(), ColumnType.INT), 0, 0, null, 1));
+                new AttributeType(UUID.randomUUID(), ColumnType.INT), 0, 0, null, 1, 0,  false));
         doc.setTableAttributes(docAttrs);
         resultSchemaMap.put(new DatamartSchemaKey("test_datamart", "pso"), pso);
         resultSchemaMap.put(new DatamartSchemaKey("test_datamart", "doc"), doc);
@@ -89,11 +90,11 @@ class LogicalSchemaServiceImplTest {
         entities.add(new DatamartEntity(2L, "doc", "test_datamart"));
 
         final List<EntityAttribute> psoAttributes = new ArrayList<>();
-        psoAttributes.add(new EntityAttribute(1, "id", "integer",
-                0, 0, "pso", "test_datamart", 1, null));
+        psoAttributes.add(new EntityAttribute(1, "id", ColumnType.INT,
+                0, 0, "pso", "test_datamart", 1, null, 0,  false));
         final List<EntityAttribute> docAttributes = new ArrayList<>();
-        docAttributes.add(new EntityAttribute(1, "id", "integer",
-                0, 0, "doc", "test_datamart", null, 1));
+        docAttributes.add(new EntityAttribute(1, "id", ColumnType.INT,
+                0, 0, "doc", "test_datamart", null, 1, 0,  false));
 
         doAnswer(invocation -> {
             final Handler<AsyncResult<List<DatamartEntity>>> handler = invocation.getArgument(1);
@@ -165,8 +166,8 @@ class LogicalSchemaServiceImplTest {
         entities.add(new DatamartEntity(1L, "pso", "test_datamart"));
         entities.add(new DatamartEntity(2L, "doc", "test_datamart"));
         final List<EntityAttribute> psoAttributes = new ArrayList<>();
-        psoAttributes.add(new EntityAttribute(1, "id", "integer",
-                0, 0, "pso", "test_datamart", null, null));
+        psoAttributes.add(new EntityAttribute(1, "id", ColumnType.INT,
+                0, 0, "pso", "test_datamart", null, null, 0,  false));
 
         doAnswer(invocation -> {
             final Handler<AsyncResult<List<DatamartEntity>>> handler = invocation.getArgument(1);

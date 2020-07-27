@@ -11,7 +11,6 @@ import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.SourceType;
-import ru.ibs.dtm.query.execution.plugin.adg.factory.AdgHelperTableNamesFactory;
 import ru.ibs.dtm.query.execution.plugin.adg.service.AvroSchemaGenerator;
 import ru.ibs.dtm.query.execution.plugin.adg.service.KafkaTopicService;
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryExecutorService;
@@ -72,7 +71,7 @@ public class AdgDdlServiceImpl {
         queryRequest.setSql("drop table test_table");
         queryRequest.setDatamartMnemonic("test_schema");
 
-        List<ClassField> fields = Collections.singletonList(new ClassField("test_field", "varchar(1)", false, false, ""));
+        List<ClassField> fields = Collections.singletonList(new ClassField(0,"test_field", "varchar(1)", false, false, ""));
         ClassTable classTable = new ClassTable("test_schema.test_table", fields);
 
         DdlRequestContext context = new DdlRequestContext(new DdlRequest(queryRequest, classTable));

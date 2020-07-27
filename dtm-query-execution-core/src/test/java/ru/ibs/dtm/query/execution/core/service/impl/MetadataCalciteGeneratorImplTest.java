@@ -11,7 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
-import ru.ibs.dtm.common.model.ddl.ClassTypes;
+import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import ru.ibs.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
@@ -46,10 +46,11 @@ class MetadataCalciteGeneratorImplTest {
     }
 
     private List<ClassField> createFieldsForTable() {
-        ClassField f1 = new ClassField("id", ClassTypes.INT, false, true);
-        ClassField f2 = new ClassField("name", ClassTypes.VARCHAR, true, false);
+        ClassField f1 = new ClassField(0, "id", ColumnType.INT, false, true);
+        f1.setPrimaryOrder(1);
+        ClassField f2 = new ClassField(1, "name", ColumnType.VARCHAR, true, false);
         f2.setSize(100);
-        ClassField f3 = new ClassField("account_id", ClassTypes.INT, false, true);
+        ClassField f3 = new ClassField(2, "account_id", ColumnType.INT, false, true);
         f1.setPrimaryOrder(1);
         f3.setPrimaryOrder(2);
         f3.setShardingOrder(1);
@@ -57,17 +58,19 @@ class MetadataCalciteGeneratorImplTest {
     }
 
     private List<ClassField> createFieldsForUplTable() {
-        ClassField f1 = new ClassField("id", ClassTypes.INT, false, true);
-        ClassField f2 = new ClassField("name", ClassTypes.VARCHAR, true, false);
+        ClassField f1 = new ClassField(0,"id", ColumnType.INT, false, true);
+        f1.setPrimaryOrder(1);
+        ClassField f2 = new ClassField(1,"name", ColumnType.VARCHAR, true, false);
         f2.setSize(100);
-        ClassField f3 = new ClassField("booleanvalue", ClassTypes.BOOLEAN, true, false);
-        ClassField f4 = new ClassField("charvalue", ClassTypes.CHAR, true, false);
-        ClassField f5 = new ClassField("bgintvalue", ClassTypes.BIGINT, true, false);
-        ClassField f6 = new ClassField("dbvalue", ClassTypes.DOUBLE, true, false);
-        ClassField f7 = new ClassField("flvalue", ClassTypes.FLOAT, true, false);
-        ClassField f8 = new ClassField("datevalue", ClassTypes.DATE, true, false);
-        ClassField f9 = new ClassField("timevalue", ClassTypes.TIME, true, false);
-        ClassField f11 = new ClassField("tsvalue", ClassTypes.TIMESTAMP, true, false);
+        ClassField f3 = new ClassField(2,"booleanvalue", ColumnType.BOOLEAN, true, false);
+        ClassField f4 = new ClassField(3,"charvalue", ColumnType.CHAR, true, false);
+        ClassField f5 = new ClassField(4,"bgintvalue", ColumnType.BIGINT, true, false);
+        ClassField f6 = new ClassField(5,"dbvalue", ColumnType.DOUBLE, true, false);
+        ClassField f7 = new ClassField(6,"flvalue", ColumnType.FLOAT, true, false);
+        ClassField f8 = new ClassField(7,"datevalue", ColumnType.DATE, true, false);
+        ClassField f9 = new ClassField(8,"timevalue", ColumnType.TIME, true, false);
+        ClassField f11 = new ClassField(9, "tsvalue", ColumnType.TIMESTAMP, true, false);
+        f11.setAccuracy(10);
         return new ArrayList<>(Arrays.asList(f1, f2, f3, f4, f5, f6, f7, f8, f9, f11));
     }
 
@@ -83,7 +86,7 @@ class MetadataCalciteGeneratorImplTest {
                 " flValue float, " +
                 " dateValue date, " +
                 " timeValue time, " +
-                " tsValue timestamp, " +
+                " tsValue timestamp(10), " +
                 " primary key(id)) " +
                 "LOCATION 'kafka://zookeeper_host:port/topic' FORMAT 'avro'";
         SqlNode sqlNode = planner.parse(sql);
@@ -103,7 +106,7 @@ class MetadataCalciteGeneratorImplTest {
                 " flValue float, " +
                 " dateValue date, " +
                 " timeValue time, " +
-                " tsValue timestamp, " +
+                " tsValue timestamp(10), " +
                 " primary key(id)) " +
                 "LOCATION 'kafka://zookeeper_host:port/topic' FORMAT 'avro'";
         SqlNode sqlNode = planner.parse(sql);

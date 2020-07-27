@@ -47,11 +47,11 @@ class TableDdlTest {
 
         ClassTable tbl = new ClassTable("shares.test",
                 Arrays.asList(
-                        new ClassField("test1", "VARCHAR(255)", true, null, null, ""),
-                        new ClassField("test2", "INTEGER", false, 1, null, ""),
-                        new ClassField("test3", "INTEGER", false, 2, null, ""),
-                        new ClassField("test4", "VARCHAR(255)", true, null, 1, ""),
-                        new ClassField("test5", "VARCHAR(255)", true, null, 2, "")
+                        new ClassField(0,"test1", "VARCHAR(255)", true, null, null, ""),
+                        new ClassField(1,"test2", "INTEGER", false, 1, null, ""),
+                        new ClassField(2,"test3", "INTEGER", false, 2, null, ""),
+                        new ClassField(3,"test4", "VARCHAR(255)", true, null, 1, ""),
+                        new ClassField(4,"test5", "VARCHAR(255)", true, null, 2, "")
                 ));
 
         DdlRequestContext context = new DdlRequestContext(new DdlRequest(new QueryRequest(), tbl));

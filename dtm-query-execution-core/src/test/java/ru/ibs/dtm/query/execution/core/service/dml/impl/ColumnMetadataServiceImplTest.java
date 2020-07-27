@@ -5,17 +5,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.jackson.DatabindCodec;
 import io.vertx.junit5.VertxTestContext;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
+import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QuerySourceRequest;
 import ru.ibs.dtm.query.calcite.core.service.QueryParserService;
@@ -26,8 +22,13 @@ import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguratio
 import ru.ibs.dtm.query.execution.core.factory.impl.CoreSchemaFactory;
 import ru.ibs.dtm.query.execution.core.service.dml.ColumnMetadataService;
 import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
-import ru.ibs.dtm.query.execution.model.metadata.ColumnType;
 import ru.ibs.dtm.query.execution.model.metadata.Datamart;
+
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;

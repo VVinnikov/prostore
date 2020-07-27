@@ -90,7 +90,7 @@ class ServiceDaoImplIT {
 
     @Test
     void insertAttribute(VertxTestContext testContext) throws Throwable {
-        ClassField cf = new ClassField(attrName, null, null, null, null, null);
+        ClassField cf = new ClassField(0, attrName, null, null, null, null, null);
         serviceDbFacade.getServiceDbDao().getAttributeDao().insertAttribute(entityId, cf, 1, ar -> {
             if (ar.succeeded()) {
                 testContext.completeNow();

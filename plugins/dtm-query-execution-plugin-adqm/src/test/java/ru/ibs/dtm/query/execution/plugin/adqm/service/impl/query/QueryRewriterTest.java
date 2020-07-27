@@ -1,9 +1,5 @@
 package ru.ibs.dtm.query.execution.plugin.adqm.service.impl.query;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import lombok.SneakyThrows;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
@@ -20,6 +16,11 @@ import ru.ibs.dtm.query.execution.plugin.adqm.calcite.AdqmCalciteSchemaFactory;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.CalciteConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.factory.impl.AdqmSchemaFactory;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -51,9 +52,12 @@ class QueryRewriterTest {
     private static List<DeltaInformation> mockDeltas() {
         SqlParserPos pos = new SqlParserPos(0, 0);
         return Arrays.asList(
-                new DeltaInformation("a", "2019-12-23 15:15:14", false,101L, "shares", "accounts", pos),
-                new DeltaInformation("b", "2019-12-23 15:15:14", false,102L, "test_datamart", "balances", pos),
-                new DeltaInformation("", "2020-06-10 23:59:59", false, 103L, "shares", "transactions", pos)
+                new DeltaInformation("a", "2019-12-23 15:15:14", false,
+                        101L, null, null, "shares", "accounts", pos),
+                new DeltaInformation("b", "2019-12-23 15:15:14", false,
+                        102L, null, null, "test_datamart", "balances", pos),
+                new DeltaInformation("", "2020-06-10 23:59:59", false,
+                        103L, null, null, "shares", "transactions", pos)
         );
     }
 

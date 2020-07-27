@@ -1,0 +1,29 @@
+version: '3.7'
+
+networks:
+  dtm-query-execution:
+
+volumes:
+  dtmservice:
+
+services:
+  dtmservicedb:
+    image: mariadb:10.5.3
+    container_name: dtmservicedb
+    restart: always
+    ports:
+      - "3306:3306"
+    volumes:
+      - dtmservice:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: dtmservice
+      MYSQL_USER: dtmuser
+      MYSQL_PASSWORD: Cat6Gmt7Ncr
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+
+  zookeeper:
+    image: zookeeper:3.6
+    container_name: zk-1.dtm.local
+    restart: always
+    ports:
+      - "2181:2181"

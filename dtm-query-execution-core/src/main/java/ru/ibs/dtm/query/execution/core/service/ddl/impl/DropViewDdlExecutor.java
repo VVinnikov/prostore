@@ -11,7 +11,8 @@ import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.core.configuration.jooq.MariaProperties;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
-import ru.ibs.dtm.query.execution.core.factory.MetadataFactory;
+import ru.ibs.dtm.query.execution.core.service.metadata.MetadataExecutor;
+import ru.ibs.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import ru.ibs.dtm.query.execution.core.utils.SqlPreparer;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 
@@ -19,10 +20,10 @@ import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 @Component
 public class DropViewDdlExecutor extends QueryResultDdlExecutor {
     @Autowired
-    public DropViewDdlExecutor(MetadataFactory<DdlRequestContext> metadataFactory,
+    public DropViewDdlExecutor(MetadataExecutor<DdlRequestContext> metadataExecutor,
                                MariaProperties mariaProperties,
                                ServiceDbFacade serviceDbFacade) {
-        super(metadataFactory, mariaProperties, serviceDbFacade);
+        super(metadataExecutor, mariaProperties, serviceDbFacade);
     }
 
     @Override

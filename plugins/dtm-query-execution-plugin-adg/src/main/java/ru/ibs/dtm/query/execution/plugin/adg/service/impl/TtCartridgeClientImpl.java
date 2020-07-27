@@ -69,7 +69,6 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
     executeGetRequest(new GetRequest(cartridgeProperties.getSendQueryUrl(), queryParamMap), handler);
   }
 
-
   @Override
   public void subscribe(TtSubscriptionKafkaRequest request, Handler<AsyncResult<Void>> handler) {
     val uri = cartridgeProperties.getUrl() + cartridgeProperties.getKafkaSubscriptionUrl();
@@ -236,7 +235,7 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
             if (CollectionUtils.isEmpty(res.getErrors())) {
               handler.handle(Future.succeededFuture(res));
             } else {
-              handler.handle(Future.failedFuture(res.getErrors().get(0).getMessage()));
+              handler.handle(Future.failedFuture(new RuntimeException(res.getErrors().get(0).getMessage())));
             }
           } catch (Exception e) {
             handler.handle(Future.failedFuture(e));

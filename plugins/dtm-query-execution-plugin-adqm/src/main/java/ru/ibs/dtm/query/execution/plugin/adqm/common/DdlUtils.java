@@ -8,10 +8,8 @@ import org.apache.avro.Schema;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.util.StringUtils;
 import ru.ibs.dtm.common.model.ddl.ClassField;
-import ru.ibs.dtm.common.model.ddl.ClassTypes;
+import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.common.plugin.exload.QueryLoadParam;
-import ru.ibs.dtm.query.execution.model.metadata.ColumnType;
-import ru.ibs.dtm.query.execution.model.metadata.TableAttribute;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 
@@ -66,7 +64,7 @@ public class DdlUtils {
         return Optional.of(Pair.of(parts[0], parts[1]));
     }
 
-    public static String classTypeToNative(@NonNull ClassTypes type) {
+    public static String classTypeToNative(@NonNull ColumnType type) {
         switch (type) {
             case UUID: return "UUID";
 
@@ -75,28 +73,18 @@ public class DdlUtils {
             case VARCHAR: return "String";
 
             case INT:
-            case INTEGER:
             case BIGINT:
             case DATE:
             case TIME: return "Int64";
 
-            case TINYINT: return "Int8";
-
-            case BOOL:
             case BOOLEAN: return "UInt8";
 
             case FLOAT: return "Float32";
             case DOUBLE: return "Float64";
 
-            case DATETIME: return "DateTime";
             case TIMESTAMP: return "DateTime64(3)";
 
             default: return "";
-            // FIXME will be supported after ClassFiled will support them
-//            case DECIMAL: return "";
-//            case DEC: return "";
-//            case NUMERIC: return "";
-//            case FIXED: return "";
         }
     }
 

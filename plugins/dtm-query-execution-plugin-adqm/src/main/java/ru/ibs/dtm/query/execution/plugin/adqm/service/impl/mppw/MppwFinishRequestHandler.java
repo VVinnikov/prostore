@@ -13,7 +13,9 @@ import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.plugin.adqm.common.DdlUtils;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
+import ru.ibs.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
+import ru.ibs.dtm.query.execution.plugin.adqm.service.StatusReporter;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 
 import java.time.LocalDateTime;
@@ -45,13 +47,15 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
     private final DatabaseExecutor databaseExecutor;
     private final DdlProperties ddlProperties;
     private final AppConfiguration appConfiguration;
+    private final StatusReporter statusReporter;
 
     public MppwFinishRequestHandler(final DatabaseExecutor databaseExecutor,
                                     final DdlProperties ddlProperties,
-                                    final AppConfiguration appConfiguration) {
+                                    final AppConfiguration appConfiguration, StatusReporter statusReporter) {
         this.databaseExecutor = databaseExecutor;
         this.ddlProperties = ddlProperties;
         this.appConfiguration = appConfiguration;
+        this.statusReporter = statusReporter;
     }
 
     @Override
@@ -78,7 +82,13 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
                         fullName + BUFFER_POSTFIX,
                         fullName + BUFFER_SHARD_POSTFIX), this::dropTable))
                 .compose(v -> optimizeTable(fullName + ACTUAL_SHARD_POSTFIX))  // 6. merge shards
-                .flatMap(v -> Future.succeededFuture(QueryResult.emptyResult()));
+                .compose(v -> {
+                    reportFinish(request.getTopic());
+                    return Future.succeededFuture(QueryResult.emptyResult());
+                }, f -> {
+                    reportError(request.getTopic());
+                    return Future.failedFuture(f.getCause());
+                });
     }
 
     private Future<Void> dropTable(@NonNull String table) {
@@ -174,5 +184,15 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
                 .filter(f -> !SYSTEM_FIELDS.contains(f))
                 .map(n -> "a." + n)
                 .collect(Collectors.joining(", "));
+    }
+
+    private void reportFinish(String topic) {
+        StatusReportDto start = new StatusReportDto(topic);
+        statusReporter.onFinish(start);
+    }
+
+    private void reportError(String topic) {
+        StatusReportDto start = new StatusReportDto(topic);
+        statusReporter.onError(start);
     }
 }

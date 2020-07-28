@@ -12,4 +12,7 @@ ddl:
 
 mppw:
   consumerGroup: ${ADQM_CONSUMER_GROUP:adqm}
-  kafkaBrokers: {$ADQM_BROKERS:10.92.6.44:9092}
+  kafkaBrokers: ${ADQM_BROKERS:10.92.3.31:9092}
+  loadType: ${ADQM_MPPW_LOAD_TYPE:REST}
+  restLoadUrl: ${ADQM_REST_LOAD_URL:http://10.92.3.3:8090/newdata}
+  restLoadConsumerGroup: ${ADQM_REST_LOAD_GROUP:test_datamart.consumer}

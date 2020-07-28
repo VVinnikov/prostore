@@ -5,7 +5,7 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw.load.LoadType;
 
-@ConfigurationProperties("mppw")
+@ConfigurationProperties("adqm.mppw")
 @Getter
 @Setter
 public class MppwProperties {

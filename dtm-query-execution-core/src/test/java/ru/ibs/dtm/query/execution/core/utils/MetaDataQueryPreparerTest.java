@@ -43,7 +43,7 @@ public class MetaDataQueryPreparerTest {
   void findInformationSchemaViewsSingleCaseInsensitive() {
     String sql = "select * from infORMATION_SCheMA.SCheMaTa";
 
-    assertEquals(InformationSchemaView.SCHEMATA,
+    assertEquals(InformationSchemaView.SCHEMES,
       MetaDataQueryPreparer.findInformationSchemaViews(sql).get(0).getView());
   }
 

@@ -17,7 +17,7 @@ import ru.ibs.dtm.query.execution.core.service.TargetDatabaseDefinitionService;
 import ru.ibs.dtm.query.execution.core.service.dml.ColumnMetadataService;
 import ru.ibs.dtm.query.execution.core.service.dml.InformationSchemaExecutor;
 import ru.ibs.dtm.query.execution.core.service.dml.LogicViewReplacer;
-import ru.ibs.dtm.query.execution.core.utils.HintExtractor;
+import ru.ibs.dtm.query.execution.core.service.schema.SystemDatamartViewsProvider;
 import ru.ibs.dtm.query.execution.plugin.api.dml.DmlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.LlrRequest;
@@ -32,19 +32,22 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
     private final LogicViewReplacer logicViewReplacer;
     private final ColumnMetadataService columnMetadataService;
     private final InformationSchemaExecutor informationSchemaExecutor;
+    private final SystemDatamartViewsProvider systemDatamartViewsProvider;
 
     @Autowired
     public DmlServiceImpl(DataSourcePluginService dataSourcePluginService,
                           TargetDatabaseDefinitionService targetDatabaseDefinitionService,
                           DeltaQueryPreprocessor deltaQueryPreprocessor, LogicViewReplacer logicViewReplacer,
                           ColumnMetadataService columnMetadataService,
-                          InformationSchemaExecutor informationSchemaExecutor) {
+                          InformationSchemaExecutor informationSchemaExecutor,
+                          SystemDatamartViewsProvider systemDatamartViewsProvider) {
         this.dataSourcePluginService = dataSourcePluginService;
         this.targetDatabaseDefinitionService = targetDatabaseDefinitionService;
         this.deltaQueryPreprocessor = deltaQueryPreprocessor;
         this.logicViewReplacer = logicViewReplacer;
         this.informationSchemaExecutor = informationSchemaExecutor;
         this.columnMetadataService = columnMetadataService;
+        this.systemDatamartViewsProvider = systemDatamartViewsProvider;
     }
 
     @Override
@@ -87,7 +90,10 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
             if (ar.succeeded()) {
                 QuerySourceRequest querySourceRequest = ar.result();
                 if (querySourceRequest.getQueryRequest().getSourceType() == SourceType.INFORMATION_SCHEMA) {
-                    informationSchemaExecutor.execute(querySourceRequest.getQueryRequest(), asyncResultHandler);
+                    querySourceRequest.setLogicalSchema(systemDatamartViewsProvider.getLogicalSchemaFromSystemViews());
+                    informationSchemaExecute(querySourceRequest)
+                        .compose(queryResult -> setColumnMetaData(querySourceRequest, queryResult))
+                        .onComplete(asyncResultHandler);
                 } else {
                     pluginExecute(querySourceRequest)
                         .compose(queryResult -> setColumnMetaData(querySourceRequest, queryResult))
@@ -97,6 +103,10 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
                 asyncResultHandler.handle(Future.failedFuture(ar.cause()));
             }
         });
+    }
+
+    private Future<QueryResult> informationSchemaExecute(QuerySourceRequest querySourceRequest) {
+        return Future.future(p -> informationSchemaExecutor.execute(querySourceRequest.getQueryRequest(), p));
     }
 
     @SneakyThrows

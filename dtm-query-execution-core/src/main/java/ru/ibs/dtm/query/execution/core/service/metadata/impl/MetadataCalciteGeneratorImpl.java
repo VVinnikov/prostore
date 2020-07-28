@@ -47,7 +47,7 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
             notExistsKeys.add("sharding key(s)");
         }
 
-        if (! notExistsKeys.isEmpty()) {
+        if (!notExistsKeys.isEmpty()) {
             throw new IllegalArgumentException(
                 "Primary keys and Sharding keys are required. The following keys do not exist: " + String.join(",", notExistsKeys)
             );
@@ -56,22 +56,24 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
     }
 
     private List<ClassField> createTableFields(SqlCreate sqlCreate) {
-        final Map<String, ClassField> fieldMap = new HashMap<>();
         final List<ClassField> fields = new ArrayList<>();
         final SqlNodeList columnList = (SqlNodeList) sqlCreate.getOperandList().get(1);
-        for (int ordinalPos = 0; ordinalPos < columnList.getList().size(); ordinalPos++) {
-            SqlNode col = columnList.getList().get(ordinalPos);
-            if (col.getKind().equals(SqlKind.COLUMN_DECL)) {
-                final ClassField field = createField((SqlColumnDeclaration) col, ordinalPos);
-                fieldMap.put(field.getName(), field);
-                fields.add(field);
-            } else if (col.getKind().equals(SqlKind.PRIMARY_KEY)) {
-                initPrimaryKeyColumns((SqlKeyConstraint) col, fieldMap);
-            } else {
-                throw new RuntimeException("Тип атрибута " + col.getKind() + " не поддерживается!");
+        if (columnList != null) {
+            final Map<String, ClassField> fieldMap = new HashMap<>();
+            for (int ordinalPos = 0; ordinalPos < columnList.getList().size(); ordinalPos++) {
+                SqlNode col = columnList.getList().get(ordinalPos);
+                if (col.getKind().equals(SqlKind.COLUMN_DECL)) {
+                    final ClassField field = createField((SqlColumnDeclaration) col, ordinalPos);
+                    fieldMap.put(field.getName(), field);
+                    fields.add(field);
+                } else if (col.getKind().equals(SqlKind.PRIMARY_KEY)) {
+                    initPrimaryKeyColumns((SqlKeyConstraint) col, fieldMap);
+                } else {
+                    throw new RuntimeException("Тип атрибута " + col.getKind() + " не поддерживается!");
+                }
             }
+            initDistributedKeyColumns(sqlCreate, fieldMap);
         }
-        initDistributedKeyColumns(sqlCreate, fieldMap);
         return fields;
     }
 

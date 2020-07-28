@@ -1,6 +1,7 @@
 package ru.ibs.dtm.jdbc.ext;
 
 import lombok.SneakyThrows;
+import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.jdbc.util.DtmException;
 import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
 
@@ -101,9 +102,14 @@ public class DtmResultSetMetaData implements ResultSetMetaData {
 
     @Override
     public int getColumnType(int column) throws SQLException {
-        return JDBCType
-                .valueOf(fields.get(column - 1).getType().name())
+        ColumnType type = fields.get(column - 1).getType();
+        if (type == ColumnType.INT) {
+            return JDBCType.INTEGER.getVendorTypeNumber();
+        } else {
+            return JDBCType
+                .valueOf(type.name())
                 .getVendorTypeNumber();
+        }
     }
 
     @Override

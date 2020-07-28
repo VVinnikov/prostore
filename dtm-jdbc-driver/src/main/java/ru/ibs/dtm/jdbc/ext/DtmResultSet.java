@@ -1,6 +1,7 @@
 package ru.ibs.dtm.jdbc.ext;
 
 import lombok.SneakyThrows;
+import lombok.val;
 import ru.ibs.dtm.jdbc.core.Field;
 import ru.ibs.dtm.jdbc.util.DtmException;
 import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
@@ -10,6 +11,9 @@ import java.io.Reader;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.sql.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
@@ -694,7 +698,8 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public Date getDate(int columnIndex, Calendar cal) throws SQLException {
-        return null;
+        val value = (LocalDate) thisRow[columnIndex - 1].getValue();
+        return Date.valueOf(value);
     }
 
     @Override
@@ -704,7 +709,8 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public Time getTime(int columnIndex, Calendar cal) throws SQLException {
-        return null;
+        val value = (LocalTime) thisRow[columnIndex - 1].getValue();
+        return Time.valueOf(value);
     }
 
     @Override
@@ -714,7 +720,8 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public Timestamp getTimestamp(int columnIndex, Calendar cal) throws SQLException {
-        return null;
+        val value = (LocalDateTime) thisRow[columnIndex - 1].getValue();
+        return Timestamp.valueOf(value);
     }
 
     @Override

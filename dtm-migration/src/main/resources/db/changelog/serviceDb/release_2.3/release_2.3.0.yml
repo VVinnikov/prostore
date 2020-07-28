@@ -1,15 +1,1 @@
-databaseChangeLog:
-  - changeSet:
-      id:  20200722_120000
-      author: 'Ivan Lapa'
-      changes:
-        - sqlFile:
-            path: 0001.sql
-            relativeToChangelogFile:  true
-  - changeSet:
-      id:  20200728_120000
-      author: 'Ivan Lapa'
-      changes:
-        - sqlFile:
-            path: 0002.sql
-            relativeToChangelogFile:  true
+databaseChangeLog:  - changeSet:      id:  20200722_120000      author: 'Ivan Lapa'      changes:        - sqlFile:            path: 0001.sql            relativeToChangelogFile:  true  - changeSet:      id:  20200728_120000      author: 'Dmitrii Kosiakov'      changes:        - sqlFile:            path: 0002.sql            relativeToChangelogFile:  true

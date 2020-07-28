@@ -61,3 +61,48 @@ kafka:
 logging:
   level:
     ru.ibs.dtm.query.execution: ${WRITER_LOG_LEVEL:INFO}
+
+plugins:
+  adb:
+    datasource:
+      database: ${ADB_DB_NAME:adb}
+      user: ${ADB_USERNAME:gpadmin}
+      password: ${ADB_PASS:}
+      host: ${ADB_HOST:10.18.84.12}
+      port: ${ADB_PORT:5432}
+      maxSize: 20
+    connector:
+      adb:
+        host: ${ADB_MPPR_CONNECTOR_HOST:10.18.84.18}
+        port: ${ADB_MPPR_CONNECTOR_PORT:8086}
+        url: ${ADB_MPPR_CONNECTOR_URL:/query}
+
+  adg:
+    tarantool:
+      db:
+        host: ${TARANTOOL_DB_HOST:10.92.3.12}
+        port: ${TARANTOOL_DB_PORT:3301}
+        user: ${TARANTOOL_DB_USER:admin}
+        password: ${TARANTOOL_DB_PASS:memstorage-cluster-cookie}
+        operationTimeout: ${TARANTOOL_DB_OPER_TIMEOUT:60000}
+      cartridge:
+        url: ${TARANTOOL_CATRIDGE_URL:http://10.92.3.12:8081}
+        kafkaSubscriptionUrl: /api/v1/kafka/subscription
+        kafkaLoadDataUrl: /api/v1/kafka/dataload
+        transferDataToScdTableUrl: /api/etl/transfer_data_to_scd_table
+
+  adqm:
+    datasource:
+      database: ${ADQM_DB_NAME:upload}
+      user: ${ADQM_USERNAME:}
+      password: ${ADQM_PASS:}
+      hosts: ${ADQM_HOSTS:localhost:8123}
+
+    ddl:
+      cluster: ${ADQM_CLUSTER:test_arenadata}
+      ttl_sec: ${ADQM_TTL_SEC:3600}
+      archiveDisk: ${ADQM_ARCHIVE_DISK:default}
+
+    mppw:
+      consumerGroup: ${ADQM_CONSUMER_GROUP:adqm}
+      kafkaBrokers: ${ADQM_BROKERS:localhost:9092}

@@ -3,6 +3,7 @@ package ru.ibs.dtm.query.execution.core.dao.servicedb;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import ru.ibs.dtm.query.execution.core.dto.DatamartView;
+import ru.ibs.dtm.query.execution.core.dto.SystemDatamartView;
 
 import java.util.List;
 
@@ -19,4 +20,6 @@ public interface ViewDao {
     void dropView(String viewName, Long datamartId, Handler<AsyncResult<Void>> resultHandler);
 
     void dropViewsByDatamartId(Long datamartId, Handler<AsyncResult<Void>> resultHandler);
+
+    void findAllSystemViews(Handler<AsyncResult<List<SystemDatamartView>>> resultHandler);
 }

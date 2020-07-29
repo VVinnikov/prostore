@@ -38,6 +38,8 @@ kafka:
       bootstrap.servers: *kafkaUrl
       group.id: adqm-query-execution
     core:
+      key.deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
+      value.deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
       bootstrap.servers: *kafkaUrl
       key.deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
       value.deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer

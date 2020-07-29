@@ -13,6 +13,7 @@ import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.plugin.adqm.common.DdlUtils;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
+import ru.ibs.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.StatusReporter;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
@@ -186,14 +187,12 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
     }
 
     private void reportFinish(String topic) {
-        JsonObject start = new JsonObject();
-        start.put("topic", topic);
+        StatusReportDto start = new StatusReportDto(topic);
         statusReporter.onFinish(start);
     }
 
     private void reportError(String topic) {
-        JsonObject start = new JsonObject();
-        start.put("topic", topic);
+        StatusReportDto start = new StatusReportDto(topic);
         statusReporter.onError(start);
     }
 }

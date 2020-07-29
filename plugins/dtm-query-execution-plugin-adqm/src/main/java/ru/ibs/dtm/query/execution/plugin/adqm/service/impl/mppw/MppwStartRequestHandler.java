@@ -14,34 +14,29 @@ import ru.ibs.dtm.query.execution.plugin.adqm.common.DdlUtils;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.MppwProperties;
+import ru.ibs.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.StatusReporter;
+import ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw.load.*;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 import static ru.ibs.dtm.query.execution.plugin.adqm.common.Constants.*;
 import static ru.ibs.dtm.query.execution.plugin.adqm.common.DdlUtils.avroTypeToNative;
 import static ru.ibs.dtm.query.execution.plugin.adqm.common.DdlUtils.splitQualifiedTableName;
+import static ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw.load.LoadType.KAFKA;
+import static ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw.load.LoadType.REST;
 
 @Component("adqmMppwStartRequestHandler")
 @Slf4j
 public class MppwStartRequestHandler implements MppwRequestHandler {
     private static final String QUERY_TABLE_SETTINGS = "select %s from system.tables where database = '%s' and name = '%s'";
-    private static final String KAFKA_ENGINE_TEMPLATE = "ENGINE = Kafka()\n" +
-            "  SETTINGS\n" +
-            "    kafka_broker_list = '%s',\n" +
-            "    kafka_topic_list = '%s',\n" +
-            "    kafka_group_name = '%s',\n" +
-            "    kafka_format = '%s'";
-    private static final String EXT_SHARD_TEMPLATE =
-            "CREATE TABLE IF NOT EXISTS %s ON CLUSTER %s (\n" +
-            "  %s\n" +
-            ")\n" +
-            "%s\n";
     private static final String BUFFER_SHARD_TEMPLATE =
             "CREATE TABLE IF NOT EXISTS %s ON CLUSTER %s (%s, sys_op_buffer Nullable(Int8)) ENGINE = Join(ANY, INNER, %s)";
     private static final String BUFFER_TEMPLATE =
@@ -57,16 +52,24 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     private final AppConfiguration appConfiguration;
     private final MppwProperties mppwProperties;
     private final StatusReporter statusReporter;
+    private final Map<LoadType, ExtTableCreator> extTableCreators = new HashMap<>();
+    private final RestLoadInitiator restLoadInitiator;
 
     public MppwStartRequestHandler(final DatabaseExecutor databaseExecutor,
                                    final DdlProperties ddlProperties,
                                    final AppConfiguration appConfiguration,
-                                   final MppwProperties mppwProperties, StatusReporter statusReporter) {
+                                   final MppwProperties mppwProperties,
+                                   final StatusReporter statusReporter,
+                                   final RestLoadInitiator restLoadInitiator) {
         this.databaseExecutor = databaseExecutor;
         this.ddlProperties = ddlProperties;
         this.appConfiguration = appConfiguration;
         this.mppwProperties = mppwProperties;
         this.statusReporter = statusReporter;
+        this.restLoadInitiator = restLoadInitiator;
+
+        extTableCreators.put(KAFKA, new KafkaExtTableCreator(ddlProperties, mppwProperties));
+        extTableCreators.put(REST, new RestExtTableCreator(ddlProperties));
     }
 
     @Override
@@ -91,8 +94,8 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
             return Future.failedFuture(e);
         }
 
-        String kafkaSettings = genKafkaEngine(request, fullName);
-        Future<Void> extTableF = createExternalTable(fullName + EXT_SHARD_POSTFIX, schema, kafkaSettings);
+        Future<Void> extTableF = sortingKey.compose(keys ->
+                createExternalTable(request.getTopic(), fullName, schema, keys));
 
         // 4. Create _buffer_shard
         Future<Void> buffShardF = sortingKey.compose(keys ->
@@ -111,6 +114,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
                 createActualLoaderTable(fullName + ACTUAL_LOADER_SHARD_POSTFIX, schema, request.getQueryLoadParam().getDeltaHot()));
 
         return CompositeFuture.all(extTableF, buffShardF, buffF, buffLoaderF, actualLoaderF)
+                .compose(v -> createRestInitiator(request))
                 .compose(v -> Future.succeededFuture(QueryResult.emptyResult()), f -> {
                     reportError(request.getTopic());
                     return Future.failedFuture(f.getCause());
@@ -144,27 +148,20 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         return result.future();
     }
 
-    private String genKafkaEngine(@NonNull final MppwRequest request, @NonNull String tableName) {
-        String brokers = mppwProperties.getKafkaBrokers();
-        String topic = request.getTopic();
-        String consumerGroup = getConsumerGroupName(tableName);
-        // FIXME Support other formats (Text, CSV, Json?)
-        String format = "Avro";
-        return format(KAFKA_ENGINE_TEMPLATE, brokers, topic, consumerGroup, format);
-    }
-
     @NonNull
     private String getConsumerGroupName(@NonNull String tableName) {
-        return mppwProperties.getConsumerGroup() + tableName;
+        return mppwProperties.getLoadType() == KAFKA ?
+                mppwProperties.getConsumerGroup() + tableName :
+                mppwProperties.getRestLoadConsumerGroup();
     }
 
-    private Future<Void> createExternalTable(@NonNull String table,
+    private Future<Void> createExternalTable(@NonNull String topic,
+                                             @NonNull String table,
                                              @NonNull Schema schema,
-                                             @NonNull String kafkaSettings) {
-        String columns = schema.getFields().stream()
-                .map(DdlUtils::avroFieldToString)
-                .collect(Collectors.joining(", "));
-        String query = format(EXT_SHARD_TEMPLATE, table, ddlProperties.getCluster(), columns, kafkaSettings);
+                                             @NonNull String sortingKey) {
+        LoadType loadType = mppwProperties.getLoadType();
+        ExtTableCreator creator = extTableCreators.get(loadType);
+        String query = creator.generate(topic, table, schema, sortingKey);
         return databaseExecutor.executeUpdate(query);
     }
 
@@ -214,6 +211,30 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         return databaseExecutor.executeUpdate(query);
     }
 
+    private Future<Void> createRestInitiator(MppwRequest mppwRequest) {
+        LoadType loadType = mppwProperties.getLoadType();
+        if (loadType == KAFKA) {
+            return Future.succeededFuture();
+        }
+
+        RestLoadRequest request = new RestLoadRequest();
+        request.setHotDelta(mppwRequest.getQueryLoadParam().getDeltaHot());
+        request.setDatamart(mppwRequest.getQueryLoadParam().getDatamart());
+        request.setTableName(mppwRequest.getQueryLoadParam().getTableName());
+        request.setZookeeperHost(mppwRequest.getZookeeperHost());
+        request.setZookeeperPort(mppwRequest.getZookeeperPort());
+        request.setKafkaTopic(mppwRequest.getTopic());
+        request.setFormat(mppwRequest.getQueryLoadParam().getFormat().getName());
+
+        try {
+            val schema = new Schema.Parser().parse(mppwRequest.getSchema().encode());
+            request.setSchema(schema);
+            return restLoadInitiator.initiateLoading(request);
+        } catch (Exception e) {
+            return Future.failedFuture(e);
+        }
+    }
+
     private String findTypeForColumn(@NonNull String columnName, @NonNull Schema schema) {
         // Sub-optimal find via full scan of schema
         val field = schema.getFields().stream().filter(a -> a.name().equalsIgnoreCase(columnName)).findFirst();
@@ -221,21 +242,17 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     }
 
     private void reportStart(String topic, String fullName) {
-        JsonObject start = new JsonObject();
-        start.put("topic", topic);
-        start.put("consumerGroup", getConsumerGroupName(fullName));
+        StatusReportDto start = new StatusReportDto(topic, getConsumerGroupName(fullName));
         statusReporter.onStart(start);
     }
 
     private void reportFinish(String topic) {
-        JsonObject start = new JsonObject();
-        start.put("topic", topic);
+        StatusReportDto start = new StatusReportDto(topic);
         statusReporter.onFinish(start);
     }
 
     private void reportError(String topic) {
-        JsonObject start = new JsonObject();
-        start.put("topic", topic);
+        StatusReportDto start = new StatusReportDto(topic);
         statusReporter.onError(start);
     }
 }

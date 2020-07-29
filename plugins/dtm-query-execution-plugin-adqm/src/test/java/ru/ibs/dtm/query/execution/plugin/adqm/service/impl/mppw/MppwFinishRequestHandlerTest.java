@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.plugin.exload.QueryLoadParam;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
+import ru.ibs.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockDatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockEnvironment;
@@ -83,9 +84,9 @@ class MppwFinishRequestHandlerTest {
     }
 
     private MockStatusReporter getMockReporter() {
-        Map<String, JsonObject> expected = new HashMap<>();
-        expected.put("finish", new JsonObject(String.format("{\"topic\": \"%s\"}", TEST_TOPIC)));
-        expected.put("error", new JsonObject(String.format("{\"topic\": \"%s\"}", TEST_TOPIC)));
+        Map<String, StatusReportDto> expected = new HashMap<>();
+        expected.put("finish", new StatusReportDto(TEST_TOPIC));
+        expected.put("error", new StatusReportDto(TEST_TOPIC));
         return new MockStatusReporter(expected);
     }
 }

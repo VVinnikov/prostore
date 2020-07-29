@@ -128,9 +128,13 @@ public class DdlUtils {
     }
 
     public static String avroFieldToString(@NonNull Schema.Field f) {
+        return avroFieldToString(f, true);
+    }
+
+    public static String avroFieldToString(@NonNull Schema.Field f, boolean isNullable) {
         String name = f.name();
         String type = avroTypeToNative(f.schema());
-        String template = NULLABLE_FIELD; // FIXME Actually it's ok, because all schema fields are union (type, nullable)
+        String template = isNullable ? NULLABLE_FIELD : NOT_NULLABLE_FIELD;
 
         return String.format(template, name, type);
     }

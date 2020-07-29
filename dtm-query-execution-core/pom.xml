@@ -398,6 +398,7 @@
                                         |upload_external_table
                                         |upload_query
                                         |views_registry
+                                        |system_views_registry
                                     </includes>
                                     <inputSchema>${datasource.service.options.database}</inputSchema>
                                     <!--outputSchema>dtmservice</outputSchema-->

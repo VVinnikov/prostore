@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.delta.DeltaInformation;
 import ru.ibs.dtm.common.delta.DeltaInterval;
 import ru.ibs.dtm.common.delta.DeltaType;
+import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.calcite.core.service.QueryParserService;
 import ru.ibs.dtm.query.execution.model.metadata.*;
@@ -157,9 +158,9 @@ public class AdgQueryEnrichmentServiceImplTest {
         accounts.setDatamartMnemonic(schemaName);
         List<TableAttribute> accAttrs = new ArrayList<>();
         accAttrs.add(new TableAttribute(UUID.randomUUID(), "account_id", new AttributeType(UUID.randomUUID(),
-                ColumnType.BIGINT), 0, 0, 1, 1));
+                ColumnType.BIGINT), 0, 0, 1, 1, 1, false));
         accAttrs.add(new TableAttribute(UUID.randomUUID(), "account_type", new AttributeType(UUID.randomUUID(),
-                ColumnType.VARCHAR), 1, 0, null, null));
+                ColumnType.VARCHAR), 1, 0, null, null, 2, false));
         accounts.setTableAttributes(accAttrs);
         DatamartTable transactions = new DatamartTable();
         transactions.setLabel("transactions");
@@ -167,13 +168,13 @@ public class AdgQueryEnrichmentServiceImplTest {
         transactions.setDatamartMnemonic(schemaName);
         List<TableAttribute> trAttr = new ArrayList<>();
         trAttr.add(new TableAttribute(UUID.randomUUID(), "transaction_id", new AttributeType(UUID.randomUUID(),
-                ColumnType.BIGINT), 0, 0, 1, 1));
+                ColumnType.BIGINT), 0, 0, 1, 1, 1, false));
         trAttr.add(new TableAttribute(UUID.randomUUID(), "transaction_date", new AttributeType(UUID.randomUUID(),
-                ColumnType.DATE), 0, 0, null, null));
+                ColumnType.DATE), 0, 0, null, null, 2, false));
         trAttr.add(new TableAttribute(UUID.randomUUID(), "account_id", new AttributeType(UUID.randomUUID(),
-                ColumnType.BIGINT), 0, 0, 2, 1));
+                ColumnType.BIGINT), 0, 0, 2, 1, 3, false));
         trAttr.add(new TableAttribute(UUID.randomUUID(), "amount", new AttributeType(UUID.randomUUID(),
-                ColumnType.BIGINT), 0, 0, null, null));
+                ColumnType.BIGINT), 0, 0, null, null, 4, true));
         transactions.setTableAttributes(trAttr);
 
         List<Datamart> datamarts = new ArrayList<>();

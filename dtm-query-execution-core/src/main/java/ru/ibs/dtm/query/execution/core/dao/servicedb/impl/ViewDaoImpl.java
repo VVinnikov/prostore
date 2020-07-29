@@ -61,7 +61,7 @@ public class ViewDaoImpl implements ViewDao {
                         , datamartId
                         , resultSet.getRows());
                     log.error(failureMsg);
-                    resultHandler.handle(Future.failedFuture(failureMsg));
+                    resultHandler.handle(Future.failedFuture(new RuntimeException(failureMsg)));
                 }
             } else {
                 resultHandler.handle(Future.failedFuture(ar.cause()));

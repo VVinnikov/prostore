@@ -30,10 +30,10 @@ public class DdlServiceDaoImpl implements DdlServiceDao {
         executor.execute(dsl -> dsl.query(sql)
         ).setHandler(ar -> {
             if (ar.succeeded()) {
-                log.debug("Исполнен запрос(executeUpdate) sql: {}, результат: {}", sql, ar.result());
+                log.debug("Execute query sql: {}, result: {}", sql, ar.result());
                 resultHandler.handle(Future.succeededFuture());
             } else {
-                log.error("Ошибка при исполнении запроса(executeUpdate) sql: {}", sql, ar.cause());
+                log.error("Error while executing the query sql: {}", sql, ar.cause());
                 resultHandler.handle(Future.failedFuture(ar.cause()));
             }
         });
@@ -44,15 +44,16 @@ public class DdlServiceDaoImpl implements DdlServiceDao {
         executor.query(dsl -> dsl.resultQuery(sql))
                 .setHandler(ar -> {
                     if (ar.succeeded()) {
-                        log.debug("Исполнен запрос(executeQuery) sql: {}, результат: {}", sql, ar.result());
+                        log.debug("Execute query sql: {}, result: {}", sql, ar.result());
                         if (ar.result().unwrap() instanceof ResultSet) {
                             resultHandler.handle(Future.succeededFuture(ar.result().unwrap()));
                         } else {
-                            log.error("Невозможно получить результат запроса(executeQuery) sql: {}", sql, ar.cause());
-                            resultHandler.handle(Future.failedFuture(String.format("Невозможно получить результат выполнения запроса [%s]", sql)));
+                            log.error("Cannot get the result of the query sql: {}", sql, ar.cause());
+                            resultHandler.handle(Future.failedFuture(
+                                    new RuntimeException(String.format("Cannot get the result of the query [%s]", sql))));
                         }
                     } else {
-                        log.error("Ошибка при исполнении запроса(executeQuery) sql: {}", sql, ar.cause());
+                        log.error("Error while executing the query sql: {}", sql, ar.cause());
                         resultHandler.handle(Future.failedFuture(ar.cause()));
                     }
                 });
@@ -62,10 +63,10 @@ public class DdlServiceDaoImpl implements DdlServiceDao {
     public void dropTable(ClassTable classTable, Handler<AsyncResult<ClassTable>> resultHandler) {
         executor.execute(dsl -> dsl.dropTableIfExists(classTable.getName())).setHandler(ar -> {
             if (ar.succeeded()) {
-                log.debug("Удаление таблицы [{}] успешно завершено", classTable.getNameWithSchema());
+                log.debug("Deleting table [{}] completed successfully", classTable.getNameWithSchema());
                 resultHandler.handle(Future.succeededFuture(classTable));
             } else {
-                log.error("Ошибка удаления таблицы [{}]", classTable.getNameWithSchema(), ar.cause());
+                log.error("Error deleting table [{}]!", classTable.getNameWithSchema(), ar.cause());
                 resultHandler.handle(Future.failedFuture(ar.cause()));
             }
         });

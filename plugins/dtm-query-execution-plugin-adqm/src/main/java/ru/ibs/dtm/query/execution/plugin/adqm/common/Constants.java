@@ -14,9 +14,13 @@ public final class Constants {
     public static final String BUFFER_SHARD_POSTFIX = "_buffer_shard";
     public static final String BUFFER_LOADER_SHARD_POSTFIX = "_buffer_loader_shard";
     public static final String EXT_SHARD_POSTFIX = "_ext_shard";
-
+    public static final String SYS_FROM_FIELD = "sys_from";
+    public static final String SYS_TO_FIELD = "sys_to";
+    public static final String SYS_OP_FIELD = "sys_op";
+    public static final String CLOSE_DATE_FIELD = "close_date";
+    public static final String SIGN_FIELD = "sign";
     public static final Set<String> SYSTEM_FIELDS = new HashSet<>(Arrays.asList(
-            "sys_from", "sys_to", "sys_op", "close_date", "sign"
+            SYS_FROM_FIELD, SYS_TO_FIELD, SYS_OP_FIELD, CLOSE_DATE_FIELD, SIGN_FIELD
     ));
 
 }

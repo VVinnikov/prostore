@@ -170,12 +170,12 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
                                                 @NonNull Schema schema) {
         String[] cols = columns.split(",\\s*");
         String colString = Arrays.stream(cols)
-                .filter(c -> !c.equalsIgnoreCase("sys_from"))
+                .filter(c -> !c.equalsIgnoreCase(SYS_FROM_FIELD))
                 .map(c -> format("%s %s", c, findTypeForColumn(c, schema)))
                 .collect(Collectors.joining(", "));
 
         String joinString = Arrays.stream(cols)
-                .filter(c -> !c.equalsIgnoreCase("sys_from"))
+                .filter(c -> !c.equalsIgnoreCase(SYS_FROM_FIELD))
                 .collect(Collectors.joining(", "));
 
         String query = format(BUFFER_SHARD_TEMPLATE, tableName, ddlProperties.getCluster(), colString,
@@ -193,7 +193,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     private Future<Void> createBufferLoaderTable(@NonNull String table, @NonNull String columns) {
         String query = format(BUFFER_LOADER_TEMPLATE, table, ddlProperties.getCluster(),
                 table.replaceAll(BUFFER_LOADER_SHARD_POSTFIX, BUFFER_POSTFIX),
-                columns.replaceAll("sys_from", "sys_op AS sys_op_buffer"),
+                columns.replaceAll(SYS_FROM_FIELD, SYS_OP_FIELD + " AS sys_op_buffer"),
                 table.replaceAll(BUFFER_LOADER_SHARD_POSTFIX, EXT_SHARD_POSTFIX));
         return databaseExecutor.executeUpdate(query);
     }
@@ -202,7 +202,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
                                                  @NonNull Schema schema,
                                                  long deltaHot) {
         String columns = schema.getFields().stream().map(Schema.Field::name)
-                .filter(c -> !c.equalsIgnoreCase("sys_op")).collect(Collectors.joining(", "));
+                .filter(c -> !c.equalsIgnoreCase(SYS_OP_FIELD)).collect(Collectors.joining(", "));
 
         String query = format(ACTUAL_LOADER_TEMPLATE, table, ddlProperties.getCluster(),
                 table.replaceAll(ACTUAL_LOADER_SHARD_POSTFIX, ACTUAL_POSTFIX),

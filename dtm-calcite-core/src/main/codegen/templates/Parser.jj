@@ -2760,15 +2760,42 @@ SqlNode OrderItem() :
  */
 SqlNode Snapshot(SqlNode tableRef) :
 {
-    final Span s;
-    final SqlNode period;
+    SqlOperator startedInOp = null;
+    SqlOperator finishedInOp = null;
+    SqlLiteral isLatestUncommitedDelta = null;
+    Span deltaSpan = null;
+    SqlNode num = null;
+    final SqlParserPos pos;
+    SqlNode period = null;
 }
 {
-    <FOR> <SYSTEM_TIME> <AS> <OF>
-    { s = span();
-    }
-    period = Expression(ExprContext.ACCEPT_NON_QUERY) {
-        return new ru.ibs.dtm.query.calcite.core.extension.snapshot.SqlSnapshot(s.end(this), tableRef, period);
+    <FOR> <SYSTEM_TIME>
+    (
+        (
+        <STARTED> <IN> { startedInOp = SqlStdOperatorTable.IN; }
+        |
+        <FINISHED> <IN> { finishedInOp = SqlStdOperatorTable.IN; }
+        )
+        period = Expression(ExprContext.ACCEPT_NON_QUERY)
+    |
+        (
+        <AS> <OF>
+                (
+                 <DELTA_NUM> { num = NumericLiteral(); }
+                 |
+                 <LATEST_UNCOMMITED_DELTA> { isLatestUncommitedDelta = SqlLiteral.createBoolean(true, getPos());}
+                 |
+                 period = Expression(ExprContext.ACCEPT_NON_QUERY)
+                )
+        )
+    )
+    {
+        if (period == null) {
+            period = SqlLiteral.createNull(getPos());
+        }
+
+        return new ru.ibs.dtm.query.calcite.core.extension.snapshot.SqlSnapshot(getPos(),
+        tableRef, period, startedInOp, finishedInOp, num, isLatestUncommitedDelta);
     }
 }
 

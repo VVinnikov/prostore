@@ -31,7 +31,7 @@ public class AttributeTypeDaoImpl implements AttributeTypeDao {
             if (ar.succeeded())
                 resultHandler.handle(ar.result().hasResults()
                         ? Future.succeededFuture(ar.result().get(DATA_TYPES_REGISTRY.DATA_TYPE_ID))
-                        : Future.failedFuture(new RuntimeException(String.format("Type [%s] not found!", datamartMnemonic))));
+                        : Future.failedFuture(new RuntimeException(String.format("Type [%s] not found!", typeMnemonic))));
             else {
                 resultHandler.handle(Future.failedFuture(ar.cause()));
             }

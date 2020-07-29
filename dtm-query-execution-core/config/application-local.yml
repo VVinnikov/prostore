@@ -1,15 +1,15 @@
-.kafkaUrl: &kafkaUrl ${KAFKA_BOOTSTRAP_SERVERS:10.92.3.31:9092}
+.kafkaUrl: &kafkaUrl ${KAFKA_BOOTSTRAP_SERVERS:kafka-1.dtm.local:9092}
 
 logging:
   level:
-    ru.ibs.dtm.query.execution: TRACE
+    ru.ibs.dtm.query.execution: ${WRITER_LOG_LEVEL:INFO}
 
 core:
   http:
     port: ${SERVER_PORT:8088}
 
   env:
-    name: ${DTM_NAME:test}
+    name: ${DTM_NAME:local}
     defaultDatamart: ${DEFAULT_DATAMART:shares}
 
   datasource:
@@ -23,7 +23,7 @@ core:
         database: ${SERVICEDB_DB_NAME:dtmservice}
         user: ${SERVICEDB_USER:dtmuser}
         password: ${SERVICEDB_PASS:Cat6Gmt7Ncr}
-        host: ${SERVICEDB_HOST:10.92.3.41}
+        host: ${SERVICEDB_HOST:dtmservicedb}
         port: ${SERVICEDB_PORT:3306}
       poolOptions:
         maxSize: 5
@@ -39,7 +39,7 @@ core:
         key.deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
         value.deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
     cluster:
-      zookeeperHosts: ${ZOOKEEPER_HOSTS:10.92.3.31}
+      zookeeperHosts: ${ZOOKEEPER_HOSTS:zk-1.dtm.local}
       rootPath: ${KAFKA_CLUSTER_ROOTPATH:arenadata/cluster/21}
     admin:
       inputStreamTimeoutMs: ${KAFKA_INPUT_STREAM_TIMEOUT_MS:1000}

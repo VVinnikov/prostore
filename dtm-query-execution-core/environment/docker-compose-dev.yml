@@ -2,37 +2,15 @@ version: '3.7'
 
 services:
   dtm-query-execution-core:
-    build: ..
+    build:
+      context: ..
+      args:
+        - DTM_JAR=./target/dtm-query-execution-core-2.3.0-SNAPSHOT.jar
     container_name: dtm-query-execution-core
-    network_mode: bridge
     restart: always
     ports:
-      - "8080:8080"
+      - "8088:8088"
     environment:
-      - SERVICEDB_DB_NAME=dtmservice
-      - SERVICEDB_USER=dtmuser
-      - SERVICEDB_PASS=Cat6Gmt7Ncr
-      - SERVICEDB_HOST=172.17.0.1
-      - SERVICEDB_PORT=3306
-      - WRITER_LOG_LEVEL=TRACE
-      - EDML_DATASOURCE=ADB
-      - EDML_DEFAULT_CHUNK_SIZE=1000
-      - EDML_STATUS_CHECK_PERIOD_MS=1000
-      - ZOOKEEPER_HOSTS=172.17.0.1
-      - KAFKA_BOOTSTRAP_SERVERS=172.17.0.1:9092
-      - KAFKA_CLUSTER_ROOTPATH=arenadata/cluster/21
-      - KAFKA_INPUT_STREAM_TIMEOUT_MS=1000
-    # For ADB plugin
-      - ADB_DB_NAME=adb
-      - ADB_USERNAME=gpadmin
-      - ADB_PASS=
-      - ADB_HOST=10.18.84.12
-      - ADB_MPPR_CONNECTOR_HOST=10.18.84.18
-      - ADB_MPPR_CONNECTOR_PORT=8086
-    # For ADG plugin
-      - TARANTOOL_DB_HOST=10.18.84.10
-      - TARANTOOL_DB_PORT=3311
-      - TARANTOOL_DB_USER=admin
-      - TARANTOOL_DB_PASS=123
-      - TARANTOOL_CATRIDGE_URL=http://10.18.84.10:8811
-      - SCHEMA_REGISTRY_URL=http://10.18.84.6:8081
+      - SPRING_PROFILES_ACTIVE=dev
+    volumes:
+      - ../config:/app/config:Z

@@ -1,3 +1,9 @@
 #!/usr/bin/env bash
 
-docker build --build-arg DTM_JAR=./target/dtm-query-execution-core-2.3.0-SNAPSHOT.jar -t dtm-core:latest .
+DTM_JAR_NAME=$(find target -iname 'dtm-query-execution-core-*.jar' | head -n 1)
+if [ -z "${DTM_JAR_NAME}" ]; then
+  echo 'Cannot find DTM JAR. Exiting'
+  exit 1
+fi
+
+docker build --build-arg DTM_JAR="${DTM_JAR_NAME}" -t dtm-core:latest .

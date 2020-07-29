@@ -90,9 +90,9 @@ Setup run configuration for core application:
  2. Main class - `ru.ibs.dtm.query.execution.core.ServiceQueryExecutionApplication`.
  3. VM options - `-Dspring.profiles.active=dev`.
 
-##Setup JDBC test client
+## Setup JDBC test client
 
-Use [DTM JDBC driver](https://github.com/arenadata/dtm-jdbc-driver).
+Use [DTM JDBC driver](dtm-jdbc-driver/README.md).
 URL is `jdbc:adtm://<host>:<port>/`:
  - `host` is host of dtm-query-execution-core (`localhost`)
  - `port` is port of dtm-query-execution-core (see active `application.yml` for dtm-query-execution-core)

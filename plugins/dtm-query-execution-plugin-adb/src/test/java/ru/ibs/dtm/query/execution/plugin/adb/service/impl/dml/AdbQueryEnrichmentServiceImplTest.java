@@ -88,7 +88,7 @@ public class AdbQueryEnrichmentServiceImplTest {
     void enrichWithDeltaNum() {
         EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaNum(
                 "select *, CASE WHEN (account_type = 'D' AND  amount >= 0) " +
-                        "OR (account_type = 'C' AND  amount <= 0) THEN 'OK' ELSE 'NOT OK' END\n" +
+                        "OR (account_type = 'C' AND  amount <= 0) THEN 'OK' ELSE 'NOT OK   ' END\n" +
                         "  from (\n" +
                         "    select a.account_id, coalesce(sum(amount),0) amount, account_type\n" +
                         "    from shares.accounts a\n" +

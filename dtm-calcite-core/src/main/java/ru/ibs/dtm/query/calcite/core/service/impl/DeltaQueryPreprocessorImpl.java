@@ -8,6 +8,7 @@ import lombok.val;
 import org.apache.calcite.sql.SqlNode;
 import org.springframework.util.StringUtils;
 import ru.ibs.dtm.common.delta.DeltaInformation;
+import ru.ibs.dtm.common.delta.DeltaType;
 import ru.ibs.dtm.common.dto.ActualDeltaRequest;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.service.DeltaService;
@@ -16,10 +17,9 @@ import ru.ibs.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
 import ru.ibs.dtm.query.calcite.core.util.DeltaInformationExtractor;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.IntStream;
+import java.util.TreeMap;
 
 @Slf4j
 public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
@@ -67,39 +67,37 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
 
     private void calculateDeltaValues(List<DeltaInformation> deltas,
                                       Handler<AsyncResult<List<DeltaInformation>>> handler) {
-        final Map<DeltaInformation, ActualDeltaRequest> deltaInfoMap = new HashMap<>();
-        final Map<ActualDeltaRequest, Long> requestDeltaMap = new HashMap<>();
-        initRequestDeltaMap(deltas, deltaInfoMap, requestDeltaMap);
-
-        final List<ActualDeltaRequest> actualDeltaRequests = new ArrayList<>(requestDeltaMap.keySet());
+        final Map<Integer, DeltaInformation> deltaResultMap = new TreeMap<>();
+        final List<ActualDeltaRequest> actualDeltaRequests = createActualRequests(deltas, deltaResultMap);
         deltaService.getDeltasOnDateTimes(actualDeltaRequests, ar -> {
             if (ar.failed()) {
                 handler.handle(Future.failedFuture(ar.cause()));
             }
             List<Long> deltaNums = ar.result();
-            List<DeltaInformation> resultDeltas = new ArrayList<>();
-            IntStream.range(0, actualDeltaRequests.size()).forEach(i ->
-                    requestDeltaMap.put(actualDeltaRequests.get(i), deltaNums.get(i)));
-            deltaInfoMap.forEach((k, v) -> {
-                if (v != null) {
-                    resultDeltas.add(k.withDeltaNum(requestDeltaMap.get(v)));
-                } else {
-                    resultDeltas.add(k);
+            int deltaReqOrder = 0;
+            for (Map.Entry<Integer, DeltaInformation> dMap : deltaResultMap.entrySet()) {
+                if (dMap.getValue() == null) {
+                    deltaResultMap.put(dMap.getKey(), deltas.get(dMap.getKey()).withDeltaNum(deltaNums.get(deltaReqOrder)));
+                    deltaReqOrder++;
                 }
-            });
-            handler.handle(Future.succeededFuture(resultDeltas));
+            }
+            handler.handle(Future.succeededFuture(new ArrayList<>(deltaResultMap.values())));
         });
     }
 
-    private void initRequestDeltaMap(List<DeltaInformation> deltas, Map<DeltaInformation, ActualDeltaRequest> deltaInfoMap,
-                                     Map<ActualDeltaRequest, Long> requestDeltaMap) {
-        deltas.forEach(d -> {
+    private List<ActualDeltaRequest> createActualRequests(List<DeltaInformation> deltas,
+                                                          Map<Integer, DeltaInformation> deltaResultMap) {
+        final List<ActualDeltaRequest> actualDeltaRequests = new ArrayList<>();
+        int order = 0;
+        for (DeltaInformation d : deltas) {
             ActualDeltaRequest request = null;
-            if (d.isLatestUncommitedDelta() || d.getDeltaTimestamp() != null) {
+            if (d.getType().equals(DeltaType.NUM) && d.getDeltaNum() == null) {
                 request = new ActualDeltaRequest(d.getSchemaName(), d.getDeltaTimestamp(), d.isLatestUncommitedDelta());
-                requestDeltaMap.put(request, null);
+                actualDeltaRequests.add(request);
             }
-            deltaInfoMap.put(d, request);
-        });
+            deltaResultMap.put(order, request == null ? d : null);
+            order++;
+        }
+        return actualDeltaRequests;
     }
 }

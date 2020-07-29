@@ -10,7 +10,7 @@ public class DeltaInformation {
     private final String tableAlias;
     private final String deltaTimestamp;
     private final boolean isLatestUncommitedDelta;
-    private final long deltaNum;
+    private final Long deltaNum;
     private final DeltaInterval deltaInterval;
     private final DeltaType type;
     private String schemaName;

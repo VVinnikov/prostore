@@ -50,7 +50,7 @@ adb:
     database: ${ADB_DB_NAME:adb}
     user: ${ADB_USERNAME:gpadmin}
     password: ${ADB_PASS:gpadmin}
-    host: ${ADB_HOST:10.92.3.14}
+    host: ${ADB_HOST:adb}
     port: ${ADB_PORT:5432}
     maxSize: 20
 
@@ -62,23 +62,23 @@ adb:
 adg:
   tarantool:
     db:
-      host: ${TARANTOOL_DB_HOST:10.92.3.12}
+      host: ${TARANTOOL_DB_HOST:adg}
       port: ${TARANTOOL_DB_PORT:3301}
       user: ${TARANTOOL_DB_USER:admin}
       password: ${TARANTOOL_DB_PASS:memstorage-cluster-cookie}
       operationTimeout: ${TARANTOOL_DB_OPER_TIMEOUT:60000}
     cartridge:
-      url: ${TARANTOOL_CATRIDGE_URL:http://10.92.3.12:8081}
+      url: ${TARANTOOL_CATRIDGE_URL:http://adg:8081}
 
 adqm:
   datasource:
     database: ${ADQM_DB_NAME:upload}
     user: ${ADQM_USERNAME:}
     password: ${ADQM_PASS:}
-    hosts: ${ADQM_HOSTS:10.92.3.24:8123}
+    hosts: ${ADQM_HOSTS:adqm:8123}
 
   ddl:
-    cluster: ${ADQM_CLUSTER:test_arenadata}
+    cluster: ${ADQM_CLUSTER:default_cluster}
     ttlSec: ${ADQM_TTL_SEC:3600}
     archiveDisk: ${ADQM_ARCHIVE_DISK:default}
 

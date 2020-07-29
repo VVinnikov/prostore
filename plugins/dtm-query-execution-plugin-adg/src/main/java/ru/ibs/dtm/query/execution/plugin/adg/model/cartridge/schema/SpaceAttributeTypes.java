@@ -6,19 +6,21 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * Типы Tarantool
  */
 public enum SpaceAttributeTypes {
-  UNSIGNED("unsigned"),
-  NUMBER("number"),
-  STRING("string"),
-  BOOLEAN("boolean");
+    UNSIGNED("unsigned"),
+    NUMBER("number"),
+    STRING("string"),
+    INTEGER("integer"),
+    DOUBLE("double"),
+    BOOLEAN("boolean");
 
-  private String name;
+    private String name;
 
-  SpaceAttributeTypes(String name) {
-    this.name = name;
-  }
+    SpaceAttributeTypes(String name) {
+        this.name = name;
+    }
 
-  @JsonValue
-  public String getName() {
-    return name;
-  }
+    @JsonValue
+    public String getName() {
+        return name;
+    }
 }

@@ -114,12 +114,8 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
         val sb = new StringBuilder();
         sb.append(field.getName())
                 .append(" ")
-                .append(ClassTypeUtil.pgFromMariaType(field.getType().name().toLowerCase()));
-        if (field.getType().name().equalsIgnoreCase("varchar") && field.getSize() != null) {
-            sb.append("(").append(field.getSize()).append(") ");
-        } else {
-            sb.append(" ");
-        }
+                .append(ClassTypeUtil.pgFromDtmType(field))
+                .append(" ");
         if (!field.getNullable()) {
             sb.append("NOT NULL");
         }

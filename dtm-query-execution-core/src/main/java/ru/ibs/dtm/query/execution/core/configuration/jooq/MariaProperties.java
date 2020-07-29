@@ -5,7 +5,7 @@ import io.vertx.sqlclient.PoolOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-@ConfigurationProperties("datasource.service")
+@ConfigurationProperties("core.datasource.service")
 @Component
 public class MariaProperties {
   private final int DEFAULT_FETCH_SIZE = 1_000;

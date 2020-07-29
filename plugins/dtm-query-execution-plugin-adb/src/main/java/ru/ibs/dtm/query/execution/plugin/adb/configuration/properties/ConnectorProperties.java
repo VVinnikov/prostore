@@ -4,7 +4,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConfigurationProperties("connector.adb")
+@ConfigurationProperties("adb.connector")
 public class ConnectorProperties {
 
   private String host;

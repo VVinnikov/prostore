@@ -53,10 +53,4 @@ public class DtmTestConfiguration {
         };
     }
 
-    @Bean("adgKafkaAdminClient")
-    public KafkaAdminClient adqmKafkaAdminClient(KafkaProperties kafkaProperties,
-                                                 @Qualifier("adgVertx") Vertx vertx) {
-        return KafkaAdminClient.create(vertx, kafkaProperties.getConsumer().getAdg());
-    }
-
 }

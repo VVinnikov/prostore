@@ -24,11 +24,11 @@ public class AppConfiguration {
 	}
 
 	public Integer httpPort() {
-		return environment.getProperty("http.port", Integer.class);
+		return environment.getProperty("core.http.port", Integer.class);
 	}
 
 	public String getSystemName() {
-		return environment.getProperty("env.name", String.class);
+		return environment.getProperty("core.env.name", String.class);
 	}
 
 	@Bean("coreObjectMapper")

@@ -14,10 +14,10 @@ public class AppConfiguration {
     }
 
     public String getSystemName() {
-        return environment.getProperty("env.name", String.class);
+        return environment.getProperty("core.env.name", String.class);
     }
 
     public String getDefaultDatamart() {
-        return environment.getProperty("env.defaultDatamart", String.class);
+        return environment.getProperty("core.env.defaultDatamart", String.class);
     }
 }

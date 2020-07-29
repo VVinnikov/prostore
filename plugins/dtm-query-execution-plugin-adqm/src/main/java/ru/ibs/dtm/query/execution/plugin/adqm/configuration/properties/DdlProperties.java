@@ -2,7 +2,7 @@ package ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties("ddl")
+@ConfigurationProperties("adqm.ddl")
 public class DdlProperties {
     private String cluster;
     private Integer ttlSec;

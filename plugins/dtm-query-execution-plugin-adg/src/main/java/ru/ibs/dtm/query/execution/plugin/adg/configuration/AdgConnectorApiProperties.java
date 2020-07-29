@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 
 @Data
 @Component("adgConnectorProperties")
-@ConfigurationProperties(prefix = "tarantool.connector")
+@ConfigurationProperties(prefix = "adg.tarantool.connector")
 public class AdgConnectorApiProperties {
     private String url;
     private String kafkaSubscriptionUrl;

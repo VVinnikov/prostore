@@ -6,7 +6,7 @@ import java.util.Arrays;
  * Представление из информационной схемы
  */
 public enum InformationSchemaView {
-  SCHEMATA("logic_schema_datamarts"),
+  SCHEMES("logic_schema_datamarts"),
   TABLES("logic_schema_entities"),
   DELTAS("logic_schema_deltas");
 

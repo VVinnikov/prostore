@@ -3,3 +3,5 @@ databaseChangeLog:
       file: db/changelog/serviceDb/04_2020/index.yml
   - include:
       file: db/changelog/serviceDb/release_2.1/index.yml
+  - include:
+      file: db/changelog/serviceDb/release_2.3/index.yml

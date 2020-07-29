@@ -3,7 +3,7 @@ package ru.ibs.dtm.query.calcite.core.util;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql.type.SqlTypeName;
-import ru.ibs.dtm.query.execution.model.metadata.ColumnType;
+import ru.ibs.dtm.common.model.ddl.ColumnType;
 
 import java.util.List;
 

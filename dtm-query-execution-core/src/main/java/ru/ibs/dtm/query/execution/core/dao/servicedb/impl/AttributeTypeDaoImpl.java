@@ -22,16 +22,16 @@ public class AttributeTypeDaoImpl implements AttributeTypeDao {
     }
 
     @Override
-    public void findTypeIdByDatamartName(String datamartMnemonic, Handler<AsyncResult<Integer>> resultHandler) {
+    public void findTypeIdByTypeMnemonic(String typeMnemonic, Handler<AsyncResult<Integer>> resultHandler) {
         executor.query(dsl -> dsl
                 .select(DATA_TYPES_REGISTRY.DATA_TYPE_ID)
                 .from(DATA_TYPES_REGISTRY)
-                .where(DATA_TYPES_REGISTRY.DATA_TYPE_MNEMONICS.equalIgnoreCase(datamartMnemonic))
+                .where(DATA_TYPES_REGISTRY.DATA_TYPE_MNEMONICS.equalIgnoreCase(typeMnemonic))
         ).setHandler(ar -> {
             if (ar.succeeded())
                 resultHandler.handle(ar.result().hasResults()
                         ? Future.succeededFuture(ar.result().get(DATA_TYPES_REGISTRY.DATA_TYPE_ID))
-                        : Future.failedFuture(new RuntimeException(String.format("Type [%s] not found!", datamartMnemonic))));
+                        : Future.failedFuture(new RuntimeException(String.format("Type [%s] not found!", typeMnemonic))));
             else {
                 resultHandler.handle(Future.failedFuture(ar.cause()));
             }

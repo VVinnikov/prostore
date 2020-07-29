@@ -1,10 +1,11 @@
 package ru.ibs.dtm.query.execution.model.metadata;
 
-import java.io.Serializable;
-import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
+import java.util.UUID;
 
 @Data
 @AllArgsConstructor
@@ -38,4 +39,8 @@ public class TableAttribute implements Serializable {
      * Порядковый номер distribute ключа
      */
     private Integer distributeKeyOrder;
+
+    private int ordinalPosition;
+
+    private Boolean nullable;
 }

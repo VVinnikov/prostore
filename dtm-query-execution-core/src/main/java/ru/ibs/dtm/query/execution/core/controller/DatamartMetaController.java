@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MimeTypeUtils;
-import ru.ibs.dtm.query.execution.core.service.DatamartMetaService;
+import ru.ibs.dtm.query.execution.core.service.metadata.DatamartMetaService;
 
 import java.util.List;
 

@@ -3,7 +3,6 @@ package ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.JsonObject;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -11,24 +10,22 @@ import lombok.val;
 import org.apache.avro.Schema;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryResult;
-import ru.ibs.dtm.query.execution.model.metadata.Datamart;
-import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;
-import ru.ibs.dtm.query.execution.model.metadata.TableAttribute;
 import ru.ibs.dtm.query.execution.plugin.adqm.common.DdlUtils;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.MppwProperties;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
+import ru.ibs.dtm.query.execution.plugin.adqm.service.StatusReporter;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 import static ru.ibs.dtm.query.execution.plugin.adqm.common.Constants.*;
-import static ru.ibs.dtm.query.execution.plugin.adqm.common.DdlUtils.*;
+import static ru.ibs.dtm.query.execution.plugin.adqm.common.DdlUtils.avroTypeToNative;
+import static ru.ibs.dtm.query.execution.plugin.adqm.common.DdlUtils.splitQualifiedTableName;
 
 @Component("adqmMppwStartRequestHandler")
 @Slf4j
@@ -59,15 +56,17 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     private final DdlProperties ddlProperties;
     private final AppConfiguration appConfiguration;
     private final MppwProperties mppwProperties;
+    private final StatusReporter statusReporter;
 
     public MppwStartRequestHandler(final DatabaseExecutor databaseExecutor,
                                    final DdlProperties ddlProperties,
                                    final AppConfiguration appConfiguration,
-                                   final MppwProperties mppwProperties) {
+                                   final MppwProperties mppwProperties, StatusReporter statusReporter) {
         this.databaseExecutor = databaseExecutor;
         this.ddlProperties = ddlProperties;
         this.appConfiguration = appConfiguration;
         this.mppwProperties = mppwProperties;
+        this.statusReporter = statusReporter;
     }
 
     @Override
@@ -78,7 +77,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         }
 
         String fullName = DdlUtils.getQualifiedTableName(request, appConfiguration);
-
+        reportStart(request.getTopic(), fullName);
         // 1. Determine table engine (_actual_shard)
         Future<String> engineFull = getTableSetting(fullName + ACTUAL_POSTFIX, "engine_full");
         // 2. Get sorting order (_actual)
@@ -112,7 +111,10 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
                 createActualLoaderTable(fullName + ACTUAL_LOADER_SHARD_POSTFIX, schema, request.getQueryLoadParam().getDeltaHot()));
 
         return CompositeFuture.all(extTableF, buffShardF, buffF, buffLoaderF, actualLoaderF)
-                .flatMap(v -> Future.succeededFuture(QueryResult.emptyResult()));
+                .compose(v -> Future.succeededFuture(QueryResult.emptyResult()), f -> {
+                    reportError(request.getTopic());
+                    return Future.failedFuture(f.getCause());
+                });
     }
 
     private Future<String> getTableSetting(@NonNull String table, @NonNull String settingKey) {
@@ -142,25 +144,18 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         return result.future();
     }
 
-    private Optional<DatamartTable> findTableSchema(@NonNull String table, @NonNull final JsonObject schema) {
-        try {
-            Datamart dm = schema.mapTo(Datamart.class);
-            return dm.getDatamartTables().stream()
-                    .filter(c -> c.getMnemonic().equalsIgnoreCase(table))
-                    .findFirst();
-        } catch (DecodeException e) {
-            log.error("Cannot decode schema to Datamart", e);
-            return Optional.empty();
-        }
-    }
-
     private String genKafkaEngine(@NonNull final MppwRequest request, @NonNull String tableName) {
         String brokers = mppwProperties.getKafkaBrokers();
         String topic = request.getTopic();
-        String consumerGroup = mppwProperties.getConsumerGroup() + tableName;
+        String consumerGroup = getConsumerGroupName(tableName);
         // FIXME Support other formats (Text, CSV, Json?)
         String format = "Avro";
         return format(KAFKA_ENGINE_TEMPLATE, brokers, topic, consumerGroup, format);
+    }
+
+    @NonNull
+    private String getConsumerGroupName(@NonNull String tableName) {
+        return mppwProperties.getConsumerGroup() + tableName;
     }
 
     private Future<Void> createExternalTable(@NonNull String table,
@@ -223,5 +218,24 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         // Sub-optimal find via full scan of schema
         val field = schema.getFields().stream().filter(a -> a.name().equalsIgnoreCase(columnName)).findFirst();
         return field.map(f -> avroTypeToNative(f.schema())).orElse("Int64");
+    }
+
+    private void reportStart(String topic, String fullName) {
+        JsonObject start = new JsonObject();
+        start.put("topic", topic);
+        start.put("consumerGroup", getConsumerGroupName(fullName));
+        statusReporter.onStart(start);
+    }
+
+    private void reportFinish(String topic) {
+        JsonObject start = new JsonObject();
+        start.put("topic", topic);
+        statusReporter.onFinish(start);
+    }
+
+    private void reportError(String topic) {
+        JsonObject start = new JsonObject();
+        start.put("topic", topic);
+        statusReporter.onError(start);
     }
 }

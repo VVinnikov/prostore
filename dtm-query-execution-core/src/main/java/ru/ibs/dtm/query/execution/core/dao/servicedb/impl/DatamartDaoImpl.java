@@ -93,4 +93,19 @@ public class DatamartDaoImpl implements DatamartDao {
             }
         });
     }
+
+    @Override
+    public void isDatamartExists(String name, Handler<AsyncResult<Boolean>> resultHandler) {
+        executor.query(dsl -> dsl
+                .select(DATAMARTS_REGISTRY.DATAMART_ID)
+                .from(DATAMARTS_REGISTRY)
+                .where(DATAMARTS_REGISTRY.DATAMART_MNEMONICS.eq(name))
+        ).setHandler(ar -> {
+            if (ar.succeeded()) {
+                resultHandler.handle(Future.succeededFuture(ar.result().hasResults()));
+            } else {
+                resultHandler.handle(Future.failedFuture(ar.cause()));
+            }
+        });
+    }
 }

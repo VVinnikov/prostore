@@ -11,7 +11,7 @@ import ru.ibs.dtm.query.execution.core.utils.BeanNameGenerator;
 
 @SpringBootApplication(exclude = {SpringApplicationAdminJmxAutoConfiguration.class, JooqAutoConfiguration.class})
 @ConfigurationPropertiesScan("ru.ibs.dtm")
-@ComponentScan(basePackages = "ru.ibs.dtm.query.execution", nameGenerator = BeanNameGenerator.class)
+@ComponentScan(basePackages = {"ru.ibs.dtm.query.execution", "ru.ibs.dtm.kafka.core"}, nameGenerator = BeanNameGenerator.class)
 public class ServiceQueryExecutionApplication {
 
   public static void main(String[] args) {

@@ -20,6 +20,7 @@ import ru.ibs.dtm.query.execution.core.dao.delta.impl.DeltaServiceDaoImpl;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import ru.ibs.dtm.query.execution.core.factory.impl.DeltaQueryResultFactoryImpl;
+import ru.ibs.dtm.query.execution.core.service.delta.impl.BeginDeltaExecutor;
 import ru.ibs.dtm.query.execution.plugin.api.delta.DeltaRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.delta.query.BeginDeltaQuery;
 import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;

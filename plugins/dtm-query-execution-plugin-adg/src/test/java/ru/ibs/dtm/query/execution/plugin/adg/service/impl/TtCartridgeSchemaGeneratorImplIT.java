@@ -13,7 +13,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
-import ru.ibs.dtm.common.model.ddl.ClassTypes;
+import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.OperationYaml;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response.ResConfig;
 import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeClient;
@@ -42,8 +42,8 @@ class TtCartridgeSchemaGeneratorImplIT {
   private ObjectMapper yamlMapper;
 
   private ClassTable classTable = new ClassTable("test.test_", Arrays.asList(
-    new ClassField("id", ClassTypes.INT.name(), false, 1, 1, null),
-    new ClassField("test", ClassTypes.VARCHAR.name(), true, null, null, null)
+    new ClassField(0,"id", ColumnType.INT.name(), false, 1, 1, null),
+    new ClassField(1, "test", ColumnType.VARCHAR.name(), true, null, null, null)
   ));
 
   @Test

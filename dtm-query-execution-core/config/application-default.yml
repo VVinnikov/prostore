@@ -47,12 +47,13 @@ core:
 
 adb:
   datasource:
-    database: ${ADB_DB_NAME:adb}
-    user: ${ADB_USERNAME:gpadmin}
-    password: ${ADB_PASS:gpadmin}
-    host: ${ADB_HOST:10.92.3.14}
-    port: ${ADB_PORT:5432}
-    maxSize: 20
+    options:
+      database: ${ADB_DB_NAME:adb}
+      user: ${ADB_USERNAME:gpadmin}
+      password: ${ADB_PASS:gpadmin}
+      host: ${ADB_HOST:10.92.3.14}
+      port: ${ADB_PORT:5432}
+      maxSize: 20
 
   connector:
     host: ${ADB_MPPR_CONNECTOR_HOST:10.92.3.14}

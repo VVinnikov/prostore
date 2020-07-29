@@ -79,11 +79,11 @@
                 <activeByDefault>false</activeByDefault>
             </activation>
             <properties>
-                <datasource.service.options.host>${SDB_HOST:10.92.3.41}</datasource.service.options.host>
-                <datasource.service.options.port>${SDB_PORT:3306}</datasource.service.options.port>
-                <datasource.service.options.database>${SDB_DATABASE:dtmservice}</datasource.service.options.database>
-                <datasource.service.options.user>${SDB_USER:dtmuser}</datasource.service.options.user>
-                <datasource.service.options.password>${SDB_PASSWORD:Cat6Gmt7Ncr}</datasource.service.options.password>
+                <datasource.service.options.host>${SDB_HOST}</datasource.service.options.host>
+                <datasource.service.options.port>${SDB_PORT}</datasource.service.options.port>
+                <datasource.service.options.database>${SDB_DATABASE}</datasource.service.options.database>
+                <datasource.service.options.user>${SDB_USER}</datasource.service.options.user>
+                <datasource.service.options.password>${SDB_PASSWORD}</datasource.service.options.password>
             </properties>
         </profile>
         <profile>
@@ -112,23 +112,16 @@
         </plugins>
     </build>
 
-    <repositories>
-        <repository>
-            <id>maven-public</id>
-            <url>https://rt.adsw.io/artifactory/data-mart</url>
-        </repository>
-    </repositories>
-
     <distributionManagement>
         <repository>
-            <id>central</id>
+            <id>data-mart-releases</id>
             <name>Arenadata Artifactory-releases</name>
-            <url>https://rt.adsw.io/artifactory/data-mart</url>
+            <url>https://rt.adsw.io/artifactory/data-mart-release</url>
         </repository>
         <snapshotRepository>
-            <id>snapshots</id>
+            <id>data-mart-snapshots</id>
             <name>Arenadata Artifactory-snapshots</name>
-            <url>https://rt.adsw.io/artifactory/data-mart</url>
+            <url>https://rt.adsw.io/artifactory/data-mart-snapshot</url>
         </snapshotRepository>
     </distributionManagement>
 

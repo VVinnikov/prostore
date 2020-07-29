@@ -14,6 +14,7 @@ import ru.ibs.dtm.query.execution.plugin.adqm.common.Constants;
 import ru.ibs.dtm.query.execution.plugin.adqm.common.DdlUtils;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
+import ru.ibs.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.StatusReporter;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
@@ -69,13 +70,13 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
         Long deltaHot = request.getQueryLoadParam().getDeltaHot();
 
         return sequenceAll(Arrays.asList(  // 1. drop shard tables
-                    fullName + EXT_SHARD_POSTFIX,
-                    fullName + ACTUAL_LOADER_SHARD_POSTFIX,
-                    fullName + BUFFER_LOADER_SHARD_POSTFIX
-                ), this::dropTable)
+                fullName + EXT_SHARD_POSTFIX,
+                fullName + ACTUAL_LOADER_SHARD_POSTFIX,
+                fullName + BUFFER_LOADER_SHARD_POSTFIX
+        ), this::dropTable)
                 .compose(v -> sequenceAll(Arrays.asList( // 2. flush distributed tables
-                                fullName + BUFFER_POSTFIX,
-                                fullName + ACTUAL_POSTFIX), this::flushTable))
+                        fullName + BUFFER_POSTFIX,
+                        fullName + ACTUAL_POSTFIX), this::flushTable))
                 .compose(v -> closeActual(fullName, deltaHot))  // 3. insert refreshed records
                 .compose(v -> flushTable(fullName + ACTUAL_POSTFIX))  // 4. flush actual table
                 .compose(v -> sequenceAll(Arrays.asList(  // 5. drop buffer tables
@@ -187,14 +188,12 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
     }
 
     private void reportFinish(String topic) {
-        JsonObject start = new JsonObject();
-        start.put("topic", topic);
+        StatusReportDto start = new StatusReportDto(topic);
         statusReporter.onFinish(start);
     }
 
     private void reportError(String topic) {
-        JsonObject start = new JsonObject();
-        start.put("topic", topic);
+        StatusReportDto start = new StatusReportDto(topic);
         statusReporter.onError(start);
     }
 }

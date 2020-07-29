@@ -134,9 +134,9 @@ class DeltaInformationExtractorTest {
 
         assertNotNull(deltaInformationResult.getDeltaInformations().get(0).getDeltaTimestamp());
         assertTrue(deltaInformationResult.getDeltaInformations().get(1).isLatestUncommitedDelta());
-        assertEquals(new DeltaInterval(1L,2L), deltaInformationResult.getDeltaInformations().get(2).getStartedIn());
+        assertEquals(new DeltaInterval(1L,2L), deltaInformationResult.getDeltaInformations().get(2).getDeltaInterval());
         assertEquals(4444, deltaInformationResult.getDeltaInformations().get(3).getDeltaNum());
-        assertEquals(new DeltaInterval(3L,4L), deltaInformationResult.getDeltaInformations().get(4).getFinishedIn());
+        assertEquals(new DeltaInterval(3L,4L), deltaInformationResult.getDeltaInformations().get(4).getDeltaInterval());
 
         val sqlWithoutForSystemTime = deltaInformationResult.getSqlWithoutSnapshots();
         log.info(sqlWithoutForSystemTime);

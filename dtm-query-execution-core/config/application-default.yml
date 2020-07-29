@@ -33,33 +33,17 @@ core:
       property:
         bootstrap.servers: *kafkaUrl
     consumer:
-      adb:
-        bootstrap.servers: *kafkaUrl
-        group.id: adb-query-execution
-      adg:
-        bootstrap.servers: *kafkaUrl
-        group.id: adg-query-execution
-      adqm:
-        bootstrap.servers: *kafkaUrl
-        group.id: adqm-query-execution
       core:
         bootstrap.servers: *kafkaUrl
         group.id: core-query-execution
+        key.deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
+        value.deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
     cluster:
       zookeeperHosts: ${ZOOKEEPER_HOSTS:kafka-1.dtm.local}
       rootPath: ${KAFKA_CLUSTER_ROOTPATH:arenadata/cluster/21}
     admin:
       inputStreamTimeoutMs: ${KAFKA_INPUT_STREAM_TIMEOUT_MS:1000}
-      upload:
-        requestTopic:
-          adb: "%s.%s.adb.upload.rq"
-          adg: "%s.%s.adg.upload.rq"
-        responseTopic:
-          adb: "%s.%s.adb.upload.rs"
-          adg: "%s.%s.adg.upload.rs"
-        errorTopic:
-          adb: "%s.%s.adb.upload.err"
-          adg: "%s.%s.adg.upload.err"
+      monitorPoolingTimeoutMs: ${KAFKA_MONITOR_POLLING_MS:1000}
 
 adb:
   datasource:

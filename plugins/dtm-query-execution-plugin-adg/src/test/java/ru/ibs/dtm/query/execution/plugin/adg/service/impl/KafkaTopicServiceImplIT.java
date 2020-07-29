@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import ru.ibs.dtm.kafka.core.service.kafka.KafkaTopicService;
 import ru.ibs.dtm.query.execution.plugin.adg.service.DtmTestConfiguration;
-import ru.ibs.dtm.query.execution.plugin.adg.service.KafkaTopicService;
 
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;

@@ -27,8 +27,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 public class AdgQueryEnrichmentServiceImplTest {
@@ -60,12 +63,8 @@ public class AdgQueryEnrichmentServiceImplTest {
     @Test
     void enrichWithDeltaNum() throws Throwable {
         enrich(prepareRequestDeltaNum("SELECT account_id FROM shares.accounts"),
-                "select \"account_id\" from (select \"account_id\", \"account_type\" " +
-                        "from \"local__shares__accounts_history\" " +
-                        "where \"sys_from\" <= 1 and \"sys_to\" >= 1 " +
-                        "union all select \"account_id\", \"account_type\" " +
-                        "from \"local__shares__accounts_actual\" " +
-                        "where \"sys_from\" <= 1) as \"t3\"");
+                Arrays.asList("\"local__shares__accounts_history\" WHERE \"sys_from\" <= 1 AND \"sys_to\" >= 1",
+                        "\"local__shares__accounts_actual\" WHERE \"sys_from\" <= 1"));
     }
 
     @Test
@@ -77,38 +76,20 @@ public class AdgQueryEnrichmentServiceImplTest {
                 "    from shares.accounts a\n" +
                 "    left join shares.transactions t using(account_id)\n" +
                 "   group by a.account_id, account_type\n" +
-                ")x"), "select \"t3\".\"account_id\", case when sum(\"t8\".\"amount\") is not null " +
-                "then cast(sum(\"t8\".\"amount\") as bigint) else 0 end as \"amount\", \"t3\".\"account_type\", " +
-                "case when \"t3\".\"account_type\" = 'd' and case when sum(\"t8\".\"amount\") is not null " +
-                "then cast(sum(\"t8\".\"amount\") as bigint) else 0 end >= 0 or \"t3\".\"account_type\" = 'c' " +
-                "and case when sum(\"t8\".\"amount\") is not null then cast(sum(\"t8\".\"amount\") as bigint) " +
-                "else 0 end <= 0 then 'ok    ' else 'not ok' end " +
-                "from (select \"account_id\", \"account_type\" " +
-                "from \"local__shares__accounts_history\" where \"sys_from\" >= 1 and \"sys_from\" <= 5 " +
-                "union all " +
-                "select \"account_id\", \"account_type\" " +
-                "from \"local__shares__accounts_actual\" where \"sys_from\" >= 1 and \"sys_from\" <= 5) as \"t3\" " +
-                "left join (select \"transaction_id\", \"transaction_date\", \"account_id\", \"amount\" " +
-                "from \"local__shares__transactions_history\" where \"sys_to\" >= 2 and (\"sys_to\" <= 3 and \"sys_op\" = 1) " +
-                "union all " +
-                "select \"transaction_id\", \"transaction_date\", \"account_id\", \"amount\" " +
-                "from \"local__shares__transactions_actual\" where \"sys_to\" >= 2 " +
-                "and (\"sys_to\" <= 3 and \"sys_op\" = 1)) as \"t8\" on \"t3\".\"account_id\" = \"t8\".\"account_id\" " +
-                "group by \"t3\".\"account_id\", \"t3\".\"account_type\"");
+                ")x"), Arrays.asList("\"local__shares__accounts_history\" where \"sys_from\" >= 1 and \"sys_from\" <= 5",
+                "\"local__shares__accounts_actual\" where \"sys_from\" >= 1 and \"sys_from\" <= 5",
+                "\"local__shares__transactions_history\" where \"sys_to\" >= 2",
+                "\"sys_to\" <= 3 and \"sys_op\" = 1"));
     }
 
     @Test
     void enrichWithQuotes() throws Throwable {
         enrich(prepareRequestDeltaNum("SELECT \"account_id\" FROM \"shares\".\"accounts\""),
-                "select \"account_id\" from (select \"account_id\", \"account_type\" " +
-                "from \"local__shares__accounts_history\" " +
-                "where \"sys_from\" <= 1 and \"sys_to\" >= 1 " +
-                "union all select \"account_id\", \"account_type\" " +
-                "from \"local__shares__accounts_actual\" " +
-                "where \"sys_from\" <= 1) as \"t3\"");
+                Arrays.asList("\"local__shares__accounts_history\" where \"sys_from\" <= 1 and \"sys_to\" >= 1",
+                        "\"local__shares__accounts_actual\" where \"sys_from\" <= 1"));
     }
 
-    private void enrich(EnrichQueryRequest enrichRequest, String expectedSql) throws Throwable {
+    private void enrich(EnrichQueryRequest enrichRequest, List<String> expectedValues) throws Throwable {
         String[] sqlResult = {""};
 
         TestSuite suite = TestSuite.create("the_test_suite");
@@ -117,6 +98,7 @@ public class AdgQueryEnrichmentServiceImplTest {
             enrichService.enrich(enrichRequest, ar -> {
                 if (ar.succeeded()) {
                     sqlResult[0] = ar.result();
+                    expectedValues.forEach(v -> assertGrep(sqlResult[0], v));
                 } else {
                     sqlResult[0] = "-1";
                 }
@@ -125,8 +107,6 @@ public class AdgQueryEnrichmentServiceImplTest {
             async.awaitSuccess(10000);
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
-        assertEquals(sqlResult[0].toLowerCase(), expectedSql.toLowerCase().replace("\n", " ")
-                .replace("\t", ""));
     }
 
     private EnrichQueryRequest prepareRequestDeltaNum(String sql) {
@@ -199,5 +179,11 @@ public class AdgQueryEnrichmentServiceImplTest {
         List<Datamart> datamarts = new ArrayList<>();
         datamarts.add(new Datamart(UUID.randomUUID(), schemaName, Arrays.asList(transactions, accounts)));
         return datamarts;
+    }
+
+    private static void assertGrep(String data, String regexp) {
+        Pattern pattern = Pattern.compile(regexp, Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(data);
+        assertTrue(matcher.find(), String.format("Expected: %s, Received: %s", regexp, data));
     }
 }

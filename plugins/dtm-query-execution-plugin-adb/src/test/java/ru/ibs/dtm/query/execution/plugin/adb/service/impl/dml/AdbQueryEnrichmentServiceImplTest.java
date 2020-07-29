@@ -29,8 +29,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
 public class AdbQueryEnrichmentServiceImplTest {
@@ -82,27 +85,6 @@ public class AdbQueryEnrichmentServiceImplTest {
 
     @Test
     void enrichWithDeltaNum() {
-        String expectedResult = "SELECT t3.account_id,\n" +
-                "CASE WHEN SUM(t8.amount) IS NOT NULL THEN CAST(SUM(t8.amount) AS BIGINT)\n" +
-                "ELSE 0 END AS amount, t3.account_type,\n" +
-                "CASE WHEN t3.account_type = 'D' AND CASE WHEN SUM(t8.amount) IS NOT NULL\n" +
-                "THEN CAST(SUM(t8.amount) AS BIGINT)\n" +
-                "ELSE 0 END >= 0 OR t3.account_type = 'C' AND CASE WHEN SUM(t8.amount) IS NOT NULL\n" +
-                "THEN CAST(SUM(t8.amount) AS BIGINT) ELSE 0 END <= 0 THEN 'OK    ' ELSE 'NOT OK' END\n" +
-                "FROM (SELECT account_id, account_type\n" +
-                "\t\tFROM shares.accounts_history\n" +
-                "\t\tWHERE sys_from <= 1 AND sys_to >= 1\n" +
-                "\t\tUNION ALL\n" +
-                "\t\tSELECT account_id, account_type\n" +
-                "\t\tFROM shares.accounts_actual WHERE sys_from <= 1) AS t3\n" +
-                "LEFT JOIN (SELECT transaction_id, transaction_date, account_id, amount\n" +
-                "\t\t\tFROM shares.transactions_history\n" +
-                "\t\tWHERE sys_from <= 1 AND sys_to >= 1\n" +
-                "\t\tUNION ALL\n" +
-                "\t\tSELECT transaction_id, transaction_date, account_id, amount\n" +
-                "\t\tFROM shares.transactions_actual\n" +
-                "\t\tWHERE sys_from <= 1) AS t8 ON t3.account_id = t8.account_id\n" +
-                "GROUP BY t3.account_id, t3.account_type";
         EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaNum(
                 "select *, CASE WHEN (account_type = 'D' AND  amount >= 0) " +
                         "OR (account_type = 'C' AND  amount <= 0) THEN 'OK' ELSE 'NOT OK' END\n" +
@@ -120,41 +102,17 @@ public class AdbQueryEnrichmentServiceImplTest {
             adbQueryEnrichmentService.enrich(enrichQueryRequest, ar -> {
                 if (ar.succeeded()) {
                     result[0] = ar.result();
+                    assertGrep(result[0], "sys_from <= 1 AND sys_to >= 1");
                 }
                 async.complete();
             });
             async.awaitSuccess(10000);
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
-        assertEquals(result[0].toLowerCase(), expectedResult.toLowerCase().replace("\t", "")
-                .replace("\n", " "));
     }
 
     @Test
     void enrichWithDeltaInterval() {
-        //FIXME завести баг с некорректным преобразованием значения: 'OK' -> 'OK    '
-        String expectedResult = "SELECT t3.account_id,\n" +
-                "CASE WHEN SUM(t8.amount) IS NOT NULL THEN CAST(SUM(t8.amount) AS BIGINT)\n" +
-                "ELSE 0 END AS amount, t3.account_type, CASE WHEN t3.account_type = 'D' AND\n" +
-                "CASE WHEN SUM(t8.amount) IS NOT NULL THEN CAST(SUM(t8.amount) AS BIGINT)\n" +
-                "ELSE 0 END >= 0 OR t3.account_type = 'C' AND CASE WHEN SUM(t8.amount) IS NOT NULL\n" +
-                "THEN CAST(SUM(t8.amount) AS BIGINT) ELSE 0 END <= 0\n" +
-                "THEN 'OK    ' ELSE 'NOT OK' END\n" +
-                "FROM (SELECT account_id, account_type\n" +
-                "\tFROM shares.accounts_history\n" +
-                "\tWHERE sys_from >= 1 AND sys_from <= 5\n" +
-                "\tUNION ALL\n" +
-                "\tSELECT account_id, account_type\n" +
-                "\tFROM shares.accounts_actual\n" +
-                "\tWHERE sys_from >= 1 AND sys_from <= 5) AS t3\n" +
-                "LEFT JOIN (SELECT transaction_id, transaction_date, account_id, amount\n" +
-                "\tFROM shares.transactions_history\n" +
-                "\tWHERE sys_to >= 2 AND (sys_to <= 3 AND sys_op = 1)\n" +
-                "\tUNION ALL\n" +
-                "\tSELECT transaction_id, transaction_date, account_id, amount\n" +
-                "\tFROM shares.transactions_actual\n" +
-                "\tWHERE sys_to >= 2 AND (sys_to <= 3 AND sys_op = 1)) AS t8 ON t3.account_id = t8.account_id\n" +
-                "GROUP BY t3.account_id, t3.account_type";
         EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaInterval(
                 "select *, CASE WHEN (account_type = 'D' AND  amount >= 0) " +
                         "OR (account_type = 'C' AND  amount <= 0) THEN 'OK' ELSE 'NOT OK' END\n" +
@@ -172,14 +130,15 @@ public class AdbQueryEnrichmentServiceImplTest {
             adbQueryEnrichmentService.enrich(enrichQueryRequest, ar -> {
                 if (ar.succeeded()) {
                     result[0] = ar.result();
+                    assertGrep(result[0], "sys_from >= 1 AND sys_from <= 5");
+                    assertGrep(result[0], "sys_to <= 3 AND sys_op = 1");
+                    assertGrep(result[0], "sys_to >= 2");
                 }
                 async.complete();
             });
             async.awaitSuccess(10000);
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
-        assertEquals(result[0].toLowerCase(), expectedResult.toLowerCase().replace("\t", "")
-                .replace("\n", " "));
     }
 
     private EnrichQueryRequest prepareRequestDeltaNum(String sql) {
@@ -250,5 +209,11 @@ public class AdbQueryEnrichmentServiceImplTest {
         List<Datamart> datamarts = new ArrayList<>();
         datamarts.add(new Datamart(UUID.randomUUID(), schemaName, Arrays.asList(transactions, accounts)));
         return datamarts;
+    }
+
+    private static void assertGrep(String data, String regexp) {
+        Pattern pattern = Pattern.compile(regexp, Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(data);
+        assertTrue(matcher.find(), String.format("Expected: %s, Received: %s", regexp, data));
     }
 }

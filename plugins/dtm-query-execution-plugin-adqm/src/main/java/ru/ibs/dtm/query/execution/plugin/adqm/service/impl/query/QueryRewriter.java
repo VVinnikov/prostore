@@ -3,12 +3,6 @@ package ru.ibs.dtm.query.execution.plugin.adqm.service.impl.query;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
@@ -26,9 +20,16 @@ import org.apache.calcite.util.Pair;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.calcite.CalciteContext;
 import ru.ibs.dtm.common.delta.DeltaInformation;
+import ru.ibs.dtm.common.delta.DeltaType;
 import ru.ibs.dtm.query.calcite.core.node.SqlSelectTree;
 import ru.ibs.dtm.query.execution.plugin.adqm.calcite.AdqmCalciteContextProvider;
+import ru.ibs.dtm.query.execution.plugin.adqm.common.Constants;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
+
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
@@ -77,7 +78,7 @@ public class QueryRewriter {
 
         for (ParseTableContext ctx : ctxs) {
             for (TableWithAlias t : ctx.tables) {
-                Long delta = findDelta(deltas, t.id, t.alias);
+                DeltaInformation delta = findDelta(deltas, t.id, t.alias);
                 if (delta != null) {
                     Pair<String, String> parsed = fromSqlIdentifier(t.id);
                     String alias = t.alias.equals("") ? parsed.right : t.alias;
@@ -195,14 +196,14 @@ public class QueryRewriter {
         });
     }
 
-    private Long findDelta(List<DeltaInformation> deltas, SqlIdentifier table, String alias) {
+    private DeltaInformation findDelta(List<DeltaInformation> deltas, SqlIdentifier table, String alias) {
         Pair<String, String> parsed = fromSqlIdentifier(table);
         // It's better to convert List to Map, but for typical uses (less then 10 tables) full list scan is possible
         for (DeltaInformation d : deltas) {
             if (d.getSchemaName().equals(parsed.left) &&
                     d.getTableName().equals(parsed.right.replaceAll("_final", "")) &&
                     d.getTableAlias().equals(alias)) {
-                return d.getDeltaNum();
+                return d;
             }
         }
 
@@ -216,20 +217,73 @@ public class QueryRewriter {
                 .parse(String.format(SUBQUERY_TEMPLATE, qualifiedTableName));
     }
 
-    private SqlNode createDeltaFilter(String tableAlias, long deltaNum, SqlParserPos pos) {
-        // t.sys_from <= 98 AND t.sys_to >= 98
-        // 98 between t.sys_from and t.sys_to
-        SqlNode deltaLit = SqlLiteral.createExactNumeric(Long.toString(deltaNum), pos);
+    private SqlNode createDeltaFilter(String tableAlias, DeltaInformation deltaInfo, SqlParserPos pos) {
+        switch (deltaInfo.getType()) {
+            case STARTED_IN:
+                return createDeltaStartedInConditionNode(tableAlias, deltaInfo, pos);
+            case FINISHED_IN:
+                return createDeltaFinishedInConditionNode(tableAlias, deltaInfo, pos);
+            case NUM:
+                return createDeltaNumConditionNode(tableAlias, deltaInfo, pos);
+            default:
+                throw new RuntimeException(String.format("Incorrect delta type %s, expected values: %s!",
+                        deltaInfo.getType(), DeltaType.values()));
+        }
+    }
 
+    private SqlNode createDeltaStartedInConditionNode(String tableAlias, DeltaInformation deltaInfo, SqlParserPos pos) {
         return new SqlBasicCall(
-                SqlStdOperatorTable.BETWEEN,
+                SqlStdOperatorTable.AND,
                 new SqlNode[]{
-                        deltaLit,
-                        createId(tableAlias, "sys_from", pos),
-                        createId(tableAlias, "sys_to", pos)
+                        createConditionNode(tableAlias, pos, SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
+                                Constants.SYS_FROM_FIELD, deltaInfo.getDeltaInterval().getDeltaFrom()),
+                        createConditionNode(tableAlias, pos, SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
+                                Constants.SYS_FROM_FIELD, deltaInfo.getDeltaInterval().getDeltaTo())
                 },
                 pos
         );
+    }
+
+    private SqlNode createDeltaFinishedInConditionNode(String tableAlias, DeltaInformation deltaInfo, SqlParserPos pos) {
+        List<SqlBasicCall> nodes = new ArrayList<>();
+        nodes.add(createConditionNode(tableAlias, pos, SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
+                Constants.SYS_TO_FIELD, deltaInfo.getDeltaInterval().getDeltaFrom() - 1));
+        nodes.add(
+                new SqlBasicCall(SqlStdOperatorTable.AND, Arrays.asList(
+                        createConditionNode(tableAlias, pos, SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
+                                Constants.SYS_TO_FIELD, deltaInfo.getDeltaInterval().getDeltaTo() - 1),
+                        createConditionNode(tableAlias, pos, SqlStdOperatorTable.EQUALS,
+                                Constants.SYS_OP_FIELD, 1L)).toArray(new SqlNode[2]), pos));
+        return new SqlBasicCall(SqlStdOperatorTable.AND, nodes.toArray(new SqlNode[nodes.size()]), pos);
+    }
+
+    private SqlNode createDeltaNumConditionNode(String tableAlias, DeltaInformation deltaInfo, SqlParserPos pos) {
+        return new SqlBasicCall(
+                SqlStdOperatorTable.AND,
+                new SqlNode[]{
+                        createConditionNode(tableAlias, pos, SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
+                                Constants.SYS_FROM_FIELD, deltaInfo.getDeltaNum()),
+                        createConditionNode(tableAlias, pos, SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
+                                Constants.SYS_TO_FIELD, deltaInfo.getDeltaNum())
+                },
+                pos
+        );
+    }
+
+    private SqlBasicCall createConditionNode(String tableAlias, SqlParserPos pos,
+                                             SqlBinaryOperator lessThanOrEqual, String sysFromField, long deltaNum) {
+        return new SqlBasicCall(
+                lessThanOrEqual,
+                createSysNodeArray(tableAlias, pos, sysFromField, deltaNum),
+                pos
+        );
+    }
+
+    private SqlNode[] createSysNodeArray(String tableAlias, SqlParserPos pos, String sysToField, long deltaNum) {
+        return new SqlNode[]{
+                createId(tableAlias, sysToField, pos),
+                SqlLiteral.createExactNumeric(Long.toString(deltaNum), pos)
+        };
     }
 
     private SqlIdentifier createId(String schema, String name, SqlParserPos pos) {

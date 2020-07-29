@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.reader.QueryRequest;
+import ru.ibs.dtm.query.execution.plugin.adqm.common.Constants;
 import ru.ibs.dtm.query.execution.plugin.adqm.common.DdlUtils;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
@@ -118,7 +119,7 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
     private String getOrderKeys(List<ClassField> fields) {
         List<String> orderKeys = fields.stream().filter(f -> f.getPrimaryOrder() != null)
                 .map(ClassField::getName).collect(Collectors.toList());
-        orderKeys.add("sys_from");
+        orderKeys.add(Constants.SYS_FROM_FIELD);
         return String.join(", ", orderKeys);
     }
 

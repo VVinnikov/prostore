@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryResult;
+import ru.ibs.dtm.query.execution.plugin.adqm.common.Constants;
 import ru.ibs.dtm.query.execution.plugin.adqm.common.DdlUtils;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
@@ -157,7 +158,7 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
 
             String sortingKey = rows.get(0).getString("sorting_key");
             String withoutSysFrom = Arrays.stream(sortingKey.split(",\\s*"))
-                    .filter(c -> !c.equalsIgnoreCase("sys_from"))
+                    .filter(c -> !c.equalsIgnoreCase(SYS_FROM_FIELD))
                     .collect(Collectors.joining(", "));
 
             promise.complete(withoutSysFrom);

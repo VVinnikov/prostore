@@ -8,6 +8,7 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 import ru.ibs.dtm.common.delta.DeltaInformation;
 import ru.ibs.dtm.common.delta.DeltaInformationResult;
 import ru.ibs.dtm.common.delta.DeltaInterval;
+import ru.ibs.dtm.common.delta.DeltaType;
 import ru.ibs.dtm.query.calcite.core.extension.snapshot.SqlSnapshot;
 import ru.ibs.dtm.query.calcite.core.node.SqlSelectTree;
 import ru.ibs.dtm.query.calcite.core.node.SqlTreeNode;
@@ -164,15 +165,24 @@ public class DeltaInformationExtractor {
             deltaTime = snapshotTime == null ? LOCAL_DATE_TIME.format(LocalDateTime.now()) : snapshotTime;
         }
 
-        long delta = deltaNum == null? 0L: deltaNum;
+        long delta = deltaNum == null ? 0L : deltaNum;
+        DeltaInterval deltaInterval = null;
+        DeltaType deltaType = DeltaType.NUM;
+        if (startedIn != null) {
+            deltaInterval = startedIn;
+            deltaType = DeltaType.STARTED_IN;
+        } else if (finishedIn != null) {
+            deltaInterval = finishedIn;
+            deltaType = DeltaType.FINISHED_IN;
+        }
 
         return new DeltaInformation(
                 aliasVal,
                 deltaTime,
                 isLatestUncommitedDelta,
                 delta,
-                startedIn,
-                finishedIn,
+                deltaInterval,
+                deltaType,
                 datamart,
                 tableName,
                 pos);

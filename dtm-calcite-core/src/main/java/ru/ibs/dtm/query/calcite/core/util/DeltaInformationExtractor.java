@@ -165,7 +165,6 @@ public class DeltaInformationExtractor {
             deltaTime = snapshotTime == null ? LOCAL_DATE_TIME.format(LocalDateTime.now()) : snapshotTime;
         }
 
-        //long delta = deltaNum == null ? 0L : deltaNum;
         DeltaInterval deltaInterval = null;
         DeltaType deltaType = DeltaType.NUM;
         if (startedIn != null) {

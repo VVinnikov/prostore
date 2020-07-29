@@ -1,28 +1,50 @@
--- changeset ilapa:add_table_system_views_registry
--- preconditions onFail:MARK_RAN
--- precondition-sql-check expectedResult:0 select count(*) from information_schema.TABLES where table_name = 'system_views_registry' and table_schema = database();
-create table system_views_registry
-(
-	name varchar(100) not null
-		primary key,
-	query varchar(4096) null,
-	`schema` varchar(4096) null
-);
+-- liquibase formatted sql
 
--- changeset ilapa:add_views_to_system_views_registry
-INSERT INTO system_views_registry (name, query, `schema`) VALUES ('SCHEMES', 'select NULL AS `catalog_name`, `datamarts_registry`.`datamart_mnemonics` AS `schema_name`
-from `datamarts_registry`', '{"id":"f0c0d0d4-cdbb-4fb2-b206-000000000001","mnemonic":"SCHEMES","datamartMnemonic":"information_schema","label":"SCHEMES","tableAttributes":[{"id":"f0c0d0d4-cdbb-4fb2-b206-000000000002","mnemonic":"catalog_name","type":{"id":"f0c0d0d4-cdbb-4fb2-b206-000000000003","value":"VARCHAR"},"length":null,"accuracy":null,"primaryKeyOrder":null,"distributeKeyOrder":null,"ordinalPosition":0,"nullable":true},{"id":"f0c0d0d4-cdbb-4fb2-b206-000000000004","mnemonic":"schema_name","type":{"id":"f0c0d0d4-cdbb-4fb2-b206-000000000005","value":"VARCHAR"},"length":30,"accuracy":null,"primaryKeyOrder":null,"distributeKeyOrder":null,"ordinalPosition":1,"nullable":null}],"primaryKeys":null}');
-INSERT INTO system_views_registry (name, query, `schema`) VALUES ('DELTAS', 'select NULL                              AS `delta_catalog`,
-       `delta_data`.`datamart_mnemonics` AS `delta_schema`,
-       `delta_data`.`load_id`            AS `load_id`,
-       `delta_data`.`sys_date`           AS `sys_date`,
-       `delta_data`.`sin_id`             AS `sin_id`,
-       `delta_data`.`status`             AS `status`,
-       `delta_data`.`status_date`        AS `status_date`
-from `delta_data`', '{"id":"f0c0d0d4-cdbb-4fb2-0001-000000000001","mnemonic":"DELTAS","datamartMnemonic":"information_schema","label":"DELTAS","tableAttributes":[{"id":"f0c0d0d4-cdbb-4fb2-0001-000000000002","mnemonic":"delta_catalog","type":{"id":"f0c0d0d4-cdbb-4fb2-0001-000000000003","value":"VARCHAR"},"length":1024,"accuracy":null,"primaryKeyOrder":null,"distributeKeyOrder":null,"ordinalPosition":0,"nullable":true},{"id":"f0c0d0d4-cdbb-4fb2-0001-000000000004","mnemonic":"delta_schema","type":{"id":"f0c0d0d4-cdbb-4fb2-0001-000000000005","value":"VARCHAR"},"length":1024,"accuracy":null,"primaryKeyOrder":null,"distributeKeyOrder":null,"ordinalPosition":1,"nullable":null},{"id":"f0c0d0d4-cdbb-4fb2-0001-000000000006","mnemonic":"load_id","type":{"id":"f0c0d0d4-cdbb-4fb2-0001-000000000007","value":"BIGINT"},"length":20,"accuracy":null,"primaryKeyOrder":null,"distributeKeyOrder":null,"ordinalPosition":2,"nullable":null},{"id":"f0c0d0d4-cdbb-4fb2-0001-000000000008","mnemonic":"sys_date","type":{"id":"f0c0d0d4-cdbb-4fb2-0001-000000000009","value":"TIMESTAMP"},"length":null,"accuracy":null,"primaryKeyOrder":null,"distributeKeyOrder":null,"ordinalPosition":3,"nullable":null},{"id":"f0c0d0d4-cdbb-4fb2-0001-000000000010","mnemonic":"sin_id","type":{"id":"f0c0d0d4-cdbb-4fb2-0001-000000000011","value":"BIGINT"},"length":20,"accuracy":null,"primaryKeyOrder":null,"distributeKeyOrder":null,"ordinalPosition":4,"nullable":null},{"id":"f0c0d0d4-cdbb-4fb2-0001-000000000012","mnemonic":"status","type":{"id":"f0c0d0d4-cdbb-4fb2-0001-000000000013","value":"INT"},"length":11,"accuracy":null,"primaryKeyOrder":null,"distributeKeyOrder":null,"ordinalPosition":5,"nullable":null},{"id":"f0c0d0d4-cdbb-4fb2-0001-000000000014","mnemonic":"status_date","type":{"id":"f0c0d0d4-cdbb-4fb2-0001-000000000015","value":"TIMESTAMP"},"length":null,"accuracy":null,"primaryKeyOrder":null,"distributeKeyOrder":null,"ordinalPosition":6,"nullable":null}],"primaryKeys":null}');
-INSERT INTO system_views_registry (name, query, `schema`) VALUES ('TABLES', 'select NULL                             AS `table_catalog`,
-       `datamarts`.`datamart_mnemonics` AS `table_schema`,
-       `entities`.`entity_mnemonics`    AS `table_name`,
-       ''BASE TABLE''                     AS `table_type`
-from (`entities_registry` `entities`
-         join `datamarts_registry` `datamarts` on (`datamarts`.`datamart_id` = `entities`.`datamart_id`))', '{"id":"f0c0d0d4-cdbb-4fb2-0002-000000000001","mnemonic":"TABLES","datamartMnemonic":"information_schema","label":"TABLES","tableAttributes":[{"id":"f0c0d0d4-cdbb-4fb2-0002-000000000002","mnemonic":"table_catalog","type":{"id":"f0c0d0d4-cdbb-4fb2-0002-000000000003","value":"VARCHAR"},"length":1024,"accuracy":null,"primaryKeyOrder":null,"distributeKeyOrder":null,"ordinalPosition":0,"nullable":true},{"id":"f0c0d0d4-cdbb-4fb2-0002-000000000004","mnemonic":"table_schema","type":{"id":"f0c0d0d4-cdbb-4fb2-0002-000000000005","value":"VARCHAR"},"length":1024,"accuracy":null,"primaryKeyOrder":null,"distributeKeyOrder":null,"ordinalPosition":1,"nullable":null},{"id":"f0c0d0d4-cdbb-4fb2-0002-000000000006","mnemonic":"table_name","type":{"id":"f0c0d0d4-cdbb-4fb2-0002-000000000007","value":"VARCHAR"},"length":1024,"accuracy":null,"primaryKeyOrder":null,"distributeKeyOrder":null,"ordinalPosition":2,"nullable":null},{"id":"f0c0d0d4-cdbb-4fb2-0002-000000000008","mnemonic":"table_type","type":{"id":"f0c0d0d4-cdbb-4fb2-0002-000000000009","value":"VARCHAR"},"length":10,"accuracy":null,"primaryKeyOrder":null,"distributeKeyOrder":null,"ordinalPosition":3,"nullable":null}],"primaryKeys":null}');
+-- changeset dkosiakov:create_logic_schema_attributes
+-- preconditions onFail:MARK_RAN
+-- precondition-sql-check expectedResult:0 select count(*) from information_schema.tables where table_name = 'logic_schema_attributes' and table_schema = database();
+CREATE VIEW logic_schema_attributes AS
+SELECT null AS table_catalog, datamart_mnemonics AS table_schema, entity_mnemonics AS table_name, attr.attr_mnemonics AS column_name, attr.nullable AS is_nullable, dt.data_type_mnemonics AS data_type, attr.length AS character_maximum_length, attr.accuracy AS datetime_precision
+FROM attributes_registry attr
+         INNER JOIN data_types_registry dt ON dt.data_type_id = attr.data_type_id
+         INNER JOIN entities_registry entity ON entity.entity_id = attr.entity_id
+         INNER JOIN datamarts_registry datamarts ON datamarts.datamart_id = entity.datamart_id;
+-- rollback drop view logic_schema_attributes;
+
+-- changeset dkosiakov:create_logic_schema_table_constraints
+-- preconditions onFail:MARK_RAN
+-- precondition-sql-check expectedResult:0 select count(*) from information_schema.tables where table_name = 'logic_schema_table_constraints' and table_schema = database();
+CREATE VIEW logic_schema_table_constraints AS
+SELECT null AS constraint_catalog, datamart_mnemonics AS constraint_schema, CONCAT(datamart_mnemonics,'_','entity_mnemonics','_','pk') AS constraint_name, datamart_mnemonics AS table_schema, entity_mnemonics AS table_name, 'primary key' AS CONSTRAINT_TYPE
+FROM entities_registry entity
+         INNER JOIN datamarts_registry datamarts ON datamarts.datamart_id = entity.datamart_id
+         INNER JOIN attributes_registry attr ON attr.entity_id = entity.entity_id
+WHERE attr.primary_key_order IS NOT NULL
+GROUP BY entity.datamart_id, entity.entity_id
+UNION ALL
+SELECT null AS constraint_catalog, datamart_mnemonics AS constraint_schema, CONCAT(datamart_mnemonics,'_','entity_mnemonics','_','sk') AS constraint_name, datamart_mnemonics AS table_schema, entity_mnemonics AS table_name, 'sharding key' AS CONSTRAINT_TYPE
+FROM entities_registry entity
+         INNER JOIN datamarts_registry datamarts ON datamarts.datamart_id = entity.datamart_id
+         INNER JOIN attributes_registry attr ON attr.entity_id = entity.entity_id
+WHERE attr.distribute_key_order IS NOT NULL
+GROUP BY entity.datamart_id, entity.entity_id;
+-- rollback drop view logic_schema_table_constraints;
+
+-- changeset dkosiakov:create_logic_schema_key_column_usage
+-- preconditions onFail:MARK_RAN
+-- precondition-sql-check expectedResult:0 select count(*) from information_schema.tables where table_name = 'logic_schema_key_column_usage' and table_schema = database();
+CREATE VIEW logic_schema_key_column_usage AS
+SELECT null AS constraint_catalog, datamart_mnemonics AS constraint_schema,
+       CONCAT(datamart_mnemonics,'_','entity_mnemonics','_','pk') AS constraint_name, datamart_mnemonics AS table_schema, entity_mnemonics AS table_name, attr.attr_mnemonics AS column_name, attr.primary_key_order AS ordinal_position
+FROM entities_registry entity
+         INNER JOIN datamarts_registry datamarts ON datamarts.datamart_id = entity.datamart_id
+         INNER JOIN attributes_registry attr ON attr.entity_id = entity.entity_id
+WHERE attr.primary_key_order IS NOT NULL
+UNION ALL
+SELECT null AS constraint_catalog, datamart_mnemonics AS constraint_schema,
+       CONCAT(datamart_mnemonics,'_','entity_mnemonics','_','sk') AS constraint_name, datamart_mnemonics AS table_schema, entity_mnemonics AS table_name, attr.attr_mnemonics AS column_name, attr.distribute_key_order AS ordinal_position
+FROM entities_registry entity
+         INNER JOIN datamarts_registry datamarts ON datamarts.datamart_id = entity.datamart_id
+         INNER JOIN attributes_registry attr ON attr.entity_id = entity.entity_id
+WHERE attr.distribute_key_order IS NOT NULL;
+-- rollback drop view logic_schema_key_column_usage;

@@ -3,7 +3,7 @@ package ru.ibs.dtm.query.execution.plugin.adb.factory.impl;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
-import ru.ibs.dtm.common.model.ddl.ClassTypes;
+import ru.ibs.dtm.common.model.ddl.ColumnType;
 
 import java.util.Arrays;
 
@@ -40,9 +40,9 @@ class MetadataSqlFactoryImplTest {
 
     private ClassTable getClassTable() {
         return new ClassTable("test.test_ts3222", Arrays.asList(
-                new ClassField("id", ClassTypes.INT.name(), false, 1, 1, null),
-                new ClassField("name", ClassTypes.VARCHAR.name(), true, null, null, null),
-                new ClassField("dt", ClassTypes.DATETIME.name(), true, null, 2, null)
+                new ClassField(0,"id", ColumnType.INT.name(), false, 1, 1, null),
+                new ClassField(1,"name", ColumnType.VARCHAR.name(), true, null, null, null),
+                new ClassField(2,"dt", ColumnType.TIMESTAMP.name(), true, null, 2, null)
         ));
     }
 }

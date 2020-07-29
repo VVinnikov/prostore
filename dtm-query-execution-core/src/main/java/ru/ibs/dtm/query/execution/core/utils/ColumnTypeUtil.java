@@ -1,33 +1,33 @@
 package ru.ibs.dtm.query.execution.core.utils;
 
 import org.apache.calcite.sql.type.SqlTypeName;
-import ru.ibs.dtm.common.model.ddl.ClassTypes;
+import ru.ibs.dtm.common.model.ddl.ColumnType;
 
 public class ColumnTypeUtil {
-    public static ClassTypes valueOf(SqlTypeName type) {
+    public static ColumnType valueOf(SqlTypeName type) {
         switch (type) {
             case BOOLEAN:
-                return ClassTypes.BOOLEAN;
+                return ColumnType.BOOLEAN;
             case VARCHAR:
-                return ClassTypes.VARCHAR;
+                return ColumnType.VARCHAR;
             case CHAR:
-                return ClassTypes.CHAR;
+                return ColumnType.CHAR;
             case BIGINT:
-                return ClassTypes.BIGINT;
+                return ColumnType.BIGINT;
             case INTEGER:
-                return ClassTypes.INT;
+                return ColumnType.INT;
             case DOUBLE:
-                return ClassTypes.DOUBLE;
+                return ColumnType.DOUBLE;
             case FLOAT:
-                return ClassTypes.FLOAT;
+                return ColumnType.FLOAT;
             case DATE:
-                return ClassTypes.DATE;
+                return ColumnType.DATE;
             case TIME:
-                return ClassTypes.TIME;
+                return ColumnType.TIME;
             case TIMESTAMP:
-                return ClassTypes.TIMESTAMP;
+                return ColumnType.TIMESTAMP;
             default:
-                return ClassTypes.ANY;
+                return ColumnType.ANY;
         }
     }
 }

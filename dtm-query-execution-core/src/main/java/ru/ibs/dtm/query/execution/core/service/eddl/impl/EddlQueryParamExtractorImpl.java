@@ -13,11 +13,11 @@ import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.plugin.exload.Format;
 import ru.ibs.dtm.common.plugin.exload.Type;
 import ru.ibs.dtm.common.reader.QueryRequest;
+import ru.ibs.dtm.kafka.core.configuration.properties.KafkaProperties;
 import ru.ibs.dtm.query.calcite.core.extension.eddl.*;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
-import ru.ibs.dtm.query.execution.core.configuration.properties.KafkaProperties;
 import ru.ibs.dtm.query.execution.core.dto.eddl.*;
-import ru.ibs.dtm.query.execution.core.service.MetadataCalciteGenerator;
+import ru.ibs.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
 import ru.ibs.dtm.query.execution.core.service.avro.AvroSchemaGenerator;
 import ru.ibs.dtm.query.execution.core.service.eddl.EddlQueryParamExtractor;
 

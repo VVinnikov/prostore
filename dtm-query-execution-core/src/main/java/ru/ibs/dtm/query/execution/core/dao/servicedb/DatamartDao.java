@@ -15,4 +15,6 @@ public interface DatamartDao {
     void findDatamart(String name, Handler<AsyncResult<Long>> resultHandler);
 
     void dropDatamart(Long id, Handler<AsyncResult<Void>> resultHandler);
+
+    void isDatamartExists(String name, Handler<AsyncResult<Boolean>> resultHandler);
 }

@@ -42,6 +42,8 @@ kafka:
     core:
       bootstrap.servers: *kafkaUrl
       group.id: core-query-execution
+      key.deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
+      value.deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
     adb:
       bootstrap.servers: *kafkaUrl
       group.id: adb-query-execution
@@ -56,6 +58,7 @@ kafka:
     rootPath: ${KAFKA_CLUSTER_ROOTPATH:arenadata/cluster/21}
   admin:
     inputStreamTimeoutMs: ${KAFKA_INPUT_STREAM_TIMEOUT_MS:1000}
+    monitorPoolingTimeoutMs: ${KAFKA_MONITOR_POLLING_MS:1000}
     upload:
       requestTopic:
         adb: "%s.%s.adb.upload.rq"

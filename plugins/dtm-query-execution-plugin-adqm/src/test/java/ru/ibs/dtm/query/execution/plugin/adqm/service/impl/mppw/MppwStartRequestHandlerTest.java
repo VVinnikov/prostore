@@ -3,7 +3,6 @@ package ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import lombok.val;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.plugin.exload.QueryLoadParam;
@@ -13,6 +12,7 @@ import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.MppwPrope
 import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockDatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockEnvironment;
+import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockStatusReporter;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 
 import java.util.Arrays;
@@ -21,10 +21,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Predicate;
 
+import static java.lang.String.format;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 class MppwStartRequestHandlerTest {
     private static final DdlProperties ddlProperties = new DdlProperties();
     private static final AppConfiguration appConfiguration = new AppConfiguration(new MockEnvironment());
     private static final MppwProperties mppwProperties = new MppwProperties();
+
+    private static final String TEST_TOPIC = "adqm_topic";
+    private static final String TEST_CONSUMER_GROUP = "adqm_group";
 
     @BeforeAll
     public static void setup() {
@@ -32,7 +38,7 @@ class MppwStartRequestHandlerTest {
         ddlProperties.setCluster("test_arenadata");
         ddlProperties.setArchiveDisk("default");
 
-        mppwProperties.setConsumerGroup("adqm_group");
+        mppwProperties.setConsumerGroup(TEST_CONSUMER_GROUP);
         mppwProperties.setKafkaBrokers("localhost:9092");
     }
 
@@ -58,15 +64,27 @@ class MppwStartRequestHandlerTest {
                         "AS SELECT column1, column2, column3, 101 AS sys_from, 9223372036854775807 as sys_to, 0 as sys_op, '9999-12-31 00:00:00' as close_date, 1 AS sign  FROM dev__shares.accounts_ext_shard WHERE sys_op <> 1")
         ), mockData, false);
 
-        MppwRequestHandler handler = new MppwStartRequestHandler(executor, ddlProperties, appConfiguration, mppwProperties);
+        MockStatusReporter mockReporter = getMockReporter();
+        MppwRequestHandler handler = new MppwStartRequestHandler(executor, ddlProperties, appConfiguration, mppwProperties,
+                mockReporter);
         QueryLoadParam loadParam = createQueryLoadParam();
         JsonObject schema = createSchema();
 
         MppwRequest request = new MppwRequest(null, loadParam, schema);
-        request.setTopic("adqm_topic");
+        request.setTopic(TEST_TOPIC);
         request.setZookeeperHost("zkhost");
 
-        handler.execute(request).onComplete(ar -> Assertions.assertTrue(ar.succeeded(), ar.cause() != null ? ar.cause().getMessage() : ""));
+        handler.execute(request).onComplete(ar -> {
+            assertTrue(ar.succeeded(), ar.cause() != null ? ar.cause().getMessage() : "");
+            assertTrue(mockReporter.wasCalled("start"));
+        });
+    }
+
+    private MockStatusReporter getMockReporter() {
+        Map<String, JsonObject> expected = new HashMap<>();
+        expected.put("start", new JsonObject(format("{\"topic\": \"%s\", \"consumerGroup\": \"%s\"}", TEST_TOPIC,
+                TEST_CONSUMER_GROUP + "dev__shares.accounts")));
+        return new MockStatusReporter(expected);
     }
 
     private QueryLoadParam createQueryLoadParam() {

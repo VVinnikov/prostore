@@ -27,9 +27,10 @@ services:
       - adqm
       - adb
     ports:
-      - "8088:8088"
+      - "9090:9090"
     environment:
       - SPRING_PROFILES_ACTIVE=local
+      - SERVER_PORT=9090
     volumes:
       - ../config:/app/config:Z
 

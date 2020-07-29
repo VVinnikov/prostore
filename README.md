@@ -68,16 +68,18 @@ cd dtm-query-execution-core
 docker-compose -f environment/docker-compose-local.yml up -d
 docker logs -f dtm-query-execution-core
 ```
+After that service will listen on the 9090 port
 
 It runs:
 * MariaDB
 * Zookeeper
 * Kafka
 * dtm-query-execution-core
+* ADB
+* ADG
+* ADQM
 
 Add `127.0.0.1	kafka-1.dtm.local` to `/etc/hosts`. It is required for tests and local debug.
-
-Also you need local or remote ADB, ADG and ADQM.
 
 ## Setup IDE
 

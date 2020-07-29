@@ -112,23 +112,16 @@
         </plugins>
     </build>
 
-    <repositories>
-        <repository>
-            <id>maven-public</id>
-            <url>https://rt.adsw.io/artifactory/data-mart</url>
-        </repository>
-    </repositories>
-
     <distributionManagement>
         <repository>
-            <id>central</id>
+            <id>data-mart-releases</id>
             <name>Arenadata Artifactory-releases</name>
-            <url>https://rt.adsw.io/artifactory/data-mart</url>
+            <url>https://rt.adsw.io/artifactory/data-mart-release</url>
         </repository>
         <snapshotRepository>
-            <id>snapshots</id>
+            <id>data-mart-snapshots</id>
             <name>Arenadata Artifactory-snapshots</name>
-            <url>https://rt.adsw.io/artifactory/data-mart</url>
+            <url>https://rt.adsw.io/artifactory/data-mart-snapshot</url>
         </snapshotRepository>
     </distributionManagement>
 

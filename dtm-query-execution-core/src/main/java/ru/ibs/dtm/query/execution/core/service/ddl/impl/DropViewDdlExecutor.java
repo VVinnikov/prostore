@@ -9,10 +9,11 @@ import org.apache.calcite.sql.SqlKind;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryResult;
+import ru.ibs.dtm.query.calcite.core.node.SqlSelectTree;
 import ru.ibs.dtm.query.execution.core.configuration.jooq.MariaProperties;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
-import ru.ibs.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import ru.ibs.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
+import ru.ibs.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import ru.ibs.dtm.query.execution.core.utils.SqlPreparer;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 
@@ -30,8 +31,8 @@ public class DropViewDdlExecutor extends QueryResultDdlExecutor {
     public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<QueryResult>> handler) {
         try {
             val schema = getSchemaName(context.getRequest().getQueryRequest(), sqlNodeName);
-            val sql = getSql(context, sqlNodeName);
-            val viewName = SqlPreparer.getViewName(sql);
+            val tree = new SqlSelectTree(context.getQuery());
+            val viewName = SqlPreparer.getViewName(tree);
             findDatamart(schema)
                     .compose(datamartId -> dropView(viewName, datamartId))
                     .onComplete(handler);

@@ -45,10 +45,12 @@ public class EntityDaoImpl implements EntityDao {
             if (ar.succeeded()) {
                 if (ar.result().unwrap() instanceof ResultSet) {
                     List<DatamartEntity> datamartEntityList = initDatamartEntities(ar);
-                    log.info("Найдено {} сущностей для витрины: {}", datamartEntityList.size(), datamartMnemonic);
+                    log.info("Found [{}] entities for datamart [{}]", datamartEntityList.size(), datamartMnemonic);
                     resultHandler.handle(Future.succeededFuture(datamartEntityList));
                 } else {
-                    resultHandler.handle(Future.failedFuture(String.format("Невозможно получить сущности для витрины %s", datamartMnemonic)));
+                    resultHandler.handle(Future.failedFuture(
+                            new RuntimeException(String.format("Unable to get entities for datamart [%s]",
+                                    datamartMnemonic))));
                 }
             } else
                 resultHandler.handle(Future.failedFuture(ar.cause()));
@@ -81,7 +83,7 @@ public class EntityDaoImpl implements EntityDao {
             if (ar.succeeded()) {
                 resultHandler.handle(ar.result().hasResults()
                         ? Future.succeededFuture(ar.result().get(ENTITIES_REGISTRY.ENTITY_ID))
-                        : Future.failedFuture(String.format("Таблица не найдена: [%s]", name)));
+                        : Future.failedFuture(new RuntimeException(String.format("Entity [%s] not found!", name))));
             } else {
                 resultHandler.handle(Future.failedFuture(ar.cause()));
             }
@@ -120,9 +122,11 @@ public class EntityDaoImpl implements EntityDao {
     }
 
     @Override
-    public void findEntitiesByDatamartAndTableNames(DatamartInfo datamartInfo, Handler<AsyncResult<List<DatamartEntity>>> resultHandler) {
+    public void findEntitiesByDatamartAndTableNames(DatamartInfo datamartInfo,
+                                                    Handler<AsyncResult<List<DatamartEntity>>> resultHandler) {
         executor.query(dsl -> dsl
-                .select(ENTITIES_REGISTRY.ENTITY_ID, ENTITIES_REGISTRY.ENTITY_MNEMONICS, DATAMARTS_REGISTRY.DATAMART_MNEMONICS)
+                .select(ENTITIES_REGISTRY.ENTITY_ID, ENTITIES_REGISTRY.ENTITY_MNEMONICS,
+                        DATAMARTS_REGISTRY.DATAMART_MNEMONICS)
                 .from(DATAMARTS_REGISTRY)
                 .join(ENTITIES_REGISTRY)
                 .on(ENTITIES_REGISTRY.DATAMART_ID.eq(DATAMARTS_REGISTRY.DATAMART_ID))
@@ -132,10 +136,13 @@ public class EntityDaoImpl implements EntityDao {
             if (ar.succeeded()) {
                 if (ar.result().unwrap() instanceof ResultSet) {
                     List<DatamartEntity> datamartEntityList = initDatamartEntities(ar);
-                    log.info("Найдено {} сущностей для витрины: {}", datamartEntityList.size(), datamartInfo.getSchemaName());
+                    log.info("Found [{}] entities for datamary [{}]", datamartEntityList.size(),
+                            datamartInfo.getSchemaName());
                     resultHandler.handle(Future.succeededFuture(datamartEntityList));
                 } else {
-                    resultHandler.handle(Future.failedFuture(String.format("Невозможно получить сущности для витрины %s", datamartInfo.getSchemaName())));
+                    resultHandler.handle(Future.failedFuture(
+                            new RuntimeException(String.format("Unable to get entities for datamart [%s]!",
+                                    datamartInfo.getSchemaName()))));
                 }
             } else
                 resultHandler.handle(Future.failedFuture(ar.cause()));

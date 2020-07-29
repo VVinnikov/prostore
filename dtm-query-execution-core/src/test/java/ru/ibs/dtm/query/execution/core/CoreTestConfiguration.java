@@ -13,10 +13,13 @@ import ru.ibs.dtm.query.execution.core.utils.BeanNameGenerator;
 @Profile("test")
 @EnableAutoConfiguration(exclude = {SpringApplicationAdminJmxAutoConfiguration.class, JooqAutoConfiguration.class})
 @ComponentScan(basePackages = {
-  "ru.ibs.dtm.query.execution.core.utils",
-  "ru.ibs.dtm.query.execution.core.service",
-  "ru.ibs.dtm.query.execution.core.dao",
-  "ru.ibs.dtm.query.execution.core.factory",
-  "ru.ibs.dtm.query.execution.core.configuration"}, nameGenerator = BeanNameGenerator.class)
+        "ru.ibs.dtm.query.execution.core.calcite",
+        "ru.ibs.dtm.query.execution.core.transformer",
+        "ru.ibs.dtm.query.execution.core.utils",
+        "ru.ibs.dtm.query.execution.core.service",
+        "ru.ibs.dtm.query.execution.core.dao",
+        "ru.ibs.dtm.query.execution.core.factory",
+        "ru.ibs.dtm.query.execution.core.configuration",
+        "ru.ibs.dtm.kafka.core.configuration"}, nameGenerator = BeanNameGenerator.class)
 public class CoreTestConfiguration {
 }

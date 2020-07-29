@@ -21,10 +21,11 @@ public class SnapshotOperator extends SqlOperator {
         return SqlSyntax.SPECIAL;
     }
 
-    public SqlCall createCall(SqlLiteral functionQualifier, SqlParserPos pos, SqlNode... operands) {
+    public SqlCall createCall(SqlLiteral functionQualifier, SqlParserPos pos, SqlNode tableRef, SqlNode period,
+                              SqlOperator started, SqlOperator finished, SqlNode num, SqlLiteral isLatestUncommitedDelta) {
         assert functionQualifier == null;
-        assert operands.length == 2;
-        return new ru.ibs.dtm.query.calcite.core.extension.snapshot.SqlSnapshot(pos, operands[0], operands[1]);
+        return new ru.ibs.dtm.query.calcite.core.extension.snapshot.SqlSnapshot(pos,
+                tableRef, period, started, finished, num, isLatestUncommitedDelta);
     }
 
     public <R> void acceptCall(SqlVisitor<R> visitor, SqlCall call, boolean onlyExpressions, SqlBasicVisitor.ArgHandler<R> argHandler) {
@@ -43,7 +44,6 @@ public class SnapshotOperator extends SqlOperator {
         ru.ibs.dtm.query.calcite.core.extension.snapshot.SqlSnapshot snapshot =
                 (ru.ibs.dtm.query.calcite.core.extension.snapshot.SqlSnapshot) call;
         snapshot.getTableRef().unparse(writer, 0, 0);
-        writer.keyword("FOR SYSTEM_TIME AS OF");
-        snapshot.getPeriod().unparse(writer, 0, 0);
+        writer.keyword("FOR SYSTEM_TIME");
     }
 }

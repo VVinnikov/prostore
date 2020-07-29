@@ -57,7 +57,7 @@ public class DatamartDaoImpl implements DatamartDao {
                     );
                     resultHandler.handle(Future.succeededFuture(datamartInfoList));
                 } else {
-                    resultHandler.handle(Future.failedFuture("Unable to get metadata!"));
+                    resultHandler.handle(Future.failedFuture(new RuntimeException("Unable to get metadata!")));
                 }
             } else
                 resultHandler.handle(Future.failedFuture(ar.cause()));
@@ -73,7 +73,7 @@ public class DatamartDaoImpl implements DatamartDao {
             if (ar.succeeded()) {
                 resultHandler.handle(ar.result().hasResults()
                         ? Future.succeededFuture(ar.result().get(DATAMARTS_REGISTRY.DATAMART_ID))
-                        : Future.failedFuture(String.format("Datamart [%s] not found!", name)));
+                        : Future.failedFuture(new RuntimeException(String.format("Datamart [%s] not found!", name))));
             } else {
                 resultHandler.handle(Future.failedFuture(ar.cause()));
             }

@@ -2,6 +2,7 @@ package ru.ibs.dtm.query.execution.core.service.ddl.impl;
 
 import io.vertx.core.*;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.calcite.sql.SqlCreate;
 import org.apache.calcite.sql.SqlKind;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,7 @@ import ru.ibs.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlType;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -41,6 +43,7 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
             context.getRequest().getQueryRequest().setDatamartMnemonic(schema);
             context.setDdlType(DdlType.CREATE_TABLE);
             ClassTable classTable = metadataCalciteGenerator.generateTableMetadata((SqlCreate) context.getQuery());
+            checkRequiredKeys(classTable.getFields());
             classTable.setNameWithSchema(getTableNameWithSchema(schema, classTable.getName()));
             context.getRequest().setClassTable(classTable);
             context.setDatamartName(schema);
@@ -56,6 +59,27 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
         } catch (Exception e) {
             log.error("Error creating table by query request: {}!", context.getRequest().getQueryRequest(), e);
             handler.handle(Future.failedFuture(e));
+        }
+    }
+
+    private void checkRequiredKeys(List<ClassField> fields) {
+        val notExistsKeys = new ArrayList<String>();
+        val notExistsPrimaryKeys = fields.stream()
+            .noneMatch(f -> f.getPrimaryOrder() != null);
+        if (notExistsPrimaryKeys) {
+            notExistsKeys.add("primary key(s)");
+        }
+
+        val notExistsShardingKey = fields.stream()
+            .noneMatch(f -> f.getShardingOrder() != null);
+        if (notExistsShardingKey) {
+            notExistsKeys.add("sharding key(s)");
+        }
+
+        if (!notExistsKeys.isEmpty()) {
+            throw new IllegalArgumentException(
+                "Primary keys and Sharding keys are required. The following keys do not exist: " + String.join(",", notExistsKeys)
+            );
         }
     }
 

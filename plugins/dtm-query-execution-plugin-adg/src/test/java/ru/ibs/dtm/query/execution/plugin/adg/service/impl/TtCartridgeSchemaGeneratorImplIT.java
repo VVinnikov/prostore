@@ -67,26 +67,6 @@ class TtCartridgeSchemaGeneratorImplIT {
     testContext.awaitCompletion(5, TimeUnit.SECONDS);
   }
 
-  @Test
-  void setConfig(VertxTestContext testContext) throws Throwable {
-    client.getFiles(ar1 -> {
-      if (ar1.succeeded()) {
-        val files = ar1.result().getData().getCluster().getConfig()
-          .stream().map(ResConfig::toOperationFile).collect(Collectors.toList());
-        generator.setConfig(classTable, files, ar2 -> {
-          if (ar2.succeeded()) {
-            testContext.completeNow();
-          } else {
-            testContext.failNow(ar2.cause());
-          }
-        });
-      } else {
-        testContext.failNow(ar1.cause());
-      }
-    });
-    testContext.awaitCompletion(5, TimeUnit.SECONDS);
-  }
-
   private OperationYaml parseYaml(String yaml) {
     OperationYaml operationYaml = null;
     try {

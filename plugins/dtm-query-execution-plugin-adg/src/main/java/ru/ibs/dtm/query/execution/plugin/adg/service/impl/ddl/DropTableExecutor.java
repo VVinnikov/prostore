@@ -35,9 +35,7 @@ public class DropTableExecutor implements DdlExecutor<Void> {
     @Override
     public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<Void>> handler) {
         dropSpacesFromDb(context.getRequest().getClassTable())
-                .compose(d -> Future.future((Promise<Void> promise) ->
-                        cartridgeProvider.delete(context.getRequest().getClassTable(), promise)))
-                .onSuccess(s -> handler.handle(Future.succeededFuture(s)))
+                .onSuccess(s -> handler.handle(Future.succeededFuture()))
                 .onFailure(f -> handler.handle(Future.failedFuture(f)));
     }
 

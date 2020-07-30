@@ -8,8 +8,8 @@
     <name>DTM JDBC Driver</name>
 
     <parent>
-        <artifactId>parent</artifactId>
         <groupId>ru.ibs.dtm</groupId>
+        <artifactId>parent</artifactId>
         <version>2.4.0-SNAPSHOT</version>
     </parent>
 

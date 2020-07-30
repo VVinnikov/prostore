@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <artifactId>parent</artifactId>
-        <groupId>ru.ibs.dtm</groupId>
-        <version>2.4.0-SNAPSHOT</version>
-    </parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
     <artifactId>dtm-kafka-core</artifactId>
     <version>2.4.0-SNAPSHOT</version>
     <name>DTM Kafka Core</name>
 
-    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>ru.ibs.dtm</groupId>
+        <artifactId>parent</artifactId>
+        <version>2.4.0-SNAPSHOT</version>
+    </parent>
 
     <properties>
         <dtm.common.version>${project.version}</dtm.common.version>
     </properties>
-
 
     <dependencies>
         <!-- DTM-->
@@ -103,7 +103,6 @@
         </dependency>
 
 
-
         <!--Tests-->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -159,7 +158,6 @@
             <artifactId>scala-library</artifactId>
             <version>2.12.8</version>
         </dependency>
-
 
 
     </dependencies>

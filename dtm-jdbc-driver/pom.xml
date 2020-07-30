@@ -1,28 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>dtm-jdbc</artifactId>
+    <version>2.4.0-SNAPSHOT</version>
+    <name>DTM JDBC Driver</name>
+
     <parent>
         <artifactId>parent</artifactId>
         <groupId>ru.ibs.dtm</groupId>
         <version>2.4.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>dtm-jdbc</artifactId>
-    <version>2.4.0-SNAPSHOT</version>
-    <name>DTM JDBC Driver</name>
-    <modelVersion>4.0.0</modelVersion>
-
     <properties>
         <java.version>1.8</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-
-    <scm>
-        <connection>scm:git:git@github.com:arenadata/dtm-jdbc-driver.git</connection>
-        <url>https://github.com/arenadata/dtm-jdbc-driver</url>
-        <developerConnection>scm:git:git@github.com:arenadata/dtm-jdbc-driver.git</developerConnection>
-        <tag>HEAD</tag>
-    </scm>
 
     <dependencies>
         <dependency>
@@ -40,7 +34,6 @@
             <artifactId>dtm-common</artifactId>
             <version>${project.version}</version>
         </dependency>
-
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
@@ -55,7 +48,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.6.2</version>
+                <version>${maven.build.plugin}</version>
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
@@ -64,6 +57,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven.surefire.plugin}</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -98,27 +92,5 @@
             </resource>
         </resources>
     </build>
-
-    <repositories>
-        <repository>
-            <id>data-mart-release</id>
-            <url>https://rt.adsw.io/artifactory/data-mart-release</url>
-        </repository>
-    </repositories>
-
-    <distributionManagement>
-        <repository>
-            <id>data-mart-release</id>
-            <url>https://rt.adsw.io/artifactory/maven-dtm-releases</url>
-            <layout>default</layout>
-            <uniqueVersion>true</uniqueVersion>
-        </repository>
-
-        <snapshotRepository>
-            <id>data-mart-snapshots</id>
-            <url>https://rt.adsw.io/artifactory/data-mart-snapshot</url>
-            <layout>default</layout>
-        </snapshotRepository>
-    </distributionManagement>
 
 </project>

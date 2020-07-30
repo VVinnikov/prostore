@@ -4,7 +4,7 @@ import io.reactiverse.pgclient.PgPoolOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-@ConfigurationProperties("datasource.adb")
+@ConfigurationProperties("adb.datasource")
 @Component
 public class GreenplumProperties {
   private final int DEFAULT_FETCH_SIZE = 1_000;

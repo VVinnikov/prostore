@@ -3,34 +3,38 @@ Main project of data mart for NSUD.
 
 ## Local deployment
 
-### Run internal DB & kafka
+### App configuration
+All app configuration files are placed into dtm-query-execution-core/config folder.
+We use Spring Boot profiles to separate settings for the different environments.
+Actually we supports 2 environments:
+* dev - all connections are pointed to the Yandex.Cloud
+* local - Service db, Kafka and Zookeeper are local, ADB, ADG and ADQM are similar to dev profile. In the future all connections will be local
 
-Docker compose is required to run services on local:
+Default profile actually similar to the dev profile.
+
+We can specify profile via environment variable SPRING_PROFILES_ACTIVE or via specifing argument to java -Dspring.profiles.active=
+
+### Build application
+
+#### Start required services
+To build DTM application, we use JOOQ objects generation from service db, so if we use `local` maven profile, we should start it local
+ 
+```shell script
+cd dtm-query-execution-core
+docker-compose -f environment/docker-compose-build.yml up -d
 ```
-docker-compose -f dtm-query-execution-core/environment/docker-compose-local.yml up -d
-```
 
-It runs:
-* MariaDB
-* Zookeeper
-* Kafka
-* Postgres as emulator of ADB
-
-Add `127.0.0.1	kafka-1.dtm.local` to `/etc/hosts`. It is required for tests and local debug.
-
-Also you need local or remote ADB, ADG and ADQM.
-
-### Load initial data
+#### Load initial data
 
 To load schema changes use sub-project [dtm-migration](dtm-migration/README.md) and run:
-```
+```shell script
 cd dtm-migration
 mvn spring-boot:run
 ```
 
-### Build project using maven
+#### Build project using maven
 
-```
+```shell script
 # without any tests
 mvn package -P local -D skipTests
 
@@ -38,19 +42,44 @@ mvn package -P local -D skipTests
 mvn verify -P local
 ```
 
-### Run main service as a single jar
+### Run application
 
-```
+!!! Please note what actually we hardcode jar version while running or building docker image, so please double-check it while running application
+
+#### Run main service as a single jar
+
+```shell script
 cd dtm-query-execution-core
-java -Dspring.config.location=classpath:/application.yml,<path-to-adb-config>/application.yml,<path-to-adg-config>/application.yml,<path-to-adqm-config>/application.yml -jar target/dtm-query-execution-core-2.2.1-SNAPSHOT.jar
+java -Dspring.profiles.active=dev -jar target/dtm-query-execution-core-2.2.1-SNAPSHOT.jar
 ```
 
-### Run main service as a docker container
+#### Run main service as a docker container
 
-```
-docker-compose -f dtm-query-execution-core/environment/docker-compose-dev.yml up -d
+```shell script
+cd dtm-query-execution-core
+docker-compose -f environment/docker-compose-dev.yml up -d
 docker logs -f dtm-query-execution-core
 ```
+
+#### Run main service and related services (ServiceDB, Kafka, Zookeeper) 
+
+```shell script
+cd dtm-query-execution-core
+docker-compose -f environment/docker-compose-local.yml up -d
+docker logs -f dtm-query-execution-core
+```
+After that service will listen on the 9090 port
+
+It runs:
+* MariaDB
+* Zookeeper
+* Kafka
+* dtm-query-execution-core
+* ADB
+* ADG
+* ADQM
+
+Add `127.0.0.1	kafka-1.dtm.local` to `/etc/hosts`. It is required for tests and local debug.
 
 ## Setup IDE
 
@@ -59,18 +88,11 @@ Use profile `local` for project builder.
 Setup run configuration for core application:
  1. Working dir - `dtm-query-execution-core`.
  2. Main class - `ru.ibs.dtm.query.execution.core.ServiceQueryExecutionApplication`.
- 3. VM options - `-Dspring.config.location=classpath:/application.yml,./doc/remote/config/adb/application.yml,./doc/remote/config/adg/application.yml,./doc/remote/config/adqm/application.yml`.
- 4. Environment variables (if nessessary):
-    - ZOOKEEPER_HOSTS=127.0.0.1
-    - KAFKA_BOOTSTRAP_SERVERS=127.0.0.1:9092
-    - ADB_HOST=10.92.3.14
-    - TARANTOOL_DB_HOST=10.92.3.12
-    - ADQM_HOSTS=10.92.3.24:8123,10.92.3.34:8123
-    - ...
+ 3. VM options - `-Dspring.profiles.active=dev`.
 
-##Setup JDBC test client
+## Setup JDBC test client
 
-Use [DTM JDBC driver](https://github.com/arenadata/dtm-jdbc-driver).
+Use [DTM JDBC driver](dtm-jdbc-driver/README.md).
 URL is `jdbc:adtm://<host>:<port>/`:
  - `host` is host of dtm-query-execution-core (`localhost`)
  - `port` is port of dtm-query-execution-core (see active `application.yml` for dtm-query-execution-core)

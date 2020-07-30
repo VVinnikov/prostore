@@ -9,6 +9,7 @@ import java.sql.Connection;
 import java.sql.JDBCType;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.List;
 
 public class DtmResultSetMetaData implements ResultSetMetaData {
@@ -17,7 +18,7 @@ public class DtmResultSetMetaData implements ResultSetMetaData {
 
     public DtmResultSetMetaData(Connection connection, List<ColumnMetadata> fields) {
         this.connection = connection;
-        this.fields = fields;
+        this.fields = fields == null ? Collections.emptyList() : fields;
     }
 
     @Override

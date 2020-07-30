@@ -22,7 +22,7 @@ public class SystemViewsConfiguration {
             if (out.succeeded()) {
                 log.debug("System views fetch completed");
             } else {
-                log.debug("System views fetch error", out.cause());
+                log.error("System views fetch error", out.cause());
             }
         });
     }

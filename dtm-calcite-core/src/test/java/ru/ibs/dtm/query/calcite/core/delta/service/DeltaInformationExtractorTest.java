@@ -15,6 +15,7 @@ import org.apache.calcite.tools.Planner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.delta.DeltaInformationResult;
+import ru.ibs.dtm.common.delta.DeltaInterval;
 import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import ru.ibs.dtm.query.calcite.core.util.DeltaInformationExtractor;
 
@@ -108,6 +109,34 @@ class DeltaInformationExtractorTest {
         assertTrue(deltaInformationResult.getDeltaInformations().get(2).isLatestUncommitedDelta());
         assertNull(deltaInformationResult.getDeltaInformations().get(1).getDeltaTimestamp());
         assertNull(deltaInformationResult.getDeltaInformations().get(2).getDeltaTimestamp());
+
+        val sqlWithoutForSystemTime = deltaInformationResult.getSqlWithoutSnapshots();
+        log.info(sqlWithoutForSystemTime);
+        assertFalse(sqlWithoutForSystemTime.contains(FOR_SYSTEM_TIME));
+    }
+
+    @Test
+    void extractWithStartedDeltaInterval() throws SqlParseException {
+        val sql = "SELECT v.col1 AS c, (SELECT col4 FROM tblc FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59' t3 WHERE tblx.col6 = 0 ) AS r\n" +
+                "FROM test.tbl FOR SYSTEM_TIME AS OF LATEST_UNCOMMITED_DELTA AS t\n" +
+                "INNER JOIN (SELECT col4, col5\n" +
+                "FROM test2.tblx FOR SYSTEM_TIME STARTED IN (1, 2)\n" +
+                "WHERE tblx.col6 = 0) AS v ON t.col3 = v.col4\n" +
+                "INNER JOIN (SELECT col4, col5\n" +
+                "FROM test2.tbly FOR SYSTEM_TIME AS OF DELTA_NUM 4444\n" +
+                "WHERE tbly.col6 = 0) AS vv ON t.col3 = vv.col4\n" +
+                "WHERE EXISTS (SELECT id\n" +
+                "FROM (SELECT col4, col5 FROM tblz FOR SYSTEM_TIME FINISHED IN (3,4) WHERE tblz.col6 = 0) AS view) order by v.col1";
+        SqlNode sqlNode = planner.parse(sql);
+        log.info(sql);
+        DeltaInformationResult deltaInformationResult = DeltaInformationExtractor.extract(sqlNode);
+        assertEquals(5, deltaInformationResult.getDeltaInformations().size());
+
+        assertNotNull(deltaInformationResult.getDeltaInformations().get(0).getDeltaTimestamp());
+        assertTrue(deltaInformationResult.getDeltaInformations().get(1).isLatestUncommitedDelta());
+        assertEquals(new DeltaInterval(1L,2L), deltaInformationResult.getDeltaInformations().get(2).getDeltaInterval());
+        assertEquals(4444, deltaInformationResult.getDeltaInformations().get(3).getDeltaNum());
+        assertEquals(new DeltaInterval(3L,4L), deltaInformationResult.getDeltaInformations().get(4).getDeltaInterval());
 
         val sqlWithoutForSystemTime = deltaInformationResult.getSqlWithoutSnapshots();
         log.info(sqlWithoutForSystemTime);

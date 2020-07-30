@@ -16,10 +16,7 @@ import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dto.edml.DownloadExtTableRecord;
 import ru.ibs.dtm.query.execution.core.dto.edml.DownloadQueryRecord;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @ActiveProfiles("test")
@@ -169,6 +166,21 @@ class ServiceDaoImplIT {
                 new ActualDeltaRequest("dm2", "2020-03-01 07:00:00", false),
                 new ActualDeltaRequest("dmX", "2020-04-01 07:00:00", false)
         );
+        serviceDbFacade.getDeltaServiceDao().getDeltasOnDateTimes(requests, ar -> {
+            if (ar.succeeded()) {
+                deltas = ar.result();
+                testContext.completeNow();
+            } else {
+                testContext.failNow(ar.cause());
+            }
+        });
+        testContext.awaitCompletion(5, TimeUnit.SECONDS);
+        Assertions.assertEquals(requests.size(), deltas.size());
+    }
+
+    @Test
+    void getDeltasOnDateTimesWithEmptyRequests(VertxTestContext testContext) throws Throwable {
+        final List<ActualDeltaRequest> requests = new ArrayList<>();
         serviceDbFacade.getDeltaServiceDao().getDeltasOnDateTimes(requests, ar -> {
             if (ar.succeeded()) {
                 deltas = ar.result();

@@ -13,3 +13,10 @@ databaseChangeLog:
         - sqlFile:
             path: 0002.sql
             relativeToChangelogFile:  true
+  - changeSet:
+      id:  20200729_120000
+      author: 'Dmitrii Kosiakov'
+      changes:
+        - sqlFile:
+            path: 0003.sql
+            relativeToChangelogFile:  true

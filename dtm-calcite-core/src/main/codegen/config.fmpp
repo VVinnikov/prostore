@@ -44,7 +44,11 @@ data: {
       "CHUNK_SIZE"
       "MESSAGE_LIMIT"
       "DISTRIBUTED"
-      "DELTA"
+      "DELTA",
+      "STARTED",
+      "FINISHED",
+      "DELTA_NUM",
+      "LATEST_UNCOMMITED_DELTA"
     ]
 
     # List of keywords from "keywords" section that are not reserved.

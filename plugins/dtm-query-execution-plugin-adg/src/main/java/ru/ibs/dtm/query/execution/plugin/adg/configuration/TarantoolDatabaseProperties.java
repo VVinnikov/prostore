@@ -6,7 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @Data
 @ToString
-@ConfigurationProperties(prefix = "tarantool.db")
+@ConfigurationProperties(prefix = "adg.tarantool.db")
 public class TarantoolDatabaseProperties {
   String host = "localhost";
   Integer port = 3511;

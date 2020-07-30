@@ -1,9 +1,11 @@
 package ru.ibs.dtm.query.calcite.core.node;
 
+import lombok.Data;
+import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlNode;
+
 import java.util.Optional;
 import java.util.function.Consumer;
-import lombok.Data;
-import org.apache.calcite.sql.SqlNode;
 
 @Data
 public class SqlTreeNode implements Comparable<SqlTreeNode> {
@@ -42,6 +44,32 @@ public class SqlTreeNode implements Comparable<SqlTreeNode> {
     @SuppressWarnings("unchecked")
     public <T extends SqlNode> T getNode() {
         return (T) node;
+    }
+
+    public Optional<String> tryGetSchemaName() {
+        if (node instanceof SqlIdentifier) {
+            SqlIdentifier idNode = getNode();
+            if (idNode.isSimple()) {
+                return Optional.empty();
+            } else {
+                return Optional.of(idNode.names.get(0));
+            }
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    public Optional<String> tryGetTableName() {
+        if (node instanceof SqlIdentifier) {
+            SqlIdentifier idNode = getNode();
+            if (idNode.isSimple()) {
+                return Optional.of(idNode.names.get(0));
+            } else {
+                return Optional.of(idNode.names.get(1));
+            }
+        } else {
+            return Optional.empty();
+        }
     }
 
     @Override

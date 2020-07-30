@@ -1,9 +1,5 @@
 package ru.ibs.dtm.query.execution.plugin.adqm.service.impl.query;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import lombok.SneakyThrows;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
@@ -15,11 +11,18 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.env.AbstractEnvironment;
 import ru.ibs.dtm.common.delta.DeltaInformation;
+import ru.ibs.dtm.common.delta.DeltaInterval;
+import ru.ibs.dtm.common.delta.DeltaType;
 import ru.ibs.dtm.query.execution.plugin.adqm.calcite.AdqmCalciteContextProvider;
 import ru.ibs.dtm.query.execution.plugin.adqm.calcite.AdqmCalciteSchemaFactory;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.CalciteConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.factory.impl.AdqmSchemaFactory;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -48,17 +51,43 @@ class QueryRewriterTest {
         assertTrue(matcher.find(), String.format("Expected: %s, Received: %s", regexp, data));
     }
 
+    @Test
+    void testQueryRewriter() {
+        QueryRewriter rewriter = new QueryRewriter(calciteContextProvider, appConfiguration);
+        String query = "SELECT a.account_id, a.account_type\n" +
+                "FROM shares.accounts a\n" +
+                "JOIN shares.transactions t ON t.account_id = a.account_id\n" +
+                "WHERE a.account_id = 1 OR a.account_type = '100'";
+        rewriter.rewrite(query, mockDeltas(), ar -> {
+            assertTrue(ar.succeeded());
+            String modifiedQuery = ar.result();
+
+            // Physical names instead of datamart's
+            assertGrep(modifiedQuery, "`dev__shares`.`accounts_actual`");
+            assertGrep(modifiedQuery, "`dev__shares`.`transactions_actual_shard`");
+
+            // Union all clause
+            assertGrep(modifiedQuery, "UNION ALL");
+
+            // where with delta filters
+            assertGrep(modifiedQuery, "`a`.`sys_from` <= 98 AND `a`.`sys_to` >= 98");
+            assertGrep(modifiedQuery, "`t`.`sys_from` <= 107 AND `t`.`sys_to` >= 107");
+        });
+
+    }
+
     private static List<DeltaInformation> mockDeltas() {
         SqlParserPos pos = new SqlParserPos(0, 0);
         return Arrays.asList(
-                new DeltaInformation("a", "2019-12-23 15:15:14", false,101L, "shares", "accounts", pos),
-                new DeltaInformation("b", "2019-12-23 15:15:14", false,102L, "test_datamart", "balances", pos),
-                new DeltaInformation("", "2020-06-10 23:59:59", false, 103L, "shares", "transactions", pos)
+                new DeltaInformation("a", "2019-12-23 15:15:14", false,
+                        98L, null, DeltaType.NUM, "shares", "accounts", pos),
+                new DeltaInformation("t", null, false,
+                        107L, null, DeltaType.NUM, "shares", "transactions", pos)
         );
     }
 
     @Test
-    public void testQueryRewrite() {
+    public void testQueryRewriteDeltaNum() {
         QueryRewriter rewriter = new QueryRewriter(calciteContextProvider, appConfiguration);
 
         String query = "select *, " +
@@ -76,7 +105,7 @@ class QueryRewriterTest {
                 "    group by a.account_id, a.account_type\n" +
                 ") x";
 
-        rewriter.rewrite(query, mockDeltas(), ar -> {
+        rewriter.rewrite(query, mockDeltasNumType(), ar -> {
             assertTrue(ar.succeeded());
             String modifiedQuery = ar.result();
 
@@ -89,10 +118,73 @@ class QueryRewriterTest {
             assertGrep(modifiedQuery, "UNION ALL");
 
             // where with delta filters
-            assertGrep(modifiedQuery, "101 between\\s+`a`.`sys_from` and `a`.`sys_to`");
-            assertGrep(modifiedQuery, "102 between\\s+`b`.`sys_from` and `b`.`sys_to`");
-            assertGrep(modifiedQuery, "103 between\\s+`transactions_actual_shard`.`sys_from` and `transactions_actual_shard`.`sys_to`");
+            assertGrep(modifiedQuery, "`a`.`sys_from` <= 101 AND `a`.`sys_to` >= 101");
+            assertGrep(modifiedQuery, "`b`.`sys_from` <= 102 AND `b`.`sys_to` >= 102");
+            assertGrep(modifiedQuery, "`transactions_actual_shard`.`sys_from` <= 103 AND `transactions_actual_shard`.`sys_to` >= 103");
         });
+    }
+
+    private static List<DeltaInformation> mockDeltasNumType() {
+        SqlParserPos pos = new SqlParserPos(0, 0);
+        return Arrays.asList(
+                new DeltaInformation("a", "2019-12-23 15:15:14", false,
+                        101L, null, DeltaType.NUM, "shares", "accounts", pos),
+                new DeltaInformation("b", "2019-12-23 15:15:14", false,
+                        102L, null, DeltaType.NUM, "test_datamart", "balances", pos),
+                new DeltaInformation("", "2020-06-10 23:59:59", false,
+                        103L, null, DeltaType.NUM, "shares", "transactions", pos)
+        );
+    }
+
+    @Test
+    public void testQueryRewriteDeltaInterval() {
+        QueryRewriter rewriter = new QueryRewriter(calciteContextProvider, appConfiguration);
+
+        String query = "select *, " +
+                "       CASE " +
+                "         WHEN (account_type = 'D' AND amount >= 0) " +
+                "              OR (account_type = 'C' AND  amount <= 0) THEN 'OK' " +
+                "       ELSE 'NOT OK' " +
+                "       END " +
+                " from (\n" +
+                "    select a.account_id, coalesce(sum(amount),0) amount, a.account_type\n" +
+                "    from shares.accounts a " +
+                "    join balances b on b.account_id = a.account_id\n" +
+                "    left join shares.transactions" +
+                "       using(account_id)\n" +
+                "    group by a.account_id, a.account_type\n" +
+                ") x";
+
+        rewriter.rewrite(query, mockDeltasIntervalType(), ar -> {
+            assertTrue(ar.succeeded());
+            String modifiedQuery = ar.result();
+
+            // Physical names instead of datamart's
+            assertGrep(modifiedQuery, "`dev__shares`.`accounts_actual`");
+            assertGrep(modifiedQuery, "`dev__test_datamart`.`balances_actual_shard`");
+            assertGrep(modifiedQuery, "`dev__shares`.`transactions_actual_shard`");
+
+            // Union all clause
+            assertGrep(modifiedQuery, "UNION ALL");
+
+            // where with delta filters
+            assertGrep(modifiedQuery, "`a`.`sys_from` >= 101 AND `a`.`sys_from` <= 102");
+            assertGrep(modifiedQuery, "`b`.`sys_to` <= 103 AND `b`.`sys_op` = 1");
+            assertGrep(modifiedQuery, "`b`.`sys_to` >= 102");
+            assertGrep(modifiedQuery, "`transactions_actual_shard`.`sys_from` <= 105 AND `transactions_actual_shard`.`sys_to` >= 105");
+        });
+    }
+
+    private static List<DeltaInformation> mockDeltasIntervalType() {
+        SqlParserPos pos = new SqlParserPos(0, 0);
+        return Arrays.asList(
+                new DeltaInformation("a", null, false,
+                        0L, new DeltaInterval(101L, 102L), DeltaType.STARTED_IN, "shares", "accounts", pos),
+                new DeltaInformation("b", null, false,
+                        0L, new DeltaInterval(103L, 104L), DeltaType.FINISHED_IN, "test_datamart", "balances", pos),
+                new DeltaInformation("", "2020-06-10 23:59:59", false,
+                        105L, null, DeltaType.NUM, "shares", "transactions", pos)
+        );
     }
 
     @SneakyThrows

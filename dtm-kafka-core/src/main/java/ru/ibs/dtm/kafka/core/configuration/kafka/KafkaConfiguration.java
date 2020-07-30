@@ -46,24 +46,6 @@ public class KafkaConfiguration {
         return KafkaAdminClient.create(vertx, kafkaProperties.getConsumer().getCore());
     }
 
-    @Bean("adbKafkaAdminClient")
-    public KafkaAdminClient adbKafkaAdminClient(KafkaProperties kafkaProperties,
-                                                @Qualifier("kafkaVertx") Vertx vertx) {
-        return KafkaAdminClient.create(vertx, kafkaProperties.getConsumer().getAdb());
-    }
-
-    @Bean("adgKafkaAdminClient")
-    public KafkaAdminClient adgKafkaAdminClient(KafkaProperties kafkaProperties,
-                                                @Qualifier("kafkaVertx") Vertx vertx) {
-        return KafkaAdminClient.create(vertx, kafkaProperties.getConsumer().getAdg());
-    }
-
-    @Bean("adqmKafkaAdminClient")
-    public KafkaAdminClient adqmKafkaAdminClient(KafkaProperties kafkaProperties,
-                                                 @Qualifier("kafkaVertx") Vertx vertx) {
-        return KafkaAdminClient.create(vertx, kafkaProperties.getConsumer().getAdqm());
-    }
-
     @Bean("coreKafkaConsumerMonitor")
     public KafkaConsumerMonitor kafkaConsumerMonitor(@Qualifier("coreKafkaAdminClient") KafkaAdminClient adminClient,
                                                      @Qualifier("coreKafkaConsumerFactory") KafkaConsumerFactory<byte[], byte[]> consumerFactory,

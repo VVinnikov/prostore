@@ -3,13 +3,13 @@ package ru.ibs.dtm.query.execution.plugin.adqm.service.impl.status;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.json.JsonObject;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.plugin.status.StatusQueryResult;
 import ru.ibs.dtm.kafka.core.service.kafka.KafkaConsumerMonitor;
+import ru.ibs.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.StatusReporter;
 import ru.ibs.dtm.query.execution.plugin.api.request.StatusRequest;
 import ru.ibs.dtm.query.execution.plugin.api.service.StatusService;
@@ -50,21 +50,19 @@ public class AdqmStatusService implements StatusService<StatusQueryResult>, Stat
     }
 
     @Override
-    public void onStart(@NonNull final JsonObject payload) {
-        String topic = payload.getString("topic");
-        String consumerGroup = payload.getString("consumerGroup");
+    public void onStart(@NonNull final StatusReportDto payload) {
+        String topic = payload.getTopic();
+        String consumerGroup = payload.getConsumerGroup();
         topicsInUse.put(topic, consumerGroup);
     }
 
     @Override
-    public void onFinish(@NonNull final JsonObject payload) {
-        String topic = payload.getString("topic");
-        topicsInUse.remove(topic);
+    public void onFinish(@NonNull final StatusReportDto payload) {
+        topicsInUse.remove(payload.getTopic());
     }
 
     @Override
-    public void onError(@NonNull final JsonObject payload) {
-        String topic = payload.getString("topic");
-        topicsInUse.remove(topic);
+    public void onError(@NonNull final StatusReportDto payload) {
+        topicsInUse.remove(payload.getTopic());
     }
 }

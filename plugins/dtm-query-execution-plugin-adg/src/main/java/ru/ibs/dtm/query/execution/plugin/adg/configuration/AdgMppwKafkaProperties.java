@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 
 @Data
 @Component("adgMppwKafkaProperties")
-@ConfigurationProperties(prefix = "mppw.adg.kafka")
+@ConfigurationProperties(prefix = "adg.mppw.kafka")
 public class AdgMppwKafkaProperties {
     private long maxNumberOfMessagesPerPartition = 200;
 }

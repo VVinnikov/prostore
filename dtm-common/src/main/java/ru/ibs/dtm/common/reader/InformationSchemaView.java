@@ -8,7 +8,10 @@ import java.util.Arrays;
 public enum InformationSchemaView {
   SCHEMES("logic_schema_datamarts"),
   TABLES("logic_schema_entities"),
-  DELTAS("logic_schema_deltas");
+  DELTAS("logic_schema_deltas"),
+  COLUMNS("logic_schema_columns"),
+  TABLE_CONSTRAINTS("logic_schema_table_constraints"),
+  KEY_COLUMN_USAGE("logic_schema_key_column_usage");
 
   public static final String SCHEMA_NAME = "INFORMATION_SCHEMA";
   private static final String quiet = "\"";

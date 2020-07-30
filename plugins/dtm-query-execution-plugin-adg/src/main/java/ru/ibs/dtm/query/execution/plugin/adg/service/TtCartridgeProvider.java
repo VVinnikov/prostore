@@ -10,6 +10,4 @@ import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
  */
 public interface TtCartridgeProvider {
   void apply(DdlRequestContext context, Handler<AsyncResult<Void>> handler);
-  void delete(ClassTable classTable, Handler<AsyncResult<Void>> handler);
-
 }

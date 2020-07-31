@@ -46,6 +46,9 @@ core:
     admin:
       inputStreamTimeoutMs: ${KAFKA_INPUT_STREAM_TIMEOUT_MS:1000}
       monitorPoolingTimeoutMs: ${KAFKA_MONITOR_POLLING_MS:1000}
+    status.event.publish:
+          enabled: true
+          topic: status.event
 
 adb:
   datasource:

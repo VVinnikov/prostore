@@ -32,6 +32,8 @@ core:
     producer:
       property:
         bootstrap.servers: *kafkaUrl
+        key.serializer: org.apache.kafka.common.serialization.StringSerializer
+        value.serializer: org.apache.kafka.common.serialization.StringSerializer
     consumer:
       core:
         bootstrap.servers: *kafkaUrl

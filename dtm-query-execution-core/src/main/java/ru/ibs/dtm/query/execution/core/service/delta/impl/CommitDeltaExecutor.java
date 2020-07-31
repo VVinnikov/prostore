@@ -1,20 +1,18 @@
 package ru.ibs.dtm.query.execution.core.service.delta.impl;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
+import io.vertx.core.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.delta.DeltaLoadStatus;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.status.StatusEventCode;
-import ru.ibs.dtm.query.execution.core.aspect.status.StatusEventPublisher;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import ru.ibs.dtm.query.execution.core.service.delta.DeltaExecutor;
+import ru.ibs.dtm.query.execution.core.service.delta.StatusEventPublisher;
 import ru.ibs.dtm.query.execution.plugin.api.delta.DeltaRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.delta.query.CommitDeltaQuery;
 import ru.ibs.dtm.query.execution.plugin.api.delta.query.DeltaAction;
@@ -27,12 +25,16 @@ import static ru.ibs.dtm.query.execution.plugin.api.delta.query.DeltaAction.COMM
 @Slf4j
 public class CommitDeltaExecutor implements DeltaExecutor, StatusEventPublisher {
 
+    private final Vertx vertx;
     private ServiceDbFacade serviceDbFacade;
     private DeltaQueryResultFactory deltaQueryResultFactory;
 
     @Autowired
-    public CommitDeltaExecutor(ServiceDbFacade serviceDbFacade, DeltaQueryResultFactory deltaQueryResultFactory) {
+    public CommitDeltaExecutor(ServiceDbFacade serviceDbFacade,
+                               DeltaQueryResultFactory deltaQueryResultFactory,
+                               @Qualifier("coreVertx") Vertx vertx) {
         this.serviceDbFacade = serviceDbFacade;
+        this.vertx = vertx;
         this.deltaQueryResultFactory = deltaQueryResultFactory;
     }
 
@@ -100,5 +102,10 @@ public class CommitDeltaExecutor implements DeltaExecutor, StatusEventPublisher 
     @Override
     public DeltaAction getAction() {
         return COMMIT_DELTA;
+    }
+
+    @Override
+    public Vertx getVertx() {
+        return vertx;
     }
 }

@@ -1,22 +1,20 @@
 package ru.ibs.dtm.query.execution.core.service.delta.impl;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
+import io.vertx.core.*;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.delta.DeltaLoadStatus;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.status.StatusEventCode;
-import ru.ibs.dtm.query.execution.core.aspect.status.StatusEventPublisher;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import ru.ibs.dtm.query.execution.core.service.delta.DeltaExecutor;
+import ru.ibs.dtm.query.execution.core.service.delta.StatusEventPublisher;
 import ru.ibs.dtm.query.execution.plugin.api.delta.DeltaRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.delta.query.BeginDeltaQuery;
 import ru.ibs.dtm.query.execution.plugin.api.delta.query.DeltaAction;
@@ -32,11 +30,15 @@ public class BeginDeltaExecutor implements DeltaExecutor, StatusEventPublisher {
 
     private ServiceDbFacade serviceDbFacade;
     private DeltaQueryResultFactory deltaQueryResultFactory;
+    private final Vertx vertx;
 
     @Autowired
-    public BeginDeltaExecutor(ServiceDbFacade serviceDbFacade, DeltaQueryResultFactory deltaQueryResultFactory) {
+    public BeginDeltaExecutor(ServiceDbFacade serviceDbFacade,
+                              DeltaQueryResultFactory deltaQueryResultFactory,
+                              @Qualifier("coreVertx") Vertx vertx) {
         this.serviceDbFacade = serviceDbFacade;
         this.deltaQueryResultFactory = deltaQueryResultFactory;
+        this.vertx = vertx;
     }
 
     @Override
@@ -122,5 +124,10 @@ public class BeginDeltaExecutor implements DeltaExecutor, StatusEventPublisher {
     @Override
     public DeltaAction getAction() {
         return BEGIN_DELTA;
+    }
+
+    @Override
+    public Vertx getVertx() {
+        return vertx;
     }
 }

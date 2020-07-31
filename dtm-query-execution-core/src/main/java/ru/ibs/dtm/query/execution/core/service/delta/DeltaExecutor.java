@@ -14,7 +14,7 @@ public interface DeltaExecutor {
     /**
      * <p>Выполнить delta запрос</p>
      *
-     * @param context              контекст запрсоа
+     * @param context            контекст запрсоа
      * @param asyncResultHandler хэндлер асинхронной обработки результата
      */
     void execute(DeltaRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler);

@@ -1,1 +1,0 @@
-package ru.ibs.dtm.query.execution.core.aspect.status;import ru.ibs.dtm.query.execution.core.factory.StatusEventFactory;public interface StatusEventFactoryRegistry {    void registryFactory(StatusEventFactory<?> factory);}

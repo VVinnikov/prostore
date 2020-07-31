@@ -5,3 +5,5 @@ databaseChangeLog:
       file: db/changelog/serviceDb/release_2.1/index.yml
   - include:
       file: db/changelog/serviceDb/release_2.3/index.yml
+  - include:
+      file: db/changelog/serviceDb/release_2.4/index.yml

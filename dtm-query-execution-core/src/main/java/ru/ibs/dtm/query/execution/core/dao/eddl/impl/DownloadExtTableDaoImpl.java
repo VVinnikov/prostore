@@ -48,6 +48,7 @@ public class DownloadExtTableDaoImpl implements DownloadExtTableDao {
                         .set(DOWNLOAD_EXTERNAL_TABLE.LOCATION, downloadExternalTableQuery.getLocationPath())
                         .set(DOWNLOAD_EXTERNAL_TABLE.FORMAT_ID, downloadExternalTableQuery.getFormat().ordinal())
                         .set(DOWNLOAD_EXTERNAL_TABLE.CHUNK_SIZE, downloadExternalTableQuery.getChunkSize())
+                        .set(DOWNLOAD_EXTERNAL_TABLE.TABLE_SCHEMA, downloadExternalTableQuery.getTableSchema())
                 ).setHandler(ar -> {
                     if (ar.succeeded()) {
                         resultHandler.handle(Future.succeededFuture());

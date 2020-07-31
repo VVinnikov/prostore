@@ -7,7 +7,6 @@ import org.junit.jupiter.api.function.Executable;
 import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
-import ru.ibs.dtm.common.schema.codec.AvroEncoder;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,7 +18,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class AvroSchemaGeneratorImplTest {
 
     private AvroSchemaGenerator avroSchemaGenerator;
-    private AvroEncoder<Object> encoder = new AvroEncoder();
     private ClassTable table;
 
     @BeforeEach
@@ -45,7 +43,7 @@ class AvroSchemaGeneratorImplTest {
     @Test
     void generateSchemaFields() {
         String avroResult = "{\"type\":\"record\",\"name\":\"uplexttab\",\"namespace\":\"test_datamart\"," +
-            "\"fields\":[{\"name\":\"id\",\"type\":[\"null\",\"int\"],\"default\":null,\"defaultValue\":\"null\"}," +
+            "\"fields\":[{\"name\":\"id\",\"type\":\"int\"}," +
             "{\"name\":\"name\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}]," +
             "\"default\":null,\"defaultValue\":\"null\"},{\"name\":\"booleanvalue\",\"type\":[\"null\",\"boolean\"]," +
             "\"default\":null,\"defaultValue\":\"null\"},{\"name\":\"charvalue\",\"type\":[\"null\"," +
@@ -67,5 +65,18 @@ class AvroSchemaGeneratorImplTest {
         Executable executable = () -> avroSchemaGenerator.generateTableSchema(table);
         assertThrows(IllegalArgumentException.class,
             executable, "Unsupported data type: UUID");
+    }
+
+    @Test
+    void testCheckSysOpFieldAlreadyInFields() {
+        table.getFields().add(new ClassField(9, "sys_op", ColumnType.INT, false, false));
+        Schema tableSchema = avroSchemaGenerator.generateTableSchema(table);
+        assertEquals(1, tableSchema.getFields().stream().filter(f -> f.name().equalsIgnoreCase("sys_op")).count());
+    }
+
+    @Test
+    void testCheckSysOpSkip() {
+        Schema tableSchema = avroSchemaGenerator.generateTableSchema(table, false);
+        assertEquals(0, tableSchema.getFields().stream().filter(f -> f.name().equalsIgnoreCase("sys_op")).count());
     }
 }

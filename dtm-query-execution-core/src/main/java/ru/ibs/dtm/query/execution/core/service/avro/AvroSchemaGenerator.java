@@ -5,5 +5,9 @@ import ru.ibs.dtm.common.model.ddl.ClassTable;
 
 public interface AvroSchemaGenerator {
 
-    Schema generateTableSchema(ClassTable table);
+    default Schema generateTableSchema(ClassTable table) {
+        return generateTableSchema(table, true);
+    }
+
+    Schema generateTableSchema(ClassTable table, boolean withSysOpField);
 }

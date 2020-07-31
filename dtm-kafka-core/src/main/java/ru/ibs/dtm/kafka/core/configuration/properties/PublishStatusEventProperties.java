@@ -4,10 +4,10 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-@Component("statusEventProperties")
-@ConfigurationProperties(prefix = "status.event.publish")
+@Component("publishStatusEventProperties")
+@ConfigurationProperties(prefix = "kafka.status.event.publish")
 @Data
 public class PublishStatusEventProperties {
-    private String topic = "topicS";
+    private String topic = "status.event";
     private boolean enabled = true;
 }

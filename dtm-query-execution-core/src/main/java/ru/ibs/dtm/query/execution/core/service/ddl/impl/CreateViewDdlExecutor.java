@@ -15,12 +15,15 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.calcite.core.node.SqlSelectTree;
+import ru.ibs.dtm.query.calcite.core.node.SqlTreeNode;
 import ru.ibs.dtm.query.execution.core.configuration.jooq.MariaProperties;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import ru.ibs.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import ru.ibs.dtm.query.execution.core.utils.SqlPreparer;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
+
+import java.util.List;
 
 @Slf4j
 @Component
@@ -40,11 +43,17 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
     @Override
     public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<QueryResult>> handler) {
         try {
-            val ctx = getCreateViewContext(context, sqlNodeName);
-            findDatamart(ctx)
-                .compose(this::checkEntity)
-                .compose(this::createOrReplaceView)
-                .onComplete(handler);
+            List<SqlTreeNode> bySnapshot = new SqlSelectTree(context.getQuery())
+                .findNodesByPath(SqlSelectTree.SELECT_AS_SNAPSHOT);
+            if (bySnapshot.isEmpty()) {
+                val ctx = getCreateViewContext(context, sqlNodeName);
+                findDatamart(ctx)
+                    .compose(this::checkEntity)
+                    .compose(this::createOrReplaceView)
+                    .onComplete(handler);
+            } else {
+                handler.handle(Future.failedFuture("FOR SYSTEM_TIME syntax forbidden in a view"));
+            }
         } catch (Exception e) {
             log.error("CreateViewContext creating error", e);
             handler.handle(Future.failedFuture(e));

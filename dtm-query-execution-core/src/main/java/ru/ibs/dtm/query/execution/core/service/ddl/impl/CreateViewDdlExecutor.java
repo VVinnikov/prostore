@@ -52,7 +52,7 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
                     .compose(this::createOrReplaceView)
                     .onComplete(handler);
             } else {
-                handler.handle(Future.failedFuture("It is not possible to specify a snapshot when creating a view"));
+                handler.handle(Future.failedFuture("FOR SYSTEM_TIME syntax forbidden in a view"));
             }
         } catch (Exception e) {
             log.error("CreateViewContext creating error", e);

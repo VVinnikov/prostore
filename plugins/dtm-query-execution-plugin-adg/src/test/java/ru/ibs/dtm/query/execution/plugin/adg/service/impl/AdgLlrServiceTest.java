@@ -7,6 +7,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.VertxExtension;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
@@ -34,6 +35,7 @@ import static org.mockito.Mockito.mock;
 
 @SpringBootTest(classes = DtmTestConfiguration.class)
 @ExtendWith(VertxExtension.class)
+@EnabledIfEnvironmentVariable(named = "skipITs", matches = "false")
 public class AdgLlrServiceTest {
 
 	private QueryEnrichmentService enrichmentService = mock(QueryEnrichmentService.class);

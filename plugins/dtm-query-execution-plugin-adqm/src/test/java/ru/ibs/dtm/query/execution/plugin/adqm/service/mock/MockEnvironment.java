@@ -5,11 +5,11 @@ import org.springframework.core.env.AbstractEnvironment;
 public class MockEnvironment extends AbstractEnvironment {
     @Override
     public <T> T getProperty(String key, Class<T> targetType) {
-        if (key.equals("env.name")) {
+        if (key.equals("core.env.name")) {
             return (T) "dev";
         }
 
-        if (key.equals("env.defaultDatamart")) {
+        if (key.equals("core.env.defaultDatamart")) {
             return (T) "test_datamart";
         }
 

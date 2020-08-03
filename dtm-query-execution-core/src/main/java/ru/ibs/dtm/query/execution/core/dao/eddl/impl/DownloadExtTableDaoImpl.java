@@ -107,9 +107,9 @@ public class DownloadExtTableDaoImpl implements DownloadExtTableDao {
                 final QueryResult result = ar.result();
                 final boolean found = result.hasResults();
                 if (!found) {
-                    log.error("Поиск внешней таблицы {}.{}, результат: не найдена", datamartMnemonic, table);
+                    log.error("Search external table {}. {}, Result: not found", datamartMnemonic, table);
                     resultHandler.handle(
-                            Future.failedFuture(String.format("Внешняя таблица %s.%s не найдена", datamartMnemonic, table)));
+                            Future.failedFuture(String.format("External table %s.%s not found", datamartMnemonic, table)));
                     return;
                 }
                 final Long downloadExtTableId = result.get(DOWNLOAD_EXTERNAL_TABLE.ID);
@@ -128,10 +128,10 @@ public class DownloadExtTableDaoImpl implements DownloadExtTableDao {
                 record.setFormat(Format.findByName(format));
                 record.setChunkSize(chunkSize);
 
-                log.debug("Поиск внешней таблицы {}.{}, результат (id): {}", datamartMnemonic, table, downloadExtTableId);
+                log.debug("Search external table {}. {}, Result (id): {}", datamartMnemonic, table, downloadExtTableId);
                 resultHandler.handle(Future.succeededFuture(record));
             } else {
-                log.error("Поиск внешней таблицы {}.{}, ошибка {}", datamartMnemonic, table, ar.cause().getMessage());
+                log.error("Search external table {}. {}, Error {}", datamartMnemonic, table, ar.cause().getMessage());
                 resultHandler.handle(Future.failedFuture(ar.cause()));
             }
         });

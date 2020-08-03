@@ -30,7 +30,7 @@ public class DatamartMetaServiceImpl implements DatamartMetaService {
             if (ar.succeeded()) {
                 resultHandler.handle(Future.succeededFuture(ar.result()));
             } else {
-                LOGGER.error("Ошибка получения метаданных", ar.cause());
+                LOGGER.error("Error getting metadata", ar.cause());
                 resultHandler.handle(Future.failedFuture(ar.cause()));
             }
         });

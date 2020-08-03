@@ -47,7 +47,7 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
                 } else if (col.getKind().equals(SqlKind.PRIMARY_KEY)) {
                     initPrimaryKeyColumns((SqlKeyConstraint) col, fieldMap);
                 } else {
-                    throw new RuntimeException("Тип атрибута " + col.getKind() + " не поддерживается!");
+                    throw new RuntimeException("Attribute type "+ col.getKind () +" is not supported!");
                 }
             }
             initDistributedKeyColumns(sqlCreate, fieldMap);
@@ -110,7 +110,7 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
         if (col.getOperandList().size() > 1) {
             return (SqlDataTypeSpec) col.getOperandList().get(1);
         } else {
-            throw new RuntimeException("Ошибка определения типа столбца!");
+            throw new RuntimeException("Column type error!");
         }
     }
 
@@ -118,7 +118,7 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
         if (col.getOperandList().size() > 0) {
             return ((SqlNodeList) col.getOperandList().get(1)).getList();
         } else {
-            throw new RuntimeException("Ошибка определения первичного ключа!");
+            throw new RuntimeException("Primary key definition failed!");
         }
     }
 

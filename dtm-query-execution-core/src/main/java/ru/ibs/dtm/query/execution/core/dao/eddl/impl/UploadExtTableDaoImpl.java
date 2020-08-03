@@ -58,15 +58,15 @@ public class UploadExtTableDaoImpl implements UploadExtTableDao {
                 final QueryResult result = ar.result();
                 final boolean found = result.hasResults();
                 if (!found) {
-                    log.error("Поиск внешней таблицы {}.{}, результат: не найдена", schemaName, tableName);
+                    log.error("Search external table {}. {}, Result: not found", schemaName, tableName);
                     resultHandler.handle(
-                            Future.failedFuture(String.format("Внешняя таблица %s.%s не найдена", schemaName, tableName)));
+                            Future.failedFuture(String.format("External table %s.%s not found", schemaName, tableName)));
                     return;
                 }
                 UploadExtTableRecord record = createUploadExternalTableRecord(result);
                 resultHandler.handle(Future.succeededFuture(record));
             } else {
-                log.error("Поиск внешней таблицы {}.{}, ошибка {}", schemaName, tableName, ar.cause().getMessage());
+                log.error("Search external table {}. {}, Error {}", schemaName, tableName, ar.cause().getMessage());
                 resultHandler.handle(Future.failedFuture(ar.cause()));
             }
         });

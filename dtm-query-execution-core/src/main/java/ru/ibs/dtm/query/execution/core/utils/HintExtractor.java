@@ -1,12 +1,13 @@
 package ru.ibs.dtm.query.execution.core.utils;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QuerySourceRequest;
 import ru.ibs.dtm.common.reader.SourceType;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Определение типа запроса по хинту DATASOURCE_TYPE = ''
@@ -29,7 +30,7 @@ public class HintExtractor {
             sourceRequest.setSourceType(SourceType.valueOf(dataSource));
             sourceRequest.setQueryRequest(newQueryRequest);
         } else {
-            log.info("Не определен хинт для запроса {}", request.getSql());
+            log.info("Hint not defined for request {}", request.getSql());
             sourceRequest.setQueryRequest(request);
         }
         return sourceRequest;

@@ -58,14 +58,14 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
 
     private Future<DownloadExtTableRecord> insertDownloadQuery(EdmlRequestContext context, DownloadExtTableRecord extTableRecord) {
         return Future.future((Promise<DownloadExtTableRecord> promise) -> {
-            log.debug("Внешняя таблица {} найдена", context.getTargetTable().getTableName());
+            log.debug("External table {} found", context.getTargetTable().getTableName());
             context.getRequest().getQueryRequest().setSql(context.getSqlNode().getSource().toSqlString(SQL_DIALECT).toString());
-            log.debug("От запроса оставили: {}", context.getRequest().getQueryRequest().getSql());
+            log.debug("From the request left: {}", context.getRequest().getQueryRequest().getSql());
             context.setExloadParam(createQueryExloadParam(context, extTableRecord));
             DownloadQueryRecord downloadQueryRecord = createDownloadQueryRecord(context, extTableRecord);
             serviceDbFacade.getEddlServiceDao().getDownloadQueryDao().insertDownloadQuery(downloadQueryRecord, ar -> {
                 if (ar.succeeded()) {
-                    log.debug("Добавлен downloadQuery {}", downloadQueryRecord);
+                    log.debug("Added downloadQuery {}", downloadQueryRecord);
                     promise.complete(extTableRecord);
                 } else {
                     promise.fail(ar.cause());
@@ -87,11 +87,11 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
                     .collect(Collectors.toList());
             context.getExloadParam().setTableAttributes(tableAttributes);
             if (Type.KAFKA_TOPIC.equals(context.getExloadParam().getLocationType())) {
-                log.debug("Перед обращением к plugin.mmprKafka");
+                log.debug("Before calling plugin.mmprKafka");
                 executors.get(context.getExloadParam().getLocationType()).execute(context, resultHandler);
             } else {
-                log.error("Тип выгрузки {} не реализован", context.getExloadParam().getLocationType());
-                promise.fail(new RuntimeException("Другие типы выгрузки ещё не реализованы!"));
+                log.error("Unload type {} not implemented", context.getExloadParam().getLocationType());
+                promise.fail(new RuntimeException("Other types of upload are not yet implemented!"));
             }
         });
     }

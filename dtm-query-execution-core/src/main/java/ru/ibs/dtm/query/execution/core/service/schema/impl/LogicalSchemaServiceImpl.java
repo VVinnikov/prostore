@@ -119,7 +119,7 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
                     initTableAttributes(attrFuture, tableMap);
                     resultHandler.handle(Future.succeededFuture(datamartSchemaMap));
                 } catch (Exception e) {
-                    log.error("Ошибка инициализации атрибутов таблицы!", e);
+                    log.error("Error initializing table attributes!", e);
                     resultHandler.handle(Future.failedFuture(atr.cause()));
                 }
             } else {

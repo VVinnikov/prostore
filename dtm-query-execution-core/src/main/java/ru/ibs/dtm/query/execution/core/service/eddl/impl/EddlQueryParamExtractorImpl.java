@@ -17,9 +17,9 @@ import ru.ibs.dtm.kafka.core.configuration.properties.KafkaProperties;
 import ru.ibs.dtm.query.calcite.core.extension.eddl.*;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.dto.eddl.*;
-import ru.ibs.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
 import ru.ibs.dtm.query.execution.core.service.avro.AvroSchemaGenerator;
 import ru.ibs.dtm.query.execution.core.service.eddl.EddlQueryParamExtractor;
+import ru.ibs.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
 
 @Component
 @Slf4j
@@ -89,10 +89,10 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
             } else if (sqlNode instanceof SqlDropUploadExternalTable) {
                 extractDropUploadExternalTable((SqlDropUploadExternalTable) sqlNode, defaultSchema, asyncResultHandler);
             } else {
-                asyncResultHandler.handle(Future.failedFuture("Запрос [" + sqlNode + "] не является EDDL оператором."));
+                asyncResultHandler.handle(Future.failedFuture("Query ["+ sqlNode +"] is not an EDDL statement."));
             }
         } else {
-            asyncResultHandler.handle(Future.failedFuture("Запрос [" + sqlNode + "] не является EDDL оператором."));
+            asyncResultHandler.handle(Future.failedFuture("Query ["+ sqlNode +"] is not an EDDL statement."));
         }
     }
 
@@ -160,9 +160,9 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
                 return kafkaProperties.getProducer().getProperty().get("bootstrap.servers");
             case CSV_FILE:
             case HDFS_LOCATION:
-                throw new IllegalArgumentException("Данный location type: " + type + " не поддерживается!");
+                throw new IllegalArgumentException("The given location type: "+ type +" is not supported!");
             default:
-                throw new RuntimeException("Данный тип не поддерживается!");
+                throw new RuntimeException("This type is not supported!");
         }
     }
 

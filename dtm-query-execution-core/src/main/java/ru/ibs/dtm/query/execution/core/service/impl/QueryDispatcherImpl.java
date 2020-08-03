@@ -36,7 +36,7 @@ public class QueryDispatcherImpl implements QueryDispatcher {
             serviceMap.get(context.getProcessingType())
                     .execute(context, asyncResultHandler);
         } catch (Exception e) {
-            log.error("Произошла ошибка при диспетчеризации запроса", e);
+            log.error("An error occurred while dispatching the request", e);
             asyncResultHandler.handle(Future.failedFuture(e));
         }
     }

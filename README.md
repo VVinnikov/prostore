@@ -6,9 +6,10 @@ Main project of data mart for NSUD.
 ### App configuration
 All app configuration files are placed into dtm-query-execution-core/config folder.
 We use Spring Boot profiles to separate settings for the different environments.
-Actually we supports 2 environments:
+Actually we supports 3 environments:
 * dev - all connections are pointed to the Yandex.Cloud
-* local - Service db, Kafka and Zookeeper are local, ADB, ADG and ADQM are similar to dev profile. In the future all connections will be local
+* local - Service db, Kafka and Zookeeper are local, ADB, ADG and ADQM are similar to dev profile.
+* local-debug - Service db, Kafka, Zookeeper, ADB, ADG and ADQM are local. See [Local debug](#local-debug).
 
 Default profile actually similar to the dev profile.
 
@@ -80,6 +81,30 @@ It runs:
 * ADQM
 
 Add `127.0.0.1	kafka-1.dtm.local` to `/etc/hosts`. It is required for tests and local debug.
+
+## Local debug
+
+##### Run local environment:
+```shell script
+docker-compose -f dtm-query-execution-core/environment/docker-compose-local-debug.yml up -d
+cd dtm-migration
+mvn spring-boot:run
+docker run -d --rm -p 15432:6000 --name gpdb-pxf-cluster ci.arenadata.io/gpdb-pxf:20200626
+docker exec -it gpdb-pxf-cluster bash
+```
+##### Inside opened `gpdb-pxf-cluster` console:
+```shell script
+/initialize_cluster
+sudo su - gpadmin
+echo "host all gpadmin 0.0.0.0/0 trust" >> $MASTER_DATA_DIRECTORY/pg_hba.conf
+gpstop -au
+```
+##### Run core with `local-debug` profile inside IDE or:
+```shell script
+cd dtm-query-execution-core
+java -agentlib:jdwp=transport=dt_socket,address=35286,server=y,suspend=n -Dspring.profiles.active=local-debug -jar target/dtm-query-execution-core-<version>.jar
+```
+and use port 35286 for debugger and 8088 fo DTM JDBC driver.
 
 ## Setup IDE
 

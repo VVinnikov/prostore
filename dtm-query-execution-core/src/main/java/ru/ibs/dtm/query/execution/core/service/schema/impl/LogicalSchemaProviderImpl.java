@@ -15,7 +15,6 @@ import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -36,16 +35,16 @@ public class LogicalSchemaProviderImpl implements LogicalSchemaProvider {
             logicalSchemaService.createSchema(request, ar -> {
                 if (ar.succeeded()) {
                     Map<DatamartSchemaKey, DatamartTable> datamartTableMap = ar.result();
-                    log.trace("Получена схема данных по запросу: {}; {}", request, datamartTableMap);
+                    log.trace("Received data schema on request: {}; {}", request, datamartTableMap);
                     datamartSchemaMap.putAll(datamartTableMap);
                     resultHandler.handle(Future.succeededFuture(getDatamartSchema(datamartSchemaMap)));
                 } else {
-                    log.error("Ошибка получения схемы данных для запроса: {}", request, ar.cause());
+                    log.error("Error getting data schema for request: {}", request, ar.cause());
                     resultHandler.handle(Future.failedFuture(ar.cause()));
                 }
             });
         } catch (Exception e) {
-            log.error("Ошибка формирования логической схемы по запросу {}", request.getSql(), e);
+            log.error("Error in generating a logic diagram on request {}", request.getSql(), e);
             resultHandler.handle(Future.failedFuture(e));
         }
     }

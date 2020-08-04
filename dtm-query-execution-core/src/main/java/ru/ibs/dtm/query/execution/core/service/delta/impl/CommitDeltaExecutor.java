@@ -48,9 +48,9 @@ public class CommitDeltaExecutor implements DeltaExecutor {
                 serviceDbFacade.getDeltaServiceDao().getDeltaHotByDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic(), ar -> {
                     if (ar.succeeded()) {
                         DeltaRecord deltaHotRecord = ar.result();
-                        log.debug("Найдена последняя дельта: {} для витрины: {}", deltaHotRecord, context.getRequest().getQueryRequest().getDatamartMnemonic());
+                        log.debug("Found last delta: {} for datamart: {}", deltaHotRecord, context.getRequest().getQueryRequest().getDatamartMnemonic());
                         if (!deltaHotRecord.getStatus().equals(DeltaLoadStatus.IN_PROCESS)) {
-                            promiseDelta.fail(new RuntimeException("По заданной дельте еще не завершена загрузка данных!"));
+                            promiseDelta.fail(new RuntimeException("Data loading for the given delta has not been completed yet!"));
                         }
                         promiseDelta.complete(deltaHotRecord);
                     } else {
@@ -65,12 +65,12 @@ public class CommitDeltaExecutor implements DeltaExecutor {
                         deltaHotRecord.getSinId() - 1, ar -> {
                             if (ar.succeeded()) {
                                 DeltaRecord deltaActualRecord = ar.result();
-                                log.debug("Найдена актуальная дельта: {} для витрины: {}", deltaActualRecord,
+                                log.debug("Actual delta found: {} for datamart: {}", deltaActualRecord,
                                         context.getRequest().getQueryRequest().getDatamartMnemonic());
                                 if (((CommitDeltaQuery) context.getDeltaQuery()).getDeltaDateTime() != null
                                         && (deltaActualRecord.getSysDate().isAfter(((CommitDeltaQuery) context.getDeltaQuery()).getDeltaDateTime())
                                         || deltaActualRecord.getSysDate().equals(((CommitDeltaQuery) context.getDeltaQuery()).getDeltaDateTime()))) {
-                                    promiseDelta.fail(new RuntimeException("Заданное время меньше или равно времени актуальной дельты!"));
+                                    promiseDelta.fail(new RuntimeException("The specified time is less than or equal to the time of the actual delta!"));
                                 }
                                 deltaHotRecord.setStatusDate(LocalDateTime.now());
                                 deltaHotRecord.setSysDate(LocalDateTime.now());
@@ -85,7 +85,7 @@ public class CommitDeltaExecutor implements DeltaExecutor {
     private Future<QueryResult> updateActualDelta(DeltaRequestContext context, DeltaRecord deltaHotRecord) {
         return Future.future((Promise<QueryResult> promiseUpdate) -> serviceDbFacade.getDeltaServiceDao().updateDelta(deltaHotRecord, ar -> {
             if (ar.succeeded()) {
-                log.debug("Обновлена дельта: {} для витрины: {}", deltaHotRecord, context.getRequest().getQueryRequest().getDatamartMnemonic());
+                log.debug("Updated delta: {} for datamart: {}", deltaHotRecord, context.getRequest().getQueryRequest().getDatamartMnemonic());
                 QueryResult res = deltaQueryResultFactory.create(context, deltaHotRecord);
                 promiseUpdate.complete(res);
             } else {

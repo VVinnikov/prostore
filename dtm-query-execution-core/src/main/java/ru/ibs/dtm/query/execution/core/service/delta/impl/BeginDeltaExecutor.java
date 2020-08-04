@@ -50,10 +50,10 @@ public class BeginDeltaExecutor implements DeltaExecutor {
                 serviceDbFacade.getDeltaServiceDao().getDeltaHotByDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic(), ar -> {
                     if (ar.succeeded()) {
                         DeltaRecord deltaRecord = ar.result();
-                        log.debug("Найдена последняя delta: {} для витрины: {}", deltaRecord,
+                        log.debug("Found last delta: {} for datamart: {}", deltaRecord,
                                 context.getRequest().getQueryRequest().getDatamartMnemonic());
                         Long deltaHot = initAndCheckDeltaHot(context, promiseDelta, deltaRecord);
-                        log.debug("Найдена deltaHot: {} для витрины: {}", deltaHot,
+                        log.debug("Found deltaHot: {} for datamart: {}", deltaHot,
                                 context.getRequest().getQueryRequest().getDatamartMnemonic());
                         DeltaRecord newDelta = createNextDeltaRecord(deltaHot,
                                 context.getRequest().getQueryRequest().getDatamartMnemonic());
@@ -68,7 +68,7 @@ public class BeginDeltaExecutor implements DeltaExecutor {
         return Future.future((Promise<QueryResult> promiseDelta) ->
                 serviceDbFacade.getDeltaServiceDao().insertDelta(newDelta, ar -> {
                     if (ar.succeeded()) {
-                        log.debug("Создана новая дельта: {} для витрины: {}", newDelta,
+                        log.debug("New delta created: {} for datamart: {}", newDelta,
                                 context.getRequest().getQueryRequest().getDatamartMnemonic());
                         QueryResult res = deltaQueryResultFactory.create(context, newDelta);
                         promiseDelta.complete(res);
@@ -84,10 +84,10 @@ public class BeginDeltaExecutor implements DeltaExecutor {
         if (deltaRecord != null) {
             deltaHot = getDeltaHot(deltaRecord);
             if (deltaHot == null) {
-                promiseDelta.fail(new RuntimeException("Дельта находится в процессе загрузки!"));
+                promiseDelta.fail(new RuntimeException("Delta is in the process of loading!"));
             } else if (((BeginDeltaQuery) context.getDeltaQuery()).getDeltaNum() != null
                     && !((BeginDeltaQuery) context.getDeltaQuery()).getDeltaNum().equals(deltaHot)) {
-                promiseDelta.fail(new RuntimeException("Номера заданной дельты и актуальной не совпадают!"));
+                promiseDelta.fail(new RuntimeException("The numbers of the given delta and the current one do not match!"));
             }
         }
         return deltaHot;

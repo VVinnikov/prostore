@@ -1,0 +1,91 @@
+.kafkaUrl: &kafkaUrl ${KAFKA_BOOTSTRAP_SERVERS:127.0.0.1:9092}
+
+logging:
+  level:
+    ru.ibs.dtm.query.execution: ${WRITER_LOG_LEVEL:INFO}
+
+core:
+  http:
+    port: ${SERVER_PORT:8088}
+
+  env:
+    name: ${DTM_NAME:local}
+    defaultDatamart: ${DEFAULT_DATAMART:shares}
+
+  datasource:
+    edml:
+      sourceType: ${EDML_DATASOURCE:ADB}
+      defaultChunkSize: ${EDML_DEFAULT_CHUNK_SIZE:1000}
+      defaultMessageLimit: ${EDML_DEFAULT_MESSAGE_LIMIT:1000}
+      pluginStatusCheckPeriodMs: ${EDML_STATUS_CHECK_PERIOD_MS:1000}
+    service:
+      options:
+        database: ${SERVICEDB_DB_NAME:dtmservice}
+        user: ${SERVICEDB_USER:dtmuser}
+        password: ${SERVICEDB_PASS:Cat6Gmt7Ncr}
+        host: ${SERVICEDB_HOST:127.0.0.1}
+        port: ${SERVICEDB_PORT:3306}
+      poolOptions:
+        maxSize: 5
+
+  kafka:
+    producer:
+      property:
+        bootstrap.servers: *kafkaUrl
+    consumer:
+      core:
+        bootstrap.servers: *kafkaUrl
+        group.id: core-query-execution
+        key.deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
+        value.deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
+    cluster:
+      zookeeperHosts: ${ZOOKEEPER_HOSTS:127.0.0.1}
+      rootPath: ${KAFKA_CLUSTER_ROOTPATH:arenadata/cluster/21}
+    admin:
+      inputStreamTimeoutMs: ${KAFKA_INPUT_STREAM_TIMEOUT_MS:1000}
+      monitorPoolingTimeoutMs: ${KAFKA_MONITOR_POLLING_MS:1000}
+
+adb:
+  datasource:
+    options:
+      database: ${ADB_DB_NAME:postgres}
+      user: ${ADB_USERNAME:gpadmin}
+      password: ${ADB_PASS:gpadmin}
+      host: ${ADB_HOST:localhost}
+      port: ${ADB_PORT:15432}
+      maxSize: 20
+
+  connector:
+    host: ${ADB_MPPR_CONNECTOR_HOST:10.92.3.14}
+    port: ${ADB_MPPR_CONNECTOR_PORT:8086}
+    url: ${ADB_MPPR_CONNECTOR_URL:/query}
+
+adg:
+  tarantool:
+    db:
+      host: ${TARANTOOL_DB_HOST:127.0.0.1}
+      port: ${TARANTOOL_DB_PORT:3301}
+      user: ${TARANTOOL_DB_USER:admin}
+      password: ${TARANTOOL_DB_PASS:memstorage-cluster-cookie}
+      operationTimeout: ${TARANTOOL_DB_OPER_TIMEOUT:60000}
+    cartridge:
+      url: ${TARANTOOL_CATRIDGE_URL:http://127.0.0.1:8081}
+
+adqm:
+  datasource:
+    database: ${ADQM_DB_NAME:default}
+    user: ${ADQM_USERNAME:}
+    password: ${ADQM_PASS:}
+    hosts: ${ADQM_HOSTS:127.0.0.1:8123}
+
+  ddl:
+    cluster: ${ADQM_CLUSTER:default_cluster}
+    ttlSec: ${ADQM_TTL_SEC:3600}
+    archiveDisk: ${ADQM_ARCHIVE_DISK:default}
+
+  mppw:
+    consumerGroup: ${ADQM_CONSUMER_GROUP:adqm}
+    kafkaBrokers: ${ADQM_BROKERS:10.92.3.31:9092}
+    loadType: ${ADQM_MPPW_LOAD_TYPE:REST}
+    restLoadUrl: ${ADQM_REST_LOAD_URL:http://10.92.3.3:8090/newdata}
+    restLoadConsumerGroup: ${ADQM_REST_LOAD_GROUP:test_datamart.consumer}

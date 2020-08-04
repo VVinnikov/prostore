@@ -81,6 +81,30 @@ It runs:
 
 Add `127.0.0.1	kafka-1.dtm.local` to `/etc/hosts`. It is required for tests and local debug.
 
+## Local Debug
+
+##### Run local environment:
+```shell script
+docker-compose -f dtm-query-execution-core/environment/docker-compose-local-debug.yml up -d
+cd dtm-migration
+mvn spring-boot:run
+docker run -d --rm -p 15432:6000 --name gpdb-pxf-cluster ci.arenadata.io/gpdb-pxf:20200626
+docker exec -it gpdb-pxf-cluster bash
+```
+##### Inside opened `gpdb-pxf-cluster` console:
+```shell script
+/initialize_cluster
+sudo su - gpadmin
+echo "host all gpadmin 0.0.0.0/0 trust" >> $MASTER_DATA_DIRECTORY/pg_hba.conf
+gpstop -au
+```
+##### Run core with `local-debug` profile inside IDE or:
+```shell script
+cd dtm-query-execution-core
+java -agentlib:jdwp=transport=dt_socket,address=35286,server=y,suspend=n -Dspring.profiles.active=dev -jar target/dtm-query-execution-core-<version>-SNAPSHOT.jar
+```
+and use port 35286 for debugger.
+
 ## Setup IDE
 
 Use profile `local` for project builder.

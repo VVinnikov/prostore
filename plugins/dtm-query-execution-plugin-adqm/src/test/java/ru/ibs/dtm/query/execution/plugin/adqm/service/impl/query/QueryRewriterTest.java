@@ -9,7 +9,6 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.springframework.core.env.AbstractEnvironment;
 import ru.ibs.dtm.common.delta.DeltaInformation;
 import ru.ibs.dtm.common.delta.DeltaInterval;
 import ru.ibs.dtm.common.delta.DeltaType;
@@ -18,6 +17,7 @@ import ru.ibs.dtm.query.execution.plugin.adqm.calcite.AdqmCalciteSchemaFactory;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.CalciteConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.factory.impl.AdqmSchemaFactory;
+import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockEnvironment;
 
 import java.util.Arrays;
 import java.util.List;
@@ -230,18 +230,4 @@ class QueryRewriterTest {
         return parser.parseQuery();
     }
 
-    private static class MockEnvironment extends AbstractEnvironment {
-        @Override
-        public <T> T getProperty(String key, Class<T> targetType) {
-            if (key.equals("env.name")) {
-                return (T) "dev";
-            }
-
-            if (key.equals("env.defaultDatamart")) {
-                return (T) "test_datamart";
-            }
-
-            return super.getProperty(key, targetType);
-        }
-    }
 }

@@ -116,6 +116,8 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
             TableInfo tableInfo = SqlNodeUtils.getTableInfo(ddl, defaultSchema);
             LocationOperator locationOperator = SqlNodeUtils.getOne(ddl, LocationOperator.class);
             ChunkSizeOperator chunkSizeOperator = SqlNodeUtils.getOne(ddl, ChunkSizeOperator.class);
+            ClassTable classTable = metadataCalciteGenerator.generateTableMetadata(ddl);
+            Schema avroSchema = avroSchemaGenerator.generateTableSchema(classTable, false);
             asyncResultHandler.handle(Future.succeededFuture(
                     new CreateDownloadExternalTableQuery(
                             tableInfo.getSchemaName(),
@@ -123,7 +125,8 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
                             locationOperator.getType(),
                             getLocation(locationOperator),
                             SqlNodeUtils.getOne(ddl, FormatOperator.class).getFormat(),
-                            chunkSizeOperator.getChunkSize())));
+                            chunkSizeOperator.getChunkSize(),
+                            avroSchema.toString())));
         } catch (RuntimeException e) {
             log.error(ERROR_PARSING_EDDL_QUERY, e);
             asyncResultHandler.handle(Future.failedFuture(e));
@@ -140,8 +143,14 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
             Format format = SqlNodeUtils.getOne(sqlNode, FormatOperator.class).getFormat();
             MassageLimitOperator messageLimitOperator = SqlNodeUtils.getOne(sqlNode, MassageLimitOperator.class);
             asyncResultHandler.handle(Future.succeededFuture(
-                    new CreateUploadExternalTableQuery(tableInfo.getSchemaName(), tableInfo.getTableName(), locationOperator.getType(),
-                            getLocation(locationOperator), format, avroSchema.toString(), messageLimitOperator.getMessageLimit())
+                    new CreateUploadExternalTableQuery(
+                            tableInfo.getSchemaName(),
+                            tableInfo.getTableName(),
+                            locationOperator.getType(),
+                            getLocation(locationOperator),
+                            format,
+                            avroSchema.toString(),
+                            messageLimitOperator.getMessageLimit())
             ));
         } catch (RuntimeException e) {
             log.error(ERROR_PARSING_EDDL_QUERY, e);

@@ -7,6 +7,7 @@ volumes:
   dtmservice:
   kafkalogs:
   adqm-volume:
+  adb-volume:
 
 services:
 
@@ -80,3 +81,18 @@ services:
     volumes:
       - adqm-volume:/var/lib/clickhouse
       - ./config/adqm/config.xml:/etc/clickhouse-server/config.xml:Z
+
+  adb:
+    image: postgres:12
+    container_name: adb
+    restart: always
+    networks:
+      - dtm-query-execution
+    ports:
+      - "5432:5432"
+    volumes:
+      - adb-volume:/var/lib/postgresql
+    environment:
+      POSTGRES_USER: gpadmin
+      POSTGRES_PASSWORD: gpadmin
+      POSTGRES_DB: adb

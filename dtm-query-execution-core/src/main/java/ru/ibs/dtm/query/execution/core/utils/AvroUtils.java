@@ -16,9 +16,7 @@ public class AvroUtils {
     }
 
     public static Schema.Field toSchemaField(ClassField column) {
-        Schema.Field field = new Schema.Field(column.getName(), metadataColumnTypeToAvroSchema(column.getType()), null, Schema.NULL_VALUE);
-        field.addProp("defaultValue", "null");
-        return field;
+        return column.getNullable() ? genNullableField(column) : genNonNullableField(column);
     }
 
     public static Schema metadataColumnTypeToAvroSchema(ColumnType columnType) {
@@ -56,6 +54,20 @@ public class AvroUtils {
             default:
                 throw new IllegalArgumentException("Unsupported data type: " + columnType);
         }
-        return Schema.createUnion(Schema.create(Schema.Type.NULL), schema);
+        return schema;
+    }
+
+    private static Schema.Field genNullableField(ClassField column) {
+        Schema.Field field = new Schema.Field(column.getName(),
+                Schema.createUnion(Schema.create(Schema.Type.NULL), metadataColumnTypeToAvroSchema(column.getType())),
+                null, Schema.Field.NULL_DEFAULT_VALUE);
+        field.addProp("defaultValue", "null");
+        return field;
+    }
+
+    private static Schema.Field genNonNullableField(ClassField column) {
+        return new Schema.Field(column.getName(),
+                metadataColumnTypeToAvroSchema(column.getType()),
+                null);
     }
 }

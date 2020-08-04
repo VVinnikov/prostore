@@ -18,18 +18,25 @@ import java.util.stream.Collectors;
 public class AvroSchemaGeneratorImpl implements AvroSchemaGenerator {
 
     @Override
-    public Schema generateTableSchema(ClassTable table) {
-        List<Schema.Field> fields = getFields(table);
+    public Schema generateTableSchema(ClassTable table, boolean withSysOpField) {
+        List<Schema.Field> fields = getFields(table, withSysOpField);
         return Schema.createRecord(table.getName(), null, table.getSchema(), false, fields);
     }
 
     @NotNull
-    private List<Schema.Field> getFields(ClassTable table) {
+    private List<Schema.Field> getFields(ClassTable table, boolean withSysOpField) {
         val fields = table.getFields().stream()
             .sorted(Comparator.comparing(ClassField::getOrdinalPosition))
             .map(AvroUtils::toSchemaField)
             .collect(Collectors.toList());
-        fields.add(AvroUtils.createSysOpField());
+
+        boolean hasAlreadySysOpField = table.getFields().stream()
+                .anyMatch(f -> f.getName().equalsIgnoreCase("sys_op"));
+
+        if (withSysOpField && !hasAlreadySysOpField) {
+            fields.add(AvroUtils.createSysOpField());
+        }
+
         return fields;
     }
 }

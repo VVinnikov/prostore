@@ -65,12 +65,12 @@ public class AdbQueryExecutor implements DatabaseExecutor {
                         conn.close();
                     } else {
                         conn.close();
-                        LOGGER.error("Ошибка подготовки запроса: " + ar2.cause().getMessage());
+                        LOGGER.error("Request preparation error:" + ar2.cause().getMessage());
                         resultHandler.handle(Future.failedFuture(ar2.cause()));
                     }
                 });
             } else {
-                LOGGER.error("Ошибка подключения: " + ar1.cause().getMessage());
+                LOGGER.error("Connection error:" + ar1.cause().getMessage());
                 resultHandler.handle(Future.failedFuture(ar1.cause()));
             }
         });
@@ -90,7 +90,7 @@ public class AdbQueryExecutor implements DatabaseExecutor {
                     conn.close();
                 });
             } else {
-                LOGGER.error("Ошибка подключения: " + ar1.cause().getMessage());
+                LOGGER.error("Connection error:" + ar1.cause().getMessage());
                 completionHandler.handle(Future.failedFuture(ar1.cause()));
             }
         });
@@ -109,7 +109,7 @@ public class AdbQueryExecutor implements DatabaseExecutor {
                     }
                 });
             } else {
-                LOGGER.error("Ошибка подключения: " + ar1.cause().getMessage());
+                LOGGER.error("Connection error:" + ar1.cause().getMessage());
                 resultHandler.handle(Future.failedFuture(ar1.cause()));
             }
         });

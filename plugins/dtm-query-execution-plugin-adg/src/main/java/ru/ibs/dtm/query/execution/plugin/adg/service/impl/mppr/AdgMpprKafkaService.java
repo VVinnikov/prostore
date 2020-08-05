@@ -32,7 +32,7 @@ public class AdgMpprKafkaService implements MpprKafkaService<QueryResult> {
 			if (sqlResult.succeeded()) {
 				uploadData(request, asyncResultHandler, sqlResult.result());
 			} else {
-				log.error("Ошибка при обогащении запроса");
+				log.error("Error while enriching request");
 				asyncResultHandler.handle(Future.failedFuture(sqlResult.cause()));
 			}
 		});
@@ -45,10 +45,10 @@ public class AdgMpprKafkaService implements MpprKafkaService<QueryResult> {
 		ttCartridgeClient.uploadData(sql, queryRequest.getTopic(), queryExloadParam.getChunkSize(), ar -> {
 					UUID requestId = queryRequest.getQueryRequest().getRequestId();
 					if (ar.succeeded()) {
-						log.info("Выгрузка данных из ADG прошла успешно по запросу: {}", requestId);
+						log.info("Uploading data from ADG was successful on request: {}", requestId);
 						asyncResultHandler.handle(Future.succeededFuture(QueryResult.emptyResult()));
 					} else {
-						String errMsg = String.format("Ошибка выгрузки данных из ADG: %s по запросу %s",
+						String errMsg = String.format("Error unloading data from ADG: %s on request %s",
 								ar.cause().getMessage(),
 								requestId);
 						log.error(errMsg);

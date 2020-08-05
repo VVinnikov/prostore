@@ -56,7 +56,7 @@ public class DtmConnection implements Connection {
         this.user = user;
         this.schema = schema;
         this.protocol = new CoordinatorReaderService(client, dbHost, schema);
-        LOGGER.info("Создано подключение host={} schema={} user={}", dbHost, schema, user);
+        LOGGER.info("Connection created host = {} schema = {} user = {}", dbHost, schema, user);
     }
 
     @Override
@@ -138,7 +138,7 @@ public class DtmConnection implements Connection {
 
     private void checkClosed() throws SQLException {
         if (isClosed()) {
-            throw new DtmException("Подключение было закрыто");
+            throw new DtmException("The connection was closed");
         }
     }
 

@@ -42,18 +42,18 @@ public abstract class CalciteDMLQueryParserService implements QueryParserService
                             parse
                     ));
                 } catch (Exception e) {
-                    log.error("Ошибка разбора запроса", e);
+                    log.error("Request parsing error", e);
                     it.fail(e);
                 }
             } catch (Exception e) {
-                log.error("Ошибка парсинга запроса", e);
+                log.error("Request parsing error", e);
                 it.fail(e);
             }
         }, ar -> {
             if (ar.succeeded()) {
                 asyncResultHandler.handle(Future.succeededFuture((QueryParserResponse) ar.result()));
             } else {
-                log.debug("Ошибка при исполнении метода parse", ar.cause());
+                log.debug("Error while executing the parse method", ar.cause());
                 asyncResultHandler.handle(Future.failedFuture(ar.cause()));
             }
         });

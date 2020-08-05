@@ -3,7 +3,6 @@ package ru.ibs.dtm.query.execution.plugin.adg.service.impl.enrichment;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
@@ -22,6 +21,8 @@ import ru.ibs.dtm.query.execution.plugin.adg.dto.QueryGeneratorContext;
 import ru.ibs.dtm.query.execution.plugin.adg.dto.schema.SchemaDescription;
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryExtendService;
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryGenerator;
+
+import java.util.List;
 
 @Service("adgQueryGenerator")
 @Slf4j
@@ -43,7 +44,7 @@ public class AdgQueryGeneratorImpl implements QueryGenerator {
                             QueryRequest queryRequest,
                             Handler<AsyncResult<String>> handler) {
         if (schemaDescription.getLogicalSchema() == null) {
-            handler.handle(Future.failedFuture(String.format("Ошибка определения схемы для запроса %s", relNode.toString())));
+            handler.handle(Future.failedFuture(String.format("Error defining schema for request %s", relNode.toString())));
             return;
         }
         if (deltaInformations.isEmpty()) {
@@ -58,7 +59,7 @@ public class AdgQueryGeneratorImpl implements QueryGenerator {
             log.debug("sql = " + queryResult);
             handler.handle(Future.succeededFuture(queryResult));
         } catch (Exception e) {
-            log.error("Ошибка исполнения преобразования запроса", e);
+            log.error("Request conversion execution error", e);
             handler.handle(Future.failedFuture(e));
         }
     }

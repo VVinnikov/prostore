@@ -177,7 +177,7 @@ public class DtmStatement implements Statement {
     @Override
     public void setFetchSize(int rows) throws SQLException {
         if (rows < 0 && rows != Integer.MIN_VALUE) {
-            throw new SQLException(String.format("Некорректное значение %d для размера блока", rows));
+            throw new SQLException(String.format("Incorrect %d value for block size", rows));
         } else if (rows == Integer.MIN_VALUE) {
             //for compatibility Integer.MIN_VALUE is transform to 0 => streaming
             this.fetchSize = 1;

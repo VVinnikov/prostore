@@ -29,7 +29,7 @@ public class DatamartMetaController {
 
   public void getDatamartMeta(RoutingContext context) {
     datamartMetaService.getDatamartMeta(
-      new ListToJsonHandler<>(context, "Reply sent with showcases {}"));
+      new ListToJsonHandler<>(context, "Reply sent with datamarts {}"));
   }
 
   public void getDatamartEntityMeta(RoutingContext context) {

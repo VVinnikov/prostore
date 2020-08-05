@@ -57,14 +57,14 @@ public class DeltaServiceDaoImpl implements DeltaServiceDao {
     public void getDeltaOnDateTime(ActualDeltaRequest actualDeltaRequest, Handler<AsyncResult<Long>> resultHandler) {
         final String datamart = actualDeltaRequest.getDatamart();
         final String dateTime = actualDeltaRequest.getDateTime();
-        log.debug("Getting the delta of the showcase {} on {}, start", datamart, dateTime);
+        log.debug("Getting the delta of datamart {} on {}, start", datamart, dateTime);
         executor.query(dsl -> getDeltaByDatamartAndDateSelect(dsl, actualDeltaRequest)).setHandler(ar -> {
             if (ar.succeeded()) {
                 final Long delta = ar.result().get(0, Long.class);
-                log.debug("Delta showcases {} on date {}: {}", datamart, dateTime, delta);
+                log.debug("Delta datamarts {} on date {}: {}", datamart, dateTime, delta);
                 resultHandler.handle(Future.succeededFuture(delta));
             } else {
-                log.error("Unable to get delta of showcase {} for date {}: {}",
+                log.error("Unable to get delta of datamart {} for date {}: {}",
                         datamart, dateTime, ar.cause().getMessage());
                 resultHandler.handle(Future.failedFuture(ar.cause()));
             }
@@ -140,7 +140,7 @@ public class DeltaServiceDaoImpl implements DeltaServiceDao {
                 resultHandler.handle(Future.succeededFuture(null));
             }
         } else {
-            log.error("Delta search for showcase {}, error {}", datamartMnemonic, ar.cause().getMessage());
+            log.error("Delta search for datamart {}, error {}", datamartMnemonic, ar.cause().getMessage());
             resultHandler.handle(Future.failedFuture(ar.cause()));
         }
     }

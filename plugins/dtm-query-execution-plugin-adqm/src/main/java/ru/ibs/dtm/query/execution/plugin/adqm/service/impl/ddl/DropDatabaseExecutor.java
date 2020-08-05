@@ -36,14 +36,7 @@ public class DropDatabaseExecutor implements DdlExecutor<Void> {
 
     @Override
     public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<Void>> handler) {
-        SqlNode query = context.getQuery();
-        if (!(query instanceof DropDatabase)) {
-            handler.handle(Future.failedFuture(String.format("Expecting DropDatabase in context, receiving: %s", context)));
-            return;
-        }
-
-        String name = ((DropDatabase) query).getName().names.get(0);
-
+        String name = context.getDatamartName();
         dropDatabase(name).onComplete(handler);
     }
 

@@ -77,7 +77,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                 vertx.setPeriodic(edmlProperties.getPluginStatusCheckPeriodMs(), timerId -> {
                     log.trace("Plugin status request: {} mppw downloads", ds);
                     checkMppwStatus(ds, statusRequestContext, timerId)
-                            .setHandler(chr -> {
+                            .onComplete(chr -> {
                                 if (chr.succeeded()) {
                                     StatusQueryResult result = chr.result();
                                     promise.complete(new MppwStopFuture(ds, stopMppw(ds, mppwRequestContext),
@@ -144,16 +144,11 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                                         log.error(MPPW_LOAD_ERROR_MESSAGE, e);
                                         resultHandler.handle(Future.failedFuture(e));
                                     }
-                                })
-                                .onFailure(fail -> {
-                                    log.error(MPPW_LOAD_ERROR_MESSAGE, fail);
-                                    resultHandler.handle(Future.failedFuture(fail));
                                 });
+                    } else {
+                        log.error(MPPW_LOAD_ERROR_MESSAGE, startComplete.cause());
+                        resultHandler.handle(Future.failedFuture(startComplete.cause()));
                     }
-                })
-                .onFailure(fail -> {
-                    log.error(MPPW_LOAD_ERROR_MESSAGE, fail);
-                    resultHandler.handle(Future.failedFuture(fail));
                 });
     }
 

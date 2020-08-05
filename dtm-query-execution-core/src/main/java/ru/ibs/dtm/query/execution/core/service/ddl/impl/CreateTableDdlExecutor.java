@@ -49,12 +49,9 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
             context.setDatamartName(schema);
             getDatamartId(classTable)
                     .compose(datamartId -> isDatamartTableExists(datamartId, context))
-                    .onComplete(isExists -> {
-                        final Boolean isTableExists = isExists.result();
-                        createTableIfNotExists(context, isTableExists)
-                                .onSuccess(success -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
-                                .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
-                    })
+                    .onSuccess(isExists -> createTableIfNotExists(context, isExists)
+                            .onSuccess(success -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
+                            .onFailure(fail -> handler.handle(Future.failedFuture(fail))))
                     .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
         } catch (Exception e) {
             log.error("Error creating table by query request: {}!", context.getRequest().getQueryRequest(), e);
@@ -83,6 +80,18 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
         }
     }
 
+    private Future<Long> getDatamartId(ClassTable classTable) {
+        return Future.future((Promise<Long> promise) ->
+                serviceDbFacade.getServiceDbDao().getDatamartDao().findDatamart(classTable.getSchema(), ar -> {
+                    if (ar.succeeded()) {
+                        promise.complete(ar.result());
+                    } else {
+                        log.error("Error finding datamart [{}]", classTable.getSchema(), ar.cause());
+                        promise.fail(ar.cause());
+                    }
+                }));
+    }
+
     private Future<Void> createTableIfNotExists(DdlRequestContext context,
                                                 Boolean isTableExists) {
         if (isTableExists) {
@@ -98,18 +107,6 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
         } else {
             return createTable(context);
         }
-    }
-
-    private Future<Long> getDatamartId(ClassTable classTable) {
-        return Future.future((Promise<Long> promise) ->
-                serviceDbFacade.getServiceDbDao().getDatamartDao().findDatamart(classTable.getSchema(), ar -> {
-                    if (ar.succeeded()) {
-                        promise.complete(ar.result());
-                    } else {
-                        log.error("Error finding datamart [{}]", classTable.getSchema(), ar.cause());
-                        promise.fail(ar.cause());
-                    }
-                }));
     }
 
     private Future<Boolean> isDatamartTableExists(Long datamartId, DdlRequestContext context) {

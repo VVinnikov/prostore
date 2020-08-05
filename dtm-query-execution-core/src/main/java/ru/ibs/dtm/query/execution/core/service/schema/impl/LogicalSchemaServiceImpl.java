@@ -56,11 +56,11 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
                         final Map<String, DatamartTable> tableMap = new HashMap<>();
                         final List<Future> attributeFutures = initDatamartTables(tabFuture, datamartSchemaMap, tableMap);
                         CompositeFuture.join(attributeFutures)
-                            .onComplete(getDatamartTables(datamartSchemaMap, tableMap, resultHandler))
-                            .onFailure(Future::failedFuture);
+                            .onComplete(getDatamartTables(datamartSchemaMap, tableMap, resultHandler));
+                    } else {
+                        resultHandler.handle(Future.failedFuture(ar.cause()));
                     }
-                })
-                .onFailure(fail -> resultHandler.handle(Future.failedFuture(fail)));
+                });
         } catch (Exception e) {
             resultHandler.handle(Future.failedFuture(e));
         }

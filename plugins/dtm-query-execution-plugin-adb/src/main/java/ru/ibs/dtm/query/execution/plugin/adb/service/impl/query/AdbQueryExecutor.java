@@ -9,18 +9,16 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.tuple.Pair;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import ru.ibs.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 public class AdbQueryExecutor implements DatabaseExecutor {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(AdbQueryExecutor.class);
 
     private final PgPool pool;
     private final int fetchSize;
@@ -65,12 +63,12 @@ public class AdbQueryExecutor implements DatabaseExecutor {
                         conn.close();
                     } else {
                         conn.close();
-                        LOGGER.error("Ошибка подготовки запроса: " + ar2.cause().getMessage());
+                        log.error("Request preparation error!", ar2.cause());
                         resultHandler.handle(Future.failedFuture(ar2.cause()));
                     }
                 });
             } else {
-                LOGGER.error("Ошибка подключения: " + ar1.cause().getMessage());
+                log.error("Connection error!", ar1.cause());
                 resultHandler.handle(Future.failedFuture(ar1.cause()));
             }
         });
@@ -83,6 +81,7 @@ public class AdbQueryExecutor implements DatabaseExecutor {
                 PgConnection conn = ar1.result();
                 conn.query(sql, ar2 -> {
                     if (ar2.succeeded()) {
+                        log.debug("ADB. execute update {}", sql);
                         completionHandler.handle(Future.succeededFuture());
                     } else {
                         completionHandler.handle(Future.failedFuture(ar2.cause()));
@@ -90,7 +89,7 @@ public class AdbQueryExecutor implements DatabaseExecutor {
                     conn.close();
                 });
             } else {
-                LOGGER.error("Ошибка подключения: " + ar1.cause().getMessage());
+                log.error("Connection error!", ar1.cause());
                 completionHandler.handle(Future.failedFuture(ar1.cause()));
             }
         });
@@ -109,7 +108,7 @@ public class AdbQueryExecutor implements DatabaseExecutor {
                     }
                 });
             } else {
-                LOGGER.error("Ошибка подключения: " + ar1.cause().getMessage());
+                log.error("Connection error!", ar1.cause());
                 resultHandler.handle(Future.failedFuture(ar1.cause()));
             }
         });

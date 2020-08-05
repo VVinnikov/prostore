@@ -4,6 +4,7 @@ import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.calcite.core.extension.eddl.DropDatabase;
 import ru.ibs.dtm.query.calcite.core.extension.eddl.SqlCreateDatabase;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
@@ -12,6 +13,7 @@ import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockDatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockEnvironment;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
 import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 
 import java.util.Collections;
@@ -50,11 +52,9 @@ class DatabaseDdlTest {
 
     @Test
     public void testDropDatabase() {
-        SqlParserPos pos = new SqlParserPos(1, 1);
-        DropDatabase dropDatabase = new DropDatabase(pos, false,
-                new SqlIdentifier("testdb", pos));
-
-        DdlRequestContext context = new DdlRequestContext(null, dropDatabase);
+        final String datamartName = "testdb";
+        DdlRequestContext context = new DdlRequestContext(new DdlRequest(new QueryRequest()));
+        context.setDatamartName(datamartName);
 
         DatabaseExecutor executor = new MockDatabaseExecutor(
                 Collections.singletonList(t -> t.equalsIgnoreCase("drop database if exists dev__testdb on cluster test_cluster")));

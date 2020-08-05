@@ -22,7 +22,7 @@ import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
 @Component
 @Slf4j
 public class CreateDatabaseExecutor implements DdlExecutor<Void> {
-    private static final String CREATE_TEMPLATE = "CREATE DATABASE %s %s__%s ON CLUSTER %s";
+    private static final String CREATE_TEMPLATE = "CREATE DATABASE %s__%s ON CLUSTER %s";
 
     private final DatabaseExecutor databaseExecutor;
     private final DropDatabaseExecutor dropDatabaseExecutor;
@@ -47,12 +47,11 @@ public class CreateDatabaseExecutor implements DdlExecutor<Void> {
         }
 
         String name = ((SqlCreateDatabase) query).getName().names.get(0);
-        boolean ifNotExists = ((SqlCreateDatabase) query).ifNotExists();
 
         DdlRequestContext dropCtx = createDropRequestContext(name);
         dropDatabaseExecutor.execute(dropCtx, SqlKind.DROP_SCHEMA.lowerName, ar -> {
             if (ar.succeeded()) {
-                createDatabase(name, ifNotExists).onComplete(handler);
+                createDatabase(name).onComplete(handler);
             } else {
                 handler.handle(Future.failedFuture(ar.cause()));
             }
@@ -76,12 +75,9 @@ public class CreateDatabaseExecutor implements DdlExecutor<Void> {
         service.addExecutor(this);
     }
 
-    private Future<Void> createDatabase(String dbname, boolean ifNotExists) {
-        String ifNotExistsKeyword = ifNotExists ? "IF NOT EXISTS" : "";
+    private Future<Void> createDatabase(String dbname) {
         String cluster = ddlProperties.getCluster();
-
-        String createCmd = String.format(CREATE_TEMPLATE, ifNotExistsKeyword, appConfiguration.getSystemName(),
-                dbname, cluster);
+        String createCmd = String.format(CREATE_TEMPLATE, appConfiguration.getSystemName(), dbname, cluster);
         return databaseExecutor.executeUpdate(createCmd);
     }
 }

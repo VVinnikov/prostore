@@ -29,15 +29,13 @@ class DatabaseDdlTest {
 
     @Test
     public void testCreateDatabase() {
-        // Create database if not exists
-
         SqlParserPos pos = new SqlParserPos(1, 1);
         SqlCreateDatabase createDatabase = new SqlCreateDatabase(pos, true,
                 new SqlIdentifier("testdb", pos));
         DdlRequestContext context = new DdlRequestContext(null, createDatabase);
 
         DatabaseExecutor executor = new MockDatabaseExecutor(
-                Collections.singletonList(t -> t.equalsIgnoreCase("create database if not exists dev__testdb on cluster test_cluster")));
+                Collections.singletonList(t -> t.equalsIgnoreCase("create database dev__testdb on cluster test_cluster")));
 
         DropDatabaseExecutor dropDatabaseExecutor = new DropDatabaseExecutor(
                 new MockDatabaseExecutor(
@@ -46,25 +44,6 @@ class DatabaseDdlTest {
                 ddlProperties, appConfiguration);
 
         DdlExecutor<Void> databaseDdlService = new CreateDatabaseExecutor(executor, ddlProperties, appConfiguration, dropDatabaseExecutor);
-
-        databaseDdlService.execute(context, "CREATE", ar -> assertTrue(ar.succeeded()));
-
-        // Create database
-        createDatabase = new SqlCreateDatabase(pos, false,
-                new SqlIdentifier("testdb", pos));
-        context = new DdlRequestContext(null, createDatabase);
-
-        executor = new MockDatabaseExecutor(
-                Collections.singletonList(
-                        t -> t.equalsIgnoreCase("create database  dev__testdb on cluster test_cluster")));
-
-        dropDatabaseExecutor = new DropDatabaseExecutor(
-                new MockDatabaseExecutor(
-                        Collections.singletonList(
-                                t -> t.equalsIgnoreCase("drop database if exists dev__testdb on cluster test_cluster"))),
-                ddlProperties, appConfiguration);
-
-        databaseDdlService = new CreateDatabaseExecutor(executor, ddlProperties, appConfiguration, dropDatabaseExecutor);
 
         databaseDdlService.execute(context, "CREATE", ar -> assertTrue(ar.succeeded()));
     }

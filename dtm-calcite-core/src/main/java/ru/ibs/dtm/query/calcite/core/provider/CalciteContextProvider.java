@@ -50,7 +50,7 @@ public abstract class CalciteContextProvider {
             Planner planner = Frameworks.getPlanner(config);
             return new CalciteContext(rootSchema, planner, RelBuilder.create(config));
         } catch (Exception e) {
-            log.error("Ошибка создания планировщика", e);
+            log.error("Planner creation error", e);
         }
         return null;
     }

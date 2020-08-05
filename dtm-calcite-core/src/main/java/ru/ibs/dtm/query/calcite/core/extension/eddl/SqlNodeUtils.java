@@ -16,7 +16,7 @@ public class SqlNodeUtils {
     public static List<String> getTableNames(SqlCall sqlNode) {
         List<String> names = getOne(sqlNode, SqlIdentifier.class).names;
         if (CollectionUtils.isEmpty(names) || names.size() > 2) {
-            throw new RuntimeException("Наименование таблицы должно быть представлено в виде " +
+            throw new RuntimeException("Table name should be presented in the form" +
                     "[schema_name.table_name | table_name]");
         }
         return names;
@@ -40,7 +40,7 @@ public class SqlNodeUtils {
         if (node.isPresent()) {
             return node.get();
         }
-        throw new RuntimeException("Не удалось найти параметр в [" + sqlNode + "]");
+        throw new RuntimeException("Could not find parameter in[" + sqlNode + "]");
     }
 
     private static String getTableName(List<String> names) {

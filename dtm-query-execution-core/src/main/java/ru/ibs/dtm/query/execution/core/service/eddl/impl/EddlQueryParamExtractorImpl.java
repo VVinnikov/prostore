@@ -25,7 +25,7 @@ import ru.ibs.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator
 @Slf4j
 public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
 
-    public static final String ERROR_PARSING_EDDL_QUERY = "Ошибка парсинга запроса";
+    public static final String ERROR_PARSING_EDDL_QUERY = "Request parsing error";
     public static final String START_LOCATION_TOKEN = "$";
     private final DefinitionService<SqlNode> definitionService;
     private final MetadataCalciteGenerator metadataCalciteGenerator;
@@ -65,7 +65,7 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
             SqlNode node = definitionService.processingQuery(request.getSql());
             it.complete(node);
         } catch (Exception e) {
-            log.error("Ошибка парсинга запроса", e);
+            log.error("Request parsing error", e);
             it.fail(e);
         }
     }

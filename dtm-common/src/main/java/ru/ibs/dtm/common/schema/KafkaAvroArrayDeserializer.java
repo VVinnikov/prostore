@@ -39,7 +39,7 @@ public class KafkaAvroArrayDeserializer implements Deserializer<GenericData.Arra
             GenericData.Array avroRecord = readAvroRecord(stream, writerSchema.getSchema(), readerSchema.getSchema());
             return avroRecord;
         } catch (Exception e) {
-            LOGGER.error("Ошибка десериализации", e);
+            LOGGER.error("Deserialization error", e);
             throw new RuntimeException(e);
         }
     }

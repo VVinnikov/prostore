@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class UploadKafkaExecutor implements EdmlUploadExecutor {
 
-    public static final String MPPW_LOAD_ERROR_MESSAGE = "Ошибка выполнения mppw загрузки!";
+    public static final String MPPW_LOAD_ERROR_MESSAGE = "Runtime error mppw download!";
     private final DataSourcePluginService pluginService;
     private final MppwKafkaRequestFactory mppwKafkaRequestFactory;
     private final EdmlProperties edmlProperties;

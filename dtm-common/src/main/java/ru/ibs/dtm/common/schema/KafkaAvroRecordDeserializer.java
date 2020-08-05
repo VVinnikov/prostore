@@ -45,17 +45,17 @@ public class KafkaAvroRecordDeserializer implements Deserializer<GenericData.Rec
             int schemaId = SchemaUtils.readSchemaId(stream);
             VersionedSchema writerSchema = schemaProvider.get(schemaId);
             if (writerSchema == null) {
-                throw new RuntimeException("Не определена схема записи с id=" + schemaId);
+                throw new RuntimeException("Record scheme with id not defined=" + schemaId);
             }
 
             VersionedSchema readerSchema = readerSchemasByName.get(writerSchema.getName());
             if (readerSchema == null) {
-                throw new RuntimeException("Не определена схема чтения с именем" + writerSchema.getName());
+                throw new RuntimeException("No reader defined with name" + writerSchema.getName());
             }
             GenericData.Record avroRecord = readAvroRecord(stream, writerSchema.getSchema(), readerSchema.getSchema());
             return avroRecord;
         } catch (Exception e) {
-            LOGGER.error("Ошибка десериализации", e);
+            LOGGER.error("Deserialization error", e);
             throw new RuntimeException(e);
         }
     }

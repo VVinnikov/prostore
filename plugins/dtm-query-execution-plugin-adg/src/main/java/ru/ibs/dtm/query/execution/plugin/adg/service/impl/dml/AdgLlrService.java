@@ -53,18 +53,18 @@ public class AdgLlrService implements LlrService<QueryResult> {
 								rowList.add(jsonObject);
 							});
 						} catch (Exception e) {
-							log.error("Ошибка разбора ответа на запрос {}", request, e);
+							log.error("Error parsing response to request {}", request, e);
 							handler.handle(Future.failedFuture(e));
 							return;
 						}
 						handler.handle(Future.succeededFuture(new QueryResult(request.getQueryRequest().getRequestId(), rowList)));
 					} else {
-						log.error("Ошибка выполнения запроса {}", request, exec.cause());
+						log.error("Request execution error {}", request, exec.cause());
 						handler.handle(Future.failedFuture(exec.cause()));
 					}
 				});
 			} else {
-				log.error("Ошибка при обогащении запроса {}", request);
+				log.error("Error while enriching request {}", request);
 				handler.handle(Future.failedFuture(enrich.cause()));
 			}
 		});

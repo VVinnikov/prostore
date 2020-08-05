@@ -22,7 +22,7 @@ public abstract class CalciteSchemaFactory {
                 DtmTable table = createTable(dtmSchema, it);
                 schemaPlus.add(it.getMnemonic(), table);
             } catch (Exception e) {
-                throw new RuntimeException("Ошибка инициализации таблицы $metaTable", e);
+                throw new RuntimeException("Table initialization error $metaTable", e);
             }
         });
         return schemaPlus;

@@ -3,7 +3,6 @@ package ru.ibs.dtm.query.execution.plugin.adb.service.impl.enrichment;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
@@ -18,6 +17,8 @@ import ru.ibs.dtm.common.delta.DeltaInformation;
 import ru.ibs.dtm.query.execution.plugin.adb.dto.QueryGeneratorContext;
 import ru.ibs.dtm.query.execution.plugin.adb.service.QueryExtendService;
 import ru.ibs.dtm.query.execution.plugin.adb.service.QueryGenerator;
+
+import java.util.List;
 
 @Service
 @Slf4j
@@ -51,7 +52,7 @@ public class AdbQueryGeneratorImpl implements QueryGenerator {
             log.debug("sql = " + queryResult);
             handler.handle(Future.succeededFuture(queryResult));
         } catch (Exception e) {
-            log.error("Ошибка исполнения преобразования", e);
+            log.error("Conversion execution error", e);
             handler.handle(Future.failedFuture(e));
         }
     }

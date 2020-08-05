@@ -23,7 +23,7 @@ public class TtClientFactory extends BasePooledObjectFactory<TtClient> {
     try {
       client = new TtClientImpl(tarantoolProperties, resultTranslator);
     } catch (Exception e) {
-      throw new RuntimeException("Ошибка подключения к Tarantool: " + tarantoolProperties, e);
+      throw new RuntimeException("Error connecting to Tarantool: " + tarantoolProperties, e);
     }
     return client;
   }

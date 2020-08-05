@@ -87,7 +87,7 @@ public class DtmResultSet implements ResultSet {
     public int findColumn(String columnLabel) {
         int col = findColumnIndex(columnLabel);
         if (col == 0) {
-            throw new DtmException("Не найдена колонка " + columnLabel);
+            throw new DtmException("Column not found" + columnLabel);
         }
         return col;
     }

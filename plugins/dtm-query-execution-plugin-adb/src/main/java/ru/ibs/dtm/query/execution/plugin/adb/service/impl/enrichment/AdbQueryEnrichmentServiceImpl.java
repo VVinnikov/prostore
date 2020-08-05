@@ -50,10 +50,10 @@ public class AdbQueryEnrichmentServiceImpl implements QueryEnrichmentService {
                         parserResponse.getCalciteContext(),
                         enrichedQueryResult -> {
                             if (enrichedQueryResult.succeeded()) {
-                                log.trace("Сформирован запрос: {}", enrichedQueryResult.result());
+                                log.trace("Request generated: {}", enrichedQueryResult.result());
                                 asyncHandler.handle(Future.succeededFuture(enrichedQueryResult.result()));
                             } else {
-                                log.debug("Ошибка при обогащении запроса", enrichedQueryResult.cause());
+                                log.debug("Error while enriching request", enrichedQueryResult.cause());
                                 asyncHandler.handle(Future.failedFuture(enrichedQueryResult.cause()));
                             }
                         });

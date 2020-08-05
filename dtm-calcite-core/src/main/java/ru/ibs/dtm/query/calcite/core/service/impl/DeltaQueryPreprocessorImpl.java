@@ -36,8 +36,8 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
         return Future.future(handler -> {
             try {
                 if (request == null || StringUtils.isEmpty(request.getSql())) {
-                    log.error("Неопределен запрос {}", request);
-                    handler.fail(String.format("Неопределен запрос %s", request));
+                    log.error("Unspecified request {}", request);
+                    handler.fail(String.format("Undefined request%s", request));
                 } else {
                     val sqlNode = definitionService.processingQuery(request.getSql());
                     val deltaInfoRes = DeltaInformationExtractor.extract(sqlNode);
@@ -50,7 +50,7 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
                                 copyRequest.setDeltaInformations(ar.result());
                                 handler.complete(copyRequest);
                             } catch (Exception e) {
-                                log.error("Ошибка разбора запроса", e);
+                                log.error("Request parsing error", e);
                                 handler.fail(e);
                             }
                         } else {
@@ -59,7 +59,7 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
                     });
                 }
             } catch (Exception e) {
-                log.error("Ошибка парсинга запроса", e);
+                log.error("Request parsing error", e);
                 handler.fail(e);
             }
         });

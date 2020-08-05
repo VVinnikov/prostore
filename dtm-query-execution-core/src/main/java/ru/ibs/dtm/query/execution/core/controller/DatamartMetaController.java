@@ -29,18 +29,18 @@ public class DatamartMetaController {
 
   public void getDatamartMeta(RoutingContext context) {
     datamartMetaService.getDatamartMeta(
-      new ListToJsonHandler<>(context, "Отправлен ответ с витринами {}"));
+      new ListToJsonHandler<>(context, "Reply sent with showcases {}"));
   }
 
   public void getDatamartEntityMeta(RoutingContext context) {
     datamartMetaService.getEntitiesMeta(getDatamartMnemonic(context),
-      new ListToJsonHandler<>(context, "Отправлен ответ с сущностями {}"));
+      new ListToJsonHandler<>(context, "Reply sent with entities {}"));
   }
 
   public void getEntityAttributesMeta(RoutingContext context) {
     datamartMetaService.getAttributesMeta(getDatamartMnemonic(context),
       getParam(context, RequestParam.ENTITY_MNEMONIC),
-      new ListToJsonHandler<>(context, "Отправлен ответ с атрибутами {}"));
+      new ListToJsonHandler<>(context, "Reply sent with attributes {}"));
   }
 
   private String getDatamartMnemonic(RoutingContext context) {

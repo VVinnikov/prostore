@@ -88,7 +88,7 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
 					asyncResultHandler.handle(Future.failedFuture(ex));
 				}
 			} else {
-				log.debug("Ошибка анализа запроса", parseResult.cause());
+				log.debug("Request parsing error", parseResult.cause());
 				asyncResultHandler.handle(Future.failedFuture(parseResult.cause()));
 			}
 		});

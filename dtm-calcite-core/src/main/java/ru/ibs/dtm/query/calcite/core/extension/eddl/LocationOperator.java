@@ -1,11 +1,12 @@
 package ru.ibs.dtm.query.calcite.core.extension.eddl;
 
-import java.util.List;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.util.SqlString;
 import org.apache.calcite.util.ImmutableNullableList;
 import ru.ibs.dtm.common.plugin.exload.Type;
+
+import java.util.List;
 
 public class LocationOperator extends SqlCall {
 
@@ -21,7 +22,7 @@ public class LocationOperator extends SqlCall {
         String location = destinationInfo.getNlsString().getValue();
         String[] strings = location.split(DELIMITER);
         if (strings.length < 2) {
-            throw new IllegalArgumentException("Не задан тип данных в строке " + destinationInfo);
+            throw new IllegalArgumentException("Data type not specified in string" + destinationInfo);
         }
 
         this.type = Type.findByName(strings[0]);

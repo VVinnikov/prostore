@@ -42,7 +42,7 @@ public class AdqmMpprKafkaService implements MpprKafkaService<QueryResult> {
                                 requestFactory.create(request, sqlResult.result()),
                                 asyncHandler);
                     } else {
-                        LOG.error("Ошибка при обогащении запроса");
+                        LOG.error("Error while enriching request");
                         asyncHandler.handle(Future.failedFuture(sqlResult.cause()));
                     }
                 });

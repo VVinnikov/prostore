@@ -142,7 +142,7 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
                 });
             });
         } catch (Exception e) {
-            log.error("Ошибка инициализации таблиц витрины!", e);
+            log.error("Datamart tables initialization error!", e);
             throw new RuntimeException(e);
         }
         return attrFutures;

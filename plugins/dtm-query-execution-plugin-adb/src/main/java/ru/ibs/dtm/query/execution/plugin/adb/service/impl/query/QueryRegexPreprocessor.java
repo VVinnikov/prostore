@@ -3,16 +3,17 @@ package ru.ibs.dtm.query.execution.plugin.adb.service.impl.query;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.execution.plugin.adb.dto.RegexPreprocessorResult;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 import static java.time.temporal.ChronoField.*;
@@ -60,9 +61,9 @@ public class QueryRegexPreprocessor {
     for (PatternModifierPair patternModifierPair : patternModifierPairs) {
       final Matcher matcher = patternModifierPair.regexPattern.matcher(result.getModifiedSql());
       if (matcher.matches()) {
-        LOGGER.debug("Сработал regex: {}", patternModifierPair.regexPattern);
+        LOGGER.debug("Regex worked: {}", patternModifierPair.regexPattern);
         patternModifierPair.sqlModifier.modify(matcher, result);
-        LOGGER.debug("Изменённый SQL: {}", result.getModifiedSql());
+        LOGGER.debug("Changed SQL: {}", result.getModifiedSql());
       }
     }
   }

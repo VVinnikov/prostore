@@ -6,14 +6,12 @@ import io.vertx.core.Handler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.plugin.adb.dto.EnrichQueryRequest;
 import ru.ibs.dtm.query.execution.plugin.adb.factory.MpprKafkaConnectorRequestFactory;
 import ru.ibs.dtm.query.execution.plugin.adb.service.MpprKafkaConnectorService;
 import ru.ibs.dtm.query.execution.plugin.adb.service.QueryEnrichmentService;
 import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
-import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
 import ru.ibs.dtm.query.execution.plugin.api.request.MpprRequest;
 import ru.ibs.dtm.query.execution.plugin.api.service.MpprKafkaService;
 
@@ -44,7 +42,7 @@ public class AdbMpprKafkaService implements MpprKafkaService<QueryResult> {
 								requestFactory.create(request, sqlResult.result()),
 								asyncHandler);
 					} else {
-						LOG.error("Ошибка при обогащении запроса");
+						LOG.error("Error while enriching request");
 						asyncHandler.handle(Future.failedFuture(sqlResult.cause()));
 					}
 				});

@@ -34,10 +34,10 @@ public class VertxConfiguration implements ApplicationListener<ApplicationReadyE
     Vertx vertx = event.getApplicationContext().getBean("coreVertx", Vertx.class);
     // Соберем все вертикали для деплоя
     Map<String, Verticle> verticles = event.getApplicationContext().getBeansOfType(Verticle.class);
-    LOGGER.info("Найдено вертикалей: {}", verticles.size());
+    LOGGER.info("Verticals found: {}", verticles.size());
     verticles.forEach((key, value) -> {
       vertx.deployVerticle(value);
-      LOGGER.debug("Вертикаль '{}' успешно прошла деплой", key);
+      LOGGER.debug("Vertical '{}' deployed successfully", key);
     });
   }
 }

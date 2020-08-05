@@ -44,7 +44,7 @@ public class KafkaAvroSerializer<T extends GenericContainer> implements Serializ
 
             return stream.toByteArray();
         } catch (Exception e) {
-            LOGGER.error("Ошибка сериализации", e);
+            LOGGER.error("Serialization error", e);
             throw new RuntimeException("Could not serialize data", e);
         }
     }

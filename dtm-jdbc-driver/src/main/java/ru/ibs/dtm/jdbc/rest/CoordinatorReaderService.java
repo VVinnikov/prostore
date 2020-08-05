@@ -3,6 +3,7 @@ package ru.ibs.dtm.jdbc.rest;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -10,8 +11,6 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import ru.ibs.dtm.jdbc.core.QueryRequest;
 import ru.ibs.dtm.jdbc.core.QueryResult;
 import ru.ibs.dtm.jdbc.model.ColumnInfo;
@@ -33,9 +32,9 @@ import static ru.ibs.dtm.jdbc.util.DriverConstants.HOST_PROPERTY;
 /**
  * Контроллер взаимодействия с Сервисом чтения по REST
  */
+@Slf4j
 public class CoordinatorReaderService implements Protocol {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CoordinatorReaderService.class);
     private static final String GET_META_URL = "/meta";
     private static final String GET_ENTITIES_URL = "/meta/%s/entities";
     private static final String GET_ATTRIBUTES_URL = "/meta/%s/entity/%s/attributes";
@@ -47,7 +46,7 @@ public class CoordinatorReaderService implements Protocol {
     @SneakyThrows
     public CoordinatorReaderService(CloseableHttpClient client, String dbHost, String schema) {
         if (isEmpty(dbHost)) {
-            throw new DtmException(String.format("Невозможно создать подключение, потому что параметр '%s'не задан", HOST_PROPERTY));
+            throw new DtmException(String.format("Unable to create connection because parameter '%s' is not specified", HOST_PROPERTY));
         }
         this.backendHostUrl = "http://" + dbHost;
         this.schema = schema;
@@ -65,8 +64,7 @@ public class CoordinatorReaderService implements Protocol {
                 });
             }
         } catch (IOException e) {
-            LOGGER.error("Ошибка при загрузке схем бд.", e.getCause());
-            e.printStackTrace();
+            log.error("Error loading database schemas.", e.getCause());
         }
 
         return Collections.emptyList();
@@ -85,8 +83,7 @@ public class CoordinatorReaderService implements Protocol {
                 });
             }
         } catch (IOException e) {
-            LOGGER.error("Ошибка при загрузке таблиц схемы {}", schemaPattern, e.getCause());
-            e.printStackTrace();
+            log.error("Error loading schema tables {}", schemaPattern, e.getCause());
         }
 
         return Collections.emptyList();
@@ -106,8 +103,7 @@ public class CoordinatorReaderService implements Protocol {
                 });
             }
         } catch (IOException e) {
-            LOGGER.error("Ошибка при загрузке колонок таблицы {} схемы {}", tableName, schema, e.getCause());
-            e.printStackTrace();
+            log.error("Error loading columns of table {} schema {}", tableName, schema, e.getCause());
         }
 
         return Collections.emptyList();
@@ -119,19 +115,19 @@ public class CoordinatorReaderService implements Protocol {
             HttpPost httpPost = new HttpPost(backendHostUrl + "/query/execute");
             QueryRequest queryRequest = prepareQueryRequest(sql);
             String queryRequestJson = MAPPER.writeValueAsString(queryRequest);
-            LOGGER.debug("Подготовка запроса query [{}]", queryRequestJson);
+            log.debug("Preparing the query query [{}]", queryRequestJson);
             httpPost.setEntity(new StringEntity(queryRequestJson, ContentType.APPLICATION_JSON));
             try (CloseableHttpResponse response = client.execute(httpPost)) {
                 checkResponseStatus(response);
                 InputStream content = response.getEntity().getContent();
                 QueryResult result = MAPPER.readValue(content, new TypeReference<QueryResult>() {
                 });
-                LOGGER.info("Получен ответ выполнения запроса {}", result);
+                log.info("Request received response {}", result);
                 return result;
             }
         } catch (Exception e) {
-            String errMsg = String.format("Ошибка при выполнении запроса [%s]: %s", sql, e.getMessage());
-            LOGGER.error(errMsg, e);
+            String errMsg = String.format("Error executing query [%s]: %s", sql, e.getMessage());
+            log.error(errMsg, e);
             throw new SQLException(errMsg, e);
         }
     }
@@ -142,14 +138,14 @@ public class CoordinatorReaderService implements Protocol {
             try {
                 String res = MAPPER.readValue(response.getEntity().getContent(), ResponseException.class)
                         .getExceptionMessage();
-                LOGGER.error("Система вернула неуспешный ответ: {}", res);
+                log.error("The system returned an unsuccessful response: {}", res);
                 throw new DtmException(res != null && ! res.isEmpty() ? res :
-                        String.format("Система вернула неуспешный ответ: %s", response.getStatusLine().getReasonPhrase()));
+                        String.format("The system returned an unsuccessful response: %s", response.getStatusLine().getReasonPhrase()));
             } catch (DtmException e) {
                 throw e;
             } catch (Exception e) {
-                LOGGER.error("Система вернула неуспешный ответ: {}", response.getStatusLine().getReasonPhrase());
-                throw new DtmException(String.format("Система вернула неуспешный ответ: %s", response.getStatusLine().getReasonPhrase()));
+                log.error("The system returned an unsuccessful response: {}", response.getStatusLine().getReasonPhrase());
+                throw new DtmException(String.format("The system returned an unsuccessful response:%s", response.getStatusLine().getReasonPhrase()));
             }
         }
     }
@@ -159,7 +155,7 @@ public class CoordinatorReaderService implements Protocol {
         String schema = this.schema;
 
         QueryRequest queryRequest = new QueryRequest(uuid, schema, sql);
-        LOGGER.info("Сформирован sql-запрос {}", queryRequest);
+        log.info("Sql query generated {}", queryRequest);
         return queryRequest;
     }
 }

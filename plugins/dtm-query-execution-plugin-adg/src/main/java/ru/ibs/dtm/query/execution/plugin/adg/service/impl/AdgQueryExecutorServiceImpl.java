@@ -40,6 +40,7 @@ public class AdgQueryExecutorServiceImpl implements QueryExecutorService {
 			cl = ttPool.borrowObject();
 			cl.callQuery(ar -> {
 				if (ar.succeeded() && ar.result() != null && !ar.result().isEmpty()) {
+					log.debug("ADG. execute query {}", sql);
 					val map = (Map<?, ?>) ar.result().get(0);
 					val metadata = getMetadata((List<Map<String, String>>) map.get("metadata"));
 					val dataSet = (List<List<?>>) map.get("rows");
@@ -64,7 +65,8 @@ public class AdgQueryExecutorServiceImpl implements QueryExecutorService {
 			try {
 				cl = ttPool.borrowObject();
 			} catch (Exception e) {
-				e.printStackTrace();
+				log.error("Error creating Tarantool client", e);
+				promise.fail(e);
 			}
 			try {
 				cl.call(ar -> {
@@ -75,7 +77,7 @@ public class AdgQueryExecutorServiceImpl implements QueryExecutorService {
 					}
 				}, procedure, args);
 			} finally {
-				log.debug("Call procedure {} {}", procedure, args);
+				log.debug("ADG. execute procedure {} {}", procedure, args);
 				ttPool.returnObject(cl);
 			}
 		});

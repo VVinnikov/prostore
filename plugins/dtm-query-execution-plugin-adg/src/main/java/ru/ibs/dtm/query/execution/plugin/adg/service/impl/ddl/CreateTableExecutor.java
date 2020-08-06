@@ -60,7 +60,7 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
 
     private void createTable(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {
         Future.future((Promise<Void> promise) -> cartridgeProvider.apply(context, promise))
-                .onSuccess(s -> handler.handle(Future.succeededFuture(s)))
+                .onSuccess(s -> handler.handle(Future.succeededFuture()))
                 .onFailure(f -> handler.handle(Future.failedFuture(f)));
     }
 

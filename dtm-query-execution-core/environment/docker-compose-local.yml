@@ -8,6 +8,7 @@ volumes:
   kafkalogs:
   adqm-volume:
   adb-volume:
+  adg-volume:
 
 services:
   dtm-query-execution-core:
@@ -77,13 +78,15 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zk-1.dtm.local:2181
 
   adg:
-    image: ci.arenadata.io/adg:0.5
+    image: ci.arenadata.io/adg:0.6
     container_name: adg
     restart: always
     networks:
       - dtm-query-execution
     ports:
       - "8081:8081"
+    volumes:
+      - adg-volume:/adg_dtm/tmp
 
   adqm:
     image: yandex/clickhouse-server:20.4

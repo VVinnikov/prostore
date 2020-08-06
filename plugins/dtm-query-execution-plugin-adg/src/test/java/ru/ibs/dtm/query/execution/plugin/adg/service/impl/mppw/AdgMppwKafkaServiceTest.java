@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.mockito.Mockito;
 import org.mockito.internal.verification.VerificationModeFactory;
 import ru.ibs.dtm.common.plugin.exload.QueryLoadParam;
@@ -28,6 +29,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @Slf4j
+@EnabledIfEnvironmentVariable(named = "skipITs", matches = "false")
 class AdgMppwKafkaServiceTest {
 
     private final TtCartridgeClient client = mock(TtCartridgeClient.class);

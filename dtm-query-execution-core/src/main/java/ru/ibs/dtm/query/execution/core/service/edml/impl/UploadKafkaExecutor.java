@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class UploadKafkaExecutor implements EdmlUploadExecutor {
 
-    public static final String MPPW_LOAD_ERROR_MESSAGE = "Ошибка выполнения mppw загрузки!";
+    public static final String MPPW_LOAD_ERROR_MESSAGE = "Runtime error mppw download!";
     private final DataSourcePluginService pluginService;
     private final MppwKafkaRequestFactory mppwKafkaRequestFactory;
     private final EdmlProperties edmlProperties;
@@ -63,7 +63,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
             });
             checkPluginsMppwExecution(startMppwFutureMap, resultHandler);
         } catch (Exception e) {
-            log.error("Ошибка запуска загрузки mppw!", e);
+            log.error("Error starting mppw download!", e);
             resultHandler.handle(Future.failedFuture(e));
         }
     }
@@ -71,25 +71,25 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
     private Future<MppwStopFuture> startMppw(SourceType ds, MppwRequestContext mppwRequestContext, EdmlRequestContext context) {
         return Future.future((Promise<MppwStopFuture> promise) -> pluginService.mppwKafka(ds, mppwRequestContext, ar -> {
             if (ar.succeeded()) {
-                log.debug("Отправлен запрос для плагина: {} на старт загрузки mppw: {}", ds, mppwRequestContext.getRequest());
+                log.debug("A request has been sent for the plugin: {} to start mppw download: {}", ds, mppwRequestContext.getRequest());
                 final StatusRequestContext statusRequestContext = new StatusRequestContext(new StatusRequest(context.getRequest().getQueryRequest()));
                 statusRequestContext.getRequest().setTopic(mppwRequestContext.getRequest().getTopic());
                 vertx.setPeriodic(edmlProperties.getPluginStatusCheckPeriodMs(), timerId -> {
-                    log.trace("Запрос статуса плагина: {} mppw загрузки", ds);
+                    log.trace("Plugin status request: {} mppw downloads", ds);
                     checkMppwStatus(ds, statusRequestContext, timerId)
-                            .setHandler(chr -> {
+                            .onComplete(chr -> {
                                 if (chr.succeeded()) {
                                     StatusQueryResult result = chr.result();
                                     promise.complete(new MppwStopFuture(ds, stopMppw(ds, mppwRequestContext),
                                             result.getPartitionInfo().getOffset()));
                                 } else {
-                                    log.error("Ошибка получения статуса плагина: {}", ds, chr.cause());
+                                    log.error("Error getting plugin status: {}", ds, chr.cause());
                                     promise.fail(chr.cause());
                                 }
                             });
                 });
             } else {
-                log.error("Ошибка старта загрузки mppw для плагина: {}", ds, ar.cause());
+                log.error("Error starting loading mppw for plugin: {}", ds, ar.cause());
                 promise.complete(new MppwStopFuture(ds, stopMppw(ds, mppwRequestContext), null));
             }
         }));
@@ -99,7 +99,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
         return Future.future((Promise<StatusQueryResult> promise) -> pluginService.status(ds, statusRequestContext, ar -> {
             if (ar.succeeded()) {
                 StatusQueryResult queryResult = ar.result();
-                log.trace("Получен статус плагина: {} mppw загрузки: {}, по запросу: {}", ds, queryResult, statusRequestContext);
+                log.trace("Plugin status received: {} mppw downloads: {}, on request: {}", ds, queryResult, statusRequestContext);
                 if (queryResult.getPartitionInfo().getEnd().equals(queryResult.getPartitionInfo().getOffset())
                         && checkLastCommitTime(queryResult.getPartitionInfo().getLastCommitTime())) {
                     vertx.cancelTimer(timerId);
@@ -117,10 +117,10 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
     private Future<QueryResult> stopMppw(SourceType ds, MppwRequestContext mppwRequestContext) {
         return Future.future((Promise<QueryResult> promise) -> {
             mppwRequestContext.getRequest().setLoadStart(false);
-            log.debug("Отправлен запрос для плагина: {} на остановку загрузки mppw: {}", ds, mppwRequestContext.getRequest());
+            log.debug("A request was sent for the plugin: {} to stop loading mppw: {}", ds, mppwRequestContext.getRequest());
             pluginService.mppwKafka(ds, mppwRequestContext, ar -> {
                 if (ar.succeeded()) {
-                    log.debug("Завершена остановка загрузки mppw по плагину: {}", ds);
+                    log.debug("Completed stopping mppw loading by plugin: {}", ds);
                     promise.complete(ar.result());
                 } else {
                     promise.fail(ar.cause());
@@ -140,20 +140,15 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                                     if (isAllMppwPluginsHasEqualOffsets(mppwStopFutureMap)) {
                                         resultHandler.handle(Future.succeededFuture(QueryResult.emptyResult()));
                                     } else {
-                                        RuntimeException e = new RuntimeException("Изменился offset одного из плагинов!");
+                                        RuntimeException e = new RuntimeException("The offset of one of the plugins has changed!");
                                         log.error(MPPW_LOAD_ERROR_MESSAGE, e);
                                         resultHandler.handle(Future.failedFuture(e));
                                     }
-                                })
-                                .onFailure(fail -> {
-                                    log.error(MPPW_LOAD_ERROR_MESSAGE, fail);
-                                    resultHandler.handle(Future.failedFuture(fail));
                                 });
+                    } else {
+                        log.error(MPPW_LOAD_ERROR_MESSAGE, startComplete.cause());
+                        resultHandler.handle(Future.failedFuture(startComplete.cause()));
                     }
-                })
-                .onFailure(fail -> {
-                    log.error(MPPW_LOAD_ERROR_MESSAGE, fail);
-                    resultHandler.handle(Future.failedFuture(fail));
                 });
     }
 

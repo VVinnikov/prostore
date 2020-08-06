@@ -42,7 +42,7 @@ public class DeltaServiceImpl implements DeltaService<QueryResult> {
                         .execute(context, deltaExecHandler -> {
                             if (deltaExecHandler.succeeded()) {
                                 QueryResult queryDeltaResult = deltaExecHandler.result();
-                                log.debug("Результат выполнения запроса: {}, queryResult : {}",
+                                log.debug("Query result: {}, queryResult : {}",
                                         context.getRequest().getQueryRequest(), queryDeltaResult);
                                 handler.handle(Future.succeededFuture(queryDeltaResult));
                             } else {

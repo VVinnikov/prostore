@@ -17,15 +17,15 @@ import ru.ibs.dtm.kafka.core.configuration.properties.KafkaProperties;
 import ru.ibs.dtm.query.calcite.core.extension.eddl.*;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.dto.eddl.*;
-import ru.ibs.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
 import ru.ibs.dtm.query.execution.core.service.avro.AvroSchemaGenerator;
 import ru.ibs.dtm.query.execution.core.service.eddl.EddlQueryParamExtractor;
+import ru.ibs.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
 
 @Component
 @Slf4j
 public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
 
-    public static final String ERROR_PARSING_EDDL_QUERY = "Ошибка парсинга запроса";
+    public static final String ERROR_PARSING_EDDL_QUERY = "Request parsing error";
     public static final String START_LOCATION_TOKEN = "$";
     private final DefinitionService<SqlNode> definitionService;
     private final MetadataCalciteGenerator metadataCalciteGenerator;
@@ -65,7 +65,7 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
             SqlNode node = definitionService.processingQuery(request.getSql());
             it.complete(node);
         } catch (Exception e) {
-            log.error("Ошибка парсинга запроса", e);
+            log.error("Request parsing error", e);
             it.fail(e);
         }
     }
@@ -89,10 +89,10 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
             } else if (sqlNode instanceof SqlDropUploadExternalTable) {
                 extractDropUploadExternalTable((SqlDropUploadExternalTable) sqlNode, defaultSchema, asyncResultHandler);
             } else {
-                asyncResultHandler.handle(Future.failedFuture("Запрос [" + sqlNode + "] не является EDDL оператором."));
+                asyncResultHandler.handle(Future.failedFuture("Query ["+ sqlNode +"] is not an EDDL statement."));
             }
         } else {
-            asyncResultHandler.handle(Future.failedFuture("Запрос [" + sqlNode + "] не является EDDL оператором."));
+            asyncResultHandler.handle(Future.failedFuture("Query ["+ sqlNode +"] is not an EDDL statement."));
         }
     }
 
@@ -116,6 +116,8 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
             TableInfo tableInfo = SqlNodeUtils.getTableInfo(ddl, defaultSchema);
             LocationOperator locationOperator = SqlNodeUtils.getOne(ddl, LocationOperator.class);
             ChunkSizeOperator chunkSizeOperator = SqlNodeUtils.getOne(ddl, ChunkSizeOperator.class);
+            ClassTable classTable = metadataCalciteGenerator.generateTableMetadata(ddl);
+            Schema avroSchema = avroSchemaGenerator.generateTableSchema(classTable, false);
             asyncResultHandler.handle(Future.succeededFuture(
                     new CreateDownloadExternalTableQuery(
                             tableInfo.getSchemaName(),
@@ -123,7 +125,8 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
                             locationOperator.getType(),
                             getLocation(locationOperator),
                             SqlNodeUtils.getOne(ddl, FormatOperator.class).getFormat(),
-                            chunkSizeOperator.getChunkSize())));
+                            chunkSizeOperator.getChunkSize(),
+                            avroSchema.toString())));
         } catch (RuntimeException e) {
             log.error(ERROR_PARSING_EDDL_QUERY, e);
             asyncResultHandler.handle(Future.failedFuture(e));
@@ -140,8 +143,14 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
             Format format = SqlNodeUtils.getOne(sqlNode, FormatOperator.class).getFormat();
             MassageLimitOperator messageLimitOperator = SqlNodeUtils.getOne(sqlNode, MassageLimitOperator.class);
             asyncResultHandler.handle(Future.succeededFuture(
-                    new CreateUploadExternalTableQuery(tableInfo.getSchemaName(), tableInfo.getTableName(), locationOperator.getType(),
-                            getLocation(locationOperator), format, avroSchema.toString(), messageLimitOperator.getMessageLimit())
+                    new CreateUploadExternalTableQuery(
+                            tableInfo.getSchemaName(),
+                            tableInfo.getTableName(),
+                            locationOperator.getType(),
+                            getLocation(locationOperator),
+                            format,
+                            avroSchema.toString(),
+                            messageLimitOperator.getMessageLimit())
             ));
         } catch (RuntimeException e) {
             log.error(ERROR_PARSING_EDDL_QUERY, e);
@@ -160,9 +169,9 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
                 return kafkaProperties.getProducer().getProperty().get("bootstrap.servers");
             case CSV_FILE:
             case HDFS_LOCATION:
-                throw new IllegalArgumentException("Данный location type: " + type + " не поддерживается!");
+                throw new IllegalArgumentException("The given location type: "+ type +" is not supported!");
             default:
-                throw new RuntimeException("Данный тип не поддерживается!");
+                throw new RuntimeException("This type is not supported!");
         }
     }
 

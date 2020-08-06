@@ -88,7 +88,7 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
 					asyncResultHandler.handle(Future.failedFuture(ex));
 				}
 			} else {
-				log.debug("Ошибка анализа запроса", parseResult.cause());
+				log.debug("Request parsing error", parseResult.cause());
 				asyncResultHandler.handle(Future.failedFuture(parseResult.cause()));
 			}
 		});
@@ -101,11 +101,11 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
 				try {
 					val hint = hintExtractor.extractHint(queryRequest);
 					val query = hint.getQueryRequest().getSql();
-					log.debug("Предпарсинг запроса: {}", query);
+					log.debug("Pre-parse request: {}", query);
 					val node = definitionService.processingQuery(query);
 					it.complete(new ParsedQueryResponse(node, query, hint.getSourceType()));
 				} catch (Exception e){
-					log.error("Ошибка парсинга запроса", e);
+					log.error("Request parsing error", e);
 					it.fail(e);
 				}
 			}

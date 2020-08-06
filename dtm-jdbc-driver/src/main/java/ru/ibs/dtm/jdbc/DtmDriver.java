@@ -4,17 +4,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.ibs.dtm.jdbc.ext.DtmConnection;
 
-import java.sql.Connection;
-import java.sql.Driver;
-import java.sql.DriverManager;
-import java.sql.DriverPropertyInfo;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.Properties;
 
-import static ru.ibs.dtm.jdbc.util.DriverConstants.CONNECT_URL_PREFIX;
-import static ru.ibs.dtm.jdbc.util.DriverConstants.HOST_PROPERTY;
-import static ru.ibs.dtm.jdbc.util.DriverConstants.SCHEMA_PROPERTY;
-import static ru.ibs.dtm.jdbc.util.DriverConstants.USER_PROPERTY;
+import static ru.ibs.dtm.jdbc.util.DriverConstants.*;
 import static ru.ibs.dtm.jdbc.util.UrlConnectionParser.parseURL;
 
 public class DtmDriver implements Driver {
@@ -25,9 +18,9 @@ public class DtmDriver implements Driver {
     static {
         try {
             DriverManager.registerDriver(new DtmDriver());
-            LOGGER.info("Драйвер зарегистрирован");
+            LOGGER.info("Driver registered");
         } catch (SQLException e) {
-            LOGGER.error("Ошибка при регистрации JDBC драйвера " + e.getCause());
+            LOGGER.error("Error registering JDBC driver " + e.getCause());
         }
     }
 

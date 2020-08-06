@@ -44,14 +44,14 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
                 SqlNode node = coreCalciteDefinitionService.processingQuery(context.getRequest().getQueryRequest().getSql());
                 it.complete(node);
             } catch (Exception e) {
-                log.error("Ошибка парсинга запроса", e);
+                log.error("Request parsing error", e);
                 it.fail(e);
             }
         }, ar -> {
             if (ar.succeeded()) {
                 execute(context, asyncResultHandler, ar);
             } else {
-                log.debug("Ошибка исполнения", ar.cause());
+                log.debug("Execution error", ar.cause());
                 asyncResultHandler.handle(Future.failedFuture(ar.cause()));
             }
         });
@@ -64,12 +64,12 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
             if (executorMap.containsKey(sqlDdl.getKind())) {
                 executorMap.get(sqlDdl.getKind()).execute(context, sqlNodeName, handler);
             } else {
-                log.error("Не поддерживаемый тип DDL запроса");
-                handler.handle(Future.failedFuture(String.format("Не поддерживаемый тип DDL запроса [%s]", context)));
+                log.error("Not supported DDL query type");
+                handler.handle(Future.failedFuture(String.format("Not supported DDL query type [%s]", context)));
             }
         } else {
-            log.error("Не поддерживаемый тип запроса");
-            handler.handle(Future.failedFuture(String.format("Не поддерживаемый тип запроса [%s]", context)));
+            log.error("Not supported request type");
+            handler.handle(Future.failedFuture(String.format("Not supported request type [%s]", context)));
         }
     }
 

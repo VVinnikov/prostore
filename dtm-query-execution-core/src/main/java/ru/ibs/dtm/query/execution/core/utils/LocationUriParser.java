@@ -20,7 +20,7 @@ public class LocationUriParser {
             int port = authorityArray.length > 1 ? Integer.parseInt(authorityArray[1]) : DEFAULT_ZOOKEEPER_PORT;
             return new KafkaTopicUri(host, topic, port);
         } catch (Exception e) {
-            String errMsg = String.format("Ошибка парсинга locationPath [%s]: %s", locationPath, e.getMessage());
+            String errMsg = String.format("LocationPath parsing error [%s]: %s", locationPath, e.getMessage());
             log.error(errMsg, e);
             throw new RuntimeException(errMsg, e);
         }

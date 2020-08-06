@@ -42,7 +42,7 @@ public class QueryVerticle extends AbstractVerticle {
     router.mountSubRouter("/", apiRouter());
     HttpServer httpServer = vertx.createHttpServer().requestHandler(router)
       .listen(configuration.httpPort());
-    LOGGER.info("Сервер запущен на порте: {}", httpServer.actualPort());
+    LOGGER.info("The server is running on the port: {}", httpServer.actualPort());
   }
 
   private Router apiRouter() {

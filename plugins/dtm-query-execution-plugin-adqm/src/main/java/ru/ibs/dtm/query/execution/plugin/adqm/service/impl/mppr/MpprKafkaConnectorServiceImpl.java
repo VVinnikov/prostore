@@ -32,7 +32,7 @@ public class MpprKafkaConnectorServiceImpl implements MpprKafkaConnectorService 
 
     @Override
     public void call(MpprKafkaConnectorRequest request, Handler<AsyncResult<QueryResult>> handler) {
-        LOGGER.debug("Вызов MpprKafkaConnector с параметрами: host={}, port={}, url={}, request={}",
+        LOGGER.debug("Calling MpprKafkaConnector with parameters: host = {}, port = {}, url = {}, request = {}",
                 connectorProperties.getHost(), connectorProperties.getPort(), connectorProperties.getUrl(), request);
         client.post(connectorProperties.getPort(),
                 connectorProperties.getHost(),
@@ -42,11 +42,11 @@ public class MpprKafkaConnectorServiceImpl implements MpprKafkaConnectorService 
                         if (ar.result().statusCode() == HttpURLConnection.HTTP_OK) {
                             handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
                         } else {
-                            LOGGER.error("Ошибка выполнения запроса [{}]", request);
+                            LOGGER.error("Request execution error [{}]", request);
                             handler.handle(Future.failedFuture(ar.result().bodyAsString()));
                         }
                     } else {
-                        LOGGER.error("Ошибка выполнения запоса [{}]", request);
+                        LOGGER.error("Query execution error [{}]", request);
                         handler.handle(Future.failedFuture(ar.cause()));
                     }
                 });

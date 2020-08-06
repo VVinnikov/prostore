@@ -31,10 +31,10 @@ public class KafkaTopicServiceImpl implements KafkaTopicService {
     public void create(List<String> topics, Handler<AsyncResult<Void>> handler) {
         adminClient.createTopics(topics.stream().map(it -> new NewTopic(it, 1, (short) 1)).collect(Collectors.toList()), ar -> {
             if (ar.succeeded()) {
-                log.debug("Топики [{}] успешно созданы", String.join(",", topics));
+                log.debug("Topics [{}] created successfully", String.join(",", topics));
                 handler.handle(Future.succeededFuture());
             } else {
-                log.error("Ошибка создания топиков [{}]", String.join(",", topics), ar.cause());
+                log.error("Error creating topics [{}]", String.join(",", topics), ar.cause());
                 if (ar.cause() instanceof TopicExistsException) {
                     handler.handle(Future.succeededFuture());
                     return;
@@ -48,10 +48,10 @@ public class KafkaTopicServiceImpl implements KafkaTopicService {
     public void delete(List<String> topics, Handler<AsyncResult<Void>> handler) {
         adminClient.deleteTopics(topics, ar -> {
             if (ar.succeeded()) {
-                log.debug("Топики [{}] успешно удалены", String.join(",", topics));
+                log.debug("Topics [{}] deleted successfully", String.join(",", topics));
                 handler.handle(Future.succeededFuture());
             } else {
-                log.error("Ошибка удаления топиков [{}]", String.join(",", topics), ar.cause());
+                log.error("Error deleting topics [{}]", String.join(",", topics), ar.cause());
                 if (ar.cause() instanceof UnknownTopicOrPartitionException) {
                     handler.handle(Future.succeededFuture());
                     return;
@@ -69,7 +69,7 @@ public class KafkaTopicServiceImpl implements KafkaTopicService {
                 if (ar.succeeded()) {
                     List<String> topicsForCreate = topics.stream().filter(element ->
                             !ar.result().stream().anyMatch(match -> match.equalsIgnoreCase(element))).collect(Collectors.toList());
-                    log.debug("Создание топиков [{}]", String.join(",", topicsForCreate));
+                    log.debug("Creating topics [{}]", String.join(",", topicsForCreate));
                     create(topicsForCreate, ar1 -> {
                         if (ar1.succeeded()) {
                             handler.handle(Future.succeededFuture());

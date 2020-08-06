@@ -76,13 +76,13 @@ public class AttributeDaoImpl implements AttributeDao {
                             getNullable(it)
                         ))
                     );
-                    log.info("Найдено {} атрибутов для сущности: '{}' схемы: '{}'.", res.size(), entityMnemonic, datamartMnemonic);
+                    log.info("Found {} attributes for entity: '{}' schema: '{}'.", res.size(), entityMnemonic, datamartMnemonic);
                     resultHandler.handle(Future.succeededFuture(res));
                 } catch (Exception ex) {
                     resultHandler.handle(Future.failedFuture(ex));
                 }
             } else {
-                log.error("Невозможно получить атрибуты метаданных: {}", ar.cause().getMessage());
+                log.error("Unable to get metadata attributes: {}", ar.cause().getMessage());
                 resultHandler.handle(Future.failedFuture(ar.cause()));
             }
         });

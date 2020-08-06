@@ -40,7 +40,7 @@ public class AdbCalciteDMLQueryExtendServiceImpl implements QueryExtendService {
         if (node.getInputs() == null || node.getInputs().isEmpty()) {
             if (node instanceof TableScan) {
                 if (!context.getDeltaIterator().hasNext()) {
-                    throw new RuntimeException("Не определены параметры для обогащения запроса");
+                    throw new RuntimeException("No parameters defined to enrich the request");
                 }
                 relBuilder.push(insertModifiedTableScan(relBuilder, node, deltaIterator.next()));
             } else {

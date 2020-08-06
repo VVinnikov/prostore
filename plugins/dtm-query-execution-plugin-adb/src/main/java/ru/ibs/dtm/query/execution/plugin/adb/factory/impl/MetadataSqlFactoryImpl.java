@@ -44,7 +44,7 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
     public static final String REQ_ID_ATTR = "req_id";
     public static final String DELIMITER = ", ";
     private static final String DROP_TABLE = "DROP TABLE IF EXISTS ";
-    private static final String DROP_SCHEMA = "DROP SCHEMA IF EXISTS %s";
+    private static final String DROP_SCHEMA = "DROP SCHEMA IF EXISTS %s CASCADE";
     private static final String CREATE_SCHEMA = "CREATE SCHEMA %s";
 
     @Override

@@ -62,9 +62,9 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
                     if (ar.succeeded()) {
                         DeltaRecord deltaRecord = ar.result();
                         if (deltaRecord == null || deltaRecord.getStatus() != DeltaLoadStatus.IN_PROCESS) {
-                            promise.fail(new RuntimeException("Не найдена открытая дельта!"));
+                            promise.fail(new RuntimeException("No open delta found!"));
                         }
-                        log.debug("Найдена последняя открытая дельта {}", deltaRecord);
+                        log.debug("Last open delta found {}", deltaRecord);
                         promise.complete(deltaRecord);
                     } else {
                         promise.fail(ar.cause());
@@ -80,7 +80,7 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
             context.setAvroSchema(((UploadExtTableRecord) edmlQuery.getRecord()).getTableSchema());
             serviceDbFacade.getEddlServiceDao().getUploadQueryDao().inserUploadQuery(uploadQueryRecord, ar -> {
                 if (ar.succeeded()) {
-                    log.debug("Добавлен uploadQuery {}", uploadQueryRecord);
+                    log.debug("Added uploadQuery {}", uploadQueryRecord);
                     promise.complete(uploadQueryRecord);
                 } else {
                     promise.fail(ar.cause());
@@ -95,8 +95,8 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
             if (Type.KAFKA_TOPIC.equals(edmlQuery.getRecord().getLocationType())) {
                 executors.get(edmlQuery.getRecord().getLocationType()).execute(context, resultHandler);
             } else {
-                log.error("Тип загрузки {} не реализован", context.getExloadParam().getLocationType());
-                promise.fail(new RuntimeException("Другие типы загрузки ещё не реализованы!"));
+                log.error("Loading type {} not implemented", context.getExloadParam().getLocationType());
+                promise.fail(new RuntimeException("Other download types are not yet implemented!"));
             }
         });
     }

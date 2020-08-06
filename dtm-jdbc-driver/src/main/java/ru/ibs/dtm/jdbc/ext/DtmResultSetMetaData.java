@@ -106,6 +106,8 @@ public class DtmResultSetMetaData implements ResultSetMetaData {
         ColumnType type = fields.get(column - 1).getType();
         if (type == ColumnType.INT) {
             return JDBCType.INTEGER.getVendorTypeNumber();
+        } if (type == ColumnType.ANY) {
+            return JDBCType.VARCHAR.getVendorTypeNumber();
         } else {
             return JDBCType
                 .valueOf(type.name())

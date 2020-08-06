@@ -71,7 +71,7 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
                     serviceDbFacade.getEddlServiceDao().getDownloadExtTableDao().findDownloadExternalTable(context.getSourceTable().getSchemaName(),
                             context.getSourceTable().getTableName(), ar -> {
                                 if (ar.succeeded()) {
-                                    promise.fail(new RuntimeException("Невозможно выбрать данные из внешней таблицы выгрузки: "
+                                    promise.fail(new RuntimeException("Unable to select data from external unload table: "
                                             + context.getSourceTable()));
                                 } else {
                                     promise.complete();
@@ -95,7 +95,7 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
                 serviceDbFacade.getEddlServiceDao().getUploadExtTableDao().findUploadExternalTable(context.getTargetTable().getSchemaName(),
                         context.getTargetTable().getTableName(), ar -> {
                             if (ar.succeeded()) {
-                                promise.fail(new RuntimeException("Невозможно записать данные во внешнюю таблицу загрузки: "
+                                promise.fail(new RuntimeException("Unable to write data to external load table: "
                                         + context.getSqlNode().getTargetTable().toString()));
                             } else {
                                 promise.complete();
@@ -110,18 +110,18 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
                         context.getTargetTable().getTableName(), ar -> {
                             if (ar.succeeded()) {
                                 DownloadExtTableRecord record = ar.result();
-                                log.debug("Найдена запись в downloadExternalTable: {}; для targetTable: {}", record, context.getTargetTable());
+                                log.debug("Found entry in downloadExternalTable: {}; for targetTable: {}", record, context.getTargetTable());
                                 promise.complete(new EdmlQuery(EdmlAction.DOWNLOAD, record));
                             } else {
                                 serviceDbFacade.getEddlServiceDao().getUploadExtTableDao().findUploadExternalTable(context.getSourceTable().getSchemaName(),
                                         context.getSourceTable().getTableName(), arUpl -> {
                                             if (arUpl.succeeded()) {
                                                 UploadExtTableRecord record = arUpl.result();
-                                                log.debug("Найдена запись в uploadExternalTable: {}; для sourceTable: {}",
+                                                log.debug("Found entry in uploadExternalTable: {}; for sourceTable: {}",
                                                         record, context.getSourceTable());
                                                 promise.complete(new EdmlQuery(EdmlAction.UPLOAD, record));
                                             } else {
-                                                promise.fail(new RuntimeException("Не найдено внешних таблиц загрузки/выгрузки!"));
+                                                promise.fail(new RuntimeException("No external load / unload tables found!"));
                                             }
                                         });
                             }

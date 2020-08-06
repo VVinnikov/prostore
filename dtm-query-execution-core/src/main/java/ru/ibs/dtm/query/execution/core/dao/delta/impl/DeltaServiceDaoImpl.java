@@ -14,7 +14,6 @@ import org.jooq.SelectConditionStep;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
-import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.delta.DeltaLoadStatus;
 import ru.ibs.dtm.common.dto.ActualDeltaRequest;
 import ru.ibs.dtm.query.execution.core.dao.delta.DeltaServiceDao;
@@ -58,14 +57,14 @@ public class DeltaServiceDaoImpl implements DeltaServiceDao {
     public void getDeltaOnDateTime(ActualDeltaRequest actualDeltaRequest, Handler<AsyncResult<Long>> resultHandler) {
         final String datamart = actualDeltaRequest.getDatamart();
         final String dateTime = actualDeltaRequest.getDateTime();
-        log.debug("Получение дельты витрины {} на {}, начало", datamart, dateTime);
+        log.debug("Getting the delta of datamart {} on {}, start", datamart, dateTime);
         executor.query(dsl -> getDeltaByDatamartAndDateSelect(dsl, actualDeltaRequest)).setHandler(ar -> {
             if (ar.succeeded()) {
                 final Long delta = ar.result().get(0, Long.class);
-                log.debug("Дельта витрины {} на дату {}: {}", datamart, dateTime, delta);
+                log.debug("Delta datamarts {} on date {}: {}", datamart, dateTime, delta);
                 resultHandler.handle(Future.succeededFuture(delta));
             } else {
-                log.error("Невозможно получить дельту витрины {} на дату {}: {}",
+                log.error("Unable to get delta of datamart {} for date {}: {}",
                         datamart, dateTime, ar.cause().getMessage());
                 resultHandler.handle(Future.failedFuture(ar.cause()));
             }
@@ -85,23 +84,23 @@ public class DeltaServiceDaoImpl implements DeltaServiceDao {
 
     @Override
     public void getDeltasOnDateTimes(List<ActualDeltaRequest> actualDeltaRequests, Handler<AsyncResult<List<Long>>> resultHandler) {
-        log.debug("Получение {} дельт, начало", actualDeltaRequests.size());
+        log.debug("Getting {} deltas, start", actualDeltaRequests.size());
         if (actualDeltaRequests.isEmpty()) {
-            log.warn("Список запросов на дельты должен быть не пуст.");
+            log.warn("The list of requests for deltas must not be empty.");
             resultHandler.handle(Future.succeededFuture(Collections.emptyList()));
             return;
         }
         executor.query(dsl -> getUnionOfDeltaByDatamartAndDateSelects(dsl, actualDeltaRequests)).setHandler(ar -> {
             if (ar.succeeded()) {
-                log.debug("Получение {} дельт, запрос выполнен", actualDeltaRequests.size());
+                log.debug("Get {} deltas, request completed", actualDeltaRequests.size());
                 final List<Long> result = ar.result().stream()
                         .map(queryResult -> queryResult.get(0, Long.class))
                         .map(delta -> (delta == null) ? Long.valueOf(-1L) : delta)
                         .collect(Collectors.toList());
-                log.debug("Получение {} дельт, результат: {}", actualDeltaRequests.size(), result);
+                log.debug("Getting {} deltas, result: {}", actualDeltaRequests.size(), result);
                 resultHandler.handle(Future.succeededFuture(result));
             } else {
-                log.error("Получение {} дельт, ошибка: {}", actualDeltaRequests.size(), ar.cause().getMessage());
+                log.error("Getting {} deltas, error: {}", actualDeltaRequests.size(), ar.cause().getMessage());
                 resultHandler.handle(Future.failedFuture(ar.cause()));
             }
         });
@@ -141,7 +140,7 @@ public class DeltaServiceDaoImpl implements DeltaServiceDao {
                 resultHandler.handle(Future.succeededFuture(null));
             }
         } else {
-            log.error("Поиск дельты для витрины {}, ошибка {}", datamartMnemonic, ar.cause().getMessage());
+            log.error("Delta search for datamart {}, error {}", datamartMnemonic, ar.cause().getMessage());
             resultHandler.handle(Future.failedFuture(ar.cause()));
         }
     }

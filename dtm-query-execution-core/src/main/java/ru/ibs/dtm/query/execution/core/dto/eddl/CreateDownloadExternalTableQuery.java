@@ -33,6 +33,11 @@ public class CreateDownloadExternalTableQuery extends EddlQuery {
    */
   private Integer chunkSize;
 
+  /**
+   * Avro schema in json format
+   */
+  private String tableSchema;
+
   public CreateDownloadExternalTableQuery() {
     super(EddlAction.CREATE_DOWNLOAD_EXTERNAL_TABLE);
   }
@@ -42,11 +47,13 @@ public class CreateDownloadExternalTableQuery extends EddlQuery {
                                           Type locationType,
                                           String locationPath,
                                           Format format,
-                                          Integer chunkSize) {
+                                          Integer chunkSize,
+                                          String tableSchema) {
     super(EddlAction.CREATE_DOWNLOAD_EXTERNAL_TABLE, schemaName, tableName);
     this.locationType = locationType;
     this.locationPath = locationPath;
     this.format = format;
     this.chunkSize = chunkSize;
+    this.tableSchema = tableSchema;
   }
 }

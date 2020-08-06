@@ -29,31 +29,9 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
     public ClassTable generateTableMetadata(SqlCreate sqlCreate) {
         final List<String> names = SqlNodeUtils.getTableNames(sqlCreate);
         final List<ClassField> fields = createTableFields(sqlCreate);
-        checkRequiredKeys(fields);
         return new ClassTable(getTableName(names), getSchema(names), fields);
     }
 
-    private void checkRequiredKeys(List<ClassField> fields) {
-        val notExistsKeys = new ArrayList<String>();
-        val notExistsPrimaryKeys = fields.stream()
-            .noneMatch(f -> f.getPrimaryOrder() != null);
-        if (notExistsPrimaryKeys) {
-            notExistsKeys.add("primary key(s)");
-        }
-
-        val notExistsShardingKey = fields.stream()
-            .noneMatch(f -> f.getShardingOrder() != null);
-        if (notExistsShardingKey) {
-            notExistsKeys.add("sharding key(s)");
-        }
-
-        if (!notExistsKeys.isEmpty()) {
-            throw new IllegalArgumentException(
-                "Primary keys and Sharding keys are required. The following keys do not exist: " + String.join(",", notExistsKeys)
-            );
-        }
-
-    }
 
     private List<ClassField> createTableFields(SqlCreate sqlCreate) {
         final List<ClassField> fields = new ArrayList<>();
@@ -69,7 +47,7 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
                 } else if (col.getKind().equals(SqlKind.PRIMARY_KEY)) {
                     initPrimaryKeyColumns((SqlKeyConstraint) col, fieldMap);
                 } else {
-                    throw new RuntimeException("Тип атрибута " + col.getKind() + " не поддерживается!");
+                    throw new RuntimeException("Attribute type "+ col.getKind () +" is not supported!");
                 }
             }
             initDistributedKeyColumns(sqlCreate, fieldMap);
@@ -132,7 +110,7 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
         if (col.getOperandList().size() > 1) {
             return (SqlDataTypeSpec) col.getOperandList().get(1);
         } else {
-            throw new RuntimeException("Ошибка определения типа столбца!");
+            throw new RuntimeException("Column type error!");
         }
     }
 
@@ -140,7 +118,7 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
         if (col.getOperandList().size() > 0) {
             return ((SqlNodeList) col.getOperandList().get(1)).getList();
         } else {
-            throw new RuntimeException("Ошибка определения первичного ключа!");
+            throw new RuntimeException("Primary key definition failed!");
         }
     }
 

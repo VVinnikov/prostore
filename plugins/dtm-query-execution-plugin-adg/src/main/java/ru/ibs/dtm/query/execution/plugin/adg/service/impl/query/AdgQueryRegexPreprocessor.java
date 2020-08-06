@@ -72,9 +72,9 @@ public class AdgQueryRegexPreprocessor {
     for (PatternModifierPair patternModifierPair : patternModifierPairs) {
       final Matcher matcher = patternModifierPair.regexPattern.matcher(result.getModifiedSql());
       if (matcher.matches()) {
-        LOGGER.debug("Сработал regex: {}", patternModifierPair.regexPattern);
+        LOGGER.debug("Regex worked: {}", patternModifierPair.regexPattern);
         patternModifierPair.sqlModifier.modify(matcher, result);
-        LOGGER.debug("Изменённый SQL: {}", result.getModifiedSql());
+        LOGGER.debug("Changed SQL: {}", result.getModifiedSql());
       }
     }
   }

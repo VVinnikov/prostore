@@ -12,7 +12,6 @@ import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.kafka.core.service.kafka.KafkaTopicService;
-import ru.ibs.dtm.query.execution.plugin.adg.service.AvroSchemaGenerator;
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryExecutorService;
 import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeProvider;
 import ru.ibs.dtm.query.execution.plugin.adg.service.impl.ddl.AdgDdlService;
@@ -32,7 +31,6 @@ public class AdgDdlServiceImpl {
     private TtCartridgeProvider cartridgeProvider = mock(TtCartridgeProvider.class);
     private KafkaTopicService kafkaTopicService = mock(KafkaTopicService.class);
     private KafkaConfig kafkaProperties = mock(KafkaConfig.class);
-    private AvroSchemaGenerator schemaGenerator = mock(AvroSchemaGenerator.class);
     private final QueryExecutorService executorService = mock(QueryExecutorService.class);
 
     private AdgDdlService adgDdlService = new AdgDdlService();

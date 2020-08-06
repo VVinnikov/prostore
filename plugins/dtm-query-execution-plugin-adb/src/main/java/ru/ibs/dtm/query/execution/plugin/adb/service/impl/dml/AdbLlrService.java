@@ -6,6 +6,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.reader.QueryResult;
@@ -42,20 +43,21 @@ public class AdbLlrService implements LlrService<QueryResult> {
 		adbQueryEnrichmentService.enrich(enrichQueryRequest, sqlResult -> {
 			if (sqlResult.succeeded()) {
 				adbDatabaseExecutor.execute(sqlResult.result(), executeResult -> {
-
 					if (executeResult.succeeded()) {
 						JsonArray rowList = new JsonArray();
 						try {
 							executeResult.result().forEach(row -> {
 								JsonObject jsonRow = new JsonObject();
-								row.forEach((key, rowelement) -> {
+								row.forEach(e ->{
+									val key = e.getKey();
+									val rowElement = e.getValue();
 									Object obj;
-									if (rowelement instanceof LocalDateTime) {
-										obj = ((LocalDateTime) rowelement).format(DateTimeFormatter.ofPattern(DATETIME_FORMAT_PATTERN));
-									} else if (rowelement instanceof LocalDate) {
-										obj = ((LocalDate) rowelement).format(DateTimeFormatter.ofPattern(DATE_FORMAT_PATTERN));
+									if (rowElement instanceof LocalDateTime) {
+										obj = ((LocalDateTime) rowElement).format(DateTimeFormatter.ofPattern(DATETIME_FORMAT_PATTERN));
+									} else if (rowElement instanceof LocalDate) {
+										obj = ((LocalDate) rowElement).format(DateTimeFormatter.ofPattern(DATE_FORMAT_PATTERN));
 									} else {
-										obj = rowelement;
+										obj = rowElement;
 									}
 									jsonRow.put(key, obj);
 								});
@@ -74,7 +76,7 @@ public class AdbLlrService implements LlrService<QueryResult> {
 					}
 				});
 			} else {
-				log.error("Ошибка при обогащении запроса");
+				log.error("Error while enriching request");
 				asyncHandler.handle(Future.failedFuture(sqlResult.cause()));
 			}
 		});

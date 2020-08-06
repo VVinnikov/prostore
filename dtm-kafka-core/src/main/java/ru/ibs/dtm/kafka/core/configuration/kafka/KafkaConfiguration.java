@@ -2,8 +2,8 @@ package ru.ibs.dtm.kafka.core.configuration.kafka;
 
 
 import io.vertx.core.Vertx;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.kafka.admin.KafkaAdminClient;
+import io.vertx.kafka.client.producer.KafkaProducer;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -52,5 +52,11 @@ public class KafkaConfiguration {
                                                      @Qualifier("kafkaVertx") Vertx vertx,
                                                      KafkaProperties kafkaProperties) {
         return new KafkaConsumerMonitorImpl(adminClient, consumerFactory, vertx, kafkaProperties);
+    }
+
+    @Bean("jsonCoreKafkaProducer")
+    public KafkaProducer<String, String> jsonCoreKafkaProducer(@Qualifier("coreKafkaProducerFactory") KafkaProducerFactory<String, String> producerFactory,
+                                                               @Qualifier("coreKafkaProperties") KafkaProperties kafkaProperties) {
+        return producerFactory.create(kafkaProperties.getProducer().getProperty());
     }
 }

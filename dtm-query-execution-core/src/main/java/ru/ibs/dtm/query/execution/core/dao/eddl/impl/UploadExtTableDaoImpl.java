@@ -58,7 +58,7 @@ public class UploadExtTableDaoImpl implements UploadExtTableDao {
                 final QueryResult result = ar.result();
                 final boolean found = result.hasResults();
                 if (!found) {
-                    log.error("Search external table {}. {}, Result: not found", schemaName, tableName);
+                    log.error("Search external table {}.{}, Result: not found", schemaName, tableName);
                     resultHandler.handle(
                             Future.failedFuture(String.format("External table %s.%s not found", schemaName, tableName)));
                     return;
@@ -66,7 +66,7 @@ public class UploadExtTableDaoImpl implements UploadExtTableDao {
                 UploadExtTableRecord record = createUploadExternalTableRecord(result);
                 resultHandler.handle(Future.succeededFuture(record));
             } else {
-                log.error("Search external table {}. {}, Error {}", schemaName, tableName, ar.cause().getMessage());
+                log.error("Search external table {}.{}, Error {}", schemaName, tableName, ar.cause().getMessage());
                 resultHandler.handle(Future.failedFuture(ar.cause()));
             }
         });

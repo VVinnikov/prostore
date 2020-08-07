@@ -15,6 +15,8 @@ Default profile actually similar to the dev profile.
 
 We can specify profile via environment variable SPRING_PROFILES_ACTIVE or via specifing argument to java -Dspring.profiles.active=
 
+For MPPW support you also need to confugure & run [dtm-vendor-emulator](https://github.com/arenadata/dtm-vendor-emulator) & [dtm-adb-emulator-writer](https://github.com/arenadata/dtm-adb-emulator-writer).
+
 ### Build application
 
 #### Start required services

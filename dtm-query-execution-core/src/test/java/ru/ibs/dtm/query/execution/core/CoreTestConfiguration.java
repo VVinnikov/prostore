@@ -18,6 +18,7 @@ import ru.ibs.dtm.query.execution.core.utils.BeanNameGenerator;
         "ru.ibs.dtm.query.execution.core.utils",
         "ru.ibs.dtm.query.execution.core.service",
         "ru.ibs.dtm.query.execution.core.dao",
+        "ru.ibs.dtm.query.execution.core.registry",
         "ru.ibs.dtm.query.execution.core.factory",
         "ru.ibs.dtm.query.execution.core.configuration",
         "ru.ibs.dtm.kafka.core.configuration"}, nameGenerator = BeanNameGenerator.class)

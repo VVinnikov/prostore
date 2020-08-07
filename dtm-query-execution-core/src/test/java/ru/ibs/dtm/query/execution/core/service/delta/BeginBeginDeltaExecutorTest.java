@@ -1,9 +1,6 @@
 package ru.ibs.dtm.query.execution.core.service.delta;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
+import io.vertx.core.*;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,7 +58,7 @@ class BeginBeginDeltaExecutorTest {
     @Test
     void executeDeltaWithInProgressStatus() {
         req.setSql("BEGIN DELTA");
-        beginDeltaExecutor = new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory);
+        beginDeltaExecutor = new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
         Promise promise = Promise.promise();
 
         BeginDeltaQuery deltaQuery = new BeginDeltaQuery();
@@ -96,7 +93,7 @@ class BeginBeginDeltaExecutorTest {
     @Test
     void executeDeltaWithErrorStatus() {
         req.setSql("BEGIN DELTA");
-        beginDeltaExecutor = new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory);
+        beginDeltaExecutor = new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
         Promise promise = Promise.promise();
 
         QueryDeltaResult res = new QueryDeltaResult(LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME), 1L);
@@ -142,7 +139,7 @@ class BeginBeginDeltaExecutorTest {
     @Test
     void executeDeltaWithSuccessStatus() {
         req.setSql("BEGIN DELTA");
-        beginDeltaExecutor = new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory);
+        beginDeltaExecutor = new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
         Promise promise = Promise.promise();
 
         QueryDeltaResult res = new QueryDeltaResult(LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME), 2L);
@@ -189,7 +186,7 @@ class BeginBeginDeltaExecutorTest {
     @Test
     void executeDeltaWithNumSuccessStatus() {
         req.setSql("BEGIN DELTA 2");
-        beginDeltaExecutor = new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory);
+        beginDeltaExecutor = new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
         Promise promise = Promise.promise();
 
         BeginDeltaQuery deltaQuery = new BeginDeltaQuery();
@@ -226,7 +223,7 @@ class BeginBeginDeltaExecutorTest {
     @Test
     void executeDeltaNotFound() {
         req.setSql("BEGIN DELTA 1");
-        beginDeltaExecutor = new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory);
+        beginDeltaExecutor = new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
         Promise promise = Promise.promise();
 
         QueryDeltaResult res = new QueryDeltaResult(LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME), 0L);

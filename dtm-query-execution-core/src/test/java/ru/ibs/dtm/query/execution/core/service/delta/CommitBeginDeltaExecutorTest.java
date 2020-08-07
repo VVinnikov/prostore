@@ -1,9 +1,6 @@
 package ru.ibs.dtm.query.execution.core.service.delta;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
+import io.vertx.core.*;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,7 +54,7 @@ class CommitBeginDeltaExecutorTest {
     @Test
     void executeDeltaWithInProgressStatus() {
         req.setSql("COMMIT DELTA '2020-06-11T14:00:11'");
-        commitDeltaExecutor = new CommitDeltaExecutor(serviceDbFacade, deltaQueryResultFactory);
+        commitDeltaExecutor = new CommitDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
         Promise promise = Promise.promise();
         String deltaDate = "2020-06-12T18:00:01";
 
@@ -89,7 +86,7 @@ class CommitBeginDeltaExecutorTest {
     @Test
     void executeDeltaWithDateTimeBeforeThanDeltaOk() {
         req.setSql("COMMIT DELTA '2020-06-10T14:00:11'");
-        commitDeltaExecutor = new CommitDeltaExecutor(serviceDbFacade, deltaQueryResultFactory);
+        commitDeltaExecutor = new CommitDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
         Promise promise = Promise.promise();
         String deltaDate = "2020-06-15T18:00:01";
         String deltaInputDate = "2020-06-10T14:00:11";
@@ -131,7 +128,7 @@ class CommitBeginDeltaExecutorTest {
     @Test
     void executeDeltaWithDateTimeAfterDeltaOk() {
         req.setSql("COMMIT DELTA '2020-06-15T14:00:11'");
-        commitDeltaExecutor = new CommitDeltaExecutor(serviceDbFacade, deltaQueryResultFactory);
+        commitDeltaExecutor = new CommitDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
         Promise promise = Promise.promise();
         String deltaInputDate = "2020-06-15T14:00:11";
         String deltaDate = "2020-06-10T18:00:01";

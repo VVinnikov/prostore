@@ -131,8 +131,7 @@ public class DtmPreparedStatement extends DtmStatement implements PreparedStatem
 
     @Override
     public boolean execute() throws SQLException {
-        super.executeUpdate(sql);
-        return true;
+        return execute(sql);
     }
 
     @Override

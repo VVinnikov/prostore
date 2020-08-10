@@ -1,12 +1,13 @@
 package ru.ibs.dtm.jdbc.ext;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.sql.*;
 import java.util.Calendar;
-import lombok.extern.slf4j.Slf4j;
 
 // TODO Реализовать методы по мере необходимости
 @Slf4j
@@ -130,6 +131,7 @@ public class DtmPreparedStatement extends DtmStatement implements PreparedStatem
 
     @Override
     public boolean execute() throws SQLException {
+        super.executeUpdate(sql);
         return true;
     }
 

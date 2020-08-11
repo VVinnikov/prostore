@@ -28,6 +28,17 @@
         </dependency>
         <dependency>
             <groupId>ru.ibs.dtm</groupId>
+            <artifactId>dtm-kafka-core</artifactId>
+            <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>ru.ibs</groupId>
+                    <artifactId>dtm-common</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>ru.ibs.dtm</groupId>
             <artifactId>dtm-query-execution-plugin-api</artifactId>
             <version>${dtm.plugin.api.version}</version>
             <exclusions>

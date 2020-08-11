@@ -5,7 +5,7 @@ services:
     build:
       context: ..
       args:
-        - DTM_JAR=./target/dtm-query-execution-core-2.3.0-SNAPSHOT.jar
+        - DTM_JAR=./target/dtm-query-execution-core-2.4.0-SNAPSHOT.jar
     container_name: dtm-query-execution-core
     restart: always
     ports:

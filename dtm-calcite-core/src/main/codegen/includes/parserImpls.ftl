@@ -325,6 +325,19 @@ SqlCreate SqlCreateView(Span s, boolean replace) :
             query);
     }
 }
+SqlAlter SqlAlterView(Span s) :
+{
+    final SqlIdentifier id;
+    SqlNodeList columnList = null;
+    final SqlNode query;
+}
+{
+    <VIEW> id = CompoundIdentifier()
+    [ columnList = ParenthesizedSimpleIdentifierList() ]
+    <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) {
+        return new ru.ibs.dtm.query.calcite.core.extension.ddl.SqlAlterView(s.end(this), id, columnList, query);
+}
+}
 SqlCreate SqlCreateMaterializedView(Span s, boolean replace) :
 {
     final boolean ifNotExists;

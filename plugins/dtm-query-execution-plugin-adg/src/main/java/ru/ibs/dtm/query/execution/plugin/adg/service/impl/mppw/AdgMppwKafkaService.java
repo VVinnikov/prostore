@@ -4,8 +4,11 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import io.vertx.core.json.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.stereotype.Service;
@@ -13,6 +16,8 @@ import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.plugin.adg.configuration.AdgMppwKafkaProperties;
 import ru.ibs.dtm.query.execution.plugin.adg.dto.mppw.AdgMppwKafkaContext;
 import ru.ibs.dtm.query.execution.plugin.adg.factory.AdgMppwKafkaContextFactory;
+import ru.ibs.dtm.query.execution.plugin.adg.model.callback.function.TtTransferDataScdCallbackFunction;
+import ru.ibs.dtm.query.execution.plugin.adg.model.callback.params.TtTransferDataScdCallbackParameter;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtLoadDataKafkaRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtSubscriptionKafkaRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtTransferDataEtlRequest;
@@ -63,10 +68,27 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
                 handler.handle(Future.failedFuture(msg));
             }
         } else {
+            val callbackFunctionParameter = new TtTransferDataScdCallbackParameter(
+                    ctx.getTopicName(),
+                    ctx.getHelperTableNames().getStaging(),
+                    ctx.getHelperTableNames().getActual(),
+                    ctx.getHelperTableNames().getHistory(),
+                    ctx.getHotDelta()
+            );
+            val callbackFunction = new TtTransferDataScdCallbackFunction(
+                    properties.getCallbackFunctionName(),
+                    callbackFunctionParameter,
+                    properties.getMaxNumberOfMessagesPerPartition(),
+                    properties.getCallbackFunctionSecIdle()
+            );
+
+
             val request = new TtSubscriptionKafkaRequest(
                     properties.getMaxNumberOfMessagesPerPartition(),
                     null,
-                    ctx.getTopicName()
+                    ctx.getTopicName(),
+                    Collections.singletonList(ctx.getHelperTableNames().getStaging()),
+                    callbackFunction
             );
             cartridgeClient.subscribe(request, ar -> {
                 if (ar.succeeded()) {

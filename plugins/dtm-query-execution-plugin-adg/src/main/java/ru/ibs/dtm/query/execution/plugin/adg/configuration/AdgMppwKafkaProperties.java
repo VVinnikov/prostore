@@ -9,4 +9,7 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "adg.mppw.kafka")
 public class AdgMppwKafkaProperties {
     private long maxNumberOfMessagesPerPartition = 200;
+    private String callbackFunctionName = "transfer_data_to_scd_table_on_cluster_cb";
+    private long callbackFunctionSecIdle = 100;
+
 }

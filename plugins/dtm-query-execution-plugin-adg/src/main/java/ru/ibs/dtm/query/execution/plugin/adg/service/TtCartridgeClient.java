@@ -6,6 +6,7 @@ import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.OperationFile;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtLoadDataKafkaRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtSubscriptionKafkaRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtTransferDataEtlRequest;
+import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtUploadDataKafkaRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response.ResOperation;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response.ResStatus;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response.TtLoadDataKafkaResponse;
@@ -24,7 +25,7 @@ public interface TtCartridgeClient {
 
   void setSchema(String yaml, Handler<AsyncResult<ResOperation>> handler);
 
-  void uploadData(String sql, String topicName, int batchSize, Handler<AsyncResult<ResStatus>> handler);
+  void uploadData(TtUploadDataKafkaRequest request, Handler<AsyncResult<Void>> handler);
 
   void subscribe(TtSubscriptionKafkaRequest request, Handler<AsyncResult<Void>> handler);
 

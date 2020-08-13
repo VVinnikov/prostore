@@ -14,4 +14,5 @@ public class EdmlProperties {
   private Integer defaultChunkSize;
   private Integer defaultMessageLimit;
   private Integer pluginStatusCheckPeriodMs;
+  private Integer pluginStatusTimeoutMs;
 }

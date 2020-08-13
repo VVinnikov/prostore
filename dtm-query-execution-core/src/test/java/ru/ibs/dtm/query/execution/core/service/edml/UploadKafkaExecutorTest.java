@@ -7,6 +7,7 @@ import io.vertx.ext.unit.TestOptions;
 import io.vertx.ext.unit.TestSuite;
 import io.vertx.ext.unit.report.ReportOptions;
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -44,8 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class UploadKafkaExecutorTest {
 
@@ -84,17 +84,7 @@ class UploadKafkaExecutorTest {
             kafkaAdminProperty.setInputStreamTimeoutMs(10000);
             LocalDateTime adbLastCommitTime = LocalDateTime.parse("2099-06-28T17:14:00");
             LocalDateTime adgLastCommitTime = LocalDateTime.parse("2099-06-28T17:14:01");
-            final QueryLoadParam queryLoadParam = new QueryLoadParam();
-            queryLoadParam.setId(UUID.randomUUID());
-            queryLoadParam.setDatamart("test");
-            queryLoadParam.setDeltaHot(1L);
-            queryLoadParam.setFormat(Format.AVRO);
-            queryLoadParam.setLocationType(Type.KAFKA_TOPIC);
-            queryLoadParam.setMessageLimit(1000);
-            queryLoadParam.setLocationPath("kafka://kafka-1.dtm.local:9092/topic");
-            queryLoadParam.setSqlQuery(queryRequest.getSql());
-            queryLoadParam.setKafkaStreamTimeoutMs(10000);
-            queryLoadParam.setPluginStatusCheckPeriodMs(1000);
+            final QueryLoadParam queryLoadParam = createQueryLoadParam();
 
             LocationUriParser.KafkaTopicUri kafkaTopicUri = LocationUriParser.parseKafkaLocationPath(queryLoadParam.getLocationPath());
             DatamartRequest request = new DatamartRequest(queryRequest);
@@ -124,23 +114,9 @@ class UploadKafkaExecutorTest {
             final StatusQueryResult adbStatusResult = new StatusQueryResult();
             final StatusQueryResult adgStatusResult = new StatusQueryResult();
 
-            KafkaPartitionInfo adbKafkaInfo = new KafkaPartitionInfo();
-            adbKafkaInfo.setTopic("topic");
-            adbKafkaInfo.setStart(0L);
-            adbKafkaInfo.setEnd(0L);
-            adbKafkaInfo.setLag(0L);
-            adbKafkaInfo.setOffset(0L);
-            adbKafkaInfo.setLastCommitTime(adbLastCommitTime);
-            adbKafkaInfo.setPartition(1);
+            KafkaPartitionInfo adbKafkaInfo = createKafkaPartitionInfo(adbLastCommitTime, 0L);
 
-            KafkaPartitionInfo adgKafkaInfo = new KafkaPartitionInfo();
-            adgKafkaInfo.setTopic("topic");
-            adgKafkaInfo.setStart(0L);
-            adgKafkaInfo.setEnd(0L);
-            adgKafkaInfo.setLag(0L);
-            adgKafkaInfo.setOffset(0L);
-            adgKafkaInfo.setLastCommitTime(adgLastCommitTime);
-            adgKafkaInfo.setPartition(1);
+            KafkaPartitionInfo adgKafkaInfo = createKafkaPartitionInfo(adgLastCommitTime, 0L);
 
             adbStatusResult.setPartitionInfo(adbKafkaInfo);
             adgStatusResult.setPartitionInfo(adgKafkaInfo);
@@ -214,17 +190,7 @@ class UploadKafkaExecutorTest {
             kafkaAdminProperty.setInputStreamTimeoutMs(10000);
             LocalDateTime adbLastCommitTime = LocalDateTime.parse("2099-06-28T17:14:00");
             LocalDateTime adgLastCommitTime = LocalDateTime.parse("2099-06-28T17:14:01");
-            final QueryLoadParam queryLoadParam = new QueryLoadParam();
-            queryLoadParam.setId(UUID.randomUUID());
-            queryLoadParam.setDatamart("test");
-            queryLoadParam.setDeltaHot(1L);
-            queryLoadParam.setFormat(Format.AVRO);
-            queryLoadParam.setLocationType(Type.KAFKA_TOPIC);
-            queryLoadParam.setMessageLimit(1000);
-            queryLoadParam.setLocationPath("kafka://kafka-1.dtm.local:9092/topic");
-            queryLoadParam.setSqlQuery(queryRequest.getSql());
-            queryLoadParam.setKafkaStreamTimeoutMs(10000);
-            queryLoadParam.setPluginStatusCheckPeriodMs(1000);
+            final QueryLoadParam queryLoadParam = createQueryLoadParam();
 
             LocationUriParser.KafkaTopicUri kafkaTopicUri = LocationUriParser.parseKafkaLocationPath(queryLoadParam.getLocationPath());
             DatamartRequest request = new DatamartRequest(queryRequest);
@@ -252,23 +218,9 @@ class UploadKafkaExecutorTest {
             final StatusQueryResult adbStatusResult = new StatusQueryResult();
             final StatusQueryResult adgStatusResult = new StatusQueryResult();
 
-            KafkaPartitionInfo adbKafkaInfo = new KafkaPartitionInfo();
-            adbKafkaInfo.setTopic("topic");
-            adbKafkaInfo.setStart(0L);
-            adbKafkaInfo.setEnd(0L);
-            adbKafkaInfo.setLag(0L);
-            adbKafkaInfo.setOffset(0L);
-            adbKafkaInfo.setLastCommitTime(adbLastCommitTime);
-            adbKafkaInfo.setPartition(1);
+            KafkaPartitionInfo adbKafkaInfo = createKafkaPartitionInfo(adbLastCommitTime, 0L);
 
-            KafkaPartitionInfo adgKafkaInfo = new KafkaPartitionInfo();
-            adgKafkaInfo.setTopic("topic");
-            adgKafkaInfo.setStart(0L);
-            adgKafkaInfo.setEnd(0L);
-            adgKafkaInfo.setLag(0L);
-            adgKafkaInfo.setOffset(0L);
-            adgKafkaInfo.setLastCommitTime(adgLastCommitTime);
-            adgKafkaInfo.setPartition(1);
+            KafkaPartitionInfo adgKafkaInfo = createKafkaPartitionInfo(adgLastCommitTime, 0L);
 
             adbStatusResult.setPartitionInfo(adbKafkaInfo);
             adgStatusResult.setPartitionInfo(adgKafkaInfo);
@@ -338,17 +290,7 @@ class UploadKafkaExecutorTest {
             kafkaAdminProperty.setInputStreamTimeoutMs(10000);
             LocalDateTime adbLastCommitTime = LocalDateTime.parse("2099-06-28T17:14:00");
             LocalDateTime adgLastCommitTime = LocalDateTime.parse("2099-06-28T17:14:01");
-            final QueryLoadParam queryLoadParam = new QueryLoadParam();
-            queryLoadParam.setId(UUID.randomUUID());
-            queryLoadParam.setDatamart("test");
-            queryLoadParam.setDeltaHot(1L);
-            queryLoadParam.setFormat(Format.AVRO);
-            queryLoadParam.setLocationType(Type.KAFKA_TOPIC);
-            queryLoadParam.setMessageLimit(1000);
-            queryLoadParam.setLocationPath("kafka://kafka-1.dtm.local:9092/topic");
-            queryLoadParam.setSqlQuery(queryRequest.getSql());
-            queryLoadParam.setKafkaStreamTimeoutMs(10000);
-            queryLoadParam.setPluginStatusCheckPeriodMs(1000);
+            final QueryLoadParam queryLoadParam = createQueryLoadParam();
 
             LocationUriParser.KafkaTopicUri kafkaTopicUri = LocationUriParser.parseKafkaLocationPath(queryLoadParam.getLocationPath());
             DatamartRequest request = new DatamartRequest(queryRequest);
@@ -376,23 +318,9 @@ class UploadKafkaExecutorTest {
             final StatusQueryResult adbStatusResult = new StatusQueryResult();
             final StatusQueryResult adgStatusResult = new StatusQueryResult();
 
-            KafkaPartitionInfo adbKafkaInfo = new KafkaPartitionInfo();
-            adbKafkaInfo.setTopic("topic");
-            adbKafkaInfo.setStart(0L);
-            adbKafkaInfo.setEnd(0L);
-            adbKafkaInfo.setLag(0L);
-            adbKafkaInfo.setOffset(0L);
-            adbKafkaInfo.setLastCommitTime(adbLastCommitTime);
-            adbKafkaInfo.setPartition(1);
+            KafkaPartitionInfo adbKafkaInfo = createKafkaPartitionInfo(adbLastCommitTime, 0L);
 
-            KafkaPartitionInfo adgKafkaInfo = new KafkaPartitionInfo();
-            adgKafkaInfo.setTopic("topic");
-            adgKafkaInfo.setStart(0L);
-            adgKafkaInfo.setEnd(100L);
-            adgKafkaInfo.setLag(0L);
-            adgKafkaInfo.setOffset(100L);
-            adgKafkaInfo.setLastCommitTime(adgLastCommitTime);
-            adgKafkaInfo.setPartition(1);
+            KafkaPartitionInfo adgKafkaInfo = createKafkaPartitionInfo(adgLastCommitTime, 100L);
 
             adbStatusResult.setPartitionInfo(adbKafkaInfo);
             adgStatusResult.setPartitionInfo(adgKafkaInfo);
@@ -447,7 +375,7 @@ class UploadKafkaExecutorTest {
             queryResult = (QueryResult) promise.future().result();
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
-        assertEquals(resultException.getMessage(), "Изменился offset одного из плагинов!");
+        assertEquals(resultException.getMessage(), "The offset of one of the plugins has changed!");
     }
 
     @Test
@@ -462,17 +390,7 @@ class UploadKafkaExecutorTest {
             kafkaAdminProperty.setInputStreamTimeoutMs(10000);
             LocalDateTime adbLastCommitTime = LocalDateTime.parse("2099-06-28T17:14:00");
             LocalDateTime adgLastCommitTime = LocalDateTime.parse("2099-06-28T17:14:01");
-            final QueryLoadParam queryLoadParam = new QueryLoadParam();
-            queryLoadParam.setId(UUID.randomUUID());
-            queryLoadParam.setDatamart("test");
-            queryLoadParam.setDeltaHot(1L);
-            queryLoadParam.setFormat(Format.AVRO);
-            queryLoadParam.setLocationType(Type.KAFKA_TOPIC);
-            queryLoadParam.setMessageLimit(1000);
-            queryLoadParam.setLocationPath("kafka://kafka-1.dtm.local:9092/topic");
-            queryLoadParam.setSqlQuery(queryRequest.getSql());
-            queryLoadParam.setKafkaStreamTimeoutMs(10000);
-            queryLoadParam.setPluginStatusCheckPeriodMs(1000);
+            final QueryLoadParam queryLoadParam = createQueryLoadParam();
 
             LocationUriParser.KafkaTopicUri kafkaTopicUri = LocationUriParser.parseKafkaLocationPath(queryLoadParam.getLocationPath());
             DatamartRequest request = new DatamartRequest(queryRequest);
@@ -500,23 +418,9 @@ class UploadKafkaExecutorTest {
             final StatusQueryResult adbStatusResult = new StatusQueryResult();
             final StatusQueryResult adgStatusResult = new StatusQueryResult();
 
-            KafkaPartitionInfo adbKafkaInfo = new KafkaPartitionInfo();
-            adbKafkaInfo.setTopic("topic");
-            adbKafkaInfo.setStart(0L);
-            adbKafkaInfo.setEnd(0L);
-            adbKafkaInfo.setLag(0L);
-            adbKafkaInfo.setOffset(0L);
-            adbKafkaInfo.setLastCommitTime(adbLastCommitTime);
-            adbKafkaInfo.setPartition(1);
+            KafkaPartitionInfo adbKafkaInfo = createKafkaPartitionInfo(adbLastCommitTime, 0L);
 
-            KafkaPartitionInfo adgKafkaInfo = new KafkaPartitionInfo();
-            adgKafkaInfo.setTopic("topic");
-            adgKafkaInfo.setStart(0L);
-            adgKafkaInfo.setEnd(100L);
-            adgKafkaInfo.setLag(0L);
-            adgKafkaInfo.setOffset(100L);
-            adgKafkaInfo.setLastCommitTime(adgLastCommitTime);
-            adgKafkaInfo.setPartition(1);
+            KafkaPartitionInfo adgKafkaInfo = createKafkaPartitionInfo(adgLastCommitTime, 100L);
 
             adbStatusResult.setPartitionInfo(adbKafkaInfo);
             adgStatusResult.setPartitionInfo(adgKafkaInfo);
@@ -572,5 +476,144 @@ class UploadKafkaExecutorTest {
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
         assertEquals(resultException, exception);
+    }
+
+    @Test
+    public void executeMppwWithStatusTimeout() {
+        TestSuite suite = TestSuite.create("mppwLoadTest");
+        suite.test("executeMppwAllSuccess", context -> {
+            Async async = context.async();
+            JsonObject schema = new JsonObject();
+            Promise promise = Promise.promise();
+            KafkaAdminProperty kafkaAdminProperty = new KafkaAdminProperty();
+            kafkaAdminProperty.setInputStreamTimeoutMs(10000);
+            LocalDateTime adbLastCommitTime = LocalDateTime.parse("1970-01-01T00:00:00");
+            LocalDateTime adgLastCommitTime = LocalDateTime.parse("2099-06-28T17:14:01");
+            final QueryLoadParam queryLoadParam = createQueryLoadParam();
+
+            LocationUriParser.KafkaTopicUri kafkaTopicUri = LocationUriParser.parseKafkaLocationPath(queryLoadParam.getLocationPath());
+            DatamartRequest request = new DatamartRequest(queryRequest);
+            EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
+            edmlRequestContext.setTargetTable(new TableInfo("test", "pso"));
+            edmlRequestContext.setSourceTable(new TableInfo("test", "upload_table"));
+
+            final MppwRequest adbRequest = new MppwRequest(queryRequest, queryLoadParam, schema);
+            adbRequest.setTopic(kafkaTopicUri.getTopic());
+            adbRequest.setZookeeperHost(kafkaTopicUri.getHost());
+            adbRequest.setZookeeperPort(kafkaTopicUri.getPort());
+            adbRequest.setLoadStart(true);
+
+            final MppwRequest adgRequest = new MppwRequest(queryRequest, queryLoadParam, schema);
+            adgRequest.setTopic(kafkaTopicUri.getTopic());
+            adgRequest.setZookeeperHost(kafkaTopicUri.getHost());
+            adgRequest.setZookeeperPort(kafkaTopicUri.getPort());
+            adbRequest.setLoadStart(true);
+            final Queue<MppwRequestContext> mppwContextQueue = new BlockingArrayQueue<>();
+            final MppwRequestContext mppwAdbContext = new MppwRequestContext(adbRequest);
+            final MppwRequestContext mppwAdgContext = new MppwRequestContext(adgRequest);
+            mppwContextQueue.add(mppwAdbContext);
+            mppwContextQueue.add(mppwAdgContext);
+            final StatusRequestContext adbStatusContext = new StatusRequestContext(new StatusRequest(mppwAdbContext.getRequest().getQueryRequest()));
+            final StatusRequestContext adgStatusContext = new StatusRequestContext(new StatusRequest(mppwAdgContext.getRequest().getQueryRequest()));
+
+            final StatusQueryResult adbStatusResult = new StatusQueryResult();
+            final StatusQueryResult adgStatusResult = new StatusQueryResult();
+
+            KafkaPartitionInfo adbKafkaInfo = createKafkaPartitionInfo(adbLastCommitTime, 0L);
+
+            KafkaPartitionInfo adgKafkaInfo = createKafkaPartitionInfo(adgLastCommitTime, 0L);
+
+            adbStatusResult.setPartitionInfo(adbKafkaInfo);
+            adgStatusResult.setPartitionInfo(adgKafkaInfo);
+
+            when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
+            when(mppwKafkaRequestFactory.create(edmlRequestContext)).thenAnswer(
+                    new Answer<MppwRequestContext>() {
+                        @Override
+                        public MppwRequestContext answer(InvocationOnMock invocation) {
+                            return mppwContextQueue.poll();
+                        }
+                    });
+            Mockito.doAnswer(invocation -> {
+                final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(2);
+                handler.handle(Future.succeededFuture());
+                return null;
+            }).when(pluginService).mppwKafka(eq(SourceType.ADB), eq(mppwAdbContext), any());
+            Mockito.doAnswer(invocation -> {
+                final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(2);
+                handler.handle(Future.succeededFuture());
+                return null;
+            }).when(pluginService).mppwKafka(eq(SourceType.ADG), eq(mppwAdgContext), any());
+            when(edmlProperties.getPluginStatusCheckPeriodMs()).thenReturn(queryLoadParam.getPluginStatusCheckPeriodMs());
+            when(edmlProperties.getPluginStatusTimeoutMs()).thenReturn(2000);
+            when(kafkaProperties.getAdmin()).thenReturn(kafkaAdminProperty);
+
+            Mockito.doAnswer(invocation -> {
+                final Handler<AsyncResult<StatusQueryResult>> handler = invocation.getArgument(2);
+                final SourceType ds = invocation.getArgument(0);
+                if (ds.equals(SourceType.ADB)) {
+                    handler.handle(Future.succeededFuture(adbStatusResult));
+                } else if (ds.equals(SourceType.ADG)) {
+                    handler.handle(Future.succeededFuture(adgStatusResult));
+                }
+                return null;
+            }).when(pluginService).status(any(), any(), any());
+
+            Mockito.doAnswer(invocation -> {
+                final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(2);
+                final SourceType ds = invocation.getArgument(0);
+                if (ds.equals(SourceType.ADB)) {
+                    handler.handle(Future.succeededFuture(new QueryResult()));
+                } else if (ds.equals(SourceType.ADG)) {
+                    handler.handle(Future.succeededFuture(new QueryResult()));
+                }
+                return null;
+            }).when(pluginService).mppwKafka(any(), any(), any());
+
+            uploadKafkaExecutor.execute(edmlRequestContext, ar -> {
+                if (ar.succeeded()) {
+                    promise.complete(ar.result());
+                    async.complete();
+                } else {
+                    resultException = (RuntimeException) ar.cause();
+                    promise.fail(ar.cause());
+                    async.complete();
+                }
+            });
+            async.awaitSuccess();
+        });
+        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+        // one interaction for ADG and two for ADB (until timeout)
+        Mockito.verify(pluginService, times(3)).status(any(), any(), any());
+        assertNotNull(resultException);
+    }
+
+    @NotNull
+    private QueryLoadParam createQueryLoadParam() {
+        final QueryLoadParam queryLoadParam = new QueryLoadParam();
+        queryLoadParam.setId(UUID.randomUUID());
+        queryLoadParam.setDatamart("test");
+        queryLoadParam.setDeltaHot(1L);
+        queryLoadParam.setFormat(Format.AVRO);
+        queryLoadParam.setLocationType(Type.KAFKA_TOPIC);
+        queryLoadParam.setMessageLimit(1000);
+        queryLoadParam.setLocationPath("kafka://kafka-1.dtm.local:9092/topic");
+        queryLoadParam.setSqlQuery(queryRequest.getSql());
+        queryLoadParam.setKafkaStreamTimeoutMs(10000);
+        queryLoadParam.setPluginStatusCheckPeriodMs(1000);
+        return queryLoadParam;
+    }
+
+    @NotNull
+    private KafkaPartitionInfo createKafkaPartitionInfo(LocalDateTime lastCommitTime, long endOffset) {
+        KafkaPartitionInfo adbKafkaInfo = new KafkaPartitionInfo();
+        adbKafkaInfo.setTopic("topic");
+        adbKafkaInfo.setStart(0L);
+        adbKafkaInfo.setEnd(endOffset);
+        adbKafkaInfo.setLag(0L);
+        adbKafkaInfo.setOffset(endOffset);
+        adbKafkaInfo.setLastCommitTime(lastCommitTime);
+        adbKafkaInfo.setPartition(1);
+        return adbKafkaInfo;
     }
 }

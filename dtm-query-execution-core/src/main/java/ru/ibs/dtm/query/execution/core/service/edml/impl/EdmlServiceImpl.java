@@ -5,13 +5,12 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.sql.SqlIdentifier;
-import org.apache.calcite.sql.SqlSelect;
+import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.dto.TableInfo;
 import ru.ibs.dtm.common.reader.QueryResult;
-import ru.ibs.dtm.query.calcite.core.extension.eddl.SqlNodeUtils;
+import ru.ibs.dtm.query.calcite.core.node.SqlSelectTree;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dto.edml.DownloadExtTableRecord;
 import ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction;
@@ -82,12 +81,14 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
     }
 
     private void initSourceAndTargetTables(EdmlRequestContext context) {
-        TableInfo sourceTable = SqlNodeUtils.getTableInfo((SqlSelect) context.getSqlNode().getSource(),
-                context.getRequest().getQueryRequest().getDatamartMnemonic());
-        TableInfo targetTable = SqlNodeUtils.getTableInfo((SqlIdentifier) context.getSqlNode().getTargetTable(),
-                context.getRequest().getQueryRequest().getDatamartMnemonic());
-        context.setSourceTable(sourceTable);
-        context.setTargetTable(targetTable);
+        val tableAndSnapshots = new SqlSelectTree(context.getSqlNode()).findAllTableAndSnapshots();
+        val defDatamartMnemonic = context.getRequest().getQueryRequest().getDatamartMnemonic();
+        val tableInfos = tableAndSnapshots.stream()
+                .map(n -> new TableInfo(n.tryGetSchemaName().orElse(defDatamartMnemonic),
+                        n.tryGetTableName().orElseThrow(() -> new RuntimeException(""))))
+                .collect(Collectors.toList());
+        context.setTargetTable(tableInfos.get(0));
+        context.setSourceTable(tableInfos.get(1));
     }
 
     private Future<Void> checkUploadExtTargetTableExists(EdmlRequestContext context) {

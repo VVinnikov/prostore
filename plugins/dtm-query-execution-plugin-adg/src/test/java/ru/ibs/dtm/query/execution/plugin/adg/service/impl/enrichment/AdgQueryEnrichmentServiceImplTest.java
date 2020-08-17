@@ -90,6 +90,20 @@ public class AdgQueryEnrichmentServiceImplTest {
                         "\"local__shares__accounts_actual\" where \"sys_from\" <= 1"));
     }
 
+    @Test
+    void enrichWithMultipleSchemas() throws Throwable {
+        enrich(prepareRequestMultipleSchema("SELECT a.account_id FROM accounts a " +
+                        "JOIN shares_2.accounts aa ON aa.account_id = a.account_id " +
+                        "JOIN test_datamart.transactions t ON t.account_id = a.account_id"),
+                Arrays.asList(
+                        "\"local__shares__accounts_history\" WHERE \"sys_from\" <= 1 AND \"sys_to\" >= 1",
+                        "\"local__shares__accounts_actual\" where \"sys_from\" <= 1",
+                        "\"local__shares_2__accounts_history\" WHERE \"sys_from\" <= 2 AND \"sys_to\" >= 2",
+                        "\"local__shares_2__accounts_actual\" WHERE \"sys_from\" <= 2",
+                        "\"local__test_datamart__transactions_history\" WHERE \"sys_from\" <= 2 AND \"sys_to\" >= 2",
+                        "\"local__test_datamart__transactions_actual\" WHERE \"sys_from\" <= 2"));
+    }
+
     private void enrich(EnrichQueryRequest enrichRequest, List<String> expectedValues) throws Throwable {
         String[] sqlResult = {""};
 
@@ -100,18 +114,45 @@ public class AdgQueryEnrichmentServiceImplTest {
                 if (ar.succeeded()) {
                     sqlResult[0] = ar.result();
                     expectedValues.forEach(v -> assertGrep(sqlResult[0], v));
+                    async.complete();
                 } else {
                     sqlResult[0] = "-1";
                 }
-                async.complete();
             });
-            async.awaitSuccess(10000);
+            async.awaitSuccess();
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
     }
 
+    private EnrichQueryRequest prepareRequestMultipleSchema(String sql){
+        List<Datamart> datamarts = Arrays.asList(
+                getSchema("shares", true),
+                getSchema("shares_2", false),
+                getSchema("test_datamart", false));
+        String defaultSchema = datamarts.get(0).getMnemonic();
+        QueryRequest queryRequest = new QueryRequest();
+        queryRequest.setSql(sql);
+        queryRequest.setSystemName("local");
+        queryRequest.setRequestId(UUID.randomUUID());
+        queryRequest.setDatamartMnemonic(defaultSchema);
+        SqlParserPos pos = new SqlParserPos(0, 0);
+        queryRequest.setDeltaInformations(Arrays.asList(
+                new DeltaInformation("a", "2019-12-23 15:15:14", false,
+                        1L, null, DeltaType.NUM, defaultSchema,
+                        datamarts.get(0).getDatamartTables().get(0).getLabel(), pos),
+                new DeltaInformation("aa", "2019-12-23 15:15:14", false,
+                        2L, null, DeltaType.NUM, datamarts.get(1).getMnemonic(),
+                        datamarts.get(1).getDatamartTables().get(1).getLabel(), pos),
+                new DeltaInformation("t", "2019-12-23 15:15:14", false,
+                        2L, null, DeltaType.NUM, datamarts.get(2).getMnemonic(),
+                        datamarts.get(2).getDatamartTables().get(1).getLabel(), pos)
+        ));
+        LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts);
+        return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
+    }
+
     private EnrichQueryRequest prepareRequestDeltaNum(String sql) {
-        List<Datamart> datamarts = getSchema();
+        List<Datamart> datamarts = Arrays.asList(getSchema("shares", true));
         String schemaName = datamarts.get(0).getMnemonic();
         QueryRequest queryRequest = new QueryRequest();
         queryRequest.setSql(sql);
@@ -130,7 +171,7 @@ public class AdgQueryEnrichmentServiceImplTest {
     }
 
     private EnrichQueryRequest prepareRequestDeltaInterval(String sql) {
-        List<Datamart> datamarts = getSchema();
+        List<Datamart> datamarts = Arrays.asList(getSchema("shares", true));
         String schemaName = datamarts.get(0).getMnemonic();
         QueryRequest queryRequest = new QueryRequest();
         queryRequest.setSql(sql);
@@ -150,8 +191,7 @@ public class AdgQueryEnrichmentServiceImplTest {
         return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
     }
 
-    private List<Datamart> getSchema() {
-        String schemaName = "shares";
+    private Datamart getSchema(String schemaName, boolean isDefault) {
         DatamartTable accounts = new DatamartTable();
         accounts.setLabel("accounts");
         accounts.setMnemonic("accounts");
@@ -176,10 +216,7 @@ public class AdgQueryEnrichmentServiceImplTest {
         trAttr.add(new TableAttribute(UUID.randomUUID(), "amount", new AttributeType(UUID.randomUUID(),
                 ColumnType.BIGINT), 0, 0, null, null, 4, true));
         transactions.setTableAttributes(trAttr);
-
-        List<Datamart> datamarts = new ArrayList<>();
-        datamarts.add(new Datamart(UUID.randomUUID(), schemaName, Arrays.asList(transactions, accounts)));
-        return datamarts;
+        return new Datamart(UUID.randomUUID(), schemaName, isDefault, Arrays.asList(transactions, accounts));
     }
 
     private static void assertGrep(String data, String regexp) {

@@ -9,10 +9,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.dto.QueryParserRequest;
 import ru.ibs.dtm.query.calcite.core.service.QueryParserService;
-import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 import ru.ibs.dtm.query.execution.plugin.adg.calcite.AdgCalciteContextProvider;
 import ru.ibs.dtm.query.execution.plugin.adg.dto.EnrichQueryRequest;
-import ru.ibs.dtm.query.execution.plugin.adg.dto.schema.SchemaDescription;
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryEnrichmentService;
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryGenerator;
 import ru.ibs.dtm.query.execution.plugin.adg.service.SchemaExtender;
@@ -37,21 +35,14 @@ public class AdgQueryEnrichmentServiceImpl implements QueryEnrichmentService {
 
     @Override
     public void enrich(EnrichQueryRequest request, Handler<AsyncResult<String>> asyncHandler) {
-        //FIXME исправить после реализации использования нескольких схем
-        Datamart logicalSchema = request.getSchema().get(0);
-        queryParserService.parse(new QueryParserRequest(request.getQueryRequest(), request.getSchema().get(0)), ar -> {
+        queryParserService.parse(new QueryParserRequest(request.getQueryRequest(), request.getSchema()), ar -> {
             if (ar.succeeded()) {
                 val parserResponse = ar.result();
-                contextProvider.enrichContext(parserResponse.getCalciteContext(), logicalSchema);
-                val schemaDescription = new SchemaDescription();
-                schemaDescription.setLogicalSchema(logicalSchema);
-                val physicalSchema = schemaExtender.generatePhysicalSchema(logicalSchema, parserResponse.getQueryRequest());
-                contextProvider.enrichContext(parserResponse.getCalciteContext(), physicalSchema);
-                schemaDescription.setPhysicalSchema(physicalSchema);
+                contextProvider.enrichContext(parserResponse.getCalciteContext(),
+                        schemaExtender.generatePhysicalSchema(request.getSchema(), request.getQueryRequest()));
                 // формируем новый sql-запрос
                 adgQueryGenerator.mutateQuery(parserResponse.getRelNode(),
                         parserResponse.getQueryRequest().getDeltaInformations(),
-                        schemaDescription,
                         parserResponse.getCalciteContext(),
                         request.getQueryRequest(),
                         enrichedQueryResult -> {

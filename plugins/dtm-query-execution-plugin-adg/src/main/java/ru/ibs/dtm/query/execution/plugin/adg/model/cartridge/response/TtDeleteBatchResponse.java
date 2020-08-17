@@ -11,5 +11,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TtDeleteBatchResponse {
-    private long batchId;
+    private String batchId;
 }

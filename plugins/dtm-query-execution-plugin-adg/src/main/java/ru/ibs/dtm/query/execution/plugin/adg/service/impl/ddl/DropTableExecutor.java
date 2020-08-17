@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
+import ru.ibs.dtm.query.execution.plugin.adg.factory.AdgHelperTableNamesFactory;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtDeleteTablesQueueRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtDeleteTablesRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryExecutorService;
@@ -32,22 +33,33 @@ public class DropTableExecutor implements DdlExecutor<Void> {
     private final QueryExecutorService executorService;
     private final TtCartridgeProvider cartridgeProvider;
     private final TtCartridgeClient cartridgeClient;
+    private final AdgHelperTableNamesFactory adgHelperTableNamesFactory;
 
     @Autowired
-    public DropTableExecutor(QueryExecutorService executorService, TtCartridgeProvider cartridgeProvider, TtCartridgeClient cartridgeClient) {
+    public DropTableExecutor(QueryExecutorService executorService,
+                             TtCartridgeProvider cartridgeProvider,
+                             TtCartridgeClient cartridgeClient,
+                             AdgHelperTableNamesFactory adgHelperTableNamesFactory) {
         this.executorService = executorService;
         this.cartridgeProvider = cartridgeProvider;
         this.cartridgeClient = cartridgeClient;
+        this.adgHelperTableNamesFactory = adgHelperTableNamesFactory;
     }
 
     @Override
     public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<Void>> handler) {
-        val classTable = context.getRequest().getClassTable();
-        String actualTable = classTable.getName() + ACTUAL_POSTFIX;
-        String historyTable = classTable.getName() + HISTORY_POSTFIX;
-        String stagingTable = classTable.getName() + STAGING_POSTFIX;
+        val tableNames = adgHelperTableNamesFactory.create(
+                context.getRequest().getQueryRequest().getSystemName(),
+                context.getRequest().getQueryRequest().getDatamartMnemonic(),
+                context.getRequest().getClassTable().getName());
 
-        val request = new TtDeleteTablesRequest(Arrays.asList(stagingTable,actualTable,historyTable));
+
+
+        val request = new TtDeleteTablesRequest(Arrays.asList(
+                tableNames.getStaging(),
+                tableNames.getActual(),
+                tableNames.getHistory()
+        ));
         cartridgeClient.addSpacesToDeleteQueue(request, ar -> {
             if(ar.succeeded()) {
                 val response = ar.result();

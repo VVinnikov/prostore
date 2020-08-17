@@ -3,6 +3,7 @@ package ru.ibs.dtm.query.calcite.core.node;
 import lombok.Data;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlSnapshot;
 
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -47,8 +48,17 @@ public class SqlTreeNode implements Comparable<SqlTreeNode> {
     }
 
     public Optional<String> tryGetSchemaName() {
+        if (node instanceof SqlSnapshot) {
+            SqlSnapshot snapshot = getNode();
+            return tryGetSchemaName(snapshot.getTableRef());
+        } else {
+            return tryGetSchemaName(node);
+        }
+    }
+
+    private Optional<String> tryGetSchemaName(SqlNode node) {
         if (node instanceof SqlIdentifier) {
-            SqlIdentifier idNode = getNode();
+            SqlIdentifier idNode = (SqlIdentifier) node;
             if (idNode.isSimple()) {
                 return Optional.empty();
             } else {
@@ -60,8 +70,17 @@ public class SqlTreeNode implements Comparable<SqlTreeNode> {
     }
 
     public Optional<String> tryGetTableName() {
+        if (node instanceof SqlSnapshot) {
+            SqlSnapshot snapshot = getNode();
+            return tryGetTableName(snapshot.getTableRef());
+        } else {
+            return tryGetTableName(node);
+        }
+    }
+
+    private Optional<String> tryGetTableName(SqlNode node) {
         if (node instanceof SqlIdentifier) {
-            SqlIdentifier idNode = getNode();
+            SqlIdentifier idNode = (SqlIdentifier) node;
             if (idNode.isSimple()) {
                 return Optional.of(idNode.names.get(0));
             } else {

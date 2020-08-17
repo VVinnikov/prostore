@@ -108,6 +108,7 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
         exloadParam.setFormat(detRecord.getFormat());
         exloadParam.setChunkSize(detRecord.getChunkSize() != null ?
                 detRecord.getChunkSize() : edmlProperties.getDefaultChunkSize());
+        exloadParam.setAvroSchema(detRecord.getTableSchema());
         return exloadParam;
     }
 

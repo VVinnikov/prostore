@@ -57,7 +57,8 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
         if (initializedLoadingByTopic.containsKey(ctx.getTopicName())) {
             val expectedTableName = initializedLoadingByTopic.get(ctx.getTopicName());
             if (expectedTableName.equals(ctx.getConsumerTableName())) {
-                loadData(ctx, handler);
+                //loadData(ctx, handler);
+                transferData(ctx, handler);
             } else {
                 val msg = String.format(
                         "Tables must be the same within a single load by topic [%s]. Actual [%s], but expected [%s]"
@@ -94,7 +95,8 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
                 if (ar.succeeded()) {
                     log.debug("Loading initialize completed by [{}]", request);
                     initializedLoadingByTopic.put(ctx.getTopicName(), ctx.getConsumerTableName());
-                    loadData(ctx, handler);
+                    //loadData(ctx, handler);
+                    transferData(ctx, handler);
                 } else {
                     log.error("Loading initialize error:", ar.cause());
                     handler.handle(Future.failedFuture(ar.cause()));

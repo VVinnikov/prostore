@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.dto.QueryParserRequest;
 import ru.ibs.dtm.query.calcite.core.service.QueryParserService;
-import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 import ru.ibs.dtm.query.execution.plugin.adb.calcite.AdbCalciteContextProvider;
 import ru.ibs.dtm.query.execution.plugin.adb.dto.EnrichQueryRequest;
 import ru.ibs.dtm.query.execution.plugin.adb.service.QueryEnrichmentService;
@@ -38,12 +37,11 @@ public class AdbQueryEnrichmentServiceImpl implements QueryEnrichmentService {
 
     @Override
     public void enrich(EnrichQueryRequest request, Handler<AsyncResult<String>> asyncHandler) {
-        //FIXME исправить после реализации использования нескольких схем
-        Datamart logicalSchema = request.getSchema().get(0);
-        queryParserService.parse(new QueryParserRequest(request.getQueryRequest(), logicalSchema), ar -> {
+        queryParserService.parse(new QueryParserRequest(request.getQueryRequest(), request.getSchema()), ar -> {
             if (ar.succeeded()) {
                 val parserResponse = ar.result();
-                contextProvider.enrichContext(parserResponse.getCalciteContext(), schemaExtender.generatePhysicalSchema(logicalSchema));
+                contextProvider.enrichContext(parserResponse.getCalciteContext(),
+                        schemaExtender.generatePhysicalSchemas(request.getSchema()));
                 // формируем новый sql-запрос
                 adbQueryGenerator.mutateQuery(parserResponse.getRelNode(),
                         parserResponse.getQueryRequest().getDeltaInformations(),

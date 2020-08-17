@@ -16,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.delta.DeltaInformationResult;
 import ru.ibs.dtm.common.delta.DeltaInterval;
+import ru.ibs.dtm.common.delta.DeltaType;
 import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import ru.ibs.dtm.query.calcite.core.util.DeltaInformationExtractor;
 
@@ -24,14 +25,14 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 class DeltaInformationExtractorTest {
 
-    private CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
-    private SqlParser.Config parserConfig;
-    public static final String FOR_SYSTEM_TIME = "FOR SYSTEM_TIME";
+    private static final String FOR_SYSTEM_TIME = "FOR SYSTEM_TIME";
+
+    private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private Planner planner;
 
     @BeforeEach
     void setUp() {
-        parserConfig = SqlParser.configBuilder()
+        SqlParser.Config parserConfig = SqlParser.configBuilder()
                 .setParserFactory(calciteCoreConfiguration.eddlParserImplFactory())
                 .setConformance(SqlConformanceEnum.DEFAULT)
                 .setLex(Lex.MYSQL)
@@ -135,8 +136,10 @@ class DeltaInformationExtractorTest {
         assertNotNull(deltaInformationResult.getDeltaInformations().get(0).getDeltaTimestamp());
         assertTrue(deltaInformationResult.getDeltaInformations().get(1).isLatestUncommitedDelta());
         assertEquals(new DeltaInterval(1L,2L), deltaInformationResult.getDeltaInformations().get(2).getDeltaInterval());
+        assertEquals(DeltaType.STARTED_IN, deltaInformationResult.getDeltaInformations().get(2).getType());
         assertEquals(4444, deltaInformationResult.getDeltaInformations().get(3).getDeltaNum());
         assertEquals(new DeltaInterval(3L,4L), deltaInformationResult.getDeltaInformations().get(4).getDeltaInterval());
+        assertEquals(DeltaType.FINISHED_IN, deltaInformationResult.getDeltaInformations().get(4).getType());
 
         val sqlWithoutForSystemTime = deltaInformationResult.getSqlWithoutSnapshots();
         log.info(sqlWithoutForSystemTime);

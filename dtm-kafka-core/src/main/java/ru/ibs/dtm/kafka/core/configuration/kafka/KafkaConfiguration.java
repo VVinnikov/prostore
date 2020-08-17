@@ -24,32 +24,32 @@ public class KafkaConfiguration {
 
     @Bean("coreKafkaProducerFactory")
     public KafkaProducerFactory<String, String> kafkaProviderFactory(KafkaProperties kafkaProperties,
-                                                                     @Qualifier("kafkaVertx") Vertx vertx) {
+                                                                     @Qualifier("coreVertx") Vertx vertx) {
         return new VertxKafkaProducerFactory<>(vertx, kafkaProperties.getProducer().getProperty());
     }
 
     @Bean("coreKafkaConsumerFactory")
     public KafkaConsumerFactory<byte[], byte[]> coreKafkaConsumerFactory(KafkaProperties kafkaProperties,
-                                                                         @Qualifier("kafkaVertx") Vertx vertx) {
+                                                                         @Qualifier("coreVertx") Vertx vertx) {
         return new VertxKafkaConsumerFactory<>(vertx, kafkaProperties.getConsumer().getCore());
     }
 
     @Bean("coreByteArrayKafkaProviderFactory")
     public KafkaProducerFactory<String, Byte[]> byteArrayKafkaProviderFactory(KafkaProperties kafkaProperties,
-                                                                              @Qualifier("kafkaVertx") Vertx vertx) {
+                                                                              @Qualifier("coreVertx") Vertx vertx) {
         return new VertxKafkaProducerFactory<>(vertx, kafkaProperties.getProducer().getProperty());
     }
 
     @Bean("coreKafkaAdminClient")
     public KafkaAdminClient coreKafkaAdminClient(KafkaProperties kafkaProperties,
-                                                 @Qualifier("kafkaVertx") Vertx vertx) {
+                                                 @Qualifier("coreVertx") Vertx vertx) {
         return KafkaAdminClient.create(vertx, kafkaProperties.getConsumer().getCore());
     }
 
     @Bean("coreKafkaConsumerMonitor")
     public KafkaConsumerMonitor kafkaConsumerMonitor(@Qualifier("coreKafkaAdminClient") KafkaAdminClient adminClient,
                                                      @Qualifier("coreKafkaConsumerFactory") KafkaConsumerFactory<byte[], byte[]> consumerFactory,
-                                                     @Qualifier("kafkaVertx") Vertx vertx,
+                                                     @Qualifier("coreVertx") Vertx vertx,
                                                      KafkaProperties kafkaProperties) {
         return new KafkaConsumerMonitorImpl(adminClient, consumerFactory, vertx, kafkaProperties);
     }

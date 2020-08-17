@@ -3,27 +3,39 @@ package ru.ibs.dtm.query.execution.plugin.adg.service.impl.status;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.plugin.status.StatusQueryResult;
-import ru.ibs.dtm.common.plugin.status.kafka.KafkaPartitionInfo;
+import ru.ibs.dtm.kafka.core.service.kafka.KafkaConsumerMonitor;
+import ru.ibs.dtm.query.execution.plugin.adg.configuration.MppwProperties;
+import ru.ibs.dtm.query.execution.plugin.api.request.StatusRequest;
 import ru.ibs.dtm.query.execution.plugin.api.service.StatusService;
 import ru.ibs.dtm.query.execution.plugin.api.status.StatusRequestContext;
 
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoField;
-
 @Service("adgStatusService")
 public class AdgStatusService implements StatusService<StatusQueryResult> {
+    private final KafkaConsumerMonitor kafkaConsumerMonitor;
+    private final MppwProperties mppwProperties;
+
+    public AdgStatusService(@Qualifier("coreKafkaConsumerMonitor") KafkaConsumerMonitor kafkaConsumerMonitor, MppwProperties mppwProperties) {
+        this.kafkaConsumerMonitor = kafkaConsumerMonitor;
+        this.mppwProperties = mppwProperties;
+    }
 
     @Override
     public void execute(StatusRequestContext context, Handler<AsyncResult<StatusQueryResult>> handler) {
-        //TODO реализовать
+        if (context == null || context.getRequest() == null) {
+            handler.handle(Future.failedFuture("StatusRequestContext should not be null"));
+            return;
+        }
+
+        StatusRequest request = context.getRequest();
+
+        String consumerGroup = mppwProperties.getConsumerGroup();
         StatusQueryResult result = new StatusQueryResult();
-        KafkaPartitionInfo partitionInfo = new KafkaPartitionInfo();
-        partitionInfo.setEnd(3L);
-        partitionInfo.setOffset(3L);
-        partitionInfo.setLastCommitTime(LocalDateTime.now().plus(0, ChronoField.MILLI_OF_DAY.getBaseUnit()));
-        result.setPartitionInfo(partitionInfo);
+        result.setPartitionInfo(
+                kafkaConsumerMonitor.getAggregateGroupConsumerInfo(
+                        consumerGroup, request.getTopic()));
         handler.handle(Future.succeededFuture(result));
     }
 }

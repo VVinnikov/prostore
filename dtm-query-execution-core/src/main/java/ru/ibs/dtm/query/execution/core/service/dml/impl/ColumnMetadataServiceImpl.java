@@ -34,7 +34,7 @@ public class ColumnMetadataServiceImpl implements ColumnMetadataService {
 
     @Override
     public void getColumnMetadata(QuerySourceRequest request, Handler<AsyncResult<List<ColumnMetadata>>> handler) {
-        val parserRequest = new QueryParserRequest(request.getQueryRequest(), request.getLogicalSchema().get(0));
+        val parserRequest = new QueryParserRequest(request.getQueryRequest(), request.getLogicalSchema());
         parserService.parse(parserRequest, ar -> {
             if (ar.succeeded()) {
                 QueryParserResponse parserResponse = ar.result();

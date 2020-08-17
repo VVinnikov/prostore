@@ -21,7 +21,7 @@ import static ru.ibs.dtm.query.execution.plugin.adb.factory.impl.MetadataSqlFact
 
 @Service
 @Slf4j
-public class AdbCalciteDMLQueryExtendServiceImpl implements QueryExtendService {
+public class AdbCalciteDmlQueryExtendServiceImpl implements QueryExtendService {
 
     public static final String TABLE_PREFIX = "_";
 

@@ -18,7 +18,6 @@ import ru.ibs.dtm.common.calcite.CalciteContext;
 import ru.ibs.dtm.common.delta.DeltaInformation;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.dto.QueryGeneratorContext;
-import ru.ibs.dtm.query.execution.plugin.adg.dto.schema.SchemaDescription;
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryExtendService;
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryGenerator;
 
@@ -39,17 +38,9 @@ public class AdgQueryGeneratorImpl implements QueryGenerator {
     @Override
     public void mutateQuery(RelRoot relNode,
                             List<DeltaInformation> deltaInformations,
-                            SchemaDescription schemaDescription,
                             CalciteContext calciteContext,
                             QueryRequest queryRequest,
                             Handler<AsyncResult<String>> handler) {
-        if (schemaDescription.getLogicalSchema() == null) {
-            handler.handle(Future.failedFuture(String.format("Error defining schema for request %s", relNode.toString())));
-            return;
-        }
-        if (deltaInformations.isEmpty()) {
-            log.warn("Deltas list cannot be empty");
-        }
         try {
             val generatorContext = getContext(relNode, deltaInformations, calciteContext, queryRequest);
             val extendedQuery = queryExtendService.extendQuery(generatorContext);

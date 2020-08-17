@@ -3,13 +3,13 @@ package ru.ibs.dtm.query.execution.plugin.adqm.service.impl.enrichment;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.dto.QueryParserRequest;
+import ru.ibs.dtm.common.dto.QueryParserResponse;
 import ru.ibs.dtm.query.calcite.core.service.QueryParserService;
-import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 import ru.ibs.dtm.query.execution.plugin.adqm.calcite.AdqmCalciteContextProvider;
 import ru.ibs.dtm.query.execution.plugin.adqm.dto.EnrichQueryRequest;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.QueryEnrichmentService;
@@ -32,28 +32,31 @@ public class AdqmQueryEnrichmentServiceImpl implements QueryEnrichmentService {
 
     @Override
     public void enrich(EnrichQueryRequest request, Handler<AsyncResult<String>> asyncHandler) {
-        // FIXME rewrite to the Future's compose instead of callback hell
-        //FIXME исправить после реализации использования нескольких схем
-        Datamart logicalSchema = request.getSchema().get(0);
-        queryParserService.parse(new QueryParserRequest(request.getQueryRequest(), logicalSchema), ar -> {
-            if (ar.succeeded()) {
-                val parserResponse = ar.result();
-                contextProvider.enrichContext(parserResponse.getCalciteContext(), logicalSchema);
-
-                // 2. Modify query - add filter for sys_from/sys_to columns based on deltas
-                // 3. Modify query - duplicate via union all (with sub queries) and rename table names to physical names
-                // 4. Modify query - rename schemas to physical name
-                queryRewriter.rewrite(request.getQueryRequest().getSql(), parserResponse.getQueryRequest().getDeltaInformations(), ar3 -> {
-                    if (ar3.failed()) {
-                        asyncHandler.handle(Future.failedFuture(ar3.cause()));
+        Future.future((Promise<QueryParserResponse> promise) ->
+                queryParserService.parse(new QueryParserRequest(request.getQueryRequest(), request.getSchema()), promise))
+                .compose(parserResponse -> rewriteQuery(request, parserResponse))
+                .onComplete(ar -> {
+                    if (ar.succeeded()) {
+                        asyncHandler.handle(Future.succeededFuture(ar.result()));
+                    } else {
+                        asyncHandler.handle(Future.failedFuture(ar.cause()));
                     }
-
-                    asyncHandler.handle(Future.succeededFuture(ar3.result()));
                 });
+    }
 
-            } else {
-                asyncHandler.handle(Future.failedFuture(ar.cause()));
-            }
-        });
+    private Future<String> rewriteQuery(EnrichQueryRequest request, QueryParserResponse parserResponse) {
+        return Future.future((Promise<String> promise) -> {
+                    try {
+                        contextProvider.enrichContext(parserResponse.getCalciteContext(), request.getSchema());
+                        // 2. Modify query - add filter for sys_from/sys_to columns based on deltas
+                        // 3. Modify query - duplicate via union all (with sub queries) and rename table names to physical names
+                        // 4. Modify query - rename schemas to physical name
+                        queryRewriter.rewrite(request, parserResponse.getQueryRequest().getDeltaInformations(), promise);
+                    } catch (Exception e) {
+                        log.error("Error enrich calcite context by request: {}!", parserResponse, e);
+                        promise.fail(e);
+                    }
+                }
+        );
     }
 }

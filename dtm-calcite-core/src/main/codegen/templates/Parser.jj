@@ -1008,8 +1008,10 @@ SqlNode SqlStmt() :
 </#list>
         stmt = SqlSetOption(Span.of(), null)
     |
+<#if parser.alterStatementParserMethods?size != 0>
         stmt = SqlAlter()
     |
+</#if>
 <#if parser.createStatementParserMethods?size != 0>
         stmt = SqlCreate()
     |
@@ -3910,33 +3912,30 @@ SqlSetOption SqlSetOption(Span s, String scope) :
 SqlAlter SqlAlter() :
 {
     final Span s;
-    final String scope;
     final SqlAlter alterNode;
 }
 {
     <ALTER> { s = span(); }
-    scope = Scope()
+    /*scope = Scope()*/
     (
 <#-- additional literal parser methods are included here -->
 <#list parser.alterStatementParserMethods as method>
-        alterNode = ${method}(s, scope)
-    |
+        alterNode = ${method}(s)
+        <#sep>|</#sep>
 </#list>
-
-        alterNode = SqlSetOption(s, scope)
+        /* alterNode = SqlSetOption(s, scope)*/
     )
     {
         return alterNode;
     }
 }
-
-String Scope() :
+/*String Scope() :
 {
 }
 {
-    ( <SYSTEM> | <SESSION> ) { return token.image.toUpperCase(Locale.ROOT); }
+    ( <SYSTEM> | <SESSION> | <VIEW>) { return token.image.toUpperCase(Locale.ROOT); }
 }
-
+*/
 <#if parser.createStatementParserMethods?size != 0>
 /**
  * Parses a CREATE statement.

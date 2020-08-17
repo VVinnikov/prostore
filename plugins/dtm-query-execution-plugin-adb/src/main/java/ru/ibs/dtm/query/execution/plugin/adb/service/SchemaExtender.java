@@ -2,9 +2,11 @@ package ru.ibs.dtm.query.execution.plugin.adb.service;
 
 import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 
-/*
- * Интерфейс экстендера для получения физической схемы из логической
- * */
+import java.util.List;
+
+/**
+ * Extender interface for obtaining physical schemas from logical
+ */
 public interface SchemaExtender {
-  Datamart generatePhysicalSchema(Datamart datamart);
+    List<Datamart> generatePhysicalSchemas(List<Datamart> logicalSchemas);
 }

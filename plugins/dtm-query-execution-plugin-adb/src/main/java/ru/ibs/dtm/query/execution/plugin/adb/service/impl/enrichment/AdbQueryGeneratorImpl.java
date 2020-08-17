@@ -60,7 +60,8 @@ public class AdbQueryGeneratorImpl implements QueryGenerator {
     private QueryGeneratorContext getContext(RelRoot relNode,
                                              List<DeltaInformation> deltaInformations,
                                              CalciteContext calciteContext) {
-        return new QueryGeneratorContext(deltaInformations.iterator(),
+        return new QueryGeneratorContext(
+                deltaInformations.iterator(),
                 calciteContext.getRelBuilder(),
                 true,
                 relNode);

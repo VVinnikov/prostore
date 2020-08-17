@@ -15,6 +15,7 @@ import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 public abstract class CalciteContextProvider {
@@ -36,11 +37,21 @@ public abstract class CalciteContextProvider {
         this.calciteSchemaFactory = calciteSchemaFactory;
     }
 
-    public CalciteContext context(Datamart defaultDatamart) {
+    public CalciteContext context(List<Datamart> schemas) {
         try {
             final SchemaPlus rootSchema = Frameworks.createRootSchema(true);
+            Datamart defaultDatamart = null;
+            if (schemas != null) {
+                Optional<Datamart> defaultSchemaOptional = schemas.stream().filter(Datamart::getIsDefault).findFirst();
+                if (defaultSchemaOptional.isPresent()) {
+                    defaultDatamart = defaultSchemaOptional.get();
+                }
+                schemas.stream().filter(d -> !d.getIsDefault()).forEach(d -> calciteSchemaFactory.addSchema(rootSchema, d));
+            }
+
             final SchemaPlus defaultSchema = defaultDatamart == null ?
                     rootSchema : calciteSchemaFactory.addSchema(rootSchema, defaultDatamart);
+
             FrameworkConfig config = Frameworks.newConfigBuilder()
                     .parserConfig(configParser)
                     .defaultSchema(defaultSchema)
@@ -55,7 +66,7 @@ public abstract class CalciteContextProvider {
         return null;
     }
 
-    public void enrichContext(CalciteContext context, Datamart datamart) {
-        calciteSchemaFactory.addSchema(context.getSchema(), datamart);
+    public void enrichContext(CalciteContext context, List<Datamart> schemas) {
+        schemas.forEach(s -> calciteSchemaFactory.addSchema(context.getSchema(), s));
     }
 }

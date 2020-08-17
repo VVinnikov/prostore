@@ -63,8 +63,8 @@ public class SqlSnapshot extends org.apache.calcite.sql.SqlSnapshot {
     }
 
     private String createDeltaDateTime() {
-        if (this.deltaNum != null || this.isLatestUncommitedDelta != null ||
-                this.startedInterval != null || this.finishedInterval != null) {
+        if (this.deltaNum != null ||
+                this.startedInterval != null || this.finishedInterval != null || this.isLatestUncommitedDelta) {
             return null;
         } else {
             return this.period.toString();

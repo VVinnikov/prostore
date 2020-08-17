@@ -6,7 +6,7 @@ import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlNode;
-import org.springframework.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import ru.ibs.dtm.common.delta.DeltaInformation;
 import ru.ibs.dtm.common.delta.DeltaType;
 import ru.ibs.dtm.common.dto.ActualDeltaRequest;
@@ -92,7 +92,11 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
         for (DeltaInformation d : deltas) {
             ActualDeltaRequest request = null;
             if (d.getType().equals(DeltaType.NUM) && d.getDeltaNum() == null) {
-                request = new ActualDeltaRequest(d.getSchemaName(), d.getDeltaTimestamp(), d.isLatestUncommitedDelta());
+                String dt = d.getDeltaTimestamp();
+                if (StringUtils.isNotEmpty(dt)) {
+                    dt = dt.replaceAll("'", "");
+                }
+                request = new ActualDeltaRequest(d.getSchemaName(), dt, d.isLatestUncommitedDelta());
                 actualDeltaRequests.add(request);
             }
             deltaResultMap.put(order, request == null ? d : null);

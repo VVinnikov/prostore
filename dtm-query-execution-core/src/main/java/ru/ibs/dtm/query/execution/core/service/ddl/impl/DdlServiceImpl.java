@@ -5,10 +5,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.sql.SqlDdl;
-import org.apache.calcite.sql.SqlIdentifier;
-import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -19,6 +16,7 @@ import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -58,19 +56,32 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
     }
 
     private void execute(DdlRequestContext context, Handler<AsyncResult<QueryResult>> handler, AsyncResult<Object> ar) {
-        if (ar.result() instanceof SqlDdl) {
-            SqlDdl sqlDdl = ((SqlDdl) ar.result());
-            String sqlNodeName = sqlDdl.getOperandList().stream().filter(t -> t instanceof SqlIdentifier).findFirst().get().toString();
-            if (executorMap.containsKey(sqlDdl.getKind())) {
-                executorMap.get(sqlDdl.getKind()).execute(context, sqlNodeName, handler);
+        try {
+            final SqlCall sqlCall = getSqlCall(ar);
+            if (executorMap.containsKey(sqlCall.getKind())) {
+                executorMap.get(sqlCall.getKind()).execute(context, getSqlNodeName(sqlCall.getOperandList()), handler);
             } else {
                 log.error("Not supported DDL query type");
                 handler.handle(Future.failedFuture(String.format("Not supported DDL query type [%s]", context)));
             }
-        } else {
-            log.error("Not supported request type");
+        } catch (Exception e) {
+            log.error(e.getMessage());
             handler.handle(Future.failedFuture(String.format("Not supported request type [%s]", context)));
         }
+    }
+
+    private SqlCall getSqlCall(AsyncResult<Object> ar) {
+        if (ar.result() instanceof SqlAlter) {
+            return (SqlCall) ((SqlAlter) ar.result());
+        } else if (ar.result() instanceof SqlDdl) {
+            return (SqlCall) ((SqlDdl) ar.result());
+        } else {
+            throw new RuntimeException("Not supported request type");
+        }
+    }
+
+    private String getSqlNodeName(List<SqlNode> operandList) {
+        return operandList.stream().filter(t -> t instanceof SqlIdentifier).findFirst().get().toString();
     }
 
     @Override

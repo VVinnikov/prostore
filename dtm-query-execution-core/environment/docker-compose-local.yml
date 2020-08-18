@@ -16,7 +16,7 @@ services:
     build:
       context: ..
       args:
-        - DTM_JAR=./target/dtm-query-execution-core-2.4.0-SNAPSHOT.jar
+        - DTM_JAR=./target/dtm-query-execution-core-2.5.0-SNAPSHOT.jar
     container_name: dtm-query-execution-core
     restart: always
     networks:
@@ -84,7 +84,7 @@ services:
       KAFKA_BROKER_ID: 1
 
   adg:
-    image: ci.arenadata.io/adg:0.6
+    image: ci.arenadata.io/adg:0.8
     container_name: adg
     restart: always
     networks:
@@ -128,10 +128,18 @@ services:
       POSTGRES_DB: adb
 
   adb-emulator:
-    image: adb-emulator:latest
+    image: ci.arenadata.io/db-writer:latest
     container_name: adb-emulator
     networks:
       - dtm-query-execution
     ports:
       - "8090:8090"
       - "5005:5005"
+
+  vendor-emulator:
+    image: ci.arenadata.io/vendor-emulator:latest
+    container_name: vendor-emulator
+    networks:
+      - dtm-query-execution
+    ports:
+      - "8082:8082"

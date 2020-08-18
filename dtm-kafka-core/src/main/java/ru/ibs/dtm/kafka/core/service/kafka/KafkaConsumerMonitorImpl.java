@@ -13,6 +13,7 @@ import kafka.coordinator.group.GroupMetadataManager;
 import kafka.coordinator.group.GroupTopicPartition;
 import kafka.coordinator.group.OffsetKey;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.RandomUtils;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -29,6 +30,7 @@ import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.*;
 
@@ -38,7 +40,7 @@ public class KafkaConsumerMonitorImpl implements KafkaConsumerMonitor {
 
     private static final String SYSTEM_TOPIC = "__consumer_offsets";
     private final KafkaAdminClient adminClient;
-    private final KafkaConsumer<byte[], byte[]> consumer;
+    private final ArrayList<KafkaConsumer<byte[], byte[]>> consumers;
     private final Vertx vertx;
     private final ConcurrentHashMap<GroupTopicPartition, KafkaTopicCommitedOffset> lastCommitedOffsets;
     private final ConcurrentHashMap<GroupTopicPartition, KafkaTopicOffset> lastOffsets;
@@ -62,7 +64,13 @@ public class KafkaConsumerMonitorImpl implements KafkaConsumerMonitor {
         properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.ByteArrayDeserializer");
         properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.ByteArrayDeserializer");
 
-        this.consumer = consumerFactory.create(properties);
+        this.consumers = new ArrayList<>();
+        int consumerNumber = Integer.parseInt(kafkaProperties.getConsumer().getCore().getOrDefault("number","8"));
+        IntStream.range(0,consumerNumber)
+                .forEach(r ->
+                        this.consumers.add(consumerFactory.create(properties)));
+
+
 
         // VertX
         this.vertx = vertx;
@@ -110,7 +118,7 @@ public class KafkaConsumerMonitorImpl implements KafkaConsumerMonitor {
 
 
     private Future<Map<TopicPartition, Long>> getBeginOffset(Set<TopicPartition> topicPartitions) {
-        return Future.future(handler -> consumer.beginningOffsets(topicPartitions, ar -> {
+        return Future.future(handler -> consumers.get(RandomUtils.nextInt(0,consumers.size())).beginningOffsets(topicPartitions, ar -> {
             if (ar.succeeded())
                 handler.complete(ar.result());
             else {
@@ -121,7 +129,7 @@ public class KafkaConsumerMonitorImpl implements KafkaConsumerMonitor {
     }
 
     private Future<Map<TopicPartition, Long>> getEndOffset(Set<TopicPartition> topicPartitions) {
-        return Future.future(handler -> consumer.endOffsets(topicPartitions, ar -> {
+        return Future.future(handler -> consumers.get(RandomUtils.nextInt(0,consumers.size())).endOffsets(topicPartitions, ar -> {
             if (ar.succeeded())
                 handler.complete(ar.result());
             else {
@@ -164,48 +172,50 @@ public class KafkaConsumerMonitorImpl implements KafkaConsumerMonitor {
     }
 
     private void initSystemTopicConsumer() {
-        consumer.handler(record -> {
-            byte[] key = record.key();
-            byte[] value;
-            if (key != null) {
-                Object o = GroupMetadataManager.readMessageKey(ByteBuffer.wrap(key));
-                if (o instanceof OffsetKey) {
-                    OffsetKey offsetKey = (OffsetKey) o;
-                    value = record.value();
-                    if (value != null) {
-                        ByteBuffer byteBuffer = ByteBuffer.wrap(value);
-                        OffsetAndMetadata offsetAndMetadata =
-                                GroupMetadataManager.readOffsetMessageValue(byteBuffer);
-                        lastCommitedOffsets.computeIfPresent(offsetKey.key(),(k,v) -> {
 
-                            if (offsetAndMetadata.commitTimestamp() > v.getLastCommitTimestamp())
-                                v.setLastCommitTimestamp(offsetAndMetadata.commitTimestamp());
+        consumers.forEach(consumer ->
+                consumer.handler(record -> {
+                    byte[] key = record.key();
+                    byte[] value;
+                    if (key != null) {
+                        Object o = GroupMetadataManager.readMessageKey(ByteBuffer.wrap(key));
+                        if (o instanceof OffsetKey) {
+                            OffsetKey offsetKey = (OffsetKey) o;
+                            value = record.value();
+                            if (value != null) {
+                                ByteBuffer byteBuffer = ByteBuffer.wrap(value);
+                                OffsetAndMetadata offsetAndMetadata =
+                                        GroupMetadataManager.readOffsetMessageValue(byteBuffer);
+                                lastCommitedOffsets.computeIfPresent(offsetKey.key(),(k,v) -> {
 
-                            if (offsetAndMetadata.offset() > v.getOffset())
-                                v.setOffset(offsetAndMetadata.offset());
+                                    if (offsetAndMetadata.commitTimestamp() > v.getLastCommitTimestamp())
+                                        v.setLastCommitTimestamp(offsetAndMetadata.commitTimestamp());
 
+                                    if (offsetAndMetadata.offset() > v.getOffset())
+                                        v.setOffset(offsetAndMetadata.offset());
+                                    return v;
+                                });
 
-                            return v;
-                        });
-
-                        lastCommitedOffsets.computeIfAbsent(offsetKey.key(),v -> {
-                            KafkaTopicCommitedOffset kafkaTopicCommitedOffset = new KafkaTopicCommitedOffset();
-                            kafkaTopicCommitedOffset.setLastCommitTimestamp(offsetAndMetadata.commitTimestamp());
-                            kafkaTopicCommitedOffset.setOffset(offsetAndMetadata.offset());
-                            return kafkaTopicCommitedOffset;
-                        });
+                                lastCommitedOffsets.computeIfAbsent(offsetKey.key(),v -> {
+                                    KafkaTopicCommitedOffset kafkaTopicCommitedOffset = new KafkaTopicCommitedOffset();
+                                    kafkaTopicCommitedOffset.setLastCommitTimestamp(offsetAndMetadata.commitTimestamp());
+                                    kafkaTopicCommitedOffset.setOffset(offsetAndMetadata.offset());
+                                    return kafkaTopicCommitedOffset;
+                                });
+                            }
+                        }
                     }
-                }
-            }
-            //consumer.commit();
-        });
+                    //consumer.commit();
+                })
+                );
 
-        consumer.subscribe(SYSTEM_TOPIC, ar -> {
-            if (ar.succeeded())
-                log.info("Subscribed to system topic");
-            else
-                log.error("Subscription to system topic error",ar.cause());
-        });
+        consumers.forEach(consumer ->
+                consumer.subscribe(SYSTEM_TOPIC, ar -> {
+                    if (ar.succeeded())
+                        log.info("Subscribed to system topic");
+                    else
+                        log.error("Subscription to system topic error",ar.cause());
+                }));
     }
 
     private void initTopicOffsetRefresh() {

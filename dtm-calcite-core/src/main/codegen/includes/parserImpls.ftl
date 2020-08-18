@@ -532,3 +532,17 @@ SqlDrop SqlDropFunction(Span s, boolean replace) :
         return SqlDdlNodes.dropFunction(s.end(this), ifExists, id);
     }
 }
+SqlNode SqlUseSchema() :
+{
+    SqlParserPos pos;
+    final SqlIdentifier id;
+}
+{
+    <USE> id = CompoundIdentifier()
+{
+        pos = getPos();
+}
+    {
+        return new ru.ibs.dtm.query.calcite.core.extension.ddl.SqlUseSchema(pos, id);
+    }
+}

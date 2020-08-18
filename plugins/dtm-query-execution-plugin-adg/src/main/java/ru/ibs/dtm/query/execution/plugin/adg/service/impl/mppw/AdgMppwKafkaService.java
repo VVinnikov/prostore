@@ -70,7 +70,7 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
             }
         } else {
             val callbackFunctionParameter = new TtTransferDataScdCallbackParameter(
-                    ctx.getTopicName(),
+                    ctx.getHelperTableNames().getStaging(),
                     ctx.getHelperTableNames().getStaging(),
                     ctx.getHelperTableNames().getActual(),
                     ctx.getHelperTableNames().getHistory(),
@@ -96,7 +96,7 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
                     log.debug("Loading initialize completed by [{}]", request);
                     initializedLoadingByTopic.put(ctx.getTopicName(), ctx.getConsumerTableName());
                     //loadData(ctx, handler);
-                    transferData(ctx, handler);
+                    //transferData(ctx, handler);
                 } else {
                     log.error("Loading initialize error:", ar.cause());
                     handler.handle(Future.failedFuture(ar.cause()));

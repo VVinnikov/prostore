@@ -2,6 +2,7 @@ package ru.ibs.dtm.query.execution.plugin.adg.service.impl.enrichment;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rex.RexNode;
@@ -15,6 +16,7 @@ import ru.ibs.dtm.query.execution.plugin.adg.factory.AdgHelperTableNamesFactory;
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryExtendService;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -54,7 +56,9 @@ public class AdgCalciteDmlQueryExtendServiceImpl implements QueryExtendService {
 
     RelNode insertModifiedTableScan(QueryGeneratorContext context, RelNode tableScan, DeltaInformation deltaInfo) {
         val relBuilder = RelBuilder.proto(tableScan.getCluster().getPlanner().getContext())
-                .create(tableScan.getCluster(), context.getRelBuilder().getRelOptSchema());
+                .create(tableScan.getCluster(),
+                        ((CalciteCatalogReader) context.getRelBuilder().getRelOptSchema())
+                                .withSchemaPath(Collections.singletonList(deltaInfo.getSchemaName())));
 
         val rexBuilder = relBuilder.getCluster().getRexBuilder();
         List<RexNode> rexNodes = new ArrayList<>();
@@ -64,9 +68,10 @@ public class AdgCalciteDmlQueryExtendServiceImpl implements QueryExtendService {
 
         val qualifiedName = tableScan.getTable().getQualifiedName();
         val tableName = qualifiedName.get(qualifiedName.size() > 1 ? 1 : 0);
+        val schemaName = deltaInfo.getSchemaName();
         val queryRequest = context.getQueryRequest();
         val tableNames = helperTableNamesFactory.create(queryRequest.getSystemName(),
-                queryRequest.getDatamartMnemonic(), tableName);
+                schemaName, tableName);
         RelNode topRelNode;
         RelNode bottomRelNode;
 

@@ -26,10 +26,7 @@ import ru.ibs.dtm.query.execution.plugin.api.status.StatusRequestContext;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoField;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -56,7 +53,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
     @Override
     public void execute(EdmlRequestContext context, Handler<AsyncResult<QueryResult>> resultHandler) {
         try {
-            final Map<SourceType, Future> startMppwFutureMap = new HashMap<>();
+            final Map<SourceType, Future<MppwStopFuture>> startMppwFutureMap = new HashMap<>();
             pluginService.getSourceTypes().forEach(ds -> {
                 final MppwRequestContext mppwRequestContext = mppwKafkaRequestFactory.create(context);
                 startMppwFutureMap.put(ds, startMppw(ds, mppwRequestContext, context));
@@ -74,16 +71,26 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                 log.debug("A request has been sent for the plugin: {} to start mppw download: {}", ds, mppwRequestContext.getRequest());
                 final StatusRequestContext statusRequestContext = new StatusRequestContext(new StatusRequest(context.getRequest().getQueryRequest()));
                 statusRequestContext.getRequest().setTopic(mppwRequestContext.getRequest().getTopic());
+                long beginPollStatus = System.currentTimeMillis();
                 vertx.setPeriodic(edmlProperties.getPluginStatusCheckPeriodMs(), timerId -> {
                     log.trace("Plugin status request: {} mppw downloads", ds);
-                    checkMppwStatus(ds, statusRequestContext, timerId)
+                    checkMppwStatus(ds, statusRequestContext)
                             .onComplete(chr -> {
                                 if (chr.succeeded()) {
-                                    StatusQueryResult result = chr.result();
-                                    promise.complete(new MppwStopFuture(ds, stopMppw(ds, mppwRequestContext),
-                                            result.getPartitionInfo().getOffset()));
+                                    Optional<StatusQueryResult> result = chr.result();
+                                    if (result.isPresent()) {
+                                        vertx.cancelTimer(timerId);
+                                        promise.complete(new MppwStopFuture(ds, stopMppw(ds, mppwRequestContext),
+                                                result.get().getPartitionInfo().getOffset()));
+                                    } else {
+                                        if (System.currentTimeMillis() - beginPollStatus > edmlProperties.getPluginStatusTimeoutMs()) {
+                                            vertx.cancelTimer(timerId);
+                                            promise.complete(new MppwStopFuture(ds, stopMppw(ds, mppwRequestContext),null));
+                                        }
+                                    }
                                 } else {
                                     log.error("Error getting plugin status: {}", ds, chr.cause());
+                                    vertx.cancelTimer(timerId);
                                     promise.fail(chr.cause());
                                 }
                             });
@@ -95,20 +102,18 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
         }));
     }
 
-    private Future<StatusQueryResult> checkMppwStatus(SourceType ds, StatusRequestContext statusRequestContext, Long timerId) {
-        return Future.future((Promise<StatusQueryResult> promise) -> pluginService.status(ds, statusRequestContext, ar -> {
+    private Future<Optional<StatusQueryResult>> checkMppwStatus(SourceType ds, StatusRequestContext statusRequestContext) {
+        return Future.future((Promise<Optional<StatusQueryResult>> promise) -> pluginService.status(ds, statusRequestContext, ar -> {
             if (ar.succeeded()) {
                 StatusQueryResult queryResult = ar.result();
                 log.trace("Plugin status received: {} mppw downloads: {}, on request: {}", ds, queryResult, statusRequestContext);
                 if (queryResult.getPartitionInfo().getEnd().equals(queryResult.getPartitionInfo().getOffset())
                         && checkLastCommitTime(queryResult.getPartitionInfo().getLastCommitTime())) {
-                    vertx.cancelTimer(timerId);
-                    promise.complete(queryResult);
+                    promise.complete(Optional.of(queryResult));
                 } else {
-                    promise.future();
+                    promise.complete(Optional.empty());
                 }
             } else {
-                vertx.cancelTimer(timerId);
                 promise.fail(ar.cause());
             }
         }));
@@ -129,13 +134,14 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
         });
     }
 
-    private void checkPluginsMppwExecution(Map<SourceType, Future> startMppwFuturefMap, Handler<AsyncResult<QueryResult>> resultHandler) {
+    private void checkPluginsMppwExecution(Map<SourceType, Future<MppwStopFuture>> startMppwFuturefMap, Handler<AsyncResult<QueryResult>> resultHandler) {
         final Map<SourceType, MppwStopFuture> mppwStopFutureMap = new HashMap<>();
         CompositeFuture.join(new ArrayList<>(startMppwFuturefMap.values()))
                 .onComplete(startComplete -> {
                     if (startComplete.succeeded()) {
-                        List<Future> stopMppwFutures = getStopMppwFutures(mppwStopFutureMap, startComplete);
-                        CompositeFuture.join(stopMppwFutures)
+                        List<Future<QueryResult>> stopMppwFutures = getStopMppwFutures(mppwStopFutureMap, startComplete);
+                        // This extra copy of futures to satisfy CompositeFuture.join signature, which require untyped Future
+                        CompositeFuture.join(new ArrayList<>(stopMppwFutures))
                                 .onComplete(stopComplete -> {
                                     if (isAllMppwPluginsHasEqualOffsets(mppwStopFutureMap)) {
                                         resultHandler.handle(Future.succeededFuture(QueryResult.emptyResult()));
@@ -153,7 +159,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
     }
 
     @NotNull
-    private List<Future> getStopMppwFutures(Map<SourceType, MppwStopFuture> mppwStopFutureMap, AsyncResult<CompositeFuture> ar) {
+    private List<Future<QueryResult>> getStopMppwFutures(Map<SourceType, MppwStopFuture> mppwStopFutureMap, AsyncResult<CompositeFuture> ar) {
         CompositeFuture mppwStart = ar.result();
         mppwStart.list().forEach(r -> {
             //проверяем что все функции начала загрузки завершились успешно
@@ -193,7 +199,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
     @ToString
     private static class MppwStopFuture {
         private SourceType sourceType;
-        private Future future;
+        private Future<QueryResult> future;
         private Long offset;
     }
 

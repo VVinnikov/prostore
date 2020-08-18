@@ -2,9 +2,11 @@ package ru.ibs.dtm.query.execution.core.calcite.ddl;
 
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.parser.SqlParseException;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import ru.ibs.dtm.query.calcite.core.extension.ddl.SqlAlterView;
+import ru.ibs.dtm.query.calcite.core.extension.ddl.SqlCreateView;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import ru.ibs.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
@@ -26,7 +28,27 @@ public class SqlDdlParserImplTest {
         assertTrue(sqlNode instanceof SqlAlterView);
         assertEquals(Arrays.asList("test", "view_a"),
                 ((SqlIdentifier) ((SqlAlterView) sqlNode).getOperandList().get(0)).names);
-        assertNotNull(((SqlAlterView) sqlNode).getOperandList().get(1));
-        assertNotNull(((SqlAlterView) sqlNode).getOperandList().get(2));
+        assertEquals(3, ((SqlAlterView) sqlNode).getOperandList().size());
     }
+
+    @Test
+    void parseAlterWithoutFromClause() {
+        assertThrows(SqlParseException.class, () -> {
+            definitionService.processingQuery("ALTER VIEW test.view_a AS SELECT * ");
+        });
+    }
+
+    @Test
+    void parseCreateViewSuccess() {
+        SqlNode sqlNode = definitionService.processingQuery("CREATE VIEW test.view_a AS SELECT * FROM test.tab_1");
+        assertTrue(sqlNode instanceof SqlCreateView);
+    }
+
+    @Test
+    void parseCreateViewWithoutFromClause() {
+        assertThrows(SqlParseException.class, () -> {
+            definitionService.processingQuery("CREATE VIEW test.view_a AS SELECT * ft");
+        });
+    }
+
 }

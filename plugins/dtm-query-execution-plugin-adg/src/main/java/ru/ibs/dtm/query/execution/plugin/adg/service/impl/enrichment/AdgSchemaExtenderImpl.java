@@ -14,6 +14,7 @@ import ru.ibs.dtm.query.execution.plugin.adg.service.SchemaExtender;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static ru.ibs.dtm.query.execution.plugin.adg.constants.ColumnFields.*;
 
@@ -30,15 +31,20 @@ public class AdgSchemaExtenderImpl implements SchemaExtender {
     }
 
     @Override
-    public Datamart generatePhysicalSchema(Datamart datamart, QueryRequest queryRequest) {
+    public List<Datamart> generatePhysicalSchema(List<Datamart> logicalSchemas, QueryRequest request) {
+        return logicalSchemas.stream().map(ls -> createPhysicalSchema(ls, request.getSystemName()))
+                .collect(Collectors.toList());
+    }
+
+    private Datamart createPhysicalSchema(Datamart logicalSchema, String systemName) {
         Datamart extendedSchema = new Datamart();
-        extendedSchema.setMnemonic(datamart.getMnemonic());
+        extendedSchema.setMnemonic(logicalSchema.getMnemonic());
         extendedSchema.setId(UUID.randomUUID());
         List<DatamartTable> extendedDatamartClasses = new ArrayList<>();
-        datamart.getDatamartTables().forEach(dmClass -> {
-            val helperTableNames = helperTableNamesFactory.create(queryRequest.getSystemName(),
-                queryRequest.getDatamartMnemonic(),
-                dmClass.getLabel());
+        logicalSchema.getDatamartTables().forEach(dmClass -> {
+            val helperTableNames = helperTableNamesFactory.create(systemName,
+                    logicalSchema.getMnemonic(),
+                    dmClass.getLabel());
             dmClass.setMnemonic(dmClass.getMnemonic());
             dmClass.getTableAttributes().addAll(getExtendedColumns());
             extendedDatamartClasses.add(dmClass);
@@ -47,7 +53,6 @@ public class AdgSchemaExtenderImpl implements SchemaExtender {
             extendedDatamartClasses.add(getExtendedSchema(dmClass, helperTableNames.getActual()));
         });
         extendedSchema.setDatamartTables(extendedDatamartClasses);
-
         return extendedSchema;
     }
 
@@ -55,6 +60,7 @@ public class AdgSchemaExtenderImpl implements SchemaExtender {
         DatamartTable datamartTableExtended = new DatamartTable();
         datamartTableExtended.setLabel(tableName);
         datamartTableExtended.setMnemonic(tableName);
+        datamartTableExtended.setDatamartMnemonic(datamartTable.getDatamartMnemonic());
         datamartTableExtended.setId(UUID.randomUUID());
         List<TableAttribute> tableAttributeList = new ArrayList<>();
         datamartTable.getTableAttributes().forEach(classAttr -> {

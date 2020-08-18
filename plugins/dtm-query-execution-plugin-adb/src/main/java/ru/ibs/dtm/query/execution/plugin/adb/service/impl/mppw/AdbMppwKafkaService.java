@@ -30,7 +30,6 @@ public class AdbMppwKafkaService implements MppwKafkaService<QueryResult> {
 
 	@Override
 	public void execute(MppwRequestContext context, Handler<AsyncResult<QueryResult>> asyncHandler) {
-		MppwRequest request = context.getRequest();
-		//TODO реализовать
+		asyncHandler.handle(Future.succeededFuture(QueryResult.emptyResult()));
 	}
 }

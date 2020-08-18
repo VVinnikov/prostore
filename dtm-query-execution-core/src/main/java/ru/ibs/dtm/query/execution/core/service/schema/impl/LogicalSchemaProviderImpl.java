@@ -37,7 +37,7 @@ public class LogicalSchemaProviderImpl implements LogicalSchemaProvider {
                     Map<DatamartSchemaKey, DatamartTable> datamartTableMap = ar.result();
                     log.trace("Received data schema on request: {}; {}", request, datamartTableMap);
                     datamartSchemaMap.putAll(datamartTableMap);
-                    resultHandler.handle(Future.succeededFuture(getDatamartSchema(datamartSchemaMap)));
+                    resultHandler.handle(Future.succeededFuture(getDatamartsSchemas(request.getDatamartMnemonic(), datamartSchemaMap)));
                 } else {
                     log.error("Error getting data schema for request: {}", request, ar.cause());
                     resultHandler.handle(Future.failedFuture(ar.cause()));
@@ -50,10 +50,15 @@ public class LogicalSchemaProviderImpl implements LogicalSchemaProvider {
     }
 
     @NotNull
-    private List<Datamart> getDatamartSchema(Map<DatamartSchemaKey, DatamartTable> datamartSchemaMap) {
+    private List<Datamart> getDatamartsSchemas(String defaultDatamart,
+                                               Map<DatamartSchemaKey, DatamartTable> datamartSchemaMap) {
         Map<String, Datamart> datamartMap = new HashMap<>();
         datamartSchemaMap.forEach((k, v) -> {
-            datamartMap.putIfAbsent(k.getSchema(), createDatamart(k.getSchema()));
+            final Datamart datamart = createDatamart(k.getSchema());
+            if (datamart.getMnemonic().equals(defaultDatamart)) {
+                datamart.setIsDefault(true);
+            }
+            datamartMap.putIfAbsent(k.getSchema(), datamart);
             datamartMap.get(k.getSchema()).getDatamartTables().add(v);
         });
         return new ArrayList<>(datamartMap.values());

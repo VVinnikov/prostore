@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.reader.SourceType;
+import ru.ibs.dtm.query.calcite.core.extension.ddl.SqlUseSchema;
 import ru.ibs.dtm.query.calcite.core.extension.delta.SqlBeginDelta;
 import ru.ibs.dtm.query.calcite.core.extension.delta.SqlCommitDelta;
 import ru.ibs.dtm.query.calcite.core.extension.eddl.DropDatabase;
@@ -124,7 +125,8 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
                 && !(sqlNode instanceof SqlCreateDatabase)
                 && !(sqlNode instanceof DropDatabase)
                 && !(sqlNode instanceof SqlBeginDelta)
-                && !(sqlNode instanceof SqlCommitDelta);
+                && !(sqlNode instanceof SqlCommitDelta)
+                && !(sqlNode instanceof SqlUseSchema);
     }
 
     @Data

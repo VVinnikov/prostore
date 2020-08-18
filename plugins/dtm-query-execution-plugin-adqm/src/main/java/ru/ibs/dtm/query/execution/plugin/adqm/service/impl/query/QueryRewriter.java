@@ -343,9 +343,6 @@ public class QueryRewriter {
         String schema = delta.getSchemaName();
         String id = delta.getTableName();
         String envPrefix = appConfiguration.getSystemName() + "__";
-        if (schema.equals("")) {
-            schema = appConfiguration.getDefaultDatamart();
-        }
         schema = envPrefix + schema;
         String postfix = firstInQuery ? "_actual" : "_actual_shard";
         if (withFinalModifiers) {

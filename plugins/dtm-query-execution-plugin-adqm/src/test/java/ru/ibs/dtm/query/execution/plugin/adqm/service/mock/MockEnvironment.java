@@ -8,11 +8,6 @@ public class MockEnvironment extends AbstractEnvironment {
         if (key.equals("core.env.name")) {
             return (T) "dev";
         }
-
-        if (key.equals("core.env.defaultDatamart")) {
-            return (T) "test_datamart";
-        }
-
         return super.getProperty(key, targetType);
     }
 }

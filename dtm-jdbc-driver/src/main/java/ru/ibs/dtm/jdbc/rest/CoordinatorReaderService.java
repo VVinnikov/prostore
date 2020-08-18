@@ -11,6 +11,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
+import ru.ibs.dtm.common.model.ddl.SystemMetadata;
 import ru.ibs.dtm.jdbc.core.QueryRequest;
 import ru.ibs.dtm.jdbc.core.QueryResult;
 import ru.ibs.dtm.jdbc.model.ColumnInfo;
@@ -41,7 +42,7 @@ public class CoordinatorReaderService implements Protocol {
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private final CloseableHttpClient client;
     private final String backendHostUrl;
-    private final String schema;
+    private String schema;
 
     @SneakyThrows
     public CoordinatorReaderService(CloseableHttpClient client, String dbHost, String schema) {
@@ -122,6 +123,7 @@ public class CoordinatorReaderService implements Protocol {
                 InputStream content = response.getEntity().getContent();
                 QueryResult result = MAPPER.readValue(content, new TypeReference<QueryResult>() {
                 });
+                setUsedSchemaIfExists(result);
                 log.info("Request received response {}", result);
                 return result;
             }
@@ -132,6 +134,17 @@ public class CoordinatorReaderService implements Protocol {
         }
     }
 
+    private void setUsedSchemaIfExists(QueryResult result) throws DtmException {
+        if (result.getMetadata().size() == 1
+                && SystemMetadata.SCHEMA == result.getMetadata().get(0).getSystemMetadata()) {
+            if (!result.isEmpty()) {
+                this.schema = result.getResult().get(0).values().stream().findFirst().toString();
+            } else {
+                throw new DtmException("Empty result for using schema!");
+            }
+        }
+    }
+
     @SneakyThrows
     private void checkResponseStatus(CloseableHttpResponse response) {
         if (HttpStatus.SC_OK != response.getStatusLine().getStatusCode()) {
@@ -139,7 +152,7 @@ public class CoordinatorReaderService implements Protocol {
                 String res = MAPPER.readValue(response.getEntity().getContent(), ResponseException.class)
                         .getExceptionMessage();
                 log.error("The system returned an unsuccessful response: {}", res);
-                throw new DtmException(res != null && ! res.isEmpty() ? res :
+                throw new DtmException(res != null && !res.isEmpty() ? res :
                         String.format("The system returned an unsuccessful response: %s", response.getStatusLine().getReasonPhrase()));
             } catch (DtmException e) {
                 throw e;

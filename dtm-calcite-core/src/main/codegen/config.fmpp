@@ -50,6 +50,7 @@ data: {
       "FINISHED",
       "DELTA_NUM",
       "LATEST_UNCOMMITED_DELTA"
+      "USE"
     ]
 
     # List of keywords from "keywords" section that are not reserved.
@@ -397,6 +398,7 @@ data: {
     statementParserMethods: [
         "SqlBeginDelta()"
         "SqlCommitDelta()"
+        "SqlUseSchema()"
     ]
 
     # List of methods for parsing custom literals.

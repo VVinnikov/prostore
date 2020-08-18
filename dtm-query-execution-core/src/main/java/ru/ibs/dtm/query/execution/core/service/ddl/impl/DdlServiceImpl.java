@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.reader.QueryResult;
+import ru.ibs.dtm.query.calcite.core.extension.ddl.SqlUseSchema;
 import ru.ibs.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
@@ -75,6 +76,8 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
             return (SqlCall) ((SqlAlter) ar.result());
         } else if (ar.result() instanceof SqlDdl) {
             return (SqlCall) ((SqlDdl) ar.result());
+        } else if (ar.result() instanceof SqlUseSchema) {
+            return (SqlCall) ((SqlUseSchema) ar.result());
         } else {
             throw new RuntimeException("Not supported request type");
         }

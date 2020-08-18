@@ -96,7 +96,6 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
                     log.debug("Loading initialize completed by [{}]", request);
                     initializedLoadingByTopic.put(ctx.getTopicName(), ctx.getConsumerTableName());
                     //loadData(ctx, handler);
-                    //transferData(ctx, handler);
                 } else {
                     log.error("Loading initialize error:", ar.cause());
                     handler.handle(Future.failedFuture(ar.cause()));
@@ -141,6 +140,7 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
 
     private void cancelLoadData(AdgMppwKafkaContext ctx, Handler<AsyncResult<QueryResult>> handler) {
         val topicName = ctx.getTopicName();
+        transferData(ctx,handler);
         cartridgeClient.cancelSubscription(topicName, ar -> {
             initializedLoadingByTopic.remove(topicName);
             if (ar.succeeded()) {

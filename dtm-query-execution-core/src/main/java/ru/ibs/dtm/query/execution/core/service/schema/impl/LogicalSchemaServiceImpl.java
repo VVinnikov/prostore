@@ -50,17 +50,16 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
             final List<DatamartInfo> tableInfoList = getDatamartInfoListFromQuery(request.getSql());
             tableInfoList.forEach(datamart -> datamartTableFutures.add(getDatamartFuture(datamart)));
             CompositeFuture.join(datamartTableFutures)
-                .onComplete(ar -> {
-                    if (ar.succeeded()) {
-                        CompositeFuture tabFuture = ar.result();
-                        final Map<String, DatamartTable> tableMap = new HashMap<>();
-                        final List<Future> attributeFutures = initDatamartTables(tabFuture, datamartSchemaMap, tableMap);
-                        CompositeFuture.join(attributeFutures)
-                            .onComplete(getDatamartTables(datamartSchemaMap, tableMap, resultHandler));
-                    } else {
-                        resultHandler.handle(Future.failedFuture(ar.cause()));
-                    }
-                });
+                    .onComplete(ar -> {
+                        if (ar.succeeded()) {
+                            CompositeFuture tabFuture = ar.result();
+                            final List<Future> attributeFutures = initDatamartTables(tabFuture, datamartSchemaMap);
+                            CompositeFuture.join(attributeFutures)
+                                    .onComplete(getDatamartTables(datamartSchemaMap, resultHandler));
+                        } else {
+                            resultHandler.handle(Future.failedFuture(ar.cause()));
+                        }
+                    });
         } catch (Exception e) {
             resultHandler.handle(Future.failedFuture(e));
         }
@@ -72,17 +71,17 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
         val tree = new SqlSelectTree(sqlNode);
         Map<String, DatamartInfo> datamartMap = new HashMap<>();
         tree.findAllTableAndSnapshots().stream()
-            .map(node -> DeltaInformationExtractor.getDeltaInformation(tree, node))
-            .filter(Objects::nonNull)
-            .collect(Collectors.toList())
-            .forEach(node -> {
-                //подразумевается, что на данном этапе в запросе уже будет проставлен defaultDatamart там, где требуется
-                String schemaName = node.getSchemaName();
-                String tableName = node.getTableName();
-                DatamartInfo datamartInfo = datamartMap.getOrDefault(schemaName, new DatamartInfo(schemaName, new HashSet<>()));
-                datamartInfo.getTables().add(tableName);
-                datamartMap.putIfAbsent(datamartInfo.getSchemaName(), datamartInfo);
-            });
+                .map(node -> DeltaInformationExtractor.getDeltaInformation(tree, node))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList())
+                .forEach(node -> {
+                    //подразумевается, что на данном этапе в запросе уже будет проставлен defaultDatamart там, где требуется
+                    String schemaName = node.getSchemaName();
+                    String tableName = node.getTableName();
+                    DatamartInfo datamartInfo = datamartMap.getOrDefault(schemaName, new DatamartInfo(schemaName, new HashSet<>()));
+                    datamartInfo.getTables().add(tableName);
+                    datamartMap.putIfAbsent(datamartInfo.getSchemaName(), datamartInfo);
+                });
         return new ArrayList<>(datamartMap.values());
     }
 
@@ -93,7 +92,7 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
                     List<DatamartEntity> entities = ar.result();
                     final List<DatamartTableFuture> datamartTableFutures = new ArrayList<>();
                     entities.forEach(entity -> datamartTableFutures.add(new DatamartTableFuture(entity,
-                        getDtatmartEntityAttributes(entity))));
+                            getDtatmartEntityAttributes(entity))));
                     promise.complete(new DatamartFuture(datamartInfo, datamartTableFutures));
                 } else {
                     promise.fail(ar.cause());
@@ -104,19 +103,18 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
 
     private Future<List<EntityAttribute>> getDtatmartEntityAttributes(DatamartEntity datamartEntity) {
         return Future.future((Promise<List<EntityAttribute>> promise) ->
-            serviceDbFacade.getServiceDbDao().getAttributeDao().getAttributesMeta(datamartEntity.getDatamartMnemonic(),
-                datamartEntity.getMnemonic(), promise));
+                serviceDbFacade.getServiceDbDao().getAttributeDao().getAttributesMeta(datamartEntity.getDatamartMnemonic(),
+                        datamartEntity.getMnemonic(), promise));
     }
 
     @NotNull
     private Handler<AsyncResult<CompositeFuture>> getDatamartTables(Map<DatamartSchemaKey, DatamartTable> datamartSchemaMap,
-                                                                    Map<String, DatamartTable> tableMap,
                                                                     Handler<AsyncResult<Map<DatamartSchemaKey, DatamartTable>>> resultHandler) {
         return atr -> {
             if (atr.succeeded()) {
                 CompositeFuture attrFuture = atr.result();
                 try {
-                    initTableAttributes(attrFuture, tableMap);
+                    initTableAttributes(attrFuture, datamartSchemaMap);
                     resultHandler.handle(Future.succeededFuture(datamartSchemaMap));
                 } catch (Exception e) {
                     log.error("Error initializing table attributes!", e);
@@ -128,8 +126,8 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
         };
     }
 
-    private List<Future> initDatamartTables(CompositeFuture datamartFuture, Map<DatamartSchemaKey, DatamartTable> datamartSchemaMap,
-                                            Map<String, DatamartTable> tableMap) {
+    private List<Future> initDatamartTables(CompositeFuture datamartFuture,
+                                            Map<DatamartSchemaKey, DatamartTable> datamartSchemaMap) {
         final List<Future> attrFutures = new ArrayList<>();
         try {
             datamartFuture.list().forEach(res -> {
@@ -137,7 +135,6 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
                 dmFuture.getTableFutures().forEach(tf -> {
                     final DatamartTable datamartTable = createDatamartTable(tf.getTable());
                     datamartSchemaMap.put(createDatamartSchemaKey(datamartTable), datamartTable);
-                    tableMap.put(datamartTable.getLabel(), datamartTable);
                     attrFutures.add(tf.getAttributeFuture());
                 });
             });
@@ -148,13 +145,15 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
         return attrFutures;
     }
 
-    private void initTableAttributes(CompositeFuture attrFuture, Map<String, DatamartTable> tableMap) {
+    private void initTableAttributes(CompositeFuture attrFuture, Map<DatamartSchemaKey, DatamartTable> datamartSchemaMap) {
         attrFuture.list().forEach(entAttr -> {
             List<EntityAttribute> entityAttributes = (List<EntityAttribute>) entAttr;
             if (!entityAttributes.isEmpty()) {
-                String tableLabel = entityAttributes.get(0).getEntityMnemonic();
+                final DatamartSchemaKey datamartSchemaKey = new DatamartSchemaKey(
+                        entityAttributes.get(0).getDatamartMnemonic(),
+                        entityAttributes.get(0).getEntityMnemonic());
                 //FIXME доделать выставление primaryKeys, после добавления признака PK в таблице attributes_registry
-                tableMap.get(tableLabel).setTableAttributes(createTableAttributes(entityAttributes));
+                datamartSchemaMap.get(datamartSchemaKey).setTableAttributes(createTableAttributes(entityAttributes));
             } else {
                 throw new RuntimeException("Список атрибутов должен быть не пустой!");
             }
@@ -180,20 +179,20 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
     @NotNull
     private List<TableAttribute> createTableAttributes(List<EntityAttribute> attrs) {
         return attrs.stream()
-            .sorted(Comparator.comparing(EntityAttribute::getOrdinalPosition))
-            .map(attr -> {
-                final TableAttribute tableAttribute = new TableAttribute();
-                tableAttribute.setId(UUID.randomUUID());
-                tableAttribute.setMnemonic(attr.getMnemonic());
-                tableAttribute.setType(mapColumnType(attr.getDataType()));
-                tableAttribute.setLength(attr.getLength());
-                tableAttribute.setAccuracy(attr.getAccuracy());
-                tableAttribute.setPrimaryKeyOrder(attr.getPrimaryKeyOrder());
-                tableAttribute.setDistributeKeyOrder(attr.getDistributeKeykOrder());
-                tableAttribute.setOrdinalPosition(attr.getOrdinalPosition());
-                tableAttribute.setNullable(attr.getNullable());
-                return tableAttribute;
-            }).collect(Collectors.toList());
+                .sorted(Comparator.comparing(EntityAttribute::getOrdinalPosition))
+                .map(attr -> {
+                    final TableAttribute tableAttribute = new TableAttribute();
+                    tableAttribute.setId(UUID.randomUUID());
+                    tableAttribute.setMnemonic(attr.getMnemonic());
+                    tableAttribute.setType(mapColumnType(attr.getDataType()));
+                    tableAttribute.setLength(attr.getLength());
+                    tableAttribute.setAccuracy(attr.getAccuracy());
+                    tableAttribute.setPrimaryKeyOrder(attr.getPrimaryKeyOrder());
+                    tableAttribute.setDistributeKeyOrder(attr.getDistributeKeykOrder());
+                    tableAttribute.setOrdinalPosition(attr.getOrdinalPosition());
+                    tableAttribute.setNullable(attr.getNullable());
+                    return tableAttribute;
+                }).collect(Collectors.toList());
     }
 
     private AttributeType mapColumnType(ColumnType dataType) {

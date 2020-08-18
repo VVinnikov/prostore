@@ -9,6 +9,9 @@ logging:
           clients: ERROR
 
 core:
+  plugins:
+    active: ${CORE_PLUGINS_ACTIVE:ADG, ADB, ADQM}
+
   http:
     port: ${SERVER_PORT:8088}
 

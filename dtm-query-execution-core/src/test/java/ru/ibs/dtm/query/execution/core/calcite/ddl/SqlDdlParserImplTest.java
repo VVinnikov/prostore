@@ -2,12 +2,11 @@ package ru.ibs.dtm.query.execution.core.calcite.ddl;
 
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlSelect;
-import org.apache.calcite.sql.ddl.SqlCreateView;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import ru.ibs.dtm.query.calcite.core.extension.ddl.SqlAlterView;
+import ru.ibs.dtm.query.calcite.core.extension.ddl.SqlCreateView;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import ru.ibs.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;

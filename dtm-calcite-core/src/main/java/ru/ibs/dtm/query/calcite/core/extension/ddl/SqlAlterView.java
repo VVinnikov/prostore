@@ -24,7 +24,7 @@ public class SqlAlterView extends SqlAlter {
     private SqlNode checkQueryAndGet(SqlNode query) throws ParseException {
         if (query instanceof SqlSelect) {
             if (((SqlSelect) query).getFrom() == null) {
-                throw new ParseException("From clause can not be null!");
+                throw new ParseException("View query must have from clause!");
             } else {
                 return query;
             }

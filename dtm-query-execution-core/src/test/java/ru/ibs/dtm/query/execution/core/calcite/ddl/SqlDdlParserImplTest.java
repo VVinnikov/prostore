@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import ru.ibs.dtm.query.calcite.core.extension.ddl.SqlAlterView;
 import ru.ibs.dtm.query.calcite.core.extension.ddl.SqlUseSchema;
+import ru.ibs.dtm.query.calcite.core.extension.ddl.SqlCreateView;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import ru.ibs.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
@@ -60,4 +61,25 @@ public class SqlDdlParserImplTest {
             definitionService.processingQuery("USE 'shares'");
         });
     }
+
+    @Test
+    void parseAlterWithoutFromClause() {
+        assertThrows(SqlParseException.class, () -> {
+            definitionService.processingQuery("ALTER VIEW test.view_a AS SELECT * ");
+        });
+    }
+
+    @Test
+    void parseCreateViewSuccess() {
+        SqlNode sqlNode = definitionService.processingQuery("CREATE VIEW test.view_a AS SELECT * FROM test.tab_1");
+        assertTrue(sqlNode instanceof SqlCreateView);
+    }
+
+    @Test
+    void parseCreateViewWithoutFromClause() {
+        assertThrows(SqlParseException.class, () -> {
+            definitionService.processingQuery("CREATE VIEW test.view_a AS SELECT * ft");
+        });
+    }
+
 }

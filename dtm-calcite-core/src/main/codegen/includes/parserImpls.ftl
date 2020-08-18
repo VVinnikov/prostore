@@ -321,8 +321,7 @@ SqlCreate SqlCreateView(Span s, boolean replace) :
     <VIEW> id = CompoundIdentifier()
     [ columnList = ParenthesizedSimpleIdentifierList() ]
     <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) {
-        return SqlDdlNodes.createView(s.end(this), replace, id, columnList,
-            query);
+        return new ru.ibs.dtm.query.calcite.core.extension.ddl.SqlCreateView(s.end(this), replace, id, columnList, query);
     }
 }
 SqlAlter SqlAlterView(Span s) :

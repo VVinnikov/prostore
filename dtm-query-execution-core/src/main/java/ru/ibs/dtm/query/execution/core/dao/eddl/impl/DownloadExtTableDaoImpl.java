@@ -17,7 +17,8 @@ import ru.ibs.dtm.query.execution.core.dao.eddl.DownloadExtTableDao;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.DatamartDao;
 import ru.ibs.dtm.query.execution.core.dto.eddl.CreateDownloadExternalTableQuery;
 import ru.ibs.dtm.query.execution.core.dto.edml.DownloadExtTableRecord;
-
+import org.springframework.util.StringUtils;
+import io.vertx.core.json.JsonObject;
 import static org.jooq.generated.dtmservice.Tables.*;
 
 @Repository
@@ -95,7 +96,8 @@ public class DownloadExtTableDaoImpl implements DownloadExtTableDao {
                         DOWNLOAD_EXTERNAL_TABLE.LOCATION,
                         DOWNLOAD_EXTERNAL_FORMAT.NAME,
                         DOWNLOAD_EXTERNAL_TABLE.CHUNK_SIZE,
-                        DATAMARTS_REGISTRY.DATAMART_ID
+                        DATAMARTS_REGISTRY.DATAMART_ID,
+                        DOWNLOAD_EXTERNAL_TABLE.TABLE_SCHEMA
                 )
                 .from(DOWNLOAD_EXTERNAL_TABLE)
                 .join(DATAMARTS_REGISTRY).on(DATAMARTS_REGISTRY.DATAMART_ID.eq(DOWNLOAD_EXTERNAL_TABLE.SCHEMA_ID))
@@ -119,6 +121,8 @@ public class DownloadExtTableDaoImpl implements DownloadExtTableDao {
                 final String format = result.get(3, String.class);
                 final Integer chunkSize = result.get(DOWNLOAD_EXTERNAL_TABLE.CHUNK_SIZE);
                 final Long datamartId = result.get(5, Long.class);
+                String tableSchema = result.get(6, String.class);
+                tableSchema = StringUtils.hasText(tableSchema) ? tableSchema : "";
 
                 DownloadExtTableRecord record = new DownloadExtTableRecord();
                 record.setId(downloadExtTableId);
@@ -128,6 +132,7 @@ public class DownloadExtTableDaoImpl implements DownloadExtTableDao {
                 record.setLocationPath(locationPath);
                 record.setFormat(Format.findByName(format));
                 record.setChunkSize(chunkSize);
+                record.setTableSchema(new JsonObject(tableSchema));
 
                 log.debug("Search external table {}.{}, Result (id): {}", datamartMnemonic, table, downloadExtTableId);
                 resultHandler.handle(Future.succeededFuture(record));

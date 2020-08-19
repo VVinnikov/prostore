@@ -1,5 +1,6 @@
 package ru.ibs.dtm.query.execution.plugin.adg.service.impl;
 
+import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import lombok.SneakyThrows;
@@ -11,6 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import ru.ibs.dtm.common.service.DeltaService;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.OperationFile;
+import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtUploadDataKafkaRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response.ResConfig;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response.ResStatusEnum;
 import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeClient;
@@ -96,14 +98,11 @@ class TtCartridgeClientImplIT {
   @Test
   @SneakyThrows
   void uploadData(VertxTestContext testContext) {
-    client.uploadData("select count(*) from employees", "test", 1000, ar -> {
+    val request = new TtUploadDataKafkaRequest("select count(*) from employees",
+            "test", 1000, new JsonObject(""));
+
+    client.uploadData(request, ar -> {
       if (ar.succeeded()) {
-        val status = ar.result();
-        if (ResStatusEnum.ok == status.getStatus()) {
-          testContext.completeNow();
-        } else {
-          testContext.failNow(ar.cause());
-        }
         testContext.completeNow();
       } else {
         testContext.failNow(ar.cause());
@@ -115,7 +114,9 @@ class TtCartridgeClientImplIT {
   @Test
   @SneakyThrows
   void badUploadData(VertxTestContext testContext) {
-    client.uploadData("count(*) from employees", "test", 1000, ar -> {
+    val request = new TtUploadDataKafkaRequest("count(*) from employees",
+            "test", 1000, new JsonObject(""));
+    client.uploadData(request,ar -> {
       if (ar.succeeded()) {
         testContext.failNow(ar.cause());
       } else {

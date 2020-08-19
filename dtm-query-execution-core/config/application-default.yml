@@ -10,7 +10,6 @@ core:
 
   env:
     name: ${DTM_NAME:test}
-    defaultDatamart: ${DEFAULT_DATAMART:shares}
 
   datasource:
     edml:

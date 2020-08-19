@@ -48,9 +48,6 @@ public class DdlUtils {
 
         String tableName = loadParam.getTableName();
         String schema = loadParam.getDatamart();
-        if (StringUtils.isEmpty(schema)) {
-            schema = appConfiguration.getDefaultDatamart();
-        }
         String env = appConfiguration.getSystemName();
         return env + "__" + schema + "." + tableName;
     }

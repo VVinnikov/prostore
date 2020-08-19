@@ -18,4 +18,8 @@ public class TarantoolCartridgeProperties {
   private String kafkaLoadDataUrl = "/api/v1/kafka/dataload";
 
   private String transferDataToScdTableUrl = "/api/etl/transfer_data_to_scd_table";
+
+  private String kafkaUploadDataUrl = "/api/v1/kafka/dataunload/query";
+
+  private String tableBatchDeleteUrl = "/api/v1/ddl/table/batchDelete";
 }

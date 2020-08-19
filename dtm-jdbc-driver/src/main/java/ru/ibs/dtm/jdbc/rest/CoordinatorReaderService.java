@@ -135,7 +135,7 @@ public class CoordinatorReaderService implements Protocol {
     }
 
     private void setUsedSchemaIfExists(QueryResult result) throws DtmException {
-        if (result.getMetadata().size() == 1
+        if (result.getMetadata() != null && result.getMetadata().size() == 1
                 && SystemMetadata.SCHEMA == result.getMetadata().get(0).getSystemMetadata()) {
             if (!result.isEmpty()) {
                 this.schema = result.getResult().get(0).values().stream().findFirst().toString();

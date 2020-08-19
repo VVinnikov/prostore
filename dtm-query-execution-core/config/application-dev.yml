@@ -83,7 +83,6 @@ adg:
     consumerGroup: ${ADG_CONSUMER_GROUP:tarantool-group-csv}
     kafka:
       maxNumberOfMessagesPerPartition: 200
-      callbackFunctionName: transfer_data_to_scd_table_on_cluster_cb
       callbackFunctionSecIdle: 100
 adqm:
   datasource:

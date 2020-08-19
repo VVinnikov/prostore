@@ -11,7 +11,7 @@ import java.util.HashMap;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class TtTransferDataScdCallbackParameter extends TtKafkaCallbackParameter {
+public class TtTransferDataScdCallbackParameter implements TtKafkaCallbackParameter {
 
     @JsonProperty("_space")
     private String spaceName;

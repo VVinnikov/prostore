@@ -27,6 +27,7 @@ import ru.ibs.dtm.query.execution.core.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.core.factory.RequestContextFactory;
 import ru.ibs.dtm.query.execution.core.service.QueryAnalyzer;
 import ru.ibs.dtm.query.execution.core.service.QueryDispatcher;
+import ru.ibs.dtm.query.execution.core.service.SemicolonRemover;
 import ru.ibs.dtm.query.execution.core.utils.DatamartMnemonicExtractor;
 import ru.ibs.dtm.query.execution.core.utils.DefaultDatamartSetter;
 import ru.ibs.dtm.query.execution.core.utils.HintExtractor;
@@ -45,6 +46,7 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
     private final AppConfiguration configuration;
     private final DatamartMnemonicExtractor datamartMnemonicExtractor;
     private final DefaultDatamartSetter defaultDatamartSetter;
+    private final SemicolonRemover semicolonRemover;
 
     @Autowired
     public QueryAnalyzerImpl(QueryDispatcher queryDispatcher,
@@ -54,7 +56,8 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
                              HintExtractor hintExtractor,
                              DatamartMnemonicExtractor datamartMnemonicExtractor,
                              AppConfiguration configuration,
-                             DefaultDatamartSetter defaultDatamartSetter) {
+                             DefaultDatamartSetter defaultDatamartSetter,
+                             SemicolonRemover semicolonRemover) {
         this.queryDispatcher = queryDispatcher;
         this.definitionService = definitionService;
         this.requestContextFactory = requestContextFactory;
@@ -63,6 +66,7 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
         this.datamartMnemonicExtractor = datamartMnemonicExtractor;
         this.configuration = configuration;
         this.defaultDatamartSetter = defaultDatamartSetter;
+        this.semicolonRemover = semicolonRemover;
     }
 
     @Override
@@ -100,7 +104,8 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
         vertx.executeBlocking(it ->
                 {
                     try {
-                        val hint = hintExtractor.extractHint(queryRequest);
+                        val withoutSemicolon =  semicolonRemover.remove(queryRequest);
+                        val hint = hintExtractor.extractHint(withoutSemicolon);
                         val query = hint.getQueryRequest().getSql();
                         log.debug("Pre-parse request: {}", query);
                         val node = definitionService.processingQuery(query);

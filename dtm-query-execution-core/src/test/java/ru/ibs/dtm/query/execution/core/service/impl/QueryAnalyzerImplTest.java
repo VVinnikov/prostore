@@ -19,7 +19,6 @@ import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
-import ru.ibs.dtm.query.execution.core.dto.ParsedQueryRequest;
 import ru.ibs.dtm.query.execution.core.factory.RequestContextFactory;
 import ru.ibs.dtm.query.execution.core.factory.impl.RequestContextFactoryImpl;
 import ru.ibs.dtm.query.execution.core.service.QueryAnalyzer;
@@ -28,7 +27,6 @@ import ru.ibs.dtm.query.execution.core.utils.DatamartMnemonicExtractor;
 import ru.ibs.dtm.query.execution.core.utils.DefaultDatamartSetter;
 import ru.ibs.dtm.query.execution.core.utils.HintExtractor;
 import ru.ibs.dtm.query.execution.plugin.api.RequestContext;
-import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
 import ru.ibs.dtm.query.execution.plugin.api.service.SqlProcessingType;
 
@@ -50,7 +48,12 @@ class QueryAnalyzerImplTest {
     private QueryAnalyzer queryAnalyzer = new QueryAnalyzerImpl(queryDispatcher,
             definitionService,
             requestContextFactory,
-            vertx, new HintExtractor(), new DatamartMnemonicExtractor(), new AppConfiguration(mock(Environment.class)), new DefaultDatamartSetter());
+            vertx,
+            new HintExtractor(),
+            new DatamartMnemonicExtractor(),
+            new AppConfiguration(mock(Environment.class)),
+            new DefaultDatamartSetter(),
+            new SemicolonRemoverImpl());
 
     @Test
     void parsedSelect() {

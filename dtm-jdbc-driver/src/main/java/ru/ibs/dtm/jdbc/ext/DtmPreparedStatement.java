@@ -21,6 +21,7 @@ public class DtmPreparedStatement extends DtmStatement implements PreparedStatem
 
     @Override
     public ResultSet executeQuery() throws SQLException {
+        execute();
         return resultSet;
     }
 

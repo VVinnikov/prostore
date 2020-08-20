@@ -145,7 +145,7 @@ class MppwStartRequestHandlerTest {
         loadParam.setTableName("accounts");
         loadParam.setDeltaHot(101L);
         loadParam.setFormat(Format.AVRO);
-
+        loadParam.setMessageLimit(1000);
         return loadParam;
     }
 

@@ -66,7 +66,8 @@ adb:
     url: ${ADB_MPPR_CONNECTOR_URL:/query}
 
   mppw:
-    consumerGroup: ${ADB_CONSUMER_GROUP:adb-query-execution}
+    loadUrl: ${ADB_LOAD_URL:http://adb-emulator:8090/newdata/adb}
+    consumerGroup: ${ADB_LOAD_GROUP:adb-emulator-load-adb}
 
 adg:
   tarantool:
@@ -98,5 +99,5 @@ adqm:
     consumerGroup: ${ADQM_CONSUMER_GROUP:adqm}
     kafkaBrokers: ${ADQM_BROKERS:kafka-1.dtm.local:9092}
     loadType: ${ADQM_MPPW_LOAD_TYPE:REST}
-    restLoadUrl: ${ADQM_REST_LOAD_URL:http://adb-emulator:8090/newdata}
-    restLoadConsumerGroup: ${ADQM_REST_LOAD_GROUP:adb-query-execution}
+    restLoadUrl: ${ADQM_REST_LOAD_URL:http://adb-emulator:8090/newdata/adqm}
+    restLoadConsumerGroup: ${ADQM_REST_LOAD_GROUP:adb-emulator-load-adqm}

@@ -39,7 +39,7 @@ public class CalciteConfiguration {
                 .setParserFactory(factory)
                 .setConformance(SqlConformanceEnum.DEFAULT)
                 .setLex(Lex.MYSQL)
-                .setCaseSensitive(false)
+                .setCaseSensitive(true)
                 .setUnquotedCasing(Casing.TO_LOWER)
                 .setQuotedCasing(Casing.TO_LOWER)
                 .setQuoting(Quoting.DOUBLE_QUOTE)

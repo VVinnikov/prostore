@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.apache.http.util.TextUtils.isEmpty;
@@ -135,10 +136,15 @@ public class CoordinatorReaderService implements Protocol {
     }
 
     private void setUsedSchemaIfExists(QueryResult result) throws DtmException {
-        if (result.getMetadata().size() == 1
+        if (result.getMetadata() != null && result.getMetadata().size() == 1
                 && SystemMetadata.SCHEMA == result.getMetadata().get(0).getSystemMetadata()) {
             if (!result.isEmpty()) {
-                this.schema = result.getResult().get(0).values().stream().findFirst().toString();
+                final Optional<Object> schemaOptional = result.getResult().get(0).values().stream().findFirst();
+                if (schemaOptional.isPresent()){
+                    this.schema = schemaOptional.get().toString();
+                } else {
+                    throw new DtmException("Schema value not found!");
+                }
             } else {
                 throw new DtmException("Empty result for using schema!");
             }

@@ -2,6 +2,7 @@ package ru.ibs.dtm.query.execution.core.service.delta.impl;
 
 import io.vertx.core.*;
 import lombok.extern.slf4j.Slf4j;
+import lombok.var;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -18,6 +19,7 @@ import ru.ibs.dtm.query.execution.plugin.api.delta.query.CommitDeltaQuery;
 import ru.ibs.dtm.query.execution.plugin.api.delta.query.DeltaAction;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 import static ru.ibs.dtm.query.execution.plugin.api.delta.query.DeltaAction.COMMIT_DELTA;
 
@@ -41,10 +43,10 @@ public class CommitDeltaExecutor implements DeltaExecutor, StatusEventPublisher 
     @Override
     public void execute(DeltaRequestContext context, Handler<AsyncResult<QueryResult>> handler) {
         getDeltaHotByDatamart(context)
-            .compose(deltaHotRecord -> getDeltaActualBySinIdAndDatamart(context, deltaHotRecord))
-            .compose(deltaActualRecord -> updateActualDelta(context, deltaActualRecord))
-            .onSuccess(success -> handler.handle(Future.succeededFuture(success)))
-            .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
+                .compose(deltaHotRecord -> getDeltaActualBySinIdAndDatamart(context, deltaHotRecord))
+                .compose(deltaActualRecord -> updateActualDelta(context, deltaActualRecord))
+                .onSuccess(success -> handler.handle(Future.succeededFuture(success)))
+                .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
     }
 
     private Future<DeltaRecord> getDeltaHotByDatamart(DeltaRequestContext context) {
@@ -53,7 +55,7 @@ public class CommitDeltaExecutor implements DeltaExecutor, StatusEventPublisher 
                     if (ar.succeeded()) {
                         DeltaRecord deltaHotRecord = ar.result();
                         log.debug("Found last delta: {} for datamart: {}", deltaHotRecord, context.getRequest().getQueryRequest().getDatamartMnemonic());
-                        if (!deltaHotRecord.getStatus().equals(DeltaLoadStatus.IN_PROCESS)) {
+                        if (! deltaHotRecord.getStatus().equals(DeltaLoadStatus.IN_PROCESS)) {
                             promiseDelta.fail(new RuntimeException("Data loading for the given delta has not been completed yet!"));
                         }
                         promiseDelta.complete(deltaHotRecord);
@@ -71,19 +73,31 @@ public class CommitDeltaExecutor implements DeltaExecutor, StatusEventPublisher 
                                 DeltaRecord deltaActualRecord = ar.result();
                                 log.debug("Actual delta found: {} for datamart: {}", deltaActualRecord,
                                         context.getRequest().getQueryRequest().getDatamartMnemonic());
-                                if (((CommitDeltaQuery) context.getDeltaQuery()).getDeltaDateTime() != null
+
+                                if (deltaActualRecord != null && ((CommitDeltaQuery) context.getDeltaQuery()).getDeltaDateTime() != null
                                         && (deltaActualRecord.getSysDate().isAfter(((CommitDeltaQuery) context.getDeltaQuery()).getDeltaDateTime())
                                         || deltaActualRecord.getSysDate().equals(((CommitDeltaQuery) context.getDeltaQuery()).getDeltaDateTime()))) {
-                                    promiseDelta.fail(new RuntimeException("The specified time is less than or equal to the time of the actual delta!"));
+                                    promiseDelta.fail("The specified time is less than or equal to the time of the actual delta!");
                                 }
+                                deltaHotRecord.setSysDate(getSysDate(context));
                                 deltaHotRecord.setStatusDate(LocalDateTime.now());
-                                deltaHotRecord.setSysDate(LocalDateTime.now());
                                 deltaHotRecord.setStatus(DeltaLoadStatus.SUCCESS);
                                 promiseDelta.complete(deltaHotRecord);
                             } else {
                                 promiseDelta.fail(ar.cause());
                             }
                         }));
+    }
+
+    private LocalDateTime getSysDate(DeltaRequestContext context) {
+        var sysDate = LocalDateTime.now(ZoneOffset.UTC);
+        if (context.getDeltaQuery() instanceof CommitDeltaQuery) {
+            CommitDeltaQuery query = (CommitDeltaQuery) context.getDeltaQuery();
+            if (query != null && query.getDeltaDateTime() != null) {
+                sysDate = query.getDeltaDateTime();
+            }
+        }
+        return sysDate;
     }
 
     private Future<QueryResult> updateActualDelta(DeltaRequestContext context, DeltaRecord deltaHotRecord) {

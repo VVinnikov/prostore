@@ -85,10 +85,15 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
         val defDatamartMnemonic = context.getRequest().getQueryRequest().getDatamartMnemonic();
         val tableInfos = tableAndSnapshots.stream()
                 .map(n -> new TableInfo(n.tryGetSchemaName().orElse(defDatamartMnemonic),
-                        n.tryGetTableName().orElseThrow(() -> new RuntimeException(""))))
+                        n.tryGetTableName().orElseThrow(() -> getCantGetTableNameError(context))))
                 .collect(Collectors.toList());
         context.setTargetTable(tableInfos.get(0));
         context.setSourceTable(tableInfos.get(1));
+    }
+
+    private RuntimeException getCantGetTableNameError(EdmlRequestContext context) {
+        val sql = context.getRequest().getQueryRequest().getSql();
+        return new RuntimeException("Can't get table name from sql: " + sql);
     }
 
     private Future<Void> checkUploadExtTargetTableExists(EdmlRequestContext context) {
@@ -96,8 +101,8 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
                 serviceDbFacade.getEddlServiceDao().getUploadExtTableDao().findUploadExternalTable(context.getTargetTable().getSchemaName(),
                         context.getTargetTable().getTableName(), ar -> {
                             if (ar.succeeded()) {
-                                promise.fail(new RuntimeException("Unable to write data to external load table: "
-                                        + context.getSqlNode().getTargetTable().toString()));
+                                promise.fail("Unable to write data to external load table: "
+                                        + context.getSqlNode().getTargetTable().toString());
                             } else {
                                 promise.complete();
                             }

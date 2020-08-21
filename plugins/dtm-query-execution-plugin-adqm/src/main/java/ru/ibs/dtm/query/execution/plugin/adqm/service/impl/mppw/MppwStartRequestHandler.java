@@ -224,6 +224,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         request.setZookeeperHost(mppwRequest.getZookeeperHost());
         request.setZookeeperPort(mppwRequest.getZookeeperPort());
         request.setKafkaTopic(mppwRequest.getTopic());
+        request.setConsumerGroup(mppwProperties.getRestLoadConsumerGroup());
         request.setFormat(mppwRequest.getQueryLoadParam().getFormat().getName());
 
         try {

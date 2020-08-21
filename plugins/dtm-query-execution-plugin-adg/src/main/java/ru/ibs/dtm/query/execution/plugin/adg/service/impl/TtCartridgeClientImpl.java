@@ -222,7 +222,7 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
   }
 
   private <T> void unexpectedResponse(Handler<AsyncResult<T>> handler, HttpResponse<Buffer> response) {
-    String failureMessage = String.format("Unexpected response %s", response);
+    String failureMessage = String.format("Unexpected response %s", response.bodyAsJsonObject());
     handler.handle(Future.failedFuture(failureMessage));
   }
 
@@ -293,7 +293,7 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
       if (statusCode == 200) {
         val successResponse = response.bodyAsJson(TtDeleteBatchResponse.class);
         handler.handle(Future.succeededFuture(successResponse));
-        log.debug("Loading Successful");
+        log.debug("spaces added to delete queue successful");
       } else if (statusCode == 500) {
         handler.handle(Future.failedFuture(response.bodyAsJson(TtKafkaError.class)));
       }  else {
@@ -306,18 +306,39 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
   }
 
   @Override
-  public void executeDeleteQueue(TtDeleteTablesQueueRequest request, Handler<AsyncResult<Void>> handler) {
+  public void executeDeleteQueue(TtDeleteTablesQueueRequest request, Handler<AsyncResult<TtDeleteQueueResponse>> handler) {
     val uri = cartridgeProperties.getUrl() + cartridgeProperties.getTableBatchDeleteUrl() + "/"
-            + request.getBatchId().toString();
+            + request.getBatchId();
     log.debug("send to [{}]", uri);
     webClient.deleteAbs(uri)
             .send(ar -> {
               if (ar.succeeded()) {
                 val response = ar.result();
-                handleCancelSubscription(response, handler);
+                handleExecuteDeleteQueue(response, handler);
               } else {
                 handler.handle(Future.failedFuture(ar.cause()));
               }
             });
+  }
+
+  private void handleExecuteDeleteQueue(HttpResponse<Buffer> response,
+                                        Handler<AsyncResult<TtDeleteQueueResponse>> handler) {
+    try {
+      log.trace("handle [executeDeleteQueue] response [{}]", response);
+      val statusCode = response.statusCode();
+      if(statusCode == 200) {
+        val successResponse = response.bodyAsJson(TtDeleteQueueResponse.class);
+        handler.handle(Future.succeededFuture(successResponse));
+        log.debug("spaces [{}] dropped successful",successResponse);
+      }
+      else if (statusCode == 500) {
+        handler.handle(Future.failedFuture(response.bodyAsJson(TtKafkaError.class)));
+      } else {
+        unexpectedResponse(handler,response);
+      }
+    }
+    catch (Exception ex) {
+      handler.handle(Future.failedFuture(ex));
+    }
   }
 }

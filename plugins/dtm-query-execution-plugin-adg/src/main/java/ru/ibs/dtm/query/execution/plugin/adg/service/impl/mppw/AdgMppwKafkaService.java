@@ -62,9 +62,9 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
             } else {
                 val msg = String.format(
                         "Tables must be the same within a single load by topic [%s]. Actual [%s], but expected [%s]"
+                        , ctx.getTopicName()
                         , ctx.getConsumerTableName()
-                        , expectedTableName
-                        , ctx.getTopicName());
+                        , expectedTableName);
                 log.error(msg);
                 handler.handle(Future.failedFuture(msg));
             }

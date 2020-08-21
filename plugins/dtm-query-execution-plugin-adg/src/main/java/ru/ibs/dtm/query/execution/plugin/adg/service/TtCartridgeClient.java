@@ -6,6 +6,7 @@ import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.OperationFile;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.*;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response.ResOperation;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response.TtDeleteBatchResponse;
+import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response.TtDeleteQueueResponse;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response.TtLoadDataKafkaResponse;
 
 import java.util.List;
@@ -36,5 +37,5 @@ public interface TtCartridgeClient {
 
   void addSpacesToDeleteQueue(TtDeleteTablesRequest request, Handler<AsyncResult<TtDeleteBatchResponse>> handler);
 
-  void executeDeleteQueue(TtDeleteTablesQueueRequest request, Handler<AsyncResult<Void>> handler);
+  void executeDeleteQueue(TtDeleteTablesQueueRequest request, Handler<AsyncResult<TtDeleteQueueResponse>> handler);
 }

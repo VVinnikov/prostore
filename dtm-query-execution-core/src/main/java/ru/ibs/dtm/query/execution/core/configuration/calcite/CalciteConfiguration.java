@@ -1,6 +1,5 @@
 package ru.ibs.dtm.query.execution.core.configuration.calcite;
 
-import javax.annotation.PostConstruct;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.config.Lex;
@@ -17,6 +16,8 @@ import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
 import ru.ibs.dtm.query.calcite.core.service.impl.DeltaQueryPreprocessorImpl;
+
+import javax.annotation.PostConstruct;
 
 @Configuration
 public class CalciteConfiguration {
@@ -39,7 +40,7 @@ public class CalciteConfiguration {
                 .setParserFactory(factory)
                 .setConformance(SqlConformanceEnum.DEFAULT)
                 .setLex(Lex.MYSQL)
-                .setCaseSensitive(true)
+                .setCaseSensitive(false)
                 .setUnquotedCasing(Casing.TO_LOWER)
                 .setQuotedCasing(Casing.TO_LOWER)
                 .setQuoting(Quoting.DOUBLE_QUOTE)

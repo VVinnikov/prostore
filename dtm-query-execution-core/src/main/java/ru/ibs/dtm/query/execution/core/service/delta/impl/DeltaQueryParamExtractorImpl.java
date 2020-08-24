@@ -5,6 +5,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.calcite.sql.SqlNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -25,6 +26,7 @@ import java.time.format.DateTimeFormatter;
 @Slf4j
 public class DeltaQueryParamExtractorImpl implements DeltaQueryParamExtractor {
 
+    public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private final DefinitionService<SqlNode> definitionService;
     private final Vertx coreVertx;
 
@@ -87,9 +89,9 @@ public class DeltaQueryParamExtractorImpl implements DeltaQueryParamExtractor {
     }
 
     private LocalDateTime getDeltaDateTime(SqlCommitDelta sqlNode) {
-        if (sqlNode.getDeltaDateTimeOperator().getDeltaDateTime() != null) {
-            return LocalDateTime.parse(sqlNode.getDeltaDateTimeOperator().getDeltaDateTime(),
-                    DateTimeFormatter.ISO_DATE_TIME);
+        val deltaDateTime = sqlNode.getDeltaDateTimeOperator().getDeltaDateTime();
+        if (deltaDateTime != null) {
+            return LocalDateTime.parse(deltaDateTime, DATE_TIME_FORMATTER);
         } else {
             return null;
         }

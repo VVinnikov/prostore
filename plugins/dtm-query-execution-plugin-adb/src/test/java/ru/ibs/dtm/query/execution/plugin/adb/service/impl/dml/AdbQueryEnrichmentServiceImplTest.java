@@ -15,7 +15,10 @@ import ru.ibs.dtm.common.delta.DeltaType;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.calcite.core.service.QueryParserService;
-import ru.ibs.dtm.query.execution.model.metadata.*;
+import ru.ibs.dtm.query.execution.model.metadata.AttributeType;
+import ru.ibs.dtm.query.execution.model.metadata.Datamart;
+import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;
+import ru.ibs.dtm.query.execution.model.metadata.TableAttribute;
 import ru.ibs.dtm.query.execution.plugin.adb.calcite.AdbCalciteContextProvider;
 import ru.ibs.dtm.query.execution.plugin.adb.calcite.AdbCalciteSchemaFactory;
 import ru.ibs.dtm.query.execution.plugin.adb.configuration.CalciteConfiguration;
@@ -33,7 +36,6 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
@@ -134,6 +136,28 @@ public class AdbQueryEnrichmentServiceImplTest {
                     assertGrep(result[0], "sys_from >= 1 AND sys_from <= 5");
                     assertGrep(result[0], "sys_to <= 3 AND sys_op = 1");
                     assertGrep(result[0], "sys_to >= 2");
+                }
+                async.complete();
+            });
+            async.awaitSuccess(10000);
+        });
+        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+    }
+
+    @Test
+    void enrichWithNull() {
+        EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaInterval(
+                "select account_id, null, null from shares.accounts");
+        String[] result = {""};
+
+        TestSuite suite = TestSuite.create("the_test_suite");
+        suite.test("executeQuery", context -> {
+            Async async = context.async();
+            adbQueryEnrichmentService.enrich(enrichQueryRequest, ar -> {
+                if (ar.succeeded()) {
+                    result[0] = ar.result();
+                    log.info(result[0]);
+                    assertGrep(result[0], "NULL AS EXPR$1, NULL AS EXPR$2");
                 }
                 async.complete();
             });

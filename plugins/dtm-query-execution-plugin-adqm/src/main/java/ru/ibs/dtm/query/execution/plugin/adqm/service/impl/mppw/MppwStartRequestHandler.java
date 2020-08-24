@@ -226,6 +226,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         request.setKafkaTopic(mppwRequest.getTopic());
         request.setConsumerGroup(mppwProperties.getRestLoadConsumerGroup());
         request.setFormat(mppwRequest.getQueryLoadParam().getFormat().getName());
+        request.setMessageProcessingLimit(mppwRequest.getQueryLoadParam().getMessageLimit());
 
         try {
             val schema = new Schema.Parser().parse(mppwRequest.getSchema().encode());

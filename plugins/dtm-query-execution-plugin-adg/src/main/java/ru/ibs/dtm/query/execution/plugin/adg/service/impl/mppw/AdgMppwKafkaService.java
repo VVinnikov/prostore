@@ -140,16 +140,17 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
 
     private void cancelLoadData(AdgMppwKafkaContext ctx, Handler<AsyncResult<QueryResult>> handler) {
         val topicName = ctx.getTopicName();
-        transferData(ctx,handler);
-        cartridgeClient.cancelSubscription(topicName, ar -> {
-            initializedLoadingByTopic.remove(topicName);
-            if (ar.succeeded()) {
-                log.debug("Cancel Load Data completed by request [{}]", topicName);
-                handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
-            } else {
-                log.error("Cancel Load Data error: ", ar.cause());
-                handler.handle(Future.failedFuture(ar.cause()));
-            }
+        transferData(ctx, tr -> {
+            cartridgeClient.cancelSubscription(topicName, ar -> {
+                initializedLoadingByTopic.remove(topicName);
+                if (ar.succeeded()) {
+                    log.debug("Cancel Load Data completed by request [{}]", topicName);
+                    handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
+                } else {
+                    log.error("Cancel Load Data error: ", ar.cause());
+                    handler.handle(Future.failedFuture(ar.cause()));
+                }
+            });
         });
     }
 }

@@ -83,6 +83,11 @@ adg:
     kafka:
       maxNumberOfMessagesPerPartition: 200
       callbackFunctionSecIdle: 100
+  circuitbreaker:
+    maxFailures: 5
+    timeout: 1000
+    fallbackOnFailure: false
+    resetTimeout: 1000
 
 adqm:
   datasource:

@@ -1,10 +1,7 @@
 package ru.ibs.dtm.query.execution.core.service.edml.impl;
 
 import io.vertx.core.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -80,12 +77,22 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                                     Optional<StatusQueryResult> result = chr.result();
                                     if (result.isPresent()) {
                                         vertx.cancelTimer(timerId);
-                                        promise.complete(new MppwStopFuture(ds, stopMppw(ds, mppwRequestContext),
-                                                result.get().getPartitionInfo().getOffset()));
+                                        MppwStopFuture stopFuture = MppwStopFuture.builder()
+                                                .sourceType(ds)
+                                                .future(stopMppw(ds, mppwRequestContext))
+                                                .offset(result.get().getPartitionInfo().getOffset())
+                                                .stopReason(MppwStopReason.OFFSET_RECEIVED)
+                                                .build();
+                                        promise.complete(stopFuture);
                                     } else {
                                         if (System.currentTimeMillis() - beginPollStatus > edmlProperties.getPluginStatusTimeoutMs()) {
                                             vertx.cancelTimer(timerId);
-                                            promise.complete(new MppwStopFuture(ds, stopMppw(ds, mppwRequestContext),null));
+                                            MppwStopFuture stopFuture = MppwStopFuture.builder()
+                                                    .sourceType(ds)
+                                                    .future(stopMppw(ds, mppwRequestContext))
+                                                    .stopReason(MppwStopReason.TIMEOUT_RECEIVED)
+                                                    .build();
+                                            promise.complete(stopFuture);
                                         }
                                     }
                                 } else {
@@ -97,7 +104,13 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                 });
             } else {
                 log.error("Error starting loading mppw for plugin: {}", ds, ar.cause());
-                promise.complete(new MppwStopFuture(ds, stopMppw(ds, mppwRequestContext), null));
+                MppwStopFuture stopFuture = MppwStopFuture.builder()
+                        .sourceType(ds)
+                        .future(stopMppw(ds, mppwRequestContext))
+                        .cause(ar.cause())
+                        .stopReason(MppwStopReason.ERROR_RECEIVED)
+                        .build();
+                promise.complete(stopFuture);
             }
         }));
     }
@@ -146,7 +159,8 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                                     if (isAllMppwPluginsHasEqualOffsets(mppwStopFutureMap)) {
                                         resultHandler.handle(Future.succeededFuture(QueryResult.emptyResult()));
                                     } else {
-                                        RuntimeException e = new RuntimeException("The offset of one of the plugins has changed!");
+                                        String stopStatus = collectStatus(mppwStopFutureMap);
+                                        RuntimeException e = new RuntimeException(String.format("The offset of one of the plugins has changed: \n %s", stopStatus));
                                         log.error(MPPW_LOAD_ERROR_MESSAGE, e);
                                         resultHandler.handle(Future.failedFuture(e));
                                     }
@@ -156,6 +170,15 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                         resultHandler.handle(Future.failedFuture(startComplete.cause()));
                     }
                 });
+    }
+
+    private String collectStatus(Map<SourceType, MppwStopFuture> mppwStopFutureMap) {
+        return mppwStopFutureMap.values().stream().map(s ->
+                String.format("Plugin: %s, status: %s, offset: %d, reason: %s",
+                        s.sourceType.name(), s.stopReason.name(),
+                        s.offset == null ? -1L : s.offset,
+                        s.cause == null ? "" : s.cause.getMessage())
+        ).collect(Collectors.joining("\n"));
     }
 
     @NotNull
@@ -194,13 +217,18 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
     }
 
     @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
     @ToString
+    @Builder
     private static class MppwStopFuture {
         private SourceType sourceType;
         private Future<QueryResult> future;
         private Long offset;
+        private Throwable cause;
+        private MppwStopReason stopReason;
+    }
+
+    private enum MppwStopReason {
+        OFFSET_RECEIVED, TIMEOUT_RECEIVED, ERROR_RECEIVED;
     }
 
 }

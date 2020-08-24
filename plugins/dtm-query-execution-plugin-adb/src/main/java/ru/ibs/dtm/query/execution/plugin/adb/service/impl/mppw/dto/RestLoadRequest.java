@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw.load;
+package ru.ibs.dtm.query.execution.plugin.adb.service.impl.mppw.dto;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;

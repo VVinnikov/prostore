@@ -102,7 +102,7 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
 
     private Future<Void> closeActual(@NonNull String table, long deltaHot) {
         LocalDateTime ldt = LocalDateTime.now();
-        String now = ldt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        String now = ldt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
         Future<String> columnNames = fetchColumnNames(table + ACTUAL_POSTFIX);
         Future<String> sortingKey = fetchSortingKey(table + ACTUAL_SHARD_POSTFIX);

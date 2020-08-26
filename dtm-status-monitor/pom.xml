@@ -12,6 +12,11 @@
     <artifactId>dtm-status-monitor</artifactId>
 
     <dependencies>
+        <dependency>
+            <groupId>ru.ibs.dtm</groupId>
+            <artifactId>dtm-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <!--Spring-->
         <dependency>
             <groupId>org.springframework.boot</groupId>

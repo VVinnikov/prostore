@@ -1,4 +1,4 @@
-package ru.ibs.dtm.status.monitor.dto;
+package ru.ibs.dtm.common.status.kafka;
 
 import lombok.Data;
 

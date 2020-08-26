@@ -49,6 +49,7 @@ core:
     status.event.publish:
       enabled: false
       topic: status.event
+    statusMonitorUrl: ${STATUS_MONITOR_URL:http://127.0.0.1:9095/status}
 
 adb:
   datasource:

@@ -1,10 +1,12 @@
 package ru.ibs.dtm.common.plugin.status.kafka;
 
+import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
 @Data
+@Builder
 public class KafkaPartitionInfo {
     private String consumerGroup;
     private String topic;

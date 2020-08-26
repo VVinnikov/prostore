@@ -33,7 +33,7 @@ docker build -t dtm-status-monitor .
 
 and then run:
 ```shell script
-docker run -d -e STATUS_MONITOR_BROKERS=10.92.6.44:9092 -p 9095:9095 --name dtm-status-monitor dtm-status-monitor
+docker run -d -e STATUS_MONITOR_BROKERS=10.92.3.31:9092 -p 9095:9095 --name dtm-status-monitor dtm-status-monitor
 ```
 
 and then check

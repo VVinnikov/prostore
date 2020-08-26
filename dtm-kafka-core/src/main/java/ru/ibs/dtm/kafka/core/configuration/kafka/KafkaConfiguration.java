@@ -14,7 +14,7 @@ import ru.ibs.dtm.kafka.core.factory.KafkaProducerFactory;
 import ru.ibs.dtm.kafka.core.factory.impl.VertxKafkaConsumerFactory;
 import ru.ibs.dtm.kafka.core.factory.impl.VertxKafkaProducerFactory;
 import ru.ibs.dtm.kafka.core.service.kafka.KafkaConsumerMonitor;
-import ru.ibs.dtm.kafka.core.service.kafka.KafkaConsumerMonitorImpl;
+import ru.ibs.dtm.kafka.core.service.kafka.RestConsumerMonitorImpl;
 
 
 @Configuration
@@ -47,11 +47,9 @@ public class KafkaConfiguration {
     }
 
     @Bean("coreKafkaConsumerMonitor")
-    public KafkaConsumerMonitor kafkaConsumerMonitor(@Qualifier("coreKafkaAdminClient") KafkaAdminClient adminClient,
-                                                     @Qualifier("coreKafkaConsumerFactory") KafkaConsumerFactory<byte[], byte[]> consumerFactory,
-                                                     @Qualifier("coreVertx") Vertx vertx,
+    public KafkaConsumerMonitor kafkaConsumerMonitor(@Qualifier("coreVertx") Vertx vertx,
                                                      KafkaProperties kafkaProperties) {
-        return new KafkaConsumerMonitorImpl(adminClient, consumerFactory, vertx, kafkaProperties);
+        return new RestConsumerMonitorImpl(vertx, kafkaProperties);
     }
 
     @Bean("jsonCoreKafkaProducer")

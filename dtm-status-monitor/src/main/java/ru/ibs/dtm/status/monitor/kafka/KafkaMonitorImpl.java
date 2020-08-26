@@ -13,9 +13,9 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.springframework.stereotype.Component;
+import ru.ibs.dtm.common.status.kafka.StatusRequest;
+import ru.ibs.dtm.common.status.kafka.StatusResponse;
 import ru.ibs.dtm.status.monitor.config.AppProperties;
-import ru.ibs.dtm.status.monitor.dto.StatusRequest;
-import ru.ibs.dtm.status.monitor.dto.StatusResponse;
 
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -141,6 +141,9 @@ public class KafkaMonitorImpl implements KafkaMonitor {
             int partition = offsetKey.key().topicPartition().partition();
 
             OffsetAndMetadata offset = GroupMetadataManager.readOffsetMessageValue(ByteBuffer.wrap(value));
+            // Because all OffsetKey messages for specified group, topic and partition are placed into one partition,
+            // so only one Consumer thread will read and update them.
+            // We replay all messages from specified partition in chronological order, and we can perform simple update by key
             offsets.put(new GroupTopicPartition(consumerGroup, topic, partition), offset);
             log.debug(String.format("Received offset %d for topic %s, partition %d, group %s", offset.offset(),
                     topic,

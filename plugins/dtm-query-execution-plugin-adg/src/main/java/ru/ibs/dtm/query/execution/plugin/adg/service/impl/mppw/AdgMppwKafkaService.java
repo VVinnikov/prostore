@@ -95,7 +95,7 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
                 if (ar.succeeded()) {
                     log.debug("Loading initialize completed by [{}]", request);
                     initializedLoadingByTopic.put(ctx.getTopicName(), ctx.getConsumerTableName());
-                    //loadData(ctx, handler);
+                    handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
                 } else {
                     log.error("Loading initialize error:", ar.cause());
                     handler.handle(Future.failedFuture(ar.cause()));

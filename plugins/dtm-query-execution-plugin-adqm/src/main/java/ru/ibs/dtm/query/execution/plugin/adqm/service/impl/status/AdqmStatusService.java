@@ -21,50 +21,51 @@ import java.util.Map;
 @Service("adqmStatusService")
 @Slf4j
 public class AdqmStatusService implements StatusService<StatusQueryResult>, StatusReporter {
-    private final KafkaConsumerMonitor kafkaConsumerMonitor;
-    private final Map<String, String> topicsInUse = new HashMap<>();
+	private final KafkaConsumerMonitor kafkaConsumerMonitor;
+	private final Map<String, String> topicsInUse = new HashMap<>();
 
-    public AdqmStatusService(@Qualifier("coreKafkaConsumerMonitor") KafkaConsumerMonitor kafkaConsumerMonitor) {
-        this.kafkaConsumerMonitor = kafkaConsumerMonitor;
-    }
+	public AdqmStatusService(@Qualifier("coreKafkaConsumerMonitor") KafkaConsumerMonitor kafkaConsumerMonitor) {
+		this.kafkaConsumerMonitor = kafkaConsumerMonitor;
+	}
 
-    @Override
-    public void execute(StatusRequestContext context, Handler<AsyncResult<StatusQueryResult>> handler) {
-        if (context == null || context.getRequest() == null) {
-            handler.handle(Future.failedFuture("StatusRequestContext should not be null"));
-            return;
-        }
+	@Override
+	public void execute(StatusRequestContext context, Handler<AsyncResult<StatusQueryResult>> handler) {
+		if (context == null || context.getRequest() == null) {
+			handler.handle(Future.failedFuture("StatusRequestContext should not be null"));
+			return;
+		}
 
-        StatusRequest request = context.getRequest();
+		StatusRequest request = context.getRequest();
 
-        if (topicsInUse.containsKey(request.getTopic())) {
-            String consumerGroup = topicsInUse.get(request.getTopic());
+		if (topicsInUse.containsKey(request.getTopic())) {
+			String consumerGroup = topicsInUse.get(request.getTopic());
 
-            handler.handle(kafkaConsumerMonitor.getAggregateGroupConsumerInfo(
-                    consumerGroup, request.getTopic()).map(p -> {
-                StatusQueryResult result = new StatusQueryResult();
-                result.setPartitionInfo(p);
-                return result;
-            }));
-        } else {
-            handler.handle(Future.failedFuture("Cannot find info about " + request.getTopic()));
-        }
-    }
+			kafkaConsumerMonitor.getAggregateGroupConsumerInfo(consumerGroup, request.getTopic())
+					.onSuccess(p -> {
+						StatusQueryResult result = new StatusQueryResult();
+						result.setPartitionInfo(p);
+						handler.handle(Future.succeededFuture(result));
+					})
+					.onFailure(f -> handler.handle(Future.failedFuture(f)));
+		} else {
+			handler.handle(Future.failedFuture("Cannot find info about " + request.getTopic()));
+		}
+	}
 
-    @Override
-    public void onStart(@NonNull final StatusReportDto payload) {
-        String topic = payload.getTopic();
-        String consumerGroup = payload.getConsumerGroup();
-        topicsInUse.put(topic, consumerGroup);
-    }
+	@Override
+	public void onStart(@NonNull final StatusReportDto payload) {
+		String topic = payload.getTopic();
+		String consumerGroup = payload.getConsumerGroup();
+		topicsInUse.put(topic, consumerGroup);
+	}
 
-    @Override
-    public void onFinish(@NonNull final StatusReportDto payload) {
-        topicsInUse.remove(payload.getTopic());
-    }
+	@Override
+	public void onFinish(@NonNull final StatusReportDto payload) {
+		topicsInUse.remove(payload.getTopic());
+	}
 
-    @Override
-    public void onError(@NonNull final StatusReportDto payload) {
-        topicsInUse.remove(payload.getTopic());
-    }
+	@Override
+	public void onError(@NonNull final StatusReportDto payload) {
+		topicsInUse.remove(payload.getTopic());
+	}
 }

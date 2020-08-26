@@ -82,8 +82,11 @@ public class KafkaMonitorImpl implements KafkaMonitor {
 
         // set last offsets
         log.debug("Fetching end offsets");
-        Map<TopicPartition, Long> endOffsets =
-                offsetProvider.endOffsets(partitions.stream().map(GroupTopicPartition::topicPartition).collect(Collectors.toList()));
+        Map<TopicPartition, Long> endOffsets;
+        synchronized (this) {
+            endOffsets =
+                    offsetProvider.endOffsets(partitions.stream().map(GroupTopicPartition::topicPartition).collect(Collectors.toList()));
+        }
         endOffsets.forEach((tp, offset) -> response.setProducerOffset(offset + response.getProducerOffset()));
         log.debug(String.format("Finish fetching end offsets, received %d", endOffsets.entrySet().size()));
 

@@ -27,7 +27,7 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
 
     @Override
     public void generate(DdlRequestContext context, OperationYaml yaml, Handler<AsyncResult<OperationYaml>> handler) {
-        if (yaml.getSpaces().isEmpty()) {
+        if (yaml.getSpaces() == null || yaml.getSpaces().isEmpty()) {
             yaml.setSpaces(new LinkedHashMap<>());
         }
         val spaces = yaml.getSpaces();

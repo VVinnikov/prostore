@@ -1,7 +1,8 @@
 package ru.ibs.dtm.status.monitor.kafka;
 
-import ru.ibs.dtm.status.monitor.dto.StatusRequest;
-import ru.ibs.dtm.status.monitor.dto.StatusResponse;
+
+import ru.ibs.dtm.common.status.kafka.StatusRequest;
+import ru.ibs.dtm.common.status.kafka.StatusResponse;
 
 import java.util.List;
 

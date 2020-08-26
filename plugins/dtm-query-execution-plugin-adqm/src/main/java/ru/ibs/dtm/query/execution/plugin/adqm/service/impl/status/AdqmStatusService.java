@@ -39,11 +39,13 @@ public class AdqmStatusService implements StatusService<StatusQueryResult>, Stat
 
         if (topicsInUse.containsKey(request.getTopic())) {
             String consumerGroup = topicsInUse.get(request.getTopic());
-            StatusQueryResult result = new StatusQueryResult();
-            result.setPartitionInfo(
-                    kafkaConsumerMonitor.getAggregateGroupConsumerInfo(
-                            consumerGroup, request.getTopic()));
-            handler.handle(Future.succeededFuture(result));
+
+            handler.handle(kafkaConsumerMonitor.getAggregateGroupConsumerInfo(
+                    consumerGroup, request.getTopic()).map(p -> {
+                StatusQueryResult result = new StatusQueryResult();
+                result.setPartitionInfo(p);
+                return result;
+            }));
         } else {
             handler.handle(Future.failedFuture("Cannot find info about " + request.getTopic()));
         }

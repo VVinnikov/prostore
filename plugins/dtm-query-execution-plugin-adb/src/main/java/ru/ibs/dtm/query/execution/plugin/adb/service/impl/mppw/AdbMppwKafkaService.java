@@ -8,6 +8,7 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.avro.Schema;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -20,6 +21,7 @@ import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 import ru.ibs.dtm.query.execution.plugin.api.service.MppwKafkaService;
 
 @Component("adbMppwKafkaService")
+@Slf4j
 public class AdbMppwKafkaService implements MppwKafkaService<QueryResult> {
 	private final WebClient webClient;
 	private final MppwProperties mppwProperties;
@@ -35,6 +37,7 @@ public class AdbMppwKafkaService implements MppwKafkaService<QueryResult> {
 		MppwRequest mppwRequest = context.getRequest();
 
 		RestLoadRequest request = new RestLoadRequest();
+		request.setRequestId(context.getRequest().getQueryRequest().getRequestId().toString());
 		request.setHotDelta(mppwRequest.getQueryLoadParam().getDeltaHot());
 		request.setDatamart(mppwRequest.getQueryLoadParam().getDatamart());
 		request.setTableName(mppwRequest.getQueryLoadParam().getTableName());
@@ -43,21 +46,22 @@ public class AdbMppwKafkaService implements MppwKafkaService<QueryResult> {
 		request.setKafkaTopic(mppwRequest.getTopic());
 		request.setConsumerGroup(mppwProperties.getConsumerGroup());
 		request.setFormat(mppwRequest.getQueryLoadParam().getFormat().getName());
-
 		try {
 			val schema = new Schema.Parser().parse(mppwRequest.getSchema().encode());
 			request.setSchema(schema);
-			initiateLoading(request).onComplete(asyncHandler);
+			initiateLoading(request, mppwRequest.getLoadStart()?
+					mppwProperties.getStartLoadUrl(): mppwProperties.getStopLoadUrl()).onComplete(asyncHandler);
 		} catch (Exception e) {
 			asyncHandler.handle(Future.failedFuture(e));
 		}
 	}
 
-	private Future<QueryResult> initiateLoading(RestLoadRequest request) {
+	private Future<QueryResult> initiateLoading(RestLoadRequest request, String path) {
 		try {
 			JsonObject data = JsonObject.mapFrom(request);
 			Promise<QueryResult> promise = Promise.promise();
-			webClient.postAbs(mppwProperties.getLoadUrl()).sendJsonObject(data, ar -> {
+			log.debug("Send request to emulator-writer: [{}]", path);
+			webClient.postAbs(path).sendJsonObject(data, ar -> {
 				if (ar.succeeded()) {
 					HttpResponse<Buffer> response = ar.result();
 					if (response.statusCode() < 400 && response.statusCode() >= 200) {

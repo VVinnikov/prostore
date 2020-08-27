@@ -66,7 +66,8 @@ adb:
     url: ${ADB_MPPR_CONNECTOR_URL:/query}
 
   mppw:
-    loadUrl: ${ADB_LOAD_URL:http://10.92.3.3:8090/newdata/adb}
+    startLoadUrl: ${ADB_START_LOAD_URL:http://adb-emulator:8090/newdata/adb/start}
+    stopLoadUrl: ${ADB_STOP_LOAD_URL:http://adb-emulator:8090/newdata/adb/stop}
     consumerGroup: ${ADB_LOAD_GROUP:adb-emulator-load-adb}
 
 adg:

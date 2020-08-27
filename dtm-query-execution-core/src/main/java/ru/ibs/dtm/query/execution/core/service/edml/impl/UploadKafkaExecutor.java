@@ -121,7 +121,8 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                 StatusQueryResult queryResult = ar.result();
                 log.trace("Plugin status received: {} mppw downloads: {}, on request: {}", ds, queryResult, statusRequestContext);
                 if (queryResult.getPartitionInfo().getEnd().equals(queryResult.getPartitionInfo().getOffset())
-                        && checkLastCommitTime(queryResult.getPartitionInfo().getLastCommitTime())) {
+                       // && checkLastCommitTime(queryResult.getPartitionInfo().getLastCommitTime())
+                ) {
                     promise.complete(Optional.of(queryResult));
                 } else {
                     promise.complete(Optional.empty());

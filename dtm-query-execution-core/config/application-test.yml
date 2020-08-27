@@ -52,6 +52,7 @@ core:
     status.event.publish:
       enabled: false
       topic: status.event
+    statusMonitorUrl: ${STATUS_MONITOR_URL:http://10.92.3.3:9095/status}
 
 adb:
   datasource:
@@ -69,7 +70,7 @@ adb:
     url: ${ADB_MPPR_CONNECTOR_URL:/query}
 
   mppw:
-    loadUrl: ${ADB_LOAD_URL:http://localhost:8090/newdata/adb}
+    loadUrl: ${ADB_LOAD_URL:http://10.92.3.3:8090/newdata/adb}
     consumerGroup: ${ADB_LOAD_GROUP:adb-emulator-load-adb}
 
 adg:
@@ -104,5 +105,5 @@ adqm:
     consumerGroup: ${ADQM_CONSUMER_GROUP:adqm}
     kafkaBrokers: ${ADQM_BROKERS:10.92.3.25:9092}
     loadType: ${ADQM_MPPW_LOAD_TYPE:REST}
-    restLoadUrl: ${ADQM_REST_LOAD_URL:http://localhost:8090/newdata/adqm}
+    restLoadUrl: ${ADQM_REST_LOAD_URL:http://10.92.3.3:8090/newdata/adqm}
     restLoadConsumerGroup: ${ADQM_REST_LOAD_GROUP:adb-emulator-load-adqm}

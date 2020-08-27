@@ -20,10 +20,10 @@ core:
       pluginStatusTimeoutMs: ${EDML_STATUS_TIMEOUT_MS:15000}
     service:
       options:
-        database: ${SERVICEDB_DB_NAME:dtmservice_replica}
+        database: ${SERVICEDB_DB_NAME:dtmservice}
         user: ${SERVICEDB_USER:dtmuser}
         password: ${SERVICEDB_PASS:Cat6Gmt7Ncr}
-        host: ${SERVICEDB_HOST:10.92.3.46}
+        host: ${SERVICEDB_HOST:10.92.3.51}
         port: ${SERVICEDB_PORT:3306}
       poolOptions:
         maxSize: 5
@@ -49,11 +49,12 @@ core:
     status.event.publish:
       enabled: false
       topic: status.event
+    statusMonitorUrl: ${STATUS_MONITOR_URL:http://10.92.3.3:9095/status}
 
 adb:
   datasource:
     options:
-      database: ${ADB_DB_NAME:adb}
+      database: ${ADB_DB_NAME:adb_replica}
       user: ${ADB_USERNAME:gpadmin}
       password: ${ADB_PASS:gpadmin}
       host: ${ADB_HOST:10.92.3.42}
@@ -66,7 +67,8 @@ adb:
     url: ${ADB_MPPR_CONNECTOR_URL:/query}
 
   mppw:
-    consumerGroup: ${ADB_CONSUMER_GROUP:adb-query-execution}
+    loadUrl: ${ADB_LOAD_URL:http://10.92.3.3:8090/newdata/adb}
+    consumerGroup: ${ADB_LOAD_GROUP:adb-emulator-load-adb}
 
 adg:
   tarantool:

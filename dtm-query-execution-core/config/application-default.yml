@@ -27,6 +27,10 @@ core:
         port: ${SERVICEDB_PORT:3306}
       poolOptions:
         maxSize: 5
+  vertx:
+    pool:
+      task-pool: 10
+      task-timeout: 86400000
 
   kafka:
     producer:
@@ -48,8 +52,8 @@ core:
       inputStreamTimeoutMs: ${KAFKA_INPUT_STREAM_TIMEOUT_MS:1000}
       monitorPoolingTimeoutMs: ${KAFKA_MONITOR_POLLING_MS:1000}
     status.event.publish:
-          enabled: false
-          topic: status.event
+      enabled: false
+      topic: status.event
 
 adb:
   datasource:

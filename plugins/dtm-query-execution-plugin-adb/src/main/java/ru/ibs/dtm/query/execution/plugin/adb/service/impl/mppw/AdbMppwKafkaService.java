@@ -8,6 +8,7 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.avro.Schema;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -19,6 +20,7 @@ import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 import ru.ibs.dtm.query.execution.plugin.api.service.MppwKafkaService;
 
+@Slf4j
 @Component("adbMppwKafkaService")
 public class AdbMppwKafkaService implements MppwKafkaService<QueryResult> {
 	private final WebClient webClient;
@@ -32,6 +34,7 @@ public class AdbMppwKafkaService implements MppwKafkaService<QueryResult> {
 
 	@Override
 	public void execute(MppwRequestContext context, Handler<AsyncResult<QueryResult>> asyncHandler) {
+		log.debug("mppw start");
 		MppwRequest mppwRequest = context.getRequest();
 
 		RestLoadRequest request = new RestLoadRequest();

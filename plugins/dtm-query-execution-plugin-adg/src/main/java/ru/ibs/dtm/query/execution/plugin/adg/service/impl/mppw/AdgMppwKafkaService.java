@@ -3,12 +3,6 @@ package ru.ibs.dtm.query.execution.plugin.adg.service.impl.mppw;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import io.vertx.core.json.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.stereotype.Service;
@@ -24,6 +18,10 @@ import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtTransferD
 import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeClient;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.service.MppwKafkaService;
+
+import java.util.Collections;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service("adgMppwKafkaService")
@@ -45,6 +43,7 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
 
     @Override
     public void execute(MppwRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
+        log.debug("mppw start");
         val mppwKafkaContext = contextFactory.create(context.getRequest());
         if (context.getRequest().getLoadStart()) {
             initializeLoading(mppwKafkaContext, asyncResultHandler);

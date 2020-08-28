@@ -22,7 +22,6 @@ import ru.ibs.dtm.query.execution.plugin.api.service.MppwKafkaService;
 
 @Slf4j
 @Component("adbMppwKafkaService")
-@Slf4j
 public class AdbMppwKafkaService implements MppwKafkaService<QueryResult> {
 	private final WebClient webClient;
 	private final MppwProperties mppwProperties;

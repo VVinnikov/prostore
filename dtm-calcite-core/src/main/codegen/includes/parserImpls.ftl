@@ -321,9 +321,21 @@ SqlCreate SqlCreateView(Span s, boolean replace) :
     <VIEW> id = CompoundIdentifier()
     [ columnList = ParenthesizedSimpleIdentifierList() ]
     <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) {
-        return SqlDdlNodes.createView(s.end(this), replace, id, columnList,
-            query);
+        return new ru.ibs.dtm.query.calcite.core.extension.ddl.SqlCreateView(s.end(this), replace, id, columnList, query);
     }
+}
+SqlAlter SqlAlterView(Span s) :
+{
+    final SqlIdentifier id;
+    SqlNodeList columnList = null;
+    final SqlNode query;
+}
+{
+    <VIEW> id = CompoundIdentifier()
+    [ columnList = ParenthesizedSimpleIdentifierList() ]
+    <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) {
+        return new ru.ibs.dtm.query.calcite.core.extension.ddl.SqlAlterView(s.end(this), id, columnList, query);
+}
 }
 SqlCreate SqlCreateMaterializedView(Span s, boolean replace) :
 {
@@ -517,5 +529,19 @@ SqlDrop SqlDropFunction(Span s, boolean replace) :
     <FUNCTION> ifExists = IfExistsOpt()
     id = CompoundIdentifier() {
         return SqlDdlNodes.dropFunction(s.end(this), ifExists, id);
+    }
+}
+SqlNode SqlUseSchema() :
+{
+    SqlParserPos pos;
+    final SqlIdentifier id;
+}
+{
+    <USE> id = CompoundIdentifier()
+{
+        pos = getPos();
+}
+    {
+        return new ru.ibs.dtm.query.calcite.core.extension.ddl.SqlUseSchema(pos, id);
     }
 }

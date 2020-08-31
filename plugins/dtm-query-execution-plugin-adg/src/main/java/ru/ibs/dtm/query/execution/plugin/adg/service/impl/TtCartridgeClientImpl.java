@@ -61,12 +61,35 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
   }
 
   @Override
-  public void uploadData(String sql, String topicName, int batchSize, Handler<AsyncResult<ResStatus>> handler) {
-    val queryParamMap = new HashMap<String, String>();
-    queryParamMap.put("_batch_size", String.valueOf(batchSize));
-    queryParamMap.put("_topic", topicName);
-    queryParamMap.put("_query", sql);
-    executeGetRequest(new GetRequest(cartridgeProperties.getSendQueryUrl(), queryParamMap), handler);
+  public void uploadData(TtUploadDataKafkaRequest request, Handler<AsyncResult<Void>> handler) {
+    val uri = cartridgeProperties.getUrl() + cartridgeProperties.getKafkaUploadDataUrl();
+    log.debug("send to [{}] request [{}]", uri, request);
+    webClient.postAbs(uri)
+            .sendJson(request, ar -> {
+              if (ar.succeeded()) {
+                val response = ar.result();
+                handleUploadData(response,handler);
+              } else {
+                handler.handle(Future.failedFuture(ar.cause()));
+              }
+            });
+  }
+
+  private void handleUploadData(HttpResponse<Buffer> response, Handler<AsyncResult<Void>> handler) {
+    try {
+      log.trace("handle [UploadData] response [{}]", response);
+      val statusCode = response.statusCode();
+      if (statusCode == 200) {
+        handler.handle(Future.succeededFuture());
+        log.debug("UploadData Successful");
+      } else if (statusCode == 500) {
+        handler.handle(Future.failedFuture(response.bodyAsJson(TtKafkaError.class)));
+      } else {
+        unexpectedResponse(handler, response);
+      }
+    } catch(Exception ex) {
+      handler.handle(Future.failedFuture(ex));
+    }
   }
 
   @Override
@@ -244,5 +267,57 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
           handler.handle(Future.failedFuture(ar.cause()));
         }
       });
+  }
+
+  @Override
+  public void addSpacesToDeleteQueue(TtDeleteTablesRequest request, Handler<AsyncResult<TtDeleteBatchResponse>> handler) {
+    val uri = cartridgeProperties.getUrl() + cartridgeProperties.getTableBatchDeleteUrl();
+    log.debug("send to [{}] request [{}]", uri, request);
+    webClient.putAbs(uri)
+            .sendJson(request, ar -> {
+              if(ar.succeeded()) {
+                val response = ar.result();
+                handleAddSpacesToDeleteQueue(response,handler);
+              }
+              else {
+                handler.handle(Future.failedFuture(ar.cause()));
+              }
+            });
+  }
+
+  private void handleAddSpacesToDeleteQueue(HttpResponse<Buffer> response,
+                                            Handler<AsyncResult<TtDeleteBatchResponse>> handler) {
+    try {
+      log.trace("handle [addSpacesToDeleteQueue] response [{}]", response);
+      val statusCode = response.statusCode();
+      if (statusCode == 200) {
+        val successResponse = response.bodyAsJson(TtDeleteBatchResponse.class);
+        handler.handle(Future.succeededFuture(successResponse));
+        log.debug("Loading Successful");
+      } else if (statusCode == 500) {
+        handler.handle(Future.failedFuture(response.bodyAsJson(TtKafkaError.class)));
+      }  else {
+        unexpectedResponse(handler, response);
+      }
+    }
+    catch (Exception ex) {
+      handler.handle(Future.failedFuture(ex));
+    }
+  }
+
+  @Override
+  public void executeDeleteQueue(TtDeleteTablesQueueRequest request, Handler<AsyncResult<Void>> handler) {
+    val uri = cartridgeProperties.getUrl() + cartridgeProperties.getTableBatchDeleteUrl() + "/"
+            + request.getBatchId().toString();
+    log.debug("send to [{}]", uri);
+    webClient.deleteAbs(uri)
+            .send(ar -> {
+              if (ar.succeeded()) {
+                val response = ar.result();
+                handleCancelSubscription(response, handler);
+              } else {
+                handler.handle(Future.failedFuture(ar.cause()));
+              }
+            });
   }
 }

@@ -9,13 +9,14 @@ volumes:
   adqm-volume:
   adb-volume:
   adg-volume:
+  zk-volume:
 
 services:
   dtm-query-execution-core:
     build:
       context: ..
       args:
-        - DTM_JAR=./target/dtm-query-execution-core-2.3.0-SNAPSHOT.jar
+        - DTM_JAR=./target/dtm-query-execution-core-2.5.0-SNAPSHOT.jar
     container_name: dtm-query-execution-core
     restart: always
     networks:
@@ -29,6 +30,7 @@ services:
       - adb
     ports:
       - "9090:9090"
+      - "35286:35286"
     environment:
       - SPRING_PROFILES_ACTIVE=local
       - SERVER_PORT=9090
@@ -59,6 +61,8 @@ services:
       - dtm-query-execution
     ports:
       - "2181:2181"
+    volumes:
+      - zk-volume:/data
 
   kafka:
     image: wurstmeister/kafka:2.12-2.5.0
@@ -76,17 +80,22 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1.dtm.local:9092
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_ZOOKEEPER_CONNECT: zk-1.dtm.local:2181
+      KAFKA_LOG_DIRS: /kafka/data
+      KAFKA_BROKER_ID: 1
 
   adg:
-    image: ci.arenadata.io/adg:0.6
+    image: ci.arenadata.io/adg:0.8
     container_name: adg
     restart: always
     networks:
       - dtm-query-execution
     ports:
       - "8081:8081"
+      - "3301:3301"
+    depends_on:
+      - kafka
     volumes:
-      - adg-volume:/adg_dtm/tmp
+      - adg-volume:/adg_dtm/tmp:Z
 
   adqm:
     image: yandex/clickhouse-server:20.4
@@ -117,3 +126,20 @@ services:
       POSTGRES_USER: gpadmin
       POSTGRES_PASSWORD: gpadmin
       POSTGRES_DB: adb
+
+  adb-emulator:
+    image: ci.arenadata.io/db-writer:latest
+    container_name: adb-emulator
+    networks:
+      - dtm-query-execution
+    ports:
+      - "8090:8090"
+      - "5005:5005"
+
+  vendor-emulator:
+    image: ci.arenadata.io/vendor-emulator:latest
+    container_name: vendor-emulator
+    networks:
+      - dtm-query-execution
+    ports:
+      - "8082:8082"

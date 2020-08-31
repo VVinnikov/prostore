@@ -91,9 +91,19 @@ public class SqlSelectTree {
             flattenSqlCreate(treeNode, (SqlDdl) node);
         } else if (node instanceof SqlDrop) {
             flattenSqlDrop(treeNode, (SqlDdl) node);
+        } else if (node instanceof SqlAlter) {
+            flattenSqlAlterView(treeNode, (SqlCall) node);
         } else if (node instanceof SqlCall) {
             flattenSqlCall(treeNode, (SqlCall) node);
         }
+    }
+
+    private void flattenSqlAlterView(SqlTreeNode parentTree, SqlCall parentNode) {
+        addReflectNode(parentTree, parentNode, "name");
+        parentTree.resetChildPos();
+        addReflectNode(parentTree, parentNode, "columnList");
+        parentTree.resetChildPos();
+        addReflectNode(parentTree, parentNode, "query");
     }
 
     private void flattenSqlCreate(SqlTreeNode parentTree, SqlDdl parentNode) {

@@ -22,9 +22,11 @@ import ru.ibs.dtm.common.calcite.CalciteContext;
 import ru.ibs.dtm.common.delta.DeltaInformation;
 import ru.ibs.dtm.common.delta.DeltaType;
 import ru.ibs.dtm.query.calcite.core.node.SqlSelectTree;
+import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 import ru.ibs.dtm.query.execution.plugin.adqm.calcite.AdqmCalciteContextProvider;
 import ru.ibs.dtm.query.execution.plugin.adqm.common.Constants;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
+import ru.ibs.dtm.query.execution.plugin.adqm.dto.EnrichQueryRequest;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -49,21 +51,22 @@ public class QueryRewriter {
         this.appConfiguration = appConfiguration;
     }
 
-    public void rewrite(String sql, List<DeltaInformation> deltas, Handler<AsyncResult<String>> handler) {
-        CalciteContext context = calciteContextProvider.context(null);
+    public void rewrite(EnrichQueryRequest request, List<DeltaInformation> deltas, Handler<AsyncResult<String>> handler) {
+        CalciteContext context = calciteContextProvider.context(request.getSchema());
         try {
-            SqlNode root = context.getPlanner().parse(sql);
-            rewriteInternal(root, deltas, handler);
+            SqlNode root = context.getPlanner().parse(request.getQueryRequest().getSql());
+            rewriteInternal(request.getSchema(), root, deltas, handler);
         } catch (SqlParseException e) {
             handler.handle(Future.failedFuture(e));
         }
     }
 
-    private void rewriteInternal(SqlNode root, List<DeltaInformation> deltas, Handler<AsyncResult<String>> handler) {
+    private void rewriteInternal(List<Datamart> schemas, SqlNode root,
+                                 List<DeltaInformation> deltas, Handler<AsyncResult<String>> handler) {
         // 1. Modify query - add filter for sys_from/sys_to columns based on deltas
         // 2. Modify query - duplicate via union all (with sub queries) and rename table names to physical names
         // 3. Modify query - rename schemas to physical name (take into account _shard _final modifiers)
-        SqlNode union = createUnionAll(root, deltas);
+        SqlNode union = createUnionAll(schemas, root, deltas);
         handler.handle(Future.succeededFuture(
                 replaceAnsiToSpecific(
                         replaceFinalToKeyword(union.toString()))));
@@ -291,11 +294,11 @@ public class QueryRewriter {
     }
 
     @SneakyThrows
-    private SqlNode createUnionAll(SqlNode query, List<DeltaInformation> deltas) {
+    private SqlNode createUnionAll(List<Datamart> schemas, SqlNode query, List<DeltaInformation> deltas) {
         // select * from (<query> FINAL) where <subquery filters> is not null
         // union all
         // select * from (<query>) where <subquery filters> is null
-        val unionTemplate = calciteContextProvider.context(null).getPlanner().parse(UNION_ALL_TEMPLATE);
+        val unionTemplate = calciteContextProvider.context(schemas).getPlanner().parse(UNION_ALL_TEMPLATE);
         val union = (SqlBasicCall) unionTemplate;
         // This is hack because SqlNode.clone performs only top-level copying
         val sourceQuery = query.toString();
@@ -340,9 +343,6 @@ public class QueryRewriter {
         String schema = delta.getSchemaName();
         String id = delta.getTableName();
         String envPrefix = appConfiguration.getSystemName() + "__";
-        if (schema.equals("")) {
-            schema = appConfiguration.getDefaultDatamart();
-        }
         schema = envPrefix + schema;
         String postfix = firstInQuery ? "_actual" : "_actual_shard";
         if (withFinalModifiers) {

@@ -69,7 +69,7 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
     private Future<Long> getDatamart(DdlRequestContext context) {
         return Future.future((Promise<Long> promise) ->
                 serviceDbFacade.getServiceDbDao().getDatamartDao()
-                        .findDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic(), promise));
+                        .findDatamart(context.getDatamartName(), promise));
     }
 
     private Future<Long> getEntity(DdlRequestContext context, boolean ifExists, Long datamartId) {

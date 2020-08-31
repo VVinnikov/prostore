@@ -10,7 +10,6 @@ core:
 
   env:
     name: ${DTM_NAME:test}
-    defaultDatamart: ${DEFAULT_DATAMART:shares}
 
   datasource:
     edml:
@@ -18,6 +17,7 @@ core:
       defaultChunkSize: ${EDML_DEFAULT_CHUNK_SIZE:1000}
       defaultMessageLimit: ${EDML_DEFAULT_MESSAGE_LIMIT:1000}
       pluginStatusCheckPeriodMs: ${EDML_STATUS_CHECK_PERIOD_MS:1000}
+      pluginStatusTimeoutMs: ${EDML_STATUS_TIMEOUT_MS:15000}
     service:
       options:
         database: ${SERVICEDB_DB_NAME:dtmservice}
@@ -65,17 +65,25 @@ adb:
     port: ${ADB_MPPR_CONNECTOR_PORT:8086}
     url: ${ADB_MPPR_CONNECTOR_URL:/query}
 
+  mppw:
+    consumerGroup: ${ADB_CONSUMER_GROUP:adb-query-execution}
+
 adg:
   tarantool:
     db:
-      host: ${TARANTOOL_DB_HOST:10.92.3.12}
+      host: ${TARANTOOL_DB_HOST:10.92.3.33}
       port: ${TARANTOOL_DB_PORT:3301}
       user: ${TARANTOOL_DB_USER:admin}
       password: ${TARANTOOL_DB_PASS:memstorage-cluster-cookie}
       operationTimeout: ${TARANTOOL_DB_OPER_TIMEOUT:60000}
       retryCount: ${TARANTOOL_DB_RETRY_COUNT:0}
     cartridge:
-      url: ${TARANTOOL_CATRIDGE_URL:http://10.92.3.12:8081}
+      url: ${TARANTOOL_CATRIDGE_URL:http://10.92.3.33:8081}
+  mppw:
+    consumerGroup: ${ADG_CONSUMER_GROUP:tarantool-group-csv}
+    kafka:
+      maxNumberOfMessagesPerPartition: 200
+      callbackFunctionSecIdle: 100
 
 adqm:
   datasource:

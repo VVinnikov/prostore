@@ -17,7 +17,4 @@ public class AppConfiguration {
         return environment.getProperty("core.env.name", String.class);
     }
 
-    public String getDefaultDatamart() {
-        return environment.getProperty("core.env.defaultDatamart", String.class);
-    }
 }

@@ -10,7 +10,6 @@ core:
 
   env:
     name: ${DTM_NAME:local}
-    defaultDatamart: ${DEFAULT_DATAMART:shares}
 
   datasource:
     edml:
@@ -18,6 +17,7 @@ core:
       defaultChunkSize: ${EDML_DEFAULT_CHUNK_SIZE:1000}
       defaultMessageLimit: ${EDML_DEFAULT_MESSAGE_LIMIT:1000}
       pluginStatusCheckPeriodMs: ${EDML_STATUS_CHECK_PERIOD_MS:1000}
+      pluginStatusTimeoutMs: ${EDML_STATUS_TIMEOUT_MS:15000}
     service:
       options:
         database: ${SERVICEDB_DB_NAME:dtmservice}
@@ -56,7 +56,7 @@ adb:
       database: ${ADB_DB_NAME:adb}
       user: ${ADB_USERNAME:gpadmin}
       password: ${ADB_PASS:gpadmin}
-      host: ${ADB_HOST:adb}
+      host: ${ADB_HOST:10.92.3.14}
       port: ${ADB_PORT:5432}
       maxSize: 20
 
@@ -64,6 +64,9 @@ adb:
     host: ${ADB_MPPR_CONNECTOR_HOST:10.92.3.14}
     port: ${ADB_MPPR_CONNECTOR_PORT:8086}
     url: ${ADB_MPPR_CONNECTOR_URL:/query}
+
+  mppw:
+    consumerGroup: ${ADB_CONSUMER_GROUP:adb-query-execution}
 
 adg:
   tarantool:
@@ -76,6 +79,9 @@ adg:
       retryCount: ${TARANTOOL_DB_RETRY_COUNT:0}
     cartridge:
       url: ${TARANTOOL_CATRIDGE_URL:http://adg:8081}
+
+  mppw:
+    consumerGroup: ${ADG_CONSUMER_GROUP:tarantool-group-csv}
 
 adqm:
   datasource:
@@ -93,5 +99,5 @@ adqm:
     consumerGroup: ${ADQM_CONSUMER_GROUP:adqm}
     kafkaBrokers: ${ADQM_BROKERS:kafka-1.dtm.local:9092}
     loadType: ${ADQM_MPPW_LOAD_TYPE:REST}
-    restLoadUrl: ${ADQM_REST_LOAD_URL:http://172.17.0.1:8090/newdata} #ToDo
-    restLoadConsumerGroup: ${ADQM_REST_LOAD_GROUP:test_datamart.consumer}
+    restLoadUrl: ${ADQM_REST_LOAD_URL:http://adb-emulator:8090/newdata}
+    restLoadConsumerGroup: ${ADQM_REST_LOAD_GROUP:adb-query-execution}

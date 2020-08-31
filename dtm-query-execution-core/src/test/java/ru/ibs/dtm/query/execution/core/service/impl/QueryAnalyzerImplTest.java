@@ -8,6 +8,7 @@ import io.vertx.ext.unit.TestOptions;
 import io.vertx.ext.unit.report.ReportOptions;
 import io.vertx.reactivex.ext.unit.Async;
 import io.vertx.reactivex.ext.unit.TestSuite;
+import lombok.Data;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.Test;
@@ -18,7 +19,6 @@ import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
-import ru.ibs.dtm.query.execution.core.dto.ParsedQueryRequest;
 import ru.ibs.dtm.query.execution.core.factory.RequestContextFactory;
 import ru.ibs.dtm.query.execution.core.factory.impl.RequestContextFactoryImpl;
 import ru.ibs.dtm.query.execution.core.service.QueryAnalyzer;
@@ -38,145 +38,154 @@ import static org.mockito.Mockito.mock;
 
 class QueryAnalyzerImplTest {
 
-	private CalciteConfiguration config = new CalciteConfiguration();
-	private CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
-	private DefinitionService<SqlNode> definitionService =
-			new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
-	private Vertx vertx = Vertx.vertx();
-	private RequestContextFactory<RequestContext<? extends DatamartRequest>, QueryRequest> requestContextFactory = new RequestContextFactoryImpl(new SqlDialect(SqlDialect.EMPTY_CONTEXT));
-	private QueryDispatcher queryDispatcher = mock(QueryDispatcher.class);
-	private QueryAnalyzer queryAnalyzer = new QueryAnalyzerImpl(queryDispatcher,
-			definitionService,
-			requestContextFactory,
-			vertx, new HintExtractor(), new DatamartMnemonicExtractor(), new AppConfiguration(mock(Environment.class)), new DefaultDatamartSetter());
+    private CalciteConfiguration config = new CalciteConfiguration();
+    private CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
+    private DefinitionService<SqlNode> definitionService =
+            new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
+    private Vertx vertx = Vertx.vertx();
+    private RequestContextFactory<RequestContext<? extends DatamartRequest>, QueryRequest> requestContextFactory = new RequestContextFactoryImpl(new SqlDialect(SqlDialect.EMPTY_CONTEXT));
+    private QueryDispatcher queryDispatcher = mock(QueryDispatcher.class);
+    private QueryAnalyzer queryAnalyzer = new QueryAnalyzerImpl(queryDispatcher,
+            definitionService,
+            requestContextFactory,
+            vertx,
+            new HintExtractor(),
+            new DatamartMnemonicExtractor(),
+            new AppConfiguration(mock(Environment.class)),
+            new DefaultDatamartSetter(),
+            new SemicolonRemoverImpl());
 
-	@Test
-	void parsedSelect() {
-		QueryRequest queryRequest = new QueryRequest();
-		queryRequest.setSql("select count(*) from (SelEct * from TEST_DATAMART.PSO where LST_NAM='test' " +
-				"union all " +
-				"SelEct * from TEST_DATAMART.PSO where LST_NAM='test1') " +
-				"group by ID " +
-				"order by 1 desc");
+    @Test
+    void parsedSelect() {
+        QueryRequest queryRequest = new QueryRequest();
+        queryRequest.setSql("select count(*) from (SelEct * from TEST_DATAMART.PSO where LST_NAM='test' " +
+                "union all " +
+                "SelEct * from TEST_DATAMART.PSO where LST_NAM='test1') " +
+                "group by ID " +
+                "order by 1 desc");
 
-		TestData testData = prepareExecute();
-		analyzeAndExecute(testData, queryRequest);
+        TestData testData = prepareExecute();
+        analyzeAndExecute(testData, queryRequest);
 
-		assertThat(testData.getResult()).isEqualToIgnoringCase("complete");
-		assertEquals(SqlProcessingType.DML, testData.getParsedQueryRequests().getProcessingType());
-	}
+        assertThat(testData.getResult()).isEqualToIgnoringCase("complete");
+        assertEquals(SqlProcessingType.DML, testData.getProcessingType());
+    }
 
-	@Test
-	void parseInsertSelect() {
-		QueryRequest queryRequest = new QueryRequest();
-		queryRequest.setSql("INSERT INTO TEST_DATAMART.PSO SELECT * FROM TEST_DATAMART.PSO");
+    @Test
+    void parseInsertSelect() {
+        QueryRequest queryRequest = new QueryRequest();
+        queryRequest.setSql("INSERT INTO TEST_DATAMART.PSO SELECT * FROM TEST_DATAMART.PSO");
 
-		TestData testData = prepareExecute();
-		analyzeAndExecute(testData, queryRequest);
+        TestData testData = prepareExecute();
+        analyzeAndExecute(testData, queryRequest);
 
-		assertThat(testData.getResult()).isEqualToIgnoringCase("complete");
-		assertEquals(SqlProcessingType.EDML, testData.getParsedQueryRequests().getProcessingType());
-	}
+        assertThat(testData.getResult()).isEqualToIgnoringCase("complete");
+        assertEquals(SqlProcessingType.EDML, testData.getProcessingType());
+    }
 
-	@Test
-	void parseSelectWithHintReturnsComplete() {
-		QueryRequest queryRequest = new QueryRequest();
-		queryRequest.setSql("SELECT * FROM TEST_DATAMART.PSO DATASOURCE_TYPE=ADB");
+    @Test
+    void parseSelectWithHintReturnsComplete() {
+        QueryRequest queryRequest = new QueryRequest();
+        queryRequest.setSql("SELECT * FROM TEST_DATAMART.PSO DATASOURCE_TYPE='ADB'");
 
-		TestData testData = prepareExecute();
-		analyzeAndExecute(testData, queryRequest);
+        TestData testData = prepareExecute();
+        analyzeAndExecute(testData, queryRequest);
 
-		assertThat(testData.getResult()).isEqualToIgnoringCase("complete");
-		assertEquals("test_datamart"
-				, testData.getParsedQueryRequests()
-						.getQueryRequest()
-						.getDatamartMnemonic());
-		assertEquals(SqlProcessingType.DML, testData.getParsedQueryRequests().getProcessingType());
-	}
+        assertThat(testData.getResult()).isEqualToIgnoringCase("complete");
+        assertEquals("test_datamart"
+                , testData.getRequest().getDatamartMnemonic());
+        assertEquals(SqlProcessingType.DML, testData.getProcessingType());
+    }
 
-	@Test
-	void parseSelectForSystemTime() {
-		QueryRequest queryRequest = new QueryRequest();
-		queryRequest.setSql("SELECT * FROM TEST_DATAMART.PSO for system_time" +
-				" as of '2011-01-02 00:00:00' where 1=1");
+    @Test
+    void parseSelectForSystemTime() {
+        QueryRequest queryRequest = new QueryRequest();
+        queryRequest.setSql("SELECT * FROM TEST_DATAMART.PSO for system_time" +
+                " as of '2011-01-02 00:00:00' where 1=1");
 
-		TestData testData = prepareExecute();
-		analyzeAndExecute(testData, queryRequest);
+        TestData testData = prepareExecute();
+        analyzeAndExecute(testData, queryRequest);
 
-		assertThat(testData.getResult()).isEqualToIgnoringCase("complete");
-		assertEquals(SqlProcessingType.DML, testData.getParsedQueryRequests().getProcessingType());
-	}
+        assertThat(testData.getResult()).isEqualToIgnoringCase("complete");
+        assertEquals(SqlProcessingType.DML, testData.getProcessingType());
+    }
 
-	@Test
-	void parseEddl() {
-		String sql = "DROP DOWNLOAD EXTERNAL TABLE S";
-		QueryRequest queryRequest = new QueryRequest();
-		queryRequest.setSql(sql);
+    @Test
+    void parseEddl() {
+        QueryRequest queryRequest = new QueryRequest();
+        queryRequest.setSql("DROP DOWNLOAD EXTERNAL TABLE test.s");
 
-		TestData testData = prepareExecute();
-		analyzeAndExecute(testData, queryRequest);
+        TestData testData = prepareExecute();
+        analyzeAndExecute(testData, queryRequest);
 
-		assertThat(testData.getResult()).isEqualToIgnoringCase("complete");
-		assertEquals(sql, testData.getParsedQueryRequests().getQueryRequest().getSql());
-		assertEquals(SqlProcessingType.EDDL, testData.getParsedQueryRequests().getProcessingType());
-	}
+        assertThat(testData.getResult()).isEqualToIgnoringCase("complete");
+        assertEquals(queryRequest.getSql(), testData.getRequest().getSql());
+        assertEquals(SqlProcessingType.EDDL, testData.getProcessingType());
+    }
 
-	@Test
-	void parseDdl() {
-		QueryRequest queryRequest = new QueryRequest();
-		queryRequest.setSql("DROP TABLE r.l");
+    @Test
+    void parseDdl() {
+        QueryRequest queryRequest = new QueryRequest();
+        queryRequest.setSql("DROP TABLE r.l");
 
-		TestData testData = prepareExecute();
-		analyzeAndExecute(testData, queryRequest);
+        TestData testData = prepareExecute();
+        analyzeAndExecute(testData, queryRequest);
 
-		assertThat(testData.getResult()).isEqualToIgnoringCase("complete");
-		assertEquals(SqlProcessingType.DDL, testData.getParsedQueryRequests().getProcessingType());
-	}
+        assertThat(testData.getResult()).isEqualToIgnoringCase("complete");
+        assertEquals(SqlProcessingType.DDL, testData.getProcessingType());
+    }
 
-	private void analyzeAndExecute(TestData testData, QueryRequest queryRequest) {
-		TestSuite suite = TestSuite.create("parse");
-		suite.test("parse", context -> {
-			Async async = context.async();
-			queryAnalyzer.analyzeAndExecute(queryRequest, res -> {
-				testData.setResult("complete");
-				async.complete();
-			});
-			async.awaitSuccess();
-		});
-		suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
-	}
+    @Test
+    void parseAlterView() {
+        QueryRequest queryRequest = new QueryRequest();
+        queryRequest.setSql("ALTER VIEW test.view_a AS SELECT * FROM test.test_data");
 
-	private TestData prepareExecute() {
-		TestData testData = new TestData();
-		doAnswer(invocation -> {
-			testData.setParsedQueryRequests(invocation.getArgument(0));
-			Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
-			handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
-			return null;
-		}).when(queryDispatcher).dispatch(any(), any());
-		return testData;
-	}
+        TestData testData = prepareExecute();
+        analyzeAndExecute(testData, queryRequest);
 
-	private static class TestData {
+        assertThat(testData.getResult()).isEqualToIgnoringCase("complete");
+        assertEquals(SqlProcessingType.DDL, testData.getProcessingType());
+    }
 
-		private String result;
+    private void analyzeAndExecute(TestData testData, QueryRequest queryRequest) {
+        TestSuite suite = TestSuite.create("parse");
+        suite.test("parse", context -> {
+            Async async = context.async();
+            queryAnalyzer.analyzeAndExecute(queryRequest, res -> {
+                testData.setResult("complete");
+                async.complete();
+            });
+            async.awaitSuccess();
+        });
+        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+    }
 
-		private ParsedQueryRequest parsedQueryRequests;
+    private TestData prepareExecute() {
+        TestData testData = new TestData();
+        doAnswer(invocation -> {
+            final RequestContext ddlRequest = invocation.getArgument(0);
+            testData.setRequest(ddlRequest.getRequest().getQueryRequest());
+            testData.setProcessingType(ddlRequest.getProcessingType());
+            Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
+            handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
+            return null;
+        }).when(queryDispatcher).dispatch(any(), any());
+        return testData;
+    }
 
-		String getResult() {
-			return result;
-		}
+    @Data
+    private static class TestData {
 
-		void setResult(String result) {
-			this.result = result;
-		}
+        private String result;
+        private QueryRequest request;
+        private SqlProcessingType processingType;
 
-		ParsedQueryRequest getParsedQueryRequests() {
-			return parsedQueryRequests;
-		}
+        String getResult() {
+            return result;
+        }
 
-		void setParsedQueryRequests(ParsedQueryRequest parsedQueryRequests) {
-			this.parsedQueryRequests = parsedQueryRequests;
-		}
-	}
+        void setResult(String result) {
+            this.result = result;
+        }
+    }
 }

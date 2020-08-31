@@ -23,6 +23,7 @@ data: {
     imports: [
       "org.apache.calcite.schema.ColumnStrategy"
       "org.apache.calcite.sql.SqlCreate"
+      "org.apache.calcite.sql.SqlAlter"
       "org.apache.calcite.sql.SqlDrop"
       "org.apache.calcite.sql.ddl.SqlDdlNodes"
       "java.util.Map"
@@ -49,6 +50,7 @@ data: {
       "FINISHED",
       "DELTA_NUM",
       "LATEST_UNCOMMITED_DELTA"
+      "USE"
     ]
 
     # List of keywords from "keywords" section that are not reserved.
@@ -396,6 +398,7 @@ data: {
     statementParserMethods: [
         "SqlBeginDelta()"
         "SqlCommitDelta()"
+        "SqlUseSchema()"
     ]
 
     # List of methods for parsing custom literals.
@@ -419,6 +422,7 @@ data: {
     # List of methods for parsing extensions to "ALTER <scope>" calls.
     # Each must accept arguments "(SqlParserPos pos, String scope)".
     alterStatementParserMethods: [
+        "SqlAlterView"
     ]
 
     # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls.

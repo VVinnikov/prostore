@@ -55,7 +55,7 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
     }
 
     private DdlRequestContext createDropRequestContext(DdlRequestContext context) {
-        return new DdlRequestContext(new DdlRequest(new QueryRequest(), context.getRequest().getClassTable()));
+        return new DdlRequestContext(new DdlRequest(context.getRequest().getQueryRequest().copy(), context.getRequest().getClassTable()));
     }
 
     private void createTable(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {

@@ -11,6 +11,7 @@ import ru.ibs.dtm.query.execution.plugin.adb.service.SchemaExtender;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static ru.ibs.dtm.query.execution.plugin.adb.factory.impl.MetadataSqlFactoryImpl.*;
 
@@ -22,12 +23,16 @@ import static ru.ibs.dtm.query.execution.plugin.adb.factory.impl.MetadataSqlFact
 public class AdbSchemaExtenderImpl implements SchemaExtender {
 
     @Override
-    public Datamart generatePhysicalSchema(Datamart datamart) {
+    public List<Datamart> generatePhysicalSchemas(List<Datamart> logicalSchemas) {
+        return logicalSchemas.stream().map(this::createPhysicalSchema).collect(Collectors.toList());
+    }
+
+    private Datamart createPhysicalSchema(Datamart schema) {
         Datamart extendedSchema = new Datamart();
-        extendedSchema.setMnemonic(datamart.getMnemonic());
+        extendedSchema.setMnemonic(schema.getMnemonic());
         extendedSchema.setId(UUID.randomUUID());
         List<DatamartTable> extendedDatamartTables = new ArrayList<>();
-        datamart.getDatamartTables().forEach(dmClass -> {
+        schema.getDatamartTables().forEach(dmClass -> {
             dmClass.getTableAttributes().addAll(getExtendedColumns());
             extendedDatamartTables.add(dmClass);
             extendedDatamartTables.add(getExtendedSchema(dmClass, "_".concat(HISTORY_TABLE)));
@@ -35,7 +40,6 @@ public class AdbSchemaExtenderImpl implements SchemaExtender {
             extendedDatamartTables.add(getExtendedSchema(dmClass, "_".concat(ACTUAL_TABLE)));
         });
         extendedSchema.setDatamartTables(extendedDatamartTables);
-
         return extendedSchema;
     }
 

@@ -4,8 +4,11 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import io.vertx.core.json.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.stereotype.Service;
@@ -13,6 +16,8 @@ import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.plugin.adg.configuration.AdgMppwKafkaProperties;
 import ru.ibs.dtm.query.execution.plugin.adg.dto.mppw.AdgMppwKafkaContext;
 import ru.ibs.dtm.query.execution.plugin.adg.factory.AdgMppwKafkaContextFactory;
+import ru.ibs.dtm.query.execution.plugin.adg.model.callback.function.TtTransferDataScdCallbackFunction;
+import ru.ibs.dtm.query.execution.plugin.adg.model.callback.params.TtTransferDataScdCallbackParameter;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtLoadDataKafkaRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtSubscriptionKafkaRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtTransferDataEtlRequest;
@@ -52,7 +57,8 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
         if (initializedLoadingByTopic.containsKey(ctx.getTopicName())) {
             val expectedTableName = initializedLoadingByTopic.get(ctx.getTopicName());
             if (expectedTableName.equals(ctx.getConsumerTableName())) {
-                loadData(ctx, handler);
+                //loadData(ctx, handler);
+                transferData(ctx, handler);
             } else {
                 val msg = String.format(
                         "Tables must be the same within a single load by topic [%s]. Actual [%s], but expected [%s]"
@@ -63,16 +69,33 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
                 handler.handle(Future.failedFuture(msg));
             }
         } else {
+            val callbackFunctionParameter = new TtTransferDataScdCallbackParameter(
+                    ctx.getHelperTableNames().getStaging(),
+                    ctx.getHelperTableNames().getStaging(),
+                    ctx.getHelperTableNames().getActual(),
+                    ctx.getHelperTableNames().getHistory(),
+                    ctx.getHotDelta()
+            );
+            val callbackFunction = new TtTransferDataScdCallbackFunction(
+                    properties.getCallbackFunctionName(),
+                    callbackFunctionParameter,
+                    properties.getMaxNumberOfMessagesPerPartition(),
+                    properties.getCallbackFunctionSecIdle()
+            );
+
+
             val request = new TtSubscriptionKafkaRequest(
                     properties.getMaxNumberOfMessagesPerPartition(),
                     null,
-                    ctx.getTopicName()
+                    ctx.getTopicName(),
+                    Collections.singletonList(ctx.getHelperTableNames().getStaging()),
+                    callbackFunction
             );
             cartridgeClient.subscribe(request, ar -> {
                 if (ar.succeeded()) {
                     log.debug("Loading initialize completed by [{}]", request);
                     initializedLoadingByTopic.put(ctx.getTopicName(), ctx.getConsumerTableName());
-                    loadData(ctx, handler);
+                    //loadData(ctx, handler);
                 } else {
                     log.error("Loading initialize error:", ar.cause());
                     handler.handle(Future.failedFuture(ar.cause()));
@@ -117,6 +140,7 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
 
     private void cancelLoadData(AdgMppwKafkaContext ctx, Handler<AsyncResult<QueryResult>> handler) {
         val topicName = ctx.getTopicName();
+        transferData(ctx,handler);
         cartridgeClient.cancelSubscription(topicName, ar -> {
             initializedLoadingByTopic.remove(topicName);
             if (ar.succeeded()) {

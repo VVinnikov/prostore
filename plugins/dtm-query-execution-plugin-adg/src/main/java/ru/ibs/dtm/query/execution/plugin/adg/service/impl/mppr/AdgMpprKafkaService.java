@@ -5,10 +5,12 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.plugin.exload.QueryExloadParam;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.plugin.adg.dto.EnrichQueryRequest;
+import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtUploadDataKafkaRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryEnrichmentService;
 import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeClient;
 import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
@@ -42,7 +44,11 @@ public class AdgMpprKafkaService implements MpprKafkaService<QueryResult> {
 							Handler<AsyncResult<QueryResult>> asyncResultHandler,
 							String sql) {
 		QueryExloadParam queryExloadParam = queryRequest.getQueryExloadParam();
-		ttCartridgeClient.uploadData(sql, queryRequest.getTopic(), queryExloadParam.getChunkSize(), ar -> {
+		val request = new TtUploadDataKafkaRequest(
+				sql,queryRequest.getTopic(),queryExloadParam.getChunkSize(),queryExloadParam.getAvroSchema()
+		);
+		ttCartridgeClient.uploadData(request,
+				ar -> {
 					UUID requestId = queryRequest.getQueryRequest().getRequestId();
 					if (ar.succeeded()) {
 						log.info("Uploading data from ADG was successful on request: {}", requestId);

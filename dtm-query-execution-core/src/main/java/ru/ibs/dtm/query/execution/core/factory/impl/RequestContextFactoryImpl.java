@@ -1,13 +1,11 @@
 package ru.ibs.dtm.query.execution.core.factory.impl;
 
 import lombok.val;
-import org.apache.calcite.sql.SqlDdl;
-import org.apache.calcite.sql.SqlDialect;
-import org.apache.calcite.sql.SqlInsert;
-import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.*;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryRequest;
+import ru.ibs.dtm.query.calcite.core.extension.ddl.SqlUseSchema;
 import ru.ibs.dtm.query.calcite.core.extension.delta.SqlBeginDelta;
 import ru.ibs.dtm.query.calcite.core.extension.delta.SqlCommitDelta;
 import ru.ibs.dtm.query.execution.core.factory.RequestContextFactory;
@@ -32,7 +30,7 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
     @Override
     public RequestContext<? extends DatamartRequest> create(QueryRequest request, SqlNode node) {
         val changedQueryRequest = changeSql(request, node);
-        if (node instanceof SqlDdl) {
+        if (node instanceof SqlDdl || node instanceof SqlAlter) {
             switch (node.getKind()) {
                 case OTHER_DDL:
                     return new EddlRequestContext(new DatamartRequest(changedQueryRequest));
@@ -41,6 +39,8 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
             }
         } else if (node instanceof SqlBeginDelta || node instanceof SqlCommitDelta) {
             return new DeltaRequestContext(new DatamartRequest(changedQueryRequest));
+        } else if (node instanceof SqlUseSchema) {
+            return new DdlRequestContext(new DdlRequest(changedQueryRequest), node);
         }
 
         switch (node.getKind()) {

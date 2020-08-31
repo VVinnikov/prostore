@@ -24,7 +24,7 @@ public class VertxConfiguration {
     }
 
     @Bean("adgCircuitBreaker")
-    public CircuitBreaker circuitBreaker(@Qualifier("adgVertx") Vertx vertx,
+    public CircuitBreaker circuitBreaker(@Qualifier("coreVertx") Vertx vertx,
                                          @Qualifier("adgCircuitBreakerProperties") CircuitBreakerProperties properties) {
         return CircuitBreaker.create("adgCircuitBreaker", vertx,
                 new CircuitBreakerOptions()

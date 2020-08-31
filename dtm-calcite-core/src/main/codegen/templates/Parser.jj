@@ -600,6 +600,7 @@ SqlNode OrderedQueryOrExpr(ExprContext exprContext) :
     SqlNodeList orderBy = null;
     SqlNode start = null;
     SqlNode count = null;
+    boolean isLimited = false;
 }
 {
     (
@@ -613,6 +614,9 @@ SqlNode OrderedQueryOrExpr(ExprContext exprContext) :
     [
         // Postgres-style syntax. "LIMIT ... OFFSET ..."
         <LIMIT>
+        {
+            isLimited = true;
+        }
         (
             // MySQL-style syntax. "LIMIT start, count"
             LOOKAHEAD(2)
@@ -645,7 +649,7 @@ SqlNode OrderedQueryOrExpr(ExprContext exprContext) :
             if (orderBy == null) {
                 orderBy = SqlNodeList.EMPTY;
             }
-            e = new SqlOrderBy(getPos(), e, orderBy, start, count);
+            e = new ru.ibs.dtm.query.calcite.core.extension.dml.LimitableSqlOrderBy(getPos(), e, orderBy, start, count, isLimited);
 
         }
         return e;

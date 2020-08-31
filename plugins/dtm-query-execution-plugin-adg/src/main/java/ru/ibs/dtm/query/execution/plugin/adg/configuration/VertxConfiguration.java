@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import ru.ibs.dtm.common.configuration.kafka.KafkaConfig;
+import io.vertx.circuitbreaker.CircuitBreaker;
+import io.vertx.circuitbreaker.CircuitBreakerOptions;
 
 @Slf4j
 @Configuration
@@ -21,4 +23,16 @@ public class VertxConfiguration {
         return WebClient.create(vertx);
     }
 
+    @Bean("adgCircuitBreaker")
+    public CircuitBreaker circuitBreaker(@Qualifier("adgVertx") Vertx vertx,
+                                         @Qualifier("adgCircuitBreakerProperties") CircuitBreakerProperties properties) {
+        return CircuitBreaker.create("adgCircuitBreaker", vertx,
+                new CircuitBreakerOptions()
+                        .setMaxFailures(properties.getMaxFailures())
+                        .setTimeout(properties.getTimeout())
+                        .setFallbackOnFailure(properties.isFallbackOnFailure())
+                        .setResetTimeout(properties.getResetTimeout()));
+    }
+  
 }
+

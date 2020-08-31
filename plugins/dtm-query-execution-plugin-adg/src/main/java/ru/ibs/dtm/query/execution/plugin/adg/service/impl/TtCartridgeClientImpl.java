@@ -1,6 +1,7 @@
 package ru.ibs.dtm.query.execution.plugin.adg.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.vertx.circuitbreaker.CircuitBreaker;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -33,11 +34,16 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
 
   private final WebClient webClient;
   private final TarantoolCartridgeProperties cartridgeProperties;
+  private final CircuitBreaker circuitBreaker;
 
   @Autowired
-  public TtCartridgeClientImpl(TarantoolCartridgeProperties cartridgeProperties, @Qualifier("adgWebClient") WebClient webClient, ObjectMapper objectMapper) {
+  public TtCartridgeClientImpl(TarantoolCartridgeProperties cartridgeProperties,
+                               @Qualifier("adgWebClient") WebClient webClient,
+                               ObjectMapper objectMapper,
+                               @Qualifier("adgCircuitBreaker") CircuitBreaker circuitBreaker) {
     this.cartridgeProperties = cartridgeProperties;
     this.webClient = webClient;
+    this.circuitBreaker = circuitBreaker;
   }
 
   @Override
@@ -247,26 +253,25 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
       }
     });
   }
-
   @SneakyThrows
   private void executePostRequest(ReqOperation reqOperation, Handler<AsyncResult<ResOperation>> handler) {
-    webClient.postAbs(cartridgeProperties.getUrl() + cartridgeProperties.getAdminApiUrl())
-      .sendJson(reqOperation, ar -> {
-        if (ar.succeeded()) {
-          try {
-            ResOperation res = new JsonObject(ar.result().body()).mapTo(ResOperation.class);
-            if (CollectionUtils.isEmpty(res.getErrors())) {
-              handler.handle(Future.succeededFuture(res));
-            } else {
-              handler.handle(Future.failedFuture(new RuntimeException(res.getErrors().get(0).getMessage())));
-            }
-          } catch (Exception e) {
-            handler.handle(Future.failedFuture(e));
-          }
-        } else {
-          handler.handle(Future.failedFuture(ar.cause()));
-        }
-      });
+    circuitBreaker.<ResOperation>execute(future -> webClient.postAbs(cartridgeProperties.getUrl() + cartridgeProperties.getAdminApiUrl())
+            .sendJson(reqOperation, ar -> {
+              if (ar.succeeded()) {
+                try {
+                  ResOperation res = new JsonObject(ar.result().body()).mapTo(ResOperation.class);
+                  if (CollectionUtils.isEmpty(res.getErrors())) {
+                    future.complete(res);
+                  } else {
+                    future.fail(new RuntimeException(res.getErrors().get(0).getMessage()));
+                  }
+                } catch (Exception e) {
+                  future.fail(e);
+                }
+              } else {
+                future.fail(ar.cause());
+              }
+            })).setHandler(handler);
   }
 
   @Override

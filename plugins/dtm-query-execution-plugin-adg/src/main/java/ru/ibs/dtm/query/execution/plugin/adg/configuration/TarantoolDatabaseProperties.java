@@ -13,4 +13,5 @@ public class TarantoolDatabaseProperties {
   String user = "admin";
   String password = "123";
   Integer operationTimeout = 10000;
+  Integer retryCount = 0;
 }

@@ -9,4 +9,5 @@ import org.springframework.stereotype.Component;
 @Component
 public class MppwProperties {
     private String consumerGroup;
+    private String loadUrl;
 }

@@ -13,6 +13,7 @@ import kafka.coordinator.group.GroupMetadataManager;
 import kafka.coordinator.group.GroupTopicPartition;
 import kafka.coordinator.group.OffsetKey;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.RandomUtils;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -29,6 +30,7 @@ import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.*;
 
@@ -38,12 +40,11 @@ public class KafkaConsumerMonitorImpl implements KafkaConsumerMonitor {
 
     private static final String SYSTEM_TOPIC = "__consumer_offsets";
     private final KafkaAdminClient adminClient;
-    private final KafkaConsumer<byte[], byte[]> consumer;
+    private final List<KafkaConsumer<byte[], byte[]>> consumers;
     private final Vertx vertx;
     private final ConcurrentHashMap<GroupTopicPartition, KafkaTopicCommitedOffset> lastCommitedOffsets;
     private final ConcurrentHashMap<GroupTopicPartition, KafkaTopicOffset> lastOffsets;
     private final KafkaProperties kafkaProperties;
-
 
     @Autowired
     public KafkaConsumerMonitorImpl(@Qualifier("coreKafkaAdminClient") KafkaAdminClient adminClient,
@@ -62,7 +63,11 @@ public class KafkaConsumerMonitorImpl implements KafkaConsumerMonitor {
         properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.ByteArrayDeserializer");
         properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.ByteArrayDeserializer");
 
-        this.consumer = consumerFactory.create(properties);
+        this.consumers = new ArrayList<>();
+        int consumerNumber = Integer.parseInt(kafkaProperties.getConsumer().getCore().getOrDefault("number", "8"));
+        IntStream.range(0, consumerNumber)
+                .forEach(r ->
+                        this.consumers.add(consumerFactory.create(properties)));
 
         // VertX
         this.vertx = vertx;
@@ -81,7 +86,6 @@ public class KafkaConsumerMonitorImpl implements KafkaConsumerMonitor {
                         List<String> consumerGroupNames = ar.result().stream()
                                 .map(ConsumerGroupListing::getGroupId).collect(toList());
                         handler.complete(consumerGroupNames);
-
                     } else {
                         log.error("Can't get consumers group list", ar.cause());
                         handler.fail(ar.cause());
@@ -95,11 +99,11 @@ public class KafkaConsumerMonitorImpl implements KafkaConsumerMonitor {
                     if (ar.succeeded()) {
                         Map<String, Set<TopicPartition>> topicPartitions = ar.result().entrySet().stream()
                                 .collect(Collectors.toMap(
-                                Map.Entry::getKey,
-                                e -> e.getValue().getMembers().stream().map(MemberDescription::getAssignment)
-                                        .flatMap(assignment -> assignment.getTopicPartitions().stream())
-                                        .collect(toSet())
-                        ));
+                                        Map.Entry::getKey,
+                                        e -> e.getValue().getMembers().stream().map(MemberDescription::getAssignment)
+                                                .flatMap(assignment -> assignment.getTopicPartitions().stream())
+                                                .collect(toSet())
+                                ));
                         handler.complete(topicPartitions);
                     } else {
                         log.error("Can't get topic partition info", ar.cause());
@@ -110,7 +114,7 @@ public class KafkaConsumerMonitorImpl implements KafkaConsumerMonitor {
 
 
     private Future<Map<TopicPartition, Long>> getBeginOffset(Set<TopicPartition> topicPartitions) {
-        return Future.future(handler -> consumer.beginningOffsets(topicPartitions, ar -> {
+        return Future.future(handler -> consumers.get(RandomUtils.nextInt(0, consumers.size())).beginningOffsets(topicPartitions, ar -> {
             if (ar.succeeded())
                 handler.complete(ar.result());
             else {
@@ -121,7 +125,7 @@ public class KafkaConsumerMonitorImpl implements KafkaConsumerMonitor {
     }
 
     private Future<Map<TopicPartition, Long>> getEndOffset(Set<TopicPartition> topicPartitions) {
-        return Future.future(handler -> consumer.endOffsets(topicPartitions, ar -> {
+        return Future.future(handler -> consumers.get(RandomUtils.nextInt(0, consumers.size())).endOffsets(topicPartitions, ar -> {
             if (ar.succeeded())
                 handler.complete(ar.result());
             else {
@@ -153,8 +157,6 @@ public class KafkaConsumerMonitorImpl implements KafkaConsumerMonitor {
                                         }
                                 ));
                 handler.complete(intersect);
-
-
             } else {
                 log.error("Can't combine topic begin,end offsets");
                 handler.fail(ar.cause());
@@ -164,53 +166,54 @@ public class KafkaConsumerMonitorImpl implements KafkaConsumerMonitor {
     }
 
     private void initSystemTopicConsumer() {
-        consumer.handler(record -> {
-            byte[] key = record.key();
-            byte[] value;
-            if (key != null) {
-                Object o = GroupMetadataManager.readMessageKey(ByteBuffer.wrap(key));
-                if (o instanceof OffsetKey) {
-                    OffsetKey offsetKey = (OffsetKey) o;
-                    value = record.value();
-                    if (value != null) {
-                        ByteBuffer byteBuffer = ByteBuffer.wrap(value);
-                        OffsetAndMetadata offsetAndMetadata =
-                                GroupMetadataManager.readOffsetMessageValue(byteBuffer);
-                        lastCommitedOffsets.computeIfPresent(offsetKey.key(),(k,v) -> {
+        consumers.forEach(consumer ->
+                consumer.handler(record -> {
+                    byte[] key = record.key();
+                    byte[] value;
+                    if (key != null) {
+                        Object o = GroupMetadataManager.readMessageKey(ByteBuffer.wrap(key));
+                        if (o instanceof OffsetKey) {
+                            OffsetKey offsetKey = (OffsetKey) o;
+                            value = record.value();
+                            if (value != null) {
+                                ByteBuffer byteBuffer = ByteBuffer.wrap(value);
+                                OffsetAndMetadata offsetAndMetadata =
+                                        GroupMetadataManager.readOffsetMessageValue(byteBuffer);
+                                lastCommitedOffsets.computeIfPresent(offsetKey.key(), (k, v) -> {
 
-                            if (offsetAndMetadata.commitTimestamp() > v.getLastCommitTimestamp())
-                                v.setLastCommitTimestamp(offsetAndMetadata.commitTimestamp());
+                                    if (offsetAndMetadata.commitTimestamp() > v.getLastCommitTimestamp())
+                                        v.setLastCommitTimestamp(offsetAndMetadata.commitTimestamp());
 
-                            if (offsetAndMetadata.offset() > v.getOffset())
-                                v.setOffset(offsetAndMetadata.offset());
+                                    if (offsetAndMetadata.offset() > v.getOffset())
+                                        v.setOffset(offsetAndMetadata.offset());
+                                    return v;
+                                });
 
-
-                            return v;
-                        });
-
-                        lastCommitedOffsets.computeIfAbsent(offsetKey.key(),v -> {
-                            KafkaTopicCommitedOffset kafkaTopicCommitedOffset = new KafkaTopicCommitedOffset();
-                            kafkaTopicCommitedOffset.setLastCommitTimestamp(offsetAndMetadata.commitTimestamp());
-                            kafkaTopicCommitedOffset.setOffset(offsetAndMetadata.offset());
-                            return kafkaTopicCommitedOffset;
-                        });
+                                lastCommitedOffsets.computeIfAbsent(offsetKey.key(), v -> {
+                                    KafkaTopicCommitedOffset kafkaTopicCommitedOffset = new KafkaTopicCommitedOffset();
+                                    kafkaTopicCommitedOffset.setLastCommitTimestamp(offsetAndMetadata.commitTimestamp());
+                                    kafkaTopicCommitedOffset.setOffset(offsetAndMetadata.offset());
+                                    return kafkaTopicCommitedOffset;
+                                });
+                            }
+                        }
                     }
-                }
-            }
-            //consumer.commit();
-        });
+                    //consumer.commit();
+                })
+        );
 
-        consumer.subscribe(SYSTEM_TOPIC, ar -> {
-            if (ar.succeeded())
-                log.info("Subscribed to system topic");
-            else
-                log.error("Subscription to system topic error",ar.cause());
-        });
+        consumers.forEach(consumer ->
+                consumer.subscribe(SYSTEM_TOPIC, ar -> {
+                    if (ar.succeeded())
+                        log.info("Subscribed to system topic");
+                    else
+                        log.error("Subscription to system topic error", ar.cause());
+                }));
     }
 
     private void initTopicOffsetRefresh() {
         Integer monitorPoolingTimeoutMs = kafkaProperties.getAdmin().getMonitorPoolingTimeoutMs();
-        if(monitorPoolingTimeoutMs == null)
+        if (monitorPoolingTimeoutMs == null)
             monitorPoolingTimeoutMs = 1000;
 
         this.vertx.setPeriodic(monitorPoolingTimeoutMs, handler ->
@@ -219,7 +222,6 @@ public class KafkaConsumerMonitorImpl implements KafkaConsumerMonitor {
                             if (ar.failed()) {
                                 log.error("Can't get Group Consumer Info", ar.cause());
                             } else {
-
                                 Map<String, Future<Map<TopicPartition, KafkaTopicOffset>>> offsets =
                                         ar.result().entrySet().stream()
                                                 .filter(e -> !e.getValue().isEmpty()).collect(toMap(
@@ -235,11 +237,9 @@ public class KafkaConsumerMonitorImpl implements KafkaConsumerMonitor {
                                                                 topic.getTopic(), topic.getPartition()),
                                                         topicOffset)
                                         );
+                                    } else {
+                                        log.error("Can't refresh kafka topic offsets", offsetAr.cause());
                                     }
-                                    else {
-                                        log.error("Can't refresh kafka topic offsets",offsetAr.cause());
-                                    }
-
                                 }));
                             }
 
@@ -281,11 +281,11 @@ public class KafkaConsumerMonitorImpl implements KafkaConsumerMonitor {
             kafkaPartitionInfo.setStart(e.getValue().getStart());
             kafkaPartitionInfo.setEnd(e.getValue().getEnd());
             KafkaTopicCommitedOffset lastCommitedOffset = lastCommitedOffsets.getOrDefault(e.getKey(),
-                    new KafkaTopicCommitedOffset(0L,0L));
+                    new KafkaTopicCommitedOffset(0L, 0L));
             if (lastCommitedOffset != null) {
                 kafkaPartitionInfo.setOffset(lastCommitedOffset.getOffset());
                 kafkaPartitionInfo.setLastCommitTime(new Date(lastCommitedOffset.getLastCommitTimestamp()).toInstant()
-                .atZone(ZoneId.systemDefault()).toLocalDateTime());
+                        .atZone(ZoneId.systemDefault()).toLocalDateTime());
                 kafkaPartitionInfo.setLag(Math.max(0L, e.getValue().getEnd() - lastCommitedOffset.getOffset()));
             }
             return kafkaPartitionInfo;
@@ -306,14 +306,14 @@ public class KafkaConsumerMonitorImpl implements KafkaConsumerMonitor {
         result.setLastCommitTime(new Date(0L).toInstant()
                 .atZone(ZoneId.systemDefault()).toLocalDateTime());
 
-        return getGroupConsumerInfo().getOrDefault(new KafkaGroupTopic(consumerGroup,topic),new ArrayList<>())
-                .stream().reduce(result,(l,r) -> {
+        return getGroupConsumerInfo().getOrDefault(new KafkaGroupTopic(consumerGroup, topic), new ArrayList<>())
+                .stream().reduce(result, (l, r) -> {
                     l.setPartition(l.getPartition() + r.getPartition());
-                    l.setStart(Math.min(l.getStart(),r.getStart()));
+                    l.setStart(Math.min(l.getStart(), r.getStart()));
                     l.setEnd(l.getEnd() + r.getEnd());
                     l.setOffset(l.getOffset() + r.getOffset());
                     l.setLag(l.getLag() + r.getLag());
-                    if(l.getLastCommitTime().compareTo(r.getLastCommitTime()) < 0)
+                    if (l.getLastCommitTime().compareTo(r.getLastCommitTime()) < 0)
                         l.setLastCommitTime(r.getLastCommitTime());
                     return l;
                 });

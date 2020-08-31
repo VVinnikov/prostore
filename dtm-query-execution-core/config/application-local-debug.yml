@@ -65,6 +65,10 @@ adb:
     port: ${ADB_MPPR_CONNECTOR_PORT:8086}
     url: ${ADB_MPPR_CONNECTOR_URL:/query}
 
+  mppw:
+    loadUrl: ${ADB_LOAD_URL:http://10.92.3.3:8090/newdata/adb}
+    consumerGroup: ${ADB_LOAD_GROUP:adb-emulator-load-adb}
+
 adg:
   tarantool:
     db:
@@ -92,5 +96,5 @@ adqm:
     consumerGroup: ${ADQM_CONSUMER_GROUP:adqm}
     kafkaBrokers: ${ADQM_BROKERS:127.0.0.1:9092}
     loadType: ${ADQM_MPPW_LOAD_TYPE:REST}
-    restLoadUrl: ${ADQM_REST_LOAD_URL:http://127.0.0.1:8090/newdata}
-    restLoadConsumerGroup: ${ADQM_REST_LOAD_GROUP:test_datamart.consumer}
+    restLoadUrl: ${ADQM_REST_LOAD_URL:http://10.92.3.3:8090/newdata/adqm}
+    restLoadConsumerGroup: ${ADQM_REST_LOAD_GROUP:adb-emulator-load-adqm}

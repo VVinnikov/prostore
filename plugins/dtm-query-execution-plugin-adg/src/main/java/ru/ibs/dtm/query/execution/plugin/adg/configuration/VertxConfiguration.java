@@ -19,35 +19,8 @@ import io.vertx.circuitbreaker.CircuitBreakerOptions;
 public class VertxConfiguration {
 
     @Bean("adgWebClient")
-    public WebClient webClient(@Qualifier("adgVertx") Vertx vertx) {
+    public WebClient webClient(@Qualifier("coreVertx") Vertx vertx) {
         return WebClient.create(vertx);
-    }
-
-    @Bean("adgVertx")
-    public Vertx clusteredVertx(@Qualifier("adgClusterManager") ZookeeperClusterManager clusterManager) {
-        VertxOptions options = new VertxOptions().setClusterManager(clusterManager);
-        CompletableFuture<Vertx> future = new CompletableFuture<>();
-        Vertx.clusteredVertx(options, event -> {
-            if (event.succeeded()) {
-                future.complete(event.result());
-            } else {
-                log.error("adgVertx init error: ", event.cause());
-                throw new RuntimeException(event.cause());
-            }
-        });
-        return future.join();
-    }
-
-    @Bean("adgClusterManager")
-    public ZookeeperClusterManager clusterManager(@Qualifier("coreKafkaProperties") KafkaConfig properties) {
-        JsonObject config = new JsonObject();
-        config.put("zookeeperHosts", properties.getKafkaClusterProperty().getZookeeperHosts());
-        config.put("rootPath", properties.getKafkaClusterProperty().getRootPath());
-        config.put("retry", new JsonObject()
-                .put("initialSleepTime", 3000)
-                .put("maxTimes", 3)
-        );
-        return new ZookeeperClusterManager(config);
     }
 
     @Bean("adgCircuitBreaker")
@@ -60,5 +33,6 @@ public class VertxConfiguration {
                         .setFallbackOnFailure(properties.isFallbackOnFailure())
                         .setResetTimeout(properties.getResetTimeout()));
     }
-
+  
 }
+

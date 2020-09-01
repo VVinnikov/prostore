@@ -14,6 +14,8 @@ public class KafkaProperties implements KafkaConfig {
     KafkaClusterProperty cluster = new KafkaClusterProperty();
     KafkaAdminProperty admin = new KafkaAdminProperty();
 
+    private String statusMonitorUrl;
+
     @Override
     public KafkaAdminProperty getKafkaAdminProperty() {
         return admin;

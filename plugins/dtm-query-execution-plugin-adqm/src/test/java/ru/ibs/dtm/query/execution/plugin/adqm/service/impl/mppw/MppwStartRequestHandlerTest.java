@@ -9,6 +9,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import ru.ibs.dtm.common.plugin.exload.Format;
 import ru.ibs.dtm.common.plugin.exload.QueryLoadParam;
+import ru.ibs.dtm.common.reader.QueryRequest;
+import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.MppwProperties;
@@ -21,10 +23,7 @@ import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockEnvironment;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockStatusReporter;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Predicate;
 
 import static java.lang.String.format;
@@ -67,7 +66,7 @@ class MppwStartRequestHandlerTest {
                 t -> t.equalsIgnoreCase("CREATE MATERIALIZED VIEW IF NOT EXISTS dev__shares.accounts_buffer_loader_shard ON CLUSTER test_arenadata TO dev__shares.accounts_buffer\n" +
                         "  AS SELECT column1, column2, sys_op AS sys_op_buffer FROM dev__shares.accounts_ext_shard"),
                 t -> t.equalsIgnoreCase("CREATE MATERIALIZED VIEW IF NOT EXISTS dev__shares.accounts_actual_loader_shard ON CLUSTER test_arenadata TO dev__shares.accounts_actual\n" +
-                        "AS SELECT column1, column2, column3, 101 AS sys_from, 9223372036854775807 as sys_to, 0 as sys_op, '9999-12-31 00:00:00' as close_date, 1 AS sign  FROM dev__shares.accounts_ext_shard WHERE sys_op <> 1")
+                        "AS SELECT es.column1, es.column2, es.column3, 101 AS sys_from, 9223372036854775807 as sys_to, 0 as sys_op_load, '9999-12-31 00:00:00' as close_date, 1 AS sign  FROM dev__shares.accounts_ext_shard es WHERE es.sys_op <> 1")
         ), mockData, false);
 
         MockStatusReporter mockReporter = createMockReporter(TEST_CONSUMER_GROUP + "dev__shares.accounts");
@@ -109,7 +108,7 @@ class MppwStartRequestHandlerTest {
                 t -> t.equalsIgnoreCase("CREATE MATERIALIZED VIEW IF NOT EXISTS dev__shares.accounts_buffer_loader_shard ON CLUSTER test_arenadata TO dev__shares.accounts_buffer\n" +
                         "  AS SELECT column1, column2, sys_op AS sys_op_buffer FROM dev__shares.accounts_ext_shard"),
                 t -> t.equalsIgnoreCase("CREATE MATERIALIZED VIEW IF NOT EXISTS dev__shares.accounts_actual_loader_shard ON CLUSTER test_arenadata TO dev__shares.accounts_actual\n" +
-                        "AS SELECT column1, column2, column3, 101 AS sys_from, 9223372036854775807 as sys_to, 0 as sys_op, '9999-12-31 00:00:00' as close_date, 1 AS sign  FROM dev__shares.accounts_ext_shard WHERE sys_op <> 1")
+                        "AS SELECT es.column1, es.column2, es.column3, 101 AS sys_from, 9223372036854775807 as sys_to, 0 as sys_op_load, '9999-12-31 00:00:00' as close_date, 1 AS sign  FROM dev__shares.accounts_ext_shard es WHERE es.sys_op <> 1")
         ), mockData, false);
 
         MockStatusReporter mockReporter = createMockReporter("restConsumerGroup");
@@ -121,8 +120,11 @@ class MppwStartRequestHandlerTest {
                 mockReporter, mockInitiator);
         QueryLoadParam loadParam = createQueryLoadParam();
         JsonObject schema = createSchema();
+        QueryRequest queryRequest = new QueryRequest();
+        queryRequest.setRequestId(UUID.randomUUID());
+        queryRequest.setSourceType(SourceType.ADQM);
 
-        MppwRequest request = new MppwRequest(null, loadParam, schema);
+        MppwRequest request = new MppwRequest(queryRequest, loadParam, schema);
         request.setTopic(TEST_TOPIC);
         request.setZookeeperHost("zkhost");
 

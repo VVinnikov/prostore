@@ -41,8 +41,8 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
             "  SELECT %s, a.sys_from, %d - 1 AS sys_to, b.sys_op_buffer as sys_op, '%s' AS close_date, arrayJoin([-1, 1]) AS sign\n" +
             "  FROM %s a\n" +
             "  ANY INNER JOIN %s b USING(%s)\n" +
-            "  WHERE sys_from < %d\n" +
-            "    AND sys_to > %d";
+            "  WHERE a.sys_from < %d\n" +
+            "    AND a.sys_to > %d";
     private static final String SELECT_COLUMNS_QUERY = "select name from system.columns where database = '%s' and table = '%s'";
 
     private final DatabaseExecutor databaseExecutor;
@@ -102,7 +102,7 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
 
     private Future<Void> closeActual(@NonNull String table, long deltaHot) {
         LocalDateTime ldt = LocalDateTime.now();
-        String now = ldt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        String now = ldt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
         Future<String> columnNames = fetchColumnNames(table + ACTUAL_POSTFIX);
         Future<String> sortingKey = fetchSortingKey(table + ACTUAL_SHARD_POSTFIX);

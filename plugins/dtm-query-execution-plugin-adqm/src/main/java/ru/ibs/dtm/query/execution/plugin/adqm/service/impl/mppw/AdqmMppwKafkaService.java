@@ -3,12 +3,10 @@ package ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import ru.ibs.dtm.common.plugin.exload.QueryLoadParam;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
@@ -48,6 +46,7 @@ public class AdqmMppwKafkaService implements MppwKafkaService<QueryResult> {
 
     @Override
     public void execute(MppwRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
+        log.debug("mppw start");
         MppwRequest request = context.getRequest();
         if (request == null) {
             asyncResultHandler.handle(Future.failedFuture("MppwRequest should not be null"));

@@ -11,6 +11,7 @@ import ru.ibs.dtm.common.plugin.status.StatusQueryResult;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.query.execution.core.service.DataSourcePluginService;
+import ru.ibs.dtm.query.execution.core.verticle.TaskVerticleExecutor;
 import ru.ibs.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
 import ru.ibs.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
@@ -27,15 +28,18 @@ import java.util.stream.Collectors;
 public class DataSourcePluginServiceImpl implements DataSourcePluginService {
 
     private final PluginRegistry<DtmDataSourcePlugin, SourceType> pluginRegistry;
+    private final TaskVerticleExecutor taskVerticleExecutor;
     private final Set<SourceType> sourceTypes;
 
     @Autowired
     public DataSourcePluginServiceImpl(
-            @Qualifier("dtmDataSourcePluginRegistry") PluginRegistry<DtmDataSourcePlugin, SourceType> pluginRegistry) {
+        @Qualifier("dtmDataSourcePluginRegistry") PluginRegistry<DtmDataSourcePlugin, SourceType> pluginRegistry,
+        TaskVerticleExecutor taskVerticleExecutor) {
+        this.taskVerticleExecutor = taskVerticleExecutor;
         this.pluginRegistry = pluginRegistry;
         this.sourceTypes = pluginRegistry.getPlugins().stream()
-                .map(DtmDataSourcePlugin::getSourceType)
-                .collect(Collectors.toSet());
+            .map(DtmDataSourcePlugin::getSourceType)
+            .collect(Collectors.toSet());
     }
 
     @Override
@@ -47,41 +51,41 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     public void ddl(SourceType sourceType,
                     DdlRequestContext context,
                     Handler<AsyncResult<Void>> asyncResultHandler) {
-        getPlugin(sourceType).ddl(context, asyncResultHandler);
+        taskVerticleExecutor.execute(p -> getPlugin(sourceType).ddl(context, p), asyncResultHandler);
     }
 
     @Override
     public void llr(SourceType sourceType,
                     LlrRequestContext context,
                     Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-        getPlugin(sourceType).llr(context, asyncResultHandler);
+        taskVerticleExecutor.execute(p -> getPlugin(sourceType).llr(context, p), asyncResultHandler);
     }
 
     @Override
     public void mpprKafka(SourceType sourceType,
                           MpprRequestContext context,
                           Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-        getPlugin(sourceType).mpprKafka(context, asyncResultHandler);
+        taskVerticleExecutor.execute(p -> getPlugin(sourceType).mpprKafka(context, p), asyncResultHandler);
     }
 
     @Override
     public void mppwKafka(SourceType sourceType,
                           MppwRequestContext context,
                           Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-        getPlugin(sourceType).mppwKafka(context, asyncResultHandler);
+        taskVerticleExecutor.execute(p -> getPlugin(sourceType).mppwKafka(context, p), asyncResultHandler);
     }
 
     @Override
     public void calcQueryCost(SourceType sourceType,
                               QueryCostRequestContext context,
                               Handler<AsyncResult<Integer>> asyncResultHandler) {
-        getPlugin(sourceType).calcQueryCost(context, asyncResultHandler);
+        taskVerticleExecutor.execute(p -> getPlugin(sourceType).calcQueryCost(context, p), asyncResultHandler);
     }
 
     @Override
     public void status(SourceType sourceType, StatusRequestContext statusRequestContext,
                        Handler<AsyncResult<StatusQueryResult>> asyncResultHandler) {
-        getPlugin(sourceType).status(statusRequestContext, asyncResultHandler);
+        taskVerticleExecutor.execute(p -> getPlugin(sourceType).status(statusRequestContext, p), asyncResultHandler);
     }
 
     private DtmDataSourcePlugin getPlugin(SourceType sourceType) {

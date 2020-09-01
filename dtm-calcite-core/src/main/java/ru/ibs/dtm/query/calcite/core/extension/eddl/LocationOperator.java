@@ -43,7 +43,7 @@ public class LocationOperator extends SqlCall {
     @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
         writer.keyword(this.getOperator().getName());
-        writer.keyword("'" + this.location + "'");
+        writer.literal("'" + this.location + "'");
     }
 
     @Override

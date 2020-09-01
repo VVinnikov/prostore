@@ -47,7 +47,7 @@ public class SqlEddlParserImplTest {
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
         Planner planner = Frameworks.getPlanner(frameworkConfig);
 
-        SqlNode sqlNode = planner.parse("CREATE DOWNLOAD EXTERNAL TABLE s (id integer, name varchar(100)) LOCATION 'kafka://zookeeper_host:port/topic' FORMAT 'avro' CHUNK_SIZE 10");
+        SqlNode sqlNode = planner.parse("CREATE DOWNLOAD EXTERNAL TABLE s (id integer, name varchar(100)) LOCATION 'kafka://zookeeper_host:port/topic_UPPER_case' FORMAT 'avro' CHUNK_SIZE 10");
         assertTrue(sqlNode instanceof SqlCreateDownloadExternalTable);
         Map<String, String> columns = new HashMap<>();
         columns.put("id", "integer");
@@ -65,7 +65,7 @@ public class SqlEddlParserImplTest {
                 .getOperandList().get(1)).getTypeName().getSimple().toLowerCase());
         assertEquals(Type.KAFKA_TOPIC,
                 SqlNodeUtils.getOne(sqlCreateDownloadExternalTable, LocationOperator.class).getType());
-        assertEquals("kafka://zookeeper_host:port/topic",
+        assertEquals("kafka://zookeeper_host:port/topic_UPPER_case",
                 SqlNodeUtils.getOne(sqlCreateDownloadExternalTable, LocationOperator.class).getLocation());
         assertEquals(Format.AVRO,
                 SqlNodeUtils.getOne(sqlCreateDownloadExternalTable, FormatOperator.class).getFormat());

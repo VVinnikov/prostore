@@ -89,10 +89,10 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
             } else if (sqlNode instanceof SqlDropUploadExternalTable) {
                 extractDropUploadExternalTable((SqlDropUploadExternalTable) sqlNode, defaultSchema, asyncResultHandler);
             } else {
-                asyncResultHandler.handle(Future.failedFuture("Query ["+ sqlNode +"] is not an EDDL statement."));
+                asyncResultHandler.handle(Future.failedFuture("Query [" + sqlNode + "] is not an EDDL statement."));
             }
         } else {
-            asyncResultHandler.handle(Future.failedFuture("Query ["+ sqlNode +"] is not an EDDL statement."));
+            asyncResultHandler.handle(Future.failedFuture("Query [" + sqlNode + "] is not an EDDL statement."));
         }
     }
 
@@ -169,7 +169,7 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
                 return kafkaProperties.getProducer().getProperty().get("bootstrap.servers");
             case CSV_FILE:
             case HDFS_LOCATION:
-                throw new IllegalArgumentException("The given location type: "+ type +" is not supported!");
+                throw new IllegalArgumentException("The given location type: " + type + " is not supported!");
             default:
                 throw new RuntimeException("This type is not supported!");
         }

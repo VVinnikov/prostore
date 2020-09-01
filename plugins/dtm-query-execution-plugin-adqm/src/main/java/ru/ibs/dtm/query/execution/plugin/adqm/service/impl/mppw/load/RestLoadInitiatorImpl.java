@@ -33,7 +33,7 @@ public class RestLoadInitiatorImpl implements RestLoadInitiator {
                     if (response.statusCode() < 400 && response.statusCode() >= 200) {
                         promise.complete();
                     } else {
-                        promise.fail(String.format("Received HTTP status %s, msg %s", response.statusCode(), response.bodyAsString()));
+                        promise.fail(new RuntimeException(String.format("Received HTTP status %s, msg %s", response.statusCode(), response.bodyAsString())));
                     }
                 } else {
                     promise.fail(ar.cause());

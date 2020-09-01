@@ -14,7 +14,7 @@ import ru.ibs.dtm.query.execution.plugin.adqm.service.impl.query.AdqmQueryExecut
 public class QueryConfiguration {
 
     @Bean("adqmQueryExecutor")
-    public AdqmQueryExecutor clickhouse(@Qualifier("adqmVertx") Vertx vertx, ClickhouseProperties clickhouseProperties) {
+    public AdqmQueryExecutor clickhouse(@Qualifier("coreVertx") Vertx vertx, ClickhouseProperties clickhouseProperties) {
         String url = String.format("jdbc:clickhouse://%s/%s", clickhouseProperties.getHosts(),
                 clickhouseProperties.getDatabase());
         Properties props = new Properties();

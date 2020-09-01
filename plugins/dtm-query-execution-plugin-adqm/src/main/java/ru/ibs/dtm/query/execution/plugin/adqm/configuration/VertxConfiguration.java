@@ -16,33 +16,7 @@ import java.util.concurrent.CompletableFuture;
 public class VertxConfiguration {
 
     @Bean("adqmWebClient")
-    public WebClient webClient(@Qualifier("adqmVertx") Vertx vertx) {
+    public WebClient webClient(@Qualifier("coreVertx") Vertx vertx) {
         return WebClient.create(vertx);
-    }
-
-    @Bean("adqmVertx")
-    public Vertx clusteredVertx(@Qualifier("adqmClusterManager") ZookeeperClusterManager clusterManager) {
-        VertxOptions options = new VertxOptions().setClusterManager(clusterManager);
-        CompletableFuture<Vertx> future = new CompletableFuture<>();
-        Vertx.clusteredVertx(options, event -> {
-            if (event.succeeded()) {
-                future.complete(event.result());
-            } else {
-                future.complete(null);
-            }
-        });
-        return future.join();
-    }
-
-    @Bean("adqmClusterManager")
-    public ZookeeperClusterManager clusterManager(@Qualifier("coreKafkaProperties") KafkaConfig properties) {
-        JsonObject config = new JsonObject();
-        config.put("zookeeperHosts", properties.getKafkaClusterProperty().getZookeeperHosts());
-        config.put("rootPath", properties.getKafkaClusterProperty().getRootPath());
-        config.put("retry", new JsonObject()
-                .put("initialSleepTime", 3000)
-                .put("maxTimes", 3)
-        );
-        return new ZookeeperClusterManager(config);
     }
 }

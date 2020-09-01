@@ -10,19 +10,24 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.reader.QueryResult;
+import ru.ibs.dtm.common.status.StatusEventCode;
+import ru.ibs.dtm.common.status.ddl.DatamartSchemaChangedEvent;
 import ru.ibs.dtm.query.calcite.core.extension.ddl.SqlUseSchema;
+import ru.ibs.dtm.query.execution.core.service.delta.StatusEventPublisher;
 import ru.ibs.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Slf4j
 @Service("coreDdlService")
-public class DdlServiceImpl implements DdlService<QueryResult> {
+public class DdlServiceImpl implements DdlService<QueryResult>, StatusEventPublisher {
 
     private final CoreCalciteDefinitionService coreCalciteDefinitionService;
     private final Map<SqlKind, DdlExecutor<QueryResult>> executorMap;
@@ -60,7 +65,22 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
         try {
             final SqlCall sqlCall = getSqlCall(ar);
             if (executorMap.containsKey(sqlCall.getKind())) {
-                executorMap.get(sqlCall.getKind()).execute(context, getSqlNodeName(sqlCall.getOperandList()), handler);
+                executorMap.get(sqlCall.getKind())
+                    .execute(context, getSqlNodeName(sqlCall.getOperandList()), ddlAr -> {
+                        if (ddlAr.succeeded()) {
+                            handler.handle(Future.succeededFuture(ddlAr.result()));
+                            publishStatus(
+                                StatusEventCode.DATAMART_SCHEMA_CHANGED,
+                                context.getDatamartName(),
+                                DatamartSchemaChangedEvent.builder()
+                                    .datamart(context.getDatamartName())
+                                    .changeDateTime(LocalDateTime.now(ZoneOffset.UTC))
+                                    .build()
+                            );
+                        } else {
+                            handler.handle(Future.failedFuture(ddlAr.cause()));
+                        }
+                    });
             } else {
                 log.error("Not supported DDL query type");
                 handler.handle(Future.failedFuture(String.format("Not supported DDL query type [%s]", context)));
@@ -90,5 +110,10 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
     @Override
     public void addExecutor(DdlExecutor<QueryResult> executor) {
         executorMap.put(executor.getSqlKind(), executor);
+    }
+
+    @Override
+    public Vertx getVertx() {
+        return vertx;
     }
 }

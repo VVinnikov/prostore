@@ -606,14 +606,14 @@ class UploadKafkaExecutorTest {
 
     @NotNull
     private KafkaPartitionInfo createKafkaPartitionInfo(LocalDateTime lastCommitTime, long endOffset) {
-        KafkaPartitionInfo adbKafkaInfo = new KafkaPartitionInfo();
-        adbKafkaInfo.setTopic("topic");
-        adbKafkaInfo.setStart(0L);
-        adbKafkaInfo.setEnd(endOffset);
-        adbKafkaInfo.setLag(0L);
-        adbKafkaInfo.setOffset(endOffset);
-        adbKafkaInfo.setLastCommitTime(lastCommitTime);
-        adbKafkaInfo.setPartition(1);
-        return adbKafkaInfo;
+        return KafkaPartitionInfo.builder()
+                .topic("topic")
+                .start(0L)
+                .end(endOffset)
+                .lag(0L)
+                .offset(endOffset)
+                .lastCommitTime(lastCommitTime)
+                .partition(1)
+                .build();
     }
 }

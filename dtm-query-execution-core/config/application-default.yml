@@ -27,6 +27,10 @@ core:
         port: ${SERVICEDB_PORT:3306}
       poolOptions:
         maxSize: 5
+  vertx:
+    pool:
+      task-pool: 10
+      task-timeout: 86400000
 
   kafka:
     producer:
@@ -40,6 +44,7 @@ core:
         group.id: core-query-execution
         key.deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
         value.deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
+        number: 8
     cluster:
       zookeeperHosts: ${ZOOKEEPER_HOSTS:10.92.3.31}
       rootPath: ${KAFKA_CLUSTER_ROOTPATH:arenadata/cluster/21}
@@ -47,8 +52,9 @@ core:
       inputStreamTimeoutMs: ${KAFKA_INPUT_STREAM_TIMEOUT_MS:1000}
       monitorPoolingTimeoutMs: ${KAFKA_MONITOR_POLLING_MS:1000}
     status.event.publish:
-          enabled: false
-          topic: status.event
+      enabled: false
+      topic: status.event
+    statusMonitorUrl: ${STATUS_MONITOR_URL:http://127.0.0.1:9095/status}
 
 adb:
   datasource:
@@ -66,7 +72,9 @@ adb:
     url: ${ADB_MPPR_CONNECTOR_URL:/query}
 
   mppw:
-    consumerGroup: ${ADB_CONSUMER_GROUP:adb-query-execution}
+    startLoadUrl: ${ADB_START_LOAD_URL:http://10.92.3.3:8090/newdata/adb/start}
+    stopLoadUrl: ${ADB_STOP_LOAD_URL:http://10.92.3.3:8090/newdata/adb/stop}
+    consumerGroup: ${ADB_LOAD_GROUP:adb-emulator-load-adb}
 
 adg:
   tarantool:
@@ -84,6 +92,11 @@ adg:
     kafka:
       maxNumberOfMessagesPerPartition: 200
       callbackFunctionSecIdle: 100
+  circuitbreaker:
+    maxFailures: 5
+    timeout: 30000
+    fallbackOnFailure: false
+    resetTimeout: 10000
 
 adqm:
   datasource:
@@ -101,5 +114,5 @@ adqm:
     consumerGroup: ${ADQM_CONSUMER_GROUP:adqm}
     kafkaBrokers: ${ADQM_BROKERS:10.92.3.31:9092}
     loadType: ${ADQM_MPPW_LOAD_TYPE:REST}
-    restLoadUrl: ${ADQM_REST_LOAD_URL:http://10.92.3.3:8090/newdata}
-    restLoadConsumerGroup: ${ADQM_REST_LOAD_GROUP:test_datamart.consumer}
+    restLoadUrl: ${ADQM_REST_LOAD_URL:http://10.92.3.3:8090/newdata/adqm}
+    restLoadConsumerGroup: ${ADQM_REST_LOAD_GROUP:adb-emulator-load-adqm}

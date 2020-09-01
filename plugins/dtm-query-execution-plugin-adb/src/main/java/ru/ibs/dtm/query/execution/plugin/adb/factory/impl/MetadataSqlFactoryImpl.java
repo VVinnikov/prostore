@@ -62,11 +62,11 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
     @Override
     public String createTableScripts(ClassTable classTable) {
         return new StringBuilder()
-                .append(createTableScript(classTable, classTable.getNameWithSchema() + "_" + ACTUAL_TABLE, false))
+                .append(createTableScript(classTable, classTable.getNameWithSchema() + "_" + ACTUAL_TABLE, false, false))
                 .append("; ")
-                .append(createTableScript(classTable, classTable.getNameWithSchema() + "_" + HISTORY_TABLE, false))
+                .append(createTableScript(classTable, classTable.getNameWithSchema() + "_" + HISTORY_TABLE, false, true))
                 .append("; ")
-                .append(createTableScript(classTable, classTable.getNameWithSchema() + "_" + STAGING_TABLE, true))
+                .append(createTableScript(classTable, classTable.getNameWithSchema() + "_" + STAGING_TABLE, true, false))
                 .append("; ")
                 .toString();
     }
@@ -81,7 +81,7 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
         return String.format(DROP_SCHEMA, schemaName);
     }
 
-    private String createTableScript(ClassTable classTable, String tableName, boolean addReqId) {
+    private String createTableScript(ClassTable classTable, String tableName, boolean addReqId, boolean pkWithSystemFields) {
         val initDelimiter = classTable.getFields().isEmpty() ? " " : DELIMITER;
         val sb = new StringBuilder()
                 .append("CREATE TABLE ").append(tableName)
@@ -91,9 +91,9 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
         if (addReqId) {
             appendReqIdColumn(sb);
         }
-        val pkList = ClassFieldUtils.getPrimaryKeyList(classTable.getFields());
-        if (pkList.size() > 0) {
-            appendPrimaryKeys(sb, tableName, pkList);
+        List<ClassField> pkList = ClassFieldUtils.getPrimaryKeyList(classTable.getFields());
+        if (pkWithSystemFields || pkList.size() > 0) {
+            appendPrimaryKeys(sb, tableName, pkList, pkWithSystemFields);
         }
         sb.append(")");
         val shardingKeyList = ClassFieldUtils.getShardingKeyList(classTable.getFields());
@@ -122,13 +122,17 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
         return sb.toString();
     }
 
-    private void appendPrimaryKeys(StringBuilder builder, String tableName, Collection<ClassField> pkList) {
+    private void appendPrimaryKeys(StringBuilder builder, String tableName, Collection<ClassField> pkList, boolean addSystemFields) {
+        List<String> pkFields = pkList.stream().map(ClassField::getName).collect(Collectors.toList());
+        if (addSystemFields) {
+            pkFields.add(SYS_FROM_ATTR);
+        }
         builder.append(DELIMITER)
                 .append("constraint ")
                 .append("pk_")
                 .append(tableName.replace('.', '_'))
                 .append(" primary key (")
-                .append(pkList.stream().map(ClassField::getName).collect(Collectors.joining(DELIMITER)))
+                .append(pkFields.stream().collect(Collectors.joining(DELIMITER)))
                 .append(")");
     }
 

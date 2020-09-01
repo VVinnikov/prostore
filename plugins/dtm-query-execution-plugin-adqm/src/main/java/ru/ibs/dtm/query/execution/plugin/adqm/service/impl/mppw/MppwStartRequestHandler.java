@@ -44,8 +44,8 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     private static final String BUFFER_LOADER_TEMPLATE = "CREATE MATERIALIZED VIEW IF NOT EXISTS %s ON CLUSTER %s TO %s\n" +
             "  AS SELECT %s FROM %s";
     private static final String ACTUAL_LOADER_TEMPLATE = "CREATE MATERIALIZED VIEW IF NOT EXISTS %s ON CLUSTER %s TO %s\n" +
-            "AS SELECT %s, %d AS sys_from, 9223372036854775807 as sys_to, 0 as sys_op, '9999-12-31 00:00:00' as close_date, 1 AS sign " +
-            " FROM %s WHERE sys_op <> 1";
+            "AS SELECT %s, %d AS sys_from, 9223372036854775807 as sys_to, 0 as sys_op_load, '9999-12-31 00:00:00' as close_date, 1 AS sign " +
+            " FROM %s es WHERE es.sys_op <> 1";
 
     private final DatabaseExecutor databaseExecutor;
     private final DdlProperties ddlProperties;
@@ -202,7 +202,9 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
                                                  @NonNull Schema schema,
                                                  long deltaHot) {
         String columns = schema.getFields().stream().map(Schema.Field::name)
-                .filter(c -> !c.equalsIgnoreCase(SYS_OP_FIELD)).collect(Collectors.joining(", "));
+                .filter(c -> !c.equalsIgnoreCase(SYS_OP_FIELD))
+                .map(c -> "es." + c)
+                .collect(Collectors.joining(", "));
 
         String query = format(ACTUAL_LOADER_TEMPLATE, table, ddlProperties.getCluster(),
                 table.replaceAll(ACTUAL_LOADER_SHARD_POSTFIX, ACTUAL_POSTFIX),
@@ -218,12 +220,14 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         }
 
         RestLoadRequest request = new RestLoadRequest();
+        request.setRequestId(mppwRequest.getQueryRequest().getRequestId().toString());
         request.setHotDelta(mppwRequest.getQueryLoadParam().getDeltaHot());
         request.setDatamart(mppwRequest.getQueryLoadParam().getDatamart());
         request.setTableName(mppwRequest.getQueryLoadParam().getTableName());
         request.setZookeeperHost(mppwRequest.getZookeeperHost());
         request.setZookeeperPort(mppwRequest.getZookeeperPort());
         request.setKafkaTopic(mppwRequest.getTopic());
+        request.setConsumerGroup(mppwProperties.getRestLoadConsumerGroup());
         request.setFormat(mppwRequest.getQueryLoadParam().getFormat().getName());
         request.setMessageProcessingLimit(mppwRequest.getQueryLoadParam().getMessageLimit());
 

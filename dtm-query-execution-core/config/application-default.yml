@@ -93,9 +93,9 @@ adg:
       callbackFunctionSecIdle: 100
   circuitbreaker:
     maxFailures: 5
-    timeout: 1000
+    timeout: 30000
     fallbackOnFailure: false
-    resetTimeout: 1000
+    resetTimeout: 10000
 
 adqm:
   datasource:

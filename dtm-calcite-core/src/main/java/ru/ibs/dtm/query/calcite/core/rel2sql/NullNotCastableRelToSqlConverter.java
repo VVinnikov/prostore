@@ -64,7 +64,7 @@ public class NullNotCastableRelToSqlConverter extends RelToSqlConverter {
             } else {
                 Result x = visitChild(0, input);
                 parseCorrelTable(e, x);
-                final Builder builder = x.builder(input, Clause.SELECT);
+                final Builder builder = x.builder(input, Clause.FETCH);
                 val columns = x.qualifiedContext().fieldList().stream()
                     .map(n -> new SqlIdentifier(((SqlIdentifier) n).names.get(1), n.getParserPosition()))
                     .collect(Collectors.toList());

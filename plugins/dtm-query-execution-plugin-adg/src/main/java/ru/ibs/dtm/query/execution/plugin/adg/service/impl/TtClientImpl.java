@@ -3,10 +3,7 @@ package ru.ibs.dtm.query.execution.plugin.adg.service.impl;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import org.tarantool.SocketChannelProvider;
-import org.tarantool.TarantoolClient;
-import org.tarantool.TarantoolClientConfig;
-import org.tarantool.TarantoolClientImpl;
+import org.tarantool.*;
 import ru.ibs.dtm.query.execution.plugin.adg.configuration.TarantoolDatabaseProperties;
 import ru.ibs.dtm.query.execution.plugin.adg.service.TtClient;
 import ru.ibs.dtm.query.execution.plugin.adg.service.TtResultTranslator;
@@ -33,6 +30,7 @@ public class TtClientImpl implements TtClient {
     config.username = tarantoolProperties.getUser();
     config.password = tarantoolProperties.getPassword();
     config.operationExpiryTimeMillis = tarantoolProperties.getOperationTimeout();
+    config.retryCount = tarantoolProperties.getRetryCount();
     SocketChannelProvider socketChannelProvider = (i, throwable) -> {
       SocketChannel channel;
       try {

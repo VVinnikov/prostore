@@ -84,6 +84,7 @@ adg:
       user: ${TARANTOOL_DB_USER:admin}
       password: ${TARANTOOL_DB_PASS:memstorage-cluster-cookie}
       operationTimeout: ${TARANTOOL_DB_OPER_TIMEOUT:60000}
+      retryCount: ${TARANTOOL_DB_RETRY_COUNT:0}
     cartridge:
       url: ${TARANTOOL_CATRIDGE_URL:http://10.92.3.33:8081}
   mppw:
@@ -93,9 +94,9 @@ adg:
       callbackFunctionSecIdle: 100
   circuitbreaker:
     maxFailures: 5
-    timeout: 1000
+    timeout: 30000
     fallbackOnFailure: false
-    resetTimeout: 1000
+    resetTimeout: 10000
 
 adqm:
   datasource:

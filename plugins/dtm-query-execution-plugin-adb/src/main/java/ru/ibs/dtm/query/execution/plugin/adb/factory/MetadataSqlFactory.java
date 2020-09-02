@@ -14,4 +14,6 @@ public interface MetadataSqlFactory {
     String createSchemaSqlQuery(String schemaName);
 
     String dropSchemaSqlQuery(String schemaName);
+
+    String createKeyColumnsSqlQuery(String schema, String tableName);
 }

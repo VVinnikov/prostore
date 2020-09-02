@@ -10,7 +10,7 @@ import ru.ibs.dtm.query.calcite.core.service.impl.CalciteDMLQueryParserService;
 public class AdbCalciteDMLQueryParserService extends CalciteDMLQueryParserService {
     public AdbCalciteDMLQueryParserService(
             @Qualifier("adbCalciteContextProvider") CalciteContextProvider contextProvider,
-            @Qualifier("adbVertx") Vertx vertx
+            @Qualifier("coreVertx") Vertx vertx
     ) {
         super(contextProvider, vertx);
     }

@@ -1,5 +1,6 @@
 package ru.ibs.dtm.query.execution.plugin.adg.configuration;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -15,6 +16,7 @@ public class AppConfiguration {
     ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
     mapper.registerModule(new JavaTimeModule());
     mapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+    mapper.enable(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT);
     return mapper;
   }
 

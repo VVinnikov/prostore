@@ -4,6 +4,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.reader.QueryResult;
@@ -34,6 +35,17 @@ public class DeltaServiceImpl implements DeltaService<QueryResult> {
 
     @Override
     public void execute(DeltaRequestContext context, Handler<AsyncResult<QueryResult>> handler) {
+        if (StringUtils.isEmpty(context.getRequest().getQueryRequest().getDatamartMnemonic())) {
+            String errMsg = "Datamart must be not empty!\n" +
+                    "For setting datamart you can use the following command: \"USE datamartName\"";
+            log.error(errMsg);
+            handler.handle(Future.failedFuture(errMsg));
+        } else {
+            executeDeltaRequest(context, handler);
+        }
+    }
+
+    private void executeDeltaRequest(DeltaRequestContext context, Handler<AsyncResult<QueryResult>> handler) {
         deltaQueryParamExtractor.extract(context.getRequest().getQueryRequest(), exParamHandler -> {
             if (exParamHandler.succeeded()) {
                 DeltaQuery deltaQuery = exParamHandler.result();

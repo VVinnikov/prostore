@@ -1,16 +1,18 @@
 package ru.ibs.dtm.query.calcite.core.rel2sql;
 
+import lombok.val;
+import org.apache.calcite.adapter.enumerable.EnumerableLimit;
+import org.apache.calcite.adapter.enumerable.EnumerableSort;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.sql.SqlDialect;
-import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class NullNotCastableRelToSqlConverter extends RelToSqlConverter {
     /**
@@ -44,6 +46,34 @@ public class NullNotCastableRelToSqlConverter extends RelToSqlConverter {
     private void parseCorrelTable(RelNode relNode, Result x) {
         for (CorrelationId id : relNode.getVariablesSet()) {
             correlTableMap.put(id, x.qualifiedContext());
+        }
+    }
+
+    @Override
+    public Result visit(RelNode e) {
+        if (e instanceof EnumerableLimit) {
+            e.getVariablesSet();
+            RelNode input = e.getInput(0);
+            if (input instanceof EnumerableSort) {
+                val node = (EnumerableSort) input;
+                val sort = EnumerableSort.create(node.getInput(),
+                    node.getCollation(),
+                    ((EnumerableLimit) e).offset,
+                    ((EnumerableLimit) e).fetch);
+                return visitChild(0, sort);
+            } else {
+                Result x = visitChild(0, input);
+                parseCorrelTable(e, x);
+                final Builder builder = x.builder(input, Clause.SELECT);
+                val columns = x.qualifiedContext().fieldList().stream()
+                    .map(n -> new SqlIdentifier(((SqlIdentifier) n).names.get(1), n.getParserPosition()))
+                    .collect(Collectors.toList());
+                builder.setSelect(new SqlNodeList(columns, POS));
+                builder.setFetch(SqlLiteral.createExactNumeric(((EnumerableLimit) e).fetch.toStringRaw(), POS));
+                return builder.result();
+            }
+        } else {
+            throw new AssertionError("Need to implement " + e.getClass().getName());
         }
     }
 

@@ -1,8 +1,6 @@
 package ru.ibs.dtm.query.execution.plugin.adb.verticle;
 
-import io.vertx.core.AbstractVerticle;
-import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Vertx;
+import io.vertx.core.*;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class AdbMppwVerticle extends AbstractVerticle {
 
     private final Map<String, MppwKafkaRequestContext> requestMap = new ConcurrentHashMap<>();
+    private final Map<String, Future> resultMap = new ConcurrentHashMap<>();
     private final MppwProperties mppwProperties;
     private final AdbMppwHandler mppwTransferDataHandler;
 
@@ -38,7 +37,8 @@ public class AdbMppwVerticle extends AbstractVerticle {
                 .setWorkerPoolSize(this.mppwProperties.getPoolSize())
                 .setWorker(true);
         for (int i = 0; i < this.mppwProperties.getPoolSize(); i++) {
-            vertx.deployVerticle(new AdbMppwWorker(this.requestMap, this.mppwTransferDataHandler), options, ar -> {
+            vertx.deployVerticle(new AdbMppwWorker(this.requestMap, this.resultMap,
+                    this.mppwTransferDataHandler), options, ar -> {
                 if (ar.succeeded()) {
                     log.debug("Mppw workers deployed successfully");
                 } else {

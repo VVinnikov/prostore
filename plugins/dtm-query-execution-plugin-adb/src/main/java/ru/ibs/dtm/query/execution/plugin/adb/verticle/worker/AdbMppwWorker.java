@@ -1,6 +1,8 @@
 package ru.ibs.dtm.query.execution.plugin.adb.verticle.worker;
 
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
@@ -17,10 +19,13 @@ import java.util.Map;
 public class AdbMppwWorker extends AbstractVerticle {
 
     private final Map<String, MppwKafkaRequestContext> requestMap;
+    private final Map<String, Future> resultMap;
     private final AdbMppwHandler mppwTransferDataHandler;
 
-    public AdbMppwWorker(Map<String, MppwKafkaRequestContext> requestMap, AdbMppwHandler mppwTransferDataHandler) {
+    public AdbMppwWorker(Map<String, MppwKafkaRequestContext> requestMap, Map<String, Future> resultMap,
+                         AdbMppwHandler mppwTransferDataHandler) {
         this.requestMap = requestMap;
+        this.resultMap = resultMap;
         this.mppwTransferDataHandler = mppwTransferDataHandler;
     }
 
@@ -39,30 +44,38 @@ public class AdbMppwWorker extends AbstractVerticle {
                 Json.decodeValue(((JsonObject) Json.decodeValue(requestMessage.body()))
                         .getJsonObject("mppwTransferDataRequest").toString(), MppwTransferDataRequest.class);
         MppwKafkaRequestContext kafkaRequestContext = new MppwKafkaRequestContext(restLoadRequest, transferDataRequest);
+        log.debug("Received request for starting mppw kafka loading: {}", kafkaRequestContext);
         requestMap.put(kafkaRequestContext.getRestLoadRequest().getRequestId(), kafkaRequestContext);
-        vertx.eventBus().publish(MppwTopic.KAFKA_TRANSFER_DATA.getValue(),
+        vertx.eventBus().send(MppwTopic.KAFKA_TRANSFER_DATA.getValue(),
                 kafkaRequestContext.getRestLoadRequest().getRequestId());
     }
 
     private void handleStopMppwKafka(Message<String> requestMessage) {
         String requestId = requestMessage.body();
-        requestMap.remove(requestId);
-        requestMessage.reply(requestId);
+        Future transferPromise = resultMap.remove(requestId);
+        transferPromise.onComplete(ar -> {
+            requestMap.remove(requestId);
+            requestMessage.reply(requestId);
+        });
     }
 
     private void handleStartTransferData(Message<String> requestMessage) {
         String requestId = requestMessage.body();
         final MppwKafkaRequestContext requestContext = requestMap.get(requestId);
         if (requestContext != null) {
+            log.debug("Received requestId: {}, found requestContext in map: {}", requestId, requestContext);
+            Promise promise = Promise.promise();
+            resultMap.put(requestId, promise.future());
             mppwTransferDataHandler.handle(requestContext)
                     .onComplete(ar -> {
                         if (ar.succeeded()) {
-                            vertx.eventBus().publish(MppwTopic.KAFKA_TRANSFER_DATA.getValue(),
-                                    requestContext.getRestLoadRequest().getRequestId());
                             log.debug("Request executed successfully: {}", requestContext.getRestLoadRequest());
+                            vertx.eventBus().send(MppwTopic.KAFKA_TRANSFER_DATA.getValue(),
+                                    requestContext.getRestLoadRequest().getRequestId());
+                            promise.complete();
                         } else {
-                            requestMap.remove(requestId);
                             log.error("Error executing request: {}", requestContext.getRestLoadRequest(), ar.cause());
+                            promise.fail(ar.cause());
                         }
                     });
         }

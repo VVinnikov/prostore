@@ -69,8 +69,8 @@ adb:
   mppw:
     startLoadUrl: ${ADB_START_LOAD_URL:http://adb-emulator:8090/newdata/adb/start}
     consumerGroup: ${ADB_LOAD_GROUP:adb-emulator-load-adb}
-    poolSize: 2
-    stopTimeoutMs: 2000
+    poolSize: ${ADB_MPPW_POOL_SIZE:2}
+    stopTimeoutMs: ${ADB_MPPW_STOP_TIMEOUT_MS:86400000}
 
 adg:
   tarantool:

@@ -35,9 +35,10 @@ public class AdbMppwStopRequestExecutorImpl implements AdbMppwRequestExecutor {
                     new DeliveryOptions().setSendTimeout(mppwProperties.getStopTimeoutMs()),
                     ar -> {
                         if (ar.succeeded()) {
-                            log.debug("Mppw stopped successfully");
+                            log.debug("Mppw kafka stopped successfully");
                             promise.complete(QueryResult.emptyResult());
                         } else {
+                            log.error("Error stopping mppw kafka", ar.cause());
                             promise.fail(ar.cause());
                         }
                     });

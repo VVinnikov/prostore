@@ -57,7 +57,7 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
                     .onComplete(ar -> {
                         if (ar.succeeded()) {
                             final MppwKafkaRequestContext kafkaRequestContext = ar.result();
-                            vertx.eventBus().publish(MppwTopic.KAFKA_START.getValue(), Json.encode(kafkaRequestContext));
+                            vertx.eventBus().send(MppwTopic.KAFKA_START.getValue(), Json.encode(kafkaRequestContext));
                             log.debug("Mppw started successfully");
                             promise.complete(QueryResult.emptyResult());
                         } else {

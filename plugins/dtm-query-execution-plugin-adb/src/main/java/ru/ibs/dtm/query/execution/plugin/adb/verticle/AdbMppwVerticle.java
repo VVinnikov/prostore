@@ -1,14 +1,17 @@
 package ru.ibs.dtm.query.execution.plugin.adb.verticle;
 
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.eventbus.Message;
-import io.vertx.core.json.Json;
+import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Vertx;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
-import ru.ibs.dtm.common.eventbus.DataTopic;
+import ru.ibs.dtm.query.execution.plugin.adb.configuration.properties.MppwProperties;
 import ru.ibs.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwKafkaRequestContext;
-import ru.ibs.dtm.query.execution.plugin.adb.service.impl.mppw.handler.AdbMppwStartHandler;
+import ru.ibs.dtm.query.execution.plugin.adb.service.impl.mppw.handler.AdbMppwHandler;
+import ru.ibs.dtm.query.execution.plugin.adb.verticle.worker.AdbMppwWorker;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,43 +21,30 @@ import java.util.concurrent.ConcurrentHashMap;
 public class AdbMppwVerticle extends AbstractVerticle {
 
     private final Map<String, MppwKafkaRequestContext> requestMap = new ConcurrentHashMap<>();
-    private final AdbMppwStartHandler mppwStartHandler;
+    private final MppwProperties mppwProperties;
+    private final AdbMppwHandler mppwTransferDataHandler;
 
     @Autowired
-    public AdbMppwVerticle(AdbMppwStartHandler mppwStartHandler) {
-        this.mppwStartHandler = mppwStartHandler;
+    public AdbMppwVerticle(MppwProperties mppwProperties,
+                           @Qualifier("adbMppwTransferDataHandler") AdbMppwHandler mppwTransferDataHandler,
+                           @Qualifier("coreVertx") Vertx vertx) {
+        this.mppwProperties = mppwProperties;
+        this.mppwTransferDataHandler = mppwTransferDataHandler;
     }
 
     @Override
-    public void start() {
-        vertx.eventBus().consumer(DataTopic.MPPW_START.getValue(), this::handle);
-        vertx.eventBus().consumer(DataTopic.MPPW_KAFKA_START.getValue(), this::handleMppwKafka);
-    }
-
-    private void handle(Message<String> requestMessage) {
-        MppwKafkaRequestContext kafkaRequestContext = (MppwKafkaRequestContext) Json.decodeValue(requestMessage.body());
-        if (kafkaRequestContext.getRestLoadRequest().isStart()) {
-            requestMap.put(kafkaRequestContext.getRestLoadRequest().getRequestId(), kafkaRequestContext);
-            vertx.eventBus().publish(DataTopic.MPPW_KAFKA_START.getValue(),
-                    kafkaRequestContext.getRestLoadRequest().getRequestId());
-        } else {
-            requestMap.remove(kafkaRequestContext.getRestLoadRequest().getRequestId());
-        }
-    }
-
-    private void handleMppwKafka(Message<String> requestMessage) {
-        String requestId = requestMessage.body();
-        final MppwKafkaRequestContext requestContext = requestMap.get(requestId);
-        if (requestContext != null) {
-            mppwStartHandler.handle(requestContext, ar -> {
+    public void start() throws Exception {
+        val options = new DeploymentOptions()
+                .setWorkerPoolSize(this.mppwProperties.getPoolSize())
+                .setWorker(true);
+        for (int i = 0; i < this.mppwProperties.getPoolSize(); i++) {
+            vertx.deployVerticle(new AdbMppwWorker(this.requestMap, this.mppwTransferDataHandler), options, ar -> {
                 if (ar.succeeded()) {
-                    vertx.eventBus().publish(DataTopic.MPPW_KAFKA_START.getValue(), Json.encode(requestContext));
+                    log.debug("Mppw workers deployed successfully");
                 } else {
-                    log.error("Error executing mppw request: {}", requestContext);
-                    requestMap.remove(requestContext.getRestLoadRequest().getRequestId());
+                    log.error("Error deploying mppw workers", ar.cause());
                 }
             });
         }
     }
-
 }

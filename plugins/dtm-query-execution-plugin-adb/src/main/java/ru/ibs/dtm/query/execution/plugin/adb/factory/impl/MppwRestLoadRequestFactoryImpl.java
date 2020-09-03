@@ -31,8 +31,7 @@ public class MppwRestLoadRequestFactoryImpl implements MppwRestLoadRequestFactor
         request.setConsumerGroup(mppwProperties.getConsumerGroup());
         request.setFormat(context.getRequest().getQueryLoadParam().getFormat().getName());
         request.setSchema(new Schema.Parser().parse(context.getRequest().getSchema().encode()));
-        request.setPath(context.getRequest().getLoadStart() ?
-                mppwProperties.getStartLoadUrl() : mppwProperties.getStopLoadUrl());
+        request.setMessageProcessingLimit(context.getRequest().getQueryLoadParam().getMessageLimit());
         return request;
     }
 }

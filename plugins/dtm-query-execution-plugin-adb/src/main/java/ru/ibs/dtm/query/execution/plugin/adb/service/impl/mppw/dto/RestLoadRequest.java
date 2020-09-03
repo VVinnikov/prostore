@@ -11,8 +11,6 @@ import java.io.Serializable;
 
 @Data
 public class RestLoadRequest implements Serializable {
-    private String path;
-    private boolean isStart;
     private String requestId;
     private long hotDelta;
     private String datamart;

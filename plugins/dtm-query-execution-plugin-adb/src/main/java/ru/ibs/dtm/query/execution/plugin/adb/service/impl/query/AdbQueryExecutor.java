@@ -122,6 +122,7 @@ public class AdbQueryExecutor implements DatabaseExecutor {
                 .compose(tx -> Future.future((Promise<PgTransaction> promise) -> {
                     Future<PgTransaction> lastFuture = null;
                     for (PreparedStatementRequest st : requests) {
+                        log.debug("Execute query: {} with params: {}", st.getSql(), st.getParams());
                         if (lastFuture == null) {
                             lastFuture = executeTx(st, tx);
                         } else {

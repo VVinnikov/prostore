@@ -1,8 +1,6 @@
 package ru.ibs.dtm.query.execution.plugin.adb.service.impl.mppw.handler;
 
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
@@ -12,39 +10,41 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+import ru.ibs.dtm.query.execution.plugin.adb.configuration.properties.MppwProperties;
 import ru.ibs.dtm.query.execution.plugin.adb.service.impl.mppw.AdbMppwDataTransferService;
 import ru.ibs.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwKafkaRequestContext;
 import ru.ibs.dtm.query.execution.plugin.adb.service.impl.mppw.dto.RestLoadRequest;
 
-@Component
+@Component("adbMppwTransferDataHandler")
 @Slf4j
-public class AdbMppwStartHandlerImpl implements AdbMppwStartHandler {
+public class AdbMppwTransferDataHandler implements AdbMppwHandler {
 
     private final WebClient webClient;
     private final AdbMppwDataTransferService mppwDataTransferService;
+    private final MppwProperties mppwProperties;
 
     @Autowired
-    public AdbMppwStartHandlerImpl(@Qualifier("adbWebClient") WebClient webClient,
-                                   AdbMppwDataTransferService mppwDataTransferService) {
+    public AdbMppwTransferDataHandler(@Qualifier("adbWebClient") WebClient webClient,
+                                      AdbMppwDataTransferService mppwDataTransferService,
+                                      MppwProperties mppwProperties) {
         this.webClient = webClient;
         this.mppwDataTransferService = mppwDataTransferService;
+        this.mppwProperties = mppwProperties;
     }
 
     @Override
-    public void handle(MppwKafkaRequestContext requestContext, Handler<AsyncResult<Void>> asyncHandler) {
-        initiateLoading(requestContext.getRestLoadRequest())
+    public Future<Void> handle(MppwKafkaRequestContext requestContext) {
+        return sendLoadingRequest(requestContext.getRestLoadRequest())
                 .compose(s -> Future.future((Promise<Void> p) ->
-                        mppwDataTransferService.execute(requestContext.getMppwTransferDataRequest(), p)))
-                .onSuccess(s -> asyncHandler.handle(Future.succeededFuture()))
-                .onFailure(f -> asyncHandler.handle(Future.failedFuture(f)));
+                        mppwDataTransferService.execute(requestContext.getMppwTransferDataRequest(), p)));
     }
 
-    private Future<Void> initiateLoading(RestLoadRequest request) {
+    private Future<Void> sendLoadingRequest(RestLoadRequest request) {
         try {
             JsonObject data = JsonObject.mapFrom(request);
             Promise<Void> promise = Promise.promise();
             log.debug("Send request to emulator-writer: [{}]", request);
-            webClient.postAbs(request.getPath()).sendJsonObject(data, ar -> {
+            webClient.postAbs(mppwProperties.getStartLoadUrl()).sendJsonObject(data, ar -> {
                 if (ar.succeeded()) {
                     HttpResponse<Buffer> response = ar.result();
                     if (response.statusCode() < 400 && response.statusCode() >= 200) {

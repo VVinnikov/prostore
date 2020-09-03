@@ -19,13 +19,20 @@ public class MppwTransferRequestFactoryImpl implements MppwTransferRequestFactor
         mppwTransferDataRequest.setDatamart(context.getRequest().getQueryLoadParam().getDatamart());
         mppwTransferDataRequest.setTableName(context.getRequest().getQueryLoadParam().getTableName());
         mppwTransferDataRequest.setHotDelta(context.getRequest().getQueryLoadParam().getDeltaHot());
-        mppwTransferDataRequest.setColumnList(new Schema.Parser().parse(context.getRequest().getSchema().encode())
-                .getFields().stream().map(Schema.Field::name).collect(Collectors.toList()));
+        mppwTransferDataRequest.setColumnList(getColumnList(context));
         mppwTransferDataRequest.setKeyColumnList(getKeyColumnList(keyColumns));
         return mppwTransferDataRequest;
     }
 
     private List<String> getKeyColumnList(List<JsonObject> result) {
         return result.stream().map(o -> o.getString("column_name")).collect(Collectors.toList());
+    }
+
+    private List<String> getColumnList(MppwRequestContext context) {
+        final List<String> columns = new Schema.Parser().parse(context.getRequest().getSchema().encode())
+                .getFields().stream().map(Schema.Field::name).collect(Collectors.toList());
+        columns.add(MetadataSqlFactoryImpl.SYS_FROM_ATTR);
+        columns.add(MetadataSqlFactoryImpl.SYS_TO_ATTR);
+        return columns;
     }
 }

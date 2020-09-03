@@ -10,5 +10,6 @@ import org.springframework.stereotype.Component;
 public class MppwProperties {
     private String consumerGroup;
     private String startLoadUrl;
-    private String stopLoadUrl;
+    private Integer poolSize;
+    private Long stopTimeoutMs;
 }

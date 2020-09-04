@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.Schema;
 import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlNode;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -166,13 +167,18 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
     private String getConfigUrl(Type type) {
         switch (type) {
             case KAFKA_TOPIC:
-                return kafkaProperties.getProducer().getProperty().get("bootstrap.servers");
+                return getZookeeperHostPort();
             case CSV_FILE:
             case HDFS_LOCATION:
                 throw new IllegalArgumentException("The given location type: " + type + " is not supported!");
             default:
                 throw new RuntimeException("This type is not supported!");
         }
+    }
+
+    @NotNull
+    private String getZookeeperHostPort() {
+        return kafkaProperties.getCluster().getZookeeperHosts() + ":" + kafkaProperties.getCluster().getZookeeperPort();
     }
 
     private void extractDropUploadExternalTable(SqlDropUploadExternalTable sqlNode, String defaultSchema, Handler<AsyncResult<EddlQuery>> asyncResultHandler) {

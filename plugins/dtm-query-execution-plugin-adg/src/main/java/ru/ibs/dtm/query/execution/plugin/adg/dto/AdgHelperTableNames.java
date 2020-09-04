@@ -9,4 +9,5 @@ public class AdgHelperTableNames {
     private String staging;
     private String history;
     private String actual;
+    private String prefix;
 }

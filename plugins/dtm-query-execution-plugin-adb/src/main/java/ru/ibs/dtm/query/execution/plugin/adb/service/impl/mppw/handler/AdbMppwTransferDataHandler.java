@@ -40,9 +40,8 @@ public class AdbMppwTransferDataHandler implements AdbMppwHandler {
     }
 
     private Future<Void> sendLoadingRequest(RestLoadRequest request) {
-        try {
+        return Future.future((Promise<Void> promise) -> {
             JsonObject data = JsonObject.mapFrom(request);
-            Promise<Void> promise = Promise.promise();
             log.debug("Send request to emulator-writer: [{}]", request);
             webClient.postAbs(mppwProperties.getStartLoadUrl()).sendJsonObject(data, ar -> {
                 if (ar.succeeded()) {
@@ -57,9 +56,6 @@ public class AdbMppwTransferDataHandler implements AdbMppwHandler {
                     promise.fail(ar.cause());
                 }
             });
-            return promise.future();
-        } catch (Exception e) {
-            return Future.failedFuture(e);
-        }
+        });
     }
 }

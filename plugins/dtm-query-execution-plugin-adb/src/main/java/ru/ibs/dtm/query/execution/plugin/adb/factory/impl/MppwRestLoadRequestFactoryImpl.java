@@ -20,18 +20,18 @@ public class MppwRestLoadRequestFactoryImpl implements MppwRestLoadRequestFactor
 
     @Override
     public RestLoadRequest create(MppwRequestContext context) {
-        RestLoadRequest request = new RestLoadRequest();
-        request.setRequestId(context.getRequest().getQueryRequest().getRequestId().toString());
-        request.setHotDelta(context.getRequest().getQueryLoadParam().getDeltaHot());
-        request.setDatamart(context.getRequest().getQueryLoadParam().getDatamart());
-        request.setTableName(context.getRequest().getQueryLoadParam().getTableName());
-        request.setZookeeperHost(context.getRequest().getZookeeperHost());
-        request.setZookeeperPort(context.getRequest().getZookeeperPort());
-        request.setKafkaTopic(context.getRequest().getTopic());
-        request.setConsumerGroup(mppwProperties.getConsumerGroup());
-        request.setFormat(context.getRequest().getQueryLoadParam().getFormat().getName());
-        request.setSchema(new Schema.Parser().parse(context.getRequest().getSchema().encode()));
-        request.setMessageProcessingLimit(context.getRequest().getQueryLoadParam().getMessageLimit());
-        return request;
+        return RestLoadRequest.builder()
+                .requestId(context.getRequest().getQueryRequest().getRequestId().toString())
+                .hotDelta(context.getRequest().getQueryLoadParam().getDeltaHot())
+                .datamart(context.getRequest().getQueryLoadParam().getDatamart())
+                .tableName(context.getRequest().getQueryLoadParam().getTableName())
+                .zookeeperHost(context.getRequest().getZookeeperHost())
+                .zookeeperPort(context.getRequest().getZookeeperPort())
+                .kafkaTopic(context.getRequest().getTopic())
+                .consumerGroup(mppwProperties.getConsumerGroup())
+                .format(context.getRequest().getQueryLoadParam().getFormat().getName())
+                .schema(new Schema.Parser().parse(context.getRequest().getSchema().encode()))
+                .messageProcessingLimit(context.getRequest().getQueryLoadParam().getMessageLimit())
+                .build();
     }
 }

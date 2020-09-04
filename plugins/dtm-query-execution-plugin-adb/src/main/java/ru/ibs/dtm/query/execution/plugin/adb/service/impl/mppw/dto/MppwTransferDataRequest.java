@@ -1,11 +1,13 @@
 package ru.ibs.dtm.query.execution.plugin.adb.service.impl.mppw.dto;
 
+import lombok.Builder;
 import lombok.Data;
 
 import java.io.Serializable;
 import java.util.List;
 
 @Data
+@Builder
 public class MppwTransferDataRequest implements Serializable {
     private long hotDelta;
     private String datamart;

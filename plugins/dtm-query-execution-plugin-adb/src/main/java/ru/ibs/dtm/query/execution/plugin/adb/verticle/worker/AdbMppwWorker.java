@@ -67,16 +67,15 @@ public class AdbMppwWorker extends AbstractVerticle {
             Promise promise = Promise.promise();
             resultMap.put(requestId, promise.future());
             mppwTransferDataHandler.handle(requestContext)
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            log.debug("Request executed successfully: {}", requestContext.getRestLoadRequest());
-                            vertx.eventBus().send(MppwTopic.KAFKA_TRANSFER_DATA.getValue(),
-                                    requestContext.getRestLoadRequest().getRequestId());
-                            promise.complete();
-                        } else {
-                            log.error("Error executing request: {}", requestContext.getRestLoadRequest(), ar.cause());
-                            promise.fail(ar.cause());
-                        }
+                    .onSuccess(s -> {
+                        log.debug("Request executed successfully: {}", requestContext.getRestLoadRequest());
+                        vertx.eventBus().send(MppwTopic.KAFKA_TRANSFER_DATA.getValue(),
+                                requestContext.getRestLoadRequest().getRequestId());
+                        promise.complete();
+                    })
+                    .onFailure(fail -> {
+                        log.error("Error executing request: {}", requestContext.getRestLoadRequest(), fail);
+                        promise.fail(fail);
                     });
         }
     }

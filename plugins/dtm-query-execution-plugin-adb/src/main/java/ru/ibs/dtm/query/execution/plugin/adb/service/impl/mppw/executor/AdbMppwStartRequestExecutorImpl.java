@@ -54,16 +54,12 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
                 promise.fail(new RuntimeException(String.format("Format %s not implemented", restLoadRequest.getFormat())));
             }
             createMppwKafkaRequestContext(context, restLoadRequest)
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            final MppwKafkaRequestContext kafkaRequestContext = ar.result();
-                            vertx.eventBus().send(MppwTopic.KAFKA_START.getValue(), Json.encode(kafkaRequestContext));
-                            log.debug("Mppw started successfully");
-                            promise.complete(QueryResult.emptyResult());
-                        } else {
-                            promise.fail(ar.cause());
-                        }
-                    });
+                    .onSuccess(kafkaContext -> {
+                        vertx.eventBus().send(MppwTopic.KAFKA_START.getValue(), Json.encode(kafkaContext));
+                        log.debug("Mppw started successfully");
+                        promise.complete(QueryResult.emptyResult());
+                    })
+                    .onFailure(promise::fail);
         });
     }
 

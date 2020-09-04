@@ -25,8 +25,7 @@ public class AdbMppwVerticle extends AbstractVerticle {
 
     @Autowired
     public AdbMppwVerticle(MppwProperties mppwProperties,
-                           @Qualifier("adbMppwTransferDataHandler") AdbMppwHandler mppwTransferDataHandler,
-                           @Qualifier("coreVertx") Vertx vertx) {
+                           @Qualifier("adbMppwTransferDataHandler") AdbMppwHandler mppwTransferDataHandler) {
         this.mppwProperties = mppwProperties;
         this.mppwTransferDataHandler = mppwTransferDataHandler;
     }

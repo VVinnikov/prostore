@@ -15,13 +15,13 @@ public class MppwTransferRequestFactoryImpl implements MppwTransferRequestFactor
 
     @Override
     public MppwTransferDataRequest create(MppwRequestContext context, List<JsonObject> keyColumns) {
-        MppwTransferDataRequest mppwTransferDataRequest = new MppwTransferDataRequest();
-        mppwTransferDataRequest.setDatamart(context.getRequest().getQueryLoadParam().getDatamart());
-        mppwTransferDataRequest.setTableName(context.getRequest().getQueryLoadParam().getTableName());
-        mppwTransferDataRequest.setHotDelta(context.getRequest().getQueryLoadParam().getDeltaHot());
-        mppwTransferDataRequest.setColumnList(getColumnList(context));
-        mppwTransferDataRequest.setKeyColumnList(getKeyColumnList(keyColumns));
-        return mppwTransferDataRequest;
+        return MppwTransferDataRequest.builder()
+                .datamart(context.getRequest().getQueryLoadParam().getDatamart())
+                .tableName(context.getRequest().getQueryLoadParam().getTableName())
+                .hotDelta(context.getRequest().getQueryLoadParam().getDeltaHot())
+                .columnList(getColumnList(context))
+                .keyColumnList(getKeyColumnList(keyColumns))
+                .build();
     }
 
     private List<String> getKeyColumnList(List<JsonObject> result) {

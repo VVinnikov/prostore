@@ -35,11 +35,11 @@ public abstract class CalciteDMLQueryParserService implements QueryParserService
                     val copyRequest = request.getQueryRequest().copy();
                     copyRequest.setSql(sql);
                     it.complete(new QueryParserResponse(
-                            context,
-                            copyRequest,
-                            request.getSchema(),
-                            relQuery,
-                            parse
+                        context,
+                        copyRequest,
+                        request.getSchema(),
+                        relQuery,
+                        parse
                     ));
                 } catch (Exception e) {
                     log.error("Request parsing error", e);

@@ -28,8 +28,8 @@ public abstract class CalciteContextProvider {
                                   CalciteSchemaFactory calciteSchemaFactory) {
         this.configParser = configParser;
         prepareRules =
-                RuleSets.ofList(
-                        EnumerableRules.ENUMERABLE_RULES);
+            RuleSets.ofList(
+                EnumerableRules.ENUMERABLE_RULES);
 
         traitDefs = new ArrayList<>();
         traitDefs.add(ConventionTraitDef.INSTANCE);
@@ -50,14 +50,14 @@ public abstract class CalciteContextProvider {
             }
 
             final SchemaPlus defaultSchema = defaultDatamart == null ?
-                    rootSchema : calciteSchemaFactory.addSchema(rootSchema, defaultDatamart);
+                rootSchema : calciteSchemaFactory.addSchema(rootSchema, defaultDatamart);
 
             FrameworkConfig config = Frameworks.newConfigBuilder()
-                    .parserConfig(configParser)
-                    .defaultSchema(defaultSchema)
-                    .traitDefs(traitDefs).programs(Programs.of(prepareRules))
-                    .sqlToRelConverterConfig(SqlToRelConverter.configBuilder().withExpand(false).build())
-                    .build();
+                .parserConfig(configParser)
+                .defaultSchema(defaultSchema)
+                .traitDefs(traitDefs).programs(Programs.of(prepareRules))
+                .sqlToRelConverterConfig(SqlToRelConverter.configBuilder().withExpand(false).build())
+                .build();
             Planner planner = Frameworks.getPlanner(config);
             return new CalciteContext(rootSchema, planner, RelBuilder.create(config));
         } catch (Exception e) {

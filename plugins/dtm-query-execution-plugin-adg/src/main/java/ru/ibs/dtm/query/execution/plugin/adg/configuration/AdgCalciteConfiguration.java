@@ -1,18 +1,18 @@
 package ru.ibs.dtm.query.execution.plugin.adg.configuration;
 
-import javax.annotation.PostConstruct;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.sql.SqlDialect;
-import org.apache.calcite.sql.dialect.PostgresqlSqlDialect;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.SqlParserImplFactory;
-import org.apache.calcite.sql.parser.ddl.SqlDdlParserImpl;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
-import org.apache.calcite.util.SourceStringReader;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
+import ru.ibs.dtm.query.calcite.core.dialect.LimitSqlDialect;
+
+import javax.annotation.PostConstruct;
 
 @Configuration
 public class AdgCalciteConfiguration {
@@ -38,14 +38,7 @@ public class AdgCalciteConfiguration {
 
     @Bean("adgParser")
     public SqlParserImplFactory ddlParserImplFactory() {
-        return reader -> {
-            final SqlDdlParserImpl parser = new SqlDdlParserImpl(reader);
-            if (reader instanceof SourceStringReader) {
-                final String sql = ((SourceStringReader) reader).getSourceString();
-                parser.setOriginalSql(sql);
-            }
-            return parser;
-        };
+        return new CalciteCoreConfiguration().eddlParserImplFactory();
     }
 
     @Bean("adgSqlDialect")
@@ -56,6 +49,6 @@ public class AdgCalciteConfiguration {
                 .withUnquotedCasing(Casing.TO_LOWER)
                 .withCaseSensitive(false)
                 .withQuotedCasing(Casing.UNCHANGED);
-        return new PostgresqlSqlDialect(CONTEXT);
+        return new LimitSqlDialect(CONTEXT);
     }
 }

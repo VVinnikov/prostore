@@ -54,19 +54,7 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
 
     private void initializeLoading(AdgMppwKafkaContext ctx, Handler<AsyncResult<QueryResult>> handler) {
         if (initializedLoadingByTopic.containsKey(ctx.getTopicName())) {
-            val expectedTableName = initializedLoadingByTopic.get(ctx.getTopicName());
-            if (expectedTableName.equals(ctx.getConsumerTableName())) {
-                //loadData(ctx, handler);
-                transferData(ctx, handler);
-            } else {
-                val msg = String.format(
-                        "Tables must be the same within a single load by topic [%s]. Actual [%s], but expected [%s]"
-                        , ctx.getTopicName()
-                        , ctx.getConsumerTableName()
-                        , expectedTableName);
-                log.error(msg);
-                handler.handle(Future.failedFuture(msg));
-            }
+            transferData(ctx, handler);
         } else {
             val callbackFunctionParameter = new TtTransferDataScdCallbackParameter(
                     ctx.getHelperTableNames().getStaging(),
@@ -101,25 +89,6 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
                 }
             });
         }
-    }
-
-    private void loadData(AdgMppwKafkaContext ctx, Handler<AsyncResult<QueryResult>> handler) {
-        val request = new TtLoadDataKafkaRequest(
-                properties.getMaxNumberOfMessagesPerPartition(),
-                Collections.singletonList(ctx.getHelperTableNames().getStaging()),
-                null,
-                ctx.getTopicName()
-        );
-        cartridgeClient.loadData(
-                request, ar -> {
-                    if (ar.succeeded()) {
-                        log.debug("Load Data completed by request [{}] with result: [{}]", request, ar.result());
-                        transferData(ctx, handler);
-                    } else {
-                        log.error("Load Data error:", ar.cause());
-                        handler.handle(Future.failedFuture(ar.cause()));
-                    }
-                });
     }
 
     private void transferData(AdgMppwKafkaContext ctx, Handler<AsyncResult<QueryResult>> handler) {

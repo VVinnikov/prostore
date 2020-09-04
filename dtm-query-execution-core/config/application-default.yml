@@ -47,6 +47,7 @@ core:
         number: 8
     cluster:
       zookeeperHosts: ${ZOOKEEPER_HOSTS:10.92.3.31}
+      zookeeperPort: ${ZOOKEEPER_PORT:2181}
       rootPath: ${KAFKA_CLUSTER_ROOTPATH:arenadata/cluster/21}
     admin:
       inputStreamTimeoutMs: ${KAFKA_INPUT_STREAM_TIMEOUT_MS:1000}

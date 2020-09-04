@@ -42,6 +42,7 @@ core:
         value.deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
     cluster:
       zookeeperHosts: ${ZOOKEEPER_HOSTS:zk-1.dtm.local}
+      zookeeperPort: ${ZOOKEEPER_PORT:2181}
       rootPath: ${KAFKA_CLUSTER_ROOTPATH:arenadata/cluster/21}
     admin:
       inputStreamTimeoutMs: ${KAFKA_INPUT_STREAM_TIMEOUT_MS:1000}

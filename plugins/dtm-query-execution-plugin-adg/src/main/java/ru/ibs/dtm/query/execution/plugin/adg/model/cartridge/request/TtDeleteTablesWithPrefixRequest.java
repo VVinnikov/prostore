@@ -8,5 +8,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class TtDeleteTablesWithPrefixRequest {
-    String tablePrefix;
+    private String tablePrefix;
 }

@@ -167,6 +167,56 @@ public class AdbQueryEnrichmentServiceImplTest {
     }
 
     @Test
+    void enrichWithLimit() {
+        EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaInterval(
+            "select account_id from shares.accounts limit 50");
+        String[] result = {""};
+
+        TestSuite suite = TestSuite.create("the_test_suite");
+        suite.test("executeQuery", context -> {
+            Async async = context.async();
+            adbQueryEnrichmentService.enrich(enrichQueryRequest, ar -> {
+                if (ar.succeeded()) {
+                    result[0] = ar.result();
+                    log.info(result[0]);
+                    assertGrep(result[0], "LIMIT 50");
+                    async.complete();
+                } else {
+                    context.fail(ar.cause());
+                }
+            });
+            async.awaitSuccess(10000);
+        });
+        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+    }
+
+    @Test
+    void enrichWithLimitAndOrder() {
+        EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaInterval(
+            "select account_id from shares.accounts order by account_id limit 50");
+        String[] result = {""};
+
+        TestSuite suite = TestSuite.create("the_test_suite");
+        suite.test("executeQuery", context -> {
+            Async async = context.async();
+            adbQueryEnrichmentService.enrich(enrichQueryRequest, ar -> {
+                if (ar.succeeded()) {
+                    result[0] = ar.result();
+                    log.info(result[0]);
+                    assertGrep(result[0], "ORDER BY account_id LIMIT 50");
+                    async.complete();
+                } else {
+                    context.fail(ar.cause());
+                }
+            });
+            async.awaitSuccess(10000);
+        });
+        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+    }
+
+
+
+    @Test
     void enfichWithMultipleLogicalSchema() {
         EnrichQueryRequest enrichQueryRequest = prepareRequestMultipleSchemas(
                 "select * from accounts a " +

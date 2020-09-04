@@ -1,6 +1,7 @@
 package ru.ibs.dtm.query.calcite.core.extension.dml;
 
 import lombok.Getter;
+import lombok.Setter;
 import lombok.val;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -8,17 +9,19 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 import java.math.BigDecimal;
 
 @Getter
+@Setter
 public class LimitableSqlOrderBy extends SqlOrderBy {
     private static final SqlSpecialOperator OPERATOR = new LimitableSqlOrderBy.Operator() {
         @Override
         public SqlCall createCall(SqlLiteral functionQualifier,
                                   SqlParserPos pos, SqlNode... operands) {
             return new SqlOrderBy(pos, operands[0], (SqlNodeList) operands[1],
-                    operands[2], operands[3]);
+                operands[2], operands[3]);
         }
     };
     private final boolean isLimited;
     private long limit;
+    private SqlKind kind;
 
     public LimitableSqlOrderBy(SqlParserPos pos,
                                SqlNode query,
@@ -27,6 +30,7 @@ public class LimitableSqlOrderBy extends SqlOrderBy {
                                SqlNode fetch,
                                boolean isLimited) {
         super(pos, query, orderList, offset, fetch);
+        kind = SqlKind.ORDER_BY;
         this.isLimited = isLimited;
         if (isLimited) {
             if (fetch instanceof SqlNumericLiteral) {
@@ -41,6 +45,10 @@ public class LimitableSqlOrderBy extends SqlOrderBy {
         return OPERATOR;
     }
 
+    @Override
+    public SqlKind getKind() {
+        return kind;
+    }
 
     /**
      * Definition of {@code ORDER BY} operator.
@@ -56,42 +64,42 @@ public class LimitableSqlOrderBy extends SqlOrderBy {
         }
 
         public void unparse(
-                SqlWriter writer,
-                SqlCall call,
-                int leftPrec,
-                int rightPrec) {
+            SqlWriter writer,
+            SqlCall call,
+            int leftPrec,
+            int rightPrec) {
             LimitableSqlOrderBy orderBy = (LimitableSqlOrderBy) call;
             final SqlWriter.Frame frame =
-                    writer.startList(SqlWriter.FrameTypeEnum.ORDER_BY);
+                writer.startList(SqlWriter.FrameTypeEnum.ORDER_BY);
             orderBy.query.unparse(writer, getLeftPrec(), getRightPrec());
             if (orderBy.orderList != SqlNodeList.EMPTY) {
                 writer.sep(getName());
                 writer.list(SqlWriter.FrameTypeEnum.ORDER_BY_LIST, SqlWriter.COMMA,
-                        orderBy.orderList);
+                    orderBy.orderList);
             }
             if (orderBy.offset != null) {
                 final SqlWriter.Frame frame2 =
-                        writer.startList(SqlWriter.FrameTypeEnum.OFFSET);
+                    writer.startList(SqlWriter.FrameTypeEnum.OFFSET);
                 writer.newlineAndIndent();
                 writer.keyword("OFFSET");
-                orderBy.offset.unparse(writer, - 1, - 1);
+                orderBy.offset.unparse(writer, -1, -1);
                 writer.keyword("ROWS");
                 writer.endList(frame2);
             }
 
             if (orderBy.fetch != null) {
                 final SqlWriter.Frame frame3 =
-                        writer.startList(SqlWriter.FrameTypeEnum.FETCH);
+                    writer.startList(SqlWriter.FrameTypeEnum.FETCH);
                 if (orderBy.isLimited) {
                     writer.newlineAndIndent();
                     writer.keyword("LIMIT");
-                    orderBy.fetch.unparse(writer, - 1, - 1);
+                    orderBy.fetch.unparse(writer, -1, -1);
                     writer.endList(frame3);
                 } else {
                     writer.newlineAndIndent();
                     writer.keyword("FETCH");
                     writer.keyword("NEXT");
-                    orderBy.fetch.unparse(writer, - 1, - 1);
+                    orderBy.fetch.unparse(writer, -1, -1);
                     writer.keyword("ROWS");
                     writer.keyword("ONLY");
                     writer.endList(frame3);

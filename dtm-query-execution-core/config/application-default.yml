@@ -47,6 +47,7 @@ core:
         number: 8
     cluster:
       zookeeperHosts: ${ZOOKEEPER_HOSTS:10.92.3.31}
+      zookeeperPort: ${ZOOKEEPER_PORT:2181}
       rootPath: ${KAFKA_CLUSTER_ROOTPATH:arenadata/cluster/21}
     admin:
       inputStreamTimeoutMs: ${KAFKA_INPUT_STREAM_TIMEOUT_MS:1000}
@@ -73,8 +74,9 @@ adb:
 
   mppw:
     startLoadUrl: ${ADB_START_LOAD_URL:http://10.92.3.3:8090/newdata/adb/start}
-    stopLoadUrl: ${ADB_STOP_LOAD_URL:http://10.92.3.3:8090/newdata/adb/stop}
     consumerGroup: ${ADB_LOAD_GROUP:adb-emulator-load-adb}
+    poolSize: ${ADB_MPPW_POOL_SIZE:2}
+    stopTimeoutMs: ${ADB_MPPW_STOP_TIMEOUT_MS:86400000}
 
 adg:
   tarantool:

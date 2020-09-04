@@ -10,6 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>dtm-status-monitor</artifactId>
+    <name>DTM Status Monitor</name>
 
     <dependencies>
         <dependency>

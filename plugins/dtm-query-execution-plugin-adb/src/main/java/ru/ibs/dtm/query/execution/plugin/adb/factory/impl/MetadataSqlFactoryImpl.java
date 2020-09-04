@@ -46,6 +46,14 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
     private static final String DROP_TABLE = "DROP TABLE IF EXISTS ";
     private static final String DROP_SCHEMA = "DROP SCHEMA IF EXISTS %s CASCADE";
     private static final String CREATE_SCHEMA = "CREATE SCHEMA %s";
+    public static final String KEY_COLUMNS_TEMPLATE_SQL = "SELECT c.column_name, c.data_type\n" +
+            "FROM information_schema.table_constraints tc\n" +
+            "         JOIN information_schema.KEY_COLUMN_USAGE AS ccu USING (constraint_schema, constraint_name)\n" +
+            "         JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema\n" +
+            "    AND tc.table_name = c.table_name AND ccu.column_name = c.column_name\n" +
+            "WHERE constraint_type = 'PRIMARY KEY'\n" +
+            "  and c.table_schema = '%s' and tc.table_name = '%s'";
+
 
     @Override
     public String createDropTableScript(ClassTable classTable) {
@@ -162,5 +170,10 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
                 .append(SYS_OP_ATTR)
                 .append(" ")
                 .append("int");
+    }
+
+    @Override
+    public String createKeyColumnsSqlQuery(String schema, String tableName) {
+        return String.format(KEY_COLUMNS_TEMPLATE_SQL, schema, tableName + "_" + ACTUAL_TABLE);
     }
 }

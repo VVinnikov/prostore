@@ -50,9 +50,6 @@ class DropSchemaDdlExecutorTest {
     private final DeltaServiceDao deltaServiceDao = mock(DeltaServiceDaoImpl.class);
     private final ServiceDbDao serviceDbDao = mock(ServiceDbDaoImpl.class);
     private final DatamartDao datamartDao = mock(DatamartDaoImpl.class);
-    private final EntityDao entityDao = mock(EntityDaoImpl.class);
-    private final AttributeDao attributeDao = mock(AttributeDaoImpl.class);
-    private final ViewDao viewDao = mock(ViewDaoImpl.class);
     private DropSchemaDdlExecutor dropSchemaDdlExecutor;
     private DdlRequestContext context;
     private SqlNode dropSchemaQuery;
@@ -68,9 +65,6 @@ class DropSchemaDdlExecutorTest {
                 mariaProperties, serviceDbFacade);
         when(serviceDbFacade.getServiceDbDao()).thenReturn(serviceDbDao);
         when(serviceDbDao.getDatamartDao()).thenReturn(datamartDao);
-        when(serviceDbDao.getEntityDao()).thenReturn(entityDao);
-        when(serviceDbDao.getViewServiceDao()).thenReturn(viewDao);
-        when(serviceDbDao.getAttributeDao()).thenReturn(attributeDao);
         when(serviceDbFacade.getDeltaServiceDao()).thenReturn(deltaServiceDao);
         schema = "shares";
         datamartId = 1L;
@@ -107,25 +101,13 @@ class DropSchemaDdlExecutorTest {
             final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
             handler.handle(Future.succeededFuture());
             return null;
-        }).when(datamartDao).dropDatamart(eq(context.getDatamartId()), any());
-
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture());
-            return null;
-        }).when(entityDao).dropByDatamartId(eq(context.getDatamartId()), any());
-
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture());
-            return null;
-        }).when(viewDao).dropByDatamartId(eq(context.getDatamartId()), any());
-
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture());
-            return null;
         }).when(deltaServiceDao).dropByDatamart(eq(context.getDatamartName()), any());
+
+        Mockito.doAnswer(invocation -> {
+            final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
+            handler.handle(Future.succeededFuture());
+            return null;
+        }).when(datamartDao).dropDatamart(eq(context.getDatamartId()), any());
 
         dropSchemaDdlExecutor.execute(context, null, ar -> {
             if (ar.succeeded()) {
@@ -163,119 +145,6 @@ class DropSchemaDdlExecutorTest {
     }
 
     @Test
-    void executeWithDropDatamartError() {
-        Promise promise = Promise.promise();
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Long>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(datamartId));
-            return null;
-        }).when(datamartDao).findDatamart(eq(schema), any());
-
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture());
-            return null;
-        }).when(metadataExecutor).execute(any(), any());
-
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new RuntimeException("")));
-            return null;
-        }).when(datamartDao).dropDatamart(eq(context.getDatamartId()), any());
-
-        dropSchemaDdlExecutor.execute(context, null, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
-        assertTrue(promise.future().failed());
-    }
-
-    @Test
-    void executeWithDropEntitiesError() {
-        Promise promise = Promise.promise();
-
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Long>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(datamartId));
-            return null;
-        }).when(datamartDao).findDatamart(eq(schema), any());
-
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture());
-            return null;
-        }).when(metadataExecutor).execute(any(), any());
-
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture());
-            return null;
-        }).when(datamartDao).dropDatamart(eq(context.getDatamartId()), any());
-
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new RuntimeException("")));
-            return null;
-        }).when(entityDao).dropByDatamartId(eq(context.getDatamartId()), any());
-
-        dropSchemaDdlExecutor.execute(context, null, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
-        assertTrue(promise.future().failed());
-    }
-
-    @Test
-    void executeWithDropViewsError() {
-        Promise promise = Promise.promise();
-
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Long>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(datamartId));
-            return null;
-        }).when(datamartDao).findDatamart(eq(schema), any());
-
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture());
-            return null;
-        }).when(metadataExecutor).execute(any(), any());
-
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture());
-            return null;
-        }).when(datamartDao).dropDatamart(eq(context.getDatamartId()), any());
-
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture());
-            return null;
-        }).when(entityDao).dropByDatamartId(eq(context.getDatamartId()), any());
-
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new RuntimeException("")));
-            return null;
-        }).when(viewDao).dropByDatamartId(eq(context.getDatamartId()), any());
-
-        dropSchemaDdlExecutor.execute(context, null, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
-        assertNotNull(promise.future().cause());
-    }
-
-    @Test
     void executeWithDropDeltaError() {
         Promise promise = Promise.promise();
         Mockito.doAnswer(invocation -> {
@@ -292,27 +161,46 @@ class DropSchemaDdlExecutorTest {
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture());
+            handler.handle(Future.failedFuture(new RuntimeException("")));
             return null;
-        }).when(datamartDao).dropDatamart(eq(context.getDatamartId()), any());
+        }).when(deltaServiceDao).dropByDatamart(eq(context.getDatamartName()), any());
+
+        dropSchemaDdlExecutor.execute(context, null, ar -> {
+            if (ar.succeeded()) {
+                promise.complete(ar.result());
+            } else {
+                promise.fail(ar.cause());
+            }
+        });
+        assertTrue(promise.future().failed());
+    }
+
+    @Test
+    void executeWithDropDatamartError() {
+        Promise promise = Promise.promise();
+        Mockito.doAnswer(invocation -> {
+            final Handler<AsyncResult<Long>> handler = invocation.getArgument(1);
+            handler.handle(Future.succeededFuture(datamartId));
+            return null;
+        }).when(datamartDao).findDatamart(eq(schema), any());
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
             handler.handle(Future.succeededFuture());
             return null;
-        }).when(entityDao).dropByDatamartId(eq(context.getDatamartId()), any());
+        }).when(metadataExecutor).execute(any(), any());
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
             handler.handle(Future.succeededFuture());
             return null;
-        }).when(viewDao).dropByDatamartId(eq(context.getDatamartId()), any());
+        }).when(deltaServiceDao).dropByDatamart(eq(context.getDatamartName()), any());
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
             handler.handle(Future.failedFuture(new RuntimeException("")));
             return null;
-        }).when(deltaServiceDao).dropByDatamart(eq(context.getDatamartName()), any());
+        }).when(datamartDao).dropDatamart(eq(context.getDatamartId()), any());
 
         dropSchemaDdlExecutor.execute(context, null, ar -> {
             if (ar.succeeded()) {

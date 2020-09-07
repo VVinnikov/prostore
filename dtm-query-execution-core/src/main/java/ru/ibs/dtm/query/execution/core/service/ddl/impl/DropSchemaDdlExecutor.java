@@ -37,10 +37,8 @@ public class DropSchemaDdlExecutor extends DropTableDdlExecutor {
             context.setDatamartName(schemaName);
             getDatamart(context)
                     .compose(datamartId -> dropSchema(context, datamartId))
-                    .compose(r -> dropDatamart(context))
-                    .compose(r -> dropEntities(context))
-                    .compose(r -> dropViews(context))
                     .compose(r -> dropDeltas(context))
+                    .compose(r -> dropDatamart(context))
                     .onSuccess(success -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
                     .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
         } catch (Exception e) {
@@ -61,21 +59,6 @@ public class DropSchemaDdlExecutor extends DropTableDdlExecutor {
                 }));
     }
 
-    private Future<Void> dropDatamart(DdlRequestContext context) {
-        return Future.future((Promise<Void> promise) -> {
-            log.debug("Deleted schema [{}] in data sources", context.getDatamartName());
-            serviceDbFacade.getServiceDbDao().getDatamartDao().dropDatamart(context.getDatamartId(), ar -> {
-                if (ar.succeeded()) {
-                    log.debug("Deleted datamart [{}] from datamart registry", context.getDatamartName());
-                    promise.complete();
-                } else {
-                    log.error("Error deleting datamart [{}] from datamart registry!", context.getDatamartName(), ar.cause());
-                    promise.fail(ar.cause());
-                }
-            });
-        });
-    }
-
     private Future<Void> dropSchema(DdlRequestContext context, Long datamartId) {
         try {
             context.setDatamartId(datamartId);
@@ -89,32 +72,6 @@ public class DropSchemaDdlExecutor extends DropTableDdlExecutor {
         }
     }
 
-    private Future<Void> dropEntities(DdlRequestContext context) {
-        return Future.future((Promise<Void> promise) ->
-                serviceDbFacade.getServiceDbDao().getEntityDao().dropByDatamartId(context.getDatamartId(), ar -> {
-                    if (ar.succeeded()) {
-                        log.debug("Deleted entities in datamart [{}]", context.getDatamartName());
-                        promise.complete();
-                    } else {
-                        log.error("Error deleting entities in datamart [{}]!", context.getDatamartName(), ar.cause());
-                        promise.fail(ar.cause());
-                    }
-                }));
-    }
-
-    private Future<Void> dropViews(DdlRequestContext context) {
-        return Future.future((Promise<Void> promise) ->
-                serviceDbFacade.getServiceDbDao().getViewServiceDao().dropByDatamartId(context.getDatamartId(), ar -> {
-                    if (ar.succeeded()) {
-                        log.debug("Deleted views in datamart [{}]", context.getDatamartName());
-                        promise.complete();
-                    } else {
-                        log.error("Error deleting views in datamart [{}]!", context.getDatamartName(), ar.cause());
-                        promise.fail(ar.cause());
-                    }
-                }));
-    }
-
     private Future<Void> dropDeltas(DdlRequestContext context) {
         return Future.future((Promise<Void> promise) ->
                 serviceDbFacade.getDeltaServiceDao().dropByDatamart(context.getDatamartName(), ar -> {
@@ -126,6 +83,21 @@ public class DropSchemaDdlExecutor extends DropTableDdlExecutor {
                         promise.fail(ar.cause());
                     }
                 }));
+    }
+
+    private Future<Void> dropDatamart(DdlRequestContext context) {
+        return Future.future((Promise<Void> promise) -> {
+            log.debug("Deleted schema [{}] in data sources", context.getDatamartName());
+            serviceDbFacade.getServiceDbDao().getDatamartDao().dropDatamart(context.getDatamartId(), ar -> {
+                if (ar.succeeded()) {
+                    log.debug("Deleted datamart [{}] from datamart registry", context.getDatamartName());
+                    promise.complete();
+                } else {
+                    log.error("Error deleting datamart [{}] from datamart registry!", context.getDatamartName(), ar.cause());
+                    promise.fail(ar.cause());
+                }
+            });
+        });
     }
 
     @Override

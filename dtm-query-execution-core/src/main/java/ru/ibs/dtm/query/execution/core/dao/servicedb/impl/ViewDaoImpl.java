@@ -143,7 +143,7 @@ public class ViewDaoImpl implements ViewDao {
     }
 
     @Override
-    public void dropViewsByDatamartId(Long datamartId, Handler<AsyncResult<Void>> resultHandler) {
+    public void dropByDatamartId(Long datamartId, Handler<AsyncResult<Void>> resultHandler) {
         executor.execute(dsl -> dsl.deleteFrom(VIEWS_REGISTRY)
             .where(VIEWS_REGISTRY.DATAMART_ID.eq(datamartId))
         ).setHandler(ar -> {

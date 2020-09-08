@@ -19,7 +19,7 @@ public interface ViewDao {
 
     void dropView(String viewName, Long datamartId, Handler<AsyncResult<Void>> resultHandler);
 
-    void dropViewsByDatamartId(Long datamartId, Handler<AsyncResult<Void>> resultHandler);
+    void dropByDatamartId(Long datamartId, Handler<AsyncResult<Void>> resultHandler);
 
     void findAllSystemViews(Handler<AsyncResult<List<SystemDatamartView>>> resultHandler);
 }

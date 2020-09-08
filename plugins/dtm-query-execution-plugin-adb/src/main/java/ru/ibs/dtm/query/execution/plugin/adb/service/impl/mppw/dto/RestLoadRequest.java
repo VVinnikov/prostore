@@ -2,8 +2,10 @@ package ru.ibs.dtm.query.execution.plugin.adb.service.impl.mppw.dto;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.apache.avro.Schema;
 import ru.ibs.dtm.common.schema.SchemaDeserializer;
 import ru.ibs.dtm.common.schema.SchemaSerializer;
@@ -12,6 +14,8 @@ import java.io.Serializable;
 
 @Data
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class RestLoadRequest implements Serializable {
     private String requestId;
     private long hotDelta;
@@ -26,4 +30,5 @@ public class RestLoadRequest implements Serializable {
     @JsonSerialize(using = SchemaSerializer.class)
     private Schema schema;
     private int messageProcessingLimit;
+
 }

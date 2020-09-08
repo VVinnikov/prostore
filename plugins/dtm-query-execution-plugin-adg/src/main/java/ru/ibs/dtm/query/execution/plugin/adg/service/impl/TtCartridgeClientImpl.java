@@ -39,7 +39,6 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
   @Autowired
   public TtCartridgeClientImpl(TarantoolCartridgeProperties cartridgeProperties,
                                @Qualifier("adgWebClient") WebClient webClient,
-                               ObjectMapper objectMapper,
                                @Qualifier("adgCircuitBreaker") CircuitBreaker circuitBreaker) {
     this.cartridgeProperties = cartridgeProperties;
     this.webClient = webClient;
@@ -314,7 +313,24 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
   public void executeDeleteQueue(TtDeleteTablesQueueRequest request, Handler<AsyncResult<TtDeleteQueueResponse>> handler) {
     val uri = cartridgeProperties.getUrl() + cartridgeProperties.getTableBatchDeleteUrl() + "/"
             + request.getBatchId();
-    log.debug("send to [{}]", uri);
+    log.debug("send to [{}] request [{}]", uri, request);
+    webClient.deleteAbs(uri)
+            .send(ar -> {
+              if (ar.succeeded()) {
+                val response = ar.result();
+                handleExecuteDeleteQueue(response, handler);
+              } else {
+                handler.handle(Future.failedFuture(ar.cause()));
+              }
+            });
+  }
+
+  @Override
+  public void executeDeleteSpacesWithPrefix(TtDeleteTablesWithPrefixRequest request,
+                                            Handler<AsyncResult<TtDeleteQueueResponse>> handler) {
+    val uri = cartridgeProperties.getUrl() + cartridgeProperties.getTableBatchDeleteUrl() + "/prefix/"
+            + request.getTablePrefix();
+    log.debug("send to [{}] request [{}]", uri, request);
     webClient.deleteAbs(uri)
             .send(ar -> {
               if (ar.succeeded()) {

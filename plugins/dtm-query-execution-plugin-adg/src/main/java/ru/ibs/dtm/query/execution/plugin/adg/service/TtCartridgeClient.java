@@ -38,4 +38,7 @@ public interface TtCartridgeClient {
   void addSpacesToDeleteQueue(TtDeleteTablesRequest request, Handler<AsyncResult<TtDeleteBatchResponse>> handler);
 
   void executeDeleteQueue(TtDeleteTablesQueueRequest request, Handler<AsyncResult<TtDeleteQueueResponse>> handler);
+
+  void executeDeleteSpacesWithPrefix(TtDeleteTablesWithPrefixRequest request,
+                                    Handler<AsyncResult<TtDeleteQueueResponse>> handler);
 }

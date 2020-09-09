@@ -27,28 +27,38 @@ public class CalciteConfiguration {
     @Bean("adqmParserConfig")
     public SqlParser.Config configDdlParser(@Qualifier("adqmParser") SqlParserImplFactory factory) {
         return SqlParser.configBuilder()
-                .setParserFactory(factory)
-                .setConformance(SqlConformanceEnum.DEFAULT)
-                .setCaseSensitive(false)
-                .setQuotedCasing(Casing.UNCHANGED)
-                .setUnquotedCasing(Casing.TO_LOWER)
-                .setQuoting(Quoting.DOUBLE_QUOTE)
-                .build();
+            .setParserFactory(factory)
+            .setConformance(SqlConformanceEnum.DEFAULT)
+            .setCaseSensitive(false)
+            .setQuotedCasing(Casing.UNCHANGED)
+            .setUnquotedCasing(Casing.TO_LOWER)
+            .setQuoting(Quoting.DOUBLE_QUOTE)
+            .build();
     }
 
     @Bean("adqmParser")
     public SqlParserImplFactory ddlParserImplFactory() {
         return new CalciteCoreConfiguration().eddlParserImplFactory();
+//        return reader -> {
+//            final SqlDdlParserImpl parser = new SqlDdlParserImpl(reader);
+//            if (reader instanceof SourceStringReader) {
+//                final String sql = ((SourceStringReader) reader).getSourceString();
+//                parser.setOriginalSql(sql);
+//            }
+//            return parser;
+//        };
     }
+
 
     @Bean("adqmSqlDialect")
     public SqlDialect adgSqlDialect() {
         SqlDialect.Context CONTEXT = SqlDialect.EMPTY_CONTEXT
-                .withDatabaseProduct(SqlDialect.DatabaseProduct.POSTGRESQL)
-                .withIdentifierQuoteString("")
-                .withUnquotedCasing(Casing.TO_LOWER)
-                .withCaseSensitive(false)
-                .withQuotedCasing(Casing.UNCHANGED);
+            .withDatabaseProduct(SqlDialect.DatabaseProduct.POSTGRESQL)
+            .withIdentifierQuoteString("")
+            .withUnquotedCasing(Casing.TO_LOWER)
+            .withCaseSensitive(false)
+            .withQuotedCasing(Casing.UNCHANGED);
         return new LimitSqlDialect(CONTEXT);
+//        return new PostgresqlSqlDialect(CONTEXT);
     }
 }

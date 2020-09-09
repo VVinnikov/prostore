@@ -15,7 +15,7 @@ import ru.ibs.dtm.query.execution.plugin.adqm.dto.EnrichQueryRequest;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.QueryEnrichmentService;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.impl.query.QueryRewriter;
 
-@Service
+@Service("adqmQueryEnrichmentServiceOld")
 @Slf4j
 public class AdqmQueryEnrichmentServiceImpl implements QueryEnrichmentService {
     private final QueryParserService queryParserService;

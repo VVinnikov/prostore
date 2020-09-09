@@ -15,7 +15,8 @@ public class AdgHelperTableNamesFactoryImpl implements AdgHelperTableNamesFactor
         return new AdgHelperTableNames(
                 prefix + tableName + STAGING_POSTFIX,
                 prefix + tableName + HISTORY_POSTFIX,
-                prefix + tableName + ACTUAL_POSTFIX
+                prefix + tableName + ACTUAL_POSTFIX,
+                prefix
         );
     }
 }

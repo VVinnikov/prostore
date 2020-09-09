@@ -20,4 +20,6 @@ public interface DeltaServiceDao {
     void insertDelta(DeltaRecord delta, Handler<AsyncResult<Void>> resultHandler);
 
     void updateDelta(DeltaRecord delta, Handler<AsyncResult<Void>> resultHandler);
+
+    void dropByDatamart(String datamartMnemonic, Handler<AsyncResult<Void>> resultHandler);
 }

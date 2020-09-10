@@ -1,12 +1,6 @@
 package ru.ibs.dtm.query.execution.plugin.adqm.service.impl.enrichment;
 
-import io.vertx.core.Future;
-import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
-import io.vertx.ext.unit.Async;
-import io.vertx.ext.unit.TestOptions;
-import io.vertx.ext.unit.TestSuite;
-import io.vertx.ext.unit.report.ReportOptions;
 import io.vertx.junit5.VertxTestContext;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -24,32 +18,30 @@ import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;
 import ru.ibs.dtm.query.execution.model.metadata.TableAttribute;
 import ru.ibs.dtm.query.execution.plugin.adqm.calcite.AdqmCalciteContextProvider;
 import ru.ibs.dtm.query.execution.plugin.adqm.calcite.AdqmCalciteSchemaFactory;
-import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.CalciteConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.dto.EnrichQueryRequest;
 import ru.ibs.dtm.query.execution.plugin.adqm.factory.impl.AdqmHelperTableNamesFactoryImpl;
 import ru.ibs.dtm.query.execution.plugin.adqm.factory.impl.AdqmSchemaFactory;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.QueryEnrichmentService;
-import ru.ibs.dtm.query.execution.plugin.adqm.service.impl.query.QueryRewriter;
-import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockEnvironment;
 import ru.ibs.dtm.query.execution.plugin.api.request.LlrRequest;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
 class AdqmQueryEnrichmentServiceImplTest {
-    private final QueryEnrichmentService oldEnrichService;
     private final QueryEnrichmentService enrichService;
+    private final String[] expectedSqls;
 
+    @SneakyThrows
     public AdqmQueryEnrichmentServiceImplTest() {
         val calciteConfiguration = new CalciteConfiguration();
         calciteConfiguration.init();
@@ -64,25 +56,16 @@ class AdqmQueryEnrichmentServiceImplTest {
         val helperTableNamesFactory = new AdqmHelperTableNamesFactoryImpl();
         val queryExtendService = new AdqmCalciteDmlQueryExtendServiceImpl(helperTableNamesFactory);
 
-        enrichService = new Adqm2QueryEnrichmentServiceImpl(
+        enrichService = new AdqmQueryEnrichmentServiceImpl(
             queryParserService,
             contextProvider,
             new AdqmQueryGeneratorImpl(queryExtendService,
                 calciteConfiguration.adgSqlDialect()),
             new AdqmSchemaExtenderImpl(helperTableNamesFactory));
 
-        oldEnrichService = new AdqmQueryEnrichmentServiceImpl(
-            queryParserService,
-            contextProvider,
-            new QueryRewriter(contextProvider, new AppConfiguration(new MockEnvironment()))
-        );
+        expectedSqls = new String(Files.readAllBytes(Paths.get(getClass().getResource("/sql/expectedDmlSqls.sql").toURI())))
+            .split("---");
 
-    }
-
-    private static void assertGrep(String data, String regexp) {
-        Pattern pattern = Pattern.compile(regexp, Pattern.CASE_INSENSITIVE);
-        Matcher matcher = pattern.matcher(data);
-        assertTrue(matcher.find(), String.format("Expected: %s, Received: %s", regexp, data));
     }
 
     @Test
@@ -91,7 +74,7 @@ class AdqmQueryEnrichmentServiceImplTest {
                 "FROM (SELECT a2.account_id FROM shares.accounts a2 where a2.account_id = 12) a1\n" +
                 "    INNER JOIN shares.transactions t1 ON a1.account_id = t1.account_id\n" +
                 "WHERE a1.account_id = 1"),
-            Arrays.asList("accounts"), enrichService);
+            expectedSqls[0], enrichService);
     }
 
     @Test
@@ -99,14 +82,14 @@ class AdqmQueryEnrichmentServiceImplTest {
         enrich(prepareRequestDeltaNum("SELECT a.account_id FROM shares.accounts a" +
                 " join shares.transactions t on t.account_id = a.account_id" +
                 " where a.account_id = 10"),
-            Arrays.asList("accounts"), enrichService);
+            expectedSqls[1], enrichService);
     }
 
     @Test
     void enrichWithDeltaNum3() {
         enrich(prepareRequestDeltaNum("SELECT a.account_id FROM shares.accounts a" +
                 " join shares.transactions t on t.account_id = a.account_id"),
-            Arrays.asList("accounts"), enrichService);
+            expectedSqls[2], enrichService);
     }
 
     @Test
@@ -119,13 +102,13 @@ class AdqmQueryEnrichmentServiceImplTest {
                 "    left join shares.transactions t using(account_id)\n" +
                 "   group by a.account_id, account_type\n" +
                 ")x"),
-            Arrays.asList("accounts"), enrichService);
+            expectedSqls[3], enrichService);
     }
 
     @Test
     void enrichWithDeltaNum5() {
         enrich(prepareRequestDeltaNum("SELECT * FROM shares.transactions as tran"),
-            Arrays.asList("accounts"), enrichService);
+            expectedSqls[4], enrichService);
     }
 
     @Test
@@ -133,82 +116,46 @@ class AdqmQueryEnrichmentServiceImplTest {
         enrich(prepareRequestDeltaNum("SELECT a1.account_id\n" +
                 "FROM (SELECT a2.account_id FROM shares.accounts a2 where a2.account_id = 12) a1\n" +
                 "    INNER JOIN shares.transactions t1 ON a1.account_id = t1.account_id"),
-            Arrays.asList("accounts"), enrichService);
+            expectedSqls[5], enrichService);
     }
 
     @Test
-    void enrichWithDeltaNumOld() {
+    void enrichWithDeltaNum7() {
+        enrich(prepareRequestDeltaNum("SELECT a1.account_id\n" +
+                "FROM (SELECT a2.account_id FROM shares.accounts a2 where a2.account_id = 12) a1\n" +
+                "    INNER JOIN shares.transactions t1 ON a1.account_id = t1.account_id\n" +
+                "    INNER JOIN shares.transactions t2 ON a1.account_id = t2.transaction_id\n" +
+                "    INNER JOIN shares.transactions t3 ON a1.account_id = t3.transaction_id\n" +
+                "WHERE t1.account_id = 5 AND t2.transaction_id = 3"
+            ),
+            expectedSqls[6], enrichService);
+    }
+
+    @Test
+    void enrichWithDeltaNum8() {
         enrich(prepareRequestDeltaNum("SELECT a.account_id FROM shares.accounts a" +
-                " join shares.transactions t on t.account_id = a.account_id" +
-                " where a.account_id is not null"),
-            Arrays.asList("accounts"), oldEnrichService);
-    }
-
-    @Test
-    void enrichWithDeltaNumOld2() {
-        enrich(prepareRequestDeltaNum("select *, CASE WHEN (account_type = 'D' AND  amount >= 0) " +
-                "OR (account_type = 'C' AND  amount <= 0) THEN 'OK' ELSE 'NOT OK' END\n" +
-                "  from (\n" +
-                "    select a.account_id, coalesce(sum(amount),0) amount, account_type\n" +
-                "    from shares.accounts a\n" +
-                "    left join shares.transactions t using(account_id)\n" +
-                "   group by a.account_id, account_type\n" +
-                ")x"),
-            Arrays.asList("accounts"), oldEnrichService);
-    }
-
-    @Test
-    void enrichWithDeltaIntervalOld() {
-        EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaInterval(
-            "select *, CASE WHEN (account_type = 'D' AND  amount >= 0) " +
-                "OR (account_type = 'C' AND  amount <= 0) THEN 'OK' ELSE 'NOT OK' END\n" +
-                "  from (\n" +
-                "    select a.account_id, coalesce(sum(amount),0) amount, account_type\n" +
-                "    from shares.accounts a\n" +
-                "    left join shares.transactions t using(account_id)\n" +
-                "   group by a.account_id, account_type\n" +
-                ")x");
-        log.info(enrichQueryRequest.getQueryRequest().getSql());
-        String[] result = {""};
-
-        TestSuite suite = TestSuite.create("the_test_suite");
-        suite.test("executeQuery", context -> {
-            Async async = context.async();
-            enrichService.enrich(enrichQueryRequest, ar -> {
-                if (ar.succeeded()) {
-                    result[0] = ar.result();
-                    log.info("SQL: " + result[0]);
-//                    assertGrep(result[0], "sys_from >= 1 AND sys_from <= 5");
-//                    assertGrep(result[0], "sys_to <= 3 AND sys_op = 1");
-//                    assertGrep(result[0], "sys_to >= 2");
-                }
-                async.complete();
-            });
-            async.awaitSuccess(10000);
-        });
-        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+                " join shares.transactions t on t.account_id = a.account_id " +
+                "LIMIT 10"),
+            expectedSqls[7], enrichService);
     }
 
     @SneakyThrows
     private void enrich(EnrichQueryRequest enrichRequest,
-                        List<String> expectedValues,
+                        String expectedSql,
                         QueryEnrichmentService service) {
-        String[] sqlResult = {""};
-
         val testContext = new VertxTestContext();
-        testContext.assertFailure(Future.future((Promise<String> p) -> service.enrich(enrichRequest, p)));
-//        service.enrich(enrichRequest, ar -> {
-//            if (ar.succeeded()) {
-//                sqlResult[0] = ar.result();
-//                expectedValues.forEach(v -> assertGrep(sqlResult[0], v));
-//                log.info("SQL: \n" + sqlResult[0]);
-//                testContext.completeNow();
-//            } else {
-//
-//                testContext.failNow(new RuntimeException("error"));
-//            }
-//        });
-        assertThat(testContext.awaitCompletion(95, TimeUnit.SECONDS)).isTrue();
+        val actual = new String[]{""};
+        service.enrich(enrichRequest, ar -> {
+            if (ar.succeeded()) {
+                actual[0] = ar.result();
+                testContext.completeNow();
+            } else {
+                actual[0] = ar.cause().getMessage();
+                testContext.failNow(ar.cause());
+            }
+        });
+        assertThat(testContext.awaitCompletion(5, TimeUnit.SECONDS)).isTrue();
+        assertEquals(expectedSql.trim(), actual[0].trim());
     }
 
     private EnrichQueryRequest prepareRequestMultipleSchema(String sql) {
@@ -250,7 +197,11 @@ class AdqmQueryEnrichmentServiceImplTest {
         queryRequest.setDeltaInformations(Arrays.asList(
             new DeltaInformation("a", "2019-12-23 15:15:14", false,
                 1L, null, DeltaType.NUM, schemaName, datamarts.get(0).getDatamartTables().get(0).getLabel(), pos),
-            new DeltaInformation("t", "2019-12-23 15:15:14", false,
+            new DeltaInformation("t1", "2019-12-23 15:15:14", false,
+                1L, null, DeltaType.NUM, schemaName, datamarts.get(0).getDatamartTables().get(1).getLabel(), pos),
+            new DeltaInformation("t2", "2019-12-23 15:15:14", false,
+                1L, null, DeltaType.NUM, schemaName, datamarts.get(0).getDatamartTables().get(1).getLabel(), pos),
+            new DeltaInformation("t3", "2019-12-23 15:15:14", false,
                 1L, null, DeltaType.NUM, schemaName, datamarts.get(0).getDatamartTables().get(1).getLabel(), pos)
         ));
         LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts);

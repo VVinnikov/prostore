@@ -39,14 +39,6 @@ public class CalciteConfiguration {
     @Bean("adqmParser")
     public SqlParserImplFactory ddlParserImplFactory() {
         return new CalciteCoreConfiguration().eddlParserImplFactory();
-//        return reader -> {
-//            final SqlDdlParserImpl parser = new SqlDdlParserImpl(reader);
-//            if (reader instanceof SourceStringReader) {
-//                final String sql = ((SourceStringReader) reader).getSourceString();
-//                parser.setOriginalSql(sql);
-//            }
-//            return parser;
-//        };
     }
 
 
@@ -59,6 +51,5 @@ public class CalciteConfiguration {
             .withCaseSensitive(false)
             .withQuotedCasing(Casing.UNCHANGED);
         return new LimitSqlDialect(CONTEXT);
-//        return new PostgresqlSqlDialect(CONTEXT);
     }
 }

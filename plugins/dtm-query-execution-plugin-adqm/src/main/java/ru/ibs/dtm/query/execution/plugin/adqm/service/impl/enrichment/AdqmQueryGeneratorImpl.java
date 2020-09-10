@@ -6,12 +6,11 @@ import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
-import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlIdentifier;
-import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.pretty.SqlPrettyWriter;
+import org.apache.calcite.util.Util;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.calcite.CalciteContext;
@@ -26,15 +25,18 @@ import ru.ibs.dtm.query.execution.plugin.adqm.service.QueryGenerator;
 import java.util.Arrays;
 import java.util.List;
 
-@Service("adqmQueryGenerator")
 @Slf4j
+@Service("adqmQueryGenerator")
 public class AdqmQueryGeneratorImpl implements QueryGenerator {
+    public static final String ALIAS_PATTERN = ".*AS(\\[\\d+\\]|).IDENTIFIER";
     private final QueryExtendService queryExtendService;
+    private final SqlPrettyWriter sqlPrettyWriter;
     private final SqlDialect sqlDialect;
 
     public AdqmQueryGeneratorImpl(@Qualifier("adqmCalciteDmlQueryExtendService") QueryExtendService queryExtendService,
                                   @Qualifier("adqmSqlDialect") SqlDialect sqlDialect) {
         this.queryExtendService = queryExtendService;
+        this.sqlPrettyWriter = new SqlPrettyWriter(SqlPrettyWriter.config().withDialect(sqlDialect));
         this.sqlDialect = sqlDialect;
     }
 
@@ -47,15 +49,17 @@ public class AdqmQueryGeneratorImpl implements QueryGenerator {
         try {
             val generatorContext = getContext(relNode, deltaInformations, calciteContext, queryRequest);
             val extendedQuery = queryExtendService.extendQuery(generatorContext);
-            RelNode planAfter = calciteContext.getPlanner().transform(0, extendedQuery.getTraitSet().replace(EnumerableConvention.INSTANCE), extendedQuery);
-            SqlNode sqlNodeResult = new NullNotCastableRelToSqlConverter(sqlDialect).visitChild(0, planAfter).asStatement();
-            SqlSelectTree tree = new SqlSelectTree(sqlNodeResult);
-            toFinalTables(tree);
-            renameDollarSuffixInAlias(tree);
-            SqlPrettyWriter writer = new SqlPrettyWriter(sqlDialect);
-//            writer.format()
-//            String queryResult = Util.toLinux(sqlNodeResult.toSqlString(sqlDialect).getSql());
-            String queryResult = writer.format(sqlNodeResult);
+            val planAfter = calciteContext.getPlanner()
+                .transform(0,
+                    extendedQuery.getTraitSet().replace(EnumerableConvention.INSTANCE),
+                    extendedQuery);
+            val sqlNodeResult = new NullNotCastableRelToSqlConverter(sqlDialect)
+                .visitChild(0, planAfter)
+                .asStatement();
+            val sqlTree = new SqlSelectTree(sqlNodeResult);
+            renameTopUnionTablesToFinal(sqlTree);
+            renameDollarSuffixInAlias(sqlTree);
+            val queryResult = Util.toLinux(sqlNodeResult.toSqlString(sqlDialect).getSql()).replaceAll("\n", " ");
             log.debug("sql = " + queryResult);
             handler.handle(Future.succeededFuture(queryResult));
         } catch (Exception e) {
@@ -64,7 +68,7 @@ public class AdqmQueryGeneratorImpl implements QueryGenerator {
         }
     }
 
-    private void toFinalTables(SqlSelectTree tree) {
+    private void renameTopUnionTablesToFinal(SqlSelectTree tree) {
         tree.findAllTableAndSnapshots()
             .stream()
             .filter(n -> n.getKindPath().startsWith("UNION."))
@@ -81,15 +85,15 @@ public class AdqmQueryGeneratorImpl implements QueryGenerator {
     }
 
     private void renameDollarSuffixInAlias(SqlSelectTree tree) {
-        tree.findNodesByPathRegex(".*AS(\\[\\d+\\]|).IDENTIFIER").stream()
+        tree.findNodesByPathRegex(ALIAS_PATTERN).stream()
             .filter(n -> {
                 val alias = n.tryGetTableName();
                 return alias.isPresent() && alias.get().contains("$");
             })
-            .forEach(n -> {
-                SqlIdentifier identifier = n.getNode();
+            .forEach(sqlTreeNode -> {
+                SqlIdentifier identifier = sqlTreeNode.getNode();
                 val preparedAlias = identifier.getSimple().replaceAll("\\$", "__");
-                n.getSqlNodeSetter().accept(new SqlIdentifier(preparedAlias, identifier.getParserPosition()));
+                sqlTreeNode.getSqlNodeSetter().accept(new SqlIdentifier(preparedAlias, identifier.getParserPosition()));
             });
     }
 

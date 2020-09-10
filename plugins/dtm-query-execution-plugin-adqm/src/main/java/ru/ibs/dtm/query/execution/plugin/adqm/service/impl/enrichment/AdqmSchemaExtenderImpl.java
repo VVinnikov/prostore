@@ -70,8 +70,6 @@ public class AdqmSchemaExtenderImpl implements SchemaExtender {
             extendedDatamartClasses.add(dmClass);
             extendedDatamartClasses.add(getExtendedSchema(dmClass, helperTableNames.getActual()));
             extendedDatamartClasses.add(getExtendedSchema(dmClass, helperTableNames.getActualShard()));
-            extendedDatamartClasses.add(getExtendedSchema(dmClass, helperTableNames.getActual() + "__FINAL__"));
-            extendedDatamartClasses.add(getExtendedSchema(dmClass, helperTableNames.getActualShard() + "__FINAL__"));
         });
         extendedDatamartClasses.stream()
             .findFirst()

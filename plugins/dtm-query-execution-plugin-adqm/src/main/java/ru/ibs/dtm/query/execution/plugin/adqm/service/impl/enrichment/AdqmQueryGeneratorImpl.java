@@ -57,8 +57,8 @@ public class AdqmQueryGeneratorImpl implements QueryGenerator {
                 .visitChild(0, planAfter)
                 .asStatement();
             val sqlTree = new SqlSelectTree(sqlNodeResult);
-            renameTopUnionTablesToFinal(sqlTree);
-            renameDollarSuffixInAlias(sqlTree);
+            addFinalOperatorTopUnionTables(sqlTree);
+            replaceDollarSuffixInAlias(sqlTree);
             val queryResult = Util.toLinux(sqlNodeResult.toSqlString(sqlDialect).getSql()).replaceAll("\n", " ");
             log.debug("sql = " + queryResult);
             handler.handle(Future.succeededFuture(queryResult));
@@ -68,23 +68,23 @@ public class AdqmQueryGeneratorImpl implements QueryGenerator {
         }
     }
 
-    private void renameTopUnionTablesToFinal(SqlSelectTree tree) {
+    private void addFinalOperatorTopUnionTables(SqlSelectTree tree) {
         tree.findAllTableAndSnapshots()
             .stream()
             .filter(n -> n.getKindPath().startsWith("UNION."))
             .filter(n -> !n.getKindPath().contains("UNION[1]"))
             .filter(n -> !n.getKindPath().contains("SCALAR_QUERY"))
-            .forEach(n -> {
-                SqlIdentifier identifier = n.getNode();
+            .forEach(node -> {
+                SqlIdentifier identifier = node.getNode();
                 val names = Arrays.asList(
                     identifier.names.get(0),
                     identifier.names.get(1) + " FINAL"
                 );
-                n.getSqlNodeSetter().accept(new SqlIdentifier(names, identifier.getParserPosition()));
+                node.getSqlNodeSetter().accept(new SqlIdentifier(names, identifier.getParserPosition()));
             });
     }
 
-    private void renameDollarSuffixInAlias(SqlSelectTree tree) {
+    private void replaceDollarSuffixInAlias(SqlSelectTree tree) {
         tree.findNodesByPathRegex(ALIAS_PATTERN).stream()
             .filter(n -> {
                 val alias = n.tryGetTableName();
@@ -101,11 +101,11 @@ public class AdqmQueryGeneratorImpl implements QueryGenerator {
                                              List<DeltaInformation> deltaInformations,
                                              CalciteContext calciteContext,
                                              QueryRequest queryRequest) {
-        return new QueryGeneratorContext(
-            deltaInformations.iterator(),
-            queryRequest,
-            calciteContext.getRelBuilder(),
-            true,
-            relNode);
+        return QueryGeneratorContext.builder()
+            .deltaIterator(deltaInformations.iterator())
+            .relBuilder(calciteContext.getRelBuilder())
+            .queryRequest(queryRequest)
+            .relNode(relNode)
+            .build();
     }
 }

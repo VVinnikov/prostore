@@ -154,6 +154,7 @@ public class DtmResultSet implements ResultSet {
     @Override
     public long getLong(int columnIndex) throws SQLException {
         Field field = thisRow[columnIndex - 1];
+        //FIXME Dbeaver used this method for received value of INT field
         return Long.parseLong(field.getValue().toString());
     }
 

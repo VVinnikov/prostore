@@ -14,6 +14,7 @@ import ru.ibs.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Deprecated
 public class MetadataFactoryImpl implements MetadataFactory {
 
     private final AdbQueryExecutor adbQueryExecutor;

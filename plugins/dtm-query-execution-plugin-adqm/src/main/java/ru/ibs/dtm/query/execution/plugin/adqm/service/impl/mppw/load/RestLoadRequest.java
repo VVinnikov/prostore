@@ -11,12 +11,14 @@ import java.io.Serializable;
 
 @Data
 public class RestLoadRequest implements Serializable {
+    private String requestId;
     private long hotDelta;
     private String datamart;
     private String tableName;
     private String zookeeperHost;
     private int zookeeperPort;
     private String kafkaTopic;
+    private String consumerGroup;
     private String format;
     @JsonDeserialize(using = SchemaDeserializer.class)
     @JsonSerialize(using = SchemaSerializer.class)

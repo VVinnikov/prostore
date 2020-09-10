@@ -21,4 +21,6 @@ public interface EntityDao {
     void dropEntity(Long datamartId, String name, Handler<AsyncResult<Integer>> resultHandler);
 
     void findEntitiesByDatamartAndTableNames(DatamartInfo datamartInfo, Handler<AsyncResult<List<DatamartEntity>>> resultHandler);
+
+    void dropByDatamartId(Long datamartId, Handler<AsyncResult<Void>> resultHandler);
 }

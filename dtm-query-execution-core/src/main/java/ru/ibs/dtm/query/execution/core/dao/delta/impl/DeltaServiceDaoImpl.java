@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 import static java.time.temporal.ChronoField.*;
 import static org.jooq.generated.dtmservice.Tables.DELTA_DATA;
+import static org.jooq.generated.dtmservice.Tables.ENTITIES_REGISTRY;
 import static org.jooq.impl.DSL.max;
 
 @Repository
@@ -202,6 +203,20 @@ public class DeltaServiceDaoImpl implements DeltaServiceDao {
                 .set(DELTA_DATA.STATUS_DATE, delta.getStatusDate())
                 .set(DELTA_DATA.STATUS, delta.getStatus().ordinal())
                 .where(DELTA_DATA.LOAD_ID.eq(delta.getLoadId())))
+                .setHandler(ar -> {
+                    if (ar.succeeded()) {
+                        resultHandler.handle(Future.succeededFuture());
+                    } else {
+                        resultHandler.handle(Future.failedFuture(ar.cause()));
+                    }
+                });
+    }
+
+    @Override
+    public void dropByDatamart(String datamartMnemonic, Handler<AsyncResult<Void>> resultHandler) {
+        executor.execute(dsl -> dsl
+                .deleteFrom(DELTA_DATA)
+                .where(DELTA_DATA.DATAMART_MNEMONICS.eq(datamartMnemonic)))
                 .setHandler(ar -> {
                     if (ar.succeeded()) {
                         resultHandler.handle(Future.succeededFuture());

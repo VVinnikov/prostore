@@ -162,4 +162,18 @@ public class EntityDaoImpl implements EntityDao {
         );
         return datamartEntityList;
     }
+
+    @Override
+    public void dropByDatamartId(Long datamartId, Handler<AsyncResult<Void>> resultHandler) {
+        executor.execute(dsl -> dsl
+                .deleteFrom(ENTITIES_REGISTRY)
+                .where(ENTITIES_REGISTRY.DATAMART_ID.eq(datamartId)))
+                .setHandler(ar -> {
+                    if (ar.succeeded()) {
+                        resultHandler.handle(Future.succeededFuture());
+                    } else {
+                        resultHandler.handle(Future.failedFuture(ar.cause()));
+                    }
+                });
+    }
 }

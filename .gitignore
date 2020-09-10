@@ -4,3 +4,4 @@
 *.iml
 *.iws
 /dtm-jdbc-driver/target/
+/dtm-status-monitor/target/

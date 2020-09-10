@@ -45,29 +45,38 @@ public class TtCartridgeProviderImpl implements TtCartridgeProvider {
     @SneakyThrows
     public void applySchema(final DdlRequestContext context, final Handler<AsyncResult<Void>> handler) {
         Future.future((Promise<ResOperation> promise) -> client.getSchema(promise))
-                .compose(f -> Future.future((Promise<OperationYaml> promise) ->
-                {
-                    try {
-                        val yaml = yamlMapper.readValue(f.getData().getCluster().getSchema().getYaml(), OperationYaml.class);
-                        generator.generate(context, yaml, promise);
-                    } catch (Exception ex) {
-                        promise.fail(ex);
-                    }
-                })
-                        .compose(yaml -> Future.future((Promise<String> promise) -> {
-                            try {
-                                val yamlResult = yamlMapper.writeValueAsString(yaml);
-                                if (!yamlResult.isEmpty()) {
-                                    promise.complete(yamlResult);
-                                } else {
-                                    promise.fail("Empty generated yaml config");
-                                }
-                            } catch (Exception ex) {
-                                promise.fail(ex);
-                            }
-                        }))
-                        .compose(ys -> Future.future((Promise<ResOperation> promise) -> client.setSchema(ys, promise)))
-                        .onSuccess(success -> handler.handle(Future.succeededFuture()))
-                        .onFailure(failure -> handler.handle(Future.failedFuture(failure))));
+                .compose(resOperation -> generateYaml(context, resOperation))
+                .compose(this::createYamlString)
+                .compose(ys -> Future.future((Promise<ResOperation> promise) -> client.setSchema(ys, promise)))
+                .onSuccess(success -> handler.handle(Future.succeededFuture()))
+                .onFailure(failure -> handler.handle(Future.failedFuture(failure)));
+    }
+
+    private Future<OperationYaml> generateYaml(DdlRequestContext context, ResOperation resultOperation) {
+        return Future.future((Promise<OperationYaml> promise) -> {
+            try {
+                val yaml = yamlMapper.readValue(
+                        resultOperation.getData().getCluster().getSchema().getYaml(),
+                        OperationYaml.class);
+                generator.generate(context, yaml, promise);
+            } catch (Exception ex) {
+                promise.fail(ex);
+            }
+        });
+    }
+
+    private Future<String> createYamlString(OperationYaml yaml) {
+        return Future.future((Promise<String> promise) -> {
+            try {
+                val yamlResult = yamlMapper.writeValueAsString(yaml);
+                if (!yamlResult.isEmpty()) {
+                    promise.complete(yamlResult);
+                } else {
+                    promise.fail("Empty generated yaml config");
+                }
+            } catch (Exception ex) {
+                promise.fail(ex);
+            }
+        });
     }
 }

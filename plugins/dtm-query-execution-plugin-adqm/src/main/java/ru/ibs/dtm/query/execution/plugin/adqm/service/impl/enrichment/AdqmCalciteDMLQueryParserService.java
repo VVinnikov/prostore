@@ -18,8 +18,8 @@ import static ru.ibs.dtm.query.execution.plugin.adqm.service.impl.enrichment.Adq
 @Service("adqmCalciteDMLQueryParserService")
 public class AdqmCalciteDMLQueryParserService extends CalciteDMLQueryParserService {
     public AdqmCalciteDMLQueryParserService(
-        @Qualifier("adqmCalciteContextProvider") CalciteContextProvider contextProvider,
-        @Qualifier("adqmVertx") Vertx vertx
+            @Qualifier("adqmCalciteContextProvider") CalciteContextProvider contextProvider,
+            @Qualifier("coreVertx") Vertx vertx
     ) {
         super(contextProvider, vertx);
     }

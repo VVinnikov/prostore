@@ -40,8 +40,10 @@ core:
         group.id: core-query-execution
         key.deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
         value.deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
+        number: 8
     cluster:
       zookeeperHosts: ${ZOOKEEPER_HOSTS:10.92.3.31}
+      zookeeperPort: ${ZOOKEEPER_PORT:2181}
       rootPath: ${KAFKA_CLUSTER_ROOTPATH:arenadata/cluster/21}
     admin:
       inputStreamTimeoutMs: ${KAFKA_INPUT_STREAM_TIMEOUT_MS:1000}
@@ -49,6 +51,7 @@ core:
     status.event.publish:
       enabled: false
       topic: status.event
+    statusMonitorUrl: ${STATUS_MONITOR_URL:http://127.0.0.1:9095/status}
 
 adb:
   datasource:
@@ -66,7 +69,10 @@ adb:
     url: ${ADB_MPPR_CONNECTOR_URL:/query}
 
   mppw:
-    consumerGroup: ${ADB_CONSUMER_GROUP:adb-query-execution}
+    startLoadUrl: ${ADB_START_LOAD_URL:http://10.92.3.3:8090/newdata/adb/start}
+    consumerGroup: ${ADB_LOAD_GROUP:adb-emulator-load-adb}
+    poolSize: ${ADB_MPPW_POOL_SIZE:2}
+    stopTimeoutMs: ${ADB_MPPW_STOP_TIMEOUT_MS:86400000}
 
 adg:
   tarantool:
@@ -85,6 +91,12 @@ adg:
     kafka:
       maxNumberOfMessagesPerPartition: 200
       callbackFunctionSecIdle: 100
+  circuitbreaker:
+    maxFailures: 5
+    timeout: 30000
+    fallbackOnFailure: false
+    resetTimeout: 10000
+
 adqm:
   datasource:
     database: ${ADQM_DB_NAME:upload}
@@ -101,5 +113,5 @@ adqm:
     consumerGroup: ${ADQM_CONSUMER_GROUP:adqm}
     kafkaBrokers: ${ADQM_BROKERS:10.92.3.31:9092}
     loadType: ${ADQM_MPPW_LOAD_TYPE:REST}
-    restLoadUrl: ${ADQM_REST_LOAD_URL:http://10.92.3.3:8090/newdata}
-    restLoadConsumerGroup: ${ADQM_REST_LOAD_GROUP:test_datamart.consumer}
+    restLoadUrl: ${ADQM_REST_LOAD_URL:http://10.92.3.3:8090/newdata/adqm/start}
+    restLoadConsumerGroup: ${ADQM_REST_LOAD_GROUP:adb-emulator-load-adqm}

@@ -32,14 +32,14 @@ public class DtmResultSet implements ResultSet {
         this.connection = connection;
         this.fields = fields;
         thisRow = (fields == null || fields.isEmpty()) ?
-            new Field[0] : fields.get(0);
+                new Field[0] : fields.get(0);
         this.metadata = metadata;
     }
 
     public static DtmResultSet createEmptyResultSet() {
         return new DtmResultSet(null,
-            Collections.singletonList(new Field[]{new Field("insert_id", "")}),
-            Collections.emptyList());
+                Collections.singletonList(new Field[]{new Field("insert_id", "")}),
+                Collections.emptyList());
     }
 
     @Override
@@ -153,17 +153,20 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public long getLong(int columnIndex) throws SQLException {
-        return 0;
+        Field field = thisRow[columnIndex - 1];
+        return Long.parseLong(field.getValue().toString());
     }
 
     @Override
     public float getFloat(int columnIndex) throws SQLException {
-        return 0;
+        Field field = thisRow[columnIndex - 1];
+        return (Float) field.getValue();
     }
 
     @Override
     public double getDouble(int columnIndex) throws SQLException {
-        return 0;
+        Field field = thisRow[columnIndex - 1];
+        return (Double) field.getValue();
     }
 
     @Override
@@ -228,6 +231,7 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public long getLong(String columnLabel) throws SQLException {
+        //FIXME In Dbeaver this method used in receiving length attribute of column
         return 0;
     }
 

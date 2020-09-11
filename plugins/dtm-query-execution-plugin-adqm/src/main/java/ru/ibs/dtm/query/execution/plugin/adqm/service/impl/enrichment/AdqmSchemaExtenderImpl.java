@@ -21,7 +21,7 @@ import static ru.ibs.dtm.query.execution.plugin.adqm.common.Constants.*;
 
 
 /**
- * Реализация преобразования для логической схемы в физическую
+ * Implementing a Logic to Physical Conversion
  */
 @Service("adqmSchemaExtender")
 public class AdqmSchemaExtenderImpl implements SchemaExtender {
@@ -34,8 +34,8 @@ public class AdqmSchemaExtenderImpl implements SchemaExtender {
     public static List<TableAttribute> getExtendedColumns() {
         return Arrays.asList(
             generateNewField(SYS_OP_FIELD, ColumnType.INT),
-            generateNewField(SYS_TO_FIELD, ColumnType.INT),
-            generateNewField(SYS_FROM_FIELD, ColumnType.INT),
+            generateNewField(SYS_TO_FIELD, ColumnType.BIGINT),
+            generateNewField(SYS_FROM_FIELD, ColumnType.BIGINT),
             generateNewField(SIGN_FIELD, ColumnType.INT),
             generateNewField(CLOSE_DATE_FIELD, ColumnType.DATE)
         );

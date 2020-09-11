@@ -10,11 +10,11 @@ import ru.ibs.dtm.common.reader.QueryRequest;
 import java.util.List;
 
 /**
- * Преобразователи DML запроса
+ * DML query converters
  */
 public interface QueryGenerator {
     /**
-     * Преобразовать запрос
+     * Convert Query
      */
     void mutateQuery(RelRoot sqlNode,
                      List<DeltaInformation> deltaInformations,

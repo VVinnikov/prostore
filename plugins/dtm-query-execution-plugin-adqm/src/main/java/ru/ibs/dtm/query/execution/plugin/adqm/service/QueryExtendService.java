@@ -4,12 +4,12 @@ import org.apache.calcite.rel.RelNode;
 import ru.ibs.dtm.query.execution.plugin.adqm.dto.QueryGeneratorContext;
 
 /**
- * Интерфейс сервиса для обогащения запроса
+ * Service interface to enrich the request
  */
 public interface QueryExtendService {
 
     /**
-     * Расширение дерева запроса
+     * Extending the query tree
      *
      * @param context с исходным деревом объектов
      * @return модифицированное дерево запроса

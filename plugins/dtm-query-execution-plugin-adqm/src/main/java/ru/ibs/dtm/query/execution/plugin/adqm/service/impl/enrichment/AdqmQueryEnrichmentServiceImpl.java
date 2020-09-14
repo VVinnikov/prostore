@@ -40,7 +40,7 @@ public class AdqmQueryEnrichmentServiceImpl implements QueryEnrichmentService {
                 val parserResponse = ar.result();
                 contextProvider.enrichContext(parserResponse.getCalciteContext(),
                     schemaExtender.generatePhysicalSchema(request.getSchema(), request.getQueryRequest()));
-                // формируем новый sql-запрос
+                // form a new sql query
                 adqmQueryGenerator.mutateQuery(parserResponse.getRelNode(),
                     parserResponse.getQueryRequest().getDeltaInformations(),
                     parserResponse.getCalciteContext(),

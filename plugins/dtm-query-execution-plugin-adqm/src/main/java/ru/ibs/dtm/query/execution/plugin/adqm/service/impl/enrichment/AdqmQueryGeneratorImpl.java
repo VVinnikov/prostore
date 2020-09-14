@@ -9,7 +9,6 @@ import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlIdentifier;
-import org.apache.calcite.sql.pretty.SqlPrettyWriter;
 import org.apache.calcite.util.Util;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -28,15 +27,13 @@ import java.util.List;
 @Slf4j
 @Service("adqmQueryGenerator")
 public class AdqmQueryGeneratorImpl implements QueryGenerator {
-    public static final String ALIAS_PATTERN = ".*AS(\\[\\d+\\]|).IDENTIFIER";
+    public static final String ALIAS_PATTERN = ".*SELECT.OTHER(\\[\\d+\\]|)(.AS(\\[\\d+\\]|)|).IDENTIFIER";
     private final QueryExtendService queryExtendService;
-    private final SqlPrettyWriter sqlPrettyWriter;
     private final SqlDialect sqlDialect;
 
     public AdqmQueryGeneratorImpl(@Qualifier("adqmCalciteDmlQueryExtendService") QueryExtendService queryExtendService,
                                   @Qualifier("adqmSqlDialect") SqlDialect sqlDialect) {
         this.queryExtendService = queryExtendService;
-        this.sqlPrettyWriter = new SqlPrettyWriter(SqlPrettyWriter.config().withDialect(sqlDialect));
         this.sqlDialect = sqlDialect;
     }
 
@@ -71,7 +68,6 @@ public class AdqmQueryGeneratorImpl implements QueryGenerator {
     private void addFinalOperatorTopUnionTables(SqlSelectTree tree) {
         tree.findAllTableAndSnapshots()
             .stream()
-            .filter(n -> n.getKindPath().startsWith("UNION."))
             .filter(n -> !n.getKindPath().contains("UNION[1]"))
             .filter(n -> !n.getKindPath().contains("SCALAR_QUERY"))
             .forEach(node -> {

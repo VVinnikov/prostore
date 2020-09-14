@@ -3,7 +3,6 @@ package ru.ibs.dtm.common.schema.codec.conversion;
 import org.apache.avro.Conversion;
 import org.apache.avro.LogicalType;
 import org.apache.avro.Schema;
-import ru.ibs.dtm.common.schema.codec.type.LocalDateLogicalType;
 import ru.ibs.dtm.common.schema.codec.type.LocalTimeLogicalType;
 
 import java.time.LocalTime;
@@ -25,7 +24,7 @@ public class LocalTimeConversion extends Conversion<LocalTime> {
 
     @Override
     public String getLogicalTypeName() {
-        return LocalDateLogicalType.INSTANCE.getName();
+        return LocalTimeLogicalType.INSTANCE.getName();
     }
 
     @Override

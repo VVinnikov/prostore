@@ -29,7 +29,17 @@ public class LocalDateConversion extends Conversion<LocalDate> {
 
     @Override
     public Schema getRecommendedSchema() {
-        return LocalDateLogicalType.INSTANCE.addToSchema(Schema.create(Schema.Type.INT));
+        return LocalDateLogicalType.INSTANCE.addToSchema(Schema.create(Schema.Type.LONG));
+    }
+
+    @Override
+    public LocalDate fromLong(Long value, Schema schema, LogicalType type) {
+        return LocalDate.ofEpochDay(value);
+    }
+
+    @Override
+    public Long toLong(LocalDate value, Schema schema, LogicalType type) {
+        return value.toEpochDay();
     }
 
     @Override

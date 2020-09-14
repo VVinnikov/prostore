@@ -1,33 +1,49 @@
 package ru.ibs.dtm.jdbc.model;
 
 /**
- * Информация о колонке таблицы, получаемая из LL-R сервиса
+ * Information about table column, receiving from LL-R service
  */
 public class ColumnInfo {
     /**
-     * Название колонки
+     * Column name
      */
     private String mnemonic;
     /**
-     * Тип данных, который хранится в данной колонке
+     * Column type
      */
     private String dataType;
     /**
-     * Ограничение на длину символов в колонке
+     * Column length
      */
     private Integer length;
     /**
-     * Точность
+     * Precision
      */
     private Integer accuracy;
     /**
-     * Название таблицы, которой принадлежит колонка
+     * Table name
      */
     private String entityMnemonic;
     /**
-     * Название схемы, которой принадлежит колонка
+     * Schema name
      */
     private String datamartMnemonic;
+    /**
+     * Order num of primary key
+     */
+    private Integer primaryKeyOrder;
+    /**
+     * Order num distributed key
+     */
+    private Integer distributeKeykOrder;
+    /**
+     * Column order
+     */
+    private Integer ordinalPosition;
+    /**
+     * Nullable
+     */
+    private Boolean nullable;
 
     public ColumnInfo() {
     }
@@ -54,5 +70,21 @@ public class ColumnInfo {
 
     public String getDatamartMnemonic() {
         return datamartMnemonic;
+    }
+
+    public Integer getPrimaryKeyOrder() {
+        return primaryKeyOrder;
+    }
+
+    public Integer getDistributeKeykOrder() {
+        return distributeKeykOrder;
+    }
+
+    public Integer getOrdinalPosition() {
+        return ordinalPosition;
+    }
+
+    public Boolean getNullable() {
+        return nullable;
     }
 }

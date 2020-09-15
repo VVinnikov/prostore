@@ -79,7 +79,7 @@ public class DdlUtils {
             case FLOAT: return "Float32";
             case DOUBLE: return "Float64";
 
-            case TIMESTAMP: return "DateTime64(3)";
+            case TIMESTAMP: return "DateTime64(6)";
 
             default: return "";
         }

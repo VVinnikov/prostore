@@ -3,7 +3,7 @@ package ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.schema;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
 
 /**
- * Конвертация физического типа в тип Tarantool
+ * Conversion from physical type to Tarantool type
  */
 public class SpaceAttributeTypeUtil {
 
@@ -22,11 +22,11 @@ public class SpaceAttributeTypeUtil {
                 return SpaceAttributeTypes.INTEGER;
             case FLOAT:
             case DOUBLE:
-                return SpaceAttributeTypes.DOUBLE;
+                return SpaceAttributeTypes.NUMBER;
             case BOOLEAN:
                 return SpaceAttributeTypes.BOOLEAN;
             default:
-                throw new UnsupportedOperationException(String.format("Не поддержан тип: %s", type));
+                throw new UnsupportedOperationException(String.format("Unsupported type: %s", type));
         }
     }
 }

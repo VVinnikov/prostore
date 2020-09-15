@@ -87,6 +87,14 @@ adg:
 
   mppw:
     consumerGroup: ${ADG_CONSUMER_GROUP:tarantool-group-csv}
+    kafka:
+      maxNumberOfMessagesPerPartition: 200
+      callbackFunctionSecIdle: 100
+  circuitbreaker:
+    maxFailures: 5
+    timeout: 30000
+    fallbackOnFailure: false
+    resetTimeout: 10000
 
 adqm:
   datasource:

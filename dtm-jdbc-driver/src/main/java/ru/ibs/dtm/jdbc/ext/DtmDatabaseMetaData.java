@@ -5,6 +5,7 @@ import java.util.stream.Stream;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.jdbc.core.Field;
 import ru.ibs.dtm.jdbc.model.ColumnInfo;
+import ru.ibs.dtm.jdbc.model.TableInfo;
 import ru.ibs.dtm.jdbc.util.DataBaseType;
 
 import java.sql.*;
@@ -22,14 +23,6 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
 
     public DtmDatabaseMetaData(DtmConnection dtmConnection) {
         this.connection = dtmConnection;
-    }
-
-    private static Integer getJavaSqlType(String dataType) {
-        String dataTypeUpper = dataType != null ?
-                dataType.toUpperCase(Locale.getDefault()) : null;
-        return Arrays.stream(DataBaseType.values())
-                .anyMatch(dataBaseType -> dataBaseType.name().equals(dataTypeUpper)) ?
-                DataBaseType.valueOf(dataTypeUpper).getSqlType() : null;
     }
 
     private List<String> getCatalogNames(ResultSet catalogs) throws SQLException {
@@ -87,9 +80,9 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
         } else {
             catalogNames = Collections.singletonList(catalog);
         }
-
+        final List<TableInfo> databaseTables = connection.protocol.getDatabaseTables(catalog);
         List<Field[]> result = catalogNames.stream()
-                .flatMap(schemasName -> connection.protocol.getDatabaseTables(catalog).stream())
+                .flatMap(schemasName -> databaseTables.stream())
                 .map(tableInfo -> new Field[]{
                         new Field(CATALOG_NAME_COLUMN, tableInfo.getDatamartMnemonic()),
                         new Field(SCHEMA_NAME_COLUMN, ""),
@@ -123,9 +116,11 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
         if (tableNamePattern.indexOf('%') != -1) {
             ResultSet tables = getTables(catalog, schemaPattern, null, null);
             while (tables.next()) {
-                columns.addAll(connection.protocol.getDatabaseColumns(
+                final List<ColumnInfo> databaseColumns = connection.protocol.getDatabaseColumns(
                         tables.getString(CATALOG_NAME_COLUMN),
-                        tables.getString(TABLE_NAME_COLUMN)));
+                        tables.getString(TABLE_NAME_COLUMN));
+                System.out.printf("Received column infos: %s", databaseColumns);
+                columns.addAll(databaseColumns);
             }
         } else {
             columns = connection.protocol.getDatabaseColumns(catalog, tableNamePattern);
@@ -139,17 +134,17 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                         new Field(DATA_TYPE_COLUMN, getJavaSqlType(columnInfo.getDataType())),
                         new Field(TYPE_NAME_COLUMN, columnInfo.getDataType()),
                         new Field(COLUMN_SIZE_COLUMN, columnInfo.getLength()),
-                        new Field(BUFFER_LENGTH_COLUMN, 65535),
+                        new Field(BUFFER_LENGTH_COLUMN, 0),
                         new Field(DECIMAL_DIGITS_COLUMN, columnInfo.getAccuracy()),
-                        new Field(NUM_PREC_RADIX_COLUMN, 10),
-                        new Field(NULLABLE_COLUMN, 1),
+                        new Field(NUM_PREC_RADIX_COLUMN, null),
+                        new Field(NULLABLE_COLUMN, isNullable(columnInfo)? 1: 0),
                         new Field(REMARKS_COLUMN, ""),
                         new Field(COLUMN_DEF_COLUMN, ""),
                         new Field(SQL_DATA_TYPE_COLUMN, 0),
                         new Field(SQL_DATETIME_SUB_COLUMN, 0),
                         new Field(CHAR_OCTET_LENGTH_COLUMN, null),
-                        new Field(ORDINAL_POSITION_COLUMN, 1),
-                        new Field(IS_NULLABLE_COLUMN, "YES"),
+                        new Field(ORDINAL_POSITION_COLUMN, columnInfo.getOrdinalPosition()),
+                        new Field(IS_NULLABLE_COLUMN, isNullable(columnInfo) ?"YES": "NO"),
                         new Field(SCOPE_CATALOG_COLUMN, null),
                         new Field(SCOPE_SCHEMA_COLUMN, null),
                         new Field(SCOPE_TABLE_COLUMN, null),
@@ -158,6 +153,18 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                         new Field(IS_GENERATEDCOLUMN_COLUMN, "NO")
                 }).collect(Collectors.toList());
         return new DtmResultSet(connection, result, getMetadata(result));
+    }
+
+    private static Integer getJavaSqlType(String dataType) {
+        String dataTypeUpper = dataType != null ?
+                dataType.toUpperCase(Locale.getDefault()) : null;
+        return Arrays.stream(DataBaseType.values())
+                .anyMatch(dataBaseType -> dataBaseType.name().equals(dataTypeUpper)) ?
+                DataBaseType.valueOf(dataTypeUpper).getSqlType() : null;
+    }
+
+    private boolean isNullable(ColumnInfo columnInfo) {
+        return columnInfo.getNullable() == null || columnInfo.getNullable();
     }
 
     @Override
@@ -217,22 +224,22 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public String getDriverName() throws SQLException {
-        return null;
+        return "Dtm Jdbc Driver";
     }
 
     @Override
     public String getDriverVersion() throws SQLException {
-        return null;
+        return "2.6.0";
     }
 
     @Override
     public int getDriverMajorVersion() {
-        return 0;
+        return 2;
     }
 
     @Override
     public int getDriverMinorVersion() {
-        return 0;
+        return 6;
     }
 
     @Override
@@ -292,37 +299,37 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public String getSQLKeywords() throws SQLException {
-        return null;
+        return "";
     }
 
     @Override
     public String getNumericFunctions() throws SQLException {
-        return null;
+        return "";
     }
 
     @Override
     public String getStringFunctions() throws SQLException {
-        return null;
+        return "";
     }
 
     @Override
     public String getSystemFunctions() throws SQLException {
-        return null;
+        return "";
     }
 
     @Override
     public String getTimeDateFunctions() throws SQLException {
-        return null;
+        return "";
     }
 
     @Override
     public String getSearchStringEscape() throws SQLException {
-        return null;
+        return "\\";
     }
 
     @Override
     public String getExtraNameCharacters() throws SQLException {
-        return null;
+        return "";
     }
 
     @Override
@@ -754,7 +761,7 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
     public ResultSet getProcedures(String catalog,
                                    String schemaPattern,
                                    String procedureNamePattern) throws SQLException {
-        return null;
+        return DtmResultSet.createEmptyResultSet();
     }
 
     @Override
@@ -762,7 +769,7 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                                          String schemaPattern,
                                          String procedureNamePattern,
                                          String columnNamePattern) throws SQLException {
-        return null;
+        return DtmResultSet.createEmptyResultSet();
     }
 
     @Override
@@ -770,14 +777,14 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                                          String schema,
                                          String table,
                                          String columnNamePattern) throws SQLException {
-        return null;
+        return DtmResultSet.createEmptyResultSet();
     }
 
     @Override
     public ResultSet getTablePrivileges(String catalog,
                                         String schemaPattern,
                                         String tableNamePattern) throws SQLException {
-        return null;
+        return DtmResultSet.createEmptyResultSet();
     }
 
     @Override
@@ -786,27 +793,27 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                                           String table,
                                           int scope,
                                           boolean nullable) throws SQLException {
-        return null;
+        return DtmResultSet.createEmptyResultSet();
     }
 
     @Override
     public ResultSet getVersionColumns(String catalog, String schema, String table) throws SQLException {
-        return null;
+        return DtmResultSet.createEmptyResultSet();
     }
 
     @Override
     public ResultSet getPrimaryKeys(String catalog, String schema, String table) throws SQLException {
-        return null;
+        return DtmResultSet.createEmptyResultSet();
     }
 
     @Override
     public ResultSet getImportedKeys(String catalog, String schema, String table) throws SQLException {
-        return null;
+        return DtmResultSet.createEmptyResultSet();
     }
 
     @Override
     public ResultSet getExportedKeys(String catalog, String schema, String table) throws SQLException {
-        return null;
+        return DtmResultSet.createEmptyResultSet();
     }
 
     @Override
@@ -816,19 +823,8 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                                        String foreignCatalog,
                                        String foreignSchema,
                                        String foreignTable) throws SQLException {
-        return null;
+        return DtmResultSet.createEmptyResultSet();
     }
-
-    /* Метод был необходим для упрощения в getTypeInfo, но код пока не вошел
-    private Field[] valueArrayToFieldArray(String[] fieldNames, Object[] values) {
-        Field[] f = new Field[fieldNames.length];
-        for (int i = 0; i < fieldNames.length; i++) {
-            f[i] = new Field(fieldNames[i],
-                    i < values.length ? values[i] : "");
-        }
-        return f;
-    }
-    */
 
     @Override
     public ResultSet getTypeInfo() throws SQLException {
@@ -871,7 +867,7 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                                   String table,
                                   boolean unique,
                                   boolean approximate) throws SQLException {
-        return null;
+        return DtmResultSet.createEmptyResultSet();
     }
 
     @Override
@@ -939,7 +935,7 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                              String schemaPattern,
                              String typeNamePattern,
                              int[] types) throws SQLException {
-        return null;
+        return DtmResultSet.createEmptyResultSet();
     }
 
     @Override
@@ -969,12 +965,12 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public ResultSet getSuperTypes(String catalog, String schemaPattern, String typeNamePattern) throws SQLException {
-        return null;
+        return DtmResultSet.createEmptyResultSet();
     }
 
     @Override
     public ResultSet getSuperTables(String catalog, String schemaPattern, String tableNamePattern) throws SQLException {
-        return null;
+        return DtmResultSet.createEmptyResultSet();
     }
 
     @Override
@@ -982,7 +978,7 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                                    String schemaPattern,
                                    String typeNamePattern,
                                    String attributeNamePattern) throws SQLException {
-        return null;
+        return DtmResultSet.createEmptyResultSet();
     }
 
     @Override
@@ -997,12 +993,12 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public int getDatabaseMajorVersion() throws SQLException {
-        return 0;
+        return 2;
     }
 
     @Override
     public int getDatabaseMinorVersion() throws SQLException {
-        return 0;
+        return 6;
     }
 
     @Override
@@ -1032,7 +1028,7 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public RowIdLifetime getRowIdLifetime() throws SQLException {
-        return null;
+        return RowIdLifetime.ROWID_UNSUPPORTED;
     }
 
 
@@ -1048,14 +1044,14 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public ResultSet getClientInfoProperties() throws SQLException {
-        return null;
+        return DtmResultSet.createEmptyResultSet();
     }
 
     @Override
     public ResultSet getFunctions(String catalog,
                                   String schemaPattern,
                                   String functionNamePattern) throws SQLException {
-        return null;
+        return DtmResultSet.createEmptyResultSet();
     }
 
     @Override
@@ -1063,7 +1059,7 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                                         String schemaPattern,
                                         String functionNamePattern,
                                         String columnNamePattern) throws SQLException {
-        return null;
+        return DtmResultSet.createEmptyResultSet();
     }
 
     @Override

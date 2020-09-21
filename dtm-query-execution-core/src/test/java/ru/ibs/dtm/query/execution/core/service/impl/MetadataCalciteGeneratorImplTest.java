@@ -5,7 +5,6 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.tools.FrameworkConfig;
-import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Planner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,6 +12,7 @@ import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
+import ru.ibs.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import ru.ibs.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
 import ru.ibs.dtm.query.execution.core.service.metadata.impl.MetadataCalciteGeneratorImpl;
@@ -35,9 +35,9 @@ class MetadataCalciteGeneratorImplTest {
 
     @BeforeEach
     void setUp() {
-        Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        planner = Frameworks.getPlanner(frameworkConfig);
+        planner = DtmCalciteFramework.getPlanner(frameworkConfig);
         metadataCalciteGenerator = new MetadataCalciteGeneratorImpl();
         final List<ClassField> fields = createFieldsForUplTable();
         final List<ClassField> fields2 = createFieldsForTable();

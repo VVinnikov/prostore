@@ -24,4 +24,11 @@ public class TableInfo {
         return datamartMnemonic;
     }
 
+    @Override
+    public String toString() {
+        return "TableInfo{" +
+                "mnemonic='" + mnemonic + '\'' +
+                ", datamartMnemonic='" + datamartMnemonic + '\'' +
+                '}';
+    }
 }

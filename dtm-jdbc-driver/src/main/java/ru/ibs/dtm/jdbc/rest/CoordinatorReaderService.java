@@ -93,14 +93,12 @@ public class CoordinatorReaderService implements Protocol {
 
     @Override
     public List<ColumnInfo> getDatabaseColumns(String schema, String tableName) {
-
         try {
             String uri = String.format(backendHostUrl + GET_ATTRIBUTES_URL, schema, tableName);
             HttpGet httpGet = new HttpGet(uri);
             try (CloseableHttpResponse response = client.execute(httpGet)) {
                 checkResponseStatus(response);
                 InputStream content = response.getEntity().getContent();
-
                 return MAPPER.readValue(content, new TypeReference<List<ColumnInfo>>() {
                 });
             }
@@ -140,7 +138,7 @@ public class CoordinatorReaderService implements Protocol {
                 && SystemMetadata.SCHEMA == result.getMetadata().get(0).getSystemMetadata()) {
             if (!result.isEmpty()) {
                 final Optional<Object> schemaOptional = result.getResult().get(0).values().stream().findFirst();
-                if (schemaOptional.isPresent()){
+                if (schemaOptional.isPresent()) {
                     this.schema = schemaOptional.get().toString();
                 } else {
                     throw new DtmException("Schema value not found!");

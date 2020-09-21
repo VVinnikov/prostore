@@ -35,7 +35,7 @@ public class LocalDateTimeConversion extends Conversion<LocalDateTime> {
 
     @Override
     public Schema getRecommendedSchema() {
-        return LocalDateTimeLogicalType.INSTANCE.addToSchema(Schema.create(Schema.Type.STRING));
+        return LocalDateTimeLogicalType.INSTANCE.addToSchema(Schema.create(Schema.Type.LONG));
     }
 
     @Override

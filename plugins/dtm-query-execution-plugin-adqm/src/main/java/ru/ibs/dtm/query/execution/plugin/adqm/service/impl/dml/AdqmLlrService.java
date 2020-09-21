@@ -21,7 +21,7 @@ public class AdqmLlrService implements LlrService<QueryResult> {
     private final QueryEnrichmentService adqmQueryEnrichmentService;
     private final DatabaseExecutor adqmDatabaseExecutor;
 
-    public AdqmLlrService(QueryEnrichmentService adqmQueryEnrichmentService,
+    public AdqmLlrService(@Qualifier("adqmQueryEnrichmentService") QueryEnrichmentService adqmQueryEnrichmentService,
                           @Qualifier("adqmQueryExecutor") DatabaseExecutor adqmDatabaseExecutor) {
         this.adqmQueryEnrichmentService = adqmQueryEnrichmentService;
         this.adqmDatabaseExecutor = adqmDatabaseExecutor;

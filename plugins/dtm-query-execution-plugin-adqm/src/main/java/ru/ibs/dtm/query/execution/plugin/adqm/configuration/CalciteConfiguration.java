@@ -27,13 +27,13 @@ public class CalciteConfiguration {
     @Bean("adqmParserConfig")
     public SqlParser.Config configDdlParser(@Qualifier("adqmParser") SqlParserImplFactory factory) {
         return SqlParser.configBuilder()
-                .setParserFactory(factory)
-                .setConformance(SqlConformanceEnum.DEFAULT)
-                .setCaseSensitive(false)
-                .setQuotedCasing(Casing.UNCHANGED)
-                .setUnquotedCasing(Casing.TO_LOWER)
-                .setQuoting(Quoting.DOUBLE_QUOTE)
-                .build();
+            .setParserFactory(factory)
+            .setConformance(SqlConformanceEnum.DEFAULT)
+            .setCaseSensitive(false)
+            .setQuotedCasing(Casing.UNCHANGED)
+            .setUnquotedCasing(Casing.TO_LOWER)
+            .setQuoting(Quoting.DOUBLE_QUOTE)
+            .build();
     }
 
     @Bean("adqmParser")
@@ -41,14 +41,15 @@ public class CalciteConfiguration {
         return new CalciteCoreConfiguration().eddlParserImplFactory();
     }
 
+
     @Bean("adqmSqlDialect")
     public SqlDialect adgSqlDialect() {
         SqlDialect.Context CONTEXT = SqlDialect.EMPTY_CONTEXT
-                .withDatabaseProduct(SqlDialect.DatabaseProduct.POSTGRESQL)
-                .withIdentifierQuoteString("")
-                .withUnquotedCasing(Casing.TO_LOWER)
-                .withCaseSensitive(false)
-                .withQuotedCasing(Casing.UNCHANGED);
+            .withDatabaseProduct(SqlDialect.DatabaseProduct.POSTGRESQL)
+            .withIdentifierQuoteString("")
+            .withUnquotedCasing(Casing.TO_LOWER)
+            .withCaseSensitive(false)
+            .withQuotedCasing(Casing.UNCHANGED);
         return new LimitSqlDialect(CONTEXT);
     }
 }

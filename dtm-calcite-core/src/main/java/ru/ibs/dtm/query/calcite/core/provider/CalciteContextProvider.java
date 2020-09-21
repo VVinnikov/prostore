@@ -10,6 +10,7 @@ import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.*;
 import ru.ibs.dtm.common.calcite.CalciteContext;
+import ru.ibs.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import ru.ibs.dtm.query.calcite.core.factory.impl.CalciteSchemaFactory;
 import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 
@@ -39,7 +40,7 @@ public abstract class CalciteContextProvider {
 
     public CalciteContext context(List<Datamart> schemas) {
         try {
-            final SchemaPlus rootSchema = Frameworks.createRootSchema(true);
+            final SchemaPlus rootSchema = DtmCalciteFramework.createRootSchema(true);
             Datamart defaultDatamart = null;
             if (schemas != null) {
                 Optional<Datamart> defaultSchemaOptional = schemas.stream().filter(Datamart::getIsDefault).findFirst();
@@ -52,13 +53,13 @@ public abstract class CalciteContextProvider {
             final SchemaPlus defaultSchema = defaultDatamart == null ?
                 rootSchema : calciteSchemaFactory.addSchema(rootSchema, defaultDatamart);
 
-            FrameworkConfig config = Frameworks.newConfigBuilder()
+            FrameworkConfig config = DtmCalciteFramework.newConfigBuilder()
                 .parserConfig(configParser)
                 .defaultSchema(defaultSchema)
                 .traitDefs(traitDefs).programs(Programs.of(prepareRules))
                 .sqlToRelConverterConfig(SqlToRelConverter.configBuilder().withExpand(false).build())
                 .build();
-            Planner planner = Frameworks.getPlanner(config);
+            Planner planner = DtmCalciteFramework.getPlanner(config);
             return new CalciteContext(rootSchema, planner, RelBuilder.create(config));
         } catch (Exception e) {
             log.error("Planner creation error", e);

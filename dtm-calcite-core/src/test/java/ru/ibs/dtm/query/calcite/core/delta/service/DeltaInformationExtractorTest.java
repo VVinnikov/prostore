@@ -10,7 +10,6 @@ import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.tools.FrameworkConfig;
-import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Planner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,6 +17,7 @@ import ru.ibs.dtm.common.delta.DeltaInformationResult;
 import ru.ibs.dtm.common.delta.DeltaInterval;
 import ru.ibs.dtm.common.delta.DeltaType;
 import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
+import ru.ibs.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import ru.ibs.dtm.query.calcite.core.util.DeltaInformationExtractor;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -41,9 +41,9 @@ class DeltaInformationExtractorTest {
                 .setQuotedCasing(Casing.TO_LOWER)
                 .setQuoting(Quoting.DOUBLE_QUOTE)
                 .build();
-        Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        planner = Frameworks.getPlanner(frameworkConfig);
+        planner = DtmCalciteFramework.getPlanner(frameworkConfig);
     }
 
     @Test

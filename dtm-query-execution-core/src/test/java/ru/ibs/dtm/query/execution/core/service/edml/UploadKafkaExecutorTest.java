@@ -60,7 +60,7 @@ class UploadKafkaExecutorTest {
     private Set<SourceType> sourceTypes;
     private QueryRequest queryRequest;
     private QueryResult queryResult;
-    private RuntimeException resultException;
+    private Object resultException;
     private Integer inpuStreamTimeoutMs = 2000;
     private Integer pluginStatusCheckPeriodMs = 1000;
     private Integer firstOffsetTimeoutMs = 15000;
@@ -259,7 +259,7 @@ class UploadKafkaExecutorTest {
                 if (ar.succeeded()) {
                     promise.complete(ar.result());
                 } else {
-                    resultException = (RuntimeException) ar.cause();
+                    resultException = ar.cause();
                     promise.fail(ar.cause());
                 }
                 async.complete();
@@ -353,7 +353,7 @@ class UploadKafkaExecutorTest {
                 if (ar.succeeded()) {
                     promise.complete(ar.result());
                 } else {
-                    resultException = (RuntimeException) ar.cause();
+                    resultException = ar.cause();
                     promise.fail(ar.cause());
                 }
                 async.complete();
@@ -447,7 +447,7 @@ class UploadKafkaExecutorTest {
                 if (ar.succeeded()) {
                     promise.complete(ar.result());
                 } else {
-                    resultException = (RuntimeException) ar.cause();
+                    resultException = ar.cause();
                     promise.fail(ar.cause());
                 }
                 async.complete();
@@ -540,7 +540,7 @@ class UploadKafkaExecutorTest {
                 if (ar.succeeded()) {
                     promise.complete(ar.result());
                 } else {
-                    resultException = (RuntimeException) ar.cause();
+                    resultException = ar.cause();
                     promise.fail(ar.cause());
                 }
                 async.complete();
@@ -633,7 +633,7 @@ class UploadKafkaExecutorTest {
                 if (ar.succeeded()) {
                     promise.complete(ar.result());
                 } else {
-                    resultException = (RuntimeException) ar.cause();
+                    resultException = ar.cause();
                     promise.fail(ar.cause());
                 }
                 async.complete();

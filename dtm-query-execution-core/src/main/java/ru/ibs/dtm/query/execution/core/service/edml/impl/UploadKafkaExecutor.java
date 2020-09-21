@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -71,8 +72,8 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
         return Future.future((Promise<MppwStopFuture> promise) -> pluginService.mppwKafka(ds, mppwRequestContext, ar -> {
             if (ar.succeeded()) {
                 log.debug("A request has been sent for the plugin: {} to start mppw download: {}", ds, mppwRequestContext.getRequest());
-                final StatusRequestContext statusRequestContext = createStatusRequestContext(mppwRequestContext, context);
-                final MppwLoadStatusResult mppwLoadStatusResult = MppwLoadStatusResult.builder()
+                val statusRequestContext = createStatusRequestContext(mppwRequestContext, context);
+                val mppwLoadStatusResult = MppwLoadStatusResult.builder()
                         .lastOffsetTime(LocalDateTime.now())
                         .lastOffset(0L)
                         .build();
@@ -94,10 +95,10 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                                         promise.complete(stopFuture);
                                     } else if (isMppwLoadingInitFailure(mppwLoadStatusResult)) {
                                         vertx.cancelTimer(timerId);
-                                        promise.fail(new RuntimeException(String.format("Plugin %s consumer failed to start", ds)));
+                                        promise.fail(String.format("Plugin %s consumer failed to start", ds));
                                     } else if (isLastOffsetNotIncrease(mppwLoadStatusResult)) {
                                         vertx.cancelTimer(timerId);
-                                        promise.fail(new RuntimeException(String.format("Plugin %s consumer offset stopped dead", ds)));
+                                        promise.fail(String.format("Plugin %s consumer offset stopped dead", ds));
                                     }
                                 } else {
                                     log.error("Error getting plugin status: {}", ds, chr.cause());
@@ -157,7 +158,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
 
     @NotNull
     private StatusRequestContext createStatusRequestContext(MppwRequestContext mppwRequestContext, EdmlRequestContext context) {
-        final StatusRequestContext statusRequestContext = new StatusRequestContext(new StatusRequest(context.getRequest().getQueryRequest()));
+        val statusRequestContext = new StatusRequestContext(new StatusRequest(context.getRequest().getQueryRequest()));
         statusRequestContext.getRequest().setTopic(mppwRequestContext.getRequest().getTopic());
         return statusRequestContext;
     }
@@ -185,7 +186,9 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                         resultHandler.handle(Future.succeededFuture(QueryResult.emptyResult()));
                     } else {
                         String stopStatus = collectStatus(mppwStopFutureMap);
-                        RuntimeException e = new RuntimeException(String.format("The offset of one of the plugins has changed: \n %s", stopStatus));
+                        RuntimeException e = new RuntimeException(
+                                String.format("The offset of one of the plugins has changed: \n %s", stopStatus),
+                                stopComplete.cause());
                         log.error(MPPW_LOAD_ERROR_MESSAGE, e);
                         resultHandler.handle(Future.failedFuture(e));
                     }

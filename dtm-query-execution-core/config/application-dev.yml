@@ -27,6 +27,10 @@ core:
         port: ${SERVICEDB_PORT:3306}
       poolOptions:
         maxSize: 5
+    zookeeper:
+      connection-string: ${ZOOKEEPER_HOSTS:10.92.3.31}
+      session-timeout-ms: 1000
+      chroot: arenadtm
 
   kafka:
     producer:

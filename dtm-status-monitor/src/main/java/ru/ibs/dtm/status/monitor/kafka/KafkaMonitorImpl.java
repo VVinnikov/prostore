@@ -82,14 +82,6 @@ public class KafkaMonitorImpl implements KafkaMonitor {
 
         response.setLastMessageTime(getLastMessageTime(request.getTopic()));
 
-        // find end offsets for specified topic partitions
-        if (partitions.size() == 0) {
-            log.warn(String.format("Cannot find actual information for topic %s, group %s", request.getTopic(), request.getConsumerGroup()));
-            return response;
-        }
-        log.debug(String.format("Filtered %d topic partitions to handle", partitions.size()));
-
-        // set last offsets
         log.debug("Fetching end offsets");
         updateLatestOffsets(request.getConsumerGroup());
         val endOffsets = uncommitedOffsets.entrySet().stream()
@@ -99,7 +91,6 @@ public class KafkaMonitorImpl implements KafkaMonitor {
         endOffsets.forEach((tp, offset) -> response.setProducerOffset(response.getProducerOffset() + offset));
         log.debug(String.format("Finish fetching end offsets, received %d", endOffsets.entrySet().size()));
 
-        // set current offsets
         partitions.forEach(tp -> {
             OffsetAndMetadata offset = commitedOffsets.get(tp);
             response.setConsumerOffset(offset.offset() + response.getConsumerOffset());

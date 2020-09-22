@@ -7,6 +7,7 @@ import kafka.coordinator.group.GroupTopicPartition;
 import kafka.coordinator.group.OffsetKey;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.kafka.clients.admin.*;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -79,7 +80,6 @@ public class KafkaMonitorImpl implements KafkaMonitor {
                         p.group().equals(request.getConsumerGroup()))
                 .collect(Collectors.toList());
 
-        //set last message time
         response.setLastMessageTime(getLastMessageTime(request.getTopic()));
 
         // find end offsets for specified topic partitions
@@ -92,8 +92,9 @@ public class KafkaMonitorImpl implements KafkaMonitor {
         // set last offsets
         log.debug("Fetching end offsets");
         updateLatestOffsets(request.getConsumerGroup());
-        Map<TopicPartition, Long> endOffsets = uncommitedOffsets.entrySet().stream()
-                .filter(e -> e.getKey().topic().equals(request.getTopic())).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        val endOffsets = uncommitedOffsets.entrySet().stream()
+                .filter(e -> e.getKey().topic().equals(request.getTopic()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         endOffsets.forEach((tp, offset) -> response.setProducerOffset(response.getProducerOffset() + offset));
         log.debug(String.format("Finish fetching end offsets, received %d", endOffsets.entrySet().size()));
@@ -168,17 +169,17 @@ public class KafkaMonitorImpl implements KafkaMonitor {
             DescribeConsumerGroupsResult describeConsumerGroupsResult = adminClient.describeConsumerGroups(Collections.singletonList(consumerGroup));
             Map<String, ConsumerGroupDescription> consumerGroupDescriptions = describeConsumerGroupsResult.all().get();
 
-            List<TopicPartition> topicPartitions = consumerGroupDescriptions
-                    .values().stream()
+            List<TopicPartition> topicPartitions = consumerGroupDescriptions.values().stream()
                     .map(ConsumerGroupDescription::members).flatMap(Collection::stream)
                     .map(MemberDescription::assignment)
-                    .map(MemberAssignment::topicPartitions).flatMap(Set::stream).collect(Collectors.toList());
+                    .map(MemberAssignment::topicPartitions).flatMap(Set::stream)
+                    .collect(Collectors.toList());
 
             Map<TopicPartition, Long> topicPartitionLongMap = offsetProvider.endOffsets(topicPartitions);
             uncommitedOffsets.putAll(topicPartitionLongMap);
 
         } catch (Exception e) {
-            log.error(String.format("Error updating last offsets for subscribed topic of %s consumer group", consumerGroup));
+            log.error("Error updating last offsets for subscribed topic of {} consumer group", consumerGroup, e);
         }
     }
 
@@ -186,7 +187,8 @@ public class KafkaMonitorImpl implements KafkaMonitor {
         long lastMessageTime = 0;
 
         List<TopicPartition> partitionsForRequestTopic = lastMessageTimeProvider.partitionsFor(topic).stream()
-                .map(partitionInfo -> new TopicPartition(partitionInfo.topic(), partitionInfo.partition())).collect(Collectors.toList());
+                .map(partitionInfo -> new TopicPartition(partitionInfo.topic(), partitionInfo.partition()))
+                .collect(Collectors.toList());
         lastMessageTimeProvider.assign(partitionsForRequestTopic);
         lastMessageTimeProvider.seekToEnd(partitionsForRequestTopic);
 

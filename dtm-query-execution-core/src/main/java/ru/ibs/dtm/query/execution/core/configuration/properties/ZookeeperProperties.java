@@ -12,4 +12,5 @@ public class ZookeeperProperties {
     private String connectionString;
     private String chroot = "/arenadata";
     private int sessionTimeoutMs = 1000;
+    private int connectionTimeoutMs = 15000;
 }

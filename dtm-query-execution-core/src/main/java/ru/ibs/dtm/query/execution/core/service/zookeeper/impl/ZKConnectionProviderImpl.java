@@ -8,6 +8,8 @@ import ru.ibs.dtm.query.execution.core.configuration.properties.ZookeeperPropert
 import ru.ibs.dtm.query.execution.core.service.zookeeper.ZKConnectionProvider;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.zookeeper.Watcher.Event.KeeperState.SyncConnected;
@@ -36,7 +38,9 @@ public class ZKConnectionProviderImpl implements ZKConnectionProvider {
 
     @SneakyThrows
     private ZooKeeper connect() {
-        if (connection != null) connection.close();
+        if (connection != null) {
+            connection.close();
+        }
         val connectionLatch = new CountDownLatch(1);
         connection = new ZooKeeper(properties.getConnectionString(),
             properties.getSessionTimeoutMs(),
@@ -49,13 +53,20 @@ public class ZKConnectionProviderImpl implements ZKConnectionProvider {
                     connected.set(false);
                 }
             });
-        connectionLatch.await();
+        connectionLatch.await(properties.getConnectionTimeoutMs(), TimeUnit.MILLISECONDS);
+        if (!connected.get()) {
+            val errMsg = String.format("Zookeeper connection timed out: [%d] ms", properties.getConnectionTimeoutMs());
+            log.error(errMsg);
+            throw new TimeoutException(errMsg);
+        }
         return connection;
     }
 
     @Override
     @SneakyThrows
     public void close() {
-        if (connected.get()) connection.close();
+        if (connected.get()) {
+            connection.close();
+        }
     }
 }

@@ -170,9 +170,11 @@ public class KafkaMonitorImpl implements KafkaMonitor {
             Map<String, ConsumerGroupDescription> consumerGroupDescriptions = describeConsumerGroupsResult.all().get();
 
             List<TopicPartition> topicPartitions = consumerGroupDescriptions.values().stream()
-                    .map(ConsumerGroupDescription::members).flatMap(Collection::stream)
+                    .map(ConsumerGroupDescription::members)
+                    .flatMap(Collection::stream)
                     .map(MemberDescription::assignment)
-                    .map(MemberAssignment::topicPartitions).flatMap(Set::stream)
+                    .map(MemberAssignment::topicPartitions)
+                    .flatMap(Set::stream)
                     .collect(Collectors.toList());
 
             Map<TopicPartition, Long> topicPartitionLongMap = offsetProvider.endOffsets(topicPartitions);

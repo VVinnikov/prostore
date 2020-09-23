@@ -42,7 +42,7 @@ public abstract class DtmTable extends AbstractQueryableTable implements Transla
                         //FIXME реализовать выставление атрибутов precision и scale из length и accuracy
                         //it.getLength(),
                         //it.getAccuracy()
-                ).nullable(true));//FIXME добавить выставление признака nullable из атрибутов
+                ).nullable(it.getNullable()));//FIXME добавить выставление признака nullable из атрибутов
         return builder.build();
     }
 

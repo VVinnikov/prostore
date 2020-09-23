@@ -30,9 +30,9 @@ core:
       poolOptions:
         maxSize: 5
     zookeeper:
-      connection-string: ${ZOOKEEPER_DS_ADDRESS:10.92.3.25}${ZOOKEEPER_DS_CHROOT:/adtm}
+      connection-string: ${ZOOKEEPER_DS_ADDRESS:10.92.3.25}
       connection-timeout-ms: ${ZOOKEEPER_DS_CONNECTION_TIMEOUT_MS:30000}
-      session-timeout-ms: ${ZOOKEEPER_DS_SESSION_TIMEOUT_MS:5000}
+      session-timeout-ms: ${ZOOKEEPER_DS_SESSION_TIMEOUT_MS:86400000}
       chroot: ${ZOOKEEPER_DS_CHROOT:/adtm}
 
   kafka:

@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.dto.TableInfo;
-import ru.ibs.dtm.common.model.ddl.ClassTable;
+import ru.ibs.dtm.common.model.ddl.Entity;
 import ru.ibs.dtm.common.plugin.exload.Format;
 import ru.ibs.dtm.common.plugin.exload.Type;
 import ru.ibs.dtm.common.reader.QueryRequest;
@@ -117,8 +117,8 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
             TableInfo tableInfo = SqlNodeUtils.getTableInfo(ddl, defaultSchema);
             LocationOperator locationOperator = SqlNodeUtils.getOne(ddl, LocationOperator.class);
             ChunkSizeOperator chunkSizeOperator = SqlNodeUtils.getOne(ddl, ChunkSizeOperator.class);
-            ClassTable classTable = metadataCalciteGenerator.generateTableMetadata(ddl);
-            Schema avroSchema = avroSchemaGenerator.generateTableSchema(classTable, false);
+            Entity entity = metadataCalciteGenerator.generateTableMetadata(ddl);
+            Schema avroSchema = avroSchemaGenerator.generateTableSchema(entity, false);
             asyncResultHandler.handle(Future.succeededFuture(
                     new CreateDownloadExternalTableQuery(
                             tableInfo.getSchemaName(),
@@ -138,8 +138,8 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
                                                   Handler<AsyncResult<EddlQuery>> asyncResultHandler) {
         try {
             TableInfo tableInfo = SqlNodeUtils.getTableInfo(sqlNode, defaultSchema);
-            ClassTable classTable = metadataCalciteGenerator.generateTableMetadata(sqlNode);
-            Schema avroSchema = avroSchemaGenerator.generateTableSchema(classTable);
+            Entity entity = metadataCalciteGenerator.generateTableMetadata(sqlNode);
+            Schema avroSchema = avroSchemaGenerator.generateTableSchema(entity);
             LocationOperator locationOperator = SqlNodeUtils.getOne(sqlNode, LocationOperator.class);
             Format format = SqlNodeUtils.getOne(sqlNode, FormatOperator.class).getFormat();
             MassageLimitOperator messageLimitOperator = SqlNodeUtils.getOne(sqlNode, MassageLimitOperator.class);

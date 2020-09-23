@@ -9,7 +9,7 @@ import org.apache.calcite.sql.SqlKind;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import ru.ibs.dtm.common.model.ddl.ClassTable;
+import ru.ibs.dtm.common.model.ddl.Entity;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.core.configuration.jooq.MariaProperties;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
@@ -34,8 +34,8 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
         try {
             String schema = getSchemaName(context.getRequest().getQueryRequest(), sqlNodeName);
             String tableName = getTableName(sqlNodeName);
-            ClassTable classTable = createClassTable(schema, tableName);
-            context.getRequest().setClassTable(classTable);
+            Entity entity = createClassTable(schema, tableName);
+            context.getRequest().setClassTable(entity);
             context.setDatamartName(schema);
             context.setDdlType(DdlType.DROP_TABLE);
             dropTable(context, containsIfExistsCheck(context.getRequest().getQueryRequest().getSql()))
@@ -52,8 +52,8 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
     }
 
     @NotNull
-    private ClassTable createClassTable(String schema, String tableName) {
-        return new ClassTable(getTableNameWithSchema(schema, tableName), null);
+    private Entity createClassTable(String schema, String tableName) {
+        return new Entity(getTableNameWithSchema(schema, tableName), null);
     }
 
     protected Future<Void> dropTable(DdlRequestContext context, boolean ifExists) {

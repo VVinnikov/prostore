@@ -8,8 +8,8 @@ import org.apache.calcite.sql.SqlKind;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
-import ru.ibs.dtm.common.model.ddl.ClassField;
-import ru.ibs.dtm.common.model.ddl.ClassTable;
+import ru.ibs.dtm.common.model.ddl.Entity;
+import ru.ibs.dtm.common.model.ddl.EntityField;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.execution.plugin.adqm.common.Constants;
 import ru.ibs.dtm.query.execution.plugin.adqm.common.DdlUtils;
@@ -72,7 +72,7 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
 
     @Override
     public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<Void>> handler) {
-        ClassTable tbl = context.getRequest().getClassTable();
+        Entity tbl = context.getRequest().getClassTable();
         DdlRequestContext dropCtx = new DdlRequestContext(new DdlRequest(new QueryRequest(), tbl));
 
         dropTableExecutor.execute(dropCtx, SqlKind.DROP_TABLE.lowerName, ar -> createTable(tbl).onComplete(handler));
@@ -89,14 +89,14 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
         service.addExecutor(this);
     }
 
-    private Future<Void> createTable(ClassTable classTable) {
+    private Future<Void> createTable(Entity entity) {
         String env = appConfiguration.getSystemName();
         String cluster = ddlProperties.getCluster();
-        String schema = classTable.getSchema();
-        String table = classTable.getName();
-        String columnList = getColumns(classTable.getFields());
-        String orderList = getOrderKeys(classTable.getFields());
-        String shardingList = getShardingKeys(classTable.getFields());
+        String schema = entity.getSchema();
+        String table = entity.getName();
+        String columnList = getColumns(entity.getFields());
+        String orderList = getOrderKeys(entity.getFields());
+        String shardingList = getShardingKeys(entity.getFields());
         Integer ttlSec = ddlProperties.getTtlSec();
         String archiveDisk = ddlProperties.getArchiveDisk();
 
@@ -112,22 +112,22 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
                         databaseExecutor.executeUpdate(createDistributed));
     }
 
-    private String getColumns(List<ClassField> fields) {
+    private String getColumns(List<EntityField> fields) {
         return fields.stream().map(DdlUtils::classFieldToString).collect(Collectors.joining(", "));
     }
 
-    private String getOrderKeys(List<ClassField> fields) {
+    private String getOrderKeys(List<EntityField> fields) {
         List<String> orderKeys = fields.stream().filter(f -> f.getPrimaryOrder() != null)
-                .map(ClassField::getName).collect(Collectors.toList());
+                .map(EntityField::getName).collect(Collectors.toList());
         orderKeys.add(Constants.SYS_FROM_FIELD);
         return String.join(", ", orderKeys);
     }
 
-    private String getShardingKeys(List<ClassField> fields) {
+    private String getShardingKeys(List<EntityField> fields) {
         // TODO Check against CH, does it support several columns as distributed key?
         // TODO Should we fail if sharding column in metatable of unsupported type?
         // CH support only not null int types as sharding key
         return fields.stream().filter(f -> f.getShardingOrder() != null)
-                .map(ClassField::getName).limit(1).collect(Collectors.joining(", "));
+                .map(EntityField::getName).limit(1).collect(Collectors.joining(", "));
     }
 }

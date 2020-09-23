@@ -9,8 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import ru.ibs.dtm.common.dto.ActualDeltaRequest;
-import ru.ibs.dtm.common.model.ddl.ClassField;
-import ru.ibs.dtm.common.model.ddl.ClassTable;
+import ru.ibs.dtm.common.model.ddl.Entity;
+import ru.ibs.dtm.common.model.ddl.EntityField;
 import ru.ibs.dtm.query.execution.core.CoreTestConfiguration;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dto.edml.DownloadExtTableRecord;
@@ -87,7 +87,7 @@ class ServiceDaoImplIT {
 
     @Test
     void insertAttribute(VertxTestContext testContext) throws Throwable {
-        ClassField cf = new ClassField(0, attrName, null, null, null, null, null);
+        EntityField cf = new EntityField(0, attrName, null, null, null, null, null);
         serviceDbFacade.getServiceDbDao().getAttributeDao().insertAttribute(entityId, cf, 1, ar -> {
             if (ar.succeeded()) {
                 testContext.completeNow();
@@ -225,11 +225,11 @@ class ServiceDaoImplIT {
 
     @Test
     void dropTable(VertxTestContext testContext) throws Throwable {
-        ClassTable classTable = new ClassTable("dtmservice.test_doc", Collections.emptyList());
-        String createScript = String.format("create table if not exists %s (id integer not null, gnr varchar(25) not null)", classTable.getNameWithSchema());
+        Entity entity = new Entity("dtmservice.test_doc", Collections.emptyList());
+        String createScript = String.format("create table if not exists %s (id integer not null, gnr varchar(25) not null)", entity.getNameWithSchema());
         serviceDbFacade.getDdlServiceDao().executeUpdate(createScript, ar1 -> {
             if (ar1.succeeded()) {
-                serviceDbFacade.getDdlServiceDao().dropTable(classTable, ar2 -> {
+                serviceDbFacade.getDdlServiceDao().dropTable(entity, ar2 -> {
                     if (ar2.succeeded()) {
                         testContext.completeNow();
                     } else {

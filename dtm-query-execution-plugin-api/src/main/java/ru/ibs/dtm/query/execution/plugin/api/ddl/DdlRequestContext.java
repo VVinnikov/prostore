@@ -3,7 +3,6 @@ package ru.ibs.dtm.query.execution.plugin.api.ddl;
 import lombok.Data;
 import lombok.ToString;
 import org.apache.calcite.sql.SqlNode;
-import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.query.execution.plugin.api.RequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
 import ru.ibs.dtm.query.execution.plugin.api.service.SqlProcessingType;

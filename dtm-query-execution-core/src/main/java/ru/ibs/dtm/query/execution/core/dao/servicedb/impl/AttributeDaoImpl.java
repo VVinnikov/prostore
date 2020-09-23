@@ -14,8 +14,8 @@ import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
-import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
+import ru.ibs.dtm.common.model.ddl.EntityField;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.AttributeDao;
 import ru.ibs.dtm.query.execution.core.dto.metadata.EntityAttribute;
 
@@ -104,7 +104,7 @@ public class AttributeDaoImpl implements AttributeDao {
     }
 
     @Override
-    public void insertAttribute(Long entityId, ClassField field, Integer typeId, Handler<AsyncResult<Void>> resultHandler) {
+    public void insertAttribute(Long entityId, EntityField field, Integer typeId, Handler<AsyncResult<Void>> resultHandler) {
         executor.execute(dsl -> dsl
             .insertInto(ATTRIBUTES_REGISTRY)
             .set(ATTRIBUTES_REGISTRY.ENTITY_ID, entityId)

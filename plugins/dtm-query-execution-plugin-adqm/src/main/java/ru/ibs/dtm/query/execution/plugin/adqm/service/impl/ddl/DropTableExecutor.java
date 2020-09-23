@@ -8,7 +8,7 @@ import org.apache.calcite.sql.SqlKind;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
-import ru.ibs.dtm.common.model.ddl.ClassTable;
+import ru.ibs.dtm.common.model.ddl.Entity;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
@@ -53,12 +53,12 @@ public class DropTableExecutor implements DdlExecutor<Void> {
         service.addExecutor(this);
     }
 
-    private Future<Void> dropTable(ClassTable classTable) {
+    private Future<Void> dropTable(Entity entity) {
         String env = appConfiguration.getSystemName();
 
         String cluster = ddlProperties.getCluster();
-        String schema = classTable.getSchema();
-        String table = classTable.getName();
+        String schema = entity.getSchema();
+        String table = entity.getName();
 
         String dropShard = String.format(DROP_TABLE_TEMPLATE, env, schema, table + ACTUAL_SHARD_POSTFIX, cluster);
         String dropDistributed = String.format(DROP_TABLE_TEMPLATE, env, schema, table + ACTUAL_POSTFIX, cluster);

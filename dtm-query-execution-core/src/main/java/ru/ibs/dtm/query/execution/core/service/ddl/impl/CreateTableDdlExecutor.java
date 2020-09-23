@@ -7,8 +7,8 @@ import org.apache.calcite.sql.SqlCreate;
 import org.apache.calcite.sql.SqlKind;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import ru.ibs.dtm.common.model.ddl.ClassField;
-import ru.ibs.dtm.common.model.ddl.ClassTable;
+import ru.ibs.dtm.common.model.ddl.Entity;
+import ru.ibs.dtm.common.model.ddl.EntityField;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.core.configuration.jooq.MariaProperties;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
@@ -42,12 +42,11 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
             String schema = getSchemaName(context.getRequest().getQueryRequest(), sqlNodeName);
             context.getRequest().getQueryRequest().setDatamartMnemonic(schema);
             context.setDdlType(DdlType.CREATE_TABLE);
-            ClassTable classTable = metadataCalciteGenerator.generateTableMetadata((SqlCreate) context.getQuery());
-            checkRequiredKeys(classTable.getFields());
-            classTable.setNameWithSchema(getTableNameWithSchema(schema, classTable.getName()));
-            context.getRequest().setClassTable(classTable);
+            Entity entity = metadataCalciteGenerator.generateTableMetadata((SqlCreate) context.getQuery());
+            checkRequiredKeys(entity.getFields());
+            context.getRequest().setClassTable(entity);
             context.setDatamartName(schema);
-            getDatamartId(classTable)
+            getDatamartId(entity)
                     .compose(datamartId -> isDatamartTableExists(datamartId, context))
                     .onSuccess(isExists -> createTableIfNotExists(context, isExists)
                             .onSuccess(success -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
@@ -59,7 +58,7 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
         }
     }
 
-    private void checkRequiredKeys(List<ClassField> fields) {
+    private void checkRequiredKeys(List<EntityField> fields) {
         val notExistsKeys = new ArrayList<String>();
         val notExistsPrimaryKeys = fields.stream()
             .noneMatch(f -> f.getPrimaryOrder() != null);
@@ -80,13 +79,13 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
         }
     }
 
-    private Future<Long> getDatamartId(ClassTable classTable) {
+    private Future<Long> getDatamartId(Entity entity) {
         return Future.future((Promise<Long> promise) ->
-                serviceDbFacade.getServiceDbDao().getDatamartDao().findDatamart(classTable.getSchema(), ar -> {
+                serviceDbFacade.getServiceDbDao().getDatamartDao().findDatamart(entity.getSchema(), ar -> {
                     if (ar.succeeded()) {
                         promise.complete(ar.result());
                     } else {
-                        log.error("Error finding datamart [{}]", classTable.getSchema(), ar.cause());
+                        log.error("Error finding datamart [{}]", entity.getSchema(), ar.cause());
                         promise.fail(ar.cause());
                     }
                 }));
@@ -166,7 +165,7 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
                         serviceDbFacade.getServiceDbDao().getEntityDao().findEntity(datamartId, table, promise)));
     }
 
-    private Future<Void> createAttributes(Long entityId, List<ClassField> fields) {
+    private Future<Void> createAttributes(Long entityId, List<EntityField> fields) {
         return Future.future((Promise<Void> promise) -> {
             List<Future> futures = fields.stream().map(it -> Future.future(p -> createAttribute(entityId, it, ar -> {
                 if (ar.succeeded()) {
@@ -182,7 +181,7 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
         });
     }
 
-    private void createAttribute(Long entityId, ClassField field, Handler<AsyncResult<Void>> handler) {
+    private void createAttribute(Long entityId, EntityField field, Handler<AsyncResult<Void>> handler) {
         //TODO this code could be improved
         serviceDbFacade.getServiceDbDao().getAttributeTypeDao().findTypeIdByTypeMnemonic(field.getType().name(), ar -> {
             if (ar.succeeded()) {

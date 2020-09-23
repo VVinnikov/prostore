@@ -5,9 +5,9 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import lombok.val;
 import org.springframework.stereotype.Service;
-import ru.ibs.dtm.common.model.ddl.ClassField;
-import ru.ibs.dtm.common.model.ddl.ClassFieldUtils;
-import ru.ibs.dtm.common.model.ddl.ClassTable;
+import ru.ibs.dtm.common.model.ddl.Entity;
+import ru.ibs.dtm.common.model.ddl.EntityField;
+import ru.ibs.dtm.common.model.ddl.EntityFieldUtils;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.OperationYaml;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.schema.*;
@@ -33,17 +33,17 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
         val spaces = yaml.getSpaces();
         QueryRequest queryRequest = context.getRequest().getQueryRequest();
         String prefix = queryRequest.getSystemName() + "__" + queryRequest.getDatamartMnemonic() + "__";
-        ClassTable classTable = context.getRequest().getClassTable();
-        int indexComma = classTable.getName().indexOf(".");
-        String table = classTable.getName().substring(indexComma + 1).toLowerCase();
+        Entity entity = context.getRequest().getClassTable();
+        int indexComma = entity.getName().indexOf(".");
+        String table = entity.getName().substring(indexComma + 1).toLowerCase();
 
-        spaces.put(prefix + table + ACTUAL_POSTFIX, create(classTable.getFields()));
-        spaces.put(prefix + table + STAGING_POSTFIX, createStagingSpace(classTable.getFields()));
-        spaces.put(prefix + table + HISTORY_POSTFIX, create(classTable.getFields()));
+        spaces.put(prefix + table + ACTUAL_POSTFIX, create(entity.getFields()));
+        spaces.put(prefix + table + STAGING_POSTFIX, createStagingSpace(entity.getFields()));
+        spaces.put(prefix + table + HISTORY_POSTFIX, create(entity.getFields()));
         handler.handle(Future.succeededFuture(yaml));
     }
 
-    public static Space create(List<ClassField> fields) {
+    public static Space create(List<EntityField> fields) {
         List<SpaceIndexPart> primaryKeyParts = getPrimaryKeyParts(fields);
         primaryKeyParts.add(new SpaceIndexPart(SYS_FROM_FIELD, SpaceAttributeTypes.NUMBER.getName(), false));
         return new Space(
@@ -60,13 +60,13 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
                 ));
     }
 
-    private static List<SpaceIndexPart> getPrimaryKeyParts(List<ClassField> fields) {
-        return ClassFieldUtils.getPrimaryKeyList(fields).stream()
+    private static List<SpaceIndexPart> getPrimaryKeyParts(List<EntityField> fields) {
+        return EntityFieldUtils.getPrimaryKeyList(fields).stream()
                 .map(f -> new SpaceIndexPart(f.getName(), SpaceAttributeTypeUtil.toAttributeType(f.getType()).getName(), f.getNullable()))
                 .collect(Collectors.toList());
     }
 
-    public static Space createStagingSpace(List<ClassField> fields) {
+    public static Space createStagingSpace(List<EntityField> fields) {
         return new Space(
                 getStagingAttributes(fields),
                 false,
@@ -81,16 +81,16 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
                 ));
     }
 
-    private static List<String> getShardingKey(List<ClassField> fields) {
-        List<String> sk = ClassFieldUtils.getShardingKeyList(fields).stream().map(ClassField::getName).collect(Collectors.toList());
+    private static List<String> getShardingKey(List<EntityField> fields) {
+        List<String> sk = EntityFieldUtils.getShardingKeyList(fields).stream().map(EntityField::getName).collect(Collectors.toList());
         if (sk.size() == 0) {
             sk = getPrimaryKey(fields);
         }
         return sk;
     }
 
-    private static List<String> getPrimaryKey(List<ClassField> fields) {
-        List<String> sk = ClassFieldUtils.getPrimaryKeyList(fields).stream().map(ClassField::getName).collect(Collectors.toList());
+    private static List<String> getPrimaryKey(List<EntityField> fields) {
+        List<String> sk = EntityFieldUtils.getPrimaryKeyList(fields).stream().map(EntityField::getName).collect(Collectors.toList());
         if (sk.size() == 0) {
             sk = Collections.singletonList(ID);
         }
@@ -98,7 +98,7 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
     }
 
     //Порядок следования снихронизован с AVRO схемой
-    private static List<SpaceAttribute> getAttributes(List<ClassField> fields) {
+    private static List<SpaceAttribute> getAttributes(List<EntityField> fields) {
         List<SpaceAttribute> attributes = fields.stream().map(TtCartridgeSchemaGeneratorImpl::toAttribute).collect(Collectors.toList());
         attributes.addAll(
                 Arrays.asList(
@@ -110,7 +110,7 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
         return attributes;
     }
 
-    private static List<SpaceAttribute> getStagingAttributes(List<ClassField> fields) {
+    private static List<SpaceAttribute> getStagingAttributes(List<EntityField> fields) {
         List<SpaceAttribute> attributes = fields.stream().map(TtCartridgeSchemaGeneratorImpl::toAttribute).collect(Collectors.toList());
         attributes.addAll(
                 Arrays.asList(
@@ -120,7 +120,7 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
         return attributes;
     }
 
-    private static SpaceAttribute toAttribute(ClassField field) {
+    private static SpaceAttribute toAttribute(EntityField field) {
         return new SpaceAttribute(field.getNullable(), field.getName(), SpaceAttributeTypeUtil.toAttributeType(field.getType()));
     }
 

@@ -12,9 +12,9 @@ import org.apache.calcite.tools.Planner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import ru.ibs.dtm.common.model.ddl.ClassField;
-import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
+import ru.ibs.dtm.common.model.ddl.Entity;
+import ru.ibs.dtm.common.model.ddl.EntityField;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import ru.ibs.dtm.query.calcite.core.framework.DtmCalciteFramework;
@@ -61,7 +61,7 @@ class DropTableDdlExecutorTest {
     private QueryResultDdlExecutor dropTableDdlExecutor;
     private DdlRequestContext context;
     private SqlNode query;
-    private ClassTable classTable;
+    private Entity entity;
     private Long datamartId;
     private Long entityId;
     private String schema;
@@ -90,12 +90,12 @@ class DropTableDdlExecutorTest {
         context.setQuery(query);
         datamartId = 1L;
         entityId = 1L;
-        ClassField f1 = new ClassField(0, "id", ColumnType.INT, false, true);
-        ClassField f2 = new ClassField(1, "name", ColumnType.VARCHAR, true, false);
+        EntityField f1 = new EntityField(0, "id", ColumnType.INT, false);
+        EntityField f2 = new EntityField(1, "name", ColumnType.VARCHAR, true);
         f2.setSize(100);
         String sqlNodeName = "accounts";
-        classTable = new ClassTable(sqlNodeName, schema, Arrays.asList(f1, f2));
-        context.getRequest().setClassTable(classTable);
+        entity = new Entity(sqlNodeName, schema, Arrays.asList(f1, f2));
+        context.getRequest().setClassTable(entity);
         context.setDatamartId(datamartId);
     }
 

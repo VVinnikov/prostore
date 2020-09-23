@@ -19,6 +19,11 @@ public class ZookeeperExecutorImpl implements ZookeeperExecutor {
     private final Vertx vertx;
 
     @Override
+    public Future<byte[]> getData(String path) {
+        return getData(path, null, null);
+    }
+
+    @Override
     public Future<byte[]> getData(String path, boolean watch, Stat stat) {
         return execute(zk -> zk.getData(path, watch, stat));
     }
@@ -29,6 +34,11 @@ public class ZookeeperExecutorImpl implements ZookeeperExecutor {
     }
 
     @Override
+    public Future<List<String>> getChildren(String path) {
+        return getChildren(path, null);
+    }
+
+    @Override
     public Future<List<String>> getChildren(String path, Watcher watcher) {
         return execute(zk -> zk.getChildren(path, watcher));
     }
@@ -36,6 +46,16 @@ public class ZookeeperExecutorImpl implements ZookeeperExecutor {
     @Override
     public Future<List<String>> getChildren(String path, boolean watch) {
         return execute(zk -> zk.getChildren(path, watch));
+    }
+
+    @Override
+    public Future<String> createEmptyPersistentPath(String path) {
+        return createPersistentPath(path, new byte[0]);
+    }
+
+    @Override
+    public Future<String> createPersistentPath(String path, byte[] data) {
+        return create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
     }
 
     @Override

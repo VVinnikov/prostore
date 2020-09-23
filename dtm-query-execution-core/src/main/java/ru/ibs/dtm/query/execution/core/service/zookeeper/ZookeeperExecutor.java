@@ -17,6 +17,22 @@ public interface ZookeeperExecutor {
     /**
      * Return the data and the stat of the node of the given path.
      * <p>
+     * If the watch is non-null and the call is successful (no exception is
+     * thrown), a watch will be left on the node with the given path. The watch
+     * will be triggered by a successful operation that sets data on the node, or
+     * deletes the node.
+     * <p>
+     * A KeeperException with error code KeeperException.NoNode will be thrown
+     * if no node with the given path exists.
+     *
+     * @param path    the given path
+     * @return the data of the node
+     */
+    Future<byte[]> getData(String path);
+
+    /**
+     * Return the data and the stat of the node of the given path.
+     * <p>
      * If the watch is true and the call is successful (no exception is
      * thrown), a watch will be left on the node with the given path. The watch
      * will be triggered by a successful operation that sets data on the node, or
@@ -69,6 +85,25 @@ public interface ZookeeperExecutor {
      * if no node with the given path exists.
      *
      * @param path
+     * @return an unordered array of children of the node with the given path
+     */
+    Future<List<String>> getChildren(String path);
+
+    /**
+     * Return the list of the children of the node of the given path.
+     * <p>
+     * If the watch is non-null and the call is successful (no exception is thrown),
+     * a watch will be left on the node with the given path. The watch willbe
+     * triggered by a successful operation that deletes the node of the given
+     * path or creates/delete a child under the node.
+     * <p>
+     * The list of children returned is not sorted and no guarantee is provided
+     * as to its natural or lexical order.
+     * <p>
+     * A KeeperException with error code KeeperException.NoNode will be thrown
+     * if no node with the given path exists.
+     *
+     * @param path
      * @param watcher explicit watcher
      * @return an unordered array of children of the node with the given path
      */
@@ -95,6 +130,10 @@ public interface ZookeeperExecutor {
      */
     Future<List<String>> getChildren(String path,
                                      boolean watch);
+
+    Future<String> createPersistentPath(String path, byte[] data);
+
+    Future<String> createEmptyPersistentPath(String path);
 
     /**
      * Create a node with the given path. The node data will be the given data,

@@ -2,8 +2,8 @@ package ru.ibs.dtm.query.execution.plugin.adqm.service.impl.ddl;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import ru.ibs.dtm.common.model.ddl.ClassField;
-import ru.ibs.dtm.common.model.ddl.ClassTable;
+import ru.ibs.dtm.common.model.ddl.Entity;
+import ru.ibs.dtm.common.model.ddl.EntityField;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
@@ -45,13 +45,13 @@ class TableDdlTest {
         DropTableExecutor dropTableExecutor = new DropTableExecutor(mockExecutor, ddlProperties, appConfiguration);
         CreateTableExecutor executor = new CreateTableExecutor(mockExecutor, ddlProperties, appConfiguration, dropTableExecutor);
 
-        ClassTable tbl = new ClassTable("shares.test",
+        Entity tbl = new Entity("shares.test",
                 Arrays.asList(
-                        new ClassField(0,"test1", "VARCHAR(255)", true, null, null, ""),
-                        new ClassField(1,"test2", "INT", false, 1, null, ""),
-                        new ClassField(2,"test3", "INT", false, 2, null, ""),
-                        new ClassField(3,"test4", "VARCHAR(255)", true, null, 1, ""),
-                        new ClassField(4,"test5", "VARCHAR(255)", true, null, 2, "")
+                        new EntityField(0,"test1", "VARCHAR(255)", true, null, null, ""),
+                        new EntityField(1,"test2", "INT", false, 1, null, ""),
+                        new EntityField(2,"test3", "INT", false, 2, null, ""),
+                        new EntityField(3,"test4", "VARCHAR(255)", true, null, 1, ""),
+                        new EntityField(4,"test5", "VARCHAR(255)", true, null, 2, "")
                 ));
 
         DdlRequestContext context = new DdlRequestContext(new DdlRequest(new QueryRequest(), tbl));
@@ -71,7 +71,7 @@ class TableDdlTest {
                 ));
         DdlExecutor<Void> executor = new DropTableExecutor(mockExecutor, ddlProperties, appConfiguration);
 
-        ClassTable tbl = new ClassTable("shares.test", Collections.emptyList());
+        Entity tbl = new Entity("shares.test", Collections.emptyList());
 
         DdlRequestContext context = new DdlRequestContext(new DdlRequest(new QueryRequest(), tbl));
 

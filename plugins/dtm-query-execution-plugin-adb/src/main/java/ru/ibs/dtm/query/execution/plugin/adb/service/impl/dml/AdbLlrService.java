@@ -52,6 +52,7 @@ public class AdbLlrService implements LlrService<QueryResult> {
 									val key = e.getKey();
 									val rowElement = e.getValue();
 									Object obj;
+									//FIXME drop redundant code
 									if (rowElement instanceof LocalDateTime) {
 										obj = ((LocalDateTime) rowElement).format(DateTimeFormatter.ofPattern(DATETIME_FORMAT_PATTERN));
 									} else if (rowElement instanceof LocalDate) {

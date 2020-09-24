@@ -2,23 +2,23 @@ package ru.ibs.dtm.jdbc.ext;
 
 import lombok.SneakyThrows;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
+import ru.ibs.dtm.jdbc.model.ColumnInfo;
 import ru.ibs.dtm.jdbc.util.DtmException;
 import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
 
-import java.sql.Connection;
-import java.sql.JDBCType;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.Collections;
 import java.util.List;
 
 public class DtmResultSetMetaData implements ResultSetMetaData {
     protected final Connection connection;
     protected final List<ColumnMetadata> fields;
+    protected final DtmResultSet resultSet;
 
-    public DtmResultSetMetaData(Connection connection, List<ColumnMetadata> fields) {
+    public DtmResultSetMetaData(Connection connection, List<ColumnMetadata> fields, DtmResultSet resultSet) {
         this.connection = connection;
         this.fields = fields == null ? Collections.emptyList() : fields;
+        this.resultSet = resultSet;
     }
 
     @Override
@@ -43,7 +43,7 @@ public class DtmResultSetMetaData implements ResultSetMetaData {
 
     @Override
     public String getSchemaName(int column) {
-        return "";
+        return this.getCol(column).getDatamartMnemonic();
     }
 
     @Override
@@ -68,7 +68,7 @@ public class DtmResultSetMetaData implements ResultSetMetaData {
 
     @Override
     public int isNullable(int column) throws SQLException {
-        return 1;
+        return this.getCol(column).getNullable() ? 1 : 0;
     }
 
     @Override
@@ -78,22 +78,22 @@ public class DtmResultSetMetaData implements ResultSetMetaData {
 
     @Override
     public int getColumnDisplaySize(int column) throws SQLException {
-        return 0;
+        return 80;
     }
 
     @Override
     public int getPrecision(int column) throws SQLException {
-        return 0;
+        return this.getCol(column).getLength();
     }
 
     @Override
     public int getScale(int column) throws SQLException {
-        return 0;
+        return this.getCol(column).getAccuracy();
     }
 
     @Override
     public String getTableName(int column) throws SQLException {
-        return null;
+        return this.getCol(column).getEntityMnemonic();
     }
 
     @Override
@@ -148,5 +148,9 @@ public class DtmResultSetMetaData implements ResultSetMetaData {
     @Override
     public boolean isWrapperFor(Class<?> iface) throws SQLException {
         return false;
+    }
+
+    private ColumnInfo getCol(int column) {
+        return (ColumnInfo)this.resultSet.getColumns().get(column - 1);
     }
 }

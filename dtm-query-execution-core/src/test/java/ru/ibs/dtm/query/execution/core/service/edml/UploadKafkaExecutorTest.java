@@ -35,13 +35,10 @@ import ru.ibs.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
-import ru.ibs.dtm.query.execution.plugin.api.request.StatusRequest;
-import ru.ibs.dtm.query.execution.plugin.api.status.StatusRequestContext;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoField;
 import java.util.*;
-import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -696,7 +693,7 @@ class UploadKafkaExecutorTest {
                 .end(endOffset)
                 .lag(0L)
                 .offset(offset)
-                .endMessageTime(lastCommitTime)
+                .lastMessageTime(lastCommitTime)
                 .lastCommitTime(lastCommitTime)
                 .partition(1)
                 .build();

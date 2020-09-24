@@ -97,7 +97,7 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
         return sk;
     }
 
-    //Порядок следования снихронизован с AVRO схемой
+    //The order is synchronized with the AVRO scheme
     private static List<SpaceAttribute> getAttributes(List<EntityField> fields) {
         List<SpaceAttribute> attributes = fields.stream().map(TtCartridgeSchemaGeneratorImpl::toAttribute).collect(Collectors.toList());
         attributes.addAll(

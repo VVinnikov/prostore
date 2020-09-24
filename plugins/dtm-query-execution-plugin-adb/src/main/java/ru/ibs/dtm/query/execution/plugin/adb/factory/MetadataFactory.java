@@ -5,22 +5,22 @@ import io.vertx.core.Handler;
 import ru.ibs.dtm.common.model.ddl.Entity;
 
 /**
- * Исполнитель метаданных
+ * Metadata executor
  */
 public interface MetadataFactory {
-  /**
-   * Применить физическую модель на БД
-   *
-   * @param entity физическая модель
-   * @param handler    обработчик
-   */
-  void apply(Entity entity, Handler<AsyncResult<Void>> handler);
+    /**
+     * Apply the physical model to the database
+     *
+     * @param entity  physical model
+     * @param handler Handler
+     */
+    void apply(Entity entity, Handler<AsyncResult<Void>> handler);
 
-  /**
-   * Удалить физическую модель из БД
-   *
-   * @param entity физическая модель
-   * @param handler    обработчик
-   */
-  void purge(Entity entity, Handler<AsyncResult<Void>> handler);
+    /**
+     * Remove physical model from database
+     *
+     * @param entity  physical model
+     * @param handler Handler
+     */
+    void purge(Entity entity, Handler<AsyncResult<Void>> handler);
 }

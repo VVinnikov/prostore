@@ -28,7 +28,7 @@ public abstract class DtmTable extends AbstractQueryableTable implements Transla
 
     @Override
     public <T> Queryable<T> asQueryable(QueryProvider queryProvider, SchemaPlus schema, String tableName) {
-        //TODO: доделать в задаче исполнения запроса
+        //TODO: complete the task of executing the request
         return null;
     }
 
@@ -39,10 +39,10 @@ public abstract class DtmTable extends AbstractQueryableTable implements Transla
                 .forEach(it -> builder.add(
                         it.getMnemonic(),
                         CalciteUtil.valueOf(it.getType().getValue())
-                        //FIXME реализовать выставление атрибутов precision и scale из length и accuracy
+                        //FIXME implement setting the precision and scale attributes from length and accuracy
                         //it.getLength(),
                         //it.getAccuracy()
-                ).nullable(it.getNullable()));//FIXME добавить выставление признака nullable из атрибутов
+                ).nullable(it.getNullable()));
         return builder.build();
     }
 

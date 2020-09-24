@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.zookeeper.*;
 import org.springframework.beans.factory.annotation.Value;
 import ru.ibs.dtm.async.AsyncUtils;
+import ru.ibs.dtm.query.execution.core.dao.exception.DatamartAlreadyExistsException;
+import ru.ibs.dtm.query.execution.core.dao.exception.DatamartNotExistsException;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartInfo;
 import ru.ibs.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
@@ -14,6 +16,7 @@ import ru.ibs.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -35,17 +38,23 @@ public class DatamartDaoImpl implements DatamartDao<String> {
                 if (error instanceof KeeperException.NodeExistsException) {
                     return envPath;
                 } else {
-                    throw error(error, String.format("Can't create datamart [%s]", name));
+                    throw error(error,
+                        String.format("Can't create datamart [%s]", name),
+                        RuntimeException::new);
                 }
             })
             .compose(r -> executor.multi(getCreateDatamartOps(getTargetPath(name))))
             .otherwise(error -> {
                 if (error instanceof KeeperException.NodeExistsException) {
                     if (isDatamartExists((KeeperException) error)) {
-                        throw error(error, String.format("Datamart [%s] already exists!", name));
+                        throw error(error,
+                            String.format("Datamart [%s] already exists!", name),
+                            DatamartAlreadyExistsException::new);
                     }
                 }
-                throw error(error, String.format("Can't create datamart [%s]", name));
+                throw error(error,
+                    String.format("Can't create datamart [%s]", name),
+                    RuntimeException::new);
             })
             .compose(AsyncUtils::toEmptyVoidFuture)
             .onSuccess(s -> log.info("Datamart [{}] successfully created", name));
@@ -81,9 +90,13 @@ public class DatamartDaoImpl implements DatamartDao<String> {
         return executor.getChildren(envPath)
             .otherwise(error -> {
                 if (error instanceof KeeperException.NoNodeException) {
-                    throw error(error, String.format("Env [%s] not exists", envPath));
+                    throw error(error,
+                        String.format("Env [%s] not exists", envPath),
+                        RuntimeException::new);
                 } else {
-                    throw error(error, "Can't get datamarts");
+                    throw error(error,
+                        "Can't get datamarts",
+                        RuntimeException::new);
                 }
             });
     }
@@ -93,9 +106,13 @@ public class DatamartDaoImpl implements DatamartDao<String> {
         return executor.getData(getTargetPath(name))
             .otherwise(error -> {
                 if (error instanceof KeeperException.NoNodeException) {
-                    throw error(error, String.format("Datamart [%s] not exists", name));
+                    throw error(error,
+                        String.format("Datamart [%s] not exists", name),
+                        DatamartNotExistsException::new);
                 } else {
-                    throw error(error, String.format("Can't get datamarts [%s]", name));
+                    throw error(error,
+                        String.format("Can't get datamarts [%s]", name),
+                        RuntimeException::new);
                 }
             });
     }
@@ -105,17 +122,23 @@ public class DatamartDaoImpl implements DatamartDao<String> {
         return executor.deleteRecursive(getTargetPath(name))
             .otherwise(error -> {
                 if (error instanceof IllegalArgumentException) {
-                    throw error(error, String.format("Datamart [%s] does not exists!", name));
+                    throw error(error,
+                        String.format("Datamart [%s] does not exists!", name),
+                        DatamartNotExistsException::new);
                 } else {
-                    throw error(error, String.format("Can't delete datamarts [%s]", name));
+                    throw error(error,
+                        String.format("Can't delete datamarts [%s]", name),
+                        RuntimeException::new);
                 }
             })
             .onSuccess(s -> log.info("Datamart [{}] successfully removed", name));
     }
 
-    private RuntimeException error(Throwable error, String errMsg) {
+    private RuntimeException error(Throwable error,
+                                   String errMsg,
+                                   BiFunction<String, Throwable, RuntimeException> errFunc) {
         log.error(errMsg, error);
-        return new RuntimeException(errMsg, error);
+        return errFunc.apply(errMsg, error);
     }
 
     @Override

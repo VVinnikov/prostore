@@ -12,12 +12,16 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 import ru.ibs.dtm.async.AsyncUtils;
 import ru.ibs.dtm.common.model.ddl.Entity;
+import ru.ibs.dtm.query.execution.core.dao.exception.DatamartNotExistsException;
+import ru.ibs.dtm.query.execution.core.dao.exception.EntityAlreadyExistsException;
+import ru.ibs.dtm.query.execution.core.dao.exception.EntityNotExistsException;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
 import ru.ibs.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -54,15 +58,19 @@ public class EntityDaoImpl implements EntityDao<Entity> {
                     String errMsg;
                     if (error instanceof KeeperException.NoNodeException) {
                         errMsg = String.format("Datamart [%s] not exists", entity.getSchema());
+                        throw error(error, errMsg, DatamartNotExistsException::new);
                     } else if (error instanceof KeeperException.NodeExistsException) {
                         errMsg = String.format("Entity [%s] already exists", entity.getNameWithSchema());
+                        throw error(error, errMsg, EntityAlreadyExistsException::new);
                     } else {
                         errMsg = String.format("Can't create entity [%s]", entity.getNameWithSchema());
+                        throw error(error, errMsg, RuntimeException::new);
                     }
-                    throw error(error, errMsg);
                 });
         } catch (JsonProcessingException e) {
-            return Future.failedFuture(error(e, String.format("Can't serialize entity [%s]", entity)));
+            return Future.failedFuture(
+                error(e, String.format("Can't serialize entity [%s]", entity), RuntimeException::new)
+            );
         }
     }
 
@@ -76,13 +84,16 @@ public class EntityDaoImpl implements EntityDao<Entity> {
                     String errMsg;
                     if (error instanceof KeeperException.NoNodeException) {
                         errMsg = String.format("Entity [%s] not exists", entity.getNameWithSchema());
+                        throw error(error, errMsg, EntityNotExistsException::new);
                     } else {
                         errMsg = String.format("Can't update entity [%s]", entity.getNameWithSchema());
+                        throw error(error, errMsg, RuntimeException::new);
                     }
-                    throw error(error, errMsg);
                 });
         } catch (JsonProcessingException e) {
-            return Future.failedFuture(error(e, String.format("Can't serialize entity [%s]", entity)));
+            return Future.failedFuture(
+                error(e, String.format("Can't serialize entity [%s]", entity), RuntimeException::new)
+            );
         }
     }
 
@@ -95,10 +106,11 @@ public class EntityDaoImpl implements EntityDao<Entity> {
                 String errMsg;
                 if (error instanceof KeeperException.NoNodeException) {
                     errMsg = String.format("Entity [%s] not exists", nameWithSchema);
+                    throw error(error, errMsg, EntityNotExistsException::new);
                 } else {
                     errMsg = String.format("Can't delete entity [%s]", nameWithSchema);
+                    throw error(error, errMsg, RuntimeException::new);
                 }
-                throw error(error, errMsg);
             });
     }
 
@@ -110,17 +122,20 @@ public class EntityDaoImpl implements EntityDao<Entity> {
                 try {
                     return DatabindCodec.mapper().readValue(entityData, Entity.class);
                 } catch (IOException e) {
-                    throw error(e, String.format("Can't deserialize entity [%s]", nameWithSchema));
+                    throw error(e,
+                        String.format("Can't deserialize entity [%s]", nameWithSchema),
+                        RuntimeException::new);
                 }
             })
             .otherwise(error -> {
                 String errMsg;
                 if (error instanceof KeeperException.NoNodeException) {
                     errMsg = String.format("Entity [%s] not exists", nameWithSchema);
+                    throw error(error, errMsg, EntityNotExistsException::new);
                 } else {
                     errMsg = String.format("Can't get entity [%s]", nameWithSchema);
+                    throw error(error, errMsg, RuntimeException::new);
                 }
-                throw error(error, errMsg);
             });
     }
 
@@ -131,17 +146,20 @@ public class EntityDaoImpl implements EntityDao<Entity> {
                 String errMsg;
                 if (error instanceof KeeperException.NoNodeException) {
                     errMsg = String.format("Datamart [%s] not exists", datamartMnemonic);
+                    throw error(error, errMsg, DatamartNotExistsException::new);
                 } else {
                     errMsg = String.format("Can't get entity names by datamartMnemonic [%s]", datamartMnemonic);
+                    throw error(error, errMsg, RuntimeException::new);
                 }
-                throw error(error, errMsg);
             });
     }
 
 
-    private RuntimeException error(Throwable error, String errMsg) {
+    private RuntimeException error(Throwable error,
+                                   String errMsg,
+                                   BiFunction<String, Throwable, RuntimeException> errFunc) {
         log.error(errMsg, error);
-        return new RuntimeException(errMsg, error);
+        return errFunc.apply(errMsg, error);
     }
 
     @Override

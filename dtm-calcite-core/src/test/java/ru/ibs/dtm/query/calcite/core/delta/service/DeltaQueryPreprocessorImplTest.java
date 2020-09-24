@@ -14,7 +14,6 @@ import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.tools.FrameworkConfig;
-import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Planner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,6 +25,7 @@ import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.common.service.DeltaService;
 import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
+import ru.ibs.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
 import ru.ibs.dtm.query.calcite.core.service.impl.CalciteDefinitionService;
@@ -60,9 +60,9 @@ class DeltaQueryPreprocessorImplTest {
                 .setQuotedCasing(Casing.TO_LOWER)
                 .setQuoting(Quoting.DOUBLE_QUOTE)
                 .build();
-        Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        planner = Frameworks.getPlanner(frameworkConfig);
+        planner = DtmCalciteFramework.getPlanner(frameworkConfig);
         deltaQueryPreprocessor = new DeltaQueryPreprocessorImpl(definitionService, deltaService);
     }
 

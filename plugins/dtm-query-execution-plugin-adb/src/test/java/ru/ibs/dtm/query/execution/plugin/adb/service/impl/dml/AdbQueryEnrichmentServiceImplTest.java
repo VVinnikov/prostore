@@ -89,8 +89,8 @@ public class AdbQueryEnrichmentServiceImplTest {
     @Test
     void enrichWithDeltaNum() {
         EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaNum(
-                "select *, CASE WHEN (account_type = 'D' AND  amount >= 0) " +
-                        "OR (account_type = 'C' AND  amount <= 0) THEN 'OK' ELSE 'NOT OK   ' END\n" +
+                "select *, (CASE WHEN (account_type = 'D' AND  amount >= 0) " +
+                        "OR (account_type = 'C' AND  amount <= 0) THEN 'OK' ELSE 'NOT OK' END) as c\n" +
                         "  from (\n" +
                         "    select a.account_id, coalesce(sum(amount),0) amount, account_type\n" +
                         "    from shares.accounts a\n" +
@@ -113,6 +113,30 @@ public class AdbQueryEnrichmentServiceImplTest {
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
     }
+
+    @Test
+    void enrichWithStaticCaseExpressions() {
+        EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaNum(
+                "select a.account_id, (case when a.account_type = 'D' then 'ok' else 'not ok' end) as ss " +
+                        "from shares.accounts a ");
+        String[] result = {""};
+
+        TestSuite suite = TestSuite.create("the_test_suite");
+        suite.test("executeQuery", context -> {
+            Async async = context.async();
+            adbQueryEnrichmentService.enrich(enrichQueryRequest, ar -> {
+                if (ar.succeeded()) {
+                    result[0] = ar.result();
+                    assertGrep(result[0], "CASE WHEN account_type = 'D' THEN 'ok' ELSE 'not ok' END AS ss");
+                    assertGrep(result[0], "sys_from <= 1 AND sys_to >= 1");
+                }
+                async.complete();
+            });
+            async.awaitSuccess();
+        });
+        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+    }
+
 
     @Test
     void enrichWithDeltaInterval() {
@@ -213,8 +237,6 @@ public class AdbQueryEnrichmentServiceImplTest {
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
     }
-
-
 
     @Test
     void enfichWithMultipleLogicalSchema() {

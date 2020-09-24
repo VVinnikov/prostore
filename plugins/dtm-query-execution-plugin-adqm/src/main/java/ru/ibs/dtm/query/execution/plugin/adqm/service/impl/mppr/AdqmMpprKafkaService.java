@@ -5,6 +5,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.plugin.adqm.dto.EnrichQueryRequest;
@@ -23,7 +24,7 @@ public class AdqmMpprKafkaService implements MpprKafkaService<QueryResult> {
     private final MpprKafkaConnectorService mpprKafkaConnectorService;
     private final MpprKafkaConnectorRequestFactory requestFactory;
 
-    public AdqmMpprKafkaService(QueryEnrichmentService queryEnrichmentService,
+    public AdqmMpprKafkaService(@Qualifier("adqmQueryEnrichmentService") QueryEnrichmentService queryEnrichmentService,
                                 MpprKafkaConnectorService mpprKafkaConnectorService,
                                 MpprKafkaConnectorRequestFactory requestFactory) {
         this.adqmQueryEnrichmentService = queryEnrichmentService;

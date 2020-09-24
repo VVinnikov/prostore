@@ -52,6 +52,8 @@ public class RestConsumerMonitorImpl implements KafkaConsumerMonitor {
                                 .end(statusResponse.getProducerOffset())
                                 .lastCommitTime(new Date(statusResponse.getLastCommitTime()).toInstant()
                                         .atZone(ZoneId.systemDefault()).toLocalDateTime())
+                                .lastMessageTime(new Date(statusResponse.getLastMessageTime()).toInstant()
+                                        .atZone(ZoneId.systemDefault()).toLocalDateTime())
                                 .build();
                         p.complete(kafkaPartitionInfo);
                     } else {

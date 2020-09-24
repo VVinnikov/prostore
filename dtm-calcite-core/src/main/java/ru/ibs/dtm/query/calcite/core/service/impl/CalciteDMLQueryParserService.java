@@ -10,6 +10,9 @@ import ru.ibs.dtm.common.dto.QueryParserRequest;
 import ru.ibs.dtm.common.dto.QueryParserResponse;
 import ru.ibs.dtm.query.calcite.core.provider.CalciteContextProvider;
 import ru.ibs.dtm.query.calcite.core.service.QueryParserService;
+import ru.ibs.dtm.query.execution.model.metadata.Datamart;
+
+import java.util.List;
 
 @Slf4j
 public abstract class CalciteDMLQueryParserService implements QueryParserService {
@@ -26,7 +29,7 @@ public abstract class CalciteDMLQueryParserService implements QueryParserService
     public void parse(QueryParserRequest request, Handler<AsyncResult<QueryParserResponse>> asyncResultHandler) {
         vertx.executeBlocking(it -> {
             try {
-                val context = contextProvider.context(request.getSchema());
+                val context = contextProvider.context(extendSchemes(request.getSchema()));
                 try {
                     val sql = request.getQueryRequest().getSql();
                     val parse = context.getPlanner().parse(sql);
@@ -57,5 +60,9 @@ public abstract class CalciteDMLQueryParserService implements QueryParserService
                 asyncResultHandler.handle(Future.failedFuture(ar.cause()));
             }
         });
+    }
+
+    protected List<Datamart> extendSchemes(List<Datamart> datamarts) {
+        return datamarts;
     }
 }

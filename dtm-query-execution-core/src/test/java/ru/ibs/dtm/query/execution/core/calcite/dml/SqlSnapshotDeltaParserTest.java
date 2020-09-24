@@ -7,13 +7,13 @@ import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.tools.FrameworkConfig;
-import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Planner;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.delta.DeltaInterval;
 import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import ru.ibs.dtm.query.calcite.core.extension.snapshot.SqlSnapshot;
+import ru.ibs.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -28,9 +28,9 @@ public class SqlSnapshotDeltaParserTest {
 
     @Test
     void parseSnapshotWithDeltaDateTime() throws SqlParseException {
-        Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        Planner planner = Frameworks.getPlanner(frameworkConfig);
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
 
         SqlNode sqlNode = planner.parse("select * from test.pso FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14'");
         assertNotNull(sqlNode);
@@ -41,9 +41,9 @@ public class SqlSnapshotDeltaParserTest {
 
     @Test
     void parseSnapshotWithLatestUncommitedDelta() throws SqlParseException {
-        Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        Planner planner = Frameworks.getPlanner(frameworkConfig);
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
 
         SqlNode sqlNode = planner.parse("select * from test.pso FOR SYSTEM_TIME AS OF LATEST_UNCOMMITED_DELTA");
         assertTrue(((SqlSnapshot) ((SqlSelect) sqlNode).getFrom()).getLatestUncommitedDelta());
@@ -52,9 +52,9 @@ public class SqlSnapshotDeltaParserTest {
 
     @Test
     void parseSnapshotWithStartedInInterval() throws SqlParseException {
-        Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        Planner planner = Frameworks.getPlanner(frameworkConfig);
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
         DeltaInterval startedInterval = new DeltaInterval(1L, 3L);
         SqlNode sqlNode = planner.parse("select * from test.pso FOR SYSTEM_TIME STARTED IN (1,3)");
         assertNull(((SqlSnapshot) ((SqlSelect) sqlNode).getFrom()).getFinishedInterval());
@@ -66,9 +66,9 @@ public class SqlSnapshotDeltaParserTest {
 
     @Test
     void parseSnapshotWithIncorrectStartedInInterval() {
-        Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        Planner planner = Frameworks.getPlanner(frameworkConfig);
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
         Assertions.assertThrows(SqlParseException.class, () -> {
             SqlNode sqlNode = planner.parse("select * from test.pso FOR SYSTEM_TIME STARTED IN (5,3)");
         });
@@ -85,9 +85,9 @@ public class SqlSnapshotDeltaParserTest {
 
     @Test
     void parseSnapshotWithFinishedInInterval() throws SqlParseException {
-        Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        Planner planner = Frameworks.getPlanner(frameworkConfig);
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
         DeltaInterval finishedInterval = new DeltaInterval(1L, 3L);
         SqlNode sqlNode = planner.parse("select * from test.pso FOR SYSTEM_TIME FINISHED IN (1,3)");
         assertNull(((SqlSnapshot) ((SqlSelect) sqlNode).getFrom()).getStartedInterval());
@@ -99,9 +99,9 @@ public class SqlSnapshotDeltaParserTest {
 
     @Test
     void parseSnapshotWithIncorrectFinishedInInterval() {
-        Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        Planner planner = Frameworks.getPlanner(frameworkConfig);
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
         Assertions.assertThrows(SqlParseException.class, () -> {
             SqlNode sqlNode = planner.parse("select * from test.pso FOR SYSTEM_TIME FINISHED IN (5,3)");
         });
@@ -118,9 +118,9 @@ public class SqlSnapshotDeltaParserTest {
 
     @Test
     void parseSnapshotWithDeltaNum() throws SqlParseException {
-        Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        Planner planner = Frameworks.getPlanner(frameworkConfig);
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
 
         SqlNode sqlNode = planner.parse("select * from test.pso FOR SYSTEM_TIME AS OF DELTA_NUM 1");
         assertNotNull(sqlNode);
@@ -131,11 +131,22 @@ public class SqlSnapshotDeltaParserTest {
 
     @Test
     void parseSnaapshotWithIncorrectDeltaNum() {
-        Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        Planner planner = Frameworks.getPlanner(frameworkConfig);
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
         Assertions.assertThrows(SqlParseException.class, () -> {
             SqlNode sqlNode = planner.parse("select * from test.pso FOR SYSTEM_TIME AS OF DELTA_NUM '1'");
         });
+    }
+
+    @Test
+    void parseSelectWithCase() throws SqlParseException {
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
+        FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
+
+        SqlNode sqlNode = planner.parse("select case when id > 1 then 'ok' else 'not ok' end " +
+                " from test.pso FOR SYSTEM_TIME AS OF DELTA_NUM 1");
+        assertNotNull(sqlNode);
     }
 }

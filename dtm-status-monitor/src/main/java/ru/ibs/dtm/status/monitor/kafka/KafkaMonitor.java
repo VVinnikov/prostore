@@ -1,6 +1,5 @@
 package ru.ibs.dtm.status.monitor.kafka;
 
-
 import ru.ibs.dtm.common.status.kafka.StatusRequest;
 import ru.ibs.dtm.common.status.kafka.StatusResponse;
 

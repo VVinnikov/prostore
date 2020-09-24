@@ -16,4 +16,5 @@ public class KafkaPartitionInfo {
     private Long offset;
     private Long lag;
     private LocalDateTime lastCommitTime;
+    private LocalDateTime lastMessageTime;
 }

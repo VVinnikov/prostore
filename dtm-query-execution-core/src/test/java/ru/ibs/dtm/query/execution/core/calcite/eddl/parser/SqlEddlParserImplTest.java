@@ -5,7 +5,6 @@ import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.tools.FrameworkConfig;
-import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Planner;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.plugin.exload.Format;
@@ -13,6 +12,7 @@ import ru.ibs.dtm.common.plugin.exload.Type;
 import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import ru.ibs.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
 import ru.ibs.dtm.query.calcite.core.extension.eddl.*;
+import ru.ibs.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 
 import java.util.HashMap;
@@ -31,9 +31,9 @@ public class SqlEddlParserImplTest {
     @Test
     public void testDropDownloadExtTable() throws SqlParseException {
 
-        Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        Planner planner = Frameworks.getPlanner(frameworkConfig);
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
 
         SqlNode sqlNode = planner.parse("DROP DOWNLOAD EXTERNAL TABLE s");
 
@@ -43,9 +43,9 @@ public class SqlEddlParserImplTest {
     @Test
     public void testCreateDownloadExtTable() throws SqlParseException {
 
-        Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        Planner planner = Frameworks.getPlanner(frameworkConfig);
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
 
         SqlNode sqlNode = planner.parse("CREATE DOWNLOAD EXTERNAL TABLE s (id integer, name varchar(100)) LOCATION 'kafka://zookeeper_host:port/topic_UPPER_case' FORMAT 'avro' CHUNK_SIZE 10");
         assertTrue(sqlNode instanceof SqlCreateDownloadExternalTable);
@@ -58,7 +58,7 @@ public class SqlEddlParserImplTest {
         assertEquals("s",
                 SqlNodeUtils.getOne(sqlCreateDownloadExternalTable, SqlIdentifier.class).getSimple());
         assertEquals("id", ((SqlIdentifier) ((SqlColumnDeclaration) columnList.get(0)).getOperandList().get(0)).getSimple());
-        assertEquals(columns.get("id"), ((SqlDataTypeSpec) ((SqlColumnDeclaration)columnList.get(0))
+        assertEquals(columns.get("id"), ((SqlDataTypeSpec) ((SqlColumnDeclaration) columnList.get(0))
                 .getOperandList().get(1)).getTypeName().getSimple().toLowerCase());
         assertEquals("name", ((SqlIdentifier) ((SqlColumnDeclaration) columnList.get(1)).getOperandList().get(0)).getSimple());
         assertEquals(columns.get("name"), ((SqlDataTypeSpec) ((SqlColumnDeclaration) columnList.get(1))
@@ -76,9 +76,9 @@ public class SqlEddlParserImplTest {
     @Test
     public void testCreateDownloadExtTableInvalidSql() {
 
-        Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        Planner planner = Frameworks.getPlanner(frameworkConfig);
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
 
         assertThrows(SqlParseException.class,
                 () -> planner.parse("CREATE DOWNLOAD EXTERNAL TABLE s (id integer, name varchar(100)) FORMAT 'avro'"));
@@ -87,9 +87,9 @@ public class SqlEddlParserImplTest {
     @Test
     public void testCreateDownloadExtTableInvalidTypeLocationOperator() {
 
-        Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        Planner planner = Frameworks.getPlanner(frameworkConfig);
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
 
         assertThrows(SqlParseException.class,
                 () -> planner.parse("CREATE DOWNLOAD EXTERNAL TABLE s (id integer, name varchar(100)) LOCATION 'kafkaTopic1=test' FORMAT 'avro'"));
@@ -98,9 +98,9 @@ public class SqlEddlParserImplTest {
     @Test
     public void testCreateDownloadExtTableInvalidFormat() {
 
-        Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        Planner planner = Frameworks.getPlanner(frameworkConfig);
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
 
         assertThrows(SqlParseException.class,
                 () -> planner.parse("CREATE DOWNLOAD EXTERNAL TABLE s (id integer, name varchar(100)) LOCATION 'kafkaTopic=test' FORMAT 'avro1'"));
@@ -109,9 +109,9 @@ public class SqlEddlParserImplTest {
     @Test
     public void testCreateDownloadExtTableOmitChunkSize() throws SqlParseException {
 
-        Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        Planner planner = Frameworks.getPlanner(frameworkConfig);
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
 
         SqlNode sqlNode = planner.parse("CREATE DOWNLOAD EXTERNAL TABLE s (id integer, name varchar(100)) LOCATION 'kafka://zookeeper_host:port/topic' FORMAT 'avro'");
         assertTrue(sqlNode instanceof SqlCreateDownloadExternalTable);
@@ -129,9 +129,9 @@ public class SqlEddlParserImplTest {
 
     @Test
     public void testCreateUploadExtTableWithoutMessageLimit() throws SqlParseException {
-        Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        Planner planner = Frameworks.getPlanner(frameworkConfig);
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
         Map<String, String> columns = new HashMap<>();
         columns.put("id", "integer");
         columns.put("name", "varchar");
@@ -163,9 +163,9 @@ public class SqlEddlParserImplTest {
 
     @Test
     public void testCreateUploadExtTable() throws SqlParseException {
-        Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        Planner planner = Frameworks.getPlanner(frameworkConfig);
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
         Map<String, String> columns = new HashMap<>();
         columns.put("id", "integer");
         columns.put("name", "varchar");
@@ -196,18 +196,18 @@ public class SqlEddlParserImplTest {
 
     @Test
     public void testDropUploadExtTable() throws SqlParseException {
-        Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        Planner planner = Frameworks.getPlanner(frameworkConfig);
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
         SqlNode sqlNode = planner.parse("DROP UPLOAD EXTERNAL TABLE s");
         assertTrue(sqlNode instanceof SqlDropUploadExternalTable);
     }
 
     @Test
     void parseDdlWithQuote() throws SqlParseException {
-        Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        Planner planner = Frameworks.getPlanner(frameworkConfig);
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
 
         SqlCreateTable node = (SqlCreateTable) planner.parse("CREATE TABLE a(\"index\" integer)");
         assertTrue(node instanceof SqlCreateTable);

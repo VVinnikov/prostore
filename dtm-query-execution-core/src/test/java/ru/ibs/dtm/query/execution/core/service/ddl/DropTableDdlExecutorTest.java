@@ -8,7 +8,6 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.tools.FrameworkConfig;
-import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Planner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,6 +17,7 @@ import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
+import ru.ibs.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import ru.ibs.dtm.query.execution.core.configuration.jooq.MariaProperties;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
@@ -68,9 +68,9 @@ class DropTableDdlExecutorTest {
 
     @BeforeEach
     void setUp() throws SqlParseException {
-        Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        planner = Frameworks.getPlanner(frameworkConfig);
+        planner = DtmCalciteFramework.getPlanner(frameworkConfig);
         dropTableDdlExecutor = new DropTableDdlExecutor(metadataExecutor,
                 mariaProperties, serviceDbFacade);
         when(serviceDbFacade.getServiceDbDao()).thenReturn(serviceDbDao);

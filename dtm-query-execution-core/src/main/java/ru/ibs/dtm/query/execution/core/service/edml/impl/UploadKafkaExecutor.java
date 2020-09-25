@@ -25,6 +25,7 @@ import ru.ibs.dtm.query.execution.plugin.api.request.StatusRequest;
 import ru.ibs.dtm.query.execution.plugin.api.status.StatusRequestContext;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -82,6 +83,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                     getMppwLoadingStatus(ds, statusRequestContext)
                             .onComplete(chr -> {
                                 if (chr.succeeded()) {
+                                    //todo: Add error checking (try catch and so on)
                                     StatusQueryResult result = chr.result();
                                     updateMppwLoadStatus(mppwLoadStatusResult, result);
                                     if (isMppwLoadedSuccess(result)) {
@@ -254,6 +256,10 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
     }
 
     private boolean checkLastMessageTime(LocalDateTime endMessageTime) {
+        //todo: Remove this. Create normal checks.
+        if (endMessageTime == null) {
+            endMessageTime = LocalDateTime.parse("1970-01-01T00:00:00", DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        }
         LocalDateTime endMessageTimeWithTimeout = endMessageTime.plus(kafkaProperties.getAdmin().getInputStreamTimeoutMs(),
                 ChronoField.MILLI_OF_DAY.getBaseUnit());
         return endMessageTimeWithTimeout.isBefore(LocalDateTime.now());

@@ -22,7 +22,9 @@ import ru.ibs.dtm.status.monitor.config.AppProperties;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -168,35 +170,38 @@ public class KafkaMonitorImpl implements KafkaMonitor {
                     .flatMap(Set::stream)
                     .collect(Collectors.toList());
 
-            Map<TopicPartition, Long> topicPartitionLongMap = offsetProvider.endOffsets(topicPartitions);
-            uncommitedOffsets.putAll(topicPartitionLongMap);
+            synchronized (offsetProvider) {
+                Map<TopicPartition, Long> topicPartitionLongMap = offsetProvider.endOffsets(topicPartitions);
+                uncommitedOffsets.putAll(topicPartitionLongMap);
+            }
 
         } catch (Exception e) {
             log.error("Error updating last offsets for subscribed topic of {} consumer group", consumerGroup, e);
         }
     }
 
-    private long getLastMessageTime(String topic){
+    private long getLastMessageTime(String topic) {
         long lastMessageTime = 0;
 
         List<TopicPartition> partitionsForRequestTopic = lastMessageTimeProvider.partitionsFor(topic).stream()
                 .map(partitionInfo -> new TopicPartition(partitionInfo.topic(), partitionInfo.partition()))
                 .collect(Collectors.toList());
-        lastMessageTimeProvider.assign(partitionsForRequestTopic);
-        lastMessageTimeProvider.seekToEnd(partitionsForRequestTopic);
+        synchronized (lastMessageTimeProvider) {
+            lastMessageTimeProvider.assign(partitionsForRequestTopic);
+            lastMessageTimeProvider.seekToEnd(partitionsForRequestTopic);
 
-        partitionsForRequestTopic.forEach(tp -> {
-            long lastOffset = lastMessageTimeProvider.position(tp);
-            if (lastOffset > 0) {
-                lastMessageTimeProvider.seek(tp, lastOffset - 1);
+            partitionsForRequestTopic.forEach(tp -> {
+                long lastOffset = lastMessageTimeProvider.position(tp);
+                if (lastOffset > 0) {
+                    lastMessageTimeProvider.seek(tp, lastOffset - 1);
+                }
+            });
+
+            ConsumerRecords<byte[], byte[]> records = lastMessageTimeProvider.poll(Duration.ofMillis(100));
+            for (ConsumerRecord<byte[], byte[]> record : records) {
+                lastMessageTime = Math.max(record.timestamp(), lastMessageTime);
             }
-        });
-
-        ConsumerRecords<byte[], byte[]> records = lastMessageTimeProvider.poll(Duration.ofMillis(100));
-        for(ConsumerRecord<byte[], byte[]> record : records) {
-            lastMessageTime = Math.max(record.timestamp(), lastMessageTime);
         }
-
         return lastMessageTime;
     }
 

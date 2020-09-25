@@ -44,7 +44,7 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                 new Field(SCHEMA_NAME_COLUMN, ""),
                 new Field(CATALOG_NAME_COLUMN, "")
         });
-        return new DtmResultSet(connection, result, getMetadata(result));
+        return new DtmResultSet(connection, result, getMetadata(result), Collections.emptyList());
     }
 
     @Override
@@ -53,7 +53,7 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
             List<Field[]> result = connection.protocol.getDatabaseSchemas().stream()
                     .map(schemaInfo -> new Field[]{new Field(CATALOG_NAME_COLUMN, schemaInfo.getMnemonic())})
                     .collect(Collectors.toList());
-            this.catalogs = new DtmResultSet(connection, result, getMetadata(result));
+            this.catalogs = new DtmResultSet(connection, result, getMetadata(result), Collections.emptyList());
         }
         return catalogs;
     }
@@ -93,7 +93,7 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                         new Field(REF_GENERATION_COLUMN, null),
                         new Field(TABLE_OWNER_COLUMN, getUserName())
                 }).collect(Collectors.toList());
-        return new DtmResultSet(connection, result, getMetadata(result));
+        return new DtmResultSet(connection, result, getMetadata(result), Collections.emptyList());
     }
 
     @Override
@@ -103,7 +103,7 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                 new Field(TABLE_TYPE_COLUMN, SYSTEM_VIEW_TYPE),
                 new Field(TABLE_TYPE_COLUMN, VIEW_TYPE)
         });
-        return new DtmResultSet(connection, result, getMetadata(result));
+        return new DtmResultSet(connection, result, getMetadata(result), Collections.emptyList());
     }
 
     @Override
@@ -114,7 +114,7 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
         List<ColumnInfo> columns = new ArrayList<>();
         //Временный костыль что бы пофиксить возможный запрос всех полей в схеме.
         if (tableNamePattern.indexOf('%') != -1) {
-            ResultSet tables = getTables(catalog, schemaPattern, null, null);
+            ResultSet tables = this.getTables(catalog, schemaPattern, null, null);
             while (tables.next()) {
                 final List<ColumnInfo> databaseColumns = connection.protocol.getDatabaseColumns(
                         tables.getString(CATALOG_NAME_COLUMN),
@@ -131,8 +131,8 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                         new Field(SCHEMA_NAME_COLUMN, null),
                         new Field(TABLE_NAME_COLUMN, columnInfo.getEntityMnemonic()),
                         new Field(COLUMN_NAME_COLUMN, columnInfo.getMnemonic()),
-                        new Field(DATA_TYPE_COLUMN, getJavaSqlType(columnInfo.getDataType())),
-                        new Field(TYPE_NAME_COLUMN, columnInfo.getDataType()),
+                        new Field(DATA_TYPE_COLUMN, columnInfo.getDataType().getSqlType()),
+                        new Field(TYPE_NAME_COLUMN, columnInfo.getDataType().getAliases()[0].toUpperCase()),
                         new Field(COLUMN_SIZE_COLUMN, columnInfo.getLength()),
                         new Field(BUFFER_LENGTH_COLUMN, 0),
                         new Field(DECIMAL_DIGITS_COLUMN, columnInfo.getAccuracy()),
@@ -152,15 +152,7 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                         new Field(IS_AUTOINCREMENT_COLUMN, "NO"),
                         new Field(IS_GENERATEDCOLUMN_COLUMN, "NO")
                 }).collect(Collectors.toList());
-        return new DtmResultSet(connection, result, getMetadata(result));
-    }
-
-    private static Integer getJavaSqlType(String dataType) {
-        String dataTypeUpper = dataType != null ?
-                dataType.toUpperCase(Locale.getDefault()) : null;
-        return Arrays.stream(DataBaseType.values())
-                .anyMatch(dataBaseType -> dataBaseType.name().equals(dataTypeUpper)) ?
-                DataBaseType.valueOf(dataTypeUpper).getSqlType() : null;
+        return new DtmResultSet(connection, result, getMetadata(result), columns);
     }
 
     private boolean isNullable(ColumnInfo columnInfo) {

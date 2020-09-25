@@ -2,44 +2,54 @@ package ru.ibs.dtm.jdbc.ext;
 
 import lombok.SneakyThrows;
 import lombok.val;
+import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.jdbc.core.Field;
+import ru.ibs.dtm.jdbc.model.ColumnInfo;
 import ru.ibs.dtm.jdbc.util.DtmException;
 import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
 
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URL;
+import java.sql.Date;
 import java.sql.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class DtmResultSet implements ResultSet {
 
+    private final SimpleDateFormat dateTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+    private final TimeZone defaultDateTimeTimeZone = TimeZone.getDefault();
     private final List<ColumnMetadata> metadata;
     private List<Field[]> fields;
     private int currentRow = -1;
     private Field[] thisRow;
     private Connection connection;
     private ResultSetMetaData rsMetaData;
+    private List<ColumnInfo> columns;
 
-    public DtmResultSet(Connection connection, List<Field[]> fields, List<ColumnMetadata> metadata) {
+    public DtmResultSet(Connection connection, List<Field[]> fields, List<ColumnMetadata> metadata, List<ColumnInfo> columns) {
         this.connection = connection;
         this.fields = fields;
         thisRow = (fields == null || fields.isEmpty()) ?
                 new Field[0] : fields.get(0);
         this.metadata = metadata;
+        this.columns = columns;
     }
 
     public static DtmResultSet createEmptyResultSet() {
         return new DtmResultSet(null,
                 Collections.singletonList(new Field[]{new Field("insert_id", "")}),
-                Collections.emptyList());
+                Collections.emptyList(), Collections.emptyList());
+    }
+
+    public List<ColumnInfo> getColumns() {
+        return columns;
     }
 
     @Override
@@ -70,15 +80,14 @@ public class DtmResultSet implements ResultSet {
     }
 
     @Override
-    public String getString(int columnIndex) {
-        Field field = thisRow[columnIndex - 1];
-        Object value = field.getValue();
+    public String getString(int columnIndex) throws SQLException {
+        Object value = this.getValue(columnIndex);
         return value == null ? null : value.toString();
     }
 
     @Override
-    public String getString(String columnLabel) {
-        return getString(findColumn(columnLabel));
+    public String getString(String columnLabel) throws SQLException {
+        return this.getString(findColumn(columnLabel));
     }
 
 
@@ -104,20 +113,27 @@ public class DtmResultSet implements ResultSet {
     @Override
     public ResultSetMetaData getMetaData() {
         if (rsMetaData == null) {
-            rsMetaData = new DtmResultSetMetaData(connection, metadata);
+            rsMetaData = new DtmResultSetMetaData(connection, metadata, this);
         }
         return rsMetaData;
     }
 
     @Override
-    public Object getObject(int columnIndex) {
-        return thisRow[columnIndex - 1].getValue();
+    public Object getObject(int columnIndex) throws SQLException {
+        return this.getValue(columnIndex);
     }
 
     @Override
-    public Object getObject(String columnLabel) {
-        int column = findColumn(columnLabel);
-        return thisRow[column - 1].getValue();
+    public Object getObject(String columnLabel) throws SQLException {
+        return this.getObject(this.findColumn(columnLabel));
+    }
+
+    private Object getValue(int columnIndex) throws SQLException {
+        Field field = thisRow[columnIndex - 1];
+        if (field == null) {
+            throw new SQLException(String.format("Field for index %s not found!", columnIndex));
+        }
+        return field.getValue();
     }
 
     @Override
@@ -132,67 +148,114 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public boolean getBoolean(int columnIndex) throws SQLException {
-        return false;
+        final Object value = this.getValue(columnIndex);
+        return value != null && (boolean) value;
     }
 
     @Override
     public byte getByte(int columnIndex) throws SQLException {
-        return 0;
+        final Object value = this.getValue(columnIndex);
+        return value == null ? 0 : Byte.parseByte(value.toString());
     }
 
     @Override
     public short getShort(int columnIndex) throws SQLException {
-        return 0;
+        final Object value = this.getValue(columnIndex);
+        return value == null ? 0 : (Short) value;
     }
 
     @Override
     public int getInt(int columnIndex) throws SQLException {
-        Field field = thisRow[columnIndex - 1];
-        return field.getValue() instanceof Integer ? (Integer) field.getValue() : 0;
+        final Object value = this.getValue(columnIndex);
+        return value == null ? 0 : (Integer) value;
     }
 
     @Override
     public long getLong(int columnIndex) throws SQLException {
-        Field field = thisRow[columnIndex - 1];
         //FIXME Dbeaver used this method for received value of INT field
-        return Long.parseLong(field.getValue().toString());
+        final Object value = this.getValue(columnIndex);
+        if (value == null) {
+            return 0L;
+        } else {
+            return Long.parseLong(value.toString());
+        }
     }
 
     @Override
     public float getFloat(int columnIndex) throws SQLException {
-        Field field = thisRow[columnIndex - 1];
-        return (Float) field.getValue();
+        final Object value = this.getValue(columnIndex);
+        return value == null ? 0 : (Float) value;
     }
 
     @Override
     public double getDouble(int columnIndex) throws SQLException {
-        Field field = thisRow[columnIndex - 1];
-        return (Double) field.getValue();
+        String string = this.getString(columnIndex);
+        if (string == null) {
+            return 0.0D;
+        } else {
+            return Double.parseDouble(string);
+        }
     }
 
     @Override
     public BigDecimal getBigDecimal(int columnIndex, int scale) throws SQLException {
-        return null;
+        String string = this.getString(columnIndex);
+        if (string == null) {
+            return null;
+        } else {
+            BigDecimal result = new BigDecimal(string);
+            return result.setScale(scale, RoundingMode.HALF_UP);
+        }
     }
 
     @Override
     public byte[] getBytes(int columnIndex) throws SQLException {
-        return new byte[0];
+        final Object value = this.getValue(columnIndex);
+        return value == null ? new byte[0] : value.toString().getBytes();
     }
 
     @Override
     public Date getDate(int columnIndex) throws SQLException {
-        return null;
+        final Object value = this.getValue(columnIndex);
+        if (value != null && !value.toString().equals("0000-00-00")) {
+            try {
+                return new Date(this.dateFormat.parse(value.toString()).getTime());
+            } catch (ParseException e) {
+                throw new SQLException("Incorrect date value", e);
+            }
+        } else {
+            return null;
+        }
     }
 
     @Override
     public Time getTime(int columnIndex) throws SQLException {
-        return null;
+        Timestamp ts = this.getTimestamp(columnIndex);
+        return ts == null ? null : new Time(ts.getTime());
     }
 
     @Override
     public Timestamp getTimestamp(int columnIndex) throws SQLException {
-        return null;
+        final Long value = getTimestampAsLong(columnIndex);
+        return value == null ? null : new Timestamp(value);
+    }
+
+    private Long getTimestampAsLong(int columnIndex) throws SQLException {
+        final Object value = this.getValue(columnIndex);
+        return this.toTimestamp(value, this.defaultDateTimeTimeZone);
+    }
+
+    private Long toTimestamp(Object value, TimeZone timeZone) {
+        if (value != null && !value.toString().equals("0000-00-00 00:00:00")) {
+            try {
+                this.dateTimeFormat.setTimeZone(timeZone);
+                return this.dateTimeFormat.parse(value.toString()).getTime();
+            } catch (ParseException var4) {
+                throw new RuntimeException(var4);
+            }
+        } else {
+            return null;
+        }
     }
 
     @Override
@@ -212,63 +275,62 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public boolean getBoolean(String columnLabel) throws SQLException {
-        return false;
+        return this.getBoolean(this.findColumn(columnLabel));
     }
 
     @Override
     public byte getByte(String columnLabel) throws SQLException {
-        return 0;
+        return this.getByte(this.findColumn(columnLabel));
     }
 
     @Override
     public short getShort(String columnLabel) throws SQLException {
-        return 0;
+        return this.getShort(this.findColumn(columnLabel));
     }
 
     @Override
     public int getInt(String columnLabel) throws SQLException {
-        return getInt(findColumn(columnLabel));
+        return this.getInt(this.findColumn(columnLabel));
     }
 
     @Override
     public long getLong(String columnLabel) throws SQLException {
-        //FIXME In Dbeaver this method used in receiving length attribute of column
-        return 0;
+        return this.getLong(this.findColumn(columnLabel));
     }
 
     @Override
     public float getFloat(String columnLabel) throws SQLException {
-        return 0;
+        return this.getFloat(this.findColumn(columnLabel));
     }
 
     @Override
     public double getDouble(String columnLabel) throws SQLException {
-        return 0;
+        return this.getDouble(this.findColumn(columnLabel));
     }
 
     @Override
     public BigDecimal getBigDecimal(String columnLabel, int scale) throws SQLException {
-        return null;
+        return this.getBigDecimal(this.findColumn(columnLabel), scale);
     }
 
     @Override
     public byte[] getBytes(String columnLabel) throws SQLException {
-        return new byte[0];
+        return this.getBytes(this.findColumn(columnLabel));
     }
 
     @Override
     public Date getDate(String columnLabel) throws SQLException {
-        return null;
+        return this.getDate(this.findColumn(columnLabel));
     }
 
     @Override
     public Time getTime(String columnLabel) throws SQLException {
-        return null;
+        return this.getTime(this.findColumn(columnLabel));
     }
 
     @Override
     public Timestamp getTimestamp(String columnLabel) throws SQLException {
-        return null;
+        return this.getTimestamp(this.findColumn(columnLabel));
     }
 
     @Override
@@ -313,12 +375,13 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public BigDecimal getBigDecimal(int columnIndex) throws SQLException {
-        return null;
+        String value = this.getString(columnIndex);
+        return value == null ? null : new BigDecimal(value);
     }
 
     @Override
     public BigDecimal getBigDecimal(String columnLabel) throws SQLException {
-        return null;
+        return this.getBigDecimal(this.findColumn(columnLabel));
     }
 
     @Override
@@ -714,24 +777,22 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public Time getTime(int columnIndex, Calendar cal) throws SQLException {
-        val value = (LocalTime) thisRow[columnIndex - 1].getValue();
-        return Time.valueOf(value);
+        return this.getTime(columnIndex);
     }
 
     @Override
     public Time getTime(String columnLabel, Calendar cal) throws SQLException {
-        return null;
+        return this.getTime(this.findColumn(columnLabel), cal);
     }
 
     @Override
     public Timestamp getTimestamp(int columnIndex, Calendar cal) throws SQLException {
-        val value = (LocalDateTime) thisRow[columnIndex - 1].getValue();
-        return Timestamp.valueOf(value);
+        return this.getTimestamp(columnIndex);
     }
 
     @Override
     public Timestamp getTimestamp(String columnLabel, Calendar cal) throws SQLException {
-        return null;
+        return this.getTimestamp(this.findColumn(columnLabel), cal);
     }
 
     @Override

@@ -62,9 +62,9 @@ public class ClassField {
         Matcher matcher = nameWithSizePtn.matcher(typeWithSize);
         if (matcher.find()) {
             this.size = Integer.parseInt(typeWithSize.substring(matcher.start(), matcher.end()));
-            this.type = ColumnType.valueOf(typeWithSize.substring(0, matcher.start() - 1).toUpperCase());
+            this.type = ColumnType.fromTypeString(typeWithSize.substring(0, matcher.start() - 1).toLowerCase());
         } else {
-            this.type = ColumnType.valueOf(typeWithSize.toUpperCase());
+            this.type = ColumnType.fromTypeString(typeWithSize.toLowerCase());
         }
         this.typeWithSize = typeWithSize;
     }

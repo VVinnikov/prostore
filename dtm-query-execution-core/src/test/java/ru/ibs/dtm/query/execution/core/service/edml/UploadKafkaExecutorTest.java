@@ -62,6 +62,8 @@ class UploadKafkaExecutorTest {
     private Integer pluginStatusCheckPeriodMs = 1000;
     private Integer firstOffsetTimeoutMs = 15000;
     private Integer changeOffsetTimeoutMs = 10000;
+    private long msgCommitTimeoutMs = 1000L;
+    private long msgProcessTimeoutMs = 100L;
 
     @BeforeEach
     void setUp() {
@@ -587,8 +589,8 @@ class UploadKafkaExecutorTest {
 
             final Queue<StatusQueryResult> adbStatusResultQueue = new BlockingArrayQueue<>();
             final Queue<StatusQueryResult> adgStatusResultQueue = new BlockingArrayQueue<>();
-            initStatusResultQueue(adbStatusResultQueue, 15, 0);
-            initStatusResultQueue(adgStatusResultQueue, 15, 0);
+            initStatusResultQueueWithOffset(adbStatusResultQueue, 15, 0, 0);
+            initStatusResultQueueWithOffset(adgStatusResultQueue, 15, 0, 0);
 
             when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
             when(edmlProperties.getPluginStatusCheckPeriodMs()).thenReturn(pluginStatusCheckPeriodMs);
@@ -644,27 +646,31 @@ class UploadKafkaExecutorTest {
 
     private void initStatusResultQueue(Queue<StatusQueryResult> adbStatusResultQueue,
                                        long statusResultCount, long endOffset) {
-        long msgProcessTimeoutMs = 1000L;
         final LocalDateTime lastCommitTime = LocalDateTime.now();
+        final LocalDateTime lastMessageTime = LocalDateTime.now();
         LongStream.range(0L, statusResultCount).forEach(key -> {
-            adbStatusResultQueue.add(createStatusQueryResult(lastCommitTime.plus(msgProcessTimeoutMs * key,
-                    ChronoField.MILLI_OF_DAY.getBaseUnit()), endOffset, key));
+            adbStatusResultQueue.add(createStatusQueryResult(
+                    lastMessageTime.plus(msgProcessTimeoutMs * key, ChronoField.MILLI_OF_DAY.getBaseUnit()),
+                    lastCommitTime.plus(msgCommitTimeoutMs * key, ChronoField.MILLI_OF_DAY.getBaseUnit()),
+                    endOffset, key));
         });
     }
 
     private void initStatusResultQueueWithOffset(Queue<StatusQueryResult> adbStatusResultQueue,
                                                  long statusResultCount, long endOffset, long offset) {
-        long msgProcessTimeoutMs = 1000L;
         final LocalDateTime lastCommitTime = LocalDateTime.now();
+        final LocalDateTime lastMessageTime = LocalDateTime.now();
         LongStream.range(0L, statusResultCount).forEach(key -> {
-            adbStatusResultQueue.add(createStatusQueryResult(lastCommitTime.plus(msgProcessTimeoutMs * key,
-                    ChronoField.MILLI_OF_DAY.getBaseUnit()), endOffset, offset));
+            adbStatusResultQueue.add(createStatusQueryResult(
+                    lastMessageTime.plus(msgProcessTimeoutMs * key, ChronoField.MILLI_OF_DAY.getBaseUnit()),
+                    lastCommitTime.plus(msgCommitTimeoutMs * key, ChronoField.MILLI_OF_DAY.getBaseUnit()),
+                    endOffset, offset));
         });
     }
 
-    private StatusQueryResult createStatusQueryResult(LocalDateTime lastCommitTime, long endOffset, long offset) {
+    private StatusQueryResult createStatusQueryResult(LocalDateTime lastMessageTime, LocalDateTime lastCommitTime, long endOffset, long offset) {
         StatusQueryResult statusQueryResult = new StatusQueryResult();
-        KafkaPartitionInfo kafkaPartitionInfo = createKafkaPartitionInfo(lastCommitTime, endOffset, offset);
+        KafkaPartitionInfo kafkaPartitionInfo = createKafkaPartitionInfo(lastMessageTime, lastCommitTime, endOffset, offset);
         statusQueryResult.setPartitionInfo(kafkaPartitionInfo);
         return statusQueryResult;
     }
@@ -686,14 +692,17 @@ class UploadKafkaExecutorTest {
     }
 
     @NotNull
-    private KafkaPartitionInfo createKafkaPartitionInfo(LocalDateTime lastCommitTime, long endOffset, long offset) {
+    private KafkaPartitionInfo createKafkaPartitionInfo(LocalDateTime lastMessageTime,
+                                                        LocalDateTime lastCommitTime,
+                                                        long endOffset,
+                                                        long offset) {
         return KafkaPartitionInfo.builder()
                 .topic("topic")
                 .start(0L)
                 .end(endOffset)
                 .lag(0L)
                 .offset(offset)
-                .lastMessageTime(lastCommitTime)
+                .lastMessageTime(lastMessageTime)
                 .lastCommitTime(lastCommitTime)
                 .partition(1)
                 .build();

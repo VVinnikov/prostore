@@ -95,10 +95,22 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                                         promise.complete(stopFuture);
                                     } else if (isMppwLoadingInitFailure(mppwLoadStatusResult)) {
                                         vertx.cancelTimer(timerId);
-                                        promise.fail(String.format("Plugin %s consumer failed to start", ds));
+                                        MppwStopFuture stopFuture = MppwStopFuture.builder()
+                                                .sourceType(ds)
+                                                .future(stopMppw(ds, mppwRequestContext))
+                                                .cause(new RuntimeException(String.format("Plugin %s consumer failed to start", ds)))
+                                                .stopReason(MppwStopReason.ERROR_RECEIVED)
+                                                .build();
+                                        promise.complete(stopFuture);
                                     } else if (isLastOffsetNotIncrease(mppwLoadStatusResult)) {
                                         vertx.cancelTimer(timerId);
-                                        promise.fail(String.format("Plugin %s consumer offset stopped dead", ds));
+                                        MppwStopFuture stopFuture = MppwStopFuture.builder()
+                                                .sourceType(ds)
+                                                .future(stopMppw(ds, mppwRequestContext))
+                                                .cause(new RuntimeException(String.format("Plugin %s consumer offset stopped dead", ds)))
+                                                .stopReason(MppwStopReason.ERROR_RECEIVED)
+                                                .build();
+                                        promise.complete(stopFuture);
                                     }
                                 } else {
                                     log.error("Error getting plugin status: {}", ds, chr.cause());
@@ -242,9 +254,9 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
     }
 
     private boolean checkLastMessageTime(LocalDateTime endMessageTime) {
-        LocalDateTime commitTimeWithTimeout = endMessageTime.plus(kafkaProperties.getAdmin().getInputStreamTimeoutMs(),
+        LocalDateTime endMessageTimeWithTimeout = endMessageTime.plus(kafkaProperties.getAdmin().getInputStreamTimeoutMs(),
                 ChronoField.MILLI_OF_DAY.getBaseUnit());
-        return commitTimeWithTimeout.isAfter(LocalDateTime.now());
+        return endMessageTimeWithTimeout.isBefore(LocalDateTime.now());
     }
 
     @Override

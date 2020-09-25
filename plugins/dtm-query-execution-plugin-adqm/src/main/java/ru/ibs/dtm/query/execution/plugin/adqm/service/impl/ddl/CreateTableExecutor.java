@@ -72,7 +72,7 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
 
     @Override
     public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<Void>> handler) {
-        Entity tbl = context.getRequest().getClassTable();
+        Entity tbl = context.getRequest().getEntity();
         DdlRequestContext dropCtx = new DdlRequestContext(new DdlRequest(new QueryRequest(), tbl));
 
         dropTableExecutor.execute(dropCtx, SqlKind.DROP_TABLE.lowerName, ar -> createTable(tbl).onComplete(handler));

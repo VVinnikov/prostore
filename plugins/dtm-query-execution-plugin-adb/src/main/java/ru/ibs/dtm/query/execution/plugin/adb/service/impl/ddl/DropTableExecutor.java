@@ -5,8 +5,6 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.ddl.SqlDropTable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -32,7 +30,7 @@ public class DropTableExecutor implements DdlExecutor<Void> {
     @Override
     public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<Void>> handler) {
         try {
-            String dropSql = sqlFactory.createDropTableScript(context.getRequest().getClassTable());
+            String dropSql = sqlFactory.createDropTableScript(context.getRequest().getEntity());
             adbQueryExecutor.executeUpdate(dropSql, handler);
         } catch (Exception e) {
             log.error("Error executing drop table query!", e);

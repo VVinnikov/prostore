@@ -17,11 +17,11 @@ public class DdlRequest extends DatamartRequest {
 		this.entity = entity;
 	}
 
-	public Entity getClassTable() {
+	public Entity getEntity() {
 		return entity;
 	}
 
-	public void setClassTable(Entity entity) {
+	public void setEntity(Entity entity) {
 		this.entity = entity;
 	}
 

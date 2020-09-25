@@ -50,7 +50,7 @@ public class DropTableExecutor implements DdlExecutor<Void> {
         val tableNames = adgHelperTableNamesFactory.create(
                 context.getRequest().getQueryRequest().getSystemName(),
                 context.getRequest().getQueryRequest().getDatamartMnemonic(),
-                context.getRequest().getClassTable().getName());
+                context.getRequest().getEntity().getName());
 
 
 

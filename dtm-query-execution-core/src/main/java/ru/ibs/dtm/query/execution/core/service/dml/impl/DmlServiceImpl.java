@@ -7,6 +7,7 @@ import lombok.SneakyThrows;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import ru.ibs.dtm.common.dto.QueryParserRequest;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.reader.QuerySourceRequest;
@@ -113,14 +114,14 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
     private Future<QueryResult> pluginExecute(QuerySourceRequest request) {
         return Future.future(p -> dataSourcePluginService.llr(
             request.getQueryRequest().getSourceType(),
-            new LlrRequestContext(new LlrRequest(request.getQueryRequest(), request.getLogicalSchema())),
-            p));
+            new LlrRequestContext(new LlrRequest(request.getQueryRequest(), request.getLogicalSchema())), p));
 
     }
 
     private Future<QueryResult> setColumnMetaData(QuerySourceRequest request, QueryResult queryResult) {
         return Future.future(p -> {
-            columnMetadataService.getColumnMetadata(request, ar -> {
+            val parserRequest = new QueryParserRequest(request.getQueryRequest(), request.getLogicalSchema());
+            columnMetadataService.getColumnMetadata(parserRequest, ar -> {
                 if (ar.succeeded()) {
                     queryResult.setMetadata(ar.result());
                     p.complete(queryResult);

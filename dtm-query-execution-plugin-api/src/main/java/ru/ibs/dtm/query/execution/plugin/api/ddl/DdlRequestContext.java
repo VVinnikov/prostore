@@ -14,26 +14,25 @@ import static ru.ibs.dtm.query.execution.plugin.api.service.SqlProcessingType.DD
 @ToString
 public class DdlRequestContext extends RequestContext<DdlRequest> {
 
-	private DdlType ddlType;
-	private String datamartName;
-	private Long datamartId;
-	private SqlNode query;
-	private String systemName;
+    private DdlType ddlType;
+    private String datamartName;
+    private SqlNode query;
+    private String systemName;
 
-	public DdlRequestContext(final DdlRequest request) {
-		this(request, null);
-	}
+    public DdlRequestContext(final DdlRequest request) {
+        this(request, null);
+    }
 
-	public DdlRequestContext(final DdlRequest request, final SqlNode query) {
-		super(request);
-		this.ddlType = UNKNOWN;
-		this.query = query;
-		this.systemName = "local";
-	}
+    public DdlRequestContext(final DdlRequest request, final SqlNode query) {
+        super(request);
+        this.ddlType = UNKNOWN;
+        this.query = query;
+        this.systemName = "local";
+    }
 
-	@Override
-	public SqlProcessingType getProcessingType() {
-		return DDL;
-	}
+    @Override
+    public SqlProcessingType getProcessingType() {
+        return DDL;
+    }
 
 }

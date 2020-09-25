@@ -7,7 +7,7 @@ import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartInfo;
 
 import java.util.List;
 
-public interface DatamartDao<T> extends ZkDao<T> {
+public interface DatamartDao extends ZkDao<String> {
     Future<Void> createDatamart(String name);
 
     void getDatamartMeta(Handler<AsyncResult<List<DatamartInfo>>> resultHandler);
@@ -15,6 +15,8 @@ public interface DatamartDao<T> extends ZkDao<T> {
     Future<List<String>> getDatamarts();
 
     Future<?> getDatamart(String name);
+
+    Future<Boolean> existsDatamart(String name);
 
     Future<Void> deleteDatamart(String name);
 }

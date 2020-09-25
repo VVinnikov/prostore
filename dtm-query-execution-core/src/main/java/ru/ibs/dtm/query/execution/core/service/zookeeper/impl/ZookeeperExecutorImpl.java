@@ -98,6 +98,11 @@ public class ZookeeperExecutorImpl implements ZookeeperExecutor {
     }
 
     @Override
+    public Future<Boolean> exists(String path) {
+        return execute(zk -> zk.exists(path, false) != null);
+    }
+
+    @Override
     public Future<Void> executeVoid(ThrowableConsumer<ZooKeeper> consumer) {
         return Future.future(promise -> vertx.executeBlocking(blockingPromise -> {
             try {

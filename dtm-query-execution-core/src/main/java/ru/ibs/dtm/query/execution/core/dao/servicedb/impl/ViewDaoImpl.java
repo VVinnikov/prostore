@@ -88,7 +88,6 @@ public class ViewDaoImpl implements ViewDao {
                 resultSet.getRows().forEach(row -> {
                     viewRecords.add(
                         new DatamartView(row.getString(VIEWS_REGISTRY.VIEW_NAME.getName()),
-                            row.getLong(VIEWS_REGISTRY.DATAMART_ID.getName()),
                             row.getString(VIEWS_REGISTRY.QUERY.getName())));
                 });
                 resultHandler.handle(Future.succeededFuture(viewRecords));

@@ -1,6 +1,9 @@
 package ru.ibs.dtm.query.execution.core.service.schema.impl;
 
-import io.vertx.core.*;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -13,11 +16,13 @@ import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.dto.DatamartInfo;
 import ru.ibs.dtm.common.dto.schema.DatamartSchemaKey;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
+import ru.ibs.dtm.common.model.ddl.Entity;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.calcite.core.node.SqlSelectTree;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.calcite.core.util.DeltaInformationExtractor;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
+import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
 import ru.ibs.dtm.query.execution.core.dto.metadata.EntityAttribute;
 import ru.ibs.dtm.query.execution.core.service.schema.LogicalSchemaService;
@@ -47,8 +52,9 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
         try {
             final List<Future> datamartTableFutures = new ArrayList<>();
             final Map<DatamartSchemaKey, DatamartTable> datamartSchemaMap = new HashMap<>();
-            final List<DatamartInfo> tableInfoList = getDatamartInfoListFromQuery(request.getSql());
-            tableInfoList.forEach(datamart -> datamartTableFutures.add(getDatamartFuture(datamart)));
+            final List<DatamartInfo> datamartInfoList = getDatamartInfoListFromQuery(request.getSql());
+            datamartInfoList.forEach(datamart -> datamartTableFutures.add(getDatamartFuture(datamart)));
+
             CompositeFuture.join(datamartTableFutures)
                     .onComplete(ar -> {
                         if (ar.succeeded()) {
@@ -86,25 +92,12 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
     }
 
     private Future<DatamartFuture> getDatamartFuture(DatamartInfo datamartInfo) {
-        return Future.future((Promise<DatamartFuture> promise) -> {
-            serviceDbFacade.getServiceDbDao().getEntityDao().findEntitiesByDatamartAndTableNames(datamartInfo, ar -> {
-                if (ar.succeeded()) {
-                    List<DatamartEntity> entities = ar.result();
-                    final List<DatamartTableFuture> datamartTableFutures = new ArrayList<>();
-                    entities.forEach(entity -> datamartTableFutures.add(new DatamartTableFuture(entity,
-                            getDtatmartEntityAttributes(entity))));
-                    promise.complete(new DatamartFuture(datamartInfo, datamartTableFutures));
-                } else {
-                    promise.fail(ar.cause());
-                }
-            });
-        });
-    }
-
-    private Future<List<EntityAttribute>> getDtatmartEntityAttributes(DatamartEntity datamartEntity) {
-        return Future.future((Promise<List<EntityAttribute>> promise) ->
-                serviceDbFacade.getServiceDbDao().getAttributeDao().getAttributesMeta(datamartEntity.getDatamartMnemonic(),
-                        datamartEntity.getMnemonic(), promise));
+        EntityDao entityDao = serviceDbFacade.getServiceDbDao().getEntityDao();
+       return CompositeFuture.join(
+            datamartInfo.getTables().stream()
+                .map(entityName -> entityDao.getEntity(datamartInfo.getSchemaName(), entityName))
+                .collect(Collectors.toList()))
+            .map(cf -> new DatamartFuture(datamartInfo, cf.list()));
     }
 
     @NotNull
@@ -132,7 +125,7 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
         try {
             datamartFuture.list().forEach(res -> {
                 DatamartFuture dmFuture = (DatamartFuture) res;
-                dmFuture.getTableFutures().forEach(tf -> {
+                dmFuture.getEntities().forEach(tf -> {
                     final DatamartTable datamartTable = createDatamartTable(tf.getTable());
                     datamartSchemaMap.put(createDatamartSchemaKey(datamartTable), datamartTable);
                     attrFutures.add(tf.getAttributeFuture());
@@ -206,13 +199,6 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
     @AllArgsConstructor
     private static class DatamartFuture {
         private DatamartInfo datamartInfo;
-        private List<DatamartTableFuture> tableFutures;
-    }
-
-    @Data
-    @AllArgsConstructor
-    private static class DatamartTableFuture {
-        private DatamartEntity table;
-        private Future attributeFuture;
+        private List<Entity> entities;
     }
 }

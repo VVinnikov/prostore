@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Repository
-public class EntityDaoImpl implements EntityDao<Entity> {
+public class EntityDaoImpl implements EntityDao {
     private final ZookeeperExecutor executor;
     private final String envPath;
 
@@ -95,6 +95,11 @@ public class EntityDaoImpl implements EntityDao<Entity> {
                 error(e, String.format("Can't serialize entity [%s]", entity), RuntimeException::new)
             );
         }
+    }
+
+    @Override
+    public Future<Boolean> existsEntity(String datamartMnemonic, String entityName) {
+        return executor.exists(getTargetPath(datamartMnemonic, entityName));
     }
 
     @Override

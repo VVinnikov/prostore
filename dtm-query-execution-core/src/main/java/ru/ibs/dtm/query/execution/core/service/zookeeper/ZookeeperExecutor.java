@@ -279,6 +279,8 @@ public interface ZookeeperExecutor {
      */
     <T> Future<T> execute(ThrowableFunction<ZooKeeper, T> function);
 
+    Future<Boolean> exists(String path);
+
     /**
      * Executing zookeeper operations with return results in Future of Void
      *

@@ -8,12 +8,14 @@ import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
 
 import java.util.List;
 
-public interface EntityDao<T> extends ZkDao<T> {
+public interface EntityDao extends ZkDao<Entity> {
     void getEntitiesMeta(String datamartMnemonic, Handler<AsyncResult<List<DatamartEntity>>> resultHandler);
 
     Future<Void> createEntity(Entity entity);
 
     Future<Void> updateEntity(Entity entity);
+
+    Future<Boolean> existsEntity(String datamartMnemonic, String entityName);
 
     Future<Void> deleteEntity(String datamartMnemonic, String entityName);
 

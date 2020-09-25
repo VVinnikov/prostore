@@ -22,9 +22,10 @@ public class Entity {
     private String name;
     private String schema;
     private String viewQuery;
+    private EntityType entityType;
     private String externalTableFormat;
     private String externalTableSchema;
-    private String externalTableLocationType;
+    private ExternalTableLocationType externalTableLocationType;
     private String externalTableLocationPath;
     private Integer externalTableDownloadChunkSize;
     private Integer externalTableUploadMessageLimit;

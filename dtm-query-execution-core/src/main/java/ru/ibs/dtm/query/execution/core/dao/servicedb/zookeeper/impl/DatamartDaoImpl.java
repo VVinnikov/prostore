@@ -20,7 +20,7 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class DatamartDaoImpl implements DatamartDao<String> {
+public class DatamartDaoImpl implements DatamartDao {
     private static final int CREATE_DATAMART_OP_INDEX = 0;
     private static final byte[] EMPTY_DATA = new byte[0];
     private final ZookeeperExecutor executor;
@@ -115,6 +115,11 @@ public class DatamartDaoImpl implements DatamartDao<String> {
                         RuntimeException::new);
                 }
             });
+    }
+
+    @Override
+    public Future<Boolean> existsDatamart(String name) {
+        return executor.exists(getTargetPath(name));
     }
 
     @Override

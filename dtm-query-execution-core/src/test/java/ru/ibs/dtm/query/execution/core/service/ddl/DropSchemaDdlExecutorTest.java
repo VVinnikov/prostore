@@ -57,10 +57,10 @@ class DropSchemaDdlExecutorTest {
         DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
         Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
-        dropSchemaDdlExecutor = new DropSchemaDdlExecutor(metadataExecutor, serviceDbFacade);
         when(serviceDbFacade.getServiceDbDao()).thenReturn(serviceDbDao);
         when(serviceDbDao.getDatamartDao()).thenReturn(datamartDao);
         when(serviceDbFacade.getDeltaServiceDao()).thenReturn(deltaServiceDao);
+        dropSchemaDdlExecutor = new DropSchemaDdlExecutor(metadataExecutor, serviceDbFacade);
         schema = "shares";
         final QueryRequest queryRequest = new QueryRequest();
         queryRequest.setRequestId(UUID.randomUUID());

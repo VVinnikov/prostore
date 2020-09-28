@@ -5,6 +5,7 @@ import lombok.val;
 import org.apache.calcite.avatica.util.Quoting;
 import org.springframework.util.StringUtils;
 import ru.ibs.dtm.query.calcite.core.node.SqlSelectTree;
+import ru.ibs.dtm.query.calcite.core.node.SqlTreeNode;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -23,11 +24,11 @@ public class SqlPreparer {
     private static final String SERVICE_DB_NAME = "dtmservice";
 
     /**
-     * Определяем схему и таблицу, где будем создавать физическую "пустышку".
+     * We define a schema and a table where we will create a physical "dummy".
      *
-     * @param targetSchema схема
-     * @param table        название таблицы
-     * @return таблица с правильной схемой
+     * @param targetSchema Schema
+     * @param table        table name
+     * @return table with correct schema
      */
     public static String getTableWithSchema(String targetSchema, String table) {
         int indexComma = table.indexOf(".");
@@ -42,11 +43,11 @@ public class SqlPreparer {
     }
 
     /**
-     * Заменяет название таблицы в запросе, если таблица пришла без схемы
+     * Replaces the table name in the query if the table came without a schema
      *
-     * @param sql             запрос
-     * @param tableWithSchema таблица со схемой
-     * @return обогащенный запрос
+     * @param sql             Query
+     * @param tableWithSchema schematic table
+     * @return enriched query
      */
     public static String replaceTableInSql(String sql, String tableWithSchema) {
         if (sql.toLowerCase().contains(tableWithSchema.toLowerCase())) {
@@ -64,10 +65,10 @@ public class SqlPreparer {
     }
 
     /**
-     * Заменяем двойные кавычки на обратные, т.к. такие используются в марии
+     * Replace double quotes with back ones, because such are used in Mary
      *
-     * @param sql запрос
-     * @return запрос с корректными кавычками для марии
+     * @param sql query
+     * @return query with correct quotes for mary
      */
     public static String replaceQuote(String sql) {
         return sql.replace(Quoting.DOUBLE_QUOTE.string, Quoting.BACK_TICK.string);
@@ -81,12 +82,12 @@ public class SqlPreparer {
         return sql;
     }
 
-    public static String getViewName(SqlSelectTree tree) {
+    public static SqlTreeNode getViewNameNode(SqlSelectTree tree) {
         val namesByView = tree.findNodesByPath(VIEW_NAME_PATH);
         if (namesByView.isEmpty()) {
             throw new IllegalArgumentException(UNABLE_TO_GET_VIEW_NAME);
         } else {
-            return namesByView.get(0).tryGetTableName().orElseThrow(() -> new IllegalArgumentException(UNABLE_TO_GET_VIEW_NAME));
+            return namesByView.get(0);
         }
     }
 

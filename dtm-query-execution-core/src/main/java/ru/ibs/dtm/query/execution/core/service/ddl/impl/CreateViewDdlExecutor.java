@@ -118,11 +118,15 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
 
     private Entity toViewEntity(DdlRequestContext ctx, List<ColumnMetadata> columnMetadata) {
         val tree = new SqlSelectTree(ctx.getQuery());
-        val viewName = SqlPreparer.getViewName(tree);
+        val viewNameNode = SqlPreparer.getViewNameNode(tree);
+        val schemaName = viewNameNode.tryGetSchemaName()
+            .orElseThrow(() -> new RuntimeException("Unable to get schema of view"));
+        val viewName = viewNameNode.tryGetTableName()
+            .orElseThrow(() -> new RuntimeException("Unable to get name of view"));
         val viewQuery = getViewQuery(tree);
         return Entity.builder()
             .name(viewName)
-            .schema(ctx.getDatamartName())
+            .schema(schemaName)
             .entityType(EntityType.VIEW)
             .viewQuery(viewQuery)
             .fields(getEntityFields(columnMetadata))

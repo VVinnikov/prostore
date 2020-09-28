@@ -6,6 +6,8 @@ import io.vertx.core.Promise;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.springframework.stereotype.Component;
+import ru.ibs.dtm.common.model.ddl.Entity;
+import ru.ibs.dtm.common.model.ddl.EntityType;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import ru.ibs.dtm.query.execution.core.dto.DatamartView;
@@ -58,8 +60,7 @@ public class DatamartViewWrapLoaderImpl implements DatamartViewWrapLoader {
                 EntityDao entityDao = serviceDbFacade.getServiceDbDao().getEntityDao();
                 CompositeFuture.join(
                     viewNames.stream()
-                        .map(viewName -> entityDao.getEntity(datamart, viewName)
-                            .map(entity -> new DatamartView(entity.getName(), entity.getViewQuery())))
+                        .map(viewName -> entityDao.getEntity(datamart, viewName))
                         .collect(toList())
                 ).onSuccess(cf -> {
                     val datamartViews = toDatamartViewWraps(datamart, cf.list());
@@ -70,8 +71,10 @@ public class DatamartViewWrapLoaderImpl implements DatamartViewWrapLoader {
             .collect(toList());
     }
 
-    private List<DatamartViewWrap> toDatamartViewWraps(String datamart, List<DatamartView> datamartViews) {
-        return datamartViews.stream()
+    private List<DatamartViewWrap> toDatamartViewWraps(String datamart, List<Entity> entities) {
+        return entities.stream()
+            .filter(entity -> EntityType.VIEW == entity.getEntityType())
+            .map(entity -> new DatamartView(entity.getName(), entity.getViewQuery()))
             .map(v -> new DatamartViewWrap(datamart, v))
             .collect(toList());
     }

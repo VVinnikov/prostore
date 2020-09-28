@@ -55,9 +55,9 @@ class CreateSchemaDdlExecutorTest {
         DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
         Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
-        createSchemaDdlExecutor = new CreateSchemaDdlExecutor(metadataExecutor, serviceDbFacade);
         when(serviceDbFacade.getServiceDbDao()).thenReturn(serviceDbDao);
         when(serviceDbDao.getDatamartDao()).thenReturn(datamartDao);
+        createSchemaDdlExecutor = new CreateSchemaDdlExecutor(metadataExecutor, serviceDbFacade);
         schema = "shares";
         final QueryRequest queryRequest = new QueryRequest();
         queryRequest.setRequestId(UUID.randomUUID());

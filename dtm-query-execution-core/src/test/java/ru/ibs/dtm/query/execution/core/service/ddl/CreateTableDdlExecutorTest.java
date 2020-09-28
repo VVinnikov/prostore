@@ -66,10 +66,10 @@ class CreateTableDdlExecutorTest {
         DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
         Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
-        createTableDdlExecutor = new CreateTableDdlExecutor(metadataExecutor, serviceDbFacade, metadataCalciteGenerator);
         when(serviceDbFacade.getServiceDbDao()).thenReturn(serviceDbDao);
         when(serviceDbDao.getEntityDao()).thenReturn(entityDao);
         when(serviceDbDao.getDatamartDao()).thenReturn(datamartDao);
+        createTableDdlExecutor = new CreateTableDdlExecutor(metadataExecutor, serviceDbFacade, metadataCalciteGenerator);
 
         schema = "shares";
         final QueryRequest queryRequest = new QueryRequest();
@@ -82,6 +82,8 @@ class CreateTableDdlExecutorTest {
         context.getRequest().setQueryRequest(queryRequest);
         context.setQuery(query);
         EntityField f1 = new EntityField(0, "id", ColumnType.INT, false);
+        f1.setPrimaryOrder(1);
+        f1.setShardingOrder(1);
         EntityField f2 = new EntityField(1, "name", ColumnType.VARCHAR, true);
         f2.setSize(100);
         String sqlNodeName = "accounts";

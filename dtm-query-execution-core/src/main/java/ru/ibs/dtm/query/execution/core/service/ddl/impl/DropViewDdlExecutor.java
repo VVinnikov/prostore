@@ -36,10 +36,14 @@ public class DropViewDdlExecutor extends QueryResultDdlExecutor {
     public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<QueryResult>> handler) {
         try {
             val tree = new SqlSelectTree(context.getQuery());
-            val viewName = SqlPreparer.getViewName(tree);
+            val viewNameNode = SqlPreparer.getViewNameNode(tree);
+            val schemaName = viewNameNode.tryGetSchemaName()
+                .orElseThrow(() -> new RuntimeException("Unable to get schema of view"));
+            val viewName = viewNameNode.tryGetTableName()
+                .orElseThrow(() -> new RuntimeException("Unable to get name of view"));
             entityDao.getEntity(context.getDatamartName(), viewName)
                 .compose(this::checkEntityType)
-                .compose(v -> entityDao.deleteEntity(context.getDatamartName(), viewName))
+                .compose(v -> entityDao.deleteEntity(schemaName, viewName))
                 .onSuccess(success -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
                 .onFailure(error -> handler.handle(Future.failedFuture(error)));
         } catch (Exception e) {

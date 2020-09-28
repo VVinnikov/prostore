@@ -36,13 +36,15 @@ import ru.ibs.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import ru.ibs.dtm.query.execution.core.service.metadata.impl.MetadataExecutorImpl;
 import ru.ibs.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import ru.ibs.dtm.query.execution.core.service.schema.impl.LogicalSchemaProviderImpl;
-import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
+import ru.ibs.dtm.query.execution.model.metadata.*;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -60,31 +62,30 @@ class AlterViewDdlExecutorTest {
     private final LogicalSchemaProvider logicalSchemaProvider = mock(LogicalSchemaProviderImpl.class);
     private final ColumnMetadataService columnMetadataService = mock(ColumnMetadataService.class);
     private final MetadataExecutor<DdlRequestContext> metadataExecutor = mock(MetadataExecutorImpl.class);
-    private CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
-    private CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
-    private SqlParser.Config parserConfig = calciteConfiguration.configEddlParser(
-        calciteCoreConfiguration.eddlParserImplFactory());
+    private final CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
+    private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
+    private final SqlParser.Config parserConfig = calciteConfiguration
+        .configEddlParser(calciteCoreConfiguration.eddlParserImplFactory());
     private AlterViewDdlExecutor alterViewDdlExecutor;
     private DdlRequestContext context;
-    private String schema;
-    private SqlNode query;
-    private Planner planner;
-    private String viewName;
     private String sqlNodeName;
+    private String viewName;
+    private String schema;
 
     @BeforeEach
     void setUp() throws SqlParseException {
+        when(serviceDbFacade.getServiceDbDao()).thenReturn(serviceDbDao);
+        when(serviceDbDao.getEntityDao()).thenReturn(entityDao);
+        when(serviceDbDao.getDatamartDao()).thenReturn(datamartDao);
+
         DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        planner = DtmCalciteFramework.getPlanner(frameworkConfig);
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
         alterViewDdlExecutor = new AlterViewDdlExecutor(metadataExecutor,
             logicalSchemaProvider,
             columnMetadataService,
             serviceDbFacade,
             new SqlDialect(SqlDialect.EMPTY_CONTEXT));
-        when(serviceDbFacade.getServiceDbDao()).thenReturn(serviceDbDao);
-        when(serviceDbDao.getEntityDao()).thenReturn(entityDao);
-        when(serviceDbDao.getDatamartDao()).thenReturn(datamartDao);
         schema = "shares";
         viewName = "test_view";
         sqlNodeName = schema + "." + viewName;
@@ -94,7 +95,7 @@ class AlterViewDdlExecutorTest {
         queryRequest.setDatamartMnemonic(schema);
         queryRequest.setSql(String.format("ALTER VIEW %s.test_view AS SELECT * FROM %s.test_table",
             schema, schema));
-        query = planner.parse(queryRequest.getSql());
+        SqlNode query = planner.parse(queryRequest.getSql());
         context = new DdlRequestContext(new DdlRequest(queryRequest));
         context.getRequest().setQueryRequest(queryRequest);
         context.setQuery(query);
@@ -103,6 +104,19 @@ class AlterViewDdlExecutorTest {
             handler.handle(Future.succeededFuture());
             return null;
         }).when(metadataExecutor).execute(any(), any());
+        Mockito.doAnswer(invocation -> {
+            final Handler<AsyncResult<List<Datamart>>> handler = invocation.getArgument(1);
+            DatamartTable table = createDatamartTable(getViewEntity(schema, viewName));
+            handler.handle(Future.succeededFuture(
+                Collections.singletonList(new Datamart(
+                    UUID.randomUUID(),
+                    schema,
+                    true,
+                    Collections.singletonList(table)
+                ))
+            ));
+            return null;
+        }).when(logicalSchemaProvider).getSchema(any(), any());
     }
 
     @Test
@@ -134,13 +148,15 @@ class AlterViewDdlExecutorTest {
     private Entity getViewEntity(String schema, String viewName) {
         return Entity.builder()
             .entityType(EntityType.VIEW)
-            .viewQuery("select 1")
+            .viewQuery("SELECT *\n" +
+                "FROM shares.test_table")
             .name(viewName)
             .schema(schema)
             .fields(Collections.singletonList(EntityField.builder()
                 .name("id")
                 .type(ColumnType.BIGINT)
                 .ordinalPosition(0)
+                .nullable(true)
                 .build()))
             .build();
     }
@@ -148,15 +164,52 @@ class AlterViewDdlExecutorTest {
     private Entity getTableEntity(String schema, String viewName) {
         return Entity.builder()
             .entityType(EntityType.TABLE)
-            .viewQuery("select 1")
+            .viewQuery("SELECT *\n" +
+                "FROM shares.test_table")
             .name(viewName)
             .schema(schema)
             .fields(Collections.singletonList(EntityField.builder()
                 .name("id")
                 .type(ColumnType.BIGINT)
                 .ordinalPosition(0)
+                .nullable(true)
                 .build()))
             .build();
+    }
+
+    private DatamartTable createDatamartTable(Entity table) {
+        final DatamartTable dmTable = new DatamartTable();
+        dmTable.setId(UUID.randomUUID());
+        dmTable.setDatamartMnemonic(table.getSchema());
+        dmTable.setMnemonic(table.getName());
+        dmTable.setLabel(table.getName());
+        dmTable.setTableAttributes(createTableAttributes(table.getFields()));
+        return dmTable;
+    }
+
+    private List<TableAttribute> createTableAttributes(List<EntityField> fields) {
+        return fields.stream()
+            .sorted(Comparator.comparing(EntityField::getOrdinalPosition))
+            .map(field -> {
+                final TableAttribute tableAttribute = new TableAttribute();
+                tableAttribute.setId(UUID.randomUUID());
+                tableAttribute.setMnemonic(field.getName());
+                tableAttribute.setType(mapColumnType(field.getType()));
+                tableAttribute.setLength(field.getSize());
+                tableAttribute.setAccuracy(field.getAccuracy());
+                tableAttribute.setPrimaryKeyOrder(field.getPrimaryOrder());
+                tableAttribute.setDistributeKeyOrder(field.getShardingOrder());
+                tableAttribute.setOrdinalPosition(field.getOrdinalPosition());
+                tableAttribute.setNullable(field.getNullable());
+                return tableAttribute;
+            }).collect(Collectors.toList());
+    }
+
+    private AttributeType mapColumnType(ColumnType dataType) {
+        AttributeType attributeType = new AttributeType();
+        attributeType.setId(UUID.randomUUID());
+        attributeType.setValue(dataType);
+        return attributeType;
     }
 
 
@@ -173,30 +226,6 @@ class AlterViewDdlExecutorTest {
         }).when(columnMetadataService).getColumnMetadata(any(), any());
         Mockito.when(entityDao.getEntity(eq(schema), eq(viewName)))
             .thenReturn(Future.failedFuture(new ViewNotExistsException(viewName)));
-        alterViewDdlExecutor.execute(context, sqlNodeName, ar -> {
-                if (ar.succeeded()) {
-                    promise.complete(ar.result());
-                } else {
-                    promise.fail(ar.cause());
-                }
-            }
-        );
-        assertTrue(promise.future().failed());
-    }
-
-    @Test
-    void executeWithViewExistsFalse() {
-        Promise promise = Promise.promise();
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<List<ColumnMetadata>>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()
-                .name("id")
-                .type(ColumnType.BIGINT)
-                .build())));
-            return null;
-        }).when(columnMetadataService).getColumnMetadata(any(), any());
-        Mockito.when(entityDao.getEntity(eq(schema), eq(viewName)))
-            .thenReturn(Future.succeededFuture(getTableEntity(schema, viewName)));
         alterViewDdlExecutor.execute(context, sqlNodeName, ar -> {
                 if (ar.succeeded()) {
                     promise.complete(ar.result());

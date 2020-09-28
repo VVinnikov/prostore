@@ -133,7 +133,7 @@ class UseSchemaDdlExecutorTest {
         context.getRequest().getQueryRequest().setSql("USE_dtm");
 
         Mockito.when(datamartDao.getDatamart(eq(schema)))
-            .thenReturn(Future.succeededFuture());
+            .thenReturn(Future.failedFuture(new RuntimeException("")));
 
         useSchemaDdlExecutor.execute(context, schema, ar -> {
             if (ar.succeeded()) {

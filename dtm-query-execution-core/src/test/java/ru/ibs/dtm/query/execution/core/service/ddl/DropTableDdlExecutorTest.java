@@ -63,10 +63,10 @@ class DropTableDdlExecutorTest {
         DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
         Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
-        dropTableDdlExecutor = new DropTableDdlExecutor(metadataExecutor, serviceDbFacade);
         when(serviceDbFacade.getServiceDbDao()).thenReturn(serviceDbDao);
         when(serviceDbDao.getDatamartDao()).thenReturn(datamartDao);
         when(serviceDbDao.getEntityDao()).thenReturn(entityDao);
+        dropTableDdlExecutor = new DropTableDdlExecutor(metadataExecutor, serviceDbFacade);
 
         schema = "shares";
         final QueryRequest queryRequest = new QueryRequest();
@@ -79,6 +79,8 @@ class DropTableDdlExecutorTest {
         context.getRequest().setQueryRequest(queryRequest);
         context.setQuery(query);
         EntityField f1 = new EntityField(0, "id", ColumnType.INT, false);
+        f1.setPrimaryOrder(1);
+        f1.setShardingOrder(1);
         EntityField f2 = new EntityField(1, "name", ColumnType.VARCHAR, true);
         f2.setSize(100);
         String sqlNodeName = "accounts";

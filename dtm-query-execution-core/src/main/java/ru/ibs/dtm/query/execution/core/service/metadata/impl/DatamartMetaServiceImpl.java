@@ -13,6 +13,7 @@ import ru.ibs.dtm.query.execution.core.dto.metadata.EntityAttribute;
 import ru.ibs.dtm.query.execution.core.service.metadata.DatamartMetaService;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class DatamartMetaServiceImpl implements DatamartMetaService {
@@ -38,11 +39,27 @@ public class DatamartMetaServiceImpl implements DatamartMetaService {
 
     @Override
     public void getEntitiesMeta(String datamartMnemonic, Handler<AsyncResult<List<DatamartEntity>>> resultHandler) {
-        serviceDbFacade.getServiceDbDao().getEntityDao().getEntitiesMeta(datamartMnemonic, resultHandler::handle);
+        serviceDbFacade.getServiceDbDao().getEntityDao().getEntitiesMeta(datamartMnemonic, resultHandler);
     }
 
     @Override
     public void getAttributesMeta(String datamartMnemonic, String entityMnemonic, Handler<AsyncResult<List<EntityAttribute>>> resultHandler) {
-        serviceDbFacade.getServiceDbDao().getAttributeDao().getAttributesMeta(datamartMnemonic, entityMnemonic, resultHandler::handle);
+        serviceDbFacade.getServiceDbDao().getEntityDao().getEntity(datamartMnemonic, entityMnemonic)
+            .onFailure(error -> resultHandler.handle(Future.failedFuture(error)))
+            .onSuccess(entity -> {
+                resultHandler.handle(Future.succeededFuture(entity.getFields().stream()
+                    .map(ef -> EntityAttribute.builder()
+                        .accuracy(ef.getAccuracy())
+                        .distributeKeykOrder(ef.getShardingOrder())
+                        .primaryKeyOrder(ef.getPrimaryOrder())
+                        .dataType(ef.getType())
+                        .length(ef.getSize())
+                        .mnemonic(ef.getName())
+                        .ordinalPosition(ef.getOrdinalPosition())
+                        .nullable(ef.getNullable())
+                        .accuracy(ef.getAccuracy())
+                        .build())
+                    .collect(Collectors.toList())));
+            });
     }
 }

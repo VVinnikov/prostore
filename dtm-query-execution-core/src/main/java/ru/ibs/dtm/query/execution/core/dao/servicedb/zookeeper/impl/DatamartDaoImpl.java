@@ -5,7 +5,9 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.zookeeper.*;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Repository;
 import ru.ibs.dtm.async.AsyncUtils;
 import ru.ibs.dtm.query.execution.core.dao.exception.DatamartAlreadyExistsException;
 import ru.ibs.dtm.query.execution.core.dao.exception.DatamartNotExistsException;
@@ -20,9 +22,10 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 @Slf4j
+@Repository
 public class DatamartDaoImpl implements DatamartDao {
     private static final int CREATE_DATAMART_OP_INDEX = 0;
-    private static final byte[] EMPTY_DATA = new byte[0];
+    private static final byte[] EMPTY_DATA = null;
     private final ZookeeperExecutor executor;
     private final String envPath;
 
@@ -63,8 +66,16 @@ public class DatamartDaoImpl implements DatamartDao {
     private List<Op> getCreateDatamartOps(String datamartPath) {
         return Arrays.asList(
             Op.create(datamartPath, EMPTY_DATA, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT),
-            Op.create(datamartPath + "/entity", EMPTY_DATA, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT),
-            Op.create(datamartPath + "/delta", EMPTY_DATA, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT));
+            createDatamartNodeOp(datamartPath, "/entity"),
+            createDatamartNodeOp(datamartPath, "/delta"),
+            createDatamartNodeOp(datamartPath, "/delta/num"),
+            createDatamartNodeOp(datamartPath, "/delta/date")
+        );
+    }
+
+    @NotNull
+    private Op createDatamartNodeOp(String datamartPath, String nodeName) {
+        return Op.create(datamartPath + nodeName, EMPTY_DATA, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
     }
 
     private boolean isDatamartExists(KeeperException error) {
@@ -75,13 +86,13 @@ public class DatamartDaoImpl implements DatamartDao {
     @Override
     public void getDatamartMeta(Handler<AsyncResult<List<DatamartInfo>>> resultHandler) {
         getDatamarts()
-            .onSuccess(names -> {
-                resultHandler.handle(Future.succeededFuture(
+            .onSuccess(names -> resultHandler.handle(
+                Future.succeededFuture(
                     names.stream()
                         .map(DatamartInfo::new)
-                        .collect(Collectors.toList())
-                ));
-            })
+                        .collect(Collectors.toList()
+                        )
+                )))
             .onFailure(error -> resultHandler.handle(Future.failedFuture(error)));
     }
 

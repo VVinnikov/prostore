@@ -8,7 +8,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import ru.ibs.dtm.query.execution.core.configuration.properties.ZookeeperProperties;
-import ru.ibs.dtm.query.execution.core.service.zookeeper.ZKConnectionProvider;
+import ru.ibs.dtm.query.execution.core.service.zookeeper.ZookeeperConnectionProvider;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -18,12 +18,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.apache.zookeeper.Watcher.Event.KeeperState.SyncConnected;
 
 @Slf4j
-public class ZKConnectionProviderImpl implements ZKConnectionProvider {
+public class ZookeeperConnectionProviderImpl implements ZookeeperConnectionProvider {
     private final AtomicBoolean synConnected = new AtomicBoolean();
     private final ZookeeperProperties properties;
     private ZooKeeper connection;
 
-    public ZKConnectionProviderImpl(ZookeeperProperties properties) {
+    public ZookeeperConnectionProviderImpl(ZookeeperProperties properties) {
         this.properties = properties;
         initializeChroot();
     }

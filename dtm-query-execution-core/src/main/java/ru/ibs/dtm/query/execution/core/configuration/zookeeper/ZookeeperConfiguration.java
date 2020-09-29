@@ -5,9 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import ru.ibs.dtm.query.execution.core.configuration.properties.ZookeeperProperties;
-import ru.ibs.dtm.query.execution.core.service.zookeeper.ZKConnectionProvider;
+import ru.ibs.dtm.query.execution.core.service.zookeeper.ZookeeperConnectionProvider;
 import ru.ibs.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
-import ru.ibs.dtm.query.execution.core.service.zookeeper.impl.ZKConnectionProviderImpl;
+import ru.ibs.dtm.query.execution.core.service.zookeeper.impl.ZookeeperConnectionProviderImpl;
 import ru.ibs.dtm.query.execution.core.service.zookeeper.impl.ZookeeperExecutorImpl;
 
 @Slf4j
@@ -15,12 +15,12 @@ import ru.ibs.dtm.query.execution.core.service.zookeeper.impl.ZookeeperExecutorI
 public class ZookeeperConfiguration {
 
     @Bean
-    public ZKConnectionProvider zkConnectionManager(ZookeeperProperties properties) {
-        return new ZKConnectionProviderImpl(properties);
+    public ZookeeperConnectionProvider zkConnectionManager(ZookeeperProperties properties) {
+        return new ZookeeperConnectionProviderImpl(properties);
     }
 
     @Bean
-    public ZookeeperExecutor zookeeperExecutor(ZKConnectionProvider connectionManager, Vertx vertx) {
+    public ZookeeperExecutor zookeeperExecutor(ZookeeperConnectionProvider connectionManager, Vertx vertx) {
         return new ZookeeperExecutorImpl(connectionManager, vertx);
     }
 

@@ -8,7 +8,7 @@ import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
 
 import java.util.List;
 
-public interface EntityDao<T> extends ZkDao<T> {
+public interface EntityDao<T> extends ZookeeperDao<T> {
     void getEntitiesMeta(String datamartMnemonic, Handler<AsyncResult<List<DatamartEntity>>> resultHandler);
 
     Future<Void> createEntity(Entity entity);

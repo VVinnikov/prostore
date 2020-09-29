@@ -6,7 +6,7 @@ import lombok.val;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.query.execution.core.configuration.properties.ZookeeperProperties;
 import ru.ibs.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
-import ru.ibs.dtm.query.execution.core.service.zookeeper.impl.ZKConnectionProviderImpl;
+import ru.ibs.dtm.query.execution.core.service.zookeeper.impl.ZookeeperConnectionProviderImpl;
 import ru.ibs.dtm.query.execution.core.service.zookeeper.impl.ZookeeperExecutorImpl;
 
 import java.util.concurrent.TimeUnit;
@@ -20,7 +20,7 @@ class DatamartDaoImplTest {
     private final DatamartDaoImpl dao;
 
     public DatamartDaoImplTest() {
-        ZookeeperExecutor executor = new ZookeeperExecutorImpl(new ZKConnectionProviderImpl(getZookeeperProperties()), Vertx.vertx());
+        ZookeeperExecutor executor = new ZookeeperExecutorImpl(new ZookeeperConnectionProviderImpl(getZookeeperProperties()), Vertx.vertx());
         dao = new DatamartDaoImpl(executor, "test1");
     }
 

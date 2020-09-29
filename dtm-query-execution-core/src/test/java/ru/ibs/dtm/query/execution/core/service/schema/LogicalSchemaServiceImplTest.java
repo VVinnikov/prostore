@@ -23,9 +23,6 @@ import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImp
 import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
 import ru.ibs.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
 import ru.ibs.dtm.query.execution.core.service.schema.impl.LogicalSchemaServiceImpl;
-import ru.ibs.dtm.query.execution.model.metadata.AttributeType;
-import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;
-import ru.ibs.dtm.query.execution.model.metadata.TableAttribute;
 
 import java.util.*;
 
@@ -64,24 +61,35 @@ class LogicalSchemaServiceImplTest {
 
     @Test
     void createSchemaSuccess() {
-        Promise<Map<DatamartSchemaKey, DatamartTable>> promise = Promise.promise();
-        final Map<DatamartSchemaKey, DatamartTable> resultSchemaMap = new HashMap<>();
+        Promise<Map<DatamartSchemaKey, Entity>> promise = Promise.promise();
+        final Map<DatamartSchemaKey, Entity> resultSchemaMap = new HashMap<>();
         queryRequest.setSql("select t1.id, cast(t2.id as varchar(10)) as tt from test_datamart.pso t1 \n" +
             " join test_datamart.doc t2 on t1.id = t2.id");
-        DatamartTable pso = new DatamartTable();
-        pso.setLabel(TABLE_PSO);
-        pso.setMnemonic(TABLE_PSO);
-        pso.setDatamartMnemonic(DATAMART);
-        List<TableAttribute> psoAttrs = Collections.singletonList(new TableAttribute(UUID.randomUUID(), "id",
-            new AttributeType(UUID.randomUUID(), ColumnType.INT), 0, 0, 1, 1, 0, false));
-        pso.setTableAttributes(psoAttrs);
-        DatamartTable doc = new DatamartTable();
-        doc.setLabel(TABLE_DOC);
-        doc.setMnemonic(TABLE_DOC);
-        doc.setDatamartMnemonic(DATAMART);
-        List<TableAttribute> docAttrs = Collections.singletonList(new TableAttribute(UUID.randomUUID(), "id",
-            new AttributeType(UUID.randomUUID(), ColumnType.INT), 0, 0, 1, 1, 0, false));
-        doc.setTableAttributes(docAttrs);
+        Entity pso = Entity.builder()
+            .schema(DATAMART)
+            .name(TABLE_PSO)
+            .build();
+
+        EntityField entityField = EntityField.builder()
+            .name("id")
+            .type(ColumnType.INT)
+            .ordinalPosition(0)
+            .shardingOrder(1)
+            .nullable(false)
+            .primaryOrder(1)
+            .accuracy(0)
+            .size(0)
+            .build();
+        List<EntityField> psoAttrs = Collections.singletonList(entityField);
+        pso.setFields(psoAttrs);
+
+        Entity doc = Entity.builder()
+            .schema(DATAMART)
+            .name(TABLE_DOC)
+            .build();
+        List<EntityField> docAttrs = Collections.singletonList(entityField);
+        doc.setFields(docAttrs);
+
         resultSchemaMap.put(new DatamartSchemaKey(DATAMART, TABLE_PSO), pso);
         resultSchemaMap.put(new DatamartSchemaKey(DATAMART, TABLE_DOC), doc);
 
@@ -119,21 +127,21 @@ class LogicalSchemaServiceImplTest {
                 promise.fail(ar.cause());
             }
         });
-        Map<DatamartSchemaKey, DatamartTable> schemaMap = (Map<DatamartSchemaKey, DatamartTable>) promise.future().result();
+        Map<DatamartSchemaKey, Entity> schemaMap = promise.future().result();
         assertNotNull(schemaMap);
         schemaMap.forEach((k, v) -> {
-            assertEquals(resultSchemaMap.get(k).getLabel(), v.getLabel());
-            assertEquals(resultSchemaMap.get(k).getMnemonic(), v.getMnemonic());
-            assertEquals(resultSchemaMap.get(k).getTableAttributes().get(0).getMnemonic(), v.getTableAttributes().get(0).getMnemonic());
-            assertEquals(resultSchemaMap.get(k).getTableAttributes().get(0).getType().getValue(), v.getTableAttributes().get(0).getType().getValue());
-            assertEquals(resultSchemaMap.get(k).getTableAttributes().get(0).getPrimaryKeyOrder(), v.getTableAttributes().get(0).getPrimaryKeyOrder());
-            assertEquals(resultSchemaMap.get(k).getTableAttributes().get(0).getDistributeKeyOrder(), v.getTableAttributes().get(0).getDistributeKeyOrder());
+            assertEquals(resultSchemaMap.get(k).getName(), v.getName());
+            assertEquals(resultSchemaMap.get(k).getName(), v.getName());
+            assertEquals(resultSchemaMap.get(k).getFields().get(0).getName(), v.getFields().get(0).getName());
+            assertEquals(resultSchemaMap.get(k).getFields().get(0).getType(), v.getFields().get(0).getType());
+            assertEquals(resultSchemaMap.get(k).getFields().get(0).getPrimaryOrder(), v.getFields().get(0).getPrimaryOrder());
+            assertEquals(resultSchemaMap.get(k).getFields().get(0).getShardingOrder(), v.getFields().get(0).getShardingOrder());
         });
     }
 
     @Test
     void createSchemaWithDatamartEntityError() {
-        Promise<Map<DatamartSchemaKey, DatamartTable>> promise = Promise.promise();
+        Promise<Map<DatamartSchemaKey, Entity>> promise = Promise.promise();
         queryRequest.setSql("select t1.id, cast(t2.id as varchar(10)) as tt from test_datamart.pso t1 \n" +
             " join test_datamart.doc t2 on t1.id = t2.id");
 

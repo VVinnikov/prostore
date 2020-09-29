@@ -1,12 +1,9 @@
 package ru.ibs.dtm.query.execution.plugin.adg.model.callback.params;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.vertx.core.json.JsonObject;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.HashMap;
 
 @Data
 @AllArgsConstructor

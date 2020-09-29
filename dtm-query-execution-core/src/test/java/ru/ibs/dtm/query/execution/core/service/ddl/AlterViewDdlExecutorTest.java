@@ -36,15 +36,14 @@ import ru.ibs.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import ru.ibs.dtm.query.execution.core.service.metadata.impl.MetadataExecutorImpl;
 import ru.ibs.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import ru.ibs.dtm.query.execution.core.service.schema.impl.LogicalSchemaProviderImpl;
-import ru.ibs.dtm.query.execution.model.metadata.*;
+import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
+import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
 
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -106,13 +105,11 @@ class AlterViewDdlExecutorTest {
         }).when(metadataExecutor).execute(any(), any());
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<List<Datamart>>> handler = invocation.getArgument(1);
-            DatamartTable table = createDatamartTable(getViewEntity(schema, viewName));
             handler.handle(Future.succeededFuture(
                 Collections.singletonList(new Datamart(
-                    UUID.randomUUID(),
                     schema,
                     true,
-                    Collections.singletonList(table)
+                    Collections.singletonList(getViewEntity(schema, viewName))
                 ))
             ));
             return null;
@@ -176,42 +173,6 @@ class AlterViewDdlExecutorTest {
                 .build()))
             .build();
     }
-
-    private DatamartTable createDatamartTable(Entity table) {
-        final DatamartTable dmTable = new DatamartTable();
-        dmTable.setId(UUID.randomUUID());
-        dmTable.setDatamartMnemonic(table.getSchema());
-        dmTable.setMnemonic(table.getName());
-        dmTable.setLabel(table.getName());
-        dmTable.setTableAttributes(createTableAttributes(table.getFields()));
-        return dmTable;
-    }
-
-    private List<TableAttribute> createTableAttributes(List<EntityField> fields) {
-        return fields.stream()
-            .sorted(Comparator.comparing(EntityField::getOrdinalPosition))
-            .map(field -> {
-                final TableAttribute tableAttribute = new TableAttribute();
-                tableAttribute.setId(UUID.randomUUID());
-                tableAttribute.setMnemonic(field.getName());
-                tableAttribute.setType(mapColumnType(field.getType()));
-                tableAttribute.setLength(field.getSize());
-                tableAttribute.setAccuracy(field.getAccuracy());
-                tableAttribute.setPrimaryKeyOrder(field.getPrimaryOrder());
-                tableAttribute.setDistributeKeyOrder(field.getShardingOrder());
-                tableAttribute.setOrdinalPosition(field.getOrdinalPosition());
-                tableAttribute.setNullable(field.getNullable());
-                return tableAttribute;
-            }).collect(Collectors.toList());
-    }
-
-    private AttributeType mapColumnType(ColumnType dataType) {
-        AttributeType attributeType = new AttributeType();
-        attributeType.setId(UUID.randomUUID());
-        attributeType.setValue(dataType);
-        return attributeType;
-    }
-
 
     @Test
     void executeIsEntityExistsError() {

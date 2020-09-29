@@ -14,7 +14,6 @@ import ru.ibs.dtm.common.service.DeltaService;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.OperationFile;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtUploadDataKafkaRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response.ResConfig;
-import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response.ResStatusEnum;
 import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeClient;
 
 import java.util.List;

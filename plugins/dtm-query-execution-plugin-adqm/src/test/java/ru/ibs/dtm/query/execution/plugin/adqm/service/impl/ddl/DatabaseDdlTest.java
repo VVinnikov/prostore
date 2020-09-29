@@ -5,7 +5,6 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.reader.QueryRequest;
-import ru.ibs.dtm.query.calcite.core.extension.eddl.DropDatabase;
 import ru.ibs.dtm.query.calcite.core.extension.eddl.SqlCreateDatabase;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;

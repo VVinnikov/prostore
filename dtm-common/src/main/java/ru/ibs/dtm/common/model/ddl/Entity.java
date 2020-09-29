@@ -6,16 +6,17 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
  * Physical model of the service database table
  */
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Entity {
+@Builder(toBuilder = true)
+public class Entity implements Serializable {
 
     private static final String DEFAULT_SCHEMA = "test";
 

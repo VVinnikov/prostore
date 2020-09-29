@@ -16,6 +16,11 @@ import org.apache.commons.lang3.tuple.Pair;
 import ru.ibs.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adb.service.impl.mppw.dto.PreparedStatementRequest;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,6 +40,7 @@ public class AdbQueryExecutor implements DatabaseExecutor {
         pool.getConnection(ar1 -> {
             if (ar1.succeeded()) {
                 PgConnection conn = ar1.result();
+                //FIXME drop tx condition
                 PgTransaction tx = conn.begin();
                 tx.prepare(sql, ar2 -> {
                     if (ar2.succeeded()) {
@@ -54,7 +60,7 @@ public class AdbQueryExecutor implements DatabaseExecutor {
                                             }
                                         }
                                         JsonObject values = new JsonObject();
-                                        columnIndexes.forEach(p -> values.put(p.getValue(), row.getValue(p.getKey())));
+                                        columnIndexes.forEach(p -> values.put(p.getValue(), convertValue(row.getValue(p.getKey()))));
                                         dataSet.add(values);
                                     }
                                     resultHandler.handle(Future.succeededFuture(dataSet));
@@ -74,6 +80,18 @@ public class AdbQueryExecutor implements DatabaseExecutor {
                 resultHandler.handle(Future.failedFuture(ar1.cause()));
             }
         });
+    }
+
+    private Object convertValue(Object value) {
+        if (value instanceof LocalDateTime) {
+            return ((LocalDateTime) value).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        } else if (value instanceof LocalDate) {
+            return ((LocalDate) value).getLong(ChronoField.EPOCH_DAY);
+        } else if (value instanceof LocalTime) {
+            return ((LocalTime) value).toNanoOfDay();
+        } else {
+            return value;
+        }
     }
 
     @Override

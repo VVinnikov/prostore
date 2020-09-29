@@ -6,6 +6,7 @@ import ru.ibs.dtm.jdbc.core.QueryResult;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -76,7 +77,7 @@ public class DtmStatement implements Statement {
                 });
                 result.add(resultFields);
             });
-            resultSet = new DtmResultSet(connection, result, queryResult.getMetadata());
+            resultSet = new DtmResultSet(connection, result, queryResult.getMetadata(), Collections.emptyList());
         }
 
         return resultSet != null;

@@ -1,5 +1,7 @@
 package ru.ibs.dtm.jdbc.model;
 
+import ru.ibs.dtm.common.model.ddl.ColumnType;
+
 /**
  * Information about table column, receiving from LL-R service
  */
@@ -11,7 +13,7 @@ public class ColumnInfo {
     /**
      * Column type
      */
-    private String dataType;
+    private ColumnType dataType;
     /**
      * Column length
      */
@@ -52,7 +54,7 @@ public class ColumnInfo {
         return mnemonic;
     }
 
-    public String getDataType() {
+    public ColumnType getDataType() {
         return dataType;
     }
 

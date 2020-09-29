@@ -7,13 +7,14 @@ import io.vertx.core.Promise;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.dto.schema.DatamartSchemaKey;
+import ru.ibs.dtm.common.model.ddl.ColumnType;
+import ru.ibs.dtm.common.model.ddl.Entity;
+import ru.ibs.dtm.common.model.ddl.EntityField;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import ru.ibs.dtm.query.execution.core.service.schema.impl.LogicalSchemaProviderImpl;
 import ru.ibs.dtm.query.execution.core.service.schema.impl.LogicalSchemaServiceImpl;
 import ru.ibs.dtm.query.execution.model.metadata.Datamart;
-import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;
-import ru.ibs.dtm.query.execution.model.metadata.TableAttribute;
 
 import java.util.*;
 
@@ -40,42 +41,40 @@ class LogicalSchemaProviderImplTest {
     @Test
     void createSchemaSuccess() {
         Promise promise = Promise.promise();
-        final Map<DatamartSchemaKey, DatamartTable> datamartTableMap = new HashMap<>();
-        DatamartTable table1 = new DatamartTable();
-        table1.setId(UUID.randomUUID());
-        table1.setMnemonic("test");
-        table1.setLabel("pso");
-        TableAttribute attr = new TableAttribute();
-        attr.setId(UUID.randomUUID());
-        attr.setMnemonic("id");
-        attr.setLength(null);
-        attr.setAccuracy(null);
-        attr.setPrimaryKeyOrder(1);
-        attr.setDistributeKeyOrder(1);
-        table1.setTableAttributes(Collections.singletonList(attr));
-        TableAttribute attr2 = new TableAttribute();
-        attr2.setId(UUID.randomUUID());
-        attr2.setMnemonic("id");
-        attr2.setLength(10);
-        attr2.setAccuracy(null);
-        attr2.setPrimaryKeyOrder(1);
-        attr2.setDistributeKeyOrder(1);
-        DatamartTable table2 = new DatamartTable();
-        table2.setId(UUID.randomUUID());
-        table2.setMnemonic("test");
-        table2.setLabel("doc");
-        table2.setTableAttributes(Collections.singletonList(attr2));
+        final Map<DatamartSchemaKey, Entity> datamartTableMap = new HashMap<>();
+        Entity table1 = Entity.builder()
+            .schema("test")
+            .name("pso")
+            .build();
+
+        EntityField attr = EntityField.builder()
+            .name("id")
+            .type(ColumnType.VARCHAR)
+            .primaryOrder(1)
+            .shardingOrder(1)
+            .build();
+
+        table1.setFields(Collections.singletonList(attr));
+
+        EntityField attr2 = attr.toBuilder()
+            .size(10)
+            .build();
+
+        Entity table2 = table1.toBuilder()
+            .name("doc")
+            .fields(Collections.singletonList(attr2))
+            .build();
+
         datamartTableMap.put(new DatamartSchemaKey("test", "doc"), table2);
         datamartTableMap.put(new DatamartSchemaKey("test", "pso"), table1);
 
         List<Datamart> datamarts = new ArrayList<>();
         Datamart dm = new Datamart();
-        dm.setId(UUID.randomUUID());
         dm.setMnemonic("test");
-        dm.setDatamartTables(Arrays.asList(table2, table1));
+        dm.setEntities(Arrays.asList(table2, table1));
         datamarts.add(dm);
         doAnswer(invocation -> {
-            final Handler<AsyncResult<Map<DatamartSchemaKey, DatamartTable>>> handler = invocation.getArgument(1);
+            final Handler<AsyncResult<Map<DatamartSchemaKey, Entity>>> handler = invocation.getArgument(1);
             handler.handle(Future.succeededFuture(datamartTableMap));
             return null;
         }).when(logicalSchemaService).createSchema(any(), any());
@@ -88,14 +87,14 @@ class LogicalSchemaProviderImplTest {
             }
         });
         assertEquals(datamarts.get(0).getMnemonic(), ((List<Datamart>) promise.future().result()).get(0).getMnemonic());
-        assertEquals(datamarts.get(0).getDatamartTables(), ((List<Datamart>) promise.future().result()).get(0).getDatamartTables());
+        assertEquals(datamarts.get(0).getEntities(), ((List<Datamart>) promise.future().result()).get(0).getEntities());
     }
 
     @Test
     void createSchemaWithServiceError() {
         Promise promise = Promise.promise();
         doAnswer(invocation -> {
-            final Handler<AsyncResult<Map<DatamartSchemaKey, DatamartTable>>> handler = invocation.getArgument(1);
+            final Handler<AsyncResult<Map<DatamartSchemaKey, Entity>>> handler = invocation.getArgument(1);
             handler.handle(Future.failedFuture(new RuntimeException("Ошибка создания схемы!")));
             return null;
         }).when(logicalSchemaService).createSchema(any(), any());

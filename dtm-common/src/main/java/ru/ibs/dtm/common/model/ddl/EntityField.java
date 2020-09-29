@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -12,10 +13,10 @@ import java.util.regex.Pattern;
  * Physical model of the service database field
  */
 @Data
-@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class EntityField {
+@Builder(toBuilder = true)
+public class EntityField implements Serializable {
 
     private final static Pattern nameWithSizePtn = Pattern.compile("\\w*(\\d)");
 

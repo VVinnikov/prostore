@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 import static java.time.temporal.ChronoField.*;
 import static org.jooq.generated.dtmservice.Tables.DELTA_DATA;
-import static org.jooq.generated.dtmservice.Tables.ENTITIES_REGISTRY;
 import static org.jooq.impl.DSL.max;
 
 @Repository

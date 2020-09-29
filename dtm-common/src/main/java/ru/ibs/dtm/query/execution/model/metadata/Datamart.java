@@ -3,31 +3,30 @@ package ru.ibs.dtm.query.execution.model.metadata;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import ru.ibs.dtm.common.model.ddl.Entity;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.UUID;
 
 /**
- * Описание схемы SchemaDescription
+ * Schema Description SchemaDescription
  */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class Datamart implements Serializable {
-    private UUID id;
     /**
-     * Имя схемы
+     * Schema name
      */
     private String mnemonic;
     /**
-     * признак витрины по умолчанию
+     * default showcase attribute
      */
     private Boolean isDefault = false;
     /**
-     * Описание таблиц в схеме
+     * Description of tables in the schema
      */
-    private List<DatamartTable> datamartTables;
+    private List<Entity> entities;
 }
 
 

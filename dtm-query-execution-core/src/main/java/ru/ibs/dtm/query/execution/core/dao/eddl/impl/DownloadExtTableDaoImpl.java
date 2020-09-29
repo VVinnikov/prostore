@@ -6,10 +6,12 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+import io.vertx.core.json.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
+import org.springframework.util.StringUtils;
 import ru.ibs.dtm.common.plugin.exload.Format;
 import ru.ibs.dtm.common.plugin.exload.Type;
 import ru.ibs.dtm.query.execution.core.dao.eddl.DownloadExtTableAttributeDao;
@@ -17,8 +19,7 @@ import ru.ibs.dtm.query.execution.core.dao.eddl.DownloadExtTableDao;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.DatamartDao;
 import ru.ibs.dtm.query.execution.core.dto.eddl.CreateDownloadExternalTableQuery;
 import ru.ibs.dtm.query.execution.core.dto.edml.DownloadExtTableRecord;
-import org.springframework.util.StringUtils;
-import io.vertx.core.json.JsonObject;
+
 import static org.jooq.generated.dtmservice.Tables.*;
 
 @Repository

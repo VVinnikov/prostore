@@ -6,7 +6,6 @@ import org.springframework.boot.autoconfigure.admin.SpringApplicationAdminJmxAut
 import org.springframework.boot.autoconfigure.jooq.JooqAutoConfiguration;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.ComponentScan;
-import ru.ibs.dtm.query.execution.core.configuration.jooq.JooqConfiguration;
 import ru.ibs.dtm.query.execution.core.utils.BeanNameGenerator;
 
 @SpringBootApplication(exclude = {SpringApplicationAdminJmxAutoConfiguration.class, JooqAutoConfiguration.class})

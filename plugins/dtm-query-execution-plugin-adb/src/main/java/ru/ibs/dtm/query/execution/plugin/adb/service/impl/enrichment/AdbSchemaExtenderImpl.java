@@ -1,23 +1,22 @@
 package ru.ibs.dtm.query.execution.plugin.adb.service.impl.enrichment;
 
+import lombok.val;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
-import ru.ibs.dtm.query.execution.model.metadata.AttributeType;
+import ru.ibs.dtm.common.model.ddl.Entity;
+import ru.ibs.dtm.common.model.ddl.EntityField;
 import ru.ibs.dtm.query.execution.model.metadata.Datamart;
-import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;
-import ru.ibs.dtm.query.execution.model.metadata.TableAttribute;
 import ru.ibs.dtm.query.execution.plugin.adb.service.SchemaExtender;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static ru.ibs.dtm.query.execution.plugin.adb.factory.impl.MetadataSqlFactoryImpl.*;
 
 
 /**
- * Реализация преобразования для логической схемы в физическую
+ * Implementing a Logic to Physical Conversion
  */
 @Service("adbSchemaExtender")
 public class AdbSchemaExtenderImpl implements SchemaExtender {
@@ -30,50 +29,42 @@ public class AdbSchemaExtenderImpl implements SchemaExtender {
     private Datamart createPhysicalSchema(Datamart schema) {
         Datamart extendedSchema = new Datamart();
         extendedSchema.setMnemonic(schema.getMnemonic());
-        extendedSchema.setId(UUID.randomUUID());
-        List<DatamartTable> extendedDatamartTables = new ArrayList<>();
-        schema.getDatamartTables().forEach(dmClass -> {
-            dmClass.getTableAttributes().addAll(getExtendedColumns());
-            extendedDatamartTables.add(dmClass);
-            extendedDatamartTables.add(getExtendedSchema(dmClass, "_".concat(HISTORY_TABLE)));
-            extendedDatamartTables.add(getExtendedSchema(dmClass, "_".concat(STAGING_TABLE)));
-            extendedDatamartTables.add(getExtendedSchema(dmClass, "_".concat(ACTUAL_TABLE)));
+        List<Entity> extendedEntities = new ArrayList<>();
+        schema.getEntities().forEach(entity -> {
+            val extendedEntityFields = new ArrayList<>(entity.getFields());
+            extendedEntityFields.addAll(getExtendedColumns());
+            entity.setFields(extendedEntityFields);
+            extendedEntities.add(entity);
+            extendedEntities.add(getExtendedSchema(entity, "_".concat(HISTORY_TABLE)));
+            extendedEntities.add(getExtendedSchema(entity, "_".concat(STAGING_TABLE)));
+            extendedEntities.add(getExtendedSchema(entity, "_".concat(ACTUAL_TABLE)));
         });
-        extendedSchema.setDatamartTables(extendedDatamartTables);
+        extendedSchema.setEntities(extendedEntities);
         return extendedSchema;
     }
 
-    private DatamartTable getExtendedSchema(DatamartTable datamartTable, String tablePostfix) {
-        DatamartTable datamartTableExtended = new DatamartTable();
-        datamartTableExtended.setLabel(datamartTable.getLabel());
-        datamartTableExtended.setMnemonic(datamartTable.getLabel() + tablePostfix);
-        datamartTableExtended.setId(UUID.randomUUID());
-        List<TableAttribute> tableAttributeList = new ArrayList<>();
-        datamartTable.getTableAttributes().forEach(classAttr -> {
-            TableAttribute tableAttribute = new TableAttribute();
-            tableAttribute.setId(UUID.randomUUID());
-            tableAttribute.setMnemonic(classAttr.getMnemonic());
-            tableAttribute.setType(classAttr.getType());
-            tableAttributeList.add(tableAttribute);
-        });
-        datamartTableExtended.setTableAttributes(tableAttributeList);
-        return datamartTableExtended;
+    private Entity getExtendedSchema(Entity entity, String tablePostfix) {
+        return entity.toBuilder()
+            .fields(entity.getFields().stream()
+                .map(ef -> ef.toBuilder().build())
+                .collect(Collectors.toList()))
+            .name(entity.getName() + tablePostfix)
+            .build();
     }
 
-    private List<TableAttribute> getExtendedColumns() {
-        List<TableAttribute> tableAttributeList = new ArrayList<>();
-        tableAttributeList.add(generateNewField(SYS_OP_ATTR, ColumnType.INT));
-        tableAttributeList.add(generateNewField(SYS_TO_ATTR, ColumnType.INT));
-        tableAttributeList.add(generateNewField(SYS_FROM_ATTR, ColumnType.INT));
+    private List<EntityField> getExtendedColumns() {
+        List<EntityField> tableAttributeList = new ArrayList<>();
+        tableAttributeList.add(generateNewField(SYS_OP_ATTR));
+        tableAttributeList.add(generateNewField(SYS_TO_ATTR));
+        tableAttributeList.add(generateNewField(SYS_FROM_ATTR));
         return tableAttributeList;
     }
 
-    private TableAttribute generateNewField(String mnemonic, ColumnType columnType) {
-        TableAttribute tableAttribute = new TableAttribute();
-        tableAttribute.setId(UUID.randomUUID());
-        tableAttribute.setMnemonic(mnemonic);
-        tableAttribute.setType(new AttributeType(UUID.randomUUID(), columnType));
-        return tableAttribute;
+    private EntityField generateNewField(String name) {
+        return EntityField.builder()
+            .type(ColumnType.INT)
+            .name(name)
+            .build();
     }
 
 }

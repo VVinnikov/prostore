@@ -43,7 +43,7 @@ public class ZookeeperConnectionProviderImpl implements ZookeeperConnectionProvi
     }
 
     @Override
-    public synchronized ZooKeeper getOrConnect() {
+    public ZooKeeper getOrConnect() {
         return synConnected && connection.getState().isConnected() ? connection : connect(getConnectionStringWithChroot());
     }
 
@@ -52,9 +52,13 @@ public class ZookeeperConnectionProviderImpl implements ZookeeperConnectionProvi
     }
 
     @SneakyThrows
-    private ZooKeeper connect(String connectionString) {
+    private synchronized ZooKeeper connect(String connectionString) {
         if (connection != null) {
-            connection.close();
+            if (connection.getState().isConnected()) {
+                return connection;
+            } else {
+                connection.close();
+            }
         }
         val connectionLatch = new CountDownLatch(1);
         connection = new ZooKeeper(connectionString,

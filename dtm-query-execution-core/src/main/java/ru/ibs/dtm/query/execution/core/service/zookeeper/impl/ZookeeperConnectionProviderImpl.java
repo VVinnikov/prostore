@@ -13,15 +13,14 @@ import ru.ibs.dtm.query.execution.core.service.zookeeper.ZookeeperConnectionProv
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.zookeeper.Watcher.Event.KeeperState.SyncConnected;
 
 @Slf4j
 public class ZookeeperConnectionProviderImpl implements ZookeeperConnectionProvider {
-    private final AtomicBoolean synConnected = new AtomicBoolean();
     private final ZookeeperProperties properties;
     private ZooKeeper connection;
+    private boolean synConnected;
 
     public ZookeeperConnectionProviderImpl(ZookeeperProperties properties) {
         this.properties = properties;
@@ -44,10 +43,8 @@ public class ZookeeperConnectionProviderImpl implements ZookeeperConnectionProvi
     }
 
     @Override
-    public ZooKeeper getOrConnect() {
-        synchronized (synConnected) {
-            return synConnected.get() && connection.getState().isConnected() ? connection : connect(getConnectionStringWithChroot());
-        }
+    public synchronized ZooKeeper getOrConnect() {
+        return synConnected && connection.getState().isConnected() ? connection : connect(getConnectionStringWithChroot());
     }
 
     private String getConnectionStringWithChroot() {
@@ -65,14 +62,14 @@ public class ZookeeperConnectionProviderImpl implements ZookeeperConnectionProvi
             we -> {
                 log.debug("ZooKeeper connection: [{}]", we);
                 if (we.getState() == SyncConnected) {
-                    synConnected.set(true);
+                    synConnected = true;
                     connectionLatch.countDown();
                 } else {
-                    synConnected.set(false);
+                    synConnected = false;
                 }
             });
         connectionLatch.await(properties.getConnectionTimeoutMs(), TimeUnit.MILLISECONDS);
-        if (!synConnected.get()) {
+        if (!synConnected) {
             val errMsg = String.format("Zookeeper connection timed out: [%d] ms", properties.getConnectionTimeoutMs());
             log.error(errMsg);
             throw new TimeoutException(errMsg);
@@ -83,8 +80,9 @@ public class ZookeeperConnectionProviderImpl implements ZookeeperConnectionProvi
     @Override
     @SneakyThrows
     public void close() {
-        if (synConnected.get()) {
+        if (synConnected) {
             connection.close();
+            synConnected = false;
         }
     }
 }

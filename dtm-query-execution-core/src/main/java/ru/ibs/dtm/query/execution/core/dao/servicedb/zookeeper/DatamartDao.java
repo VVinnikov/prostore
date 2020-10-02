@@ -7,7 +7,7 @@ import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartInfo;
 
 import java.util.List;
 
-public interface DatamartDao extends ZkDao<String> {
+public interface DatamartDao extends ZookeeperDao<String> {
     Future<Void> createDatamart(String name);
 
     void getDatamartMeta(Handler<AsyncResult<List<DatamartInfo>>> resultHandler);

@@ -9,7 +9,7 @@ import ru.ibs.dtm.common.model.ddl.Entity;
 import ru.ibs.dtm.common.model.ddl.EntityField;
 import ru.ibs.dtm.query.execution.core.configuration.properties.ZookeeperProperties;
 import ru.ibs.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
-import ru.ibs.dtm.query.execution.core.service.zookeeper.impl.ZKConnectionProviderImpl;
+import ru.ibs.dtm.query.execution.core.service.zookeeper.impl.ZookeeperConnectionProviderImpl;
 import ru.ibs.dtm.query.execution.core.service.zookeeper.impl.ZookeeperExecutorImpl;
 
 import java.util.ArrayList;
@@ -30,7 +30,7 @@ class EntityDaoImplTest {
     private final Entity expectedEntity2;
 
     public EntityDaoImplTest() {
-        ZookeeperExecutor executor = new ZookeeperExecutorImpl(new ZKConnectionProviderImpl(getZookeeperProperties()), Vertx.vertx());
+        ZookeeperExecutor executor = new ZookeeperExecutorImpl(new ZookeeperConnectionProviderImpl(getZookeeperProperties()), Vertx.vertx());
         datamartDao = new DatamartDaoImpl(executor, "test1");
         entityDao = new EntityDaoImpl(executor, "test1");
         expectedEntity1 = getEntity(EXPECTED_ENT_NAME1);

@@ -1,12 +1,14 @@
 package ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.impl;
 
 import io.vertx.core.Vertx;
-import io.vertx.core.json.jackson.DatabindCodec;
 import io.vertx.junit5.VertxTestContext;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.curator.test.TestingServer;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import ru.ibs.dtm.query.execution.core.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.core.configuration.properties.ZookeeperProperties;
 import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.executor.impl.*;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
@@ -16,6 +18,7 @@ import ru.ibs.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
 import ru.ibs.dtm.query.execution.core.service.zookeeper.impl.ZKConnectionProviderImpl;
 import ru.ibs.dtm.query.execution.core.service.zookeeper.impl.ZookeeperExecutorImpl;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -26,18 +29,28 @@ class DeltaServiceDaoImplTest {
     public static final String ENV_NAME = "test";
     public static final String DATAMART = "dtm";
     public static final String BAD_DTM = "bad_dtm";
+    private TestingServer testingServer;
     private DeltaServiceDaoImpl dao;
     private DatamartDao datamartDao;
 
     public DeltaServiceDaoImplTest() throws Exception {
-        DatabindCodec.mapper().findAndRegisterModules();
+        new AppConfiguration(null).objectMapper();
+    }
+
+    @BeforeEach
+    public void before() throws Exception {
+        testingServer = new TestingServer(55431, true);
         dao = new DeltaServiceDaoImpl();
         initExecutors(dao);
     }
 
-    private void initExecutors(DeltaServiceDaoImpl dao) throws Exception {
-        TestingServer server = new TestingServer(55431, true);
+    @AfterEach
+    public void after() throws IOException {
+        testingServer.stop();
+        testingServer.close();
+    }
 
+    private void initExecutors(DeltaServiceDaoImpl dao) throws Exception {
         ZookeeperProperties properties = new ZookeeperProperties();
         properties.setChroot("/arena");
         properties.setConnectionString("localhost:55431");

@@ -10,20 +10,20 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.TranslatableTable;
+import ru.ibs.dtm.common.model.ddl.Entity;
 import ru.ibs.dtm.query.calcite.core.util.CalciteUtil;
-import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;
 
 import java.util.ArrayList;
 
 public abstract class DtmTable extends AbstractQueryableTable implements TranslatableTable {
 
     protected final QueryableSchema dtmSchema;
-    protected final DatamartTable datamartTable;
+    protected final Entity entity;
 
-    public DtmTable(QueryableSchema dtmSchema, DatamartTable datamartTable) {
+    public DtmTable(QueryableSchema dtmSchema, Entity entity) {
         super(Object[].class);
         this.dtmSchema = dtmSchema;
-        this.datamartTable = datamartTable;
+        this.entity = entity;
     }
 
     @Override
@@ -35,14 +35,20 @@ public abstract class DtmTable extends AbstractQueryableTable implements Transla
     @Override
     public RelDataType getRowType(RelDataTypeFactory typeFactory) {
         RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(typeFactory);
-        datamartTable.getTableAttributes()
-                .forEach(it -> builder.add(
-                        it.getMnemonic(),
-                        CalciteUtil.valueOf(it.getType().getValue())
-                        //FIXME implement setting the precision and scale attributes from length and accuracy
-                        //it.getLength(),
-                        //it.getAccuracy()
-                ).nullable(true));
+        entity.getFields()
+            .forEach(it -> {
+                    if (it.getSize() != null && it.getAccuracy() != null) {
+                        builder.add(it.getName(), CalciteUtil.valueOf(it.getType()), it.getSize(), it.getAccuracy())
+                            .nullable(it.getNullable() != null && it.getNullable());
+                    } else if (it.getSize() != null) {
+                        builder.add(it.getName(), CalciteUtil.valueOf(it.getType()), it.getSize())
+                            .nullable(it.getNullable() != null && it.getNullable());
+                    } else {
+                        builder.add(it.getName(), CalciteUtil.valueOf(it.getType()))
+                            .nullable(it.getNullable() != null && it.getNullable());
+                    }
+                }
+            );
         return builder.build();
     }
 

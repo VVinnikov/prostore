@@ -13,9 +13,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.dto.DatamartInfo;
 import ru.ibs.dtm.common.dto.schema.DatamartSchemaKey;
-import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.common.model.ddl.Entity;
-import ru.ibs.dtm.common.model.ddl.EntityField;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.calcite.core.node.SqlSelectTree;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
@@ -23,9 +21,6 @@ import ru.ibs.dtm.query.calcite.core.util.DeltaInformationExtractor;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import ru.ibs.dtm.query.execution.core.service.schema.LogicalSchemaService;
-import ru.ibs.dtm.query.execution.model.metadata.AttributeType;
-import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;
-import ru.ibs.dtm.query.execution.model.metadata.TableAttribute;
 
 import java.util.*;
 import java.util.function.Function;
@@ -46,7 +41,7 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
     }
 
     @Override
-    public void createSchema(QueryRequest request, Handler<AsyncResult<Map<DatamartSchemaKey, DatamartTable>>> resultHandler) {
+    public void createSchema(QueryRequest request, Handler<AsyncResult<Map<DatamartSchemaKey, Entity>>> resultHandler) {
         try {
             final List<DatamartInfo> datamartInfoList = getDatamartInfoListFromQuery(request.getSql());
             CompositeFuture.join(
@@ -62,7 +57,6 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
                 try {
                     List<Entity> entities = success.list();
                     val schemaKeyDatamartTableMap = entities.stream()
-                        .map(this::createDatamartTable)
                         .collect(Collectors.toMap(this::createDatamartSchemaKey, Function.identity()));
                     resultHandler.handle(Future.succeededFuture(schemaKeyDatamartTableMap));
                 } catch (Exception ex) {
@@ -95,42 +89,8 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
         return new ArrayList<>(datamartMap.values());
     }
 
-    private DatamartSchemaKey createDatamartSchemaKey(DatamartTable table) {
-        return new DatamartSchemaKey(table.getDatamartMnemonic(), table.getMnemonic());
+    private DatamartSchemaKey createDatamartSchemaKey(Entity table) {
+        return new DatamartSchemaKey(table.getSchema(), table.getName());
     }
 
-    private DatamartTable createDatamartTable(Entity entity) {
-        final DatamartTable dmTable = new DatamartTable();
-        dmTable.setId(UUID.randomUUID());
-        dmTable.setDatamartMnemonic(entity.getSchema());
-        dmTable.setMnemonic(entity.getName());
-        dmTable.setLabel(entity.getName());
-        dmTable.setTableAttributes(createTableAttributes(entity.getFields()));
-        return dmTable;
-    }
-
-    private List<TableAttribute> createTableAttributes(List<EntityField> fields) {
-        return fields.stream()
-            .sorted(Comparator.comparing(EntityField::getOrdinalPosition))
-            .map(field -> {
-                final TableAttribute tableAttribute = new TableAttribute();
-                tableAttribute.setId(UUID.randomUUID());
-                tableAttribute.setMnemonic(field.getName());
-                tableAttribute.setType(mapColumnType(field.getType()));
-                tableAttribute.setLength(field.getSize());
-                tableAttribute.setAccuracy(field.getAccuracy());
-                tableAttribute.setPrimaryKeyOrder(field.getPrimaryOrder());
-                tableAttribute.setDistributeKeyOrder(field.getShardingOrder());
-                tableAttribute.setOrdinalPosition(field.getOrdinalPosition());
-                tableAttribute.setNullable(field.getNullable());
-                return tableAttribute;
-            }).collect(Collectors.toList());
-    }
-
-    private AttributeType mapColumnType(ColumnType dataType) {
-        AttributeType attributeType = new AttributeType();
-        attributeType.setId(UUID.randomUUID());
-        attributeType.setValue(dataType);
-        return attributeType;
-    }
 }

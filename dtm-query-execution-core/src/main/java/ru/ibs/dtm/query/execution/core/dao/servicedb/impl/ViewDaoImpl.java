@@ -15,10 +15,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 import ru.ibs.dtm.async.AsyncUtils;
+import ru.ibs.dtm.common.model.ddl.Entity;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.ViewDao;
 import ru.ibs.dtm.query.execution.core.dto.DatamartView;
 import ru.ibs.dtm.query.execution.core.dto.SystemDatamartView;
-import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -173,9 +173,9 @@ public class ViewDaoImpl implements ViewDao {
         }));
     }
 
-    private DatamartTable getDatamartTable(JsonObject row) {
+    private Entity getDatamartTable(JsonObject row) {
         try {
-            return DatabindCodec.mapper().readValue(row.getString(SYSTEM_VIEWS_REGISTRY.SCHEMA.getName()), DatamartTable.class);
+            return DatabindCodec.mapper().readValue(row.getString(SYSTEM_VIEWS_REGISTRY.SCHEMA.getName()), Entity.class);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

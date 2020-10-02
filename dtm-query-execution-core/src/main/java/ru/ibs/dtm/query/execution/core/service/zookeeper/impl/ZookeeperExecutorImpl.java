@@ -8,14 +8,14 @@ import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import ru.ibs.dtm.common.util.ThrowableConsumer;
 import ru.ibs.dtm.common.util.ThrowableFunction;
-import ru.ibs.dtm.query.execution.core.service.zookeeper.ZKConnectionProvider;
+import ru.ibs.dtm.query.execution.core.service.zookeeper.ZookeeperConnectionProvider;
 import ru.ibs.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
 
 import java.util.List;
 
 @RequiredArgsConstructor
 public class ZookeeperExecutorImpl implements ZookeeperExecutor {
-    private final ZKConnectionProvider connectionManager;
+    private final ZookeeperConnectionProvider connectionManager;
     private final Vertx vertx;
 
     @Override

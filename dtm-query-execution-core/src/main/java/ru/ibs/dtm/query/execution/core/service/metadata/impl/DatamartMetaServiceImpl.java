@@ -7,6 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
+import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
+import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;
 import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartInfo;
 import ru.ibs.dtm.query.execution.core.dto.metadata.EntityAttribute;
@@ -19,15 +21,17 @@ import java.util.stream.Collectors;
 public class DatamartMetaServiceImpl implements DatamartMetaService {
     private static final Logger LOGGER = LoggerFactory.getLogger(DatamartMetaServiceImpl.class);
 
-    private ServiceDbFacade serviceDbFacade;
+    private DatamartDao datamartDao;
+    private EntityDao entityDao;
 
     public DatamartMetaServiceImpl(ServiceDbFacade serviceDbFacade) {
-        this.serviceDbFacade = serviceDbFacade;
+        this.datamartDao = serviceDbFacade.getServiceDbDao().getDatamartDao();
+        this.entityDao = serviceDbFacade.getServiceDbDao().getEntityDao();
     }
 
     @Override
     public void getDatamartMeta(Handler<AsyncResult<List<DatamartInfo>>> resultHandler) {
-        serviceDbFacade.getServiceDbDao().getDatamartDao().getDatamartMeta(ar -> {
+        datamartDao.getDatamartMeta(ar -> {
             if (ar.succeeded()) {
                 resultHandler.handle(Future.succeededFuture(ar.result()));
             } else {
@@ -39,12 +43,12 @@ public class DatamartMetaServiceImpl implements DatamartMetaService {
 
     @Override
     public void getEntitiesMeta(String datamartMnemonic, Handler<AsyncResult<List<DatamartEntity>>> resultHandler) {
-        serviceDbFacade.getServiceDbDao().getEntityDao().getEntitiesMeta(datamartMnemonic, resultHandler);
+        entityDao.getEntitiesMeta(datamartMnemonic, resultHandler);
     }
 
     @Override
     public void getAttributesMeta(String datamartMnemonic, String entityMnemonic, Handler<AsyncResult<List<EntityAttribute>>> resultHandler) {
-        serviceDbFacade.getServiceDbDao().getEntityDao().getEntity(datamartMnemonic, entityMnemonic)
+        entityDao.getEntity(datamartMnemonic, entityMnemonic)
             .onFailure(error -> resultHandler.handle(Future.failedFuture(error)))
             .onSuccess(entity -> {
                 resultHandler.handle(Future.succeededFuture(entity.getFields().stream()

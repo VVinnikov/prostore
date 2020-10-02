@@ -1,16 +1,16 @@
 package ru.ibs.dtm.query.execution.plugin.adqm.service.impl.enrichment;
 
 import io.vertx.core.Vertx;
+import lombok.val;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import ru.ibs.dtm.common.model.ddl.Entity;
 import ru.ibs.dtm.query.calcite.core.provider.CalciteContextProvider;
 import ru.ibs.dtm.query.calcite.core.service.impl.CalciteDMLQueryParserService;
 import ru.ibs.dtm.query.execution.model.metadata.Datamart;
-import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static ru.ibs.dtm.query.execution.plugin.adqm.service.impl.enrichment.AdqmSchemaExtenderImpl.getExtendedColumns;
@@ -18,8 +18,8 @@ import static ru.ibs.dtm.query.execution.plugin.adqm.service.impl.enrichment.Adq
 @Service("adqmCalciteDMLQueryParserService")
 public class AdqmCalciteDMLQueryParserService extends CalciteDMLQueryParserService {
     public AdqmCalciteDMLQueryParserService(
-            @Qualifier("adqmCalciteContextProvider") CalciteContextProvider contextProvider,
-            @Qualifier("coreVertx") Vertx vertx
+        @Qualifier("adqmCalciteContextProvider") CalciteContextProvider contextProvider,
+        @Qualifier("coreVertx") Vertx vertx
     ) {
         super(contextProvider, vertx);
     }
@@ -34,20 +34,15 @@ public class AdqmCalciteDMLQueryParserService extends CalciteDMLQueryParserServi
     private Datamart withSystemFields(Datamart logicalSchema) {
         Datamart extendedSchema = new Datamart();
         extendedSchema.setMnemonic(logicalSchema.getMnemonic());
-        extendedSchema.setId(UUID.randomUUID());
-        List<DatamartTable> extendedDatamartClasses = new ArrayList<>();
-        logicalSchema.getDatamartTables().forEach(dmClass -> {
-            DatamartTable nwTable = new DatamartTable();
-            nwTable.setDatamartMnemonic(dmClass.getDatamartMnemonic());
-            nwTable.setPrimaryKeys(dmClass.getPrimaryKeys());
-            nwTable.setMnemonic(dmClass.getMnemonic());
-            nwTable.setLabel(dmClass.getLabel());
-            nwTable.setId(UUID.randomUUID());
-            nwTable.setTableAttributes(new ArrayList<>(dmClass.getTableAttributes()));
-            nwTable.getTableAttributes().addAll(getExtendedColumns());
-            extendedDatamartClasses.add(nwTable);
+        List<Entity> extendedDatamartClasses = new ArrayList<>();
+        logicalSchema.getEntities().forEach(entity -> {
+            val extendedFields = new ArrayList<>(entity.getFields());
+            extendedFields.addAll(getExtendedColumns());
+            extendedDatamartClasses.add(entity.toBuilder()
+                .fields(extendedFields)
+                .build());
         });
-        extendedSchema.setDatamartTables(extendedDatamartClasses);
+        extendedSchema.setEntities(extendedDatamartClasses);
         return extendedSchema;
     }
 }

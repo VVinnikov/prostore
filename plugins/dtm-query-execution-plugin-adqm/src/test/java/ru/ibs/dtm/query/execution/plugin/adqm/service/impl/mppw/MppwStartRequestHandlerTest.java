@@ -26,7 +26,6 @@ import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 import java.util.*;
 import java.util.function.Predicate;
 
-import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;

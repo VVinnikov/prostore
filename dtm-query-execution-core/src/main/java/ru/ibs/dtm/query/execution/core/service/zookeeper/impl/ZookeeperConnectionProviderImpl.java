@@ -8,22 +8,21 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import ru.ibs.dtm.query.execution.core.configuration.properties.ZookeeperProperties;
-import ru.ibs.dtm.query.execution.core.service.zookeeper.ZKConnectionProvider;
+import ru.ibs.dtm.query.execution.core.service.zookeeper.ZookeeperConnectionProvider;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.zookeeper.Watcher.Event.KeeperState.SyncConnected;
 
 @Slf4j
-public class ZKConnectionProviderImpl implements ZKConnectionProvider {
-    private final AtomicBoolean synConnected = new AtomicBoolean();
+public class ZookeeperConnectionProviderImpl implements ZookeeperConnectionProvider {
     private final ZookeeperProperties properties;
     private ZooKeeper connection;
+    private boolean synConnected;
 
-    public ZKConnectionProviderImpl(ZookeeperProperties properties) {
+    public ZookeeperConnectionProviderImpl(ZookeeperProperties properties) {
         this.properties = properties;
         initializeChroot();
     }
@@ -45,9 +44,7 @@ public class ZKConnectionProviderImpl implements ZKConnectionProvider {
 
     @Override
     public ZooKeeper getOrConnect() {
-        synchronized (synConnected) {
-            return synConnected.get() && connection.getState().isConnected() ? connection : connect(getConnectionStringWithChroot());
-        }
+        return synConnected && connection.getState().isConnected() ? connection : connect(getConnectionStringWithChroot());
     }
 
     private String getConnectionStringWithChroot() {
@@ -55,9 +52,13 @@ public class ZKConnectionProviderImpl implements ZKConnectionProvider {
     }
 
     @SneakyThrows
-    private ZooKeeper connect(String connectionString) {
+    private synchronized ZooKeeper connect(String connectionString) {
         if (connection != null) {
-            connection.close();
+            if (connection.getState().isConnected()) {
+                return connection;
+            } else {
+                connection.close();
+            }
         }
         val connectionLatch = new CountDownLatch(1);
         connection = new ZooKeeper(connectionString,
@@ -65,14 +66,14 @@ public class ZKConnectionProviderImpl implements ZKConnectionProvider {
             we -> {
                 log.debug("ZooKeeper connection: [{}]", we);
                 if (we.getState() == SyncConnected) {
-                    synConnected.set(true);
+                    synConnected = true;
                     connectionLatch.countDown();
                 } else {
-                    synConnected.set(false);
+                    synConnected = false;
                 }
             });
         connectionLatch.await(properties.getConnectionTimeoutMs(), TimeUnit.MILLISECONDS);
-        if (!synConnected.get()) {
+        if (!synConnected) {
             val errMsg = String.format("Zookeeper connection timed out: [%d] ms", properties.getConnectionTimeoutMs());
             log.error(errMsg);
             throw new TimeoutException(errMsg);
@@ -83,8 +84,9 @@ public class ZKConnectionProviderImpl implements ZKConnectionProvider {
     @Override
     @SneakyThrows
     public void close() {
-        if (synConnected.get()) {
+        if (synConnected) {
             connection.close();
+            synConnected = false;
         }
     }
 }

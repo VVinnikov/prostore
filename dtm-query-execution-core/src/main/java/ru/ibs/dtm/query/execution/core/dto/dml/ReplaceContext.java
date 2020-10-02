@@ -2,9 +2,10 @@ package ru.ibs.dtm.query.execution.core.dto.dml;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
-import java.util.*;
 import lombok.Data;
 import org.apache.calcite.sql.SqlNode;
+
+import java.util.*;
 
 @Data
 public class ReplaceContext {

@@ -5,7 +5,6 @@ import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.data.Stat;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaDaoExecutor;
@@ -28,9 +27,8 @@ public class GetDeltaOkExecutorImpl extends DeltaServiceDaoExecutorHelper implem
 
     @Override
     public Future<OkDelta> execute(String datamart) {
-        val deltaStat = new Stat();
         Promise<OkDelta> resultPromise = Promise.promise();
-        executor.getData(getDeltaPath(datamart), null, deltaStat)
+        executor.getData(getDeltaPath(datamart))
             .map(this::deserializedDelta)
             .map(Delta::getOk)
             .onSuccess(r -> {

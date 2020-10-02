@@ -14,8 +14,9 @@ import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.executor.impl.*;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.impl.DatamartDaoImpl;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaWriteOpRequest;
+import ru.ibs.dtm.query.execution.core.service.zookeeper.ZookeeperConnectionProvider;
 import ru.ibs.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
-import ru.ibs.dtm.query.execution.core.service.zookeeper.impl.ZKConnectionProviderImpl;
+import ru.ibs.dtm.query.execution.core.service.zookeeper.impl.ZookeeperConnectionProviderImpl;
 import ru.ibs.dtm.query.execution.core.service.zookeeper.impl.ZookeeperExecutorImpl;
 
 import java.io.IOException;
@@ -56,7 +57,7 @@ class DeltaServiceDaoImplTest {
         properties.setConnectionString("localhost:55431");
         properties.setConnectionTimeoutMs(10_000);
         properties.setSessionTimeoutMs(30_000);
-        ZKConnectionProviderImpl manager = new ZKConnectionProviderImpl(properties);
+        ZookeeperConnectionProvider manager = new ZookeeperConnectionProviderImpl(properties);
         ZookeeperExecutor executor = new ZookeeperExecutorImpl(manager, Vertx.vertx());
         datamartDao = new DatamartDaoImpl(executor, ENV_NAME);
         dao.addExecutor(new DeleteDeltaHotExecutorImpl(executor, ENV_NAME));

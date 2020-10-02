@@ -123,6 +123,7 @@ public class WriteOperationSuccessExecutorImpl extends DeltaServiceDaoExecutorHe
                 opNums.stream()
                     .filter(op -> op > opN)
                     .min(Comparator.naturalOrder())
+                    .map(minOp -> minOp - 1)
                     .orElse(Math.max(opN, opMax))
             );
         }

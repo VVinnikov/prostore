@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.calcite.core.extension.eddl.DropDatabase;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
-import ru.ibs.dtm.query.execution.core.dao.exception.DatamartNotExistsException;
+import ru.ibs.dtm.query.execution.core.dao.exception.datamart.DatamartNotExistsException;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import ru.ibs.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;

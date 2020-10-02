@@ -14,7 +14,7 @@ import ru.ibs.dtm.common.model.ddl.EntityField;
 import ru.ibs.dtm.common.model.ddl.EntityType;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
-import ru.ibs.dtm.query.execution.core.dao.exception.DatamartNotExistsException;
+import ru.ibs.dtm.query.execution.core.dao.exception.datamart.DatamartNotExistsException;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import ru.ibs.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;

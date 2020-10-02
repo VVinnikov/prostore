@@ -135,6 +135,8 @@ public interface ZookeeperExecutor {
 
     Future<String> createEmptyPersistentPath(String path);
 
+    Future<String> createPersistentSequentialPath(String path, byte[] data);
+
     /**
      * Create a node with the given path. The node data will be the given data,
      * and node acl will be the given acl.

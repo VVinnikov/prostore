@@ -21,7 +21,7 @@ import ru.ibs.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacadeImpl;
-import ru.ibs.dtm.query.execution.core.dao.exception.DatamartNotExistsException;
+import ru.ibs.dtm.query.execution.core.dao.exception.datamart.DatamartNotExistsException;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDao;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.impl.DatamartDaoImpl;

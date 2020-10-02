@@ -35,7 +35,7 @@ public class WriteOperationErrorExecutorImpl extends DeltaServiceDaoExecutorHelp
                 if (delta.getHot() == null) {
                     throw new CrashException("Delta hot not exists", new DeltaNotExistException());
                 }
-                opNumCnCtx[0] = sysCn - delta.getHot().getCnFrom() + 1;
+                opNumCnCtx[0] = sysCn - delta.getHot().getCnFrom();
                 return opNumCnCtx[0];
             })
             .compose(opNum -> executor.getData(getWriteOpPath(datamart, opNum)))

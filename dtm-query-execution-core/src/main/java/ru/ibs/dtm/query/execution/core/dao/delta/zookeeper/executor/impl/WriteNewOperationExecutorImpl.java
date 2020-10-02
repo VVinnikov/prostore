@@ -64,9 +64,9 @@ public class WriteNewOperationExecutorImpl extends DeltaServiceDaoExecutorHelper
     private Long getSysCn(Long cnFrom, List<OpResult> result) {
         if (result.size() == 2 && result.get(CREATE_OP_PATH_INDEX) instanceof OpResult.CreateResult) {
             try {
-                String opPath = ((OpResult.CreateResult) result.get(CREATE_OP_PATH_INDEX)).getPath();
-                long opNumber = Long.parseLong(opPath.substring(opPath.lastIndexOf("/") + 1));
-                return (opNumber - 1) + cnFrom;
+                val opPath = ((OpResult.CreateResult) result.get(CREATE_OP_PATH_INDEX)).getPath();
+                val opNumber = Long.parseLong(opPath.substring(opPath.lastIndexOf("/") + 1));
+                return opNumber + cnFrom;
             } catch (NumberFormatException e) {
                 throw new DeltaException("Can't get op number", e);
             }

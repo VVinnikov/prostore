@@ -23,6 +23,7 @@ import ru.ibs.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -47,7 +48,7 @@ public class WriteOperationSuccessExecutorImpl extends DeltaServiceDaoExecutorHe
                     throw new CrashException("Delta hot not exists", new DeltaNotExistException());
                 }
                 ctx.setDelta(delta);
-                ctx.setOpNum(sysCn - delta.getHot().getCnFrom() + 1);
+                ctx.setOpNum(sysCn - delta.getHot().getCnFrom());
                 ctx.setDeltaVersion(deltaStat.getVersion());
                 return ctx;
             })
@@ -103,22 +104,28 @@ public class WriteOperationSuccessExecutorImpl extends DeltaServiceDaoExecutorHe
             .map(path -> Long.parseLong(path.substring(path.lastIndexOf("/") + 1)))
             .collect(Collectors.toList());
         val hotDelta = ctx.getDelta().getHot();
-        val opN = ctx.getSysCn() - hotDelta.getCnFrom() + 1;
-        val opMax = hotDelta.getCnMax() - hotDelta.getCnFrom() + 1;
+        val opN = ctx.getSysCn() - hotDelta.getCnFrom();
+        val opMax = hotDelta.getCnMax() - hotDelta.getCnFrom();
         val cnMax = Math.max(ctx.getSysCn(), hotDelta.getCnMax());
-        val lastOpDone = getLastOpDoneInSequence(opN, opMax, opNums);
-        val cnTo = hotDelta.getCnFrom() - 1 + lastOpDone;
-        hotDelta.setCnTo(cnTo);
+        getLastOpDoneInSequence(opN, opMax, opNums).ifPresent(lastOpDone -> {
+            val cnTo = hotDelta.getCnFrom() + lastOpDone;
+            hotDelta.setCnTo(cnTo);
+        });
         hotDelta.setCnMax(cnMax);
         return hotDelta;
     }
 
-    private long getLastOpDoneInSequence(long opN, long opMax, List<Long> opNums) {
-        return opNums.stream().anyMatch(op -> op < opN) ?
-            1 : opNums.stream()
-            .filter(op -> op > opN)
-            .min(Comparator.naturalOrder())
-            .orElse(Math.max(opN, opMax));
+    private Optional<Long> getLastOpDoneInSequence(long opN, long opMax, List<Long> opNums) {
+        if (opNums.stream().anyMatch(op -> op < opN)) {
+            return Optional.empty();
+        } else {
+            return Optional.of(
+                opNums.stream()
+                    .filter(op -> op > opN)
+                    .min(Comparator.naturalOrder())
+                    .orElse(Math.max(opN, opMax))
+            );
+        }
     }
 
     @Override

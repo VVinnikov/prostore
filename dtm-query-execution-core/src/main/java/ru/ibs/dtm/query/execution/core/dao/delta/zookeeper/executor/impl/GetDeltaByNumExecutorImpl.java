@@ -49,6 +49,8 @@ public class GetDeltaByNumExecutorImpl extends DeltaServiceDaoExecutorHelper imp
                 log.error(errMsg, error);
                 if (error instanceof KeeperException.NoNodeException) {
                     resultPromise.fail(new DeltaNotFoundException(error));
+                } else if (error instanceof DeltaException) {
+                    resultPromise.fail(error);
                 } else {
                     resultPromise.fail(new DeltaException(errMsg, error));
                 }

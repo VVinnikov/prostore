@@ -70,7 +70,11 @@ public class WriteOperationSuccessExecutorImpl extends DeltaServiceDaoExecutorHe
                     datamart,
                     sysCn);
                 log.error(errMsg, error);
-                resultPromise.fail(new DeltaException(errMsg, error));
+                if (error instanceof DeltaException) {
+                    resultPromise.fail(error);
+                } else {
+                    resultPromise.fail(new DeltaException(errMsg, error));
+                }
             });
         return resultPromise.future();
     }

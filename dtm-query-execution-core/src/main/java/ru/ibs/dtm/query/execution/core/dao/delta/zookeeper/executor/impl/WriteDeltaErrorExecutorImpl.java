@@ -61,6 +61,8 @@ public class WriteDeltaErrorExecutorImpl extends DeltaServiceDaoExecutorHelper i
                     } else {
                         resultPromise.fail(new DeltaException(errMsg, error));
                     }
+                } else if (error instanceof DeltaException) {
+                    resultPromise.fail(error);
                 } else {
                     resultPromise.fail(new DeltaException(errMsg, error));
                 }

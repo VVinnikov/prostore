@@ -57,6 +57,8 @@ public class WriteOperationErrorExecutorImpl extends DeltaServiceDaoExecutorHelp
                 log.error(errMsg, error);
                 if (error instanceof KeeperException.NoNodeException) {
                     resultPromise.fail(new DeltaWriteOpNotFoundException(error));
+                } else if (error instanceof DeltaException) {
+                    resultPromise.fail(error);
                 } else {
                     resultPromise.fail(new DeltaException(errMsg, error));
                 }

@@ -52,8 +52,10 @@ public class WriteNewOperationExecutorImpl extends DeltaServiceDaoExecutorHelper
                 val errMsg = String.format("can't write new operation on datamart[%s]",
                     request.getDatamart());
                 log.error(errMsg, error);
-                if (error instanceof KeeperException.NoNodeException) {
+                if (error instanceof KeeperException.NodeExistsException) {
                     resultPromise.fail(new TableBlockedException(request.getTableName(), error));
+                } else if (error instanceof DeltaException) {
+                    resultPromise.fail(error);
                 } else {
                     resultPromise.fail(new DeltaException(errMsg, error));
                 }

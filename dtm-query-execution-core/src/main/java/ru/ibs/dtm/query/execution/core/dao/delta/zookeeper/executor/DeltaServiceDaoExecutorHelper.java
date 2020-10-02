@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public abstract class DeltaServiceDaoExecutorHelper {
+    public static final String SEQUENCE_NUMBER_TEMPLATE = "0000000000";
     protected static final byte[] EMPTY_DATA = null;
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
     protected final ZookeeperExecutor executor;
@@ -53,7 +54,7 @@ public abstract class DeltaServiceDaoExecutorHelper {
     }
 
     protected String getWriteOpPath(String datamart, Long opNum) {
-        return getDatamartPath(datamart) + "/run/" + opNum;
+        return getDatamartPath(datamart) + "/run/" + toSequenceNumber(opNum);
     }
 
     protected byte[] serializedDelta(Delta delta) {
@@ -102,6 +103,10 @@ public abstract class DeltaServiceDaoExecutorHelper {
         } catch (IOException e) {
             throw new DeltaException("Can't deserialize deltaWriteOp", e);
         }
+    }
+
+    protected String toSequenceNumber(long number) {
+        return SEQUENCE_NUMBER_TEMPLATE.substring(String.valueOf(number).length()) + number;
     }
 
     @Data

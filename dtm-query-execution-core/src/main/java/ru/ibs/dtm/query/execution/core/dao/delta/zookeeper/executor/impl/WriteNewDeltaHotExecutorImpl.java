@@ -45,7 +45,7 @@ public class WriteNewDeltaHotExecutorImpl extends DeltaServiceDaoExecutorHelper 
                 var cnFrom = 0L;
                 if (delta.getOk() != null) {
                     deltaNum = delta.getOk().getDeltaNum() + 1;
-                    cnFrom = delta.getOk().getCnFrom() + 1;
+                    cnFrom = delta.getOk().getCnTo() + 1;
                 }
                 if (deltaHotNum != null && deltaHotNum != deltaNum) {
                     throw new InvalidDeltaNumException();
@@ -74,6 +74,8 @@ public class WriteNewDeltaHotExecutorImpl extends DeltaServiceDaoExecutorHelper 
                 if (error instanceof KeeperException.NodeExistsException
                     || error instanceof KeeperException.BadVersionException) {
                     resultPromise.fail(new DeltaAlreadyStartedException(error));
+                } else if (error instanceof DeltaException) {
+                    resultPromise.fail(error);
                 } else {
                     resultPromise.fail(new DeltaException(errMsg, error));
                 }

@@ -41,7 +41,11 @@ public class DeleteDeltaHotExecutorImpl extends DeltaServiceDaoExecutorHelper im
                 val errMsg = String.format("can't delete delta hot on datamart[%s]",
                     datamart);
                 log.error(errMsg, error);
-                resultPromise.fail(new DeltaException(errMsg, error));
+                if (error instanceof DeltaException) {
+                    resultPromise.fail(error);
+                } else {
+                    resultPromise.fail(new DeltaException(errMsg, error));
+                }
             });
         return resultPromise.future();
     }

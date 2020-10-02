@@ -59,6 +59,8 @@ public class GetDeltaByDateTimeExecutorImpl extends DeltaServiceDaoExecutorHelpe
                 log.error(errMsg, error);
                 if (error instanceof KeeperException.NoNodeException) {
                     resultPromise.fail(new DatamartNotExistsException(datamart));
+                } else if (error instanceof DeltaException) {
+                    resultPromise.fail(error);
                 } else {
                     resultPromise.fail(new DeltaException(errMsg, error));
                 }

@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
-class DeltaServiceDaoImplTest {
+public class DeltaServiceDaoImplTest {
     public static final String ENV_NAME = "test";
     public static final String DATAMART = "dtm";
     public static final String BAD_DTM = "bad_dtm";

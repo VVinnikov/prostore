@@ -1,12 +1,13 @@
 package ru.ibs.dtm.query.execution.core.utils;
 
-import java.util.Arrays;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlSnapshot;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.query.calcite.core.node.SqlSelectTree;
 import ru.ibs.dtm.query.calcite.core.node.SqlTreeNode;
+
+import java.util.Arrays;
 
 @Component
 public class DefaultDatamartSetter {

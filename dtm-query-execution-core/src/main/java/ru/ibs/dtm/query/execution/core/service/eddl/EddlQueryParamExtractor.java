@@ -6,15 +6,15 @@ import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.execution.core.dto.eddl.EddlQuery;
 
 /**
- * Экстрактор параметров eddl запроса
+ * EDDL query param extractor
  */
 public interface EddlQueryParamExtractor {
 
     /**
-     * <p>Извелечь параметры</p>
+     * <p>exctract params</p>
      *
-     * @param request            запрос
-     * @param asyncResultHandler хэндлер асинхронной обработки результата
+     * @param request            request
+     * @param asyncResultHandler async result handler
      */
     void extract(QueryRequest request, Handler<AsyncResult<EddlQuery>> asyncResultHandler);
 

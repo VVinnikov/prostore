@@ -6,6 +6,7 @@ import lombok.val;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.query.execution.plugin.adg.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.OperationYaml;
+
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class TtCartridgeSchemaDecodingTest {

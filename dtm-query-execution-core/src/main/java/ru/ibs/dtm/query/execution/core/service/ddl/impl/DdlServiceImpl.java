@@ -61,7 +61,9 @@ public class DdlServiceImpl implements DdlService<QueryResult>, StatusEventPubli
         });
     }
 
-    private void execute(DdlRequestContext context, Handler<AsyncResult<QueryResult>> handler, AsyncResult<Object> ar) {
+    private void execute(DdlRequestContext context,
+                         Handler<AsyncResult<QueryResult>> handler,
+                         AsyncResult<Object> ar) {
         try {
             final SqlCall sqlCall = getSqlCall(ar);
             if (executorMap.containsKey(sqlCall.getKind())) {
@@ -93,11 +95,11 @@ public class DdlServiceImpl implements DdlService<QueryResult>, StatusEventPubli
 
     private SqlCall getSqlCall(AsyncResult<Object> ar) {
         if (ar.result() instanceof SqlAlter) {
-            return (SqlCall) ((SqlAlter) ar.result());
+            return (SqlCall) ar.result();
         } else if (ar.result() instanceof SqlDdl) {
-            return (SqlCall) ((SqlDdl) ar.result());
+            return (SqlCall) ar.result();
         } else if (ar.result() instanceof SqlUseSchema) {
-            return (SqlCall) ((SqlUseSchema) ar.result());
+            return (SqlCall) ar.result();
         } else {
             throw new RuntimeException("Not supported request type");
         }

@@ -135,6 +135,8 @@ public interface ZookeeperExecutor {
 
     Future<String> createEmptyPersistentPath(String path);
 
+    Future<String> createPersistentSequentialPath(String path, byte[] data);
+
     /**
      * Create a node with the given path. The node data will be the given data,
      * and node acl will be the given acl.
@@ -278,6 +280,8 @@ public interface ZookeeperExecutor {
      * @return - function result in Future
      */
     <T> Future<T> execute(ThrowableFunction<ZooKeeper, T> function);
+
+    Future<Boolean> exists(String path);
 
     /**
      * Executing zookeeper operations with return results in Future of Void

@@ -6,22 +6,22 @@ import ru.ibs.dtm.query.execution.core.dto.eddl.EddlAction;
 import ru.ibs.dtm.query.execution.core.dto.eddl.EddlQuery;
 
 /**
- * Исполнитель eddl запросов
+ * EDDL query executor
  */
 public interface EddlExecutor {
 
   /**
-   * <p>Выполнить eddl запрос</p>
+   * <p>Execute EDDL query</p>
    *
-   * @param query              запрос
-   * @param asyncResultHandler хэндлер асинхронной обработки результата
+   * @param query              query
+   * @param asyncResultHandler async result handler
    */
   void execute(EddlQuery query, Handler<AsyncResult<Void>> asyncResultHandler);
 
   /**
-   * Получить тип запроса
+   * Get query type
    *
-   * @return тип запроса
+   * @return query type
    */
   EddlAction getAction();
 }

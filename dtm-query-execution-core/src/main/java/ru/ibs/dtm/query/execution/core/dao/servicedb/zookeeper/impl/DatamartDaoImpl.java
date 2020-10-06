@@ -3,13 +3,16 @@ package ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.impl;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.json.jackson.DatabindCodec;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.zookeeper.*;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Repository;
 import ru.ibs.dtm.async.AsyncUtils;
-import ru.ibs.dtm.query.execution.core.dao.exception.DatamartAlreadyExistsException;
-import ru.ibs.dtm.query.execution.core.dao.exception.DatamartNotExistsException;
+import ru.ibs.dtm.query.execution.core.dao.exception.datamart.DatamartAlreadyExistsException;
+import ru.ibs.dtm.query.execution.core.dao.exception.datamart.DatamartNotExistsException;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
+import ru.ibs.dtm.query.execution.core.dto.delta.Delta;
 import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartInfo;
 import ru.ibs.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
 
@@ -20,9 +23,10 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class DatamartDaoImpl implements DatamartDao<String> {
+@Repository
+public class DatamartDaoImpl implements DatamartDao {
     private static final int CREATE_DATAMART_OP_INDEX = 0;
-    private static final byte[] EMPTY_DATA = new byte[0];
+    private static final byte[] EMPTY_DATA = null;
     private final ZookeeperExecutor executor;
     private final String envPath;
 
@@ -61,10 +65,23 @@ public class DatamartDaoImpl implements DatamartDao<String> {
     }
 
     private List<Op> getCreateDatamartOps(String datamartPath) {
+        byte[] deltaData;
+        try {
+            deltaData = DatabindCodec.mapper().writeValueAsBytes(new Delta());
+        } catch (Exception ex) {
+            throw new RuntimeException("Can't serialize delta");
+        }
         return Arrays.asList(
             Op.create(datamartPath, EMPTY_DATA, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT),
-            Op.create(datamartPath + "/entity", EMPTY_DATA, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT),
-            Op.create(datamartPath + "/delta", EMPTY_DATA, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT));
+            createDatamartNodeOp(datamartPath, "/entity"),
+            Op.create(datamartPath + "/delta", deltaData, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT),
+            createDatamartNodeOp(datamartPath, "/delta/num"),
+            createDatamartNodeOp(datamartPath, "/delta/date")
+        );
+    }
+
+    private Op createDatamartNodeOp(String datamartPath, String nodeName) {
+        return Op.create(datamartPath + nodeName, EMPTY_DATA, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
     }
 
     private boolean isDatamartExists(KeeperException error) {
@@ -75,13 +92,13 @@ public class DatamartDaoImpl implements DatamartDao<String> {
     @Override
     public void getDatamartMeta(Handler<AsyncResult<List<DatamartInfo>>> resultHandler) {
         getDatamarts()
-            .onSuccess(names -> {
-                resultHandler.handle(Future.succeededFuture(
+            .onSuccess(names -> resultHandler.handle(
+                Future.succeededFuture(
                     names.stream()
                         .map(DatamartInfo::new)
-                        .collect(Collectors.toList())
-                ));
-            })
+                        .collect(Collectors.toList()
+                        )
+                )))
             .onFailure(error -> resultHandler.handle(Future.failedFuture(error)));
     }
 
@@ -115,6 +132,11 @@ public class DatamartDaoImpl implements DatamartDao<String> {
                         RuntimeException::new);
                 }
             });
+    }
+
+    @Override
+    public Future<Boolean> existsDatamart(String name) {
+        return executor.exists(getTargetPath(name));
     }
 
     @Override

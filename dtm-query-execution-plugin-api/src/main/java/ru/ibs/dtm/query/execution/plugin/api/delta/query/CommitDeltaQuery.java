@@ -2,6 +2,7 @@ package ru.ibs.dtm.query.execution.plugin.api.delta.query;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+
 import java.time.LocalDateTime;
 
 import static ru.ibs.dtm.query.execution.plugin.api.delta.query.DeltaAction.COMMIT_DELTA;

@@ -4,7 +4,6 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -13,7 +12,6 @@ import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.dto.QueryParserRequest;
 import ru.ibs.dtm.common.dto.QueryParserResponse;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
-import ru.ibs.dtm.common.reader.QuerySourceRequest;
 import ru.ibs.dtm.query.calcite.core.service.QueryParserService;
 import ru.ibs.dtm.query.calcite.core.util.CalciteUtil;
 import ru.ibs.dtm.query.execution.core.service.dml.ColumnMetadataService;
@@ -33,9 +31,8 @@ public class ColumnMetadataServiceImpl implements ColumnMetadataService {
     }
 
     @Override
-    public void getColumnMetadata(QuerySourceRequest request, Handler<AsyncResult<List<ColumnMetadata>>> handler) {
-        val parserRequest = new QueryParserRequest(request.getQueryRequest(), request.getLogicalSchema());
-        parserService.parse(parserRequest, ar -> {
+    public void getColumnMetadata(QueryParserRequest request, Handler<AsyncResult<List<ColumnMetadata>>> handler) {
+        parserService.parse(request, ar -> {
             if (ar.succeeded()) {
                 QueryParserResponse parserResponse = ar.result();
                 try {

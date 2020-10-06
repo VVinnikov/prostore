@@ -1,7 +1,5 @@
 package ru.ibs.dtm.query.execution.core.utils;
 
-import java.util.Objects;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlNode;
@@ -9,6 +7,9 @@ import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.query.calcite.core.node.SqlSelectTree;
 import ru.ibs.dtm.query.calcite.core.util.DeltaInformationExtractor;
+
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component

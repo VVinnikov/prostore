@@ -59,6 +59,11 @@ public class ZookeeperExecutorImpl implements ZookeeperExecutor {
     }
 
     @Override
+    public Future<String> createPersistentSequentialPath(String path, byte[] data) {
+        return create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT_SEQUENTIAL);
+    }
+
+    @Override
     public Future<String> create(final String path,
                                  byte[] data,
                                  List<ACL> acl,
@@ -95,6 +100,11 @@ public class ZookeeperExecutorImpl implements ZookeeperExecutor {
                 blockingPromise.fail(e);
             }
         }, promise));
+    }
+
+    @Override
+    public Future<Boolean> exists(String path) {
+        return execute(zk -> zk.exists(path, false) != null);
     }
 
     @Override

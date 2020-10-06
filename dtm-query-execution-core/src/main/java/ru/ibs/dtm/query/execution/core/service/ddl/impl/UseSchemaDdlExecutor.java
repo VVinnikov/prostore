@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.common.model.ddl.SystemMetadata;
 import ru.ibs.dtm.common.reader.QueryResult;
-import ru.ibs.dtm.query.execution.core.configuration.jooq.MariaProperties;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import ru.ibs.dtm.query.execution.core.service.metadata.MetadataExecutor;
@@ -21,28 +20,25 @@ import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 
 import java.util.Collections;
 
-@Component
 @Slf4j
+@Component
 public class UseSchemaDdlExecutor extends QueryResultDdlExecutor {
 
     public static final String SCHEMA_COLUMN_NAME = "schema";
 
     public UseSchemaDdlExecutor(MetadataExecutor<DdlRequestContext> metadataExecutor,
-                                MariaProperties mariaProperties,
                                 ServiceDbFacade serviceDbFacade) {
-        super(metadataExecutor, mariaProperties, serviceDbFacade);
+        super(metadataExecutor, serviceDbFacade);
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<QueryResult>> handler) {
-        serviceDbFacade.getServiceDbDao().getDatamartDao().findDatamart(sqlNodeName, ar -> {
-            if (ar.succeeded()) {
-                context.setDatamartName(sqlNodeName);
+    public void execute(DdlRequestContext context, String datamart, Handler<AsyncResult<QueryResult>> handler) {
+        serviceDbFacade.getServiceDbDao().getDatamartDao().getDatamart(datamart)
+            .onFailure(error -> handler.handle(Future.failedFuture(error)))
+            .onSuccess(success -> {
+                context.setDatamartName(datamart);
                 handler.handle(Future.succeededFuture(createQueryResult(context)));
-            } else {
-                handler.handle(Future.failedFuture(ar.cause()));
-            }
-        });
+            });
     }
 
     @NotNull

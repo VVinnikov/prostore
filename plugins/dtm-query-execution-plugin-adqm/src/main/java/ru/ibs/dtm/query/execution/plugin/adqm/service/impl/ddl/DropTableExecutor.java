@@ -39,7 +39,7 @@ public class DropTableExecutor implements DdlExecutor<Void> {
 
     @Override
     public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<Void>> handler) {
-        dropTable(context.getRequest().getClassTable()).onComplete(handler);
+        dropTable(context.getRequest().getEntity()).onComplete(handler);
     }
 
     @Override

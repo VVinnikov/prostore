@@ -22,7 +22,8 @@ import ru.ibs.dtm.query.execution.core.service.eddl.impl.DropUploadExternalTable
 
 import java.util.Arrays;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -77,8 +78,8 @@ public class DropUploadExternalTableExecutorTest {
                 promise.fail(ar.cause());
             }
         });
+
         assertTrue(promise.future().succeeded());
-        assertFalse(promise.future().failed());
     }
 
     @Test
@@ -96,9 +97,27 @@ public class DropUploadExternalTableExecutorTest {
             }
         });
 
-        assertFalse(promise.future().succeeded());
         assertTrue(promise.future().failed());
-        assertNotNull(promise.future().cause());
+        assertEquals(String.format("Table [%s] in datamart [%s] doesn't exist!", table, schema), promise.future().cause().getMessage());
+    }
+
+    @Test
+    void executeTableNotExists(){
+        Promise promise = Promise.promise();
+
+        Mockito.when(entityDao.getEntity(eq(schema), eq(table)))
+                .thenReturn(Future.failedFuture("entity not exists"));
+
+        dropUploadExternalTableExecutor.execute(query, ar -> {
+            if (ar.succeeded()) {
+                promise.complete(ar.result());
+            } else {
+                promise.fail(ar.cause());
+            }
+        });
+
+        assertTrue(promise.future().failed());
+        assertEquals("entity not exists", promise.future().cause().getMessage());
     }
 
     @Test
@@ -109,7 +128,7 @@ public class DropUploadExternalTableExecutorTest {
                 .thenReturn(Future.succeededFuture(entity));
 
         Mockito.when(entityDao.deleteEntity(eq(schema), eq(table)))
-                .thenReturn(Future.failedFuture("deleting entity error"));
+                .thenReturn(Future.failedFuture("delete entity error"));
 
         dropUploadExternalTableExecutor.execute(query, ar -> {
             if (ar.succeeded()) {
@@ -119,8 +138,7 @@ public class DropUploadExternalTableExecutorTest {
             }
         });
 
-        assertFalse(promise.future().succeeded());
         assertTrue(promise.future().failed());
-        assertNotNull(promise.future().cause());
+        assertEquals("delete entity error", promise.future().cause().getMessage());
     }
 }

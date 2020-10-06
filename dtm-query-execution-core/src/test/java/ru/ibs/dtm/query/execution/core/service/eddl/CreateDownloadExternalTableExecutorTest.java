@@ -27,7 +27,8 @@ import ru.ibs.dtm.query.execution.core.service.eddl.impl.CreateDownloadExternalT
 
 import java.util.Arrays;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -93,8 +94,8 @@ public class CreateDownloadExternalTableExecutorTest {
                 promise.fail(ar.cause());
             }
         });
+
         assertTrue(promise.future().succeeded());
-        assertFalse(promise.future().failed());
     }
 
     @Test
@@ -111,13 +112,54 @@ public class CreateDownloadExternalTableExecutorTest {
                 promise.fail(ar.cause());
             }
         });
-        assertFalse(promise.future().succeeded());
+
         assertTrue(promise.future().failed());
-        assertNotNull(promise.future().cause());
+        assertEquals(String.format("Datamart [%s] not exists!", schema), promise.future().cause().getMessage());
     }
 
     @Test
     void executeTableExists(){
+        Promise promise = Promise.promise();
+
+        Mockito.when(datamartDao.existsDatamart(eq(schema)))
+                .thenReturn(Future.succeededFuture(true));
+
+        Mockito.when(entityDao.existsEntity(eq(schema), eq(entity.getName())))
+                .thenReturn(Future.succeededFuture(true));
+
+        createDownloadExteranlTableExecutor.execute(query, ar -> {
+            if (ar.succeeded()) {
+                promise.complete(ar.result());
+            } else {
+                promise.fail(ar.cause());
+            }
+        });
+
+        assertTrue(promise.future().failed());
+        assertEquals(String.format("Table [%s] is already exists in datamart [%s]!", entity.getName(), schema), promise.future().cause().getMessage());
+    }
+
+    @Test
+    void executeExistsDatamartError(){
+        Promise promise = Promise.promise();
+
+        Mockito.when(datamartDao.existsDatamart(eq(schema)))
+                .thenReturn(Future.failedFuture("exists datamart error"));
+
+        createDownloadExteranlTableExecutor.execute(query, ar -> {
+            if (ar.succeeded()) {
+                promise.complete(ar.result());
+            } else {
+                promise.fail(ar.cause());
+            }
+        });
+
+        assertTrue(promise.future().failed());
+        assertEquals("exists datamart error", promise.future().cause().getMessage());
+    }
+
+    @Test
+    void executeExistsEntityError(){
         Promise promise = Promise.promise();
 
         Mockito.when(datamartDao.existsDatamart(eq(schema)))
@@ -133,13 +175,13 @@ public class CreateDownloadExternalTableExecutorTest {
                 promise.fail(ar.cause());
             }
         });
-        assertFalse(promise.future().succeeded());
+
         assertTrue(promise.future().failed());
-        assertNotNull(promise.future().cause());
+        assertEquals("exists entity error", promise.future().cause().getMessage());
     }
 
     @Test
-    void executeTableNotExistsError(){
+    void executeCreateEntityError(){
         Promise promise = Promise.promise();
 
         Mockito.when(datamartDao.existsDatamart(eq(schema)))
@@ -149,7 +191,7 @@ public class CreateDownloadExternalTableExecutorTest {
                 .thenReturn(Future.succeededFuture(false));
 
         Mockito.when(entityDao.createEntity(any()))
-                .thenReturn(Future.failedFuture("creating new entity error"));
+                .thenReturn(Future.failedFuture("create entity error"));
 
         createDownloadExteranlTableExecutor.execute(query, ar -> {
             if (ar.succeeded()) {
@@ -158,8 +200,8 @@ public class CreateDownloadExternalTableExecutorTest {
                 promise.fail(ar.cause());
             }
         });
-        assertFalse(promise.future().succeeded());
+
         assertTrue(promise.future().failed());
-        assertNotNull(promise.future().cause());
+        assertEquals("create entity error", promise.future().cause().getMessage());
     }
 }

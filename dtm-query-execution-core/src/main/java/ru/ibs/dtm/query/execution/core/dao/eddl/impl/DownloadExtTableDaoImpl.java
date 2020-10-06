@@ -5,7 +5,6 @@ import io.github.jklingsporn.vertx.jooq.shared.internal.QueryResult;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,10 +13,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.util.StringUtils;
 import ru.ibs.dtm.common.plugin.exload.Format;
 import ru.ibs.dtm.common.plugin.exload.Type;
-import ru.ibs.dtm.query.execution.core.dao.eddl.DownloadExtTableAttributeDao;
 import ru.ibs.dtm.query.execution.core.dao.eddl.DownloadExtTableDao;
-import ru.ibs.dtm.query.execution.core.dao.servicedb.DatamartDao;
-import ru.ibs.dtm.query.execution.core.dto.eddl.CreateDownloadExternalTableQuery;
 import ru.ibs.dtm.query.execution.core.dto.edml.DownloadExtTableRecord;
 
 import static org.jooq.generated.dtmservice.Tables.*;
@@ -27,66 +23,10 @@ import static org.jooq.generated.dtmservice.Tables.*;
 public class DownloadExtTableDaoImpl implements DownloadExtTableDao {
 
     private final AsyncClassicGenericQueryExecutor executor;
-    private final DatamartDao datamartDao;
-    private final DownloadExtTableAttributeDao downloadExtTableAttributeDao;
 
     @Autowired
-    public DownloadExtTableDaoImpl(@Qualifier("coreQueryExecutor") AsyncClassicGenericQueryExecutor executor,
-                                   DatamartDao datamartDao, DownloadExtTableAttributeDao downloadExtTableAttributeDao) {
+    public DownloadExtTableDaoImpl(@Qualifier("coreQueryExecutor") AsyncClassicGenericQueryExecutor executor) {
         this.executor = executor;
-        this.datamartDao = datamartDao;
-        this.downloadExtTableAttributeDao = downloadExtTableAttributeDao;
-    }
-
-    @Override
-    public void insertDownloadExternalTable(CreateDownloadExternalTableQuery downloadExternalTableQuery, Handler<AsyncResult<Void>> resultHandler) {
-        datamartDao.findDatamart(downloadExternalTableQuery.getSchemaName(), datamartHandler -> {
-            if (datamartHandler.succeeded()) {
-                Long datamartId = datamartHandler.result();
-                executor.execute(dsl -> dsl.insertInto(DOWNLOAD_EXTERNAL_TABLE)
-                        .set(DOWNLOAD_EXTERNAL_TABLE.SCHEMA_ID, datamartId)
-                        .set(DOWNLOAD_EXTERNAL_TABLE.TABLE_NAME, downloadExternalTableQuery.getTableName())
-                        .set(DOWNLOAD_EXTERNAL_TABLE.TYPE_ID, downloadExternalTableQuery.getLocationType().ordinal())
-                        .set(DOWNLOAD_EXTERNAL_TABLE.LOCATION, downloadExternalTableQuery.getLocationPath())
-                        .set(DOWNLOAD_EXTERNAL_TABLE.FORMAT_ID, downloadExternalTableQuery.getFormat().ordinal())
-                        .set(DOWNLOAD_EXTERNAL_TABLE.CHUNK_SIZE, downloadExternalTableQuery.getChunkSize())
-                        .set(DOWNLOAD_EXTERNAL_TABLE.TABLE_SCHEMA, downloadExternalTableQuery.getTableSchema())
-                ).setHandler(ar -> {
-                    if (ar.succeeded()) {
-                        resultHandler.handle(Future.succeededFuture());
-                    } else {
-                        resultHandler.handle(Future.failedFuture(ar.cause()));
-                    }
-                });
-            } else {
-                resultHandler.handle(Future.failedFuture(datamartHandler.cause()));
-            }
-        });
-    }
-
-    @Override
-    public void dropDownloadExternalTable(String datamart, String tableName, Handler<AsyncResult<Void>> resultHandler) {
-        Future.future((Promise<DownloadExtTableRecord> promise) -> {
-            findDownloadExternalTable(datamart, tableName.toLowerCase(), promise);
-        })
-                .compose(deTable -> Future.future((Promise<Long> promise) -> {
-                    downloadExtTableAttributeDao.dropDownloadExtTableAttributesByTableId(deTable.getId(), ar -> {
-                        if (ar.succeeded()) {
-                            promise.complete(deTable.getId());
-                        } else {
-                            promise.fail(ar.cause());
-                        }
-                    });
-                }))
-                .compose(detId -> Future.future((Promise<Integer> promise) -> dropDownloadExternalTable(detId, promise)))
-                .onSuccess(success -> resultHandler.handle(Future.succeededFuture()))
-                .onFailure(fail -> resultHandler.handle(Future.failedFuture(fail)));
-    }
-
-    private void dropDownloadExternalTable(Long id, Handler<AsyncResult<Integer>> handler) {
-        executor.execute(dsl -> dsl.deleteFrom(DOWNLOAD_EXTERNAL_TABLE)
-                .where(DOWNLOAD_EXTERNAL_TABLE.ID.eq(id)))
-                .setHandler(handler);
     }
 
     @Override

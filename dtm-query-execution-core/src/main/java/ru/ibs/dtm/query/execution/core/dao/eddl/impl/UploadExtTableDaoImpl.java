@@ -5,7 +5,6 @@ import io.github.jklingsporn.vertx.jooq.shared.internal.QueryResult;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import lombok.extern.slf4j.Slf4j;
@@ -16,9 +15,6 @@ import org.springframework.stereotype.Repository;
 import ru.ibs.dtm.common.plugin.exload.Format;
 import ru.ibs.dtm.common.plugin.exload.Type;
 import ru.ibs.dtm.query.execution.core.dao.eddl.UploadExtTableDao;
-import ru.ibs.dtm.query.execution.core.dao.servicedb.DatamartDao;
-import ru.ibs.dtm.query.execution.core.dto.eddl.CreateUploadExternalTableQuery;
-import ru.ibs.dtm.query.execution.core.dto.eddl.DropUploadExternalTableQuery;
 import ru.ibs.dtm.query.execution.core.dto.edml.UploadExtTableRecord;
 
 import static org.jooq.generated.dtmservice.Tables.DATAMARTS_REGISTRY;
@@ -29,12 +25,10 @@ import static org.jooq.generated.dtmservice.Tables.UPLOAD_EXTERNAL_TABLE;
 public class UploadExtTableDaoImpl implements UploadExtTableDao {
 
     private final AsyncClassicGenericQueryExecutor executor;
-    private final DatamartDao datamartDao;
 
     @Autowired
-    public UploadExtTableDaoImpl(@Qualifier("coreQueryExecutor") AsyncClassicGenericQueryExecutor executor, DatamartDao datamartDao) {
+    public UploadExtTableDaoImpl(@Qualifier("coreQueryExecutor") AsyncClassicGenericQueryExecutor executor) {
         this.executor = executor;
-        this.datamartDao = datamartDao;
     }
 
     @Override
@@ -95,52 +89,4 @@ public class UploadExtTableDaoImpl implements UploadExtTableDao {
         return record;
     }
 
-    @Override
-    public void insertUploadExternalTable(CreateUploadExternalTableQuery query, Handler<AsyncResult<Void>> resultHandler) {
-        datamartDao.findDatamart(query.getSchemaName(), datamartHandler -> {
-            if (datamartHandler.succeeded()) {
-                Long datamartId = datamartHandler.result();
-                executor.execute(dsl -> dsl.insertInto(UPLOAD_EXTERNAL_TABLE)
-                        .set(UPLOAD_EXTERNAL_TABLE.DATAMART_ID, datamartId)
-                        .set(UPLOAD_EXTERNAL_TABLE.TABLE_NAME, query.getTableName())
-                        .set(UPLOAD_EXTERNAL_TABLE.TYPE_ID, query.getLocationType().ordinal())
-                        .set(UPLOAD_EXTERNAL_TABLE.LOCATION_PATH, query.getLocationPath())
-                        .set(UPLOAD_EXTERNAL_TABLE.FORMAT_ID, query.getFormat().ordinal())
-                        .set(UPLOAD_EXTERNAL_TABLE.TABLE_SCHEMA, query.getTableSchema())
-                        .set(UPLOAD_EXTERNAL_TABLE.MESSAGE_LIMIT, query.getMessageLimit())
-                ).setHandler(ar -> {
-                    if (ar.succeeded()) {
-                        resultHandler.handle(Future.succeededFuture());
-                    } else {
-                        resultHandler.handle(Future.failedFuture(ar.cause()));
-                    }
-                });
-            } else {
-                resultHandler.handle(Future.failedFuture(datamartHandler.cause()));
-            }
-        });
-    }
-
-    @Override
-    public void dropUploadExternalTable(DropUploadExternalTableQuery query, Handler<AsyncResult<Void>> resultHandler) {
-        Future.future((Promise<UploadExtTableRecord> promise) -> findUploadExternalTable(query.getSchemaName(),
-                query.getTableName().toLowerCase(), promise))
-                .compose(uploadExtTableRec -> Future.future((Promise<Void> promise) ->
-                        this.dropUploadExternalTableById(uploadExtTableRec.getId(), promise)))
-                .onSuccess(success -> resultHandler.handle(Future.succeededFuture()))
-                .onFailure(fail -> resultHandler.handle(Future.failedFuture(fail)));
-    }
-
-    @Override
-    public void dropUploadExternalTableById(Long uploadExtTableId, Handler<AsyncResult<Void>> resultHandler) {
-        executor.execute(dsl -> dsl.deleteFrom(UPLOAD_EXTERNAL_TABLE)
-                .where(UPLOAD_EXTERNAL_TABLE.ID.eq(uploadExtTableId)))
-                .setHandler(ar -> {
-                    if (ar.succeeded()) {
-                        resultHandler.handle(Future.succeededFuture());
-                    } else {
-                        resultHandler.handle(Future.failedFuture(ar.cause()));
-                    }
-                });
-    }
 }

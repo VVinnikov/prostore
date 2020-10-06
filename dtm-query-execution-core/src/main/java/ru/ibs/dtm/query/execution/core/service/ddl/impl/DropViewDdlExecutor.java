@@ -13,7 +13,7 @@ import ru.ibs.dtm.common.model.ddl.EntityType;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.calcite.core.node.SqlSelectTree;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
-import ru.ibs.dtm.query.execution.core.dao.exception.ViewNotExistsException;
+import ru.ibs.dtm.query.execution.core.dao.exception.entity.ViewNotExistsException;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import ru.ibs.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import ru.ibs.dtm.query.execution.core.service.metadata.MetadataExecutor;

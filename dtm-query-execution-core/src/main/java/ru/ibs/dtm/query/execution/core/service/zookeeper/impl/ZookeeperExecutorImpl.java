@@ -59,6 +59,11 @@ public class ZookeeperExecutorImpl implements ZookeeperExecutor {
     }
 
     @Override
+    public Future<String> createPersistentSequentialPath(String path, byte[] data) {
+        return create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT_SEQUENTIAL);
+    }
+
+    @Override
     public Future<String> create(final String path,
                                  byte[] data,
                                  List<ACL> acl,

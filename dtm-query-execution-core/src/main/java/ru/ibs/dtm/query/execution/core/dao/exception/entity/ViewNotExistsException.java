@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.dao.exception;
+package ru.ibs.dtm.query.execution.core.dao.exception.entity;
 
 public class ViewNotExistsException extends RuntimeException {
 

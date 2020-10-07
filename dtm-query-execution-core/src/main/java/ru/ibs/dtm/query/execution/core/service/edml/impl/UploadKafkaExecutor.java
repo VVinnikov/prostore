@@ -25,6 +25,7 @@ import ru.ibs.dtm.query.execution.plugin.api.request.StatusRequest;
 import ru.ibs.dtm.query.execution.plugin.api.status.StatusRequestContext;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -82,6 +83,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                     getMppwLoadingStatus(ds, statusRequestContext)
                             .onComplete(chr -> {
                                 if (chr.succeeded()) {
+                                    //todo: Add error checking (try catch and so on)
                                     StatusQueryResult result = chr.result();
                                     updateMppwLoadStatus(mppwLoadStatusResult, result);
                                     if (isMppwLoadedSuccess(result)) {
@@ -95,10 +97,22 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                                         promise.complete(stopFuture);
                                     } else if (isMppwLoadingInitFailure(mppwLoadStatusResult)) {
                                         vertx.cancelTimer(timerId);
-                                        promise.fail(String.format("Plugin %s consumer failed to start", ds));
+                                        MppwStopFuture stopFuture = MppwStopFuture.builder()
+                                                .sourceType(ds)
+                                                .future(stopMppw(ds, mppwRequestContext))
+                                                .cause(new RuntimeException(String.format("Plugin %s consumer failed to start", ds)))
+                                                .stopReason(MppwStopReason.ERROR_RECEIVED)
+                                                .build();
+                                        promise.complete(stopFuture);
                                     } else if (isLastOffsetNotIncrease(mppwLoadStatusResult)) {
                                         vertx.cancelTimer(timerId);
-                                        promise.fail(String.format("Plugin %s consumer offset stopped dead", ds));
+                                        MppwStopFuture stopFuture = MppwStopFuture.builder()
+                                                .sourceType(ds)
+                                                .future(stopMppw(ds, mppwRequestContext))
+                                                .cause(new RuntimeException(String.format("Plugin %s consumer offset stopped dead", ds)))
+                                                .stopReason(MppwStopReason.ERROR_RECEIVED)
+                                                .build();
+                                        promise.complete(stopFuture);
                                     }
                                 } else {
                                     log.error("Error getting plugin status: {}", ds, chr.cause());
@@ -242,9 +256,13 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
     }
 
     private boolean checkLastMessageTime(LocalDateTime endMessageTime) {
-        LocalDateTime commitTimeWithTimeout = endMessageTime.plus(kafkaProperties.getAdmin().getInputStreamTimeoutMs(),
+        //todo: Remove this. Create normal checks.
+        if (endMessageTime == null) {
+            endMessageTime = LocalDateTime.parse("1970-01-01T00:00:00", DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        }
+        LocalDateTime endMessageTimeWithTimeout = endMessageTime.plus(kafkaProperties.getAdmin().getInputStreamTimeoutMs(),
                 ChronoField.MILLI_OF_DAY.getBaseUnit());
-        return commitTimeWithTimeout.isAfter(LocalDateTime.now());
+        return endMessageTimeWithTimeout.isBefore(LocalDateTime.now());
     }
 
     @Override

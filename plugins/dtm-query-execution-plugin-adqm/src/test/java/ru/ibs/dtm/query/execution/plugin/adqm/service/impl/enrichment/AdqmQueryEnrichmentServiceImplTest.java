@@ -136,6 +136,12 @@ class AdqmQueryEnrichmentServiceImplTest {
             expectedSqls[7], enrichService);
     }
 
+    @Test
+    void enrichCount() {
+        enrich(prepareRequestDeltaNum("SELECT count(*) FROM shares.accounts"),
+            expectedSqls[8], enrichService);
+    }
+
     @SneakyThrows
     private void enrich(EnrichQueryRequest enrichRequest,
                         String expectedSql,

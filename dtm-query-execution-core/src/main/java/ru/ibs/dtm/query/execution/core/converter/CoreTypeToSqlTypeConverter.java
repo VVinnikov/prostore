@@ -17,7 +17,7 @@ public class CoreTypeToSqlTypeConverter extends BaseSqlTypeConverter {
     public Object convert(ColumnType type, Object value) {
         switch (type) {
             case INT:
-                return this.convert((Integer) value);
+                return this.convert(value);
             case VARCHAR:
             case CHAR:
                 return value == null? null: this.convert(value.toString());

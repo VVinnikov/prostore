@@ -19,7 +19,7 @@ import ru.ibs.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 
-import java.util.Collections;
+import java.util.*;
 
 @Component
 @Slf4j
@@ -50,9 +50,11 @@ public class UseSchemaDdlExecutor extends QueryResultDdlExecutor {
         final QueryResult result = new QueryResult();
         result.setRequestId(context.getRequest().getQueryRequest().getRequestId());
         result.setMetadata(Collections.singletonList(new ColumnMetadata(SCHEMA_COLUMN_NAME, SystemMetadata.SCHEMA, ColumnType.VARCHAR)));
-        JsonObject value = new JsonObject();
-        value.put(SCHEMA_COLUMN_NAME, context.getDatamartName());
-        result.setResult(new JsonArray(Collections.singletonList(value)));
+        List<Map<String, Object>> rows = new ArrayList<>();
+        Map<String, Object> rowMap = new HashMap<>();
+        rowMap.put(SCHEMA_COLUMN_NAME, context.getDatamartName());
+        rows.add(rowMap);
+        result.setResult(rows);
         return result;
     }
 

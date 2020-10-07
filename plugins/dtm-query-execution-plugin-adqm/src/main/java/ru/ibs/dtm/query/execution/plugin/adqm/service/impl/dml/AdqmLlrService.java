@@ -33,11 +33,12 @@ public class AdqmLlrService implements LlrService<QueryResult> {
         EnrichQueryRequest enrichQueryRequest = EnrichQueryRequest.generate(request.getQueryRequest(), request.getSchema());
         adqmQueryEnrichmentService.enrich(enrichQueryRequest, sqlResult -> {
             if (sqlResult.succeeded()) {
-                adqmDatabaseExecutor.execute(sqlResult.result(), executeResult -> {
+                adqmDatabaseExecutor.execute(sqlResult.result(), request.getMetadata(), executeResult -> {
                     if (executeResult.succeeded()) {
                         QueryResult queryResult = QueryResult.emptyResult();
                         queryResult.setRequestId(request.getQueryRequest().getRequestId());
                         queryResult.setResult(executeResult.result());
+                        queryResult.setMetadata(request.getMetadata());
                         asyncHandler.handle(Future.succeededFuture(queryResult));
                     } else {
                         asyncHandler.handle(Future.failedFuture(executeResult.cause()));

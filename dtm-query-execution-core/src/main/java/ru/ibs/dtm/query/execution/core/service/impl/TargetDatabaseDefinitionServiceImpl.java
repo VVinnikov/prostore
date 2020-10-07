@@ -17,6 +17,7 @@ import ru.ibs.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.QueryCostRequest;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -60,6 +61,7 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
                                             new QuerySourceRequest(
                                                     queryRequestWithSourceType,
                                                     request.getLogicalSchema(),
+                                                    Collections.emptyList(),
                                                     sourceType)));
                                 } else {
                                     handler.handle(Future.failedFuture(tr.cause()));

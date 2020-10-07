@@ -24,10 +24,7 @@ import ru.ibs.dtm.query.execution.plugin.adg.factory.impl.AdgHelperTableNamesFac
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryEnrichmentService;
 import ru.ibs.dtm.query.execution.plugin.api.request.LlrRequest;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -124,7 +121,7 @@ public class AdgQueryEnrichmentServiceImplTest {
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
     }
 
-    private EnrichQueryRequest prepareRequestMultipleSchema(String sql){
+    private EnrichQueryRequest prepareRequestMultipleSchema(String sql) {
         List<Datamart> datamarts = Arrays.asList(
                 getSchema("shares", true),
                 getSchema("shares_2", false),
@@ -147,7 +144,7 @@ public class AdgQueryEnrichmentServiceImplTest {
                         2L, null, DeltaType.NUM, datamarts.get(2).getMnemonic(),
                         datamarts.get(2).getDatamartTables().get(1).getLabel(), pos)
         ));
-        LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts);
+        LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts, Collections.emptyList());
         return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
     }
 
@@ -166,7 +163,7 @@ public class AdgQueryEnrichmentServiceImplTest {
                 new DeltaInformation("t", "2019-12-23 15:15:14", false,
                         1L, null, DeltaType.NUM, schemaName, datamarts.get(0).getDatamartTables().get(1).getLabel(), pos)
         ));
-        LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts);
+        LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts, Collections.emptyList());
         return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
     }
 
@@ -187,7 +184,7 @@ public class AdgQueryEnrichmentServiceImplTest {
                         1L, new DeltaInterval(3L, 4L), DeltaType.FINISHED_IN,
                         schemaName, datamarts.get(0).getDatamartTables().get(1).getLabel(), pos)
         ));
-        LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts);
+        LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts, Collections.emptyList());
         return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
     }
 

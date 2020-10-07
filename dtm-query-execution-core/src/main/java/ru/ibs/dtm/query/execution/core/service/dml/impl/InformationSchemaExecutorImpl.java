@@ -3,11 +3,10 @@ package ru.ibs.dtm.query.execution.core.service.dml.impl;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.json.JsonArray;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
+import ru.ibs.dtm.common.reader.QuerySourceRequest;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.service.dml.InformationSchemaExecutor;
 import ru.ibs.dtm.query.execution.core.utils.MetaDataQueryPreparer;
@@ -24,17 +23,17 @@ public class InformationSchemaExecutorImpl implements InformationSchemaExecutor 
     }
 
     @Override
-    public void execute(QueryRequest request, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
+    public void execute(QuerySourceRequest request, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
         serviceDbFacade.getDdlServiceDao().executeQuery(
-                SqlPreparer.replaceQuote(MetaDataQueryPreparer.modify(request.getSql())), ar -> {
+                SqlPreparer.replaceQuote(MetaDataQueryPreparer.modify(request.getQueryRequest().getSql())),
+                request.getMetadata(), ar -> {
                     if (ar.succeeded()) {
-                        QueryResult result = new QueryResult(request.getRequestId(),
-                                new JsonArray(ar.result().getRows()));
+                        QueryResult result = new QueryResult(request.getQueryRequest().getRequestId(),
+                                ar.result(), request.getMetadata());
                         asyncResultHandler.handle(Future.succeededFuture(result));
                     } else {
                         asyncResultHandler.handle(Future.failedFuture(ar.cause()));
                     }
                 });
     }
-
 }

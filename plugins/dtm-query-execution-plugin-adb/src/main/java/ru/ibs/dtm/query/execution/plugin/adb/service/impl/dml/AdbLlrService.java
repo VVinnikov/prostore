@@ -27,8 +27,6 @@ public class AdbLlrService implements LlrService<QueryResult> {
 
 	private final QueryEnrichmentService adbQueryEnrichmentService;
 	private final DatabaseExecutor adbDatabaseExecutor;
-	public static final String DATE_FORMAT_PATTERN = "yyyy-MM-dd";
-	public static final String DATETIME_FORMAT_PATTERN = DATE_FORMAT_PATTERN + " HH:mm:ss";
 
 	public AdbLlrService(QueryEnrichmentService adbQueryEnrichmentService,
 						 @Qualifier("adbQueryExecutor") DatabaseExecutor adbDatabaseExecutor) {
@@ -42,34 +40,12 @@ public class AdbLlrService implements LlrService<QueryResult> {
 		EnrichQueryRequest enrichQueryRequest = EnrichQueryRequest.generate(request.getQueryRequest(), request.getSchema());
 		adbQueryEnrichmentService.enrich(enrichQueryRequest, sqlResult -> {
 			if (sqlResult.succeeded()) {
-				adbDatabaseExecutor.execute(sqlResult.result(), executeResult -> {
+				adbDatabaseExecutor.execute(sqlResult.result(), request.getMetadata(), executeResult -> {
 					if (executeResult.succeeded()) {
-						JsonArray rowList = new JsonArray();
-						try {
-							executeResult.result().forEach(row -> {
-								JsonObject jsonRow = new JsonObject();
-								row.forEach(e ->{
-									val key = e.getKey();
-									val rowElement = e.getValue();
-									Object obj;
-									if (rowElement instanceof LocalDateTime) {
-										obj = ((LocalDateTime) rowElement).format(DateTimeFormatter.ofPattern(DATETIME_FORMAT_PATTERN));
-									} else if (rowElement instanceof LocalDate) {
-										obj = ((LocalDate) rowElement).format(DateTimeFormatter.ofPattern(DATE_FORMAT_PATTERN));
-									} else {
-										obj = rowElement;
-									}
-									jsonRow.put(key, obj);
-								});
-								rowList.add(jsonRow);
-							});
-						} catch (Exception ex) {
-							asyncHandler.handle(Future.failedFuture(ex));
-							return;
-						}
 						QueryResult queryResult = QueryResult.emptyResult();
 						queryResult.setRequestId(request.getQueryRequest().getRequestId());
-						queryResult.setResult(rowList);
+						queryResult.setResult(executeResult.result());
+						queryResult.setMetadata(request.getMetadata());
 						asyncHandler.handle(Future.succeededFuture(queryResult));
 					} else {
 						asyncHandler.handle(Future.failedFuture(executeResult.cause()));

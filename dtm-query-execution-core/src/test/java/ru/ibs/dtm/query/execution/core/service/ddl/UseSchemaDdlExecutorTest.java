@@ -31,12 +31,12 @@ import ru.ibs.dtm.query.execution.core.dao.servicedb.impl.ServiceDbDaoImpl;
 import ru.ibs.dtm.query.execution.core.service.ddl.impl.UseSchemaDdlExecutor;
 import ru.ibs.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import ru.ibs.dtm.query.execution.core.service.metadata.impl.MetadataExecutorImpl;
+import ru.ibs.dtm.query.execution.core.utils.QueryResultUtils;
 import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
 
-import java.util.Collections;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -88,9 +88,8 @@ class UseSchemaDdlExecutorTest {
         QueryResult result = new QueryResult();
         result.setMetadata(Collections.singletonList(new ColumnMetadata("schema", SystemMetadata.SCHEMA, ColumnType.VARCHAR)));
         result.setRequestId(context.getRequest().getQueryRequest().getRequestId());
-        JsonObject value = new JsonObject();
-        value.put("schema", schema);
-        result.setResult(new JsonArray(Collections.singletonList(value)));
+        result.setResult(QueryResultUtils.createResultWithSingleRow(Collections.singletonList("schema"),
+                Collections.singletonList(schema)));
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<Long>> handler = invocation.getArgument(1);
             handler.handle(Future.succeededFuture(datamartId));
@@ -114,9 +113,8 @@ class UseSchemaDdlExecutorTest {
         QueryResult result = new QueryResult();
         result.setMetadata(Collections.singletonList(new ColumnMetadata("schema", SystemMetadata.SCHEMA, ColumnType.VARCHAR)));
         result.setRequestId(context.getRequest().getQueryRequest().getRequestId());
-        JsonObject value = new JsonObject();
-        value.put("schema", schema);
-        result.setResult(new JsonArray(Collections.singletonList(value)));
+        result.setResult(QueryResultUtils.createResultWithSingleRow(Collections.singletonList("schema"),
+                Collections.singletonList(schema)));
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<Long>> handler = invocation.getArgument(1);
             handler.handle(Future.failedFuture(new RuntimeException("")));
@@ -140,9 +138,8 @@ class UseSchemaDdlExecutorTest {
         result.setMetadata(Collections.singletonList(new ColumnMetadata("schema",
                 SystemMetadata.SCHEMA, ColumnType.VARCHAR)));
         result.setRequestId(context.getRequest().getQueryRequest().getRequestId());
-        JsonObject value = new JsonObject();
-        value.put("schema", schema);
-        result.setResult(new JsonArray(Collections.singletonList(value)));
+        result.setResult(QueryResultUtils.createResultWithSingleRow(Collections.singletonList("schema"),
+                Collections.singletonList(schema)));
         context.getRequest().getQueryRequest().setSql("USE_dtm");
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<Long>> handler = invocation.getArgument(1);

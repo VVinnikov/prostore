@@ -56,15 +56,15 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
             val queryRequest = context.getRequest().getQueryRequest();
             val sourceRequest = new QuerySourceRequest(queryRequest, queryRequest.getSourceType());
             logicViewReplace(sourceRequest.getQueryRequest())
-                .compose(deltaQueryPreprocessor::process)
-                .onComplete(ar -> {
-                    if (ar.succeeded()) {
-                        sourceRequest.setQueryRequest(ar.result());
-                        setTargetSourceAndExecute(sourceRequest, asyncResultHandler);
-                    } else {
-                        asyncResultHandler.handle(Future.failedFuture(ar.cause()));
-                    }
-                });
+                    .compose(deltaQueryPreprocessor::process)
+                    .onComplete(ar -> {
+                        if (ar.succeeded()) {
+                            sourceRequest.setQueryRequest(ar.result());
+                            setTargetSourceAndExecute(sourceRequest, asyncResultHandler);
+                        } else {
+                            asyncResultHandler.handle(Future.failedFuture(ar.cause()));
+                        }
+                    });
         } catch (Exception e) {
             asyncResultHandler.handle(Future.failedFuture(e));
         }
@@ -91,13 +91,13 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
                 QuerySourceRequest querySourceRequest = ar.result();
                 if (querySourceRequest.getQueryRequest().getSourceType() == SourceType.INFORMATION_SCHEMA) {
                     querySourceRequest.setLogicalSchema(systemDatamartViewsProvider.getLogicalSchemaFromSystemViews());
-                    informationSchemaExecute(querySourceRequest)
-                        .compose(queryResult -> setColumnMetaData(querySourceRequest, queryResult))
-                        .onComplete(asyncResultHandler);
+                    initColumnMetaData(querySourceRequest)
+                            .compose(v -> informationSchemaExecute(querySourceRequest))
+                            .onComplete(asyncResultHandler);
                 } else {
-                    pluginExecute(querySourceRequest)
-                        .compose(queryResult -> setColumnMetaData(querySourceRequest, queryResult))
-                        .onComplete(asyncResultHandler);
+                    initColumnMetaData(querySourceRequest)
+                            .compose(v -> pluginExecute(querySourceRequest))
+                            .onComplete(asyncResultHandler);
                 }
             } else {
                 asyncResultHandler.handle(Future.failedFuture(ar.cause()));
@@ -106,24 +106,24 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
     }
 
     private Future<QueryResult> informationSchemaExecute(QuerySourceRequest querySourceRequest) {
-        return Future.future(p -> informationSchemaExecutor.execute(querySourceRequest.getQueryRequest(), p));
+        return Future.future(p -> informationSchemaExecutor.execute(querySourceRequest, p));
     }
 
     @SneakyThrows
     private Future<QueryResult> pluginExecute(QuerySourceRequest request) {
         return Future.future(p -> dataSourcePluginService.llr(
-            request.getQueryRequest().getSourceType(),
-            new LlrRequestContext(new LlrRequest(request.getQueryRequest(), request.getLogicalSchema())),
-            p));
-
+                request.getQueryRequest().getSourceType(),
+                new LlrRequestContext(
+                        new LlrRequest(request.getQueryRequest(), request.getLogicalSchema(), request.getMetadata())),
+                p));
     }
 
-    private Future<QueryResult> setColumnMetaData(QuerySourceRequest request, QueryResult queryResult) {
+    private Future<Void> initColumnMetaData(QuerySourceRequest request) {
         return Future.future(p -> {
             columnMetadataService.getColumnMetadata(request, ar -> {
                 if (ar.succeeded()) {
-                    queryResult.setMetadata(ar.result());
-                    p.complete(queryResult);
+                    request.setMetadata(ar.result());
+                    p.complete();
                 } else {
                     p.fail(ar.cause());
                 }

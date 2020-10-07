@@ -3,13 +3,14 @@ package ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.core.json.JsonObject;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.avro.Schema;
 import org.springframework.stereotype.Component;
+import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.common.reader.QueryResult;
+import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
 import ru.ibs.dtm.query.execution.plugin.adqm.common.DdlUtils;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
@@ -20,10 +21,7 @@ import ru.ibs.dtm.query.execution.plugin.adqm.service.StatusReporter;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw.load.*;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.lang.String.format;
@@ -82,9 +80,11 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         String fullName = DdlUtils.getQualifiedTableName(request, appConfiguration);
         reportStart(request.getTopic(), fullName);
         // 1. Determine table engine (_actual_shard)
-        Future<String> engineFull = getTableSetting(fullName + ACTUAL_POSTFIX, "engine_full");
+        final String engineFullColumn = "engine_full";
+        Future<String> engineFull = getTableSetting(fullName + ACTUAL_POSTFIX, engineFullColumn, createVarcharColumnMetadata(engineFullColumn));
         // 2. Get sorting order (_actual)
-        Future<String> sortingKey = getTableSetting(fullName + ACTUAL_SHARD_POSTFIX, "sorting_key");
+        final String sortingKeyColumn = "sorting_key";
+        Future<String> sortingKey = getTableSetting(fullName + ACTUAL_SHARD_POSTFIX, sortingKeyColumn, createVarcharColumnMetadata(sortingKeyColumn));
 
         // 3. Create _ext_shard based on schema from request
         final Schema schema;
@@ -121,29 +121,32 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
                 });
     }
 
-    private Future<String> getTableSetting(@NonNull String table, @NonNull String settingKey) {
+    private List<ColumnMetadata> createVarcharColumnMetadata(String column) {
+        List<ColumnMetadata> metadata = new ArrayList<>();
+        metadata.add(new ColumnMetadata(column, ColumnType.VARCHAR));
+        return metadata;
+    }
+
+    private Future<String> getTableSetting(@NonNull String table, @NonNull String settingKey, List<ColumnMetadata> metadata) {
         val nameParts = splitQualifiedTableName(table);
         if (!nameParts.isPresent()) {
             return Future.failedFuture(format("Cannot parse table name %s", table));
         }
-
         Promise<String> result = Promise.promise();
-
         String query = format(QUERY_TABLE_SETTINGS, settingKey, nameParts.get().getLeft(), nameParts.get().getRight());
-        databaseExecutor.execute(query, ar -> {
+        databaseExecutor.execute(query, metadata, ar -> {
             if (ar.failed()) {
                 result.fail(ar.cause());
                 return;
             }
-
             @SuppressWarnings("unchecked")
-            List<JsonObject> rows = ar.result().getList();
-            if (rows.size() == 0) {
+            List<Map<String, Object>> rows = ar.result();
+            if (rows.isEmpty()) {
                 result.fail(format("Cannot find %s for %s", settingKey, table));
                 return;
             }
 
-            result.complete(rows.get(0).getString(settingKey));
+            result.complete(rows.get(0).get(settingKey).toString());
         });
         return result.future();
     }

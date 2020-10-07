@@ -27,10 +27,7 @@ import ru.ibs.dtm.query.execution.plugin.api.request.LlrRequest;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -181,7 +178,7 @@ class AdqmQueryEnrichmentServiceImplTest {
                 2L, null, DeltaType.NUM, datamarts.get(2).getMnemonic(),
                 datamarts.get(2).getDatamartTables().get(1).getLabel(), pos)
         ));
-        LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts);
+        LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts, Collections.emptyList());
         return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
     }
 
@@ -204,7 +201,7 @@ class AdqmQueryEnrichmentServiceImplTest {
             new DeltaInformation("t3", "2019-12-23 15:15:14", false,
                 1L, null, DeltaType.NUM, schemaName, datamarts.get(0).getDatamartTables().get(1).getLabel(), pos)
         ));
-        LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts);
+        LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts, Collections.emptyList());
         return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
     }
 
@@ -225,7 +222,7 @@ class AdqmQueryEnrichmentServiceImplTest {
                 1L, new DeltaInterval(3L, 4L), DeltaType.FINISHED_IN,
                 schemaName, datamarts.get(0).getDatamartTables().get(1).getLabel(), pos)
         ));
-        LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts);
+        LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts, Collections.emptyList());
         return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
     }
 

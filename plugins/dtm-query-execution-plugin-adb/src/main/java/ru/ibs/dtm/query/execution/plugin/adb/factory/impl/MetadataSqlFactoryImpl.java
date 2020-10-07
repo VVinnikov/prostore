@@ -2,12 +2,11 @@ package ru.ibs.dtm.query.execution.plugin.adb.factory.impl;
 
 import lombok.val;
 import org.springframework.stereotype.Component;
-import ru.ibs.dtm.common.model.ddl.ClassField;
-import ru.ibs.dtm.common.model.ddl.ClassFieldUtils;
-import ru.ibs.dtm.common.model.ddl.ClassTable;
-import ru.ibs.dtm.common.model.ddl.ClassTypeUtil;
+import ru.ibs.dtm.common.model.ddl.*;
+import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
 import ru.ibs.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -175,5 +174,13 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
     @Override
     public String createKeyColumnsSqlQuery(String schema, String tableName) {
         return String.format(KEY_COLUMNS_TEMPLATE_SQL, schema, tableName + "_" + ACTUAL_TABLE);
+    }
+
+    @Override
+    public List<ColumnMetadata> createKeyColumnQueryMetadata() {
+        List<ColumnMetadata> metadata = new ArrayList<>();
+        metadata.add(new ColumnMetadata("column_name", ColumnType.VARCHAR));
+        metadata.add(new ColumnMetadata("data_type", ColumnType.VARCHAR));
+        return metadata;
     }
 }

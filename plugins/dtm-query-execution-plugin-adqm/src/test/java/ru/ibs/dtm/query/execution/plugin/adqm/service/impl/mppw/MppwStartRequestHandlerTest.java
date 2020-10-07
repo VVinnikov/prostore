@@ -1,7 +1,6 @@
 package ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw;
 
 import io.vertx.core.Future;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import lombok.val;
 import org.junit.jupiter.api.BeforeAll;
@@ -26,7 +25,6 @@ import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 import java.util.*;
 import java.util.function.Predicate;
 
-import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -49,13 +47,13 @@ class MppwStartRequestHandlerTest {
 
     @Test
     public void testStartCallOrder() {
-        Map<Predicate<String>, JsonArray> mockData = new HashMap<>();
-        mockData.put(t -> t.contains("select engine_full"), new JsonArray(Collections.singletonList(
-                new JsonObject("{\"engine_full\": \"Distributed('test_arenadata', 'shares', 'accounts_actual_shard', column1)\"}")
-        )));
-        mockData.put(t -> t.contains("select sorting_key"), new JsonArray(Collections.singletonList(
-                new JsonObject("{\"sorting_key\": \"column1, column2, sys_from\"}")
-        )));
+        Map<Predicate<String>, List<Map<String, Object>>> mockData = new HashMap<>();
+        mockData.put(t -> t.contains("select engine_full"), Collections.singletonList(
+                createRowMap("engine_full", "Distributed('test_arenadata', 'shares', 'accounts_actual_shard', column1)")
+        ));
+        mockData.put(t -> t.contains("select sorting_key"), Collections.singletonList(
+                createRowMap("sorting_key", "column1, column2, sys_from")
+        ));
 
         DatabaseExecutor executor = new MockDatabaseExecutor(Arrays.asList(
                 t -> t.contains("CREATE TABLE IF NOT EXISTS dev__shares.accounts_ext_shard ON CLUSTER test_arenadata") &&
@@ -90,13 +88,15 @@ class MppwStartRequestHandlerTest {
 
     @Test
     public void testStartCallOrderWithRest() {
-        Map<Predicate<String>, JsonArray> mockData = new HashMap<>();
-        mockData.put(t -> t.contains("select engine_full"), new JsonArray(Collections.singletonList(
-                new JsonObject("{\"engine_full\": \"Distributed('test_arenadata', 'shares', 'accounts_actual_shard', column1)\"}")
-        )));
-        mockData.put(t -> t.contains("select sorting_key"), new JsonArray(Collections.singletonList(
-                new JsonObject("{\"sorting_key\": \"column1, column2, sys_from\"}")
-        )));
+        Map<Predicate<String>, List<Map<String, Object>>> mockData = new HashMap<>();
+        mockData.put(t -> t.contains("select engine_full"),
+                Collections.singletonList(
+                        createRowMap("engine_full", "Distributed('test_arenadata', 'shares', 'accounts_actual_shard', column1)")
+                ));
+        mockData.put(t -> t.contains("select sorting_key"),
+                Collections.singletonList(
+                        createRowMap("sorting_key", "column1, column2, sys_from")
+                ));
 
         DatabaseExecutor executor = new MockDatabaseExecutor(Arrays.asList(
                 t -> t.contains("CREATE TABLE IF NOT EXISTS dev__shares.accounts_ext_shard ON CLUSTER test_arenadata") &&
@@ -133,6 +133,12 @@ class MppwStartRequestHandlerTest {
             assertTrue(mockReporter.wasCalled("start"));
             verify(mockInitiator, only()).initiateLoading(any());
         });
+    }
+
+    private Map<String, Object> createRowMap(String key, Object value) {
+        Map<String, Object> map = new HashMap<>();
+        map.put(key, value);
+        return map;
     }
 
     private MockStatusReporter createMockReporter(String expectedConsumerGroup) {

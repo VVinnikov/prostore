@@ -9,6 +9,7 @@ import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ClassFieldUtils;
 import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.reader.QueryRequest;
+import ru.ibs.dtm.query.execution.plugin.adg.configuration.TarantoolDatabaseProperties;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.OperationYaml;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.schema.*;
 import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeSchemaGenerator;
@@ -25,6 +26,14 @@ import static ru.ibs.dtm.query.execution.plugin.adg.constants.ColumnFields.*;
 @Service
 public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerator {
 
+    private TarantoolDatabaseProperties tarantoolProperties;
+    private final SpaceEngines engine;
+
+    public TtCartridgeSchemaGeneratorImpl(TarantoolDatabaseProperties tarantoolProperties) {
+        this.tarantoolProperties = tarantoolProperties;
+        this.engine  = SpaceEngines.valueOf(tarantoolProperties.getEngine());
+    }
+
     @Override
     public void generate(DdlRequestContext context, OperationYaml yaml, Handler<AsyncResult<OperationYaml>> handler) {
         if (yaml.getSpaces() == null) {
@@ -37,19 +46,19 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
         int indexComma = classTable.getName().indexOf(".");
         String table = classTable.getName().substring(indexComma + 1).toLowerCase();
 
-        spaces.put(prefix + table + ACTUAL_POSTFIX, create(classTable.getFields()));
-        spaces.put(prefix + table + STAGING_POSTFIX, createStagingSpace(classTable.getFields()));
-        spaces.put(prefix + table + HISTORY_POSTFIX, create(classTable.getFields()));
+        spaces.put(prefix + table + ACTUAL_POSTFIX, create(classTable.getFields(), engine));
+        spaces.put(prefix + table + STAGING_POSTFIX, createStagingSpace(classTable.getFields(), engine));
+        spaces.put(prefix + table + HISTORY_POSTFIX, create(classTable.getFields(), engine));
         handler.handle(Future.succeededFuture(yaml));
     }
 
-    public static Space create(List<ClassField> fields) {
+    public static Space create(List<ClassField> fields, SpaceEngines engine) {
         List<SpaceIndexPart> primaryKeyParts = getPrimaryKeyParts(fields);
         primaryKeyParts.add(new SpaceIndexPart(SYS_FROM_FIELD, SpaceAttributeTypes.NUMBER.getName(), false));
         return new Space(
                 getAttributes(fields),
                 false,
-                SpaceEngines.MEMTX,
+                engine,
                 false,
                 getShardingKey(fields),
                 Arrays.asList(
@@ -66,11 +75,11 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
                 .collect(Collectors.toList());
     }
 
-    public static Space createStagingSpace(List<ClassField> fields) {
+    public static Space createStagingSpace(List<ClassField> fields, SpaceEngines engine) {
         return new Space(
                 getStagingAttributes(fields),
                 false,
-                SpaceEngines.MEMTX,
+                engine,
                 false,
                 getShardingKey(fields),
                 Arrays.asList(

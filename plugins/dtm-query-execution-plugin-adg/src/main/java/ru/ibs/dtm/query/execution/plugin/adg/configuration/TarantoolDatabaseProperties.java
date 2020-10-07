@@ -14,4 +14,5 @@ public class TarantoolDatabaseProperties {
   String password = "123";
   Integer operationTimeout = 10000;
   Integer retryCount = 0;
+  String engine = "MEMTX";
 }

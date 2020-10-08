@@ -90,7 +90,7 @@ public class AttributeDaoImpl implements AttributeDao {
 
     @Nullable
     private Boolean getNullable(JsonObject it) {
-        return BooleanUtils.toBooleanObject(it.getInteger(ATTRIBUTES_REGISTRY.DISTRIBUTE_KEY_ORDER.getName()));
+        return BooleanUtils.toBooleanObject(it.getInteger(ATTRIBUTES_REGISTRY.NULLABLE.getName()));
     }
 
     @NotNull

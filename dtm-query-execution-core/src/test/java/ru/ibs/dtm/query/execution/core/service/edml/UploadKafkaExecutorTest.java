@@ -35,14 +35,13 @@ import ru.ibs.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
-import ru.ibs.dtm.query.execution.plugin.api.request.StatusRequest;
-import ru.ibs.dtm.query.execution.plugin.api.status.StatusRequestContext;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoField;
 import java.util.*;
+import java.util.stream.LongStream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -58,7 +57,13 @@ class UploadKafkaExecutorTest {
     private Set<SourceType> sourceTypes;
     private QueryRequest queryRequest;
     private QueryResult queryResult;
-    private RuntimeException resultException;
+    private Object resultException;
+    private Integer inpuStreamTimeoutMs = 2000;
+    private Integer pluginStatusCheckPeriodMs = 1000;
+    private Integer firstOffsetTimeoutMs = 15000;
+    private Integer changeOffsetTimeoutMs = 10000;
+    private long msgCommitTimeoutMs = 1000L;
+    private long msgProcessTimeoutMs = 100L;
 
     @BeforeEach
     void setUp() {
@@ -81,9 +86,7 @@ class UploadKafkaExecutorTest {
             JsonObject schema = new JsonObject();
             Promise promise = Promise.promise();
             KafkaAdminProperty kafkaAdminProperty = new KafkaAdminProperty();
-            kafkaAdminProperty.setInputStreamTimeoutMs(10000);
-            LocalDateTime adbLastCommitTime = LocalDateTime.parse("2099-06-28T17:14:00");
-            LocalDateTime adgLastCommitTime = LocalDateTime.parse("2099-06-28T17:14:01");
+            kafkaAdminProperty.setInputStreamTimeoutMs(inpuStreamTimeoutMs);
             final QueryLoadParam queryLoadParam = createQueryLoadParam();
 
             LocationUriParser.KafkaTopicUri kafkaTopicUri = LocationUriParser.parseKafkaLocationPath(queryLoadParam.getLocationPath());
@@ -108,20 +111,18 @@ class UploadKafkaExecutorTest {
             final MppwRequestContext mppwAdgContext = new MppwRequestContext(adgRequest);
             mppwContextQueue.add(mppwAdbContext);
             mppwContextQueue.add(mppwAdgContext);
-            final StatusRequestContext adbStatusContext = new StatusRequestContext(new StatusRequest(mppwAdbContext.getRequest().getQueryRequest()));
-            final StatusRequestContext adgStatusContext = new StatusRequestContext(new StatusRequest(mppwAdgContext.getRequest().getQueryRequest()));
 
-            final StatusQueryResult adbStatusResult = new StatusQueryResult();
-            final StatusQueryResult adgStatusResult = new StatusQueryResult();
-
-            KafkaPartitionInfo adbKafkaInfo = createKafkaPartitionInfo(adbLastCommitTime, 0L);
-
-            KafkaPartitionInfo adgKafkaInfo = createKafkaPartitionInfo(adgLastCommitTime, 0L);
-
-            adbStatusResult.setPartitionInfo(adbKafkaInfo);
-            adgStatusResult.setPartitionInfo(adgKafkaInfo);
+            final Queue<StatusQueryResult> adbStatusResultQueue = new BlockingArrayQueue<>();
+            final Queue<StatusQueryResult> adgStatusResultQueue = new BlockingArrayQueue<>();
+            initStatusResultQueue(adbStatusResultQueue, 10, 5);
+            initStatusResultQueue(adgStatusResultQueue, 10, 5);
 
             when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
+            when(edmlProperties.getPluginStatusCheckPeriodMs()).thenReturn(pluginStatusCheckPeriodMs);
+            when(edmlProperties.getFirstOffsetTimeoutMs()).thenReturn(firstOffsetTimeoutMs);
+            when(edmlProperties.getChangeOffsetTimeoutMs()).thenReturn(changeOffsetTimeoutMs);
+            when(kafkaProperties.getAdmin()).thenReturn(kafkaAdminProperty);
+
             when(mppwKafkaRequestFactory.create(edmlRequestContext)).thenAnswer(
                     new Answer<MppwRequestContext>() {
                         @Override
@@ -139,15 +140,14 @@ class UploadKafkaExecutorTest {
                 handler.handle(Future.succeededFuture());
                 return null;
             }).when(pluginService).mppwKafka(eq(SourceType.ADG), eq(mppwAdgContext), any());
-            when(edmlProperties.getPluginStatusCheckPeriodMs()).thenReturn(queryLoadParam.getPluginStatusCheckPeriodMs());
-            when(kafkaProperties.getAdmin()).thenReturn(kafkaAdminProperty);
+
             Mockito.doAnswer(invocation -> {
                 final Handler<AsyncResult<StatusQueryResult>> handler = invocation.getArgument(2);
                 final SourceType ds = invocation.getArgument(0);
                 if (ds.equals(SourceType.ADB)) {
-                    handler.handle(Future.succeededFuture(adbStatusResult));
+                    handler.handle(Future.succeededFuture(adbStatusResultQueue.poll()));
                 } else if (ds.equals(SourceType.ADG)) {
-                    handler.handle(Future.succeededFuture(adgStatusResult));
+                    handler.handle(Future.succeededFuture(adgStatusResultQueue.poll()));
                 }
                 return null;
             }).when(pluginService).status(any(), any(), any());
@@ -162,7 +162,6 @@ class UploadKafkaExecutorTest {
                 }
                 return null;
             }).when(pluginService).mppwKafka(any(), any(), any());
-
 
             uploadKafkaExecutor.execute(edmlRequestContext, ar -> {
                 if (ar.succeeded()) {
@@ -180,19 +179,18 @@ class UploadKafkaExecutorTest {
     }
 
     @Test
-    void executeMppwWithStartFail() {
+    void executeMppwWithAdbPluginStartFail() {
         TestSuite suite = TestSuite.create("mppwLoadTest");
         suite.test("executeMppwWithStartFail", context -> {
             Async async = context.async();
             JsonObject schema = new JsonObject();
             Promise promise = Promise.promise();
             KafkaAdminProperty kafkaAdminProperty = new KafkaAdminProperty();
-            kafkaAdminProperty.setInputStreamTimeoutMs(10000);
-            LocalDateTime adbLastCommitTime = LocalDateTime.parse("2099-06-28T17:14:00");
-            LocalDateTime adgLastCommitTime = LocalDateTime.parse("2099-06-28T17:14:01");
+            kafkaAdminProperty.setInputStreamTimeoutMs(inpuStreamTimeoutMs);
             final QueryLoadParam queryLoadParam = createQueryLoadParam();
 
-            LocationUriParser.KafkaTopicUri kafkaTopicUri = LocationUriParser.parseKafkaLocationPath(queryLoadParam.getLocationPath());
+            LocationUriParser.KafkaTopicUri kafkaTopicUri =
+                    LocationUriParser.parseKafkaLocationPath(queryLoadParam.getLocationPath());
             DatamartRequest request = new DatamartRequest(queryRequest);
             EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
             edmlRequestContext.setTargetTable(new TableInfo("test", "pso"));
@@ -215,17 +213,15 @@ class UploadKafkaExecutorTest {
             mppwContextQueue.add(mppwAdbContext);
             mppwContextQueue.add(mppwAdgContext);
 
-            final StatusQueryResult adbStatusResult = new StatusQueryResult();
-            final StatusQueryResult adgStatusResult = new StatusQueryResult();
-
-            KafkaPartitionInfo adbKafkaInfo = createKafkaPartitionInfo(adbLastCommitTime, 0L);
-
-            KafkaPartitionInfo adgKafkaInfo = createKafkaPartitionInfo(adgLastCommitTime, 0L);
-
-            adbStatusResult.setPartitionInfo(adbKafkaInfo);
-            adgStatusResult.setPartitionInfo(adgKafkaInfo);
+            final Queue<StatusQueryResult> adgStatusResultQueue = new BlockingArrayQueue<>();
+            initStatusResultQueue(adgStatusResultQueue, 10, 5);
 
             when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
+            when(edmlProperties.getPluginStatusCheckPeriodMs()).thenReturn(pluginStatusCheckPeriodMs);
+            when(edmlProperties.getFirstOffsetTimeoutMs()).thenReturn(firstOffsetTimeoutMs);
+            when(edmlProperties.getChangeOffsetTimeoutMs()).thenReturn(changeOffsetTimeoutMs);
+            when(kafkaProperties.getAdmin()).thenReturn(kafkaAdminProperty);
+
             when(mppwKafkaRequestFactory.create(edmlRequestContext)).thenAnswer(
                     new Answer<MppwRequestContext>() {
                         @Override
@@ -233,16 +229,13 @@ class UploadKafkaExecutorTest {
                             return mppwContextQueue.poll();
                         }
                     });
-
-            when(edmlProperties.getPluginStatusCheckPeriodMs()).thenReturn(queryLoadParam.getPluginStatusCheckPeriodMs());
             when(kafkaProperties.getAdmin()).thenReturn(kafkaAdminProperty);
+
             Mockito.doAnswer(invocation -> {
                 final Handler<AsyncResult<StatusQueryResult>> handler = invocation.getArgument(2);
                 final SourceType ds = invocation.getArgument(0);
-                if (ds.equals(SourceType.ADB)) {
-                    handler.handle(Future.succeededFuture(adbStatusResult));
-                } else if (ds.equals(SourceType.ADG)) {
-                    handler.handle(Future.succeededFuture(adgStatusResult));
+                if (ds.equals(SourceType.ADG)) {
+                    handler.handle(Future.succeededFuture(adgStatusResultQueue.poll()));
                 }
                 return null;
             }).when(pluginService).status(any(), any(), any());
@@ -261,16 +254,14 @@ class UploadKafkaExecutorTest {
                 return null;
             }).when(pluginService).mppwKafka(any(), any(), any());
 
-
             uploadKafkaExecutor.execute(edmlRequestContext, ar -> {
                 if (ar.succeeded()) {
                     promise.complete(ar.result());
-                    async.complete();
                 } else {
-                    resultException = (RuntimeException) ar.cause();
+                    resultException = ar.cause();
                     promise.fail(ar.cause());
-                    async.complete();
                 }
+                async.complete();
             });
             async.awaitSuccess();
             queryResult = (QueryResult) promise.future().result();
@@ -280,119 +271,19 @@ class UploadKafkaExecutorTest {
     }
 
     @Test
-    void executeMppwWithDifferentOffset() {
-        TestSuite suite = TestSuite.create("mppwLoadTest");
-        suite.test("executeMppwWithDifferentOffset", context -> {
-            Async async = context.async();
-            JsonObject schema = new JsonObject();
-            Promise promise = Promise.promise();
-            KafkaAdminProperty kafkaAdminProperty = new KafkaAdminProperty();
-            kafkaAdminProperty.setInputStreamTimeoutMs(10000);
-            LocalDateTime adbLastCommitTime = LocalDateTime.parse("2099-06-28T17:14:00");
-            LocalDateTime adgLastCommitTime = LocalDateTime.parse("2099-06-28T17:14:01");
-            final QueryLoadParam queryLoadParam = createQueryLoadParam();
-
-            LocationUriParser.KafkaTopicUri kafkaTopicUri = LocationUriParser.parseKafkaLocationPath(queryLoadParam.getLocationPath());
-            DatamartRequest request = new DatamartRequest(queryRequest);
-            EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
-            edmlRequestContext.setTargetTable(new TableInfo("test", "pso"));
-            edmlRequestContext.setSourceTable(new TableInfo("test", "upload_table"));
-
-            final MppwRequest adbRequest = new MppwRequest(queryRequest, queryLoadParam, schema);
-            adbRequest.setTopic(kafkaTopicUri.getTopic());
-            adbRequest.setZookeeperHost(kafkaTopicUri.getHost());
-            adbRequest.setZookeeperPort(kafkaTopicUri.getPort());
-            adbRequest.setLoadStart(true);
-
-            final MppwRequest adgRequest = new MppwRequest(queryRequest, queryLoadParam, schema);
-            adgRequest.setTopic(kafkaTopicUri.getTopic());
-            adgRequest.setZookeeperHost(kafkaTopicUri.getHost());
-            adgRequest.setZookeeperPort(kafkaTopicUri.getPort());
-            adgRequest.setLoadStart(true);
-            final Queue<MppwRequestContext> mppwContextQueue = new BlockingArrayQueue<>();
-            final MppwRequestContext mppwAdbContext = new MppwRequestContext(adbRequest);
-            final MppwRequestContext mppwAdgContext = new MppwRequestContext(adgRequest);
-            mppwContextQueue.add(mppwAdbContext);
-            mppwContextQueue.add(mppwAdgContext);
-
-            final StatusQueryResult adbStatusResult = new StatusQueryResult();
-            final StatusQueryResult adgStatusResult = new StatusQueryResult();
-
-            KafkaPartitionInfo adbKafkaInfo = createKafkaPartitionInfo(adbLastCommitTime, 0L);
-
-            KafkaPartitionInfo adgKafkaInfo = createKafkaPartitionInfo(adgLastCommitTime, 100L);
-
-            adbStatusResult.setPartitionInfo(adbKafkaInfo);
-            adgStatusResult.setPartitionInfo(adgKafkaInfo);
-
-            when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
-            when(mppwKafkaRequestFactory.create(edmlRequestContext)).thenAnswer(
-                    new Answer<MppwRequestContext>() {
-                        @Override
-                        public MppwRequestContext answer(InvocationOnMock invocation) {
-                            return mppwContextQueue.poll();
-                        }
-                    });
-
-            when(edmlProperties.getPluginStatusCheckPeriodMs()).thenReturn(queryLoadParam.getPluginStatusCheckPeriodMs());
-            when(kafkaProperties.getAdmin()).thenReturn(kafkaAdminProperty);
-            Mockito.doAnswer(invocation -> {
-                final Handler<AsyncResult<StatusQueryResult>> handler = invocation.getArgument(2);
-                final SourceType ds = invocation.getArgument(0);
-                if (ds.equals(SourceType.ADB)) {
-                    handler.handle(Future.succeededFuture(adbStatusResult));
-                } else if (ds.equals(SourceType.ADG)) {
-                    handler.handle(Future.succeededFuture(adgStatusResult));
-                }
-                return null;
-            }).when(pluginService).status(any(), any(), any());
-
-            Mockito.doAnswer(invocation -> {
-                final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(2);
-                final SourceType ds = invocation.getArgument(0);
-                final MppwRequestContext requestContext = invocation.getArgument(1);
-                if (ds.equals(SourceType.ADB) && requestContext.getRequest().getLoadStart()) {
-                    handler.handle(Future.succeededFuture(new QueryResult()));
-                } else if (ds.equals(SourceType.ADB) && !requestContext.getRequest().getLoadStart()) {
-                    handler.handle(Future.succeededFuture(new QueryResult()));
-                } else if (ds.equals(SourceType.ADG)) {
-                    handler.handle(Future.succeededFuture(new QueryResult()));
-                }
-                return null;
-            }).when(pluginService).mppwKafka(any(), any(), any());
-
-            uploadKafkaExecutor.execute(edmlRequestContext, ar -> {
-                if (ar.succeeded()) {
-                    promise.complete(ar.result());
-                    async.complete();
-                } else {
-                    resultException = (RuntimeException) ar.cause();
-                    promise.fail(ar.cause());
-                    async.complete();
-                }
-            });
-            async.awaitSuccess();
-            queryResult = (QueryResult) promise.future().result();
-        });
-        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
-        assertEquals(resultException.getMessage(), "The offset of one of the plugins has changed!");
-    }
-
-    @Test
     void executeMppwWithFailedRetrievePluginStatus() {
         TestSuite suite = TestSuite.create("mppwLoadTest");
         RuntimeException exception = new RuntimeException("Ошибка получения статуса");
-        suite.test("executeMppwWithDifferentOffset", context -> {
+        suite.test("executeMppwWithFailedRetrievePluginStatus", context -> {
             Async async = context.async();
             JsonObject schema = new JsonObject();
             Promise promise = Promise.promise();
             KafkaAdminProperty kafkaAdminProperty = new KafkaAdminProperty();
-            kafkaAdminProperty.setInputStreamTimeoutMs(10000);
-            LocalDateTime adbLastCommitTime = LocalDateTime.parse("2099-06-28T17:14:00");
-            LocalDateTime adgLastCommitTime = LocalDateTime.parse("2099-06-28T17:14:01");
+            kafkaAdminProperty.setInputStreamTimeoutMs(inpuStreamTimeoutMs);
             final QueryLoadParam queryLoadParam = createQueryLoadParam();
 
-            LocationUriParser.KafkaTopicUri kafkaTopicUri = LocationUriParser.parseKafkaLocationPath(queryLoadParam.getLocationPath());
+            LocationUriParser.KafkaTopicUri kafkaTopicUri =
+                    LocationUriParser.parseKafkaLocationPath(queryLoadParam.getLocationPath());
             DatamartRequest request = new DatamartRequest(queryRequest);
             EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
             edmlRequestContext.setTargetTable(new TableInfo("test", "pso"));
@@ -415,17 +306,17 @@ class UploadKafkaExecutorTest {
             mppwContextQueue.add(mppwAdbContext);
             mppwContextQueue.add(mppwAdgContext);
 
-            final StatusQueryResult adbStatusResult = new StatusQueryResult();
-            final StatusQueryResult adgStatusResult = new StatusQueryResult();
-
-            KafkaPartitionInfo adbKafkaInfo = createKafkaPartitionInfo(adbLastCommitTime, 0L);
-
-            KafkaPartitionInfo adgKafkaInfo = createKafkaPartitionInfo(adgLastCommitTime, 100L);
-
-            adbStatusResult.setPartitionInfo(adbKafkaInfo);
-            adgStatusResult.setPartitionInfo(adgKafkaInfo);
+            final Queue<StatusQueryResult> adbStatusResultQueue = new BlockingArrayQueue<>();
+            final Queue<StatusQueryResult> adgStatusResultQueue = new BlockingArrayQueue<>();
+            initStatusResultQueue(adbStatusResultQueue, 10, 5);
+            initStatusResultQueue(adgStatusResultQueue, 10, 5);
 
             when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
+            when(edmlProperties.getPluginStatusCheckPeriodMs()).thenReturn(pluginStatusCheckPeriodMs);
+            when(edmlProperties.getFirstOffsetTimeoutMs()).thenReturn(firstOffsetTimeoutMs);
+            when(edmlProperties.getChangeOffsetTimeoutMs()).thenReturn(changeOffsetTimeoutMs);
+            when(kafkaProperties.getAdmin()).thenReturn(kafkaAdminProperty);
+
             when(mppwKafkaRequestFactory.create(edmlRequestContext)).thenAnswer(
                     new Answer<MppwRequestContext>() {
                         @Override
@@ -434,8 +325,6 @@ class UploadKafkaExecutorTest {
                         }
                     });
 
-            when(edmlProperties.getPluginStatusCheckPeriodMs()).thenReturn(queryLoadParam.getPluginStatusCheckPeriodMs());
-            when(kafkaProperties.getAdmin()).thenReturn(kafkaAdminProperty);
             Mockito.doAnswer(invocation -> {
                 final Handler<AsyncResult<StatusQueryResult>> handler = invocation.getArgument(2);
                 final SourceType ds = invocation.getArgument(0);
@@ -451,9 +340,7 @@ class UploadKafkaExecutorTest {
                 final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(2);
                 final SourceType ds = invocation.getArgument(0);
                 final MppwRequestContext requestContext = invocation.getArgument(1);
-                if (ds.equals(SourceType.ADB) && requestContext.getRequest().getLoadStart()) {
-                    handler.handle(Future.succeededFuture(new QueryResult()));
-                } else if (ds.equals(SourceType.ADB) && !requestContext.getRequest().getLoadStart()) {
+                if (ds.equals(SourceType.ADB)) {
                     handler.handle(Future.succeededFuture(new QueryResult()));
                 } else if (ds.equals(SourceType.ADG)) {
                     handler.handle(Future.succeededFuture(new QueryResult()));
@@ -464,12 +351,11 @@ class UploadKafkaExecutorTest {
             uploadKafkaExecutor.execute(edmlRequestContext, ar -> {
                 if (ar.succeeded()) {
                     promise.complete(ar.result());
-                    async.complete();
                 } else {
-                    resultException = (RuntimeException) ar.cause();
+                    resultException = ar.cause();
                     promise.fail(ar.cause());
-                    async.complete();
                 }
+                async.complete();
             });
             async.awaitSuccess();
             queryResult = (QueryResult) promise.future().result();
@@ -479,16 +365,15 @@ class UploadKafkaExecutorTest {
     }
 
     @Test
-    public void executeMppwWithStatusTimeout() {
+    void executeMppwWithLastOffsetNotIncrease() {
         TestSuite suite = TestSuite.create("mppwLoadTest");
-        suite.test("executeMppwAllSuccess", context -> {
+        suite.test("executeMppwWithLastOffsetNotIncrease", context -> {
             Async async = context.async();
             JsonObject schema = new JsonObject();
             Promise promise = Promise.promise();
             KafkaAdminProperty kafkaAdminProperty = new KafkaAdminProperty();
-            kafkaAdminProperty.setInputStreamTimeoutMs(10000);
-            LocalDateTime adbLastCommitTime = LocalDateTime.parse("1970-01-01T00:00:00");
-            LocalDateTime adgLastCommitTime = LocalDateTime.parse("2099-06-28T17:14:01");
+            kafkaAdminProperty.setInputStreamTimeoutMs(inpuStreamTimeoutMs);
+
             final QueryLoadParam queryLoadParam = createQueryLoadParam();
 
             LocationUriParser.KafkaTopicUri kafkaTopicUri = LocationUriParser.parseKafkaLocationPath(queryLoadParam.getLocationPath());
@@ -507,26 +392,25 @@ class UploadKafkaExecutorTest {
             adgRequest.setTopic(kafkaTopicUri.getTopic());
             adgRequest.setZookeeperHost(kafkaTopicUri.getHost());
             adgRequest.setZookeeperPort(kafkaTopicUri.getPort());
-            adbRequest.setLoadStart(true);
+            adgRequest.setLoadStart(true);
+
             final Queue<MppwRequestContext> mppwContextQueue = new BlockingArrayQueue<>();
             final MppwRequestContext mppwAdbContext = new MppwRequestContext(adbRequest);
             final MppwRequestContext mppwAdgContext = new MppwRequestContext(adgRequest);
             mppwContextQueue.add(mppwAdbContext);
             mppwContextQueue.add(mppwAdgContext);
-            final StatusRequestContext adbStatusContext = new StatusRequestContext(new StatusRequest(mppwAdbContext.getRequest().getQueryRequest()));
-            final StatusRequestContext adgStatusContext = new StatusRequestContext(new StatusRequest(mppwAdgContext.getRequest().getQueryRequest()));
 
-            final StatusQueryResult adbStatusResult = new StatusQueryResult();
-            final StatusQueryResult adgStatusResult = new StatusQueryResult();
-
-            KafkaPartitionInfo adbKafkaInfo = createKafkaPartitionInfo(adbLastCommitTime, 0L);
-
-            KafkaPartitionInfo adgKafkaInfo = createKafkaPartitionInfo(adgLastCommitTime, 0L);
-
-            adbStatusResult.setPartitionInfo(adbKafkaInfo);
-            adgStatusResult.setPartitionInfo(adgKafkaInfo);
+            final Queue<StatusQueryResult> adbStatusResultQueue = new BlockingArrayQueue<>();
+            final Queue<StatusQueryResult> adgStatusResultQueue = new BlockingArrayQueue<>();
+            initStatusResultQueue(adbStatusResultQueue, 15, 5);
+            initStatusResultQueueWithOffset(adgStatusResultQueue, 15, 5, 1);
 
             when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
+            when(edmlProperties.getPluginStatusCheckPeriodMs()).thenReturn(pluginStatusCheckPeriodMs);
+            when(edmlProperties.getFirstOffsetTimeoutMs()).thenReturn(firstOffsetTimeoutMs);
+            when(edmlProperties.getChangeOffsetTimeoutMs()).thenReturn(changeOffsetTimeoutMs);
+            when(kafkaProperties.getAdmin()).thenReturn(kafkaAdminProperty);
+
             when(mppwKafkaRequestFactory.create(edmlRequestContext)).thenAnswer(
                     new Answer<MppwRequestContext>() {
                         @Override
@@ -534,27 +418,108 @@ class UploadKafkaExecutorTest {
                             return mppwContextQueue.poll();
                         }
                     });
-            Mockito.doAnswer(invocation -> {
-                final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(2);
-                handler.handle(Future.succeededFuture());
-                return null;
-            }).when(pluginService).mppwKafka(eq(SourceType.ADB), eq(mppwAdbContext), any());
-            Mockito.doAnswer(invocation -> {
-                final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(2);
-                handler.handle(Future.succeededFuture());
-                return null;
-            }).when(pluginService).mppwKafka(eq(SourceType.ADG), eq(mppwAdgContext), any());
-            when(edmlProperties.getPluginStatusCheckPeriodMs()).thenReturn(queryLoadParam.getPluginStatusCheckPeriodMs());
-            when(edmlProperties.getPluginStatusTimeoutMs()).thenReturn(2000);
-            when(kafkaProperties.getAdmin()).thenReturn(kafkaAdminProperty);
 
             Mockito.doAnswer(invocation -> {
                 final Handler<AsyncResult<StatusQueryResult>> handler = invocation.getArgument(2);
                 final SourceType ds = invocation.getArgument(0);
                 if (ds.equals(SourceType.ADB)) {
-                    handler.handle(Future.succeededFuture(adbStatusResult));
+                    handler.handle(Future.succeededFuture(adbStatusResultQueue.poll()));
                 } else if (ds.equals(SourceType.ADG)) {
-                    handler.handle(Future.succeededFuture(adgStatusResult));
+                    handler.handle(Future.succeededFuture(adgStatusResultQueue.poll()));
+                }
+                return null;
+            }).when(pluginService).status(any(), any(), any());
+
+            Mockito.doAnswer(invocation -> {
+                final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(2);
+                final SourceType ds = invocation.getArgument(0);
+                final MppwRequestContext requestContext = invocation.getArgument(1);
+                if (ds.equals(SourceType.ADB)) {
+                    handler.handle(Future.succeededFuture(new QueryResult()));
+                } else if (ds.equals(SourceType.ADG)) {
+                    handler.handle(Future.succeededFuture(new QueryResult()));
+                }
+                return null;
+            }).when(pluginService).mppwKafka(any(), any(), any());
+
+            uploadKafkaExecutor.execute(edmlRequestContext, ar -> {
+                if (ar.succeeded()) {
+                    promise.complete(ar.result());
+                } else {
+                    resultException = ar.cause();
+                    promise.fail(ar.cause());
+                }
+                async.complete();
+            });
+            async.awaitSuccess();
+            queryResult = (QueryResult) promise.future().result();
+        });
+        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+        assertNotNull(resultException);
+    }
+
+    @Test
+    void executeMppwLoadingInitFalure() {
+        TestSuite suite = TestSuite.create("mppwLoadTest");
+        suite.test("executeMppwLoadingInitFalure", context -> {
+            Async async = context.async();
+            JsonObject schema = new JsonObject();
+            Promise promise = Promise.promise();
+            KafkaAdminProperty kafkaAdminProperty = new KafkaAdminProperty();
+            kafkaAdminProperty.setInputStreamTimeoutMs(inpuStreamTimeoutMs);
+
+            final QueryLoadParam queryLoadParam = createQueryLoadParam();
+
+            LocationUriParser.KafkaTopicUri kafkaTopicUri = LocationUriParser.parseKafkaLocationPath(queryLoadParam.getLocationPath());
+            DatamartRequest request = new DatamartRequest(queryRequest);
+            EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
+            edmlRequestContext.setTargetTable(new TableInfo("test", "pso"));
+            edmlRequestContext.setSourceTable(new TableInfo("test", "upload_table"));
+
+            final MppwRequest adbRequest = new MppwRequest(queryRequest, queryLoadParam, schema);
+            adbRequest.setTopic(kafkaTopicUri.getTopic());
+            adbRequest.setZookeeperHost(kafkaTopicUri.getHost());
+            adbRequest.setZookeeperPort(kafkaTopicUri.getPort());
+            adbRequest.setLoadStart(true);
+
+            final MppwRequest adgRequest = new MppwRequest(queryRequest, queryLoadParam, schema);
+            adgRequest.setTopic(kafkaTopicUri.getTopic());
+            adgRequest.setZookeeperHost(kafkaTopicUri.getHost());
+            adgRequest.setZookeeperPort(kafkaTopicUri.getPort());
+            adgRequest.setLoadStart(true);
+
+            final Queue<MppwRequestContext> mppwContextQueue = new BlockingArrayQueue<>();
+            final MppwRequestContext mppwAdbContext = new MppwRequestContext(adbRequest);
+            final MppwRequestContext mppwAdgContext = new MppwRequestContext(adgRequest);
+            mppwContextQueue.add(mppwAdbContext);
+            mppwContextQueue.add(mppwAdgContext);
+
+            final Queue<StatusQueryResult> adbStatusResultQueue = new BlockingArrayQueue<>();
+            final Queue<StatusQueryResult> adgStatusResultQueue = new BlockingArrayQueue<>();
+            initStatusResultQueue(adbStatusResultQueue, 15, 5);
+            initStatusResultQueueWithOffset(adgStatusResultQueue, 15, 5, 0);
+
+            when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
+            when(edmlProperties.getPluginStatusCheckPeriodMs()).thenReturn(pluginStatusCheckPeriodMs);
+            when(edmlProperties.getFirstOffsetTimeoutMs()).thenReturn(firstOffsetTimeoutMs);
+            when(edmlProperties.getChangeOffsetTimeoutMs()).thenReturn(changeOffsetTimeoutMs);
+            when(kafkaProperties.getAdmin()).thenReturn(kafkaAdminProperty);
+
+            when(mppwKafkaRequestFactory.create(edmlRequestContext)).thenAnswer(
+                    new Answer<MppwRequestContext>() {
+                        @Override
+                        public MppwRequestContext answer(InvocationOnMock invocation) {
+                            return mppwContextQueue.poll();
+                        }
+                    });
+
+            Mockito.doAnswer(invocation -> {
+                final Handler<AsyncResult<StatusQueryResult>> handler = invocation.getArgument(2);
+                final SourceType ds = invocation.getArgument(0);
+                if (ds.equals(SourceType.ADB)) {
+                    handler.handle(Future.succeededFuture(adbStatusResultQueue.poll()));
+                } else if (ds.equals(SourceType.ADG)) {
+                    handler.handle(Future.succeededFuture(adgStatusResultQueue.poll()));
                 }
                 return null;
             }).when(pluginService).status(any(), any(), any());
@@ -573,19 +538,141 @@ class UploadKafkaExecutorTest {
             uploadKafkaExecutor.execute(edmlRequestContext, ar -> {
                 if (ar.succeeded()) {
                     promise.complete(ar.result());
-                    async.complete();
                 } else {
-                    resultException = (RuntimeException) ar.cause();
+                    resultException = ar.cause();
                     promise.fail(ar.cause());
-                    async.complete();
                 }
+                async.complete();
             });
             async.awaitSuccess();
+            queryResult = (QueryResult) promise.future().result();
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
-        // one interaction for ADG and two for ADB (until timeout)
-        Mockito.verify(pluginService, times(3)).status(any(), any(), any());
         assertNotNull(resultException);
+    }
+
+    @Test
+    void executeMppwWithZeroOffsets() {
+        TestSuite suite = TestSuite.create("mppwLoadTest");
+        suite.test("executeMppwWithZeroOffsets", context -> {
+            Async async = context.async();
+            JsonObject schema = new JsonObject();
+            Promise promise = Promise.promise();
+            KafkaAdminProperty kafkaAdminProperty = new KafkaAdminProperty();
+            kafkaAdminProperty.setInputStreamTimeoutMs(inpuStreamTimeoutMs);
+
+            final QueryLoadParam queryLoadParam = createQueryLoadParam();
+
+            LocationUriParser.KafkaTopicUri kafkaTopicUri = LocationUriParser.parseKafkaLocationPath(queryLoadParam.getLocationPath());
+            DatamartRequest request = new DatamartRequest(queryRequest);
+            EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
+            edmlRequestContext.setTargetTable(new TableInfo("test", "pso"));
+            edmlRequestContext.setSourceTable(new TableInfo("test", "upload_table"));
+
+            final MppwRequest adbRequest = new MppwRequest(queryRequest, queryLoadParam, schema);
+            adbRequest.setTopic(kafkaTopicUri.getTopic());
+            adbRequest.setZookeeperHost(kafkaTopicUri.getHost());
+            adbRequest.setZookeeperPort(kafkaTopicUri.getPort());
+            adbRequest.setLoadStart(true);
+
+            final MppwRequest adgRequest = new MppwRequest(queryRequest, queryLoadParam, schema);
+            adgRequest.setTopic(kafkaTopicUri.getTopic());
+            adgRequest.setZookeeperHost(kafkaTopicUri.getHost());
+            adgRequest.setZookeeperPort(kafkaTopicUri.getPort());
+            adgRequest.setLoadStart(true);
+
+            final Queue<MppwRequestContext> mppwContextQueue = new BlockingArrayQueue<>();
+            final MppwRequestContext mppwAdbContext = new MppwRequestContext(adbRequest);
+            final MppwRequestContext mppwAdgContext = new MppwRequestContext(adgRequest);
+            mppwContextQueue.add(mppwAdbContext);
+            mppwContextQueue.add(mppwAdgContext);
+
+            final Queue<StatusQueryResult> adbStatusResultQueue = new BlockingArrayQueue<>();
+            final Queue<StatusQueryResult> adgStatusResultQueue = new BlockingArrayQueue<>();
+            initStatusResultQueueWithOffset(adbStatusResultQueue, 15, 0, 0);
+            initStatusResultQueueWithOffset(adgStatusResultQueue, 15, 0, 0);
+
+            when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
+            when(edmlProperties.getPluginStatusCheckPeriodMs()).thenReturn(pluginStatusCheckPeriodMs);
+            when(edmlProperties.getFirstOffsetTimeoutMs()).thenReturn(firstOffsetTimeoutMs);
+            when(edmlProperties.getChangeOffsetTimeoutMs()).thenReturn(changeOffsetTimeoutMs);
+            when(kafkaProperties.getAdmin()).thenReturn(kafkaAdminProperty);
+
+            when(mppwKafkaRequestFactory.create(edmlRequestContext)).thenAnswer(
+                    new Answer<MppwRequestContext>() {
+                        @Override
+                        public MppwRequestContext answer(InvocationOnMock invocation) {
+                            return mppwContextQueue.poll();
+                        }
+                    });
+
+            Mockito.doAnswer(invocation -> {
+                final Handler<AsyncResult<StatusQueryResult>> handler = invocation.getArgument(2);
+                final SourceType ds = invocation.getArgument(0);
+                if (ds.equals(SourceType.ADB)) {
+                    handler.handle(Future.succeededFuture(adbStatusResultQueue.poll()));
+                } else if (ds.equals(SourceType.ADG)) {
+                    handler.handle(Future.succeededFuture(adgStatusResultQueue.poll()));
+                }
+                return null;
+            }).when(pluginService).status(any(), any(), any());
+
+            Mockito.doAnswer(invocation -> {
+                final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(2);
+                final SourceType ds = invocation.getArgument(0);
+                if (ds.equals(SourceType.ADB)) {
+                    handler.handle(Future.succeededFuture(new QueryResult()));
+                } else if (ds.equals(SourceType.ADG)) {
+                    handler.handle(Future.succeededFuture(new QueryResult()));
+                }
+                return null;
+            }).when(pluginService).mppwKafka(any(), any(), any());
+
+            uploadKafkaExecutor.execute(edmlRequestContext, ar -> {
+                if (ar.succeeded()) {
+                    promise.complete(ar.result());
+                } else {
+                    resultException = ar.cause();
+                    promise.fail(ar.cause());
+                }
+                async.complete();
+            });
+            async.awaitSuccess();
+            queryResult = (QueryResult) promise.future().result();
+        });
+        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+        assertNull(resultException);
+    }
+
+    private void initStatusResultQueue(Queue<StatusQueryResult> adbStatusResultQueue,
+                                       long statusResultCount, long endOffset) {
+        final LocalDateTime lastCommitTime = LocalDateTime.now();
+        final LocalDateTime lastMessageTime = LocalDateTime.now();
+        LongStream.range(0L, statusResultCount).forEach(key -> {
+            adbStatusResultQueue.add(createStatusQueryResult(
+                    lastMessageTime.plus(msgProcessTimeoutMs * key, ChronoField.MILLI_OF_DAY.getBaseUnit()),
+                    lastCommitTime.plus(msgCommitTimeoutMs * key, ChronoField.MILLI_OF_DAY.getBaseUnit()),
+                    endOffset, key));
+        });
+    }
+
+    private void initStatusResultQueueWithOffset(Queue<StatusQueryResult> adbStatusResultQueue,
+                                                 long statusResultCount, long endOffset, long offset) {
+        final LocalDateTime lastCommitTime = LocalDateTime.now();
+        final LocalDateTime lastMessageTime = LocalDateTime.now();
+        LongStream.range(0L, statusResultCount).forEach(key -> {
+            adbStatusResultQueue.add(createStatusQueryResult(
+                    lastMessageTime.plus(msgProcessTimeoutMs * key, ChronoField.MILLI_OF_DAY.getBaseUnit()),
+                    lastCommitTime.plus(msgCommitTimeoutMs * key, ChronoField.MILLI_OF_DAY.getBaseUnit()),
+                    endOffset, offset));
+        });
+    }
+
+    private StatusQueryResult createStatusQueryResult(LocalDateTime lastMessageTime, LocalDateTime lastCommitTime, long endOffset, long offset) {
+        StatusQueryResult statusQueryResult = new StatusQueryResult();
+        KafkaPartitionInfo kafkaPartitionInfo = createKafkaPartitionInfo(lastMessageTime, lastCommitTime, endOffset, offset);
+        statusQueryResult.setPartitionInfo(kafkaPartitionInfo);
+        return statusQueryResult;
     }
 
     @NotNull
@@ -605,13 +692,17 @@ class UploadKafkaExecutorTest {
     }
 
     @NotNull
-    private KafkaPartitionInfo createKafkaPartitionInfo(LocalDateTime lastCommitTime, long endOffset) {
+    private KafkaPartitionInfo createKafkaPartitionInfo(LocalDateTime lastMessageTime,
+                                                        LocalDateTime lastCommitTime,
+                                                        long endOffset,
+                                                        long offset) {
         return KafkaPartitionInfo.builder()
                 .topic("topic")
                 .start(0L)
                 .end(endOffset)
                 .lag(0L)
-                .offset(endOffset)
+                .offset(offset)
+                .lastMessageTime(lastMessageTime)
                 .lastCommitTime(lastCommitTime)
                 .partition(1)
                 .build();

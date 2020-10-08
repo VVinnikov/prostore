@@ -17,7 +17,8 @@ core:
       defaultChunkSize: ${EDML_DEFAULT_CHUNK_SIZE:1000}
       defaultMessageLimit: ${EDML_DEFAULT_MESSAGE_LIMIT:1000}
       pluginStatusCheckPeriodMs: ${EDML_STATUS_CHECK_PERIOD_MS:1000}
-      pluginStatusTimeoutMs: ${EDML_STATUS_TIMEOUT_MS:15000}
+      firstOffsetTimeoutMs: ${EDML_FIRST_OFFSET_TIMEOUT_MS:15000}
+      changeOffsetTimeoutMs: ${EDML_CHANGE_OFFSET_TIMEOUT_MS:10000}
     zookeeper:
       connection-string: ${ZOOKEEPER_DS_ADDRESS:10.92.3.31}
       connection-timeout-ms: ${ZOOKEEPER_DS_CONNECTION_TIMEOUT_MS:30000}
@@ -42,8 +43,7 @@ core:
       zookeeperPort: ${ZOOKEEPER_PORT:2181}
       rootPath: ${KAFKA_CLUSTER_ROOTPATH:arenadata/cluster/21}
     admin:
-      inputStreamTimeoutMs: ${KAFKA_INPUT_STREAM_TIMEOUT_MS:1000}
-      monitorPoolingTimeoutMs: ${KAFKA_MONITOR_POLLING_MS:1000}
+      inputStreamTimeoutMs: ${KAFKA_INPUT_STREAM_TIMEOUT_MS:2000}
     status.event.publish:
       enabled: false
       topic: status.event

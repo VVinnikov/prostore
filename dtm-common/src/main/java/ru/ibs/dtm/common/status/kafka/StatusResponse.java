@@ -9,4 +9,5 @@ public class StatusResponse {
     private long consumerOffset;
     private long producerOffset;
     private long lastCommitTime;
+    private long lastMessageTime;
 }

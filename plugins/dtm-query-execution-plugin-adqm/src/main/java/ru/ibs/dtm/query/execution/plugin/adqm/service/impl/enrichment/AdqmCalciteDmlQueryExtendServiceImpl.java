@@ -336,12 +336,12 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
         } else if (buildCtx.getTableScans().size() > 1) {
             addSignConditions(buildCtx, buildCtx.getBuilder().project(lastParent.getChildExps()).build());
         }
-        if (lastParent instanceof Sort) {
-            val sort = (Sort) lastParent;
-            val sortBody = buildCtx.getBuilder().build();
-            return sort.copy(sortBody.getTraitSet(), Collections.singletonList(sortBody));
+
+        val lastNode = buildCtx.getBuilder().build();
+        if (lastParent instanceof Project) {
+            return lastNode;
         } else {
-            return buildCtx.getBuilder().build();
+            return lastParent.copy(lastNode.getTraitSet(), Collections.singletonList(lastNode));
         }
 
     }

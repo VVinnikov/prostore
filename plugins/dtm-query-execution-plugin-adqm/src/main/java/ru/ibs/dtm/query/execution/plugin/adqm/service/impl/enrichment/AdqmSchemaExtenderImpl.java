@@ -3,18 +3,16 @@ package ru.ibs.dtm.query.execution.plugin.adqm.service.impl.enrichment;
 import lombok.val;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
+import ru.ibs.dtm.common.model.ddl.Entity;
+import ru.ibs.dtm.common.model.ddl.EntityField;
 import ru.ibs.dtm.common.reader.QueryRequest;
-import ru.ibs.dtm.query.execution.model.metadata.AttributeType;
 import ru.ibs.dtm.query.execution.model.metadata.Datamart;
-import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;
-import ru.ibs.dtm.query.execution.model.metadata.TableAttribute;
 import ru.ibs.dtm.query.execution.plugin.adqm.factory.AdqmHelperTableNamesFactory;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.SchemaExtender;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static ru.ibs.dtm.query.execution.plugin.adqm.common.Constants.*;
@@ -31,7 +29,7 @@ public class AdqmSchemaExtenderImpl implements SchemaExtender {
         this.helperTableNamesFactory = helperTableNamesFactory;
     }
 
-    public static List<TableAttribute> getExtendedColumns() {
+    public static List<EntityField> getExtendedColumns() {
         return Arrays.asList(
             generateNewField(SYS_OP_FIELD, ColumnType.INT),
             generateNewField(SYS_TO_FIELD, ColumnType.BIGINT),
@@ -41,12 +39,11 @@ public class AdqmSchemaExtenderImpl implements SchemaExtender {
         );
     }
 
-    private static TableAttribute generateNewField(String mnemonic, ColumnType columnType) {
-        TableAttribute tableAttribute = new TableAttribute();
-        tableAttribute.setId(UUID.randomUUID());
-        tableAttribute.setMnemonic(mnemonic);
-        tableAttribute.setType(new AttributeType(UUID.randomUUID(), columnType));
-        return tableAttribute;
+    private static EntityField generateNewField(String name, ColumnType columnType) {
+        return EntityField.builder()
+            .type(columnType)
+            .name(name)
+            .build();
     }
 
     @Override
@@ -58,42 +55,33 @@ public class AdqmSchemaExtenderImpl implements SchemaExtender {
     private Datamart createPhysicalSchema(Datamart logicalSchema, String systemName) {
         Datamart extendedSchema = new Datamart();
         extendedSchema.setMnemonic(logicalSchema.getMnemonic());
-        extendedSchema.setId(UUID.randomUUID());
-        List<DatamartTable> extendedDatamartClasses = new ArrayList<>();
-        logicalSchema.getDatamartTables().forEach(dmClass -> {
+        List<Entity> extendedEntities = new ArrayList<>();
+        logicalSchema.getEntities().forEach(entity -> {
             val helperTableNames = helperTableNamesFactory.create(systemName,
                 logicalSchema.getMnemonic(),
-                dmClass.getLabel());
-            dmClass.setDatamartMnemonic(helperTableNames.getSchema());
-            dmClass.setMnemonic(dmClass.getMnemonic());
-            dmClass.getTableAttributes().addAll(getExtendedColumns());
-            extendedDatamartClasses.add(dmClass);
-            extendedDatamartClasses.add(getExtendedSchema(dmClass, helperTableNames.getActual()));
-            extendedDatamartClasses.add(getExtendedSchema(dmClass, helperTableNames.getActualShard()));
+                entity.getName());
+            entity.setSchema(helperTableNames.getSchema());
+            val extendedEntityFields = new ArrayList<>(entity.getFields());
+            extendedEntityFields.addAll(getExtendedColumns());
+            entity.setFields(extendedEntityFields);
+            extendedEntities.add(entity);
+            extendedEntities.add(getExtendedSchema(entity, helperTableNames.getActual()));
+            extendedEntities.add(getExtendedSchema(entity, helperTableNames.getActualShard()));
         });
-        extendedDatamartClasses.stream()
+        extendedEntities.stream()
             .findFirst()
-            .ifPresent(datamartTable -> extendedSchema.setMnemonic(datamartTable.getDatamartMnemonic()));
-        extendedSchema.setDatamartTables(extendedDatamartClasses);
+            .ifPresent(datamartTable -> extendedSchema.setMnemonic(datamartTable.getSchema()));
+        extendedSchema.setEntities(extendedEntities);
         return extendedSchema;
     }
 
-    private DatamartTable getExtendedSchema(DatamartTable datamartTable, String tableName) {
-        DatamartTable datamartTableExtended = new DatamartTable();
-        datamartTableExtended.setLabel(tableName);
-        datamartTableExtended.setMnemonic(tableName);
-        datamartTableExtended.setDatamartMnemonic(datamartTable.getDatamartMnemonic());
-        datamartTableExtended.setId(UUID.randomUUID());
-        List<TableAttribute> tableAttributeList = new ArrayList<>();
-        datamartTable.getTableAttributes().forEach(classAttr -> {
-            TableAttribute tableAttribute = new TableAttribute();
-            tableAttribute.setId(UUID.randomUUID());
-            tableAttribute.setMnemonic(classAttr.getMnemonic());
-            tableAttribute.setType(classAttr.getType());
-            tableAttributeList.add(tableAttribute);
-        });
-        datamartTableExtended.setTableAttributes(tableAttributeList);
-        return datamartTableExtended;
+    private Entity getExtendedSchema(Entity entity, String tableName) {
+        return entity.toBuilder()
+            .fields(entity.getFields().stream()
+                .map(ef -> ef.toBuilder().build())
+                .collect(Collectors.toList()))
+            .name(tableName)
+            .build();
     }
 
 }

@@ -1,13 +1,13 @@
 package ru.ibs.dtm.query.execution.core.service.avro;
 
 import org.apache.avro.Schema;
-import ru.ibs.dtm.common.model.ddl.ClassTable;
+import ru.ibs.dtm.common.model.ddl.Entity;
 
 public interface AvroSchemaGenerator {
 
-    default Schema generateTableSchema(ClassTable table) {
+    default Schema generateTableSchema(Entity table) {
         return generateTableSchema(table, true);
     }
 
-    Schema generateTableSchema(ClassTable table, boolean withSysOpField);
+    Schema generateTableSchema(Entity table, boolean withSysOpField);
 }

@@ -6,9 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.avro.Schema;
 import org.apache.commons.lang3.tuple.Pair;
-import org.springframework.util.StringUtils;
-import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
+import ru.ibs.dtm.common.model.ddl.EntityField;
 import ru.ibs.dtm.common.plugin.exload.QueryLoadParam;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
@@ -116,7 +115,7 @@ public class DdlUtils {
         }
     }
 
-    public static String classFieldToString(@NonNull ClassField f) {
+    public static String classFieldToString(@NonNull EntityField f) {
         String name = f.getName();
         String type = classTypeToNative(f.getType());
         String template = f.getNullable() ? NULLABLE_FIELD : NOT_NULLABLE_FIELD;

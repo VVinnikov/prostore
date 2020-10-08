@@ -8,15 +8,20 @@ import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import ru.ibs.dtm.common.util.ThrowableConsumer;
 import ru.ibs.dtm.common.util.ThrowableFunction;
-import ru.ibs.dtm.query.execution.core.service.zookeeper.ZKConnectionProvider;
+import ru.ibs.dtm.query.execution.core.service.zookeeper.ZookeeperConnectionProvider;
 import ru.ibs.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
 
 import java.util.List;
 
 @RequiredArgsConstructor
 public class ZookeeperExecutorImpl implements ZookeeperExecutor {
-    private final ZKConnectionProvider connectionManager;
+    private final ZookeeperConnectionProvider connectionManager;
     private final Vertx vertx;
+
+    @Override
+    public Future<byte[]> getData(String path) {
+        return getData(path, null, null);
+    }
 
     @Override
     public Future<byte[]> getData(String path, boolean watch, Stat stat) {
@@ -29,6 +34,11 @@ public class ZookeeperExecutorImpl implements ZookeeperExecutor {
     }
 
     @Override
+    public Future<List<String>> getChildren(String path) {
+        return getChildren(path, null);
+    }
+
+    @Override
     public Future<List<String>> getChildren(String path, Watcher watcher) {
         return execute(zk -> zk.getChildren(path, watcher));
     }
@@ -36,6 +46,21 @@ public class ZookeeperExecutorImpl implements ZookeeperExecutor {
     @Override
     public Future<List<String>> getChildren(String path, boolean watch) {
         return execute(zk -> zk.getChildren(path, watch));
+    }
+
+    @Override
+    public Future<String> createEmptyPersistentPath(String path) {
+        return createPersistentPath(path, new byte[0]);
+    }
+
+    @Override
+    public Future<String> createPersistentPath(String path, byte[] data) {
+        return create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+    }
+
+    @Override
+    public Future<String> createPersistentSequentialPath(String path, byte[] data) {
+        return create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT_SEQUENTIAL);
     }
 
     @Override
@@ -75,6 +100,11 @@ public class ZookeeperExecutorImpl implements ZookeeperExecutor {
                 blockingPromise.fail(e);
             }
         }, promise));
+    }
+
+    @Override
+    public Future<Boolean> exists(String path) {
+        return execute(zk -> zk.exists(path, false) != null);
     }
 
     @Override

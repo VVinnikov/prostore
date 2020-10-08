@@ -1,7 +1,7 @@
 package ru.ibs.dtm.common.model.ddl;
 
-public class ClassTypeUtil {
-    public static String pgFromDtmType(ClassField field) {
+public class EntityTypeUtil {
+    public static String pgFromDtmType(EntityField field) {
         switch (field.getType()) {
             case DATE:
                 return "date";
@@ -28,11 +28,11 @@ public class ClassTypeUtil {
         }
     }
 
-    private static String getTimePrecision(ClassField field) {
+    private static String getTimePrecision(EntityField field) {
         return field.getAccuracy() == null ? "" : "(" + field.getAccuracy() + ")";
     }
 
-    private static String getVarcharSize(ClassField field) {
+    private static String getVarcharSize(EntityField field) {
         return field.getSize() == null ? "" : "(" + field.getSize() + ")";
     }
 }

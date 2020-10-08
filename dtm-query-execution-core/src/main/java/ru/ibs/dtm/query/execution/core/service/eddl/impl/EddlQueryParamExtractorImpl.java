@@ -2,7 +2,7 @@ package ru.ibs.dtm.query.execution.core.service.eddl.impl;
 
 import io.vertx.core.*;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.avro.Schema;
+import lombok.val;
 import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlNode;
 import org.jetbrains.annotations.NotNull;
@@ -10,8 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.dto.TableInfo;
-import ru.ibs.dtm.common.model.ddl.ClassTable;
-import ru.ibs.dtm.common.plugin.exload.Format;
+import ru.ibs.dtm.common.model.ddl.EntityType;
 import ru.ibs.dtm.common.plugin.exload.Type;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.kafka.core.configuration.properties.KafkaProperties;
@@ -114,39 +113,45 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
                                                     String defaultSchema,
                                                     Handler<AsyncResult<EddlQuery>> asyncResultHandler) {
         try {
-            TableInfo tableInfo = SqlNodeUtils.getTableInfo(ddl, defaultSchema);
-            LocationOperator locationOperator = SqlNodeUtils.getOne(ddl, LocationOperator.class);
-            ChunkSizeOperator chunkSizeOperator = SqlNodeUtils.getOne(ddl, ChunkSizeOperator.class);
-            ClassTable classTable = metadataCalciteGenerator.generateTableMetadata(ddl);
-            Schema avroSchema = avroSchemaGenerator.generateTableSchema(classTable, false);
+            val tableInfo = SqlNodeUtils.getTableInfo(ddl, defaultSchema);
+            val entity = metadataCalciteGenerator.generateTableMetadata(ddl);
+            entity.setEntityType(EntityType.DOWNLOAD_EXTERNAL_TABLE);
+            val avroSchema = avroSchemaGenerator.generateTableSchema(entity, false);
+            val locationOperator = SqlNodeUtils.getOne(ddl, LocationOperator.class);
+            val format = SqlNodeUtils.getOne(ddl, FormatOperator.class).getFormat();
+            val chunkSizeOperator = SqlNodeUtils.getOne(ddl, ChunkSizeOperator.class);
             asyncResultHandler.handle(Future.succeededFuture(
                     new CreateDownloadExternalTableQuery(
                             tableInfo.getSchemaName(),
                             tableInfo.getTableName(),
+                            entity,
                             locationOperator.getType(),
                             getLocation(locationOperator),
-                            SqlNodeUtils.getOne(ddl, FormatOperator.class).getFormat(),
-                            chunkSizeOperator.getChunkSize(),
-                            avroSchema.toString())));
+                            format,
+                            avroSchema.toString(),
+                            chunkSizeOperator.getChunkSize())));
         } catch (RuntimeException e) {
             log.error(ERROR_PARSING_EDDL_QUERY, e);
             asyncResultHandler.handle(Future.failedFuture(e));
         }
     }
 
-    private void extractCreateUploadExternalTable(SqlCreateUploadExternalTable sqlNode, String defaultSchema,
+    private void extractCreateUploadExternalTable(SqlCreateUploadExternalTable ddl,
+                                                  String defaultSchema,
                                                   Handler<AsyncResult<EddlQuery>> asyncResultHandler) {
         try {
-            TableInfo tableInfo = SqlNodeUtils.getTableInfo(sqlNode, defaultSchema);
-            ClassTable classTable = metadataCalciteGenerator.generateTableMetadata(sqlNode);
-            Schema avroSchema = avroSchemaGenerator.generateTableSchema(classTable);
-            LocationOperator locationOperator = SqlNodeUtils.getOne(sqlNode, LocationOperator.class);
-            Format format = SqlNodeUtils.getOne(sqlNode, FormatOperator.class).getFormat();
-            MassageLimitOperator messageLimitOperator = SqlNodeUtils.getOne(sqlNode, MassageLimitOperator.class);
+            val tableInfo = SqlNodeUtils.getTableInfo(ddl, defaultSchema);
+            val entity = metadataCalciteGenerator.generateTableMetadata(ddl);
+            entity.setEntityType(EntityType.UPLOAD_EXTERNAL_TABLE);
+            val avroSchema = avroSchemaGenerator.generateTableSchema(entity);
+            val locationOperator = SqlNodeUtils.getOne(ddl, LocationOperator.class);
+            val format = SqlNodeUtils.getOne(ddl, FormatOperator.class).getFormat();
+            val messageLimitOperator = SqlNodeUtils.getOne(ddl, MassageLimitOperator.class);
             asyncResultHandler.handle(Future.succeededFuture(
                     new CreateUploadExternalTableQuery(
                             tableInfo.getSchemaName(),
                             tableInfo.getTableName(),
+                            entity,
                             locationOperator.getType(),
                             getLocation(locationOperator),
                             format,

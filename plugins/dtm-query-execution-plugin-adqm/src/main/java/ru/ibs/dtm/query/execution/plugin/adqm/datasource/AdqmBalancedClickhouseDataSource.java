@@ -1,10 +1,11 @@
 package ru.ibs.dtm.query.execution.plugin.adqm.datasource;
 
-import java.sql.SQLException;
-import java.util.Properties;
 import ru.yandex.clickhouse.BalancedClickhouseDataSource;
 import ru.yandex.clickhouse.ClickHouseConnection;
 import ru.yandex.clickhouse.settings.ClickHouseProperties;
+
+import java.sql.SQLException;
+import java.util.Properties;
 
 public class AdqmBalancedClickhouseDataSource extends BalancedClickhouseDataSource {
     public AdqmBalancedClickhouseDataSource(String url) {

@@ -2,36 +2,42 @@ package ru.ibs.dtm.query.execution.core.dto.eddl;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import ru.ibs.dtm.common.model.ddl.Entity;
 import ru.ibs.dtm.common.plugin.exload.Format;
 import ru.ibs.dtm.common.plugin.exload.Type;
 
 /**
- * Запрос создания внешней таблицы загрузки
+ * Upload External table creation request
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class CreateUploadExternalTableQuery extends EddlQuery {
     /**
-     * Тип
+     * Table entity
+     */
+    private Entity entity;
+
+    /**
+     * Type
      */
     private Type locationType;
 
     /**
-     * путь
+     * Path
      */
     private String locationPath;
 
     /**
-     * Формат
+     * Format
      */
     private Format format;
 
     /**
-     * Avro схема в формате Json
+     * Avro schema in json format
      */
     private String tableSchema;
     /**
-     * Размер чанка
+     * Chunk size
      */
     private Integer messageLimit;
 
@@ -41,12 +47,14 @@ public class CreateUploadExternalTableQuery extends EddlQuery {
 
     public CreateUploadExternalTableQuery(String schemaName,
                                           String tableName,
+                                          Entity entity,
                                           Type locationType,
                                           String locationPath,
                                           Format format,
                                           String tableSchema,
                                           Integer messageLimit) {
         super(EddlAction.CREATE_UPLOAD_EXTERNAL_TABLE, schemaName, tableName);
+        this.entity = entity;
         this.locationType = locationType;
         this.locationPath = locationPath;
         this.format = format;

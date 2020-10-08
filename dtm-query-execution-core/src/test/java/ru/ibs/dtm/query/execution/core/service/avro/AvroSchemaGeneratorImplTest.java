@@ -4,9 +4,9 @@ import org.apache.avro.Schema;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
-import ru.ibs.dtm.common.model.ddl.ClassField;
-import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
+import ru.ibs.dtm.common.model.ddl.Entity;
+import ru.ibs.dtm.common.model.ddl.EntityField;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,25 +18,25 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class AvroSchemaGeneratorImplTest {
 
     private AvroSchemaGenerator avroSchemaGenerator;
-    private ClassTable table;
+    private Entity table;
 
     @BeforeEach
     void setUp() {
         this.avroSchemaGenerator = new AvroSchemaGeneratorImpl();
-        this.table = new ClassTable("uplexttab", "test_datamart", createFields());
+        this.table = new Entity("uplexttab", "test_datamart", createFields());
     }
 
-    private List<ClassField> createFields() {
-        ClassField f1 = new ClassField(0, "id", ColumnType.INT, false, true);
-        ClassField f2 = new ClassField(1, "name", ColumnType.VARCHAR, true, false);
+    private List<EntityField> createFields() {
+        EntityField f1 = new EntityField(0, "id", ColumnType.INT, false);
+        EntityField f2 = new EntityField(1, "name", ColumnType.VARCHAR, true);
         f2.setSize(100);
-        ClassField f3 = new ClassField(2, "booleanvalue", ColumnType.BOOLEAN, true, false);
-        ClassField f4 = new ClassField(3, "charvalue", ColumnType.CHAR, true, false);
-        ClassField f5 = new ClassField(4, "bgintvalue", ColumnType.BIGINT, true, false);
-        ClassField f6 = new ClassField(5, "dbvalue", ColumnType.DOUBLE, true, false);
-        ClassField f7 = new ClassField(6, "flvalue", ColumnType.FLOAT, true, false);
-        ClassField f8 = new ClassField(7, "datevalue", ColumnType.DATE, true, false);
-        ClassField f9 = new ClassField(8, "datetimevalue", ColumnType.TIMESTAMP, true, false);
+        EntityField f3 = new EntityField(2, "booleanvalue", ColumnType.BOOLEAN, true);
+        EntityField f4 = new EntityField(3, "charvalue", ColumnType.CHAR, true);
+        EntityField f5 = new EntityField(4, "bgintvalue", ColumnType.BIGINT, true);
+        EntityField f6 = new EntityField(5, "dbvalue", ColumnType.DOUBLE, true);
+        EntityField f7 = new EntityField(6, "flvalue", ColumnType.FLOAT, true);
+        EntityField f8 = new EntityField(7, "datevalue", ColumnType.DATE, true);
+        EntityField f9 = new EntityField(8, "datetimevalue", ColumnType.TIMESTAMP, true);
         return new ArrayList<>(Arrays.asList(f1, f2, f3, f4, f5, f6, f7, f8, f9));
     }
 
@@ -61,7 +61,7 @@ class AvroSchemaGeneratorImplTest {
 
     @Test
     void generateTableSchemaUnsupportedType() {
-        table.getFields().add(new ClassField(0, "uuid", ColumnType.UUID, true, false));
+        table.getFields().add(new EntityField(0, "uuid", ColumnType.UUID, true));
         Executable executable = () -> avroSchemaGenerator.generateTableSchema(table);
         assertThrows(IllegalArgumentException.class,
             executable, "Unsupported data type: UUID");
@@ -69,7 +69,7 @@ class AvroSchemaGeneratorImplTest {
 
     @Test
     void testCheckSysOpFieldAlreadyInFields() {
-        table.getFields().add(new ClassField(9, "sys_op", ColumnType.INT, false, false));
+        table.getFields().add(new EntityField(9, "sys_op", ColumnType.INT, false));
         Schema tableSchema = avroSchemaGenerator.generateTableSchema(table);
         assertEquals(1, tableSchema.getFields().stream().filter(f -> f.name().equalsIgnoreCase("sys_op")).count());
     }

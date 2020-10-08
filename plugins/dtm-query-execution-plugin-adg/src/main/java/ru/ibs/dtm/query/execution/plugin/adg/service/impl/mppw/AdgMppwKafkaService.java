@@ -12,7 +12,6 @@ import ru.ibs.dtm.query.execution.plugin.adg.dto.mppw.AdgMppwKafkaContext;
 import ru.ibs.dtm.query.execution.plugin.adg.factory.AdgMppwKafkaContextFactory;
 import ru.ibs.dtm.query.execution.plugin.adg.model.callback.function.TtTransferDataScdCallbackFunction;
 import ru.ibs.dtm.query.execution.plugin.adg.model.callback.params.TtTransferDataScdCallbackParameter;
-import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtLoadDataKafkaRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtSubscriptionKafkaRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtTransferDataEtlRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeClient;

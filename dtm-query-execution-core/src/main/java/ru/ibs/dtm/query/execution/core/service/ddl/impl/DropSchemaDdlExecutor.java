@@ -10,8 +10,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.calcite.core.extension.eddl.DropDatabase;
-import ru.ibs.dtm.query.execution.core.configuration.jooq.MariaProperties;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
+import ru.ibs.dtm.query.execution.core.dao.exception.datamart.DatamartNotExistsException;
+import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import ru.ibs.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 
@@ -20,13 +21,13 @@ import static ru.ibs.dtm.query.execution.plugin.api.ddl.DdlType.DROP_SCHEMA;
 @Slf4j
 @Component
 public class DropSchemaDdlExecutor extends DropTableDdlExecutor {
+    private final DatamartDao datamartDao;
 
     @Autowired
-    public DropSchemaDdlExecutor(
-            MetadataExecutor<DdlRequestContext> metadataExecutor,
-            MariaProperties mariaProperties,
-            ServiceDbFacade serviceDbFacade) {
-        super(metadataExecutor, mariaProperties, serviceDbFacade);
+    public DropSchemaDdlExecutor(MetadataExecutor<DdlRequestContext> metadataExecutor,
+                                 ServiceDbFacade serviceDbFacade) {
+        super(metadataExecutor, serviceDbFacade);
+        datamartDao = serviceDbFacade.getServiceDbDao().getDatamartDao();
     }
 
     @Override
@@ -35,33 +36,24 @@ public class DropSchemaDdlExecutor extends DropTableDdlExecutor {
             String schemaName = ((DropDatabase) context.getQuery()).getName().names.get(0);
             context.getRequest().getQueryRequest().setDatamartMnemonic(schemaName);
             context.setDatamartName(schemaName);
-            getDatamart(context)
-                    .compose(datamartId -> dropSchema(context, datamartId))
-                    .compose(r -> dropDeltas(context))
-                    .compose(r -> dropDatamart(context))
-                    .onSuccess(success -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
-                    .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
+            datamartDao.existsDatamart(schemaName)
+                .compose(isExists -> isExists ? dropDatamartInPlugins(context) : getNotExistsDatamartFuture(schemaName))
+                .compose(r -> dropDatamartInPlugins(context))
+                .compose(r -> dropDatamart(context))
+                .onSuccess(success -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
+                .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
         } catch (Exception e) {
             log.error("Error deleting datamart!", e);
             handler.handle(Future.failedFuture(e));
         }
     }
 
-    private Future<Long> getDatamart(DdlRequestContext context) {
-        return Future.future((Promise<Long> promise) ->
-                serviceDbFacade.getServiceDbDao().getDatamartDao().findDatamart(context.getDatamartName(), ar -> {
-                    if (ar.succeeded()) {
-                        promise.complete(ar.result());
-                    } else {
-                        log.error("Error finding datamart [{}]!", context.getDatamartName(), ar.cause());
-                        promise.fail(ar.cause());
-                    }
-                }));
+    private Future<Void> getNotExistsDatamartFuture(String schemaName) {
+        return Future.failedFuture(new DatamartNotExistsException(schemaName));
     }
 
-    private Future<Void> dropSchema(DdlRequestContext context, Long datamartId) {
+    private Future<Void> dropDatamartInPlugins(DdlRequestContext context) {
         try {
-            context.setDatamartId(datamartId);
             context.getRequest().setQueryRequest(replaceDatabaseInSql(context.getRequest().getQueryRequest()));
             context.setDdlType(DROP_SCHEMA);
             log.debug("Delete physical objects in plugins for datamart: [{}]", context.getDatamartName());
@@ -72,32 +64,11 @@ public class DropSchemaDdlExecutor extends DropTableDdlExecutor {
         }
     }
 
-    private Future<Void> dropDeltas(DdlRequestContext context) {
-        return Future.future((Promise<Void> promise) ->
-                serviceDbFacade.getDeltaServiceDao().dropByDatamart(context.getDatamartName(), ar -> {
-                    if (ar.succeeded()) {
-                        log.debug("Deltas for datamart [{}] deleted successfully", context.getDatamartName());
-                        promise.complete(ar.result());
-                    } else {
-                        log.error("Error deleting delta by datamart [{}]!", context.getDatamartName(), ar.cause());
-                        promise.fail(ar.cause());
-                    }
-                }));
-    }
-
     private Future<Void> dropDatamart(DdlRequestContext context) {
-        return Future.future((Promise<Void> promise) -> {
-            log.debug("Deleted schema [{}] in data sources", context.getDatamartName());
-            serviceDbFacade.getServiceDbDao().getDatamartDao().dropDatamart(context.getDatamartId(), ar -> {
-                if (ar.succeeded()) {
-                    log.debug("Deleted datamart [{}] from datamart registry", context.getDatamartName());
-                    promise.complete();
-                } else {
-                    log.error("Error deleting datamart [{}] from datamart registry!", context.getDatamartName(), ar.cause());
-                    promise.fail(ar.cause());
-                }
-            });
-        });
+        log.debug("Deleted schema [{}] in data sources", context.getDatamartName());
+        return datamartDao.deleteDatamart(context.getDatamartName())
+            .onSuccess(success -> log.debug("Deleted datamart [{}] from datamart registry", context.getDatamartName()))
+            .onFailure(error -> log.error("Error deleting datamart [{}] from datamart registry!", context.getDatamartName(), error));
     }
 
     @Override

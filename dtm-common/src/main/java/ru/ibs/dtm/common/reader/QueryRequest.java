@@ -1,18 +1,23 @@
 package ru.ibs.dtm.common.reader;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import ru.ibs.dtm.common.delta.DeltaInformation;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import ru.ibs.dtm.common.delta.DeltaInformation;
 
 /**
  * Запрос на извлечение данных
  */
 @Data
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 public class QueryRequest {
 
     /**

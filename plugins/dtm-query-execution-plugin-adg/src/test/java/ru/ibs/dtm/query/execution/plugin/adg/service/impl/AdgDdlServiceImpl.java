@@ -7,8 +7,8 @@ import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.configuration.kafka.KafkaAdminProperty;
 import ru.ibs.dtm.common.configuration.kafka.KafkaConfig;
 import ru.ibs.dtm.common.configuration.kafka.KafkaUploadProperty;
-import ru.ibs.dtm.common.model.ddl.ClassField;
-import ru.ibs.dtm.common.model.ddl.ClassTable;
+import ru.ibs.dtm.common.model.ddl.Entity;
+import ru.ibs.dtm.common.model.ddl.EntityField;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.kafka.core.service.kafka.KafkaTopicService;
@@ -69,10 +69,10 @@ public class AdgDdlServiceImpl {
         queryRequest.setSql("drop table test_table");
         queryRequest.setDatamartMnemonic("test_schema");
 
-        List<ClassField> fields = Collections.singletonList(new ClassField(0,"test_field", "varchar(1)", false, false, ""));
-        ClassTable classTable = new ClassTable("test_schema.test_table", fields);
+        List<EntityField> fields = Collections.singletonList(new EntityField(0,"test_field", "varchar(1)", false, ""));
+        Entity entity = new Entity("test_schema.test_table", fields);
 
-        DdlRequestContext context = new DdlRequestContext(new DdlRequest(queryRequest, classTable));
+        DdlRequestContext context = new DdlRequestContext(new DdlRequest(queryRequest, entity));
         context.setDdlType(DROP_TABLE);
         adgDdlService.execute(context, handler -> {
             assertTrue(handler.succeeded());

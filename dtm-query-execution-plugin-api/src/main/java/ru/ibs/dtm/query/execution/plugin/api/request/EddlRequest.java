@@ -1,31 +1,31 @@
 package ru.ibs.dtm.query.execution.plugin.api.request;
 
-import ru.ibs.dtm.common.model.ddl.ClassTable;
+import ru.ibs.dtm.common.model.ddl.Entity;
 import ru.ibs.dtm.common.reader.QueryRequest;
 
 
 public class EddlRequest extends DatamartRequest {
 
-	private final ClassTable classTable;
+	private final Entity entity;
 
 	public EddlRequest(final QueryRequest queryRequest) {
 		this(queryRequest, null);
 	}
 
-	public EddlRequest(final QueryRequest queryRequest, final ClassTable classTable) {
+	public EddlRequest(final QueryRequest queryRequest, final Entity entity) {
 		super(queryRequest);
-		this.classTable = classTable;
+		this.entity = entity;
 	}
 
-	public ClassTable getClassTable() {
-		return classTable;
+	public Entity getClassTable() {
+		return entity;
 	}
 
 	@Override
 	public String toString() {
 		return "EddlRequest{" +
 				super.toString() +
-				", classTable=" + classTable +
+				", classTable=" + entity +
 				'}';
 	}
 }

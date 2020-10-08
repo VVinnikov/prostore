@@ -137,7 +137,7 @@ public class AdgQueryEnrichmentServiceImplTest {
         String defaultSchema = datamarts.get(0).getMnemonic();
         QueryRequest queryRequest = new QueryRequest();
         queryRequest.setSql(sql);
-        queryRequest.setSystemName("local");
+        queryRequest.setEnvName("local");
         queryRequest.setRequestId(UUID.randomUUID());
         queryRequest.setDatamartMnemonic(defaultSchema);
         SqlParserPos pos = new SqlParserPos(0, 0);
@@ -161,7 +161,7 @@ public class AdgQueryEnrichmentServiceImplTest {
         String schemaName = datamarts.get(0).getMnemonic();
         QueryRequest queryRequest = new QueryRequest();
         queryRequest.setSql(sql);
-        queryRequest.setSystemName("local");
+        queryRequest.setEnvName("local");
         queryRequest.setRequestId(UUID.randomUUID());
         queryRequest.setDatamartMnemonic(schemaName);
         SqlParserPos pos = new SqlParserPos(0, 0);
@@ -180,7 +180,7 @@ public class AdgQueryEnrichmentServiceImplTest {
         String schemaName = datamarts.get(0).getMnemonic();
         QueryRequest queryRequest = new QueryRequest();
         queryRequest.setSql(sql);
-        queryRequest.setSystemName("local");
+        queryRequest.setEnvName("local");
         queryRequest.setRequestId(UUID.randomUUID());
         queryRequest.setDatamartMnemonic(schemaName);
         SqlParserPos pos = new SqlParserPos(0, 0);

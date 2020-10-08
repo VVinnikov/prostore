@@ -266,7 +266,7 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
                         .collect(Collectors.toList())));
         val qualifiedName = tableScan.getTable().getQualifiedName();
         val queryRequest = ctx.getQueryRequest();
-        val tableNames = helperTableNamesFactory.create(queryRequest.getSystemName(),
+        val tableNames = helperTableNamesFactory.create(queryRequest.getEnvName(),
             qualifiedName.get(SCHEMA_INDEX),
             qualifiedName.get(TABLE_NAME_INDEX));
         val tableName = isShard ? tableNames.toQualifiedActualShard() : tableNames.toQualifiedActual();

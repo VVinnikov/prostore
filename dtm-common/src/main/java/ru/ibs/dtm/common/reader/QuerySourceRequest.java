@@ -9,7 +9,9 @@ import lombok.NonNull;
 import org.apache.commons.lang3.SerializationUtils;
 import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 
-/*Дто с модифицированным sql запросом, из которого извлечен хинт*/
+/**
+ * Modified ExecutionQueryRequest without hint
+ * */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

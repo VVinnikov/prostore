@@ -12,7 +12,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Запрос на извлечение данных
+ * Query request for receiving data
  */
 @Data
 @Builder
@@ -21,36 +21,44 @@ import java.util.UUID;
 public class QueryRequest {
 
     /**
-     * UUID базового запроса, пришедшего в ПОДД
+     * Request uuid
      */
     private UUID requestId;
 
     /**
-     * UUID подзапроса, выделенного из базового, sql-выражение которого передается Витрине
+     * SubRequest uuid
      */
+    @Deprecated
     private String subRequestId;
 
     /**
-     * мнемоника Витрины, на которой необходимо выполнить запрос
+     * Datamart name
      */
     private String datamartMnemonic;
 
     /**
-     * SQL-запрос
+     * Sql query expression
      */
     private String sql;
 
-    private String systemName;
+    /**
+     * Name of environment
+     */
+    private String envName;
 
     /**
-     * Параметры(необязательно)
+     * Parameters (optional)
      */
     private List<String> parameters;
 
     /**
-     *  Delta Information
+     *  Delta Information list
      */
     private List<DeltaInformation> deltaInformations;
+
+    /**
+     * Data source type
+     */
     private SourceType sourceType;
 
     public QueryRequest(UUID requestId, String datamartMnemonic, String sql) {
@@ -71,7 +79,7 @@ public class QueryRequest {
         if (deltaInformations != null) {
             newQueryRequest.setDeltaInformations(new ArrayList<>(deltaInformations));
         }
-        newQueryRequest.setSystemName(systemName);
+        newQueryRequest.setEnvName(envName);
         newQueryRequest.setSourceType(sourceType);
         return newQueryRequest;
     }

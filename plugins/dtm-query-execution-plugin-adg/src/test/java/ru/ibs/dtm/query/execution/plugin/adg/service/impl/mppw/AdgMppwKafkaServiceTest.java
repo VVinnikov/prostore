@@ -176,7 +176,7 @@ class AdgMppwKafkaServiceTest {
 
     private MppwRequestContext getRequestContext() {
         val queryRequest = new QueryRequest();
-        queryRequest.setSystemName("env1");
+        queryRequest.setEnvName("env1");
         queryRequest.setDatamartMnemonic("test");
         val queryLoadParam = new QueryLoadParam();
         queryLoadParam.setDatamart("test");

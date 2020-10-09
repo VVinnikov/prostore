@@ -10,7 +10,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Определение типа запроса по хинту DATASOURCE_TYPE = ''
+ * Determining the type of request by hint DATASOURCE_TYPE = 'ADB|ADG|ADQM'
  */
 @Slf4j
 @Component

@@ -27,7 +27,7 @@ public class AppConfiguration {
 		return environment.getProperty("core.http.port", Integer.class);
 	}
 
-	public String getSystemName() {
+	public String getEnvName() {
 		return environment.getProperty("core.env.name", String.class);
 	}
 

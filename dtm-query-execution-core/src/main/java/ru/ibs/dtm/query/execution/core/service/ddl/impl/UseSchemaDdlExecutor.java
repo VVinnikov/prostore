@@ -13,6 +13,7 @@ import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.common.model.ddl.SystemMetadata;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
+import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import ru.ibs.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import ru.ibs.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
@@ -25,20 +26,26 @@ import java.util.Collections;
 public class UseSchemaDdlExecutor extends QueryResultDdlExecutor {
 
     public static final String SCHEMA_COLUMN_NAME = "schema";
+    private final DatamartDao datamartDao;
 
     public UseSchemaDdlExecutor(MetadataExecutor<DdlRequestContext> metadataExecutor,
                                 ServiceDbFacade serviceDbFacade) {
         super(metadataExecutor, serviceDbFacade);
+        this.datamartDao = serviceDbFacade.getServiceDbDao().getDatamartDao();
     }
 
     @Override
     public void execute(DdlRequestContext context, String datamart, Handler<AsyncResult<QueryResult>> handler) {
-        serviceDbFacade.getServiceDbDao().getDatamartDao().getDatamart(datamart)
-            .onFailure(error -> handler.handle(Future.failedFuture(error)))
-            .onSuccess(success -> {
-                context.setDatamartName(datamart);
-                handler.handle(Future.succeededFuture(createQueryResult(context)));
-            });
+        datamartDao.existsDatamart(datamart)
+                .onSuccess(isExists -> {
+                    if (isExists) {
+                        context.setDatamartName(datamart);
+                        handler.handle(Future.succeededFuture(createQueryResult(context)));
+                    } else {
+                        handler.handle(Future.failedFuture(String.format("Datamart [%s] doesn't exist", datamart)));
+                    }
+                })
+                .onFailure(error -> handler.handle(Future.failedFuture(error)));
     }
 
     @NotNull

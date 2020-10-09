@@ -53,7 +53,6 @@ class UseSchemaDdlExecutorTest {
     private QueryResultDdlExecutor useSchemaDdlExecutor;
     private DdlRequestContext context;
     private String schema;
-    private Long datamartId;
 
     @BeforeEach
     void setUp() throws SqlParseException {
@@ -79,14 +78,19 @@ class UseSchemaDdlExecutorTest {
     void executeSuccess() {
         Promise promise = Promise.promise();
         QueryResult result = new QueryResult();
-        result.setMetadata(Collections.singletonList(new ColumnMetadata("schema", SystemMetadata.SCHEMA, ColumnType.VARCHAR)));
+        result.setMetadata(Collections.singletonList(
+                ColumnMetadata.builder()
+                        .name("schema")
+                        .systemMetadata(SystemMetadata.SCHEMA)
+                        .type(ColumnType.VARCHAR).build()));
+
         result.setRequestId(context.getRequest().getQueryRequest().getRequestId());
         JsonObject value = new JsonObject();
         value.put("schema", schema);
         result.setResult(new JsonArray(Collections.singletonList(value)));
 
-        Mockito.when(datamartDao.getDatamart(eq(schema)))
-            .thenReturn(Future.succeededFuture());
+        Mockito.when(datamartDao.existsDatamart(eq(schema)))
+                .thenReturn(Future.succeededFuture(true));
 
         useSchemaDdlExecutor.execute(context, schema, ar -> {
             if (ar.succeeded()) {
@@ -95,21 +99,18 @@ class UseSchemaDdlExecutorTest {
                 promise.fail(ar.cause());
             }
         });
-        assertNotNull(promise.future().result());
         assertEquals(result, promise.future().result());
+        assertEquals(context.getDatamartName(),
+                ((QueryResult) promise.future().result()).getResult().getJsonObject(0).getString("schema"));
     }
 
     @Test
     void executeDatamartIsNotExists() {
         Promise promise = Promise.promise();
-        QueryResult result = new QueryResult();
-        result.setMetadata(Collections.singletonList(new ColumnMetadata("schema", SystemMetadata.SCHEMA, ColumnType.VARCHAR)));
-        result.setRequestId(context.getRequest().getQueryRequest().getRequestId());
-        JsonObject value = new JsonObject();
-        value.put("schema", schema);
-        result.setResult(new JsonArray(Collections.singletonList(value)));
-        Mockito.when(datamartDao.getDatamart(eq(schema)))
-            .thenReturn(Future.failedFuture(new DatamartNotExistsException(schema)));
+
+        Mockito.when(datamartDao.existsDatamart(eq(schema)))
+                .thenReturn(Future.succeededFuture(false));
+
         useSchemaDdlExecutor.execute(context, schema, ar -> {
             if (ar.succeeded()) {
                 promise.complete(ar.result());
@@ -123,17 +124,9 @@ class UseSchemaDdlExecutorTest {
     @Test
     void executeIncorrectQuery() {
         Promise promise = Promise.promise();
-        QueryResult result = new QueryResult();
-        result.setMetadata(Collections.singletonList(new ColumnMetadata("schema",
-            SystemMetadata.SCHEMA, ColumnType.VARCHAR)));
-        result.setRequestId(context.getRequest().getQueryRequest().getRequestId());
-        JsonObject value = new JsonObject();
-        value.put("schema", schema);
-        result.setResult(new JsonArray(Collections.singletonList(value)));
-        context.getRequest().getQueryRequest().setSql("USE_dtm");
 
-        Mockito.when(datamartDao.getDatamart(eq(schema)))
-            .thenReturn(Future.failedFuture(new RuntimeException("")));
+        Mockito.when(datamartDao.existsDatamart(eq(schema)))
+                .thenReturn(Future.failedFuture(new RuntimeException("")));
 
         useSchemaDdlExecutor.execute(context, schema, ar -> {
             if (ar.succeeded()) {

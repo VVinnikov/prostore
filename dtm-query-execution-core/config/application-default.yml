@@ -19,19 +19,10 @@ core:
       pluginStatusCheckPeriodMs: ${EDML_STATUS_CHECK_PERIOD_MS:1000}
       firstOffsetTimeoutMs: ${EDML_FIRST_OFFSET_TIMEOUT_MS:15000}
       changeOffsetTimeoutMs: ${EDML_CHANGE_OFFSET_TIMEOUT_MS:10000}
-    service:
-      options:
-        database: ${SERVICEDB_DB_NAME:dtmservice}
-        user: ${SERVICEDB_USER:dtmuser}
-        password: ${SERVICEDB_PASS:Cat6Gmt7Ncr}
-        host: ${SERVICEDB_HOST:10.92.3.41}
-        port: ${SERVICEDB_PORT:3306}
-      poolOptions:
-        maxSize: 5
     zookeeper:
-      connection-string: ${ZOOKEEPER_DS_ADDRESS:10.92.3.31}${ZOOKEEPER_DS_CHROOT:/adtm}
+      connection-string: ${ZOOKEEPER_DS_ADDRESS:10.92.3.31}
       connection-timeout-ms: ${ZOOKEEPER_DS_CONNECTION_TIMEOUT_MS:30000}
-      session-timeout-ms: ${ZOOKEEPER_DS_SESSION_TIMEOUT_MS:5000}
+      session-timeout-ms: ${ZOOKEEPER_DS_SESSION_TIMEOUT_MS:86400000}
       chroot: ${ZOOKEEPER_DS_CHROOT:/adtm}
   vertx:
     pool:

@@ -2,10 +2,10 @@ package ru.ibs.dtm.query.execution.plugin.adb.factory.impl;
 
 import lombok.val;
 import org.springframework.stereotype.Component;
-import ru.ibs.dtm.common.model.ddl.ClassField;
-import ru.ibs.dtm.common.model.ddl.ClassFieldUtils;
-import ru.ibs.dtm.common.model.ddl.ClassTable;
-import ru.ibs.dtm.common.model.ddl.ClassTypeUtil;
+import ru.ibs.dtm.common.model.ddl.Entity;
+import ru.ibs.dtm.common.model.ddl.EntityField;
+import ru.ibs.dtm.common.model.ddl.EntityFieldUtils;
+import ru.ibs.dtm.common.model.ddl.EntityTypeUtil;
 import ru.ibs.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
 
 import java.util.Collection;
@@ -56,25 +56,25 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
 
 
     @Override
-    public String createDropTableScript(ClassTable classTable) {
+    public String createDropTableScript(Entity entity) {
         return new StringBuilder()
-                .append(DROP_TABLE).append(classTable.getNameWithSchema()).append("_").append(ACTUAL_TABLE)
+                .append(DROP_TABLE).append(entity.getNameWithSchema()).append("_").append(ACTUAL_TABLE)
                 .append("; ")
-                .append(DROP_TABLE).append(classTable.getNameWithSchema()).append("_").append(HISTORY_TABLE)
+                .append(DROP_TABLE).append(entity.getNameWithSchema()).append("_").append(HISTORY_TABLE)
                 .append("; ")
-                .append(DROP_TABLE).append(classTable.getNameWithSchema()).append("_").append(STAGING_TABLE)
+                .append(DROP_TABLE).append(entity.getNameWithSchema()).append("_").append(STAGING_TABLE)
                 .append("; ")
                 .toString();
     }
 
     @Override
-    public String createTableScripts(ClassTable classTable) {
+    public String createTableScripts(Entity entity) {
         return new StringBuilder()
-                .append(createTableScript(classTable, classTable.getNameWithSchema() + "_" + ACTUAL_TABLE, false, false))
+                .append(createTableScript(entity, entity.getNameWithSchema() + "_" + ACTUAL_TABLE, false, false))
                 .append("; ")
-                .append(createTableScript(classTable, classTable.getNameWithSchema() + "_" + HISTORY_TABLE, false, true))
+                .append(createTableScript(entity, entity.getNameWithSchema() + "_" + HISTORY_TABLE, false, true))
                 .append("; ")
-                .append(createTableScript(classTable, classTable.getNameWithSchema() + "_" + STAGING_TABLE, true, false))
+                .append(createTableScript(entity, entity.getNameWithSchema() + "_" + STAGING_TABLE, true, false))
                 .append("; ")
                 .toString();
     }
@@ -89,40 +89,40 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
         return String.format(DROP_SCHEMA, schemaName);
     }
 
-    private String createTableScript(ClassTable classTable, String tableName, boolean addReqId, boolean pkWithSystemFields) {
-        val initDelimiter = classTable.getFields().isEmpty() ? " " : DELIMITER;
+    private String createTableScript(Entity entity, String tableName, boolean addReqId, boolean pkWithSystemFields) {
+        val initDelimiter = entity.getFields().isEmpty() ? " " : DELIMITER;
         val sb = new StringBuilder()
                 .append("CREATE TABLE ").append(tableName)
                 .append(" (");
-        appendClassTableFields(sb, classTable.getFields());
+        appendClassTableFields(sb, entity.getFields());
         appendSystemColumns(sb, initDelimiter);
         if (addReqId) {
             appendReqIdColumn(sb);
         }
-        List<ClassField> pkList = ClassFieldUtils.getPrimaryKeyList(classTable.getFields());
+        List<EntityField> pkList = EntityFieldUtils.getPrimaryKeyList(entity.getFields());
         if (pkWithSystemFields || pkList.size() > 0) {
             appendPrimaryKeys(sb, tableName, pkList, pkWithSystemFields);
         }
         sb.append(")");
-        val shardingKeyList = ClassFieldUtils.getShardingKeyList(classTable.getFields());
+        val shardingKeyList = EntityFieldUtils.getShardingKeyList(entity.getFields());
         if (shardingKeyList.size() > 0) {
             appendShardingKeys(sb, shardingKeyList);
         }
         return sb.toString();
     }
 
-    private void appendClassTableFields(StringBuilder builder, List<ClassField> fields) {
+    private void appendClassTableFields(StringBuilder builder, List<EntityField> fields) {
         val columns = fields.stream()
                 .map(this::getColumnDDLByField)
                 .collect(Collectors.joining(DELIMITER));
         builder.append(columns);
     }
 
-    private String getColumnDDLByField(ClassField field) {
+    private String getColumnDDLByField(EntityField field) {
         val sb = new StringBuilder();
         sb.append(field.getName())
                 .append(" ")
-                .append(ClassTypeUtil.pgFromDtmType(field))
+                .append(EntityTypeUtil.pgFromDtmType(field))
                 .append(" ");
         if (!field.getNullable()) {
             sb.append("NOT NULL");
@@ -130,8 +130,8 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
         return sb.toString();
     }
 
-    private void appendPrimaryKeys(StringBuilder builder, String tableName, Collection<ClassField> pkList, boolean addSystemFields) {
-        List<String> pkFields = pkList.stream().map(ClassField::getName).collect(Collectors.toList());
+    private void appendPrimaryKeys(StringBuilder builder, String tableName, Collection<EntityField> pkList, boolean addSystemFields) {
+        List<String> pkFields = pkList.stream().map(EntityField::getName).collect(Collectors.toList());
         if (addSystemFields) {
             pkFields.add(SYS_FROM_ATTR);
         }
@@ -144,9 +144,9 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
                 .append(")");
     }
 
-    private void appendShardingKeys(StringBuilder builder, Collection<ClassField> skList) {
+    private void appendShardingKeys(StringBuilder builder, Collection<EntityField> skList) {
         builder.append(" DISTRIBUTED BY (")
-                .append(skList.stream().map(ClassField::getName).collect(Collectors.joining(DELIMITER)))
+                .append(skList.stream().map(EntityField::getName).collect(Collectors.joining(DELIMITER)))
                 .append(")");
     }
 

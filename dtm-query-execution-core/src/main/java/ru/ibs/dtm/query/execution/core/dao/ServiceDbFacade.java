@@ -3,7 +3,7 @@ package ru.ibs.dtm.query.execution.core.dao;
 import ru.ibs.dtm.query.execution.core.dao.ddl.DdlServiceDao;
 import ru.ibs.dtm.query.execution.core.dao.delta.DeltaServiceDao;
 import ru.ibs.dtm.query.execution.core.dao.eddl.EddlServiceDao;
-import ru.ibs.dtm.query.execution.core.dao.servicedb.ServiceDbDao;
+import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDao;
 
 public interface ServiceDbFacade {
 

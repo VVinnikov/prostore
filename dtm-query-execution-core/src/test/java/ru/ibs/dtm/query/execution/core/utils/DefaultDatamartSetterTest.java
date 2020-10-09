@@ -1,6 +1,5 @@
 package ru.ibs.dtm.query.execution.core.utils;
 
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlDialect;
@@ -14,6 +13,8 @@ import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.calcite.core.util.DeltaInformationExtractor;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import ru.ibs.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

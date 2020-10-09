@@ -2,41 +2,46 @@ package ru.ibs.dtm.query.execution.core.dto.eddl;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.RequiredArgsConstructor;
+import ru.ibs.dtm.common.model.ddl.Entity;
 import ru.ibs.dtm.common.plugin.exload.Format;
 import ru.ibs.dtm.common.plugin.exload.Type;
 
 /**
- * Запрос создания внешней таблицы выгрузки
+ * Download External table creation request
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class CreateDownloadExternalTableQuery extends EddlQuery {
+  /**
+   * Table entity
+   */
+  private Entity entity;
 
   /**
-   * Тип
+   * Type
    */
   private Type locationType;
 
   /**
-   * путь
+   * Path
    */
   private String locationPath;
 
   /**
-   * Формат
+   * Format
    */
   private Format format;
-
-  /**
-   * Размер чанка
-   */
-  private Integer chunkSize;
 
   /**
    * Avro schema in json format
    */
   private String tableSchema;
+
+  /**
+   * Chunk size
+   */
+  private Integer chunkSize;
+
 
   public CreateDownloadExternalTableQuery() {
     super(EddlAction.CREATE_DOWNLOAD_EXTERNAL_TABLE);
@@ -44,16 +49,18 @@ public class CreateDownloadExternalTableQuery extends EddlQuery {
 
   public CreateDownloadExternalTableQuery(String schemaName,
                                           String tableName,
+                                          Entity entity,
                                           Type locationType,
                                           String locationPath,
                                           Format format,
-                                          Integer chunkSize,
-                                          String tableSchema) {
+                                          String tableSchema,
+                                          Integer chunkSize) {
     super(EddlAction.CREATE_DOWNLOAD_EXTERNAL_TABLE, schemaName, tableName);
+    this.entity = entity;
     this.locationType = locationType;
     this.locationPath = locationPath;
     this.format = format;
-    this.chunkSize = chunkSize;
     this.tableSchema = tableSchema;
+    this.chunkSize = chunkSize;
   }
 }

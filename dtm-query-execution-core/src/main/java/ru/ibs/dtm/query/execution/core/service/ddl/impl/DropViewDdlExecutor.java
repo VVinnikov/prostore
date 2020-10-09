@@ -8,10 +8,13 @@ import lombok.val;
 import org.apache.calcite.sql.SqlKind;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import ru.ibs.dtm.common.model.ddl.Entity;
+import ru.ibs.dtm.common.model.ddl.EntityType;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.calcite.core.node.SqlSelectTree;
-import ru.ibs.dtm.query.execution.core.configuration.jooq.MariaProperties;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
+import ru.ibs.dtm.query.execution.core.dao.exception.entity.ViewNotExistsException;
+import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import ru.ibs.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import ru.ibs.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import ru.ibs.dtm.query.execution.core.utils.SqlPreparer;
@@ -20,59 +23,40 @@ import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 @Slf4j
 @Component
 public class DropViewDdlExecutor extends QueryResultDdlExecutor {
+    protected final EntityDao entityDao;
+
     @Autowired
     public DropViewDdlExecutor(MetadataExecutor<DdlRequestContext> metadataExecutor,
-                               MariaProperties mariaProperties,
                                ServiceDbFacade serviceDbFacade) {
-        super(metadataExecutor, mariaProperties, serviceDbFacade);
+        super(metadataExecutor, serviceDbFacade);
+        entityDao = serviceDbFacade.getServiceDbDao().getEntityDao();
     }
 
     @Override
     public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<QueryResult>> handler) {
         try {
-            val schema = getSchemaName(context.getRequest().getQueryRequest(), sqlNodeName);
             val tree = new SqlSelectTree(context.getQuery());
-            val viewName = SqlPreparer.getViewName(tree);
-            findDatamart(schema)
-                    .compose(datamartId -> dropView(viewName, datamartId))
-                    .onComplete(handler);
+            val viewNameNode = SqlPreparer.getViewNameNode(tree);
+            val schemaName = viewNameNode.tryGetSchemaName()
+                .orElseThrow(() -> new RuntimeException("Unable to get schema of view"));
+            val viewName = viewNameNode.tryGetTableName()
+                .orElseThrow(() -> new RuntimeException("Unable to get name of view"));
+            entityDao.getEntity(schemaName, viewName)
+                .compose(this::checkEntityType)
+                .compose(v -> entityDao.deleteEntity(schemaName, viewName))
+                .onSuccess(success -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
+                .onFailure(error -> handler.handle(Future.failedFuture(error)));
         } catch (Exception e) {
             handler.handle(Future.failedFuture(e));
         }
     }
 
-    private Future<Long> findDatamart(String datamartName) {
-        return Future.future(p -> serviceDbFacade.getServiceDbDao().getDatamartDao().findDatamart(datamartName, ar -> {
-            if (ar.succeeded()) {
-                p.complete(ar.result());
-            } else {
-                p.fail(ar.cause());
-            }
-        }));
-    }
-
-    private Future<QueryResult> dropView(String viewName, Long datamartId) {
-        return Future.future(p -> serviceDbFacade.getServiceDbDao().getViewServiceDao().existsView(viewName, datamartId, existsHandler -> {
-            if (existsHandler.succeeded()) {
-                if (existsHandler.result()) {
-                    serviceDbFacade.getServiceDbDao().getViewServiceDao().dropView(viewName, datamartId, updateHandler -> {
-                        if (updateHandler.succeeded()) {
-                            p.complete(QueryResult.emptyResult());
-                        } else {
-                            p.fail(updateHandler.cause());
-                        }
-                    });
-                } else {
-                    val failureMsg = String.format("View is not exists [%s] by datamartId [%s]"
-                            , viewName
-                            , datamartId);
-                    log.error(failureMsg);
-                    p.fail(failureMsg);
-                }
-            } else {
-                p.fail(existsHandler.cause());
-            }
-        }));
+    private Future<Void> checkEntityType(Entity entity) {
+        if (EntityType.VIEW == entity.getEntityType()) {
+            return Future.succeededFuture();
+        } else {
+            return Future.failedFuture(new ViewNotExistsException(entity.getName()));
+        }
     }
 
     @Override

@@ -5,17 +5,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import lombok.SneakyThrows;
-import lombok.val;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
-import ru.ibs.dtm.common.model.ddl.ClassField;
-import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
+import ru.ibs.dtm.common.model.ddl.Entity;
+import ru.ibs.dtm.common.model.ddl.EntityField;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.OperationYaml;
-import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response.ResConfig;
 import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeClient;
 import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeSchemaGenerator;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
@@ -23,7 +21,6 @@ import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -41,9 +38,9 @@ class TtCartridgeSchemaGeneratorImplIT {
   @Qualifier("yamlMapper")
   private ObjectMapper yamlMapper;
 
-  private ClassTable classTable = new ClassTable("test.test_", Arrays.asList(
-    new ClassField(0,"id", ColumnType.INT.name(), false, 1, 1, null),
-    new ClassField(1, "test", ColumnType.VARCHAR.name(), true, null, null, null)
+  private Entity entity = new Entity("test.test_", Arrays.asList(
+    new EntityField(0,"id", ColumnType.INT.name(), false, 1, 1, null),
+    new EntityField(1, "test", ColumnType.VARCHAR.name(), true, null, null, null)
   ));
 
   @Test
@@ -52,7 +49,7 @@ class TtCartridgeSchemaGeneratorImplIT {
     client.getSchema(ar1 -> {
       if (ar1.succeeded()) {
         OperationYaml yaml = parseYaml(ar1.result().getData().getCluster().getSchema().getYaml());
-        DdlRequestContext context = new DdlRequestContext(new DdlRequest(null, classTable));
+        DdlRequestContext context = new DdlRequestContext(new DdlRequest(null, entity));
         generator.generate(context, yaml, ar2 -> {
           if (ar2.succeeded()) {
             testContext.completeNow();

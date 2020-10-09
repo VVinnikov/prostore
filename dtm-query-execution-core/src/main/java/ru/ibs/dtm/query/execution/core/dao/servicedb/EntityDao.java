@@ -1,7 +1,6 @@
 package ru.ibs.dtm.query.execution.core.dao.servicedb;
 
 import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import ru.ibs.dtm.common.dto.DatamartInfo;
 import ru.ibs.dtm.query.execution.core.dto.metadata.DatamartEntity;

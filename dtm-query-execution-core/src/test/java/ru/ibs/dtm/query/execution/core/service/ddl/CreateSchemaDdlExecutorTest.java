@@ -16,13 +16,12 @@ import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import ru.ibs.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
-import ru.ibs.dtm.query.execution.core.configuration.jooq.MariaProperties;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacadeImpl;
-import ru.ibs.dtm.query.execution.core.dao.servicedb.DatamartDao;
-import ru.ibs.dtm.query.execution.core.dao.servicedb.ServiceDbDao;
-import ru.ibs.dtm.query.execution.core.dao.servicedb.impl.DatamartDaoImpl;
-import ru.ibs.dtm.query.execution.core.dao.servicedb.impl.ServiceDbDaoImpl;
+import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
+import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDao;
+import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.impl.DatamartDaoImpl;
+import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
 import ru.ibs.dtm.query.execution.core.service.ddl.impl.CreateSchemaDdlExecutor;
 import ru.ibs.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import ru.ibs.dtm.query.execution.core.service.metadata.impl.MetadataExecutorImpl;
@@ -39,38 +38,33 @@ import static org.mockito.Mockito.when;
 
 class CreateSchemaDdlExecutorTest {
 
-    private CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
-    private CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
-    private SqlParser.Config parserConfig = calciteConfiguration.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory());
-    private Planner planner;
+
     private final MetadataExecutor<DdlRequestContext> metadataExecutor = mock(MetadataExecutorImpl.class);
-    private final MariaProperties mariaProperties = mock(MariaProperties.class);
     private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
     private final ServiceDbDao serviceDbDao = mock(ServiceDbDaoImpl.class);
     private final DatamartDao datamartDao = mock(DatamartDaoImpl.class);
+    private final CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
+    private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
+    private final SqlParser.Config parserConfig = calciteConfiguration.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory());
     private QueryResultDdlExecutor createSchemaDdlExecutor;
     private DdlRequestContext context;
-    private SqlNode query;
     private String schema;
-    private Long datamartId;
 
     @BeforeEach
     void setUp() throws SqlParseException {
         DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        planner = DtmCalciteFramework.getPlanner(frameworkConfig);
-        createSchemaDdlExecutor = new CreateSchemaDdlExecutor(metadataExecutor,
-                mariaProperties, serviceDbFacade);
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
         when(serviceDbFacade.getServiceDbDao()).thenReturn(serviceDbDao);
         when(serviceDbDao.getDatamartDao()).thenReturn(datamartDao);
-        datamartId = 1L;
+        createSchemaDdlExecutor = new CreateSchemaDdlExecutor(metadataExecutor, serviceDbFacade);
         schema = "shares";
         final QueryRequest queryRequest = new QueryRequest();
         queryRequest.setRequestId(UUID.randomUUID());
         queryRequest.setSubRequestId(UUID.randomUUID().toString());
         queryRequest.setDatamartMnemonic(schema);
         queryRequest.setSql("create database shares");
-        query = planner.parse(queryRequest.getSql());
+        SqlNode query = planner.parse(queryRequest.getSql());
         context = new DdlRequestContext(new DdlRequest(queryRequest));
         context.getRequest().setQueryRequest(queryRequest);
         context.setQuery(query);
@@ -79,11 +73,8 @@ class CreateSchemaDdlExecutorTest {
     @Test
     void executeSuccess() {
         Promise promise = Promise.promise();
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Boolean>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(false));
-            return null;
-        }).when(datamartDao).isDatamartExists(eq(schema), any());
+        Mockito.when(datamartDao.existsDatamart(eq(schema)))
+            .thenReturn(Future.succeededFuture(false));
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
@@ -91,11 +82,8 @@ class CreateSchemaDdlExecutorTest {
             return null;
         }).when(metadataExecutor).execute(any(), any());
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Long>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(datamartId));
-            return null;
-        }).when(datamartDao).insertDatamart(eq(schema), any());
+        Mockito.when(datamartDao.createDatamart(eq(schema)))
+            .thenReturn(Future.succeededFuture());
 
         createSchemaDdlExecutor.execute(context, null, ar -> {
             if (ar.succeeded()) {
@@ -110,12 +98,8 @@ class CreateSchemaDdlExecutorTest {
     @Test
     void executeWithExistDatamart() {
         Promise promise = Promise.promise();
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Boolean>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(true));
-            return null;
-        }).when(datamartDao).isDatamartExists(eq(schema), any());
-
+        Mockito.when(datamartDao.existsDatamart(eq(schema)))
+            .thenReturn(Future.succeededFuture(true));
         createSchemaDdlExecutor.execute(context, null, ar -> {
             if (ar.succeeded()) {
                 promise.complete(ar.result());
@@ -129,12 +113,8 @@ class CreateSchemaDdlExecutorTest {
     @Test
     void executeWithCheckExistsDatamartError() {
         Promise promise = Promise.promise();
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Boolean>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new RuntimeException("")));
-            return null;
-        }).when(datamartDao).isDatamartExists(eq(schema), any());
-
+        Mockito.when(datamartDao.existsDatamart(eq(schema)))
+            .thenReturn(Future.failedFuture("exists error"));
         createSchemaDdlExecutor.execute(context, null, ar -> {
             if (ar.succeeded()) {
                 promise.complete(ar.result());
@@ -148,15 +128,12 @@ class CreateSchemaDdlExecutorTest {
     @Test
     void executeWithMetadataExecError() {
         Promise promise = Promise.promise();
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Boolean>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(false));
-            return null;
-        }).when(datamartDao).isDatamartExists(eq(schema), any());
+        Mockito.when(datamartDao.existsDatamart(eq(schema)))
+            .thenReturn(Future.succeededFuture(false));
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new RuntimeException("")));
+            handler.handle(Future.failedFuture("plugins error"));
             return null;
         }).when(metadataExecutor).execute(any(), any());
 
@@ -173,11 +150,8 @@ class CreateSchemaDdlExecutorTest {
     @Test
     void executeWithInsertDatamartError() {
         Promise promise = Promise.promise();
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Boolean>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(false));
-            return null;
-        }).when(datamartDao).isDatamartExists(eq(schema), any());
+        Mockito.when(datamartDao.existsDatamart(eq(schema)))
+            .thenReturn(Future.succeededFuture(false));
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
@@ -185,12 +159,8 @@ class CreateSchemaDdlExecutorTest {
             return null;
         }).when(metadataExecutor).execute(any(), any());
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Long>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new RuntimeException("")));
-            return null;
-        }).when(datamartDao).insertDatamart(eq(schema), any());
-
+        Mockito.when(datamartDao.createDatamart(eq(schema)))
+            .thenReturn(Future.failedFuture("create error"));
         createSchemaDdlExecutor.execute(context, null, ar -> {
             if (ar.succeeded()) {
                 promise.complete(ar.result());

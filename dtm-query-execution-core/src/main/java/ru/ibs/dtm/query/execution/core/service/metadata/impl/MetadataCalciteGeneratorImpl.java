@@ -8,9 +8,9 @@ import org.apache.calcite.sql.ddl.SqlKeyConstraint;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
-import ru.ibs.dtm.common.model.ddl.ClassField;
-import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
+import ru.ibs.dtm.common.model.ddl.Entity;
+import ru.ibs.dtm.common.model.ddl.EntityField;
 import ru.ibs.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
 import ru.ibs.dtm.query.calcite.core.extension.eddl.SqlNodeUtils;
 import ru.ibs.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
@@ -26,22 +26,22 @@ import java.util.Map;
 public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
 
     @Override
-    public ClassTable generateTableMetadata(SqlCreate sqlCreate) {
+    public Entity generateTableMetadata(SqlCreate sqlCreate) {
         final List<String> names = SqlNodeUtils.getTableNames(sqlCreate);
-        final List<ClassField> fields = createTableFields(sqlCreate);
-        return new ClassTable(getTableName(names), getSchema(names), fields);
+        final List<EntityField> fields = createTableFields(sqlCreate);
+        return new Entity(getTableName(names), getSchema(names), fields);
     }
 
 
-    private List<ClassField> createTableFields(SqlCreate sqlCreate) {
-        final List<ClassField> fields = new ArrayList<>();
+    private List<EntityField> createTableFields(SqlCreate sqlCreate) {
+        final List<EntityField> fields = new ArrayList<>();
         final SqlNodeList columnList = (SqlNodeList) sqlCreate.getOperandList().get(1);
         if (columnList != null) {
-            final Map<String, ClassField> fieldMap = new HashMap<>();
+            final Map<String, EntityField> fieldMap = new HashMap<>();
             for (int ordinalPos = 0; ordinalPos < columnList.getList().size(); ordinalPos++) {
                 SqlNode col = columnList.getList().get(ordinalPos);
                 if (col.getKind().equals(SqlKind.COLUMN_DECL)) {
-                    final ClassField field = createField((SqlColumnDeclaration) col, ordinalPos);
+                    final EntityField field = createField((SqlColumnDeclaration) col, ordinalPos);
                     fieldMap.put(field.getName(), field);
                     fields.add(field);
                 } else if (col.getKind().equals(SqlKind.PRIMARY_KEY)) {
@@ -64,15 +64,14 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
     }
 
     @NotNull
-    private ClassField createField(SqlColumnDeclaration columnValue, int ordinalPos) {
+    private EntityField createField(SqlColumnDeclaration columnValue, int ordinalPos) {
         val column = getColumn(columnValue);
         val columnTypeSpec = getColumnTypeSpec(columnValue);
-        final ClassField field = new ClassField(
+        final EntityField field = new EntityField(
                 ordinalPos,
                 column.getSimple(),
                 getColumnType(columnTypeSpec),
-                columnTypeSpec.getNullable(),
-                false
+                columnTypeSpec.getNullable()
         );
         if (columnTypeSpec.getTypeNameSpec() instanceof SqlBasicTypeNameSpec) {
             val basicTypeNameSpec = (SqlBasicTypeNameSpec) columnTypeSpec.getTypeNameSpec();
@@ -96,14 +95,13 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
         }
     }
 
-    private void initPrimaryKeyColumns(SqlKeyConstraint col, Map<String, ClassField> fieldMap) {
+    private void initPrimaryKeyColumns(SqlKeyConstraint col, Map<String, EntityField> fieldMap) {
         final List<SqlNode> pks = getPrimaryKeys(col);
         Integer pkOrder = 1;
         for (SqlNode pk : pks) {
             SqlIdentifier pkIdent = (SqlIdentifier) pk;
-            ClassField keyfield = fieldMap.get(pkIdent.getSimple());
+            EntityField keyfield = fieldMap.get(pkIdent.getSimple());
             keyfield.setPrimaryOrder(pkOrder);
-            keyfield.setIsPrimary(true);
             keyfield.setNullable(false);
             pkOrder++;
         }
@@ -138,7 +136,7 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
         return columnType.getScale() != -1 ? columnType.getScale() : null;
     }
 
-    private void initDistributedKeyColumns(SqlCreate sqlCreate, Map<String, ClassField> fieldMap) {
+    private void initDistributedKeyColumns(SqlCreate sqlCreate, Map<String, EntityField> fieldMap) {
         if (sqlCreate instanceof SqlCreateTable) {
             SqlCreateTable createTable = (SqlCreateTable) sqlCreate;
             SqlNodeList distributedBy = createTable.getDistributedBy().getDistributedBy();
@@ -151,11 +149,11 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
         }
     }
 
-    private void initDistributedOrderAttr(List<SqlNode> distrColumnList, Map<String, ClassField> fieldMap) {
+    private void initDistributedOrderAttr(List<SqlNode> distrColumnList, Map<String, EntityField> fieldMap) {
         Integer dkOrder = 1;
         for (SqlNode sqlNode : distrColumnList) {
             SqlIdentifier node = (SqlIdentifier) sqlNode;
-            final ClassField field = fieldMap.get(node.getSimple());
+            final EntityField field = fieldMap.get(node.getSimple());
             if (field == null) {
                 throw new RuntimeException(String.format("Incorrect distributed key column name %s!", node.getSimple()));
             }

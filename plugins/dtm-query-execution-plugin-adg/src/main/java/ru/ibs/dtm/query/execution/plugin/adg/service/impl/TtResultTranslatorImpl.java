@@ -2,8 +2,8 @@ package ru.ibs.dtm.query.execution.plugin.adg.service.impl;
 
 import lombok.val;
 import org.tarantool.TarantoolException;
-import ru.ibs.dtm.query.execution.plugin.adg.service.TtResultTranslator;
 import ru.ibs.dtm.query.execution.plugin.adg.exception.DtmTarantoolException;
+import ru.ibs.dtm.query.execution.plugin.adg.service.TtResultTranslator;
 
 import java.util.List;
 import java.util.Map;

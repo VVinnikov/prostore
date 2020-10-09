@@ -8,20 +8,23 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.dto.schema.DatamartSchemaKey;
+import ru.ibs.dtm.common.model.ddl.Entity;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import ru.ibs.dtm.query.execution.core.service.schema.LogicalSchemaService;
 import ru.ibs.dtm.query.execution.model.metadata.Datamart;
-import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
 public class LogicalSchemaProviderImpl implements LogicalSchemaProvider {
 
     private final LogicalSchemaService logicalSchemaService;
-    private final Map<DatamartSchemaKey, DatamartTable> datamartSchemaMap;
+    private final Map<DatamartSchemaKey, Entity> datamartSchemaMap;
 
     @Autowired
     public LogicalSchemaProviderImpl(LogicalSchemaService logicalSchemaService) {
@@ -34,7 +37,7 @@ public class LogicalSchemaProviderImpl implements LogicalSchemaProvider {
         try {
             logicalSchemaService.createSchema(request, ar -> {
                 if (ar.succeeded()) {
-                    Map<DatamartSchemaKey, DatamartTable> datamartTableMap = ar.result();
+                    Map<DatamartSchemaKey, Entity> datamartTableMap = ar.result();
                     log.trace("Received data schema on request: {}; {}", request, datamartTableMap);
                     datamartSchemaMap.putAll(datamartTableMap);
                     resultHandler.handle(Future.succeededFuture(getDatamartsSchemas(request.getDatamartMnemonic(), datamartSchemaMap)));
@@ -51,7 +54,7 @@ public class LogicalSchemaProviderImpl implements LogicalSchemaProvider {
 
     @NotNull
     private List<Datamart> getDatamartsSchemas(String defaultDatamart,
-                                               Map<DatamartSchemaKey, DatamartTable> datamartSchemaMap) {
+                                               Map<DatamartSchemaKey, Entity> datamartSchemaMap) {
         Map<String, Datamart> datamartMap = new HashMap<>();
         datamartSchemaMap.forEach((k, v) -> {
             final Datamart datamart = createDatamart(k.getSchema());
@@ -59,7 +62,7 @@ public class LogicalSchemaProviderImpl implements LogicalSchemaProvider {
                 datamart.setIsDefault(true);
             }
             datamartMap.putIfAbsent(k.getSchema(), datamart);
-            datamartMap.get(k.getSchema()).getDatamartTables().add(v);
+            datamartMap.get(k.getSchema()).getEntities().add(v);
         });
         return new ArrayList<>(datamartMap.values());
     }
@@ -67,9 +70,8 @@ public class LogicalSchemaProviderImpl implements LogicalSchemaProvider {
     @NotNull
     private Datamart createDatamart(String schema) {
         Datamart datamart = new Datamart();
-        datamart.setId(UUID.randomUUID());
         datamart.setMnemonic(schema);
-        datamart.setDatamartTables(new ArrayList<>());
+        datamart.setEntities(new ArrayList<>());
         return datamart;
     }
 

@@ -58,12 +58,12 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
     }
 
     private void createTable(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {
-        String createSql = sqlFactory.createTableScripts(context.getRequest().getClassTable());
+        String createSql = sqlFactory.createTableScripts(context.getRequest().getEntity());
         adbQueryExecutor.executeUpdate(createSql, handler);
     }
 
     private DdlRequestContext createDropRequestContext(DdlRequestContext context) {
-        return new DdlRequestContext(new DdlRequest(new QueryRequest(), context.getRequest().getClassTable()));
+        return new DdlRequestContext(new DdlRequest(new QueryRequest(), context.getRequest().getEntity()));
     }
 
     @Override

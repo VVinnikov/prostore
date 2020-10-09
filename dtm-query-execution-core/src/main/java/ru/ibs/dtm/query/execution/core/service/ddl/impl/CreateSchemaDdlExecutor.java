@@ -10,8 +10,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.calcite.core.extension.eddl.SqlCreateDatabase;
-import ru.ibs.dtm.query.execution.core.configuration.jooq.MariaProperties;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
+import ru.ibs.dtm.query.execution.core.dao.exception.datamart.DatamartAlreadyExistsException;
+import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import ru.ibs.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import ru.ibs.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
@@ -22,11 +23,13 @@ import static ru.ibs.dtm.query.execution.plugin.api.ddl.DdlType.CREATE_SCHEMA;
 @Component
 public class CreateSchemaDdlExecutor extends QueryResultDdlExecutor {
 
+    private final DatamartDao datamartDao;
+
     @Autowired
     public CreateSchemaDdlExecutor(MetadataExecutor<DdlRequestContext> metadataExecutor,
-                                   MariaProperties mariaProperties,
                                    ServiceDbFacade serviceDbFacade) {
-        super(metadataExecutor, mariaProperties, serviceDbFacade);
+        super(metadataExecutor, serviceDbFacade);
+        datamartDao = serviceDbFacade.getServiceDbDao().getDatamartDao();
     }
 
     @Override
@@ -44,44 +47,26 @@ public class CreateSchemaDdlExecutor extends QueryResultDdlExecutor {
     }
 
     private void createDatamartIfNotExists(DdlRequestContext context, Handler<AsyncResult<QueryResult>> resultHandler) {
-        serviceDbFacade.getServiceDbDao().getDatamartDao().isDatamartExists(context.getDatamartName(), isExists -> {
-            if (isExists.succeeded()) {
-                if (isExists.result()) {
-                    final RuntimeException existsException = new RuntimeException(
-                            String.format("Datamart [%s] is already exists!", context.getDatamartName()));
-                    log.error("Error creating datamart [{}]!", context.getDatamartName(), existsException);
-                    resultHandler.handle(Future.failedFuture(existsException));
-                } else {
-                    createDatamart(context, resultHandler);
-                }
-            } else {
-                log.error("Error receive isExists status for datamart [{}]!", context.getDatamartName(), isExists.cause());
-                resultHandler.handle(Future.failedFuture(isExists.cause()));
-            }
-        });
+        datamartDao.existsDatamart(context.getDatamartName())
+            .compose(isExists -> isExists ? getDatamarAlreadyExistsFuture(context) : createDatamartInPlugins(context))
+            .compose(v -> datamartDao.createDatamart(context.getDatamartName()))
+            .onSuccess(success -> {
+                log.debug("Datamart [{}] successfully created", context.getDatamartName());
+                resultHandler.handle(Future.succeededFuture(QueryResult.emptyResult()));
+            })
+            .onFailure(error -> {
+                log.error("Error creating datamart [{}]!", context.getDatamartName(), error);
+                resultHandler.handle(Future.failedFuture(error));
+            });
     }
 
-    private void createDatamart(DdlRequestContext context, Handler<AsyncResult<QueryResult>> resultHandler) {
-        Future.future((Promise<Void> promise) -> metadataExecutor.execute(context, promise))
-                .onComplete(result -> {
-                    if (result.succeeded()) {
-                        serviceDbFacade.getServiceDbDao().getDatamartDao()
-                                .insertDatamart(context.getDatamartName(), insertResult -> {
-                                    if (insertResult.succeeded()) {
-                                        log.debug("Datamart [{}] successfully created", context.getDatamartName());
-                                        resultHandler.handle(Future.succeededFuture(QueryResult.emptyResult()));
-                                    } else {
-                                        log.error("Error inserting datamart [{}]!", context.getDatamartName(),
-                                                insertResult.cause());
-                                        resultHandler.handle(Future.failedFuture(insertResult.cause()));
-                                    }
-                                });
-                    }
-                })
-                .onFailure(fail -> {
-                    log.error("Error creating schema [{}] in data sources!", context.getDatamartName(), fail);
-                    resultHandler.handle(Future.failedFuture(fail));
-                });
+    private Future<Void> getDatamarAlreadyExistsFuture(DdlRequestContext context) {
+        return Future.failedFuture(new DatamartAlreadyExistsException(context.getDatamartName()));
+    }
+
+    private Future<Void> createDatamartInPlugins(DdlRequestContext context) {
+        return Future.future((Promise<Void> promise) -> metadataExecutor.execute(context, promise))
+            .onFailure(fail -> log.error("Error creating schema [{}] in data sources!", context.getDatamartName(), fail));
     }
 
     @Override

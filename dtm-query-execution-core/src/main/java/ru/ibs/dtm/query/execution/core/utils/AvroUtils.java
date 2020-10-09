@@ -3,8 +3,8 @@ package ru.ibs.dtm.query.execution.core.utils;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.specific.SpecificData;
-import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
+import ru.ibs.dtm.common.model.ddl.EntityField;
 import ru.ibs.dtm.common.schema.codec.type.LocalDateLogicalType;
 import ru.ibs.dtm.common.schema.codec.type.LocalDateTimeLogicalType;
 import ru.ibs.dtm.common.schema.codec.type.LocalTimeLogicalType;
@@ -15,7 +15,7 @@ public class AvroUtils {
         return new Schema.Field("sys_op", Schema.create(Schema.Type.INT), null, 0);
     }
 
-    public static Schema.Field toSchemaField(ClassField column) {
+    public static Schema.Field toSchemaField(EntityField column) {
         return column.getNullable() ? genNullableField(column) : genNonNullableField(column);
     }
 
@@ -57,7 +57,7 @@ public class AvroUtils {
         return schema;
     }
 
-    private static Schema.Field genNullableField(ClassField column) {
+    private static Schema.Field genNullableField(EntityField column) {
         Schema.Field field = new Schema.Field(column.getName(),
                 Schema.createUnion(Schema.create(Schema.Type.NULL), metadataColumnTypeToAvroSchema(column.getType())),
                 null, Schema.Field.NULL_DEFAULT_VALUE);
@@ -65,7 +65,7 @@ public class AvroUtils {
         return field;
     }
 
-    private static Schema.Field genNonNullableField(ClassField column) {
+    private static Schema.Field genNonNullableField(EntityField column) {
         return new Schema.Field(column.getName(),
                 metadataColumnTypeToAvroSchema(column.getType()),
                 null);

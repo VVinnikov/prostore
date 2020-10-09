@@ -6,28 +6,28 @@ import java.util.List;
 
 import static java.util.stream.Collectors.toList;
 
-public class ClassFieldUtils {
+public class EntityFieldUtils {
 
 	private static final List<String> pkSystemField = Arrays.asList("sys_from");
 
-	public static List<ClassField> getPrimaryKeyList(final List<ClassField> fields) {
+	public static List<EntityField> getPrimaryKeyList(final List<EntityField> fields) {
 		return fields.stream()
 				.filter(f -> f.getPrimaryOrder() != null)
-				.sorted(Comparator.comparing(ClassField::getPrimaryOrder))
+				.sorted(Comparator.comparing(EntityField::getPrimaryOrder))
 				.collect(toList());
 	}
 
-	public static List<ClassField> getPrimaryKeyListWithSysFields(final List<ClassField> fields) {
+	public static List<EntityField> getPrimaryKeyListWithSysFields(final List<EntityField> fields) {
 		return fields.stream()
 				.filter(f -> f.getPrimaryOrder() != null || isSystemFieldForPk(f.getName()))
-				.sorted(Comparator.comparing(ClassField::getPrimaryOrder))
+				.sorted(Comparator.comparing(EntityField::getPrimaryOrder))
 				.collect(toList());
 	}
 
-	public static List<ClassField> getShardingKeyList(final List<ClassField> fields) {
+	public static List<EntityField> getShardingKeyList(final List<EntityField> fields) {
 		return fields.stream()
 				.filter(f -> f.getShardingOrder() != null)
-				.sorted(Comparator.comparing(ClassField::getShardingOrder))
+				.sorted(Comparator.comparing(EntityField::getShardingOrder))
 				.collect(toList());
 	}
 

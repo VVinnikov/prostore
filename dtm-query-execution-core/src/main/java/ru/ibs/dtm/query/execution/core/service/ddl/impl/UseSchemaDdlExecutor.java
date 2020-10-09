@@ -12,8 +12,8 @@ import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.common.model.ddl.SystemMetadata;
 import ru.ibs.dtm.common.reader.QueryResult;
-import ru.ibs.dtm.query.execution.core.configuration.jooq.MariaProperties;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
+import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import ru.ibs.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import ru.ibs.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
@@ -21,28 +21,31 @@ import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 
 import java.util.Collections;
 
-@Component
 @Slf4j
+@Component
 public class UseSchemaDdlExecutor extends QueryResultDdlExecutor {
 
     public static final String SCHEMA_COLUMN_NAME = "schema";
+    private final DatamartDao datamartDao;
 
     public UseSchemaDdlExecutor(MetadataExecutor<DdlRequestContext> metadataExecutor,
-                                MariaProperties mariaProperties,
                                 ServiceDbFacade serviceDbFacade) {
-        super(metadataExecutor, mariaProperties, serviceDbFacade);
+        super(metadataExecutor, serviceDbFacade);
+        this.datamartDao = serviceDbFacade.getServiceDbDao().getDatamartDao();
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<QueryResult>> handler) {
-        serviceDbFacade.getServiceDbDao().getDatamartDao().findDatamart(sqlNodeName, ar -> {
-            if (ar.succeeded()) {
-                context.setDatamartName(sqlNodeName);
-                handler.handle(Future.succeededFuture(createQueryResult(context)));
-            } else {
-                handler.handle(Future.failedFuture(ar.cause()));
-            }
-        });
+    public void execute(DdlRequestContext context, String datamart, Handler<AsyncResult<QueryResult>> handler) {
+        datamartDao.existsDatamart(datamart)
+                .onSuccess(isExists -> {
+                    if (isExists) {
+                        context.setDatamartName(datamart);
+                        handler.handle(Future.succeededFuture(createQueryResult(context)));
+                    } else {
+                        handler.handle(Future.failedFuture(String.format("Datamart [%s] doesn't exist", datamart)));
+                    }
+                })
+                .onFailure(error -> handler.handle(Future.failedFuture(error)));
     }
 
     @NotNull

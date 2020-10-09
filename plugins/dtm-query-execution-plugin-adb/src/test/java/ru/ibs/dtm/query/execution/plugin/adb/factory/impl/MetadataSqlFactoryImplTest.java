@@ -1,9 +1,9 @@
 package ru.ibs.dtm.query.execution.plugin.adb.factory.impl;
 
 import org.junit.jupiter.api.Test;
-import ru.ibs.dtm.common.model.ddl.ClassField;
-import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
+import ru.ibs.dtm.common.model.ddl.Entity;
+import ru.ibs.dtm.common.model.ddl.EntityField;
 
 import java.util.Arrays;
 
@@ -38,11 +38,11 @@ class MetadataSqlFactoryImplTest {
         assertEquals(EXPECTED_CREATE_SCRIPTS, tableScript);
     }
 
-    private ClassTable getClassTable() {
-        return new ClassTable("test.test_ts3222", Arrays.asList(
-                new ClassField(0,"id", ColumnType.INT.name(), false, 1, 1, null),
-                new ClassField(1,"name", ColumnType.VARCHAR.name(), true, null, null, null),
-                new ClassField(2,"dt", ColumnType.TIMESTAMP.name(), true, null, 2, null)
+    private Entity getClassTable() {
+        return new Entity("test.test_ts3222", Arrays.asList(
+                new EntityField(0,"id", ColumnType.INT.name(), false, 1, 1, null),
+                new EntityField(1,"name", ColumnType.VARCHAR.name(), true, null, null, null),
+                new EntityField(2,"dt", ColumnType.TIMESTAMP.name(), true, null, 2, null)
         ));
     }
 }

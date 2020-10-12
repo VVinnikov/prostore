@@ -18,14 +18,14 @@ public class AdgMppwKafkaContextFactoryImpl implements AdgMppwKafkaContextFactor
     public AdgMppwKafkaContext create(MppwRequest request) {
         val tableName = request.getKafkaParameter().getTargetTableName();
         val datamart = request.getKafkaParameter().getDatamart();
-        val systemName = request.getQueryRequest().getEnvName();
-        val helperTableNames = helperTableNamesFactory.create(systemName, datamart, tableName);
+        val envName = request.getQueryRequest().getEnvName();
+        val helperTableNames = helperTableNamesFactory.create(envName, datamart, tableName);
         return new AdgMppwKafkaContext(
                 request.getKafkaParameter().getUploadMetadata().getTopic(),
                 request.getKafkaParameter().getSysCn(),
                 tableName,
                 helperTableNames,
-                JsonObject.mapFrom(request.getKafkaParameter().getUploadMetadata().getExternalTableSchema())//FIXME check this
+                new JsonObject(request.getKafkaParameter().getUploadMetadata().getExternalTableSchema())
         );
     }
 }

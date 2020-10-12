@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.mockito.Mockito;
 import org.mockito.internal.verification.VerificationModeFactory;
+import ru.ibs.dtm.common.plugin.exload.Format;
 import ru.ibs.dtm.common.plugin.exload.QueryLoadParam;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.configuration.AdgConnectorApiProperties;
@@ -21,6 +22,8 @@ import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response.TtKafkaErr
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response.TtLoadDataKafkaResponse;
 import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeClient;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.mppw.parameter.KafkaParameter;
+import ru.ibs.dtm.query.execution.plugin.api.mppw.parameter.UploadExternalMetadata;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -178,18 +181,30 @@ class AdgMppwKafkaServiceTest {
         val queryRequest = new QueryRequest();
         queryRequest.setEnvName("env1");
         queryRequest.setDatamartMnemonic("test");
-        val queryLoadParam = new QueryLoadParam();
-        queryLoadParam.setDatamart("test");
-        queryLoadParam.setDeltaHot(1L);
-        queryLoadParam.setTableName("tbl1");
-        val mppwRequest = new MppwRequest(
-                queryRequest, true, null
-                //queryLoadParam,
-               // new JsonObject().put("name", "val")
-        );
-        mppwRequest.setIsLoadStart(true);//FIXME
-        //mppwRequest.setTopic("topic1");
+        val mppwRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
         return new MppwRequestContext(mppwRequest);
+    }
+
+    private KafkaParameter createKafkaParameter() {
+        return KafkaParameter.builder()
+                .sysCn(1L)
+                .datamart("test")
+                .targetTableName("tbl1")
+                .uploadMetadata(UploadExternalMetadata.builder()
+                        .name("ext_tab")
+                        .externalTableSchema(getExternalTableSchema())
+                        .externalTableUploadMessageLimit(1000)
+                        .externalTableLocationPath("kafka://kafka-1.dtm.local:9092/topic")
+                        .zookeeperHost("kafka-1.dtm.local")
+                        .zookeeperPort(9092)
+                        .topic("topic1")
+                        .externalTableFormat(Format.AVRO)
+                        .build())
+                .build();
+    }
+
+    private String getExternalTableSchema() {
+        return "{\"type\":\"record\",\"name\":\"accounts\",\"namespace\":\"dm2\",\"fields\":[{\"name\":\"column1\",\"type\":[\"null\",\"long\"],\"default\":null,\"defaultValue\":\"null\"},{\"name\":\"column2\",\"type\":[\"null\",\"long\"],\"default\":null,\"defaultValue\":\"null\"},{\"name\":\"column3\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}],\"default\":null,\"defaultValue\":\"null\"},{\"name\":\"sys_op\",\"type\":\"int\",\"default\":0}]}";
     }
 
     private void badSubscribeApiMock1() {

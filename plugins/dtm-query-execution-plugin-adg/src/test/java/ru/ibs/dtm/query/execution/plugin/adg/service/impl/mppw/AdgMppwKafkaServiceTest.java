@@ -56,7 +56,7 @@ class AdgMppwKafkaServiceTest {
     @Test
     void allGoodCancelTest() {
         val context = getRequestContext();
-        context.getRequest().setLoadStart(false);
+        context.getRequest().setIsLoadStart(false);
         allGoodApiMock();
         service.execute(context, ar -> {
             assertTrue(ar.succeeded());
@@ -121,7 +121,7 @@ class AdgMppwKafkaServiceTest {
     @Test
     void badCancelTest() {
         val context = getRequestContext();
-        context.getRequest().setLoadStart(false);
+        context.getRequest().setIsLoadStart(false);
         badCancelApiMock();
         service.execute(context, ar -> {
             assertFalse(ar.succeeded());
@@ -183,12 +183,12 @@ class AdgMppwKafkaServiceTest {
         queryLoadParam.setDeltaHot(1L);
         queryLoadParam.setTableName("tbl1");
         val mppwRequest = new MppwRequest(
-                queryRequest,
-                queryLoadParam,
-                new JsonObject().put("name", "val")
+                queryRequest, true, null
+                //queryLoadParam,
+               // new JsonObject().put("name", "val")
         );
-        mppwRequest.setLoadStart(true);
-        mppwRequest.setTopic("topic1");
+        mppwRequest.setIsLoadStart(true);//FIXME
+        //mppwRequest.setTopic("topic1");
         return new MppwRequestContext(mppwRequest);
     }
 

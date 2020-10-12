@@ -53,7 +53,7 @@ public class AdqmMppwKafkaService implements MppwKafkaService<QueryResult> {
             return;
         }
 
-        LoadType loadType = LoadType.valueOf(request.getLoadStart());
+        LoadType loadType = LoadType.valueOf(request.getIsLoadStart());
         handlers.get(loadType).execute(request).onComplete(asyncResultHandler);
     }
 

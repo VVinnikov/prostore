@@ -17,6 +17,7 @@ import java.util.UUID;
 @Data
 @EqualsAndHashCode
 @ToString
+@Deprecated
 public class QueryLoadParam {
     /**
      * Идентификатор

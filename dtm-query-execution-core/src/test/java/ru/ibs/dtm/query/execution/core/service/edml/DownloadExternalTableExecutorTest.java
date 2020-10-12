@@ -10,6 +10,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import ru.ibs.dtm.common.dto.TableInfo;
+import ru.ibs.dtm.common.model.ddl.Entity;
+import ru.ibs.dtm.common.model.ddl.EntityType;
+import ru.ibs.dtm.common.model.ddl.ExternalTableLocationType;
 import ru.ibs.dtm.common.plugin.exload.Format;
 import ru.ibs.dtm.common.plugin.exload.TableAttribute;
 import ru.ibs.dtm.common.plugin.exload.Type;
@@ -66,6 +69,7 @@ class DownloadExternalTableExecutorTest {
             new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
     private QueryRequest queryRequest;
     private DownloadExtTableRecord downRecord;
+    private Entity entity;
 
     @BeforeEach
     void setUp() {
@@ -75,6 +79,17 @@ class DownloadExternalTableExecutorTest {
         queryRequest.setDatamartMnemonic("test");
         queryRequest.setRequestId(UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"));
         queryRequest.setSubRequestId("6efad624-b9da-4ba1-9fed-f2da478b08e8");
+
+        entity = Entity.builder()
+                .entityType(EntityType.DOWNLOAD_EXTERNAL_TABLE)
+                .externalTableFormat("avro")
+                .externalTableLocationPath("kafka://kafka-1.dtm.local:9092/topic")
+                .externalTableLocationType(ExternalTableLocationType.KAFKA)
+                .externalTableUploadMessageLimit(1000)
+                .name("download_table")
+                .schema("test")
+                .externalTableSchema("")
+                .build();
 
         downRecord = new DownloadExtTableRecord();
         downRecord.setId(1L);
@@ -102,7 +117,7 @@ class DownloadExternalTableExecutorTest {
         context.setTargetTable(new TableInfo("test", "download_table"));
         context.setSourceTable(new TableInfo("test", "pso"));
 
-        EdmlQuery edmlQuery = new EdmlQuery(EdmlAction.DOWNLOAD, downRecord);
+        EdmlQuery edmlQuery = new EdmlQuery(EdmlAction.DOWNLOAD, entity, downRecord);
         List<DownloadExternalTableAttribute> attrs = new ArrayList<>();
         attrs.add(new DownloadExternalTableAttribute("id", "integer", 0, downRecord.getId()));
         attrs.add(new DownloadExternalTableAttribute("lst_name", "varchar(100)", 1, downRecord.getId()));
@@ -152,7 +167,7 @@ class DownloadExternalTableExecutorTest {
         context.setTargetTable(new TableInfo("test", "download_table"));
         context.setSourceTable(new TableInfo("test", "pso"));
 
-        EdmlQuery edmlQuery = new EdmlQuery(EdmlAction.DOWNLOAD, downRecord);
+        EdmlQuery edmlQuery = new EdmlQuery(EdmlAction.DOWNLOAD, entity, downRecord);
         List<DownloadExternalTableAttribute> attrs = new ArrayList<>();
         attrs.add(new DownloadExternalTableAttribute("id", "integer", 0, downRecord.getId()));
         attrs.add(new DownloadExternalTableAttribute("lst_name", "varchar(100)", 1, downRecord.getId()));

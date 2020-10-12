@@ -3,7 +3,7 @@ package ru.ibs.dtm.query.execution.core.dao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.query.execution.core.dao.ddl.DdlServiceDao;
-import ru.ibs.dtm.query.execution.core.dao.delta.DeltaServiceDao;
+import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import ru.ibs.dtm.query.execution.core.dao.eddl.EddlServiceDao;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDao;
 

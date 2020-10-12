@@ -34,12 +34,12 @@ public class DeltaServiceDaoImpl implements DeltaServiceDao, DeltaDaoExecutorRep
     }
 
     @Override
-    public Future<Void> writeDeltaHotSuccess(String datamart) {
+    public Future<Long> writeDeltaHotSuccess(String datamart) {
         return writeDeltaHotSuccess(datamart, null);
     }
 
     @Override
-    public Future<Void> writeDeltaHotSuccess(String datamart, LocalDateTime deltaHotDate) {
+    public Future<Long> writeDeltaHotSuccess(String datamart, LocalDateTime deltaHotDate) {
         return getExecutor(WriteDeltaHotSuccessExecutor.class).execute(datamart, deltaHotDate);
     }
 

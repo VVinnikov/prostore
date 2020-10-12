@@ -9,7 +9,6 @@ import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import ru.ibs.dtm.common.delta.DeltaLoadStatus;
 import ru.ibs.dtm.common.dto.TableInfo;
 import ru.ibs.dtm.common.plugin.exload.Format;
 import ru.ibs.dtm.common.plugin.exload.Type;
@@ -21,13 +20,13 @@ import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguratio
 import ru.ibs.dtm.query.execution.core.configuration.properties.EdmlProperties;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacadeImpl;
-import ru.ibs.dtm.query.execution.core.dao.delta.DeltaServiceDao;
-import ru.ibs.dtm.query.execution.core.dao.delta.impl.DeltaServiceDaoImpl;
+import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
+import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.impl.DeltaServiceDaoImpl;
 import ru.ibs.dtm.query.execution.core.dao.eddl.EddlServiceDao;
 import ru.ibs.dtm.query.execution.core.dao.eddl.UploadQueryDao;
 import ru.ibs.dtm.query.execution.core.dao.eddl.impl.EddlServiceDaoImpl;
 import ru.ibs.dtm.query.execution.core.dao.eddl.impl.UploadQueryDaoImpl;
-import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
+import ru.ibs.dtm.query.execution.core.dto.delta.HotDelta;
 import ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction;
 import ru.ibs.dtm.query.execution.core.dto.edml.EdmlQuery;
 import ru.ibs.dtm.query.execution.core.dto.edml.UploadExtTableRecord;
@@ -42,7 +41,6 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -95,19 +93,11 @@ class UploadExternalTableExecutorTest {
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
         context.setTargetTable(new TableInfo("test", "pso"));
         context.setSourceTable(new TableInfo("test", "upload_table"));
-        final DeltaRecord deltaRecord = new DeltaRecord();
-        deltaRecord.setDatamartMnemonic(context.getRequest().getQueryRequest().getDatamartMnemonic());
-        deltaRecord.setLoadId(1L);
-        deltaRecord.setSinId(1L);
-        deltaRecord.setStatus(DeltaLoadStatus.IN_PROCESS);
+        final HotDelta hotDelta = HotDelta.builder().deltaNum(1).build();
 
         EdmlQuery edmlQuery = new EdmlQuery(EdmlAction.UPLOAD, uploadRecord);
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<DeltaRecord>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(deltaRecord));
-            return null;
-        }).when(deltaServiceDao).getDeltaHotByDatamart(any(), any());
+        Mockito.when(deltaServiceDao.getDeltaHot(any())).thenReturn(Future.succeededFuture(hotDelta));
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
@@ -129,9 +119,9 @@ class UploadExternalTableExecutorTest {
             }
         });
 
-        assertEquals(context.getLoadParam().getDeltaHot(), deltaRecord.getSinId());
+        assertEquals(context.getLoadParam().getDeltaHot(), hotDelta.getDeltaNum());
         assertEquals(context.getLoadParam().getTableName(), context.getTargetTable().getTableName());
-        assertEquals(context.getLoadParam().getSqlQuery().replace("\n", " ").toLowerCase(), insertSql.toLowerCase());
+        assertEquals(context.getLoadParam().getSqlQuery().replace("\n", " ").replace("\r", "").toLowerCase(), insertSql.toLowerCase());
         assertEquals(context.getLoadParam().getDatamart(), context.getRequest().getQueryRequest().getDatamartMnemonic());
         assertEquals(context.getLoadParam().getMessageLimit(), uploadRecord.getMessageLimit());
     }
@@ -151,11 +141,7 @@ class UploadExternalTableExecutorTest {
         EdmlQuery edmlQuery = new EdmlQuery(EdmlAction.UPLOAD, uploadRecord);
         RuntimeException exception = new RuntimeException("Не найдена открытая дельта!");
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<DeltaRecord>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(exception));
-            return null;
-        }).when(deltaServiceDao).getDeltaHotByDatamart(any(), any());
+        Mockito.when(deltaServiceDao.getDeltaHot(any())).thenReturn(Future.failedFuture(exception));
 
         uploadExternalTableExecutor.execute(context, edmlQuery, ar -> {
             if (ar.succeeded()) {
@@ -165,40 +151,5 @@ class UploadExternalTableExecutorTest {
             }
         });
         assertEquals(exception, promise.future().cause());
-    }
-
-    @Test
-    void executeKafkaExecutorWithDeltaIncorrectStatus() throws Exception {
-        Promise promise = Promise.promise();
-        String selectSql = "(select id, lst_nam FROM test.upload_table)";
-        String insertSql = "insert into test.pso " + selectSql;
-        queryRequest.setSql(insertSql);
-        DatamartRequest request = new DatamartRequest(queryRequest);
-        SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
-
-        EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
-        context.setTargetTable(new TableInfo("test", "pso"));
-        context.setSourceTable(new TableInfo("test", "upload_table"));
-        EdmlQuery edmlQuery = new EdmlQuery(EdmlAction.UPLOAD, uploadRecord);
-        final DeltaRecord deltaRecord = new DeltaRecord();
-        deltaRecord.setDatamartMnemonic(context.getRequest().getQueryRequest().getDatamartMnemonic());
-        deltaRecord.setLoadId(1L);
-        deltaRecord.setSinId(1L);
-        deltaRecord.setStatus(DeltaLoadStatus.SUCCESS);
-
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<DeltaRecord>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(deltaRecord));
-            return null;
-        }).when(deltaServiceDao).getDeltaHotByDatamart(any(), any());
-
-        uploadExternalTableExecutor.execute(context, edmlQuery, ar -> {
-            if (ar.succeeded()) {
-                promise.complete();
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
-        assertNotNull(promise.future().cause());
     }
 }

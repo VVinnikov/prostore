@@ -161,12 +161,18 @@ public class DeltaInformationExtractor {
             aliasVal = alias.names.get(0);
         }
         String deltaTime = null;
+        DeltaType deltaType = DeltaType.NUM;
         if (!isLatestUncommitedDelta) {
-            deltaTime = snapshotTime == null ? LOCAL_DATE_TIME.format(LocalDateTime.now()) : snapshotTime;
+            if (snapshotTime == null) {
+                deltaTime = LOCAL_DATE_TIME.format(LocalDateTime.now());
+            }
+            else {
+                deltaTime = snapshotTime;
+                deltaType = DeltaType.DATETIME;
+            }
         }
 
         DeltaInterval deltaInterval = null;
-        DeltaType deltaType = DeltaType.NUM;
         if (startedIn != null) {
             deltaInterval = startedIn;
             deltaType = DeltaType.STARTED_IN;

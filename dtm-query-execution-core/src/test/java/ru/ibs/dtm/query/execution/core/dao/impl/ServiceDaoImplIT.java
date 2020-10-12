@@ -8,7 +8,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import ru.ibs.dtm.common.dto.ActualDeltaRequest;
 import ru.ibs.dtm.common.model.ddl.Entity;
 import ru.ibs.dtm.query.execution.core.CoreTestConfiguration;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
@@ -82,53 +81,6 @@ class ServiceDaoImplIT {
             .onFailure(testContext::failNow)
             .onSuccess(s -> testContext.completeNow());
         testContext.awaitCompletion(5, TimeUnit.SECONDS);
-    }
-
-    @Test
-    void getDeltaOnDateTime(VertxTestContext testContext) throws Throwable {
-        serviceDbFacade.getDeltaServiceDao().getDeltaOnDateTime(new ActualDeltaRequest("test_datamart", "2020-03-26 11:30:26", false), ar -> {
-            if (ar.succeeded()) {
-                testContext.completeNow();
-            } else {
-                testContext.failNow(ar.cause());
-            }
-        });
-        testContext.awaitCompletion(5, TimeUnit.SECONDS);
-    }
-
-    @Test
-    void getDeltasOnDateTimes(VertxTestContext testContext) throws Throwable {
-        final List<ActualDeltaRequest> requests = Arrays.asList(
-            new ActualDeltaRequest("dm2", "2020-04-15 07:00:00", false),
-            new ActualDeltaRequest("dm3", "2020-04-01 07:00:00", false),
-            new ActualDeltaRequest("dm2", "2020-03-01 07:00:00", false),
-            new ActualDeltaRequest("dmX", "2020-04-01 07:00:00", false)
-        );
-        serviceDbFacade.getDeltaServiceDao().getDeltasOnDateTimes(requests, ar -> {
-            if (ar.succeeded()) {
-                deltas = ar.result();
-                testContext.completeNow();
-            } else {
-                testContext.failNow(ar.cause());
-            }
-        });
-        testContext.awaitCompletion(5, TimeUnit.SECONDS);
-        Assertions.assertEquals(requests.size(), deltas.size());
-    }
-
-    @Test
-    void getDeltasOnDateTimesWithEmptyRequests(VertxTestContext testContext) throws Throwable {
-        final List<ActualDeltaRequest> requests = new ArrayList<>();
-        serviceDbFacade.getDeltaServiceDao().getDeltasOnDateTimes(requests, ar -> {
-            if (ar.succeeded()) {
-                deltas = ar.result();
-                testContext.completeNow();
-            } else {
-                testContext.failNow(ar.cause());
-            }
-        });
-        testContext.awaitCompletion(5, TimeUnit.SECONDS);
-        Assertions.assertEquals(requests.size(), deltas.size());
     }
 
     @Test

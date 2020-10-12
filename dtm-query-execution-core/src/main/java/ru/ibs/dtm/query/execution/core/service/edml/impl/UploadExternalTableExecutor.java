@@ -9,13 +9,12 @@ import org.apache.calcite.sql.SqlDialect;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import ru.ibs.dtm.common.delta.DeltaLoadStatus;
 import ru.ibs.dtm.common.plugin.exload.QueryLoadParam;
 import ru.ibs.dtm.common.plugin.exload.Type;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.core.configuration.properties.EdmlProperties;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
-import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
+import ru.ibs.dtm.query.execution.core.dto.delta.HotDelta;
 import ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction;
 import ru.ibs.dtm.query.execution.core.dto.edml.EdmlQuery;
 import ru.ibs.dtm.query.execution.core.dto.edml.UploadExtTableRecord;
@@ -50,32 +49,16 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
 
     @Override
     public void execute(EdmlRequestContext context, EdmlQuery edmlQuery, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-        getDeltaHotInProcess(context)
+        serviceDbFacade.getDeltaServiceDao().getDeltaHot(context.getRequest().getQueryRequest().getDatamartMnemonic())
                 .compose(deltaRecord -> insertUploadQuery(context, edmlQuery, deltaRecord))
                 .compose(uploadRecord -> executeUpload(context, edmlQuery, asyncResultHandler))
                 .setHandler(asyncResultHandler);
     }
 
-    private Future<DeltaRecord> getDeltaHotInProcess(EdmlRequestContext context) {
-        return Future.future((Promise<DeltaRecord> promise) ->
-                serviceDbFacade.getDeltaServiceDao().getDeltaHotByDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic(), ar -> {
-                    if (ar.succeeded()) {
-                        DeltaRecord deltaRecord = ar.result();
-                        if (deltaRecord == null || deltaRecord.getStatus() != DeltaLoadStatus.IN_PROCESS) {
-                            promise.fail(new RuntimeException("No open delta found!"));
-                        }
-                        log.debug("Last open delta found {}", deltaRecord);
-                        promise.complete(deltaRecord);
-                    } else {
-                        promise.fail(ar.cause());
-                    }
-                }));
-    }
-
-    private Future<UploadQueryRecord> insertUploadQuery(EdmlRequestContext context, EdmlQuery edmlQuery, DeltaRecord deltaRecord) {
+    private Future<UploadQueryRecord> insertUploadQuery(EdmlRequestContext context, EdmlQuery edmlQuery, HotDelta hotDelta) {
         return Future.future((Promise<UploadQueryRecord> promise) -> {
             UploadQueryRecord uploadQueryRecord = createUploadQueryRecord(context, edmlQuery);
-            QueryLoadParam queryLoadParam = createQueryLoadParam(context, (UploadExtTableRecord) edmlQuery.getRecord(), deltaRecord);
+            QueryLoadParam queryLoadParam = createQueryLoadParam(context, (UploadExtTableRecord) edmlQuery.getRecord(), hotDelta);
             context.setLoadParam(queryLoadParam);
             context.setAvroSchema(((UploadExtTableRecord) edmlQuery.getRecord()).getTableSchema());
             serviceDbFacade.getEddlServiceDao().getUploadQueryDao().inserUploadQuery(uploadQueryRecord, ar -> {
@@ -114,7 +97,7 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
     }
 
     @NotNull
-    private QueryLoadParam createQueryLoadParam(EdmlRequestContext context, UploadExtTableRecord uplRecord, DeltaRecord deltaRecord) {
+    private QueryLoadParam createQueryLoadParam(EdmlRequestContext context, UploadExtTableRecord uplRecord, HotDelta hotDelta) {
         final QueryLoadParam loadParam = new QueryLoadParam();
         loadParam.setId(UUID.randomUUID());
         loadParam.setDatamart(context.getSourceTable().getSchemaName());
@@ -123,7 +106,7 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
         loadParam.setLocationType(uplRecord.getLocationType());
         loadParam.setLocationPath(uplRecord.getLocationPath());
         loadParam.setFormat(uplRecord.getFormat());
-        loadParam.setDeltaHot(deltaRecord.getSinId());
+        loadParam.setDeltaHot(hotDelta.getDeltaNum());
         loadParam.setMessageLimit(uplRecord.getMessageLimit() != null ?
                 uplRecord.getMessageLimit() : edmlProperties.getDefaultMessageLimit());
         return loadParam;

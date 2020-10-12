@@ -2,8 +2,8 @@ package ru.ibs.dtm.query.execution.core.service.delta.impl;
 
 import io.vertx.core.*;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -11,6 +11,7 @@ import ru.ibs.dtm.common.delta.DeltaLoadStatus;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.status.StatusEventCode;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
+import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import ru.ibs.dtm.query.execution.core.service.delta.DeltaExecutor;
@@ -28,7 +29,7 @@ import static ru.ibs.dtm.query.execution.plugin.api.delta.query.DeltaAction.BEGI
 @Slf4j
 public class BeginDeltaExecutor implements DeltaExecutor, StatusEventPublisher {
 
-    private ServiceDbFacade serviceDbFacade;
+    private DeltaServiceDao deltaServiceDao;
     private DeltaQueryResultFactory deltaQueryResultFactory;
     private final Vertx vertx;
 
@@ -36,78 +37,23 @@ public class BeginDeltaExecutor implements DeltaExecutor, StatusEventPublisher {
     public BeginDeltaExecutor(ServiceDbFacade serviceDbFacade,
                               DeltaQueryResultFactory deltaQueryResultFactory,
                               @Qualifier("coreVertx") Vertx vertx) {
-        this.serviceDbFacade = serviceDbFacade;
+        this.deltaServiceDao = serviceDbFacade.getDeltaServiceDao();
         this.deltaQueryResultFactory = deltaQueryResultFactory;
         this.vertx = vertx;
     }
 
     @Override
     public void execute(DeltaRequestContext context, Handler<AsyncResult<QueryResult>> handler) {
-        getDeltaHotByDatamart(context)
-                .compose(newDelta -> insertNewDelta(context, newDelta))
-                .onSuccess(success -> handler.handle(Future.succeededFuture(success)))
+        val datamart = context.getRequest().getQueryRequest().getDatamartMnemonic();
+        val beginDelta = (BeginDeltaQuery) context.getDeltaQuery();
+        deltaServiceDao.writeNewDeltaHot(datamart, beginDelta.getDeltaNum())
+                .onSuccess(newDeltaHotNum -> {
+                    DeltaRecord newDelta = createNextDeltaRecord(newDeltaHotNum, datamart);
+                    publishStatus(StatusEventCode.DELTA_OPEN, datamart, newDelta);
+                    QueryResult res = deltaQueryResultFactory.create(context, newDelta);
+                    handler.handle(Future.succeededFuture(res));
+                })
                 .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
-    }
-
-    private Future<DeltaRecord> getDeltaHotByDatamart(DeltaRequestContext context) {
-        return Future.future((Promise<DeltaRecord> promiseDelta) ->
-                serviceDbFacade.getDeltaServiceDao().getDeltaHotByDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic(), ar -> {
-                    if (ar.succeeded()) {
-                        DeltaRecord deltaRecord = ar.result();
-                        log.debug("Found last delta: {} for datamart: {}", deltaRecord,
-                                context.getRequest().getQueryRequest().getDatamartMnemonic());
-                        Long deltaHot = initAndCheckDeltaHot(context, promiseDelta, deltaRecord);
-                        log.debug("Found deltaHot: {} for datamart: {}", deltaHot,
-                                context.getRequest().getQueryRequest().getDatamartMnemonic());
-                        DeltaRecord newDelta = createNextDeltaRecord(deltaHot,
-                                context.getRequest().getQueryRequest().getDatamartMnemonic());
-                        promiseDelta.complete(newDelta);
-                    } else {
-                        promiseDelta.fail(ar.cause());
-                    }
-                }));
-    }
-
-    private Future<QueryResult> insertNewDelta(DeltaRequestContext context, DeltaRecord newDelta) {
-        return Future.future((Promise<QueryResult> promiseDelta) ->
-                serviceDbFacade.getDeltaServiceDao().insertDelta(newDelta, ar -> {
-                    if (ar.succeeded()) {
-                        log.debug("New delta created: {} for datamart: {}", newDelta,
-                                context.getRequest().getQueryRequest().getDatamartMnemonic());
-                        QueryResult res = deltaQueryResultFactory.create(context, newDelta);
-                        publishStatus(StatusEventCode.DELTA_OPEN, newDelta.getDatamartMnemonic(), newDelta);
-                        promiseDelta.complete(res);
-                    } else {
-                        promiseDelta.fail(ar.cause());
-                    }
-                }));
-    }
-
-    @Nullable
-    private Long initAndCheckDeltaHot(DeltaRequestContext context, Promise<DeltaRecord> promiseDelta, DeltaRecord deltaRecord) {
-        Long deltaHot = 0L;
-        if (deltaRecord != null) {
-            deltaHot = getDeltaHot(deltaRecord);
-            if (deltaHot == null) {
-                promiseDelta.fail(new RuntimeException("Delta is in the process of loading!"));
-            } else if (((BeginDeltaQuery) context.getDeltaQuery()).getDeltaNum() != null
-                    && !((BeginDeltaQuery) context.getDeltaQuery()).getDeltaNum().equals(deltaHot)) {
-                promiseDelta.fail(new RuntimeException("The numbers of the given delta and the current one do not match!"));
-            }
-        }
-        return deltaHot;
-    }
-
-    private Long getDeltaHot(DeltaRecord deltaRecord) {
-        switch (deltaRecord.getStatus()) {
-            case SUCCESS:
-                return deltaRecord.getSinId() + 1;
-            case ERROR:
-                return deltaRecord.getSinId();
-            case IN_PROCESS:
-            default:
-                return null;
-        }
     }
 
     @NotNull

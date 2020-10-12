@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 import ru.ibs.dtm.common.reader.QueryRequest;
-import ru.ibs.dtm.common.service.DeltaService;
 import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 import ru.ibs.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adb.service.QueryEnrichmentService;
@@ -33,7 +32,6 @@ public class AdbLlrServiceTest {
 	private LlrService adbLLRService;
 	private QueryEnrichmentService adbQueryEnrichmentService = mock(QueryEnrichmentService.class);
 	private DatabaseExecutor adbDatabaseExecutor = mock(DatabaseExecutor.class);
-	private DeltaService deltaService = mock(DeltaService.class);
 
 	public AdbLlrServiceTest() {
 		//Моки для успешного исполнения
@@ -51,14 +49,6 @@ public class AdbLlrServiceTest {
 			((Handler<AsyncResult<List<List<?>>>>) arg0.getArgument(1)).handle(asyncResult);
 			return null;
 		}).when(adbDatabaseExecutor).execute(any(), any());
-
-		AsyncResult<Long> asyncResultDelta = mock(AsyncResult.class);
-		when(asyncResultDelta.succeeded()).thenReturn(true);
-		when(asyncResultDelta.result()).thenReturn(1L);
-		doAnswer((Answer<AsyncResult<Long>>) arg0 -> {
-			((Handler<AsyncResult<Long>>) arg0.getArgument(1)).handle(asyncResultDelta);
-			return null;
-		}).when(deltaService).getDeltaOnDateTime(any(), any());
 
 		adbLLRService = new AdbLlrService(adbQueryEnrichmentService, adbDatabaseExecutor);
 	}

@@ -9,20 +9,22 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.commons.lang3.StringUtils;
 import ru.ibs.dtm.common.delta.DeltaInformation;
 import ru.ibs.dtm.common.delta.DeltaType;
-import ru.ibs.dtm.common.dto.ActualDeltaRequest;
+import ru.ibs.dtm.common.delta.SelectOnInterval;
+import ru.ibs.dtm.common.exception.DeltaRangeInvalidException;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.service.DeltaService;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
 import ru.ibs.dtm.query.calcite.core.util.DeltaInformationExtractor;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 
 @Slf4j
 public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private final DefinitionService<SqlNode> definitionService;
     private final DeltaService deltaService;
 
@@ -65,43 +67,54 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
         });
     }
 
-    private void calculateDeltaValues(List<DeltaInformation> deltas,
-                                      Handler<AsyncResult<List<DeltaInformation>>> handler) {
-        final Map<Integer, DeltaInformation> deltaResultMap = new TreeMap<>();
-        final List<ActualDeltaRequest> actualDeltaRequests = createActualRequests(deltas, deltaResultMap);
-        deltaService.getDeltasOnDateTimes(actualDeltaRequests, ar -> {
-            if (ar.failed()) {
-                handler.handle(Future.failedFuture(ar.cause()));
-            }
-            List<Long> deltaNums = ar.result();
-            int deltaReqOrder = 0;
-            for (Map.Entry<Integer, DeltaInformation> dMap : deltaResultMap.entrySet()) {
-                if (dMap.getValue() == null) {
-                    deltaResultMap.put(dMap.getKey(), deltas.get(dMap.getKey()).withDeltaNum(deltaNums.get(deltaReqOrder)));
-                    deltaReqOrder++;
+    private void calculateDeltaValues(List<DeltaInformation> deltas, Handler<AsyncResult<List<DeltaInformation>>> handler) {
+        final List<DeltaInformation> deltaResult = new ArrayList<>();
+        deltas.forEach(deltaInformation -> {
+            if (deltaInformation.isLatestUncommitedDelta()) {
+                deltaService.getCnToDeltaHot(deltaInformation.getSchemaName())
+                        .onSuccess(deltaCnTo -> {
+                            deltaInformation.setSelectOnNum(deltaCnTo);
+                        });
+            } else {
+                if (deltaInformation.getType().equals(DeltaType.FINISHED_IN) || deltaInformation.getType().equals(DeltaType.STARTED_IN)) {
+                    calculateSelectOnInterval(deltaInformation, ar -> {
+                        if (ar.succeeded()) {
+                            deltaInformation.setSelectOnInterval(ar.result());
+                            deltaResult.add(deltaInformation);
+                        } else {
+                            handler.handle(Future.failedFuture(ar.cause()));
+                        }
+                    });
+                } else {
+                    calculateSelectOnNum(deltaInformation, ar -> {
+                        deltaInformation.setSelectOnNum(ar.result());
+                        deltaResult.add(deltaInformation);
+                    });
                 }
             }
-            handler.handle(Future.succeededFuture(new ArrayList<>(deltaResultMap.values())));
         });
+        handler.handle(Future.succeededFuture(deltaResult));
     }
 
-    private List<ActualDeltaRequest> createActualRequests(List<DeltaInformation> deltas,
-                                                          Map<Integer, DeltaInformation> deltaResultMap) {
-        final List<ActualDeltaRequest> actualDeltaRequests = new ArrayList<>();
-        int order = 0;
-        for (DeltaInformation d : deltas) {
-            ActualDeltaRequest request = null;
-            if (d.getType().equals(DeltaType.NUM) && d.getDeltaNum() == null) {
-                String dt = d.getDeltaTimestamp();
-                if (StringUtils.isNotEmpty(dt)) {
-                    dt = dt.replaceAll("'", "");
-                }
-                request = new ActualDeltaRequest(d.getSchemaName(), dt, d.isLatestUncommitedDelta());
-                actualDeltaRequests.add(request);
-            }
-            deltaResultMap.put(order, request == null ? d : null);
-            order++;
+    private void calculateSelectOnNum(DeltaInformation deltaInformation, Handler<AsyncResult<Long>> handler){
+        switch (deltaInformation.getType()) {
+            case NUM:
+                deltaService.getCnToByDeltaNum(deltaInformation.getSchemaName(), deltaInformation.getDeltaNum())
+                        .onComplete(res -> handler.handle(res));
+                break;
+            case DATETIME:
+                deltaService.getCnToByDeltaDatetime(deltaInformation.getSchemaName(), LocalDateTime.parse(deltaInformation.getDeltaTimestamp().replace("\'", ""), formatter))
+                        .onComplete(res -> handler.handle(res));
+                break;
+            default:
+                break;
         }
-        return actualDeltaRequests;
+    }
+
+    private void calculateSelectOnInterval(DeltaInformation deltaInformation, Handler<AsyncResult<SelectOnInterval>> handler){
+        Long deltaFrom = deltaInformation.getDeltaInterval().getDeltaFrom();
+        Long deltaTo = deltaInformation.getDeltaInterval().getDeltaTo();
+        deltaService.getCnFromCnToByDeltaNums(deltaInformation.getSchemaName(), deltaFrom, deltaTo)
+                .onComplete(res -> handler.handle(res));
     }
 }

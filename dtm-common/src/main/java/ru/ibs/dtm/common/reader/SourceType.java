@@ -1,7 +1,7 @@
 package ru.ibs.dtm.common.reader;
 
 /**
- * Тип источника для определения назначения запроса
+ * Data source type
  */
 public enum SourceType {
   ADB,

@@ -48,7 +48,7 @@ public class AdqmSchemaExtenderImpl implements SchemaExtender {
 
     @Override
     public List<Datamart> generatePhysicalSchema(List<Datamart> logicalSchemas, QueryRequest request) {
-        return logicalSchemas.stream().map(ls -> createPhysicalSchema(ls, request.getSystemName()))
+        return logicalSchemas.stream().map(ls -> createPhysicalSchema(ls, request.getEnvName()))
             .collect(Collectors.toList());
     }
 

@@ -2,19 +2,18 @@ package ru.ibs.dtm.query.execution.core.service;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
-import ru.ibs.dtm.common.reader.QueryRequest;
+import ru.ibs.dtm.common.reader.InputQueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
 
 /**
- * Сервис анализа запросов
+ * Service for analyzing and executing query
  */
 public interface QueryAnalyzer {
 
   /**
-   * <p>Проанализировать и выполнить запрос</p>
    *
-   * @param queryRequest       запрос
-   * @param asyncResultHandler хэндлер асинхронной обработки результата
+   * @param inputQueryRequest       queryRequest
+   * @param asyncResultHandler asyncHandler
    */
-  void analyzeAndExecute(QueryRequest queryRequest, Handler<AsyncResult<QueryResult>> asyncResultHandler);
+  void analyzeAndExecute(InputQueryRequest inputQueryRequest, Handler<AsyncResult<QueryResult>> asyncResultHandler);
 }

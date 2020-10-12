@@ -14,16 +14,17 @@ import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+import ru.ibs.dtm.common.reader.InputQueryRequest;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
-import ru.ibs.dtm.common.reader.SourceType;
+import ru.ibs.dtm.common.reader.QuerySourceRequest;
 import ru.ibs.dtm.query.calcite.core.extension.ddl.SqlUseSchema;
 import ru.ibs.dtm.query.calcite.core.extension.delta.SqlBeginDelta;
 import ru.ibs.dtm.query.calcite.core.extension.delta.SqlCommitDelta;
 import ru.ibs.dtm.query.calcite.core.extension.eddl.DropDatabase;
 import ru.ibs.dtm.query.calcite.core.extension.eddl.SqlCreateDatabase;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
-import ru.ibs.dtm.query.execution.core.configuration.AppConfiguration;
+import ru.ibs.dtm.query.execution.core.factory.QueryRequestFactory;
 import ru.ibs.dtm.query.execution.core.factory.RequestContextFactory;
 import ru.ibs.dtm.query.execution.core.service.QueryAnalyzer;
 import ru.ibs.dtm.query.execution.core.service.QueryDispatcher;
@@ -43,10 +44,11 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
     private final Vertx vertx;
     private final HintExtractor hintExtractor;
     private final RequestContextFactory<RequestContext<? extends DatamartRequest>, QueryRequest> requestContextFactory;
-    private final AppConfiguration configuration;
+
     private final DatamartMnemonicExtractor datamartMnemonicExtractor;
     private final DefaultDatamartSetter defaultDatamartSetter;
     private final SemicolonRemover semicolonRemover;
+    private final QueryRequestFactory queryRequestFactory;
 
     @Autowired
     public QueryAnalyzerImpl(QueryDispatcher queryDispatcher,
@@ -55,29 +57,28 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
                              @Qualifier("coreVertx") Vertx vertx,
                              HintExtractor hintExtractor,
                              DatamartMnemonicExtractor datamartMnemonicExtractor,
-                             AppConfiguration configuration,
                              DefaultDatamartSetter defaultDatamartSetter,
-                             SemicolonRemover semicolonRemover) {
+                             SemicolonRemover semicolonRemover,
+                             QueryRequestFactory queryRequestFactory) {
         this.queryDispatcher = queryDispatcher;
         this.definitionService = definitionService;
         this.requestContextFactory = requestContextFactory;
         this.vertx = vertx;
         this.hintExtractor = hintExtractor;
         this.datamartMnemonicExtractor = datamartMnemonicExtractor;
-        this.configuration = configuration;
         this.defaultDatamartSetter = defaultDatamartSetter;
         this.semicolonRemover = semicolonRemover;
+        this.queryRequestFactory = queryRequestFactory;
     }
 
     @Override
-    public void analyzeAndExecute(QueryRequest queryRequest, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-        getParsedQuery(queryRequest, parseResult -> {
+    public void analyzeAndExecute(InputQueryRequest execQueryRequest, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
+        getParsedQuery(execQueryRequest, parseResult -> {
             if (parseResult.succeeded()) {
                 try {
-                    queryRequest.setSystemName(configuration.getSystemName());
                     ParsedQueryResponse parsedQueryResponse = parseResult.result();
                     SqlNode sqlNode = parsedQueryResponse.getSqlNode();
-                    queryRequest.setSourceType(parsedQueryResponse.getSourceType());
+                    QueryRequest queryRequest = parsedQueryResponse.getQueryRequest();
                     if (existsDatamart(sqlNode)) {
                         if (Strings.isEmpty(queryRequest.getDatamartMnemonic())) {
                             val datamartMnemonic = datamartMnemonicExtractor.extract(sqlNode);
@@ -99,29 +100,32 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
         });
     }
 
-    private void getParsedQuery(QueryRequest queryRequest,
+    private void getParsedQuery(InputQueryRequest inputQueryRequest,
                                 Handler<AsyncResult<ParsedQueryResponse>> asyncResultHandler) {
-        vertx.executeBlocking(it ->
-                {
-                    try {
-                        val withoutSemicolon =  semicolonRemover.remove(queryRequest);
-                        val hint = hintExtractor.extractHint(withoutSemicolon);
-                        val query = hint.getQueryRequest().getSql();
-                        log.debug("Pre-parse request: {}", query);
-                        val node = definitionService.processingQuery(query);
-                        it.complete(new ParsedQueryResponse(node, query, hint.getSourceType()));
-                    } catch (Exception e) {
-                        log.error("Request parsing error", e);
-                        it.fail(e);
-                    }
-                }
-                , ar -> {
-                    if (ar.succeeded()) {
-                        asyncResultHandler.handle(Future.succeededFuture((ParsedQueryResponse) ar.result()));
-                    } else {
-                        asyncResultHandler.handle(Future.failedFuture(ar.cause()));
-                    }
-                });
+        vertx.executeBlocking(it -> {
+            try {
+                val queryRequest = queryRequestFactory.create(inputQueryRequest);
+                val queryRequestWithoutHint = getQueryRequestWithoutHint(queryRequest);
+                queryRequest.setSourceType(queryRequestWithoutHint.getSourceType());
+                log.debug("Pre-parse request: {}", queryRequestWithoutHint.getQueryRequest().getSql());
+                val node = definitionService.processingQuery(queryRequestWithoutHint.getQueryRequest().getSql());
+                it.complete(new ParsedQueryResponse(queryRequest, node));
+            } catch (Exception e) {
+                log.error("Request parsing error", e);
+                it.fail(e);
+            }
+        }, ar -> {
+            if (ar.succeeded()) {
+                asyncResultHandler.handle(Future.succeededFuture((ParsedQueryResponse) ar.result()));
+            } else {
+                asyncResultHandler.handle(Future.failedFuture(ar.cause()));
+            }
+        });
+    }
+
+    private QuerySourceRequest getQueryRequestWithoutHint(QueryRequest queryRequest) {
+        val withoutSemicolon = semicolonRemover.remove(queryRequest);
+        return hintExtractor.extractHint(withoutSemicolon);
     }
 
     private boolean existsDatamart(SqlNode sqlNode) {
@@ -136,9 +140,8 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
 
     @Data
     private final static class ParsedQueryResponse {
+        private final QueryRequest queryRequest;
         private final SqlNode sqlNode;
-        private final String sqlWithoutHint;
-        private final SourceType sourceType;
     }
 
 }

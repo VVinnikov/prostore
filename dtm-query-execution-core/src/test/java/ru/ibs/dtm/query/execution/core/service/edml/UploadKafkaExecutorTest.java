@@ -16,7 +16,6 @@ import org.mockito.stubbing.Answer;
 import ru.ibs.dtm.common.configuration.kafka.KafkaAdminProperty;
 import ru.ibs.dtm.common.dto.TableInfo;
 import ru.ibs.dtm.common.plugin.exload.Format;
-import ru.ibs.dtm.common.plugin.exload.QueryLoadParam;
 import ru.ibs.dtm.common.plugin.status.StatusQueryResult;
 import ru.ibs.dtm.common.plugin.status.kafka.KafkaPartitionInfo;
 import ru.ibs.dtm.common.reader.QueryRequest;
@@ -29,7 +28,6 @@ import ru.ibs.dtm.query.execution.core.factory.impl.MppwKafkaRequestFactoryImpl;
 import ru.ibs.dtm.query.execution.core.service.DataSourcePluginService;
 import ru.ibs.dtm.query.execution.core.service.edml.impl.UploadKafkaExecutor;
 import ru.ibs.dtm.query.execution.core.service.impl.DataSourcePluginServiceImpl;
-import ru.ibs.dtm.query.execution.core.utils.LocationUriParser;
 import ru.ibs.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.parameter.KafkaParameter;
@@ -45,7 +43,8 @@ import java.util.stream.LongStream;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class UploadKafkaExecutorTest {
 

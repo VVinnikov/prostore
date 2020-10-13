@@ -4,7 +4,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import ru.ibs.dtm.common.plugin.exload.QueryLoadParam;
+import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import ru.ibs.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
@@ -12,12 +12,11 @@ import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockDatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockEnvironment;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockStatusReporter;
+import ru.ibs.dtm.query.execution.plugin.api.mppw.parameter.KafkaParameter;
+import ru.ibs.dtm.query.execution.plugin.api.mppw.parameter.UploadExternalMetadata;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -69,13 +68,19 @@ class MppwFinishRequestHandlerTest {
 
         MockStatusReporter mockReporter = getMockReporter();
         MppwRequestHandler handler = new MppwFinishRequestHandler(executor, ddlProperties, appConfiguration, mockReporter);
-        QueryLoadParam loadParam = new QueryLoadParam();
-        loadParam.setDatamart("shares");
-        loadParam.setTableName("accounts");
-        loadParam.setDeltaHot(101L);
 
-        MppwRequest request = new MppwRequest(null, loadParam, new JsonObject());
-        request.setTopic(TEST_TOPIC);
+        MppwRequest request = new MppwRequest(QueryRequest.builder()
+                .requestId(UUID.randomUUID())
+                .datamartMnemonic("shares").build(),
+                true, KafkaParameter.builder()
+                .datamart("shares")
+                .sysCn(101L)
+                .targetTableName("accounts")
+                .uploadMetadata(UploadExternalMetadata.builder()
+                        .externalTableSchema("")
+                        .topic(TEST_TOPIC)
+                        .build())
+                .build());
 
         handler.execute(request).onComplete(ar -> {
             assertTrue(ar.succeeded(), ar.cause() != null ? ar.cause().getMessage() : "");

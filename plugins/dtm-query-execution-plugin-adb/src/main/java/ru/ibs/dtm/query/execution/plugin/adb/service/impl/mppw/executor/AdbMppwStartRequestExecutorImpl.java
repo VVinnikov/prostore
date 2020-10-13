@@ -67,8 +67,8 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
                                                                           RestLoadRequest restLoadRequest) {
         return Future.future((Promise<MppwKafkaRequestContext> promise) -> {
             final String keyColumnsSqlQuery = metadataSqlFactory.createKeyColumnsSqlQuery(
-                    context.getRequest().getQueryLoadParam().getDatamart(),
-                    context.getRequest().getQueryLoadParam().getTableName());
+                    context.getRequest().getKafkaParameter().getDatamart(),
+                    context.getRequest().getKafkaParameter().getTargetTableName());
             adbQueryExecutor.execute(keyColumnsSqlQuery, ar -> {
                 if (ar.succeeded()) {
                     final List<JsonObject> result = ar.result();

@@ -1,5 +1,6 @@
 package ru.ibs.dtm.query.execution.plugin.adg.factory.impl;
 
+import io.vertx.core.json.JsonObject;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.springframework.stereotype.Component;
@@ -15,16 +16,16 @@ public class AdgMppwKafkaContextFactoryImpl implements AdgMppwKafkaContextFactor
 
     @Override
     public AdgMppwKafkaContext create(MppwRequest request) {
-        val tableName = request.getQueryLoadParam().getTableName();
-        val datamart = request.getQueryLoadParam().getDatamart();
-        val systemName = request.getQueryRequest().getEnvName();
-        val helperTableNames = helperTableNamesFactory.create(systemName, datamart, tableName);
+        val tableName = request.getKafkaParameter().getTargetTableName();
+        val datamart = request.getKafkaParameter().getDatamart();
+        val envName = request.getQueryRequest().getEnvName();
+        val helperTableNames = helperTableNamesFactory.create(envName, datamart, tableName);
         return new AdgMppwKafkaContext(
-                request.getTopic(),
-                request.getQueryLoadParam().getDeltaHot(),
+                request.getKafkaParameter().getUploadMetadata().getTopic(),
+                request.getKafkaParameter().getSysCn(),
                 tableName,
                 helperTableNames,
-                request.getSchema()
+                new JsonObject(request.getKafkaParameter().getUploadMetadata().getExternalTableSchema())
         );
     }
 }

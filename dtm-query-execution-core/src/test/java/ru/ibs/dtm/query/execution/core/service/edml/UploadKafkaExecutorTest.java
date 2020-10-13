@@ -16,8 +16,6 @@ import org.mockito.stubbing.Answer;
 import ru.ibs.dtm.common.configuration.kafka.KafkaAdminProperty;
 import ru.ibs.dtm.common.dto.TableInfo;
 import ru.ibs.dtm.common.plugin.exload.Format;
-import ru.ibs.dtm.common.plugin.exload.QueryLoadParam;
-import ru.ibs.dtm.common.plugin.exload.Type;
 import ru.ibs.dtm.common.plugin.status.StatusQueryResult;
 import ru.ibs.dtm.common.plugin.status.kafka.KafkaPartitionInfo;
 import ru.ibs.dtm.common.reader.QueryRequest;
@@ -30,9 +28,10 @@ import ru.ibs.dtm.query.execution.core.factory.impl.MppwKafkaRequestFactoryImpl;
 import ru.ibs.dtm.query.execution.core.service.DataSourcePluginService;
 import ru.ibs.dtm.query.execution.core.service.edml.impl.UploadKafkaExecutor;
 import ru.ibs.dtm.query.execution.core.service.impl.DataSourcePluginServiceImpl;
-import ru.ibs.dtm.query.execution.core.utils.LocationUriParser;
 import ru.ibs.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.mppw.parameter.KafkaParameter;
+import ru.ibs.dtm.query.execution.plugin.api.mppw.parameter.UploadExternalMetadata;
 import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 
@@ -44,7 +43,8 @@ import java.util.stream.LongStream;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class UploadKafkaExecutorTest {
 
@@ -87,25 +87,15 @@ class UploadKafkaExecutorTest {
             Promise promise = Promise.promise();
             KafkaAdminProperty kafkaAdminProperty = new KafkaAdminProperty();
             kafkaAdminProperty.setInputStreamTimeoutMs(inpuStreamTimeoutMs);
-            final QueryLoadParam queryLoadParam = createQueryLoadParam();
 
-            LocationUriParser.KafkaTopicUri kafkaTopicUri = LocationUriParser.parseKafkaLocationPath(queryLoadParam.getLocationPath());
             DatamartRequest request = new DatamartRequest(queryRequest);
             EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
             edmlRequestContext.setTargetTable(new TableInfo("test", "pso"));
             edmlRequestContext.setSourceTable(new TableInfo("test", "upload_table"));
 
-            final MppwRequest adbRequest = new MppwRequest(queryRequest, queryLoadParam, schema);
-            adbRequest.setTopic(kafkaTopicUri.getTopic());
-            adbRequest.setZookeeperHost(kafkaTopicUri.getHost());
-            adbRequest.setZookeeperPort(kafkaTopicUri.getPort());
-            adbRequest.setLoadStart(true);
+            final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
+            final MppwRequest adgRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
 
-            final MppwRequest adgRequest = new MppwRequest(queryRequest, queryLoadParam, schema);
-            adgRequest.setTopic(kafkaTopicUri.getTopic());
-            adgRequest.setZookeeperHost(kafkaTopicUri.getHost());
-            adgRequest.setZookeeperPort(kafkaTopicUri.getPort());
-            adbRequest.setLoadStart(true);
             final Queue<MppwRequestContext> mppwContextQueue = new BlockingArrayQueue<>();
             final MppwRequestContext mppwAdbContext = new MppwRequestContext(adbRequest);
             final MppwRequestContext mppwAdgContext = new MppwRequestContext(adgRequest);
@@ -187,26 +177,15 @@ class UploadKafkaExecutorTest {
             Promise promise = Promise.promise();
             KafkaAdminProperty kafkaAdminProperty = new KafkaAdminProperty();
             kafkaAdminProperty.setInputStreamTimeoutMs(inpuStreamTimeoutMs);
-            final QueryLoadParam queryLoadParam = createQueryLoadParam();
 
-            LocationUriParser.KafkaTopicUri kafkaTopicUri =
-                    LocationUriParser.parseKafkaLocationPath(queryLoadParam.getLocationPath());
             DatamartRequest request = new DatamartRequest(queryRequest);
             EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
             edmlRequestContext.setTargetTable(new TableInfo("test", "pso"));
             edmlRequestContext.setSourceTable(new TableInfo("test", "upload_table"));
 
-            final MppwRequest adbRequest = new MppwRequest(queryRequest, queryLoadParam, schema);
-            adbRequest.setTopic(kafkaTopicUri.getTopic());
-            adbRequest.setZookeeperHost(kafkaTopicUri.getHost());
-            adbRequest.setZookeeperPort(kafkaTopicUri.getPort());
-            adbRequest.setLoadStart(true);
+            final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
+            final MppwRequest adgRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
 
-            final MppwRequest adgRequest = new MppwRequest(queryRequest, queryLoadParam, schema);
-            adgRequest.setTopic(kafkaTopicUri.getTopic());
-            adgRequest.setZookeeperHost(kafkaTopicUri.getHost());
-            adgRequest.setZookeeperPort(kafkaTopicUri.getPort());
-            adgRequest.setLoadStart(true);
             final Queue<MppwRequestContext> mppwContextQueue = new BlockingArrayQueue<>();
             final MppwRequestContext mppwAdbContext = new MppwRequestContext(adbRequest);
             final MppwRequestContext mppwAdgContext = new MppwRequestContext(adgRequest);
@@ -244,9 +223,9 @@ class UploadKafkaExecutorTest {
                 final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(2);
                 final SourceType ds = invocation.getArgument(0);
                 final MppwRequestContext requestContext = invocation.getArgument(1);
-                if (ds.equals(SourceType.ADB) && requestContext.getRequest().getLoadStart()) {
+                if (ds.equals(SourceType.ADB) && requestContext.getRequest().getIsLoadStart()) {
                     handler.handle(Future.failedFuture(new RuntimeException("Ошибка старта mppw")));
-                } else if (ds.equals(SourceType.ADB) && !requestContext.getRequest().getLoadStart()) {
+                } else if (ds.equals(SourceType.ADB) && !requestContext.getRequest().getIsLoadStart()) {
                     handler.handle(Future.succeededFuture(new QueryResult()));
                 } else if (ds.equals(SourceType.ADG)) {
                     handler.handle(Future.succeededFuture(new QueryResult()));
@@ -280,26 +259,15 @@ class UploadKafkaExecutorTest {
             Promise promise = Promise.promise();
             KafkaAdminProperty kafkaAdminProperty = new KafkaAdminProperty();
             kafkaAdminProperty.setInputStreamTimeoutMs(inpuStreamTimeoutMs);
-            final QueryLoadParam queryLoadParam = createQueryLoadParam();
 
-            LocationUriParser.KafkaTopicUri kafkaTopicUri =
-                    LocationUriParser.parseKafkaLocationPath(queryLoadParam.getLocationPath());
             DatamartRequest request = new DatamartRequest(queryRequest);
             EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
             edmlRequestContext.setTargetTable(new TableInfo("test", "pso"));
             edmlRequestContext.setSourceTable(new TableInfo("test", "upload_table"));
 
-            final MppwRequest adbRequest = new MppwRequest(queryRequest, queryLoadParam, schema);
-            adbRequest.setTopic(kafkaTopicUri.getTopic());
-            adbRequest.setZookeeperHost(kafkaTopicUri.getHost());
-            adbRequest.setZookeeperPort(kafkaTopicUri.getPort());
-            adbRequest.setLoadStart(true);
+            final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
+            final MppwRequest adgRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
 
-            final MppwRequest adgRequest = new MppwRequest(queryRequest, queryLoadParam, schema);
-            adgRequest.setTopic(kafkaTopicUri.getTopic());
-            adgRequest.setZookeeperHost(kafkaTopicUri.getHost());
-            adgRequest.setZookeeperPort(kafkaTopicUri.getPort());
-            adgRequest.setLoadStart(true);
             final Queue<MppwRequestContext> mppwContextQueue = new BlockingArrayQueue<>();
             final MppwRequestContext mppwAdbContext = new MppwRequestContext(adbRequest);
             final MppwRequestContext mppwAdgContext = new MppwRequestContext(adgRequest);
@@ -374,25 +342,13 @@ class UploadKafkaExecutorTest {
             KafkaAdminProperty kafkaAdminProperty = new KafkaAdminProperty();
             kafkaAdminProperty.setInputStreamTimeoutMs(inpuStreamTimeoutMs);
 
-            final QueryLoadParam queryLoadParam = createQueryLoadParam();
-
-            LocationUriParser.KafkaTopicUri kafkaTopicUri = LocationUriParser.parseKafkaLocationPath(queryLoadParam.getLocationPath());
             DatamartRequest request = new DatamartRequest(queryRequest);
             EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
             edmlRequestContext.setTargetTable(new TableInfo("test", "pso"));
             edmlRequestContext.setSourceTable(new TableInfo("test", "upload_table"));
 
-            final MppwRequest adbRequest = new MppwRequest(queryRequest, queryLoadParam, schema);
-            adbRequest.setTopic(kafkaTopicUri.getTopic());
-            adbRequest.setZookeeperHost(kafkaTopicUri.getHost());
-            adbRequest.setZookeeperPort(kafkaTopicUri.getPort());
-            adbRequest.setLoadStart(true);
-
-            final MppwRequest adgRequest = new MppwRequest(queryRequest, queryLoadParam, schema);
-            adgRequest.setTopic(kafkaTopicUri.getTopic());
-            adgRequest.setZookeeperHost(kafkaTopicUri.getHost());
-            adgRequest.setZookeeperPort(kafkaTopicUri.getPort());
-            adgRequest.setLoadStart(true);
+            final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
+            final MppwRequest adgRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
 
             final Queue<MppwRequestContext> mppwContextQueue = new BlockingArrayQueue<>();
             final MppwRequestContext mppwAdbContext = new MppwRequestContext(adbRequest);
@@ -468,25 +424,13 @@ class UploadKafkaExecutorTest {
             KafkaAdminProperty kafkaAdminProperty = new KafkaAdminProperty();
             kafkaAdminProperty.setInputStreamTimeoutMs(inpuStreamTimeoutMs);
 
-            final QueryLoadParam queryLoadParam = createQueryLoadParam();
-
-            LocationUriParser.KafkaTopicUri kafkaTopicUri = LocationUriParser.parseKafkaLocationPath(queryLoadParam.getLocationPath());
             DatamartRequest request = new DatamartRequest(queryRequest);
             EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
             edmlRequestContext.setTargetTable(new TableInfo("test", "pso"));
             edmlRequestContext.setSourceTable(new TableInfo("test", "upload_table"));
 
-            final MppwRequest adbRequest = new MppwRequest(queryRequest, queryLoadParam, schema);
-            adbRequest.setTopic(kafkaTopicUri.getTopic());
-            adbRequest.setZookeeperHost(kafkaTopicUri.getHost());
-            adbRequest.setZookeeperPort(kafkaTopicUri.getPort());
-            adbRequest.setLoadStart(true);
-
-            final MppwRequest adgRequest = new MppwRequest(queryRequest, queryLoadParam, schema);
-            adgRequest.setTopic(kafkaTopicUri.getTopic());
-            adgRequest.setZookeeperHost(kafkaTopicUri.getHost());
-            adgRequest.setZookeeperPort(kafkaTopicUri.getPort());
-            adgRequest.setLoadStart(true);
+            final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
+            final MppwRequest adgRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
 
             final Queue<MppwRequestContext> mppwContextQueue = new BlockingArrayQueue<>();
             final MppwRequestContext mppwAdbContext = new MppwRequestContext(adbRequest);
@@ -561,25 +505,13 @@ class UploadKafkaExecutorTest {
             KafkaAdminProperty kafkaAdminProperty = new KafkaAdminProperty();
             kafkaAdminProperty.setInputStreamTimeoutMs(inpuStreamTimeoutMs);
 
-            final QueryLoadParam queryLoadParam = createQueryLoadParam();
-
-            LocationUriParser.KafkaTopicUri kafkaTopicUri = LocationUriParser.parseKafkaLocationPath(queryLoadParam.getLocationPath());
             DatamartRequest request = new DatamartRequest(queryRequest);
             EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
             edmlRequestContext.setTargetTable(new TableInfo("test", "pso"));
             edmlRequestContext.setSourceTable(new TableInfo("test", "upload_table"));
 
-            final MppwRequest adbRequest = new MppwRequest(queryRequest, queryLoadParam, schema);
-            adbRequest.setTopic(kafkaTopicUri.getTopic());
-            adbRequest.setZookeeperHost(kafkaTopicUri.getHost());
-            adbRequest.setZookeeperPort(kafkaTopicUri.getPort());
-            adbRequest.setLoadStart(true);
-
-            final MppwRequest adgRequest = new MppwRequest(queryRequest, queryLoadParam, schema);
-            adgRequest.setTopic(kafkaTopicUri.getTopic());
-            adgRequest.setZookeeperHost(kafkaTopicUri.getHost());
-            adgRequest.setZookeeperPort(kafkaTopicUri.getPort());
-            adgRequest.setLoadStart(true);
+            final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
+            final MppwRequest adgRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
 
             final Queue<MppwRequestContext> mppwContextQueue = new BlockingArrayQueue<>();
             final MppwRequestContext mppwAdbContext = new MppwRequestContext(adbRequest);
@@ -676,19 +608,22 @@ class UploadKafkaExecutorTest {
     }
 
     @NotNull
-    private QueryLoadParam createQueryLoadParam() {
-        final QueryLoadParam queryLoadParam = new QueryLoadParam();
-        queryLoadParam.setId(UUID.randomUUID());
-        queryLoadParam.setDatamart("test");
-        queryLoadParam.setDeltaHot(1L);
-        queryLoadParam.setFormat(Format.AVRO);
-        queryLoadParam.setLocationType(Type.KAFKA_TOPIC);
-        queryLoadParam.setMessageLimit(1000);
-        queryLoadParam.setLocationPath("kafka://kafka-1.dtm.local:9092/topic");
-        queryLoadParam.setSqlQuery(queryRequest.getSql());
-        queryLoadParam.setKafkaStreamTimeoutMs(10000);
-        queryLoadParam.setPluginStatusCheckPeriodMs(1000);
-        return queryLoadParam;
+    private KafkaParameter createKafkaParameter() {
+        return KafkaParameter.builder()
+                .sysCn(1L)
+                .datamart("test")
+                .targetTableName("test_tab")
+                .uploadMetadata(UploadExternalMetadata.builder()
+                        .name("ext_tab")
+                        .externalTableSchema("")
+                        .externalTableUploadMessageLimit(1000)
+                        .externalTableLocationPath("kafka://kafka-1.dtm.local:9092/topic")
+                        .zookeeperHost("kafka-1.dtm.local")
+                        .zookeeperPort(9092)
+                        .topic("topic")
+                        .externalTableFormat(Format.AVRO)
+                        .build())
+                .build();
     }
 
     @NotNull

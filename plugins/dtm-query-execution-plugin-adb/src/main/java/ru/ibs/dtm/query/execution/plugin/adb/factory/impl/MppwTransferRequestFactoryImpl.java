@@ -30,7 +30,7 @@ public class MppwTransferRequestFactoryImpl implements MppwTransferRequestFactor
 
     private List<String> getColumnList(MppwRequestContext context) {
         final List<String> columns = new Schema.Parser().parse(context.getRequest()
-                .getKafkaParameter().getUploadMetadata().getExternalTableSchema())
+                .getKafkaParameter().getUploadMetadata().getExternalSchema())
                 .getFields().stream().map(Schema.Field::name).collect(Collectors.toList());
         columns.add(MetadataSqlFactoryImpl.SYS_FROM_ATTR);
         columns.add(MetadataSqlFactoryImpl.SYS_TO_ATTR);

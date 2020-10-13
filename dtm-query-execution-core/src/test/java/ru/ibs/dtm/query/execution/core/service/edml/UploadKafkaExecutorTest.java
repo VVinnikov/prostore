@@ -30,8 +30,8 @@ import ru.ibs.dtm.query.execution.core.service.edml.impl.UploadKafkaExecutor;
 import ru.ibs.dtm.query.execution.core.service.impl.DataSourcePluginServiceImpl;
 import ru.ibs.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
-import ru.ibs.dtm.query.execution.plugin.api.mppw.parameter.KafkaParameter;
-import ru.ibs.dtm.query.execution.plugin.api.mppw.parameter.UploadExternalMetadata;
+import ru.ibs.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaParameter;
+import ru.ibs.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
 import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 
@@ -608,21 +608,21 @@ class UploadKafkaExecutorTest {
     }
 
     @NotNull
-    private KafkaParameter createKafkaParameter() {
-        return KafkaParameter.builder()
+    private MppwKafkaParameter createKafkaParameter() {
+        return MppwKafkaParameter.builder()
                 .sysCn(1L)
                 .datamart("test")
                 .targetTableName("test_tab")
-                .uploadMetadata(UploadExternalMetadata.builder()
+                .uploadMetadata(UploadExternalEntityMetadata.builder()
                         .name("ext_tab")
-                        .externalTableSchema("")
-                        .externalTableUploadMessageLimit(1000)
-                        .externalTableLocationPath("kafka://kafka-1.dtm.local:9092/topic")
-                        .zookeeperHost("kafka-1.dtm.local")
-                        .zookeeperPort(9092)
-                        .topic("topic")
-                        .externalTableFormat(Format.AVRO)
+                        .externalSchema("")
+                        .uploadMessageLimit(1000)
+                        .locationPath("kafka://kafka-1.dtm.local:9092/topic")
+                        .format(Format.AVRO)
                         .build())
+                .zookeeperHost("kafka-1.dtm.local")
+                .zookeeperPort(9092)
+                .topic("topic")
                 .build();
     }
 

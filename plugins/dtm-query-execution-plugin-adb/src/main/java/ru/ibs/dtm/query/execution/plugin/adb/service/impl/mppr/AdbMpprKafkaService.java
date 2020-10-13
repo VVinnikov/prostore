@@ -35,7 +35,7 @@ public class AdbMpprKafkaService implements MpprKafkaService<QueryResult> {
 	public void execute(MpprRequestContext context, Handler<AsyncResult<QueryResult>> asyncHandler) {
 		MpprRequest request = context.getRequest();
 		adbQueryEnrichmentService.enrich(
-				EnrichQueryRequest.generate(request.getQueryRequest(), request.getSchema()),
+				EnrichQueryRequest.generate(request.getQueryRequest(), request.getLogicalSchema()),
 				sqlResult -> {
 					if (sqlResult.succeeded()) {
 						mpprKafkaConnectorService.call(

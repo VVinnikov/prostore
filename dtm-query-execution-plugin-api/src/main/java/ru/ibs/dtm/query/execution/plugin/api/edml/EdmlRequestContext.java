@@ -6,7 +6,6 @@ import lombok.ToString;
 import org.apache.calcite.sql.SqlInsert;
 import ru.ibs.dtm.common.dto.TableInfo;
 import ru.ibs.dtm.common.model.ddl.Entity;
-import ru.ibs.dtm.common.plugin.exload.QueryExloadParam;
 import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 import ru.ibs.dtm.query.execution.plugin.api.RequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
@@ -25,9 +24,8 @@ public class EdmlRequestContext extends RequestContext<DatamartRequest> {
     private TableInfo sourceTable;
     private TableInfo targetTable;
     private final SqlInsert sqlNode;
+    private String dmlSubquery;
     private List<Datamart> logicalSchema;
-    @Deprecated
-    private QueryExloadParam exloadParam; //TODO refactor this as in UploadExternalTableExecutor
 
     public EdmlRequestContext(DatamartRequest request, SqlInsert sqlNode) {
         super(request);

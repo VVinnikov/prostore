@@ -4,7 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import ru.ibs.dtm.common.reader.QueryRequest;
-import ru.ibs.dtm.query.execution.plugin.api.mppw.parameter.KafkaParameter;
+import ru.ibs.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaParameter;
 
 /**
  * Request Mppw dto
@@ -21,10 +21,10 @@ public class MppwRequest extends DatamartRequest {
     /**
      * Mppw params for loading to kafka
      */
-    private KafkaParameter kafkaParameter;
+    private MppwKafkaParameter kafkaParameter;
 
     @Builder
-    public MppwRequest(QueryRequest queryRequest, Boolean isLoadStart, KafkaParameter kafkaParameter) {
+    public MppwRequest(QueryRequest queryRequest, Boolean isLoadStart, MppwKafkaParameter kafkaParameter) {
         super(queryRequest);
         this.isLoadStart = isLoadStart;
         this.kafkaParameter = kafkaParameter;

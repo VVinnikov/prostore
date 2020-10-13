@@ -7,24 +7,21 @@ import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlDialect;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import ru.ibs.dtm.common.plugin.exload.QueryExloadParam;
-import ru.ibs.dtm.common.plugin.exload.TableAttribute;
-import ru.ibs.dtm.common.plugin.exload.Type;
+import ru.ibs.dtm.common.model.ddl.ExternalTableLocationType;
+import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
-import ru.ibs.dtm.common.transformer.Transformer;
-import ru.ibs.dtm.query.execution.core.configuration.properties.EdmlProperties;
-import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
-import ru.ibs.dtm.query.execution.core.dto.edml.*;
+import ru.ibs.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
+import ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction;
 import ru.ibs.dtm.query.execution.core.service.edml.EdmlDownloadExecutor;
 import ru.ibs.dtm.query.execution.core.service.edml.EdmlExecutor;
+import ru.ibs.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
+import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 import ru.ibs.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction.DOWNLOAD;
@@ -34,39 +31,42 @@ import static ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction.DOWNLOAD;
 public class DownloadExternalTableExecutor implements EdmlExecutor {
 
     private static final SqlDialect SQL_DIALECT = new SqlDialect(SqlDialect.EMPTY_CONTEXT);
-    private final Transformer<DownloadExternalTableAttribute, TableAttribute> tableAttributeTransformer;
-    private final EdmlProperties edmlProperties;
-    private final ServiceDbFacade serviceDbFacade;
-    private final Map<Type, EdmlDownloadExecutor> executors;
+    private final LogicalSchemaProvider logicalSchemaProvider;
+    private final DeltaQueryPreprocessor deltaQueryPreprocessor;
+    private final Map<ExternalTableLocationType, EdmlDownloadExecutor> executors;
 
     @Autowired
-    public DownloadExternalTableExecutor(Transformer<DownloadExternalTableAttribute, TableAttribute> tableAttributeTransformer,
-                                         EdmlProperties edmlProperties, ServiceDbFacade serviceDbFacade, List<EdmlDownloadExecutor> downloadExecutors) {
-        this.tableAttributeTransformer = tableAttributeTransformer;
-        this.edmlProperties = edmlProperties;
-        this.serviceDbFacade = serviceDbFacade;
+    public DownloadExternalTableExecutor(LogicalSchemaProvider logicalSchemaProvider,
+                                         DeltaQueryPreprocessor deltaQueryPreprocessor,
+                                         List<EdmlDownloadExecutor> downloadExecutors) {
+        this.logicalSchemaProvider = logicalSchemaProvider;
+        this.deltaQueryPreprocessor = deltaQueryPreprocessor;
         this.executors = downloadExecutors.stream().collect(Collectors.toMap(EdmlDownloadExecutor::getDownloadType, it -> it));
     }
 
     @Override
-    public void execute(EdmlRequestContext context, EdmlQuery edmlQuery, Handler<AsyncResult<QueryResult>> resultHandler) {
-        insertDownloadQuery(context, (DownloadExtTableRecord) edmlQuery.getRecord())
-                .compose(this::getDownloadExternalAttributes)
-                .compose(attributes -> executePluginService(context, attributes, resultHandler))
-                .setHandler(resultHandler);
+    public void execute(EdmlRequestContext context, Handler<AsyncResult<QueryResult>> resultHandler) {
+        initDMLSubquery(context)
+                .compose(v -> initLogicalSchema(context))
+                .compose(v -> initDeltaInformation(context))
+                .compose(v -> execute(context))
+                .onComplete(resultHandler);
     }
 
-    private Future<DownloadExtTableRecord> insertDownloadQuery(EdmlRequestContext context, DownloadExtTableRecord extTableRecord) {
-        return Future.future((Promise<DownloadExtTableRecord> promise) -> {
-            log.debug("External table {} found", context.getTargetTable().getTableName());
-            context.getRequest().getQueryRequest().setSql(context.getSqlNode().getSource().toSqlString(SQL_DIALECT).toString());
-            log.debug("From the request left: {}", context.getRequest().getQueryRequest().getSql());
-            context.setExloadParam(createQueryExloadParam(context, extTableRecord));
-            DownloadQueryRecord downloadQueryRecord = createDownloadQueryRecord(context, extTableRecord);
-            serviceDbFacade.getEddlServiceDao().getDownloadQueryDao().insertDownloadQuery(downloadQueryRecord, ar -> {
+    private Future<Void> initDMLSubquery(EdmlRequestContext context) {
+        return Future.future(promise -> {
+            context.setDmlSubquery(context.getSqlNode().getSource().toSqlString(SQL_DIALECT).toString());
+            promise.complete();
+        });
+    }
+
+    private Future<Void> initLogicalSchema(EdmlRequestContext context) {
+        return Future.future(promise -> {
+            logicalSchemaProvider.getSchema(context.getRequest().getQueryRequest(), ar -> {
                 if (ar.succeeded()) {
-                    log.debug("Added downloadQuery {}", downloadQueryRecord);
-                    promise.complete(extTableRecord);
+                    final List<Datamart> logicalSchema = ar.result();
+                    context.setLogicalSchema(logicalSchema);
+                    promise.complete();
                 } else {
                     promise.fail(ar.cause());
                 }
@@ -74,48 +74,43 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
         });
     }
 
-    private Future<List<DownloadExternalTableAttribute>> getDownloadExternalAttributes(DownloadExtTableRecord extTableRecord) {
-        return Future.future((Promise<List<DownloadExternalTableAttribute>> promise) ->
-                serviceDbFacade.getEddlServiceDao().getDownloadExtTableAttributeDao().findDownloadExtTableAttributes(extTableRecord.getId(), promise));
-    }
-
-    private Future<QueryResult> executePluginService(EdmlRequestContext context, List<DownloadExternalTableAttribute> attributes,
-                                                     Handler<AsyncResult<QueryResult>> resultHandler) {
-        return Future.future((Promise<QueryResult> promise) -> {
-            val tableAttributes = attributes.stream()
-                    .map(tableAttributeTransformer::transform)
-                    .collect(Collectors.toList());
-            context.getExloadParam().setTableAttributes(tableAttributes);
-            if (Type.KAFKA_TOPIC.equals(context.getExloadParam().getLocationType())) {
-                log.debug("Before calling plugin.mmprKafka");
-                executors.get(context.getExloadParam().getLocationType()).execute(context, resultHandler);
-            } else {
-                log.error("Unload type {} not implemented", context.getExloadParam().getLocationType());
-                promise.fail(new RuntimeException("Other types of upload are not yet implemented!"));
-            }
+    private Future<QueryRequest> initDeltaInformation(EdmlRequestContext context) {
+        return Future.future(promise -> {
+            val copyRequest = context.getRequest().getQueryRequest().copy();
+            copyRequest.setSql(context.getDmlSubquery());
+            deltaQueryPreprocessor.process(copyRequest)
+                    .onComplete(ar -> {
+                        if (ar.succeeded()) {
+                            final QueryRequest queryRequest = ar.result();
+                            context.getRequest().setQueryRequest(queryRequest);
+                            promise.complete(queryRequest);
+                        } else {
+                            promise.fail(ar.cause());
+                        }
+                    });
         });
     }
 
-    @NotNull
-    private QueryExloadParam createQueryExloadParam(EdmlRequestContext context, DownloadExtTableRecord detRecord) {
-        final QueryExloadParam exloadParam = new QueryExloadParam();
-        exloadParam.setId(UUID.randomUUID());
-        exloadParam.setDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic());
-        exloadParam.setTableName(context.getTargetTable().getTableName());
-        exloadParam.setSqlQuery(context.getRequest().getQueryRequest().getSql());
-        exloadParam.setLocationType(detRecord.getLocationType());
-        exloadParam.setLocationPath(detRecord.getLocationPath());
-        exloadParam.setFormat(detRecord.getFormat());
-        exloadParam.setChunkSize(detRecord.getChunkSize() != null ?
-                detRecord.getChunkSize() : edmlProperties.getDefaultChunkSize());
-        exloadParam.setAvroSchema(detRecord.getTableSchema());
-        return exloadParam;
-    }
-
-    @NotNull
-    private DownloadQueryRecord createDownloadQueryRecord(EdmlRequestContext context, DownloadExtTableRecord extTableRecord) {
-        return new DownloadQueryRecord(UUID.randomUUID().toString(), extTableRecord.getDatamartId(),
-                extTableRecord.getTableName(), context.getRequest().getQueryRequest().getSql(), 0);
+    private Future<QueryResult> execute(EdmlRequestContext context) {
+        return Future.future((Promise<QueryResult> promise) -> {
+            if (ExternalTableLocationType.KAFKA == context.getEntity().getExternalTableLocationType()) {
+                executors.get(context.getEntity().getExternalTableLocationType()).execute(context, ar -> {
+                    if (ar.succeeded()) {
+                        log.debug("Mppr into table [{}] for dml query [{}] finished successfully",
+                                context.getEntity().getName(), context.getDmlSubquery());
+                        promise.complete(ar.result());
+                    } else {
+                        log.error("Error executing mppr into table [{}] for dml query [{}]",
+                                context.getEntity().getName(),
+                                context.getDmlSubquery());
+                        promise.fail(ar.cause());
+                    }
+                });
+            } else {
+                log.error("Unload type {} not implemented", context.getEntity().getExternalTableLocationType());
+                promise.fail(new RuntimeException("Other types of upload are not yet implemented!"));
+            }
+        });
     }
 
     @Override

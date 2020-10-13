@@ -17,9 +17,7 @@ import ru.ibs.dtm.query.calcite.core.node.SqlSelectTree;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction;
-import ru.ibs.dtm.query.execution.core.dto.edml.EdmlQuery;
 import ru.ibs.dtm.query.execution.core.service.edml.EdmlExecutor;
-import ru.ibs.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import ru.ibs.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.service.EdmlService;
 
@@ -36,35 +34,25 @@ import java.util.stream.Collectors;
 public class EdmlServiceImpl implements EdmlService<QueryResult> {
 
     private static final SqlDialect SQL_DIALECT = new SqlDialect(SqlDialect.EMPTY_CONTEXT);
-    private final LogicalSchemaProvider logicalSchemaProvider;
+
     private final EntityDao entityDao;
     private final Map<EdmlAction, EdmlExecutor> executors;
 
     @Autowired
     public EdmlServiceImpl(ServiceDbFacade serviceDbFacade,
-                           LogicalSchemaProvider logicalSchemaProvider,
                            List<EdmlExecutor> edmlExecutors) {
         this.entityDao = serviceDbFacade.getServiceDbDao().getEntityDao();
-        this.logicalSchemaProvider = logicalSchemaProvider;
         this.executors = edmlExecutors.stream().collect(Collectors.toMap(EdmlExecutor::getAction, it -> it));
     }
 
     @Override
     public void execute(EdmlRequestContext context, Handler<AsyncResult<QueryResult>> resultHandler) {
-        //TODO refactor this with DownloadExternalTableExecutor refactoring (move getting logical schema there)
-        logicalSchemaProvider.getSchema(context.getRequest().getQueryRequest(), schemaAr -> {
-            if (schemaAr.succeeded()) {
-                context.setLogicalSchema(schemaAr.result());
-                defineExternalTableQuery(context)
-                        .compose(edmlQuery -> execute(context, edmlQuery, resultHandler))
-                        .setHandler(resultHandler);
-            } else {
-                resultHandler.handle(Future.failedFuture(schemaAr.cause()));
-            }
-        });
+        defineExternalTableAndType(context)
+                .compose(edmlType -> execute(context, edmlType))
+                .setHandler(resultHandler);
     }
 
-    private Future<EdmlQuery> defineExternalTableQuery(EdmlRequestContext context) {
+    private Future<EdmlAction> defineExternalTableAndType(EdmlRequestContext context) {
         return Future.future(edmlQueryPromise -> {
             initSourceAndTargetTables(context);
             getExternalEntity(Optional.empty(),
@@ -79,19 +67,11 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
                         if (entity.isPresent()) {
                             Entity extEntity = entity.get();
                             if (extEntity.getEntityType() == EntityType.DOWNLOAD_EXTERNAL_TABLE) {
-                                final EdmlQuery query = EdmlQuery.builder()
-                                        .action(EdmlAction.DOWNLOAD)
-                                        .entity(extEntity)
-                                        .build();
                                 context.setEntity(extEntity);
-                                edmlQueryPromise.complete(query);
+                                edmlQueryPromise.complete(EdmlAction.DOWNLOAD);
                             } else if (extEntity.getEntityType() == EntityType.UPLOAD_EXTERNAL_TABLE) {
-                                final EdmlQuery query = EdmlQuery.builder()
-                                        .action(EdmlAction.UPLOAD)
-                                        .entity(extEntity)
-                                        .build();
                                 context.setEntity(extEntity);
-                                edmlQueryPromise.complete(query);
+                                edmlQueryPromise.complete(EdmlAction.UPLOAD);
                             }
                         } else {
                             edmlQueryPromise.fail(String.format("Can't determine external table in query [%s]",
@@ -102,8 +82,15 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
         });
     }
 
-    private Future<QueryResult> execute(EdmlRequestContext context, EdmlQuery edmlQuery, Handler<AsyncResult<QueryResult>> resultHandler) {
-        return Future.future((Promise<QueryResult> promise) -> executors.get(edmlQuery.getAction()).execute(context, edmlQuery, resultHandler));
+    private Future<QueryResult> execute(EdmlRequestContext context, EdmlAction edmlAction) {
+        return Future.future((Promise<QueryResult> promise) ->
+                executors.get(edmlAction).execute(context, ar -> {
+                    if (ar.succeeded()) {
+                        promise.complete(ar.result());
+                    } else {
+                        promise.fail(ar.cause());
+                    }
+                }));
     }
 
     private void initSourceAndTargetTables(EdmlRequestContext context) {

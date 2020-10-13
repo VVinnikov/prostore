@@ -83,10 +83,10 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
                         fullName + BUFFER_SHARD_POSTFIX), this::dropTable))
                 .compose(v -> optimizeTable(fullName + ACTUAL_SHARD_POSTFIX))  // 6. merge shards
                 .compose(v -> {
-                    reportFinish(request.getKafkaParameter().getUploadMetadata().getTopic());
+                    reportFinish(request.getKafkaParameter().getTopic());
                     return Future.succeededFuture(QueryResult.emptyResult());
                 }, f -> {
-                    reportError(request.getKafkaParameter().getUploadMetadata().getTopic());
+                    reportError(request.getKafkaParameter().getTopic());
                     return Future.failedFuture(f.getCause());
                 });
     }

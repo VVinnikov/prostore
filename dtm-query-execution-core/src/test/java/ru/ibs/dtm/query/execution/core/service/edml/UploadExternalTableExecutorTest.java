@@ -9,7 +9,6 @@ import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import ru.ibs.dtm.common.delta.DeltaLoadStatus;
 import ru.ibs.dtm.common.dto.TableInfo;
 import ru.ibs.dtm.common.model.ddl.Entity;
 import ru.ibs.dtm.common.model.ddl.EntityType;
@@ -19,20 +18,12 @@ import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
-import ru.ibs.dtm.query.execution.core.configuration.properties.EdmlProperties;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacadeImpl;
 import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.impl.DeltaServiceDaoImpl;
-import ru.ibs.dtm.query.execution.core.dao.eddl.EddlServiceDao;
-import ru.ibs.dtm.query.execution.core.dao.eddl.UploadQueryDao;
-import ru.ibs.dtm.query.execution.core.dao.eddl.impl.EddlServiceDaoImpl;
-import ru.ibs.dtm.query.execution.core.dao.eddl.impl.UploadQueryDaoImpl;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDao;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
-import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
-import ru.ibs.dtm.query.execution.core.dto.delta.DeltaWriteOpRequest;
-import ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction;
 import ru.ibs.dtm.query.execution.core.service.edml.impl.UploadExternalTableExecutor;
 import ru.ibs.dtm.query.execution.core.service.edml.impl.UploadKafkaExecutor;
 import ru.ibs.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
@@ -43,7 +34,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -114,7 +106,7 @@ class UploadExternalTableExecutorTest {
         Mockito.when(deltaServiceDao.writeOperationSuccess(eq(queryRequest.getDatamartMnemonic()),
                 eq(sysCn))).thenReturn(Future.succeededFuture());
 
-        uploadExternalTableExecutor.execute(context, null, ar -> {
+        uploadExternalTableExecutor.execute(context, ar -> {
             if (ar.succeeded()) {
                 promise.complete(ar.result());
             } else {
@@ -146,7 +138,7 @@ class UploadExternalTableExecutorTest {
         Mockito.when(deltaServiceDao.writeNewOperation(any()))
                 .thenReturn(Future.failedFuture(new RuntimeException("")));
 
-        uploadExternalTableExecutor.execute(context, null, ar -> {
+        uploadExternalTableExecutor.execute(context, ar -> {
             if (ar.succeeded()) {
                 promise.complete();
             } else {
@@ -188,7 +180,7 @@ class UploadExternalTableExecutorTest {
         Mockito.when(deltaServiceDao.writeOperationSuccess(eq(queryRequest.getDatamartMnemonic()),
                 eq(sysCn))).thenReturn(Future.failedFuture(new RuntimeException("")));
 
-        uploadExternalTableExecutor.execute(context, null, ar -> {
+        uploadExternalTableExecutor.execute(context, ar -> {
             if (ar.succeeded()) {
                 promise.complete();
             } else {
@@ -231,7 +223,7 @@ class UploadExternalTableExecutorTest {
 
         when(deltaServiceDao.deleteWriteOperation(eq("test"), eq(sysCn))).thenReturn(Future.succeededFuture());
 
-        uploadExternalTableExecutor.execute(context, null, ar -> {
+        uploadExternalTableExecutor.execute(context, ar -> {
             if (ar.succeeded()) {
                 promise.complete();
             } else {
@@ -272,7 +264,7 @@ class UploadExternalTableExecutorTest {
         when(deltaServiceDao.writeOperationError(eq("test"), eq(sysCn)))
                 .thenReturn(Future.failedFuture(new RuntimeException("")));
 
-        uploadExternalTableExecutor.execute(context, null, ar -> {
+        uploadExternalTableExecutor.execute(context, ar -> {
             if (ar.succeeded()) {
                 promise.complete();
             } else {
@@ -315,7 +307,7 @@ class UploadExternalTableExecutorTest {
 
         when(deltaServiceDao.deleteWriteOperation(eq("test"), eq(sysCn))).thenReturn(Future.failedFuture(new RuntimeException("")));
 
-        uploadExternalTableExecutor.execute(context, null, ar -> {
+        uploadExternalTableExecutor.execute(context, ar -> {
             if (ar.succeeded()) {
                 promise.complete();
             } else {

@@ -18,6 +18,7 @@ import ru.ibs.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.StatusReporter;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw.load.*;
+import ru.ibs.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 
 import java.util.Arrays;
@@ -80,22 +81,22 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         }
 
         String fullName = DdlUtils.getQualifiedTableName(request, appConfiguration);
-        reportStart(request.getKafkaParameter().getUploadMetadata().getTopic(), fullName);
+        reportStart(request.getKafkaParameter().getTopic(), fullName);
         // 1. Determine table engine (_actual_shard)
         Future<String> engineFull = getTableSetting(fullName + ACTUAL_POSTFIX, "engine_full");
         // 2. Get sorting order (_actual)
         Future<String> sortingKey = getTableSetting(fullName + ACTUAL_SHARD_POSTFIX, "sorting_key");
-
+        val uploadMeta = (UploadExternalEntityMetadata) request.getKafkaParameter().getUploadMetadata();
         // 3. Create _ext_shard based on schema from request
         final Schema schema;
         try {
-            schema = new Schema.Parser().parse(request.getKafkaParameter().getUploadMetadata().getExternalTableSchema());
+            schema = new Schema.Parser().parse(uploadMeta.getExternalSchema());
         } catch (Exception e) {
             return Future.failedFuture(e);
         }
 
         Future<Void> extTableF = sortingKey.compose(keys ->
-                createExternalTable(request.getKafkaParameter().getUploadMetadata().getTopic(), fullName, schema, keys));
+                createExternalTable(request.getKafkaParameter().getTopic(), fullName, schema, keys));
 
         // 4. Create _buffer_shard
         Future<Void> buffShardF = sortingKey.compose(keys ->
@@ -116,7 +117,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         return CompositeFuture.all(extTableF, buffShardF, buffF, buffLoaderF, actualLoaderF)
                 .compose(v -> createRestInitiator(request))
                 .compose(v -> Future.succeededFuture(QueryResult.emptyResult()), f -> {
-                    reportError(request.getKafkaParameter().getUploadMetadata().getTopic());
+                    reportError(request.getKafkaParameter().getTopic());
                     return Future.failedFuture(f.getCause());
                 });
     }
@@ -218,21 +219,21 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         if (loadType == KAFKA) {
             return Future.succeededFuture();
         }
-
+        val uploadMeta = (UploadExternalEntityMetadata) mppwRequest.getKafkaParameter().getUploadMetadata();
         RestLoadRequest request = new RestLoadRequest();
         request.setRequestId(mppwRequest.getQueryRequest().getRequestId().toString());
         request.setSynCn(mppwRequest.getKafkaParameter().getSysCn());
         request.setDatamart(mppwRequest.getKafkaParameter().getDatamart());
         request.setTableName(mppwRequest.getKafkaParameter().getTargetTableName());
-        request.setZookeeperHost(mppwRequest.getKafkaParameter().getUploadMetadata().getZookeeperHost());
-        request.setZookeeperPort(mppwRequest.getKafkaParameter().getUploadMetadata().getZookeeperPort());
-        request.setKafkaTopic(mppwRequest.getKafkaParameter().getUploadMetadata().getTopic());
+        request.setZookeeperHost(mppwRequest.getKafkaParameter().getZookeeperHost());
+        request.setZookeeperPort(mppwRequest.getKafkaParameter().getZookeeperPort());
+        request.setKafkaTopic(mppwRequest.getKafkaParameter().getTopic());
         request.setConsumerGroup(mppwProperties.getRestLoadConsumerGroup());
-        request.setFormat(mppwRequest.getKafkaParameter().getUploadMetadata().getExternalTableFormat().getName());
-        request.setMessageProcessingLimit(mppwRequest.getKafkaParameter().getUploadMetadata().getExternalTableUploadMessageLimit());
+        request.setFormat(uploadMeta.getFormat().getName());
+        request.setMessageProcessingLimit(uploadMeta.getUploadMessageLimit());
 
         try {
-            val schema = new Schema.Parser().parse(mppwRequest.getKafkaParameter().getUploadMetadata().getExternalTableSchema());
+            val schema = new Schema.Parser().parse(uploadMeta.getExternalSchema());
             request.setSchema(schema);
             return restLoadInitiator.initiateLoading(request);
         } catch (Exception e) {

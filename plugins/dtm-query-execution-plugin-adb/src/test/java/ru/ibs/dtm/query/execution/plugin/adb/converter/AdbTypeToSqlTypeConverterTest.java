@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.converter.SqlTypeConverter;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
+import ru.ibs.dtm.query.execution.plugin.adb.configuration.ConverterConfiguration;
 
 import java.sql.Date;
 import java.sql.Time;
@@ -33,7 +34,7 @@ class AdbTypeToSqlTypeConverterTest {
 
     @BeforeEach
     void setUp() {
-        typeConverter = new AdbTypeToSqlTypeConverter();
+        typeConverter = new AdbTypeToSqlTypeConverter(new ConverterConfiguration().transformerMap());
         charVal = "111";
         intVal = 1;
         bigintVal = 1L;

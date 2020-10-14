@@ -5,13 +5,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.converter.SqlTypeConverter;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
+import ru.ibs.dtm.query.execution.plugin.adg.configuration.ConverterConfiguration;
 
 import java.sql.Date;
+import java.sql.Time;
 import java.sql.Timestamp;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -35,7 +34,7 @@ class AdgTypeToSqlTypeConverterTest {
 
     @BeforeEach
     void setUp() {
-        typeConverter = new AdgTypeToSqlTypeConverter();
+        typeConverter = new AdgTypeToSqlTypeConverter(new ConverterConfiguration().transformerMap());
         charVal = "111";
         intVal = 1;
         bigintVal = 100000000000L;
@@ -60,7 +59,7 @@ class AdgTypeToSqlTypeConverterTest {
         expectedValues.put(ColumnType.DOUBLE, doubleVal);
         expectedValues.put(ColumnType.FLOAT, floatVal);
         expectedValues.put(ColumnType.DATE, Date.valueOf(LocalDate.ofEpochDay(dateLongVal)));
-        expectedValues.put(ColumnType.TIME, timeLongVal);
+        expectedValues.put(ColumnType.TIME, Time.valueOf(LocalTime.ofNanoOfDay(timeLongVal)));
         expectedValues.put(ColumnType.TIMESTAMP, Timestamp.valueOf(LocalDateTime.ofInstant(Instant.ofEpochMilli(timestampLongVal), ZoneId.systemDefault())));
         expectedValues.put(ColumnType.BOOLEAN, booleanVal);
         expectedValues.put(ColumnType.UUID, UUID.fromString(uuidStrVal));
@@ -100,7 +99,7 @@ class AdgTypeToSqlTypeConverterTest {
         );
         assertAll("Time converting",
                 () -> assertEquals(expectedValues.get(ColumnType.TIME), typeConverter.convert(ColumnType.TIME, timeLongVal)),
-                () -> assertTrue(typeConverter.convert(ColumnType.TIME, timeLongVal) instanceof Long)
+                () -> assertTrue(typeConverter.convert(ColumnType.TIME, timeLongVal) instanceof Time)
         );
         assertAll("Timestamp converting",
                 () -> assertEquals(expectedValues.get(ColumnType.TIMESTAMP), typeConverter.convert(ColumnType.TIMESTAMP,

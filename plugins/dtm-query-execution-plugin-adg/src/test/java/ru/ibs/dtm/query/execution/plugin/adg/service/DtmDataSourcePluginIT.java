@@ -8,9 +8,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import ru.ibs.dtm.common.model.ddl.ClassField;
-import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
+import ru.ibs.dtm.common.model.ddl.Entity;
+import ru.ibs.dtm.common.model.ddl.EntityField;
 import ru.ibs.dtm.common.plugin.status.StatusQueryResult;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.reader.SourceType;
@@ -80,11 +80,11 @@ public class DtmDataSourcePluginIT {
 
     @Test
     void testDdl(VertxTestContext testContext) throws Throwable {
-        ClassTable classTable = new ClassTable("test.test_", Arrays.asList(
-                new ClassField(0,"id", ColumnType.INT.name(), false, 1, 1, null),
-                new ClassField(1, "test", ColumnType.VARCHAR.name(), true, 1, 1, null)
+        Entity entity = new Entity("test.test_", Arrays.asList(
+                new EntityField(0,"id", ColumnType.INT.name(), false, 1, 1, null),
+                new EntityField(1, "test", ColumnType.VARCHAR.name(), true, 1, 1, null)
         ));
-        DdlRequest dto = new DdlRequest(null, classTable);
+        DdlRequest dto = new DdlRequest(null, entity);
         DdlRequestContext context = new DdlRequestContext(dto);
         context.setDdlType(DdlType.CREATE_TABLE);
         plugin.ddl(context, ar -> {

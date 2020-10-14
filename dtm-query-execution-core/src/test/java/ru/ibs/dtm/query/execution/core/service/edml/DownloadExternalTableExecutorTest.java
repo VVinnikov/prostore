@@ -4,16 +4,15 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import ru.ibs.dtm.common.dto.TableInfo;
+import ru.ibs.dtm.common.model.ddl.Entity;
+import ru.ibs.dtm.common.model.ddl.EntityType;
+import ru.ibs.dtm.common.model.ddl.ExternalTableLocationType;
 import ru.ibs.dtm.common.plugin.exload.Format;
 import ru.ibs.dtm.common.plugin.exload.TableAttribute;
 import ru.ibs.dtm.common.plugin.exload.Type;
@@ -26,16 +25,12 @@ import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguratio
 import ru.ibs.dtm.query.execution.core.configuration.properties.EdmlProperties;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacadeImpl;
-import ru.ibs.dtm.query.execution.core.dao.delta.DeltaServiceDao;
-import ru.ibs.dtm.query.execution.core.dao.delta.impl.DeltaServiceDaoImpl;
 import ru.ibs.dtm.query.execution.core.dao.eddl.DownloadExtTableAttributeDao;
 import ru.ibs.dtm.query.execution.core.dao.eddl.DownloadQueryDao;
 import ru.ibs.dtm.query.execution.core.dao.eddl.EddlServiceDao;
-import ru.ibs.dtm.query.execution.core.dao.eddl.UploadQueryDao;
 import ru.ibs.dtm.query.execution.core.dao.eddl.impl.DownloadExtTableAttributeDaoImpl;
 import ru.ibs.dtm.query.execution.core.dao.eddl.impl.DownloadQueryDaoImpl;
 import ru.ibs.dtm.query.execution.core.dao.eddl.impl.EddlServiceDaoImpl;
-import ru.ibs.dtm.query.execution.core.dao.eddl.impl.UploadQueryDaoImpl;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.dto.edml.DownloadExtTableRecord;
 import ru.ibs.dtm.query.execution.core.dto.edml.DownloadExternalTableAttribute;
@@ -47,6 +42,11 @@ import ru.ibs.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService
 import ru.ibs.dtm.query.execution.core.transformer.DownloadExtTableAttributeTransformer;
 import ru.ibs.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -69,6 +69,7 @@ class DownloadExternalTableExecutorTest {
             new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
     private QueryRequest queryRequest;
     private DownloadExtTableRecord downRecord;
+    private Entity entity;
 
     @BeforeEach
     void setUp() {
@@ -78,6 +79,17 @@ class DownloadExternalTableExecutorTest {
         queryRequest.setDatamartMnemonic("test");
         queryRequest.setRequestId(UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"));
         queryRequest.setSubRequestId("6efad624-b9da-4ba1-9fed-f2da478b08e8");
+
+        entity = Entity.builder()
+                .entityType(EntityType.DOWNLOAD_EXTERNAL_TABLE)
+                .externalTableFormat("avro")
+                .externalTableLocationPath("kafka://kafka-1.dtm.local:9092/topic")
+                .externalTableLocationType(ExternalTableLocationType.KAFKA)
+                .externalTableUploadMessageLimit(1000)
+                .name("download_table")
+                .schema("test")
+                .externalTableSchema("")
+                .build();
 
         downRecord = new DownloadExtTableRecord();
         downRecord.setId(1L);
@@ -105,7 +117,7 @@ class DownloadExternalTableExecutorTest {
         context.setTargetTable(new TableInfo("test", "download_table"));
         context.setSourceTable(new TableInfo("test", "pso"));
 
-        EdmlQuery edmlQuery = new EdmlQuery(EdmlAction.DOWNLOAD, downRecord);
+        EdmlQuery edmlQuery = new EdmlQuery(EdmlAction.DOWNLOAD, entity, downRecord);
         List<DownloadExternalTableAttribute> attrs = new ArrayList<>();
         attrs.add(new DownloadExternalTableAttribute("id", "integer", 0, downRecord.getId()));
         attrs.add(new DownloadExternalTableAttribute("lst_name", "varchar(100)", 1, downRecord.getId()));
@@ -155,7 +167,7 @@ class DownloadExternalTableExecutorTest {
         context.setTargetTable(new TableInfo("test", "download_table"));
         context.setSourceTable(new TableInfo("test", "pso"));
 
-        EdmlQuery edmlQuery = new EdmlQuery(EdmlAction.DOWNLOAD, downRecord);
+        EdmlQuery edmlQuery = new EdmlQuery(EdmlAction.DOWNLOAD, entity, downRecord);
         List<DownloadExternalTableAttribute> attrs = new ArrayList<>();
         attrs.add(new DownloadExternalTableAttribute("id", "integer", 0, downRecord.getId()));
         attrs.add(new DownloadExternalTableAttribute("lst_name", "varchar(100)", 1, downRecord.getId()));

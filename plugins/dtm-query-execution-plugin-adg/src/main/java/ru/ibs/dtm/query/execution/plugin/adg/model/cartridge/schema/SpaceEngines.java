@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * Движки пространства
  */
 public enum SpaceEngines {
-  MEMTX("memtx");
+  MEMTX("memtx"), VINYL("vinyl");
 
   private String name;
 

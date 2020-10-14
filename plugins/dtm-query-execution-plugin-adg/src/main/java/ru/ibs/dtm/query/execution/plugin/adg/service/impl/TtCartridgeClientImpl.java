@@ -1,6 +1,5 @@
 package ru.ibs.dtm.query.execution.plugin.adg.service.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.vertx.circuitbreaker.CircuitBreaker;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -9,8 +8,6 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
-import java.util.HashMap;
-import java.util.List;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -23,6 +20,8 @@ import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.OperationFile;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.*;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response.*;
 import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeClient;
+
+import java.util.List;
 
 @Slf4j
 @Service

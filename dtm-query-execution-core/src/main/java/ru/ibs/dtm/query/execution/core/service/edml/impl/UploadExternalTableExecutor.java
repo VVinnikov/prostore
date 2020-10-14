@@ -5,28 +5,23 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.calcite.sql.SqlDialect;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import ru.ibs.dtm.common.delta.DeltaLoadStatus;
-import ru.ibs.dtm.common.plugin.exload.QueryLoadParam;
-import ru.ibs.dtm.common.plugin.exload.Type;
+import ru.ibs.dtm.common.model.ddl.Entity;
+import ru.ibs.dtm.common.model.ddl.ExternalTableLocationType;
 import ru.ibs.dtm.common.reader.QueryResult;
-import ru.ibs.dtm.query.execution.core.configuration.properties.EdmlProperties;
-import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
-import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
+import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
+import ru.ibs.dtm.query.execution.core.dto.delta.DeltaWriteOpRequest;
 import ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction;
 import ru.ibs.dtm.query.execution.core.dto.edml.EdmlQuery;
-import ru.ibs.dtm.query.execution.core.dto.edml.UploadExtTableRecord;
-import ru.ibs.dtm.query.execution.core.dto.edml.UploadQueryRecord;
 import ru.ibs.dtm.query.execution.core.service.edml.EdmlExecutor;
 import ru.ibs.dtm.query.execution.core.service.edml.EdmlUploadExecutor;
 import ru.ibs.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction.UPLOAD;
@@ -36,97 +31,119 @@ import static ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction.UPLOAD;
 public class UploadExternalTableExecutor implements EdmlExecutor {
 
     private static final SqlDialect SQL_DIALECT = new SqlDialect(SqlDialect.EMPTY_CONTEXT);
-    private final ServiceDbFacade serviceDbFacade;
-    private final EdmlProperties edmlProperties;
-    private final Map<Type, EdmlUploadExecutor> executors;
+    private final DeltaServiceDao deltaServiceDao;
+    private final Map<ExternalTableLocationType, EdmlUploadExecutor> executors;
 
     @Autowired
-    public UploadExternalTableExecutor(ServiceDbFacade serviceDbFacade, EdmlProperties edmlProperties, List<EdmlUploadExecutor> uploadExecutors) {
-        this.serviceDbFacade = serviceDbFacade;
-        this.edmlProperties = edmlProperties;
+    public UploadExternalTableExecutor(DeltaServiceDao deltaServiceDao,
+                                       List<EdmlUploadExecutor> uploadExecutors) {
+        this.deltaServiceDao = deltaServiceDao;
         this.executors = uploadExecutors.stream()
                 .collect(Collectors.toMap(EdmlUploadExecutor::getUploadType, it -> it));
     }
 
     @Override
-    public void execute(EdmlRequestContext context, EdmlQuery edmlQuery, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-        getDeltaHotInProcess(context)
-                .compose(deltaRecord -> insertUploadQuery(context, edmlQuery, deltaRecord))
-                .compose(uploadRecord -> executeUpload(context, edmlQuery, asyncResultHandler))
-                .setHandler(asyncResultHandler);
-    }
-
-    private Future<DeltaRecord> getDeltaHotInProcess(EdmlRequestContext context) {
-        return Future.future((Promise<DeltaRecord> promise) ->
-                serviceDbFacade.getDeltaServiceDao().getDeltaHotByDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic(), ar -> {
+    public void execute(EdmlRequestContext context, @Deprecated EdmlQuery edmlQuery, Handler<AsyncResult<QueryResult>> resultHandler) {
+        writeNewOperation(context, context.getEntity())
+                .compose(sysCn -> executeAndWriteOp(context))
+                .compose(queryResult -> writeOpSuccess(context.getSourceTable().getSchemaName(), context.getSysCn(), queryResult))
+                .onComplete(ar -> {
                     if (ar.succeeded()) {
-                        DeltaRecord deltaRecord = ar.result();
-                        if (deltaRecord == null || deltaRecord.getStatus() != DeltaLoadStatus.IN_PROCESS) {
-                            promise.fail(new RuntimeException("No open delta found!"));
-                        }
-                        log.debug("Last open delta found {}", deltaRecord);
-                        promise.complete(deltaRecord);
+                        resultHandler.handle(Future.succeededFuture(ar.result()));
                     } else {
-                        promise.fail(ar.cause());
+                        resultHandler.handle(Future.failedFuture(ar.cause()));
                     }
-                }));
+                });
     }
 
-    private Future<UploadQueryRecord> insertUploadQuery(EdmlRequestContext context, EdmlQuery edmlQuery, DeltaRecord deltaRecord) {
-        return Future.future((Promise<UploadQueryRecord> promise) -> {
-            UploadQueryRecord uploadQueryRecord = createUploadQueryRecord(context, edmlQuery);
-            QueryLoadParam queryLoadParam = createQueryLoadParam(context, (UploadExtTableRecord) edmlQuery.getRecord(), deltaRecord);
-            context.setLoadParam(queryLoadParam);
-            context.setAvroSchema(((UploadExtTableRecord) edmlQuery.getRecord()).getTableSchema());
-            serviceDbFacade.getEddlServiceDao().getUploadQueryDao().inserUploadQuery(uploadQueryRecord, ar -> {
-                if (ar.succeeded()) {
-                    log.debug("Added uploadQuery {}", uploadQueryRecord);
-                    promise.complete(uploadQueryRecord);
-                } else {
-                    promise.fail(ar.cause());
-                }
-            });
+    private Future<Long> writeNewOperation(EdmlRequestContext context, Entity entity) {
+        return Future.future(writePromise -> {
+            deltaServiceDao.writeNewOperation(createDeltaOp(context, entity))
+                    .onComplete(ar -> {
+                        if (ar.succeeded()) {
+                            long sysCn = ar.result();
+                            context.setSysCn(sysCn);
+                            writePromise.complete(sysCn);
+                        } else {
+                            writePromise.fail(ar.cause());
+                        }
+                    });
         });
     }
 
-    private Future<QueryResult> executeUpload(EdmlRequestContext context, EdmlQuery edmlQuery,
-                                              Handler<AsyncResult<QueryResult>> resultHandler) {
+    private DeltaWriteOpRequest createDeltaOp(EdmlRequestContext context, Entity entity) {
+        return DeltaWriteOpRequest.builder()
+                .datamart(entity.getSchema())
+                .tableName(context.getTargetTable().getTableName())
+                .tableNameExt(entity.getName())
+                .query(context.getSqlNode().toSqlString(SQL_DIALECT).toString())
+                .build();
+    }
+
+    private Future<QueryResult> executeAndWriteOp(EdmlRequestContext context) {
+        return Future.future(promise ->
+                execute(context)
+                        .onComplete(ar -> {
+                            if (ar.succeeded()) {
+                                promise.complete(ar.result());
+                            } else {
+                                writeErrorOp(context, ar.cause())
+                                        .onFailure(promise::fail);
+                            }
+                        }));
+    }
+
+    private Future<QueryResult> execute(EdmlRequestContext context) {
         return Future.future((Promise<QueryResult> promise) -> {
-            if (Type.KAFKA_TOPIC.equals(edmlQuery.getRecord().getLocationType())) {
-                executors.get(edmlQuery.getRecord().getLocationType()).execute(context, resultHandler);
+            if (ExternalTableLocationType.KAFKA == context.getEntity().getExternalTableLocationType()) {
+                executors.get(context.getEntity().getExternalTableLocationType()).execute(context, ar -> {
+                    if (ar.succeeded()) {
+                        promise.complete(ar.result());
+                    } else {
+                        promise.fail(ar.cause());
+                    }
+                });
             } else {
-                log.error("Loading type {} not implemented", context.getExloadParam().getLocationType());
+                log.error("Loading type {} not implemented", context.getEntity().getExternalTableLocationType());
                 promise.fail(new RuntimeException("Other download types are not yet implemented!"));
             }
         });
     }
 
-    @NotNull
-    private UploadQueryRecord createUploadQueryRecord(EdmlRequestContext context, EdmlQuery edmlQuery) {
-        return new UploadQueryRecord(
-                UUID.randomUUID().toString(),
-                edmlQuery.getRecord().getDatamartId(),
-                edmlQuery.getRecord().getTableName(),
-                context.getTargetTable().getTableName(),
-                context.getSqlNode().toSqlString(SQL_DIALECT).toString(),
-                0
-        );
+    private Future<Void> writeErrorOp(EdmlRequestContext context, Throwable error) {
+        return Future.future(promise -> {
+            val datamartName = context.getSourceTable().getSchemaName();
+            deltaServiceDao.writeOperationError(datamartName, context.getSysCn())
+                    .compose(v -> eraseWriteOp())
+                    .compose(v -> deltaServiceDao.deleteWriteOperation(datamartName, context.getSysCn()))
+                    .onComplete(ar -> {
+                        if (ar.succeeded()) {
+                            log.error("Edml write operation error!", error);
+                            promise.fail(error);
+                        } else {
+                            log.error("Can't write operation error!", ar.cause());
+                            promise.fail(ar.cause());
+                        }
+                    });
+        });
     }
 
-    @NotNull
-    private QueryLoadParam createQueryLoadParam(EdmlRequestContext context, UploadExtTableRecord uplRecord, DeltaRecord deltaRecord) {
-        final QueryLoadParam loadParam = new QueryLoadParam();
-        loadParam.setId(UUID.randomUUID());
-        loadParam.setDatamart(context.getSourceTable().getSchemaName());
-        loadParam.setTableName(context.getTargetTable().getTableName());
-        loadParam.setSqlQuery(context.getSqlNode().toSqlString(SQL_DIALECT).toString());
-        loadParam.setLocationType(uplRecord.getLocationType());
-        loadParam.setLocationPath(uplRecord.getLocationPath());
-        loadParam.setFormat(uplRecord.getFormat());
-        loadParam.setDeltaHot(deltaRecord.getSinId());
-        loadParam.setMessageLimit(uplRecord.getMessageLimit() != null ?
-                uplRecord.getMessageLimit() : edmlProperties.getDefaultMessageLimit());
-        return loadParam;
+    private Future<Void> eraseWriteOp() {
+        //FIXME will be implemented after writing description in confluence
+        return Future.succeededFuture();
+    }
+
+    private Future<QueryResult> writeOpSuccess(String datamartName, Long sysCn, QueryResult result) {
+        return Future.future(promise -> {
+            deltaServiceDao.writeOperationSuccess(datamartName, sysCn)
+                    .onComplete(ar -> {
+                        if (ar.succeeded()) {
+                            promise.complete(result);
+                        } else {
+                            promise.fail(ar.cause());
+                        }
+                    });
+        });
     }
 
     @Override

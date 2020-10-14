@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import ru.ibs.dtm.common.plugin.exload.Type;
+import ru.ibs.dtm.common.model.ddl.ExternalTableLocationType;
 import ru.ibs.dtm.common.plugin.status.StatusQueryResult;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.reader.SourceType;
@@ -155,6 +155,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
 
     private boolean isMppwLoadedSuccess(StatusQueryResult queryResult) {
         return queryResult.getPartitionInfo().getEnd().equals(queryResult.getPartitionInfo().getOffset())
+                && queryResult.getPartitionInfo().getEnd() != 0
                 && checkLastMessageTime(queryResult.getPartitionInfo().getLastMessageTime());
     }
 
@@ -173,7 +174,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
     @NotNull
     private StatusRequestContext createStatusRequestContext(MppwRequestContext mppwRequestContext, EdmlRequestContext context) {
         val statusRequestContext = new StatusRequestContext(new StatusRequest(context.getRequest().getQueryRequest()));
-        statusRequestContext.getRequest().setTopic(mppwRequestContext.getRequest().getTopic());
+        statusRequestContext.getRequest().setTopic(mppwRequestContext.getRequest().getKafkaParameter().getUploadMetadata().getTopic());
         return statusRequestContext;
     }
 
@@ -211,7 +212,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
 
     private Future<QueryResult> stopMppw(SourceType ds, MppwRequestContext mppwRequestContext) {
         return Future.future((Promise<QueryResult> promise) -> {
-            mppwRequestContext.getRequest().setLoadStart(false);
+            mppwRequestContext.getRequest().setIsLoadStart(false);
             log.debug("A request has been sent for the plugin: {} to stop loading mppw: {}", ds, mppwRequestContext.getRequest());
             pluginService.mppwKafka(ds, mppwRequestContext, ar -> {
                 if (ar.succeeded()) {
@@ -266,8 +267,8 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
     }
 
     @Override
-    public Type getUploadType() {
-        return Type.KAFKA_TOPIC;
+    public ExternalTableLocationType getUploadType() {
+        return ExternalTableLocationType.KAFKA;
     }
 
     @Data

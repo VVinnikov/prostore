@@ -11,6 +11,7 @@ import lombok.val;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
+import ru.ibs.dtm.common.dto.QueryParserRequest;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QuerySourceRequest;
@@ -57,7 +58,7 @@ class ColumnMetadataServiceImplTest {
         List<ColumnMetadata> expectedColumns = Arrays.asList(
                 new ColumnMetadata("account_type", ColumnType.VARCHAR),
                 new ColumnMetadata("account_id", ColumnType.BIGINT));
-        service.getColumnMetadata(sourceRequest, ar -> {
+        service.getColumnMetadata(new QueryParserRequest(sourceRequest.getQueryRequest(), sourceRequest.getLogicalSchema()), ar -> {
             if (ar.succeeded()) {
                 log.info("Result columns: {}", ar.result());
                 assertEquals(expectedColumns, ar.result());

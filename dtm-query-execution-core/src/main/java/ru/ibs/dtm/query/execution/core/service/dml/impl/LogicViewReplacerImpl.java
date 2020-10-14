@@ -3,10 +3,6 @@ package ru.ibs.dtm.query.execution.core.service.dml.impl;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -23,6 +19,11 @@ import ru.ibs.dtm.query.execution.core.dto.dml.ViewReplaceAction;
 import ru.ibs.dtm.query.execution.core.service.dml.DatamartViewWrapLoader;
 import ru.ibs.dtm.query.execution.core.service.dml.LogicViewReplacer;
 import ru.ibs.dtm.query.execution.core.service.dml.SqlSnapshotReplacer;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 

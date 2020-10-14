@@ -1,27 +1,11 @@
 package ru.ibs.dtm.query.execution.plugin.api.request;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import ru.ibs.dtm.common.reader.QueryRequest;
 
+@Data
+@AllArgsConstructor
 public class DatamartRequest {
-
-	private QueryRequest queryRequest;
-
-	public DatamartRequest(QueryRequest queryRequest) {
-		this.queryRequest = queryRequest;
-	}
-
-	public QueryRequest getQueryRequest() {
-		return queryRequest;
-	}
-
-	public void setQueryRequest(QueryRequest queryRequest) {
-		this.queryRequest = queryRequest;
-	}
-
-	@Override
-	public String toString() {
-		return "DatamartRequest{" +
-				"queryRequest=" + getQueryRequest() +
-				'}';
-	}
+    private QueryRequest queryRequest;
 }

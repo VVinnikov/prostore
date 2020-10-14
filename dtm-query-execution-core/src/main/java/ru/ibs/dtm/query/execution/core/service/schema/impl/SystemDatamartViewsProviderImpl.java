@@ -12,7 +12,6 @@ import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -62,10 +61,9 @@ public class SystemDatamartViewsProviderImpl implements SystemDatamartViewsProvi
     @NotNull
     private List<Datamart> getDatamartList(List<SystemDatamartView> systemViews) {
         val systemDatamart = new Datamart();
-        systemDatamart.setDatamartTables(systemViews.stream()
-            .map(SystemDatamartView::getDatamartTable)
+        systemDatamart.setEntities(systemViews.stream()
+            .map(SystemDatamartView::getEntity)
             .collect(Collectors.toList()));
-        systemDatamart.setId(UUID.randomUUID());
         systemDatamart.setMnemonic(MNEMONIC);
         return Collections.singletonList(systemDatamart);
     }

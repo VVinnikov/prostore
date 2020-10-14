@@ -9,8 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
+import ru.ibs.dtm.common.model.ddl.Entity;
 import ru.ibs.dtm.common.converter.SqlTypeConverter;
-import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.query.execution.core.dao.ddl.DdlServiceDao;
 import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
@@ -89,13 +89,13 @@ public class DdlServiceDaoImpl implements DdlServiceDao {
     }
 
     @Override
-    public void dropTable(ClassTable classTable, Handler<AsyncResult<ClassTable>> resultHandler) {
-        executor.execute(dsl -> dsl.dropTableIfExists(classTable.getName())).setHandler(ar -> {
+    public void dropTable(Entity entity, Handler<AsyncResult<Entity>> resultHandler) {
+        executor.execute(dsl -> dsl.dropTableIfExists(entity.getName())).setHandler(ar -> {
             if (ar.succeeded()) {
-                log.debug("Deleting table [{}] completed successfully", classTable.getNameWithSchema());
-                resultHandler.handle(Future.succeededFuture(classTable));
+                log.debug("Deleting table [{}] completed successfully", entity.getNameWithSchema());
+                resultHandler.handle(Future.succeededFuture(entity));
             } else {
-                log.error("Error deleting table [{}]!", classTable.getNameWithSchema(), ar.cause());
+                log.error("Error deleting table [{}]!", entity.getNameWithSchema(), ar.cause());
                 resultHandler.handle(Future.failedFuture(ar.cause()));
             }
         });

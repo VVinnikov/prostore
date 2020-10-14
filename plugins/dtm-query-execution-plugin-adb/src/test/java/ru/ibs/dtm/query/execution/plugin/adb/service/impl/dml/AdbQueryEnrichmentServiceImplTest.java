@@ -13,12 +13,11 @@ import ru.ibs.dtm.common.delta.DeltaInformation;
 import ru.ibs.dtm.common.delta.DeltaInterval;
 import ru.ibs.dtm.common.delta.DeltaType;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
+import ru.ibs.dtm.common.model.ddl.Entity;
+import ru.ibs.dtm.common.model.ddl.EntityField;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.calcite.core.service.QueryParserService;
-import ru.ibs.dtm.query.execution.model.metadata.AttributeType;
 import ru.ibs.dtm.query.execution.model.metadata.Datamart;
-import ru.ibs.dtm.query.execution.model.metadata.DatamartTable;
-import ru.ibs.dtm.query.execution.model.metadata.TableAttribute;
 import ru.ibs.dtm.query.execution.plugin.adb.calcite.AdbCalciteContextProvider;
 import ru.ibs.dtm.query.execution.plugin.adb.calcite.AdbCalciteSchemaFactory;
 import ru.ibs.dtm.query.execution.plugin.adb.configuration.CalciteConfiguration;
@@ -46,28 +45,34 @@ public class AdbQueryEnrichmentServiceImplTest {
         CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
         calciteConfiguration.init();
         SqlParser.Config parserConfig = calciteConfiguration.configDdlParser(
-                calciteConfiguration.ddlParserImplFactory()
+            calciteConfiguration.ddlParserImplFactory()
         );
 
         AdbCalciteContextProvider contextProvider = new AdbCalciteContextProvider(
-                parserConfig,
-                new AdbCalciteSchemaFactory(new AdbSchemaFactory()));
+            parserConfig,
+            new AdbCalciteSchemaFactory(new AdbSchemaFactory()));
 
         AdbQueryGeneratorImpl adbQueryGeneratorimpl = new AdbQueryGeneratorImpl(queryExtender, calciteConfiguration.adbSqlDialect());
         QueryParserService queryParserService = new AdbCalciteDMLQueryParserService(contextProvider, Vertx.vertx());
         adbQueryEnrichmentService = new AdbQueryEnrichmentServiceImpl(
-                queryParserService,
-                adbQueryGeneratorimpl,
-                contextProvider,
-                new AdbSchemaExtenderImpl());
+            queryParserService,
+            adbQueryGeneratorimpl,
+            contextProvider,
+            new AdbSchemaExtenderImpl());
 
+    }
+
+    private static void assertGrep(String data, String regexp) {
+        Pattern pattern = Pattern.compile(regexp, Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(data);
+        assertTrue(matcher.find(), String.format("Expected: %s, Received: %s", regexp, data));
     }
 
     @Test
     void enrich() {
         List<String> result = new ArrayList<>();
         EnrichQueryRequest enrichQueryRequest =
-                prepareRequestDeltaNum("select * from test_datamart.pso FOR SYSTEM_TIME AS OF TIMESTAMP '1999-01-08 04:05:06'");
+            prepareRequestDeltaNum("select * from test_datamart.pso FOR SYSTEM_TIME AS OF TIMESTAMP '1999-01-08 04:05:06'");
         TestSuite suite = TestSuite.create("the_test_suite");
         suite.test("executeQuery", context -> {
             Async async = context.async();
@@ -86,14 +91,14 @@ public class AdbQueryEnrichmentServiceImplTest {
     @Test
     void enrichWithDeltaNum() {
         EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaNum(
-                "select *, (CASE WHEN (account_type = 'D' AND  amount >= 0) " +
-                        "OR (account_type = 'C' AND  amount <= 0) THEN 'OK' ELSE 'NOT OK' END) as c\n" +
-                        "  from (\n" +
-                        "    select a.account_id, coalesce(sum(amount),0) amount, account_type\n" +
-                        "    from shares.accounts a\n" +
-                        "    left join shares.transactions t using(account_id)\n" +
-                        "   group by a.account_id, account_type\n" +
-                        ")x");
+            "select *, (CASE WHEN (account_type = 'D' AND  amount >= 0) " +
+                "OR (account_type = 'C' AND  amount <= 0) THEN 'OK' ELSE 'NOT OK' END) as c\n" +
+                "  from (\n" +
+                "    select a.account_id, coalesce(sum(amount),0) amount, account_type\n" +
+                "    from shares.accounts a\n" +
+                "    left join shares.transactions t using(account_id)\n" +
+                "   group by a.account_id, account_type\n" +
+                ")x");
         String[] result = {""};
 
         TestSuite suite = TestSuite.create("the_test_suite");
@@ -114,8 +119,8 @@ public class AdbQueryEnrichmentServiceImplTest {
     @Test
     void enrichWithStaticCaseExpressions() {
         EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaNum(
-                "select a.account_id, (case when a.account_type = 'D' then 'ok' else 'not ok' end) as ss " +
-                        "from shares.accounts a ");
+            "select a.account_id, (case when a.account_type = 'D' then 'ok' else 'not ok' end) as ss " +
+                "from shares.accounts a ");
         String[] result = {""};
 
         TestSuite suite = TestSuite.create("the_test_suite");
@@ -134,18 +139,17 @@ public class AdbQueryEnrichmentServiceImplTest {
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
     }
 
-
     @Test
     void enrichWithDeltaInterval() {
         EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaInterval(
-                "select *, CASE WHEN (account_type = 'D' AND  amount >= 0) " +
-                        "OR (account_type = 'C' AND  amount <= 0) THEN 'OK' ELSE 'NOT OK' END\n" +
-                        "  from (\n" +
-                        "    select a.account_id, coalesce(sum(amount),0) amount, account_type\n" +
-                        "    from shares.accounts a\n" +
-                        "    left join shares.transactions t using(account_id)\n" +
-                        "   group by a.account_id, account_type\n" +
-                        ")x");
+            "select *, CASE WHEN (account_type = 'D' AND  amount >= 0) " +
+                "OR (account_type = 'C' AND  amount <= 0) THEN 'OK' ELSE 'NOT OK' END\n" +
+                "  from (\n" +
+                "    select a.account_id, coalesce(sum(amount),0) amount, account_type\n" +
+                "    from shares.accounts a\n" +
+                "    left join shares.transactions t using(account_id)\n" +
+                "   group by a.account_id, account_type\n" +
+                ")x");
         String[] result = {""};
 
         TestSuite suite = TestSuite.create("the_test_suite");
@@ -168,7 +172,7 @@ public class AdbQueryEnrichmentServiceImplTest {
     @Test
     void enrichWithNull() {
         EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaInterval(
-                "select account_id, null, null from shares.accounts");
+            "select account_id, null, null from shares.accounts");
         String[] result = {""};
 
         TestSuite suite = TestSuite.create("the_test_suite");
@@ -238,9 +242,9 @@ public class AdbQueryEnrichmentServiceImplTest {
     @Test
     void enfichWithMultipleLogicalSchema() {
         EnrichQueryRequest enrichQueryRequest = prepareRequestMultipleSchemas(
-                "select * from accounts a " +
-                        "JOIN shares_2.accounts aa ON aa.account_id = a.account_id " +
-                        "JOIN test_datamart.transactions t ON t.account_id = a.account_id");
+            "select * from accounts a " +
+                "JOIN shares_2.accounts aa ON aa.account_id = a.account_id " +
+                "JOIN test_datamart.transactions t ON t.account_id = a.account_id");
         String[] result = {""};
 
         TestSuite suite = TestSuite.create("the_test_suite");
@@ -263,11 +267,11 @@ public class AdbQueryEnrichmentServiceImplTest {
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
     }
 
-    private EnrichQueryRequest prepareRequestMultipleSchemas(String sql){
+    private EnrichQueryRequest prepareRequestMultipleSchemas(String sql) {
         List<Datamart> schemas = Arrays.asList(
-                getSchema("shares", true),
-                getSchema("shares_2", false),
-                getSchema("test_datamart", false));
+            getSchema("shares", true),
+            getSchema("shares_2", false),
+            getSchema("test_datamart", false));
         String requestSchema = schemas.get(0).getMnemonic();
         QueryRequest queryRequest = new QueryRequest();
         queryRequest.setSql(sql);
@@ -275,12 +279,12 @@ public class AdbQueryEnrichmentServiceImplTest {
         queryRequest.setDatamartMnemonic(requestSchema);
         SqlParserPos pos = new SqlParserPos(0, 0);
         queryRequest.setDeltaInformations(Arrays.asList(
-                new DeltaInformation("a", "2019-12-23 15:15:14", false,
-                        1L, null, DeltaType.NUM, schemas.get(0).getMnemonic(), schemas.get(0).getDatamartTables().get(0).getLabel(), pos),
-                new DeltaInformation("aa", "2019-12-23 15:15:14", false,
-                        1L, null, DeltaType.NUM, schemas.get(1).getMnemonic(), schemas.get(1).getDatamartTables().get(1).getLabel(), pos),
-                new DeltaInformation("t", "2019-12-23 15:15:14", false,
-                        1L, null, DeltaType.NUM, schemas.get(2).getMnemonic(), schemas.get(2).getDatamartTables().get(1).getLabel(), pos)
+            new DeltaInformation("a", "2019-12-23 15:15:14", false,
+                1L, null, DeltaType.NUM, schemas.get(0).getMnemonic(), schemas.get(0).getEntities().get(0).getName(), pos),
+            new DeltaInformation("aa", "2019-12-23 15:15:14", false,
+                1L, null, DeltaType.NUM, schemas.get(1).getMnemonic(), schemas.get(1).getEntities().get(1).getName(), pos),
+            new DeltaInformation("t", "2019-12-23 15:15:14", false,
+                1L, null, DeltaType.NUM, schemas.get(2).getMnemonic(), schemas.get(2).getEntities().get(1).getName(), pos)
         ));
         LlrRequest llrRequest = new LlrRequest(queryRequest, schemas, Collections.emptyList());
         return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
@@ -295,10 +299,10 @@ public class AdbQueryEnrichmentServiceImplTest {
         queryRequest.setDatamartMnemonic(schemaName);
         SqlParserPos pos = new SqlParserPos(0, 0);
         queryRequest.setDeltaInformations(Arrays.asList(
-                new DeltaInformation("a", "2019-12-23 15:15:14", false,
-                        1L, null, DeltaType.NUM, schemaName, datamarts.get(0).getDatamartTables().get(0).getLabel(), pos),
-                new DeltaInformation("t", "2019-12-23 15:15:14", false,
-                        1L, null, DeltaType.NUM, schemaName, datamarts.get(0).getDatamartTables().get(1).getLabel(), pos)
+            new DeltaInformation("a", "2019-12-23 15:15:14", false,
+                1L, null, DeltaType.NUM, schemaName, datamarts.get(0).getEntities().get(0).getName(), pos),
+            new DeltaInformation("t", "2019-12-23 15:15:14", false,
+                1L, null, DeltaType.NUM, schemaName, datamarts.get(0).getEntities().get(1).getName(), pos)
         ));
         LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts, Collections.emptyList());
         return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
@@ -313,49 +317,96 @@ public class AdbQueryEnrichmentServiceImplTest {
         queryRequest.setDatamartMnemonic(schemaName);
         SqlParserPos pos = new SqlParserPos(0, 0);
         queryRequest.setDeltaInformations(Arrays.asList(
-                new DeltaInformation("a", null, false,
-                        1L, new DeltaInterval(1L, 5L), DeltaType.STARTED_IN,
-                        schemaName, datamarts.get(0).getDatamartTables().get(0).getLabel(), pos),
-                new DeltaInformation("t", null, false,
-                        1L, new DeltaInterval(3L, 4L), DeltaType.FINISHED_IN,
-                        schemaName, datamarts.get(0).getDatamartTables().get(1).getLabel(), pos)
+            new DeltaInformation("a", null, false,
+                1L, new DeltaInterval(1L, 5L), DeltaType.STARTED_IN,
+                schemaName, datamarts.get(0).getEntities().get(0).getName(), pos),
+            new DeltaInformation("t", null, false,
+                1L, new DeltaInterval(3L, 4L), DeltaType.FINISHED_IN,
+                schemaName, datamarts.get(0).getEntities().get(1).getName(), pos)
         ));
         LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts, Collections.emptyList());
         return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
     }
 
     private Datamart getSchema(String schemaName, boolean isDefault) {
-        DatamartTable accounts = new DatamartTable();
-        accounts.setLabel("accounts");
-        accounts.setMnemonic("accounts");
-        accounts.setDatamartMnemonic(schemaName);
-        List<TableAttribute> accAttrs = new ArrayList<>();
-        accAttrs.add(new TableAttribute(UUID.randomUUID(), "account_id", new AttributeType(UUID.randomUUID(),
-                ColumnType.BIGINT), 0, 0, 1, 1, 1, false));
-        accAttrs.add(new TableAttribute(UUID.randomUUID(), "account_type", new AttributeType(UUID.randomUUID(),
-                ColumnType.VARCHAR), 1, 0, null, null, 2, false));
-        accounts.setTableAttributes(accAttrs);
-        DatamartTable transactions = new DatamartTable();
-        transactions.setLabel("transactions");
-        transactions.setMnemonic("transactions");
-        transactions.setDatamartMnemonic(schemaName);
-        List<TableAttribute> trAttr = new ArrayList<>();
-        trAttr.add(new TableAttribute(UUID.randomUUID(), "transaction_id", new AttributeType(UUID.randomUUID(),
-                ColumnType.BIGINT), 0, 0, 1, 1, 1, false));
-        trAttr.add(new TableAttribute(UUID.randomUUID(), "transaction_date", new AttributeType(UUID.randomUUID(),
-                ColumnType.DATE), 0, 0, null, null, 2, true));
-        trAttr.add(new TableAttribute(UUID.randomUUID(), "account_id", new AttributeType(UUID.randomUUID(),
-                ColumnType.BIGINT), 0, 0, 2, 1, 3, false));
-        trAttr.add(new TableAttribute(UUID.randomUUID(), "amount", new AttributeType(UUID.randomUUID(),
-                ColumnType.BIGINT), 0, 0, null, null, 4, false));
-        transactions.setTableAttributes(trAttr);
+        Entity accounts = Entity.builder()
+            .schema(schemaName)
+            .name("accounts")
+            .build();
+        List<EntityField> accAttrs = Arrays.asList(
+            EntityField.builder()
+                .type(ColumnType.BIGINT)
+                .name("account_id")
+                .ordinalPosition(1)
+                .shardingOrder(1)
+                .primaryOrder(1)
+                .nullable(false)
+                .accuracy(null)
+                .size(null)
+                .build(),
+            EntityField.builder()
+                .type(ColumnType.VARCHAR)
+                .name("account_type")
+                .ordinalPosition(2)
+                .shardingOrder(null)
+                .primaryOrder(null)
+                .nullable(false)
+                .accuracy(null)
+                .size(1)
+                .build()
+        );
+        accounts.setFields(accAttrs);
 
-        return new Datamart(UUID.randomUUID(), schemaName, isDefault, Arrays.asList(transactions, accounts));
-    }
+        Entity transactions = Entity.builder()
+            .schema(schemaName)
+            .name("transactions")
+            .build();
 
-    private static void assertGrep(String data, String regexp) {
-        Pattern pattern = Pattern.compile(regexp, Pattern.CASE_INSENSITIVE);
-        Matcher matcher = pattern.matcher(data);
-        assertTrue(matcher.find(), String.format("Expected: %s, Received: %s", regexp, data));
+        List<EntityField> trAttr = Arrays.asList(
+            EntityField.builder()
+                .type(ColumnType.BIGINT)
+                .name("transaction_id")
+                .ordinalPosition(1)
+                .shardingOrder(1)
+                .primaryOrder(1)
+                .nullable(false)
+                .accuracy(null)
+                .size(null)
+                .build(),
+            EntityField.builder()
+                .type(ColumnType.DATE)
+                .name("transaction_date")
+                .ordinalPosition(2)
+                .shardingOrder(null)
+                .primaryOrder(null)
+                .nullable(true)
+                .accuracy(null)
+                .size(null)
+                .build(),
+            EntityField.builder()
+                .type(ColumnType.BIGINT)
+                .name("account_id")
+                .ordinalPosition(3)
+                .shardingOrder(1)
+                .primaryOrder(2)
+                .nullable(false)
+                .accuracy(null)
+                .size(null)
+                .build(),
+            EntityField.builder()
+                .type(ColumnType.BIGINT)
+                .name("amount")
+                .ordinalPosition(4)
+                .shardingOrder(null)
+                .primaryOrder(null)
+                .nullable(false)
+                .accuracy(null)
+                .size(null)
+                .build()
+        );
+
+        transactions.setFields(trAttr);
+
+        return new Datamart(schemaName, isDefault, Arrays.asList(transactions, accounts));
     }
 }

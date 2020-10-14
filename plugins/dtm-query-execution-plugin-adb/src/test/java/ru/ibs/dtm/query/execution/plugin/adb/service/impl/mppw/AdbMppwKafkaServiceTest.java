@@ -27,7 +27,7 @@ class AdbMppwKafkaServiceTest {
                 .datamart("test")
                 .tableName("tab_")
                 .format("avro")
-                .hotDelta(3L)
+                .sysCn(3L)
                 .kafkaTopic("test_topic")
                 .messageProcessingLimit(1000)
                 .zookeeperHost("zhost")

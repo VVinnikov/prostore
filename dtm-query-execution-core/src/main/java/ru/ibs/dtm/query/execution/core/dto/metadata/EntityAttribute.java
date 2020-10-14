@@ -3,10 +3,12 @@ package ru.ibs.dtm.query.execution.core.dto.metadata;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
 
 @Data
+@Builder
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class EntityAttribute {

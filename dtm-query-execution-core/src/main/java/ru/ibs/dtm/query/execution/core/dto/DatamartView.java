@@ -7,6 +7,5 @@ import lombok.Data;
 @AllArgsConstructor
 public class DatamartView {
     private String viewName;
-    private long datamartId;
     private String query;
 }

@@ -7,6 +7,7 @@ import lombok.SneakyThrows;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import ru.ibs.dtm.common.dto.QueryParserRequest;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.reader.QuerySourceRequest;
@@ -120,7 +121,8 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
 
     private Future<Void> initColumnMetaData(QuerySourceRequest request) {
         return Future.future(p -> {
-            columnMetadataService.getColumnMetadata(request, ar -> {
+            val parserRequest = new QueryParserRequest(request.getQueryRequest(), request.getLogicalSchema());
+            columnMetadataService.getColumnMetadata(parserRequest, ar -> {
                 if (ar.succeeded()) {
                     request.setMetadata(ar.result());
                     p.complete();

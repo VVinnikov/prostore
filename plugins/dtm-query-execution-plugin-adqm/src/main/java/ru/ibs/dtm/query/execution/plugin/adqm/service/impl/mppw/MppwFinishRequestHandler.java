@@ -68,7 +68,7 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
         }
 
         String fullName = DdlUtils.getQualifiedTableName(request, appConfiguration);
-        Long deltaHot = request.getQueryLoadParam().getDeltaHot();
+        long sysCn = request.getKafkaParameter().getSysCn();
 
         return sequenceAll(Arrays.asList(  // 1. drop shard tables
                 fullName + EXT_SHARD_POSTFIX,
@@ -78,17 +78,17 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
                 .compose(v -> sequenceAll(Arrays.asList( // 2. flush distributed tables
                         fullName + BUFFER_POSTFIX,
                         fullName + ACTUAL_POSTFIX), this::flushTable))
-                .compose(v -> closeActual(fullName, deltaHot))  // 3. insert refreshed records
+                .compose(v -> closeActual(fullName, sysCn))  // 3. insert refreshed records
                 .compose(v -> flushTable(fullName + ACTUAL_POSTFIX))  // 4. flush actual table
                 .compose(v -> sequenceAll(Arrays.asList(  // 5. drop buffer tables
                         fullName + BUFFER_POSTFIX,
                         fullName + BUFFER_SHARD_POSTFIX), this::dropTable))
                 .compose(v -> optimizeTable(fullName + ACTUAL_SHARD_POSTFIX))  // 6. merge shards
                 .compose(v -> {
-                    reportFinish(request.getTopic());
+                    reportFinish(request.getKafkaParameter().getUploadMetadata().getTopic());
                     return Future.succeededFuture(QueryResult.emptyResult());
                 }, f -> {
-                    reportError(request.getTopic());
+                    reportError(request.getKafkaParameter().getUploadMetadata().getTopic());
                     return Future.failedFuture(f.getCause());
                 });
     }

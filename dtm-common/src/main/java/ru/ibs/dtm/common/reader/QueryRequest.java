@@ -1,51 +1,64 @@
 package ru.ibs.dtm.common.reader;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import ru.ibs.dtm.common.delta.DeltaInformation;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
+
 /**
- * Запрос на извлечение данных
+ * Query request for receiving data
  */
 @Data
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 public class QueryRequest {
 
     /**
-     * UUID базового запроса, пришедшего в ПОДД
+     * Request uuid
      */
     private UUID requestId;
 
     /**
-     * UUID подзапроса, выделенного из базового, sql-выражение которого передается Витрине
+     * SubRequest uuid
      */
+    @Deprecated
     private String subRequestId;
 
     /**
-     * мнемоника Витрины, на которой необходимо выполнить запрос
+     * Datamart name
      */
     private String datamartMnemonic;
 
     /**
-     * SQL-запрос
+     * Sql query expression
      */
     private String sql;
 
-    private String systemName;
+    /**
+     * Name of environment
+     */
+    private String envName;
 
     /**
-     * Параметры(необязательно)
+     * Parameters (optional)
      */
     private List<String> parameters;
 
     /**
-     *  Delta Information
+     *  Delta Information list
      */
     private List<DeltaInformation> deltaInformations;
+
+    /**
+     * Data source type
+     */
     private SourceType sourceType;
 
     public QueryRequest(UUID requestId, String datamartMnemonic, String sql) {
@@ -66,7 +79,7 @@ public class QueryRequest {
         if (deltaInformations != null) {
             newQueryRequest.setDeltaInformations(new ArrayList<>(deltaInformations));
         }
-        newQueryRequest.setSystemName(systemName);
+        newQueryRequest.setEnvName(envName);
         newQueryRequest.setSourceType(sourceType);
         return newQueryRequest;
     }

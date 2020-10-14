@@ -95,7 +95,7 @@ class DeltaQueryPreprocessorImplTest {
         request.setDeltaInformations(deltaInfoList);
         request.setRequestId(UUID.randomUUID());
         request.setSubRequestId(UUID.randomUUID().toString());
-        request.setSystemName("local");
+        request.setEnvName("local");
         request.setSourceType(SourceType.ADB);
         request.setSql(sql);
         when(definitionService.processingQuery(any())).thenReturn(sqlNode);
@@ -148,7 +148,7 @@ class DeltaQueryPreprocessorImplTest {
         request.setDeltaInformations(deltaInfoList);
         request.setRequestId(UUID.randomUUID());
         request.setSubRequestId(UUID.randomUUID().toString());
-        request.setSystemName("local");
+        request.setEnvName("local");
         request.setSourceType(SourceType.ADB);
         request.setSql(sql);
         when(definitionService.processingQuery(any())).thenReturn(sqlNode);
@@ -212,7 +212,7 @@ class DeltaQueryPreprocessorImplTest {
         request.setDeltaInformations(deltaInfoList);
         request.setRequestId(UUID.randomUUID());
         request.setSubRequestId(UUID.randomUUID().toString());
-        request.setSystemName("local");
+        request.setEnvName("local");
         request.setSourceType(SourceType.ADB);
         request.setSql(sql);
         when(definitionService.processingQuery(any())).thenReturn(sqlNode);

@@ -11,8 +11,8 @@ import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
 import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 
 /**
- * DTO with modified sql query without hint
- */
+ * Modified ExecutionQueryRequest without hint
+ * */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

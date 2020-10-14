@@ -1,8 +1,7 @@
 package ru.ibs.dtm.query.execution.plugin.adb.factory;
 
-import ru.ibs.dtm.common.model.ddl.ClassTable;
+import ru.ibs.dtm.common.model.ddl.Entity;
 import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
-
 import java.util.List;
 
 /**
@@ -10,9 +9,9 @@ import java.util.List;
  */
 public interface MetadataSqlFactory {
 
-    String createDropTableScript(ClassTable classTable);
+    String createDropTableScript(Entity entity);
 
-    String createTableScripts(ClassTable classTable);
+    String createTableScripts(Entity entity);
 
     String createSchemaSqlQuery(String schemaName);
 

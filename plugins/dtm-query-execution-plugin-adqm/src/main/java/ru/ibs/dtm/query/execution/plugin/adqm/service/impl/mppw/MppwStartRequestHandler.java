@@ -78,7 +78,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         }
 
         String fullName = DdlUtils.getQualifiedTableName(request, appConfiguration);
-        reportStart(request.getTopic(), fullName);
+        reportStart(request.getKafkaParameter().getUploadMetadata().getTopic(), fullName);
         // 1. Determine table engine (_actual_shard)
         final String engineFullColumn = "engine_full";
         Future<String> engineFull = getTableSetting(fullName + ACTUAL_POSTFIX, engineFullColumn, createVarcharColumnMetadata(engineFullColumn));
@@ -89,13 +89,13 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         // 3. Create _ext_shard based on schema from request
         final Schema schema;
         try {
-            schema = new Schema.Parser().parse(request.getSchema().encode());
+            schema = new Schema.Parser().parse(request.getKafkaParameter().getUploadMetadata().getExternalTableSchema());
         } catch (Exception e) {
             return Future.failedFuture(e);
         }
 
         Future<Void> extTableF = sortingKey.compose(keys ->
-                createExternalTable(request.getTopic(), fullName, schema, keys));
+                createExternalTable(request.getKafkaParameter().getUploadMetadata().getTopic(), fullName, schema, keys));
 
         // 4. Create _buffer_shard
         Future<Void> buffShardF = sortingKey.compose(keys ->
@@ -111,12 +111,12 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
 
         // 7. Create _actual_loader_shard
         Future<Void> actualLoaderF = extTableF.compose(v ->
-                createActualLoaderTable(fullName + ACTUAL_LOADER_SHARD_POSTFIX, schema, request.getQueryLoadParam().getDeltaHot()));
+                createActualLoaderTable(fullName + ACTUAL_LOADER_SHARD_POSTFIX, schema, request.getKafkaParameter().getSysCn()));
 
         return CompositeFuture.all(extTableF, buffShardF, buffF, buffLoaderF, actualLoaderF)
                 .compose(v -> createRestInitiator(request))
                 .compose(v -> Future.succeededFuture(QueryResult.emptyResult()), f -> {
-                    reportError(request.getTopic());
+                    reportError(request.getKafkaParameter().getUploadMetadata().getTopic());
                     return Future.failedFuture(f.getCause());
                 });
     }
@@ -224,18 +224,18 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
 
         RestLoadRequest request = new RestLoadRequest();
         request.setRequestId(mppwRequest.getQueryRequest().getRequestId().toString());
-        request.setHotDelta(mppwRequest.getQueryLoadParam().getDeltaHot());
-        request.setDatamart(mppwRequest.getQueryLoadParam().getDatamart());
-        request.setTableName(mppwRequest.getQueryLoadParam().getTableName());
-        request.setZookeeperHost(mppwRequest.getZookeeperHost());
-        request.setZookeeperPort(mppwRequest.getZookeeperPort());
-        request.setKafkaTopic(mppwRequest.getTopic());
+        request.setSynCn(mppwRequest.getKafkaParameter().getSysCn());
+        request.setDatamart(mppwRequest.getKafkaParameter().getDatamart());
+        request.setTableName(mppwRequest.getKafkaParameter().getTargetTableName());
+        request.setZookeeperHost(mppwRequest.getKafkaParameter().getUploadMetadata().getZookeeperHost());
+        request.setZookeeperPort(mppwRequest.getKafkaParameter().getUploadMetadata().getZookeeperPort());
+        request.setKafkaTopic(mppwRequest.getKafkaParameter().getUploadMetadata().getTopic());
         request.setConsumerGroup(mppwProperties.getRestLoadConsumerGroup());
-        request.setFormat(mppwRequest.getQueryLoadParam().getFormat().getName());
-        request.setMessageProcessingLimit(mppwRequest.getQueryLoadParam().getMessageLimit());
+        request.setFormat(mppwRequest.getKafkaParameter().getUploadMetadata().getExternalTableFormat().getName());
+        request.setMessageProcessingLimit(mppwRequest.getKafkaParameter().getUploadMetadata().getExternalTableUploadMessageLimit());
 
         try {
-            val schema = new Schema.Parser().parse(mppwRequest.getSchema().encode());
+            val schema = new Schema.Parser().parse(mppwRequest.getKafkaParameter().getUploadMetadata().getExternalTableSchema());
             request.setSchema(schema);
             return restLoadInitiator.initiateLoading(request);
         } catch (Exception e) {

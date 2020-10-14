@@ -10,7 +10,6 @@ import org.apache.calcite.sql.SqlNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
-import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
 import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeProvider;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
@@ -55,7 +54,7 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
     }
 
     private DdlRequestContext createDropRequestContext(DdlRequestContext context) {
-        return new DdlRequestContext(new DdlRequest(context.getRequest().getQueryRequest().copy(), context.getRequest().getClassTable()));
+        return new DdlRequestContext(new DdlRequest(context.getRequest().getQueryRequest().copy(), context.getRequest().getEntity()));
     }
 
     private void createTable(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {

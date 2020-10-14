@@ -5,9 +5,6 @@ import org.apache.avro.Schema;
 import ru.ibs.dtm.query.execution.plugin.adqm.common.DdlUtils;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.lang.String.format;

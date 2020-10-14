@@ -2,8 +2,6 @@ package ru.ibs.dtm.query.execution.core.service.metadata;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
-import ru.ibs.dtm.common.model.ddl.ClassTable;
-import ru.ibs.dtm.query.execution.plugin.api.RequestContext;
 
 /**
  * Сервис исполнения ddl запросов в плагинах

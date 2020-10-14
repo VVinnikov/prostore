@@ -1,20 +1,16 @@
 package ru.ibs.dtm.query.execution.core.service.ddl;
 
 import lombok.AllArgsConstructor;
-import org.jetbrains.annotations.NotNull;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
-import ru.ibs.dtm.query.execution.core.configuration.jooq.MariaProperties;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.service.metadata.MetadataExecutor;
-import ru.ibs.dtm.query.execution.core.utils.SqlPreparer;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 
 @AllArgsConstructor
 public abstract class QueryResultDdlExecutor implements DdlExecutor<QueryResult> {
     protected final MetadataExecutor<DdlRequestContext> metadataExecutor;
-    protected final MariaProperties mariaProperties;
     protected final ServiceDbFacade serviceDbFacade;
 
     protected QueryRequest replaceDatabaseInSql(QueryRequest request) {
@@ -33,14 +29,7 @@ public abstract class QueryResultDdlExecutor implements DdlExecutor<QueryResult>
         return sqlNodeName.substring(indexComma + 1);
     }
 
-    protected String getTableNameWithSchema(String schema, String tableName){
+    protected String getTableNameWithSchema(String schema, String tableName) {
         return schema + "." + tableName;
-    }
-
-    @NotNull
-    protected String getSql(DdlRequestContext context, String sqlNodeName) {
-        QueryRequest request = context.getRequest().getQueryRequest();
-        String tableWithSchema = SqlPreparer.getTableWithSchema(mariaProperties.getOptions().getDatabase(), sqlNodeName);
-        return SqlPreparer.removeDistributeBy(SqlPreparer.replaceQuote(SqlPreparer.replaceTableInSql(request.getSql(), tableWithSchema)));
     }
 }

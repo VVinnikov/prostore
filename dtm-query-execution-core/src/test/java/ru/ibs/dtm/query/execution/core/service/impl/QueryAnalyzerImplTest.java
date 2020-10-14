@@ -13,6 +13,7 @@ import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.env.Environment;
+import ru.ibs.dtm.common.reader.InputQueryRequest;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
@@ -20,6 +21,7 @@ import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.execution.core.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import ru.ibs.dtm.query.execution.core.factory.RequestContextFactory;
+import ru.ibs.dtm.query.execution.core.factory.impl.QueryRequestFactoryImpl;
 import ru.ibs.dtm.query.execution.core.factory.impl.RequestContextFactoryImpl;
 import ru.ibs.dtm.query.execution.core.service.QueryAnalyzer;
 import ru.ibs.dtm.query.execution.core.service.QueryDispatcher;
@@ -51,13 +53,12 @@ class QueryAnalyzerImplTest {
             vertx,
             new HintExtractor(),
             new DatamartMnemonicExtractor(),
-            new AppConfiguration(mock(Environment.class)),
             new DefaultDatamartSetter(),
-            new SemicolonRemoverImpl());
+            new SemicolonRemoverImpl(), new QueryRequestFactoryImpl(new AppConfiguration(mock(Environment.class))));
 
     @Test
     void parsedSelect() {
-        QueryRequest queryRequest = new QueryRequest();
+        InputQueryRequest queryRequest = new InputQueryRequest();
         queryRequest.setSql("select count(*) from (SelEct * from TEST_DATAMART.PSO where LST_NAM='test' " +
                 "union all " +
                 "SelEct * from TEST_DATAMART.PSO where LST_NAM='test1') " +
@@ -73,7 +74,7 @@ class QueryAnalyzerImplTest {
 
     @Test
     void parseInsertSelect() {
-        QueryRequest queryRequest = new QueryRequest();
+        InputQueryRequest queryRequest = new InputQueryRequest();
         queryRequest.setSql("INSERT INTO TEST_DATAMART.PSO SELECT * FROM TEST_DATAMART.PSO");
 
         TestData testData = prepareExecute();
@@ -85,7 +86,7 @@ class QueryAnalyzerImplTest {
 
     @Test
     void parseSelectWithHintReturnsComplete() {
-        QueryRequest queryRequest = new QueryRequest();
+        InputQueryRequest queryRequest = new InputQueryRequest();
         queryRequest.setSql("SELECT * FROM TEST_DATAMART.PSO DATASOURCE_TYPE='ADB'");
 
         TestData testData = prepareExecute();
@@ -99,7 +100,7 @@ class QueryAnalyzerImplTest {
 
     @Test
     void parseSelectForSystemTime() {
-        QueryRequest queryRequest = new QueryRequest();
+        InputQueryRequest queryRequest = new InputQueryRequest();
         queryRequest.setSql("SELECT * FROM TEST_DATAMART.PSO for system_time" +
                 " as of '2011-01-02 00:00:00' where 1=1");
 
@@ -112,7 +113,7 @@ class QueryAnalyzerImplTest {
 
     @Test
     void parseEddl() {
-        QueryRequest queryRequest = new QueryRequest();
+        InputQueryRequest queryRequest = new InputQueryRequest();
         queryRequest.setSql("DROP DOWNLOAD EXTERNAL TABLE test.s");
 
         TestData testData = prepareExecute();
@@ -125,7 +126,7 @@ class QueryAnalyzerImplTest {
 
     @Test
     void parseDdl() {
-        QueryRequest queryRequest = new QueryRequest();
+        InputQueryRequest queryRequest = new InputQueryRequest();
         queryRequest.setSql("DROP TABLE r.l");
 
         TestData testData = prepareExecute();
@@ -137,7 +138,7 @@ class QueryAnalyzerImplTest {
 
     @Test
     void parseAlterView() {
-        QueryRequest queryRequest = new QueryRequest();
+        InputQueryRequest queryRequest = new InputQueryRequest();
         queryRequest.setSql("ALTER VIEW test.view_a AS SELECT * FROM test.test_data");
 
         TestData testData = prepareExecute();
@@ -147,7 +148,7 @@ class QueryAnalyzerImplTest {
         assertEquals(SqlProcessingType.DDL, testData.getProcessingType());
     }
 
-    private void analyzeAndExecute(TestData testData, QueryRequest queryRequest) {
+    private void analyzeAndExecute(TestData testData, InputQueryRequest queryRequest) {
         TestSuite suite = TestSuite.create("parse");
         suite.test("parse", context -> {
             Async async = context.async();

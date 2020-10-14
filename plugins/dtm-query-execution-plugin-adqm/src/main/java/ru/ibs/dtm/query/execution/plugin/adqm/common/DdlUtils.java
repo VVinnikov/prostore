@@ -6,11 +6,10 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.avro.Schema;
 import org.apache.commons.lang3.tuple.Pair;
-import org.springframework.util.StringUtils;
-import ru.ibs.dtm.common.model.ddl.ClassField;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
-import ru.ibs.dtm.common.plugin.exload.QueryLoadParam;
+import ru.ibs.dtm.common.model.ddl.EntityField;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
+import ru.ibs.dtm.query.execution.plugin.api.mppw.parameter.KafkaParameter;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 
 import java.util.List;
@@ -30,12 +29,12 @@ public class DdlUtils {
             return Optional.of("MppwRequest should not be null");
         }
 
-        QueryLoadParam loadParam = request.getQueryLoadParam();
-        if (loadParam == null) {
-            return Optional.of("MppwRequest.QueryLoadParam should not be null");
+        final KafkaParameter kafkaParameter = request.getKafkaParameter();
+        if (kafkaParameter == null) {
+            return Optional.of("MppwRequest.kafkaMppwParameter should not be null");
         }
 
-        if (request.getSchema() == null) {
+        if (request.getKafkaParameter().getUploadMetadata().getExternalTableSchema() == null) {
             return Optional.of("MppwRequest.schema should not be null");
         }
 
@@ -44,10 +43,10 @@ public class DdlUtils {
 
     public static String getQualifiedTableName(@NonNull MppwRequest request,
                                                @NonNull AppConfiguration appConfiguration) {
-        QueryLoadParam loadParam = request.getQueryLoadParam();
+        final KafkaParameter kafkaParameter = request.getKafkaParameter();
 
-        String tableName = loadParam.getTableName();
-        String schema = loadParam.getDatamart();
+        String tableName = kafkaParameter.getTargetTableName();
+        String schema = kafkaParameter.getDatamart();
         String env = appConfiguration.getSystemName();
         return env + "__" + schema + "." + tableName;
     }
@@ -116,7 +115,7 @@ public class DdlUtils {
         }
     }
 
-    public static String classFieldToString(@NonNull ClassField f) {
+    public static String classFieldToString(@NonNull EntityField f) {
         String name = f.getName();
         String type = classTypeToNative(f.getType());
         String template = f.getNullable() ? NULLABLE_FIELD : NOT_NULLABLE_FIELD;

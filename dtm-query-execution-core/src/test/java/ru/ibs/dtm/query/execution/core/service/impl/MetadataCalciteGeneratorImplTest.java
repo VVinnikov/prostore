@@ -8,9 +8,9 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Planner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import ru.ibs.dtm.common.model.ddl.ClassField;
-import ru.ibs.dtm.common.model.ddl.ClassTable;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
+import ru.ibs.dtm.common.model.ddl.Entity;
+import ru.ibs.dtm.common.model.ddl.EntityField;
 import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import ru.ibs.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
@@ -30,8 +30,8 @@ class MetadataCalciteGeneratorImplTest {
     private SqlParser.Config parserConfig = calciteConfiguration.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory());
     private Planner planner;
     private MetadataCalciteGenerator metadataCalciteGenerator;
-    private ClassTable table;
-    private ClassTable table2;
+    private Entity table;
+    private Entity table2;
 
     @BeforeEach
     void setUp() {
@@ -39,37 +39,37 @@ class MetadataCalciteGeneratorImplTest {
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
         planner = DtmCalciteFramework.getPlanner(frameworkConfig);
         metadataCalciteGenerator = new MetadataCalciteGeneratorImpl();
-        final List<ClassField> fields = createFieldsForUplTable();
-        final List<ClassField> fields2 = createFieldsForTable();
-        table = new ClassTable("uplexttab", null, fields);
-        table2 = new ClassTable("accounts", "shares", fields2);
+        final List<EntityField> fields = createFieldsForUplTable();
+        final List<EntityField> fields2 = createFieldsForTable();
+        table = new Entity("uplexttab", null, fields);
+        table2 = new Entity("accounts", "shares", fields2);
     }
 
-    private List<ClassField> createFieldsForTable() {
-        ClassField f1 = new ClassField(0, "id", ColumnType.INT, false, true);
+    private List<EntityField> createFieldsForTable() {
+        EntityField f1 = new EntityField(0, "id", ColumnType.INT, false);
         f1.setPrimaryOrder(1);
-        ClassField f2 = new ClassField(1, "name", ColumnType.VARCHAR, true, false);
+        EntityField f2 = new EntityField(1, "name", ColumnType.VARCHAR, true );
         f2.setSize(100);
-        ClassField f3 = new ClassField(2, "account_id", ColumnType.INT, false, true);
+        EntityField f3 = new EntityField(2, "account_id", ColumnType.INT, false );
         f1.setPrimaryOrder(1);
         f3.setPrimaryOrder(2);
         f3.setShardingOrder(1);
         return new ArrayList<>(Arrays.asList(f1, f2, f3));
     }
 
-    private List<ClassField> createFieldsForUplTable() {
-        ClassField f1 = new ClassField(0,"id", ColumnType.INT, false, true);
+    private List<EntityField> createFieldsForUplTable() {
+        EntityField f1 = new EntityField(0,"id", ColumnType.INT, false );
         f1.setPrimaryOrder(1);
-        ClassField f2 = new ClassField(1,"name", ColumnType.VARCHAR, true, false);
+        EntityField f2 = new EntityField(1,"name", ColumnType.VARCHAR, true );
         f2.setSize(100);
-        ClassField f3 = new ClassField(2,"booleanvalue", ColumnType.BOOLEAN, true, false);
-        ClassField f4 = new ClassField(3,"charvalue", ColumnType.CHAR, true, false);
-        ClassField f5 = new ClassField(4,"bgintvalue", ColumnType.BIGINT, true, false);
-        ClassField f6 = new ClassField(5,"dbvalue", ColumnType.DOUBLE, true, false);
-        ClassField f7 = new ClassField(6,"flvalue", ColumnType.FLOAT, true, false);
-        ClassField f8 = new ClassField(7,"datevalue", ColumnType.DATE, true, false);
-        ClassField f9 = new ClassField(8,"timevalue", ColumnType.TIME, true, false);
-        ClassField f11 = new ClassField(9, "tsvalue", ColumnType.TIMESTAMP, true, false);
+        EntityField f3 = new EntityField(2,"booleanvalue", ColumnType.BOOLEAN, true );
+        EntityField f4 = new EntityField(3,"charvalue", ColumnType.CHAR, true);
+        EntityField f5 = new EntityField(4,"bgintvalue", ColumnType.BIGINT, true);
+        EntityField f6 = new EntityField(5,"dbvalue", ColumnType.DOUBLE, true);
+        EntityField f7 = new EntityField(6,"flvalue", ColumnType.FLOAT, true);
+        EntityField f8 = new EntityField(7,"datevalue", ColumnType.DATE, true);
+        EntityField f9 = new EntityField(8,"timevalue", ColumnType.TIME, true);
+        EntityField f11 = new EntityField(9, "tsvalue", ColumnType.TIMESTAMP, true);
         f11.setAccuracy(10);
         return new ArrayList<>(Arrays.asList(f1, f2, f3, f4, f5, f6, f7, f8, f9, f11));
     }
@@ -90,8 +90,8 @@ class MetadataCalciteGeneratorImplTest {
                 " primary key(id)) " +
                 "LOCATION 'kafka://zookeeper_host:port/topic' FORMAT 'avro'";
         SqlNode sqlNode = planner.parse(sql);
-        ClassTable classTable = metadataCalciteGenerator.generateTableMetadata((SqlCreate) sqlNode);
-        assertEquals(table, classTable);
+        Entity entity = metadataCalciteGenerator.generateTableMetadata((SqlCreate) sqlNode);
+        assertEquals(table, entity);
     }
 
     @Test
@@ -111,8 +111,8 @@ class MetadataCalciteGeneratorImplTest {
                 "LOCATION 'kafka://zookeeper_host:port/topic' FORMAT 'avro'";
         SqlNode sqlNode = planner.parse(sql);
         table.setSchema("test_datamart");
-        ClassTable classTable = metadataCalciteGenerator.generateTableMetadata((SqlCreate) sqlNode);
-        assertEquals(table, classTable);
+        Entity entity = metadataCalciteGenerator.generateTableMetadata((SqlCreate) sqlNode);
+        assertEquals(table, entity);
     }
 
     @Test
@@ -120,8 +120,8 @@ class MetadataCalciteGeneratorImplTest {
         String sql = "create table shares.accounts (id integer not null, name varchar(100)," +
                 " account_id integer not null, primary key(id, account_id)) distributed by (account_id)";
         SqlNode sqlNode = planner.parse(sql);
-        ClassTable classTable = metadataCalciteGenerator.generateTableMetadata((SqlCreate) sqlNode);
-        assertEquals(table2, classTable);
+        Entity entity = metadataCalciteGenerator.generateTableMetadata((SqlCreate) sqlNode);
+        assertEquals(table2, entity);
     }
 
 }

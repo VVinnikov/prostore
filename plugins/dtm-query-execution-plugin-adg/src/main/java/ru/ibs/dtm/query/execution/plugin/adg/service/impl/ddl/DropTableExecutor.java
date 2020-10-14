@@ -3,14 +3,13 @@ package ru.ibs.dtm.query.execution.plugin.adg.service.impl.ddl;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlKind;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
-import ru.ibs.dtm.common.model.ddl.ClassTable;
+import ru.ibs.dtm.common.model.ddl.Entity;
 import ru.ibs.dtm.query.execution.plugin.adg.factory.AdgHelperTableNamesFactory;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtDeleteTablesQueueRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtDeleteTablesRequest;
@@ -49,9 +48,9 @@ public class DropTableExecutor implements DdlExecutor<Void> {
     @Override
     public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<Void>> handler) {
         val tableNames = adgHelperTableNamesFactory.create(
-                context.getRequest().getQueryRequest().getSystemName(),
+                context.getRequest().getQueryRequest().getEnvName(),
                 context.getRequest().getQueryRequest().getDatamartMnemonic(),
-                context.getRequest().getClassTable().getName());
+                context.getRequest().getEntity().getName());
 
 
 
@@ -79,10 +78,10 @@ public class DropTableExecutor implements DdlExecutor<Void> {
         });
     }
 
-    private Future<Object> dropSpacesFromDb(final ClassTable classTable) {
-        String actualTable = classTable.getName() + ACTUAL_POSTFIX;
-        String historyTable = classTable.getName() + HISTORY_POSTFIX;
-        String stagingTable = classTable.getName() + STAGING_POSTFIX;
+    private Future<Object> dropSpacesFromDb(final Entity entity) {
+        String actualTable = entity.getName() + ACTUAL_POSTFIX;
+        String historyTable = entity.getName() + HISTORY_POSTFIX;
+        String stagingTable = entity.getName() + STAGING_POSTFIX;
         // TODO It is better to drop all spaces at one, but currently it is not supported by cartridge
         return executorService.executeProcedure(DROP_SPACE, actualTable)
                 .compose(f -> executorService.executeProcedure(DROP_SPACE, historyTable))

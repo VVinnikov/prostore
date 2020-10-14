@@ -160,7 +160,8 @@ class AdqmQueryEnrichmentServiceImplTest {
             }
         });
         assertThat(testContext.awaitCompletion(5, TimeUnit.SECONDS)).isTrue();
-        assertEquals(expectedSql.trim(), actual[0].trim());
+        assertEquals(expectedSql.trim(), actual[0].trim(),
+                String.format("Expected: %s\n Actual: %s", expectedSql.trim(), actual[0].trim()));
     }
 
     private EnrichQueryRequest prepareRequestMultipleSchema(String sql) {

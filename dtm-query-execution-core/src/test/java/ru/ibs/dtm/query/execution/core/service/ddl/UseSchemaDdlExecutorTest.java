@@ -100,7 +100,7 @@ class UseSchemaDdlExecutorTest {
         });
         assertEquals(result, promise.future().result());
         assertEquals(context.getDatamartName(),
-                ((QueryResult) promise.future().result()).getResult().getJsonObject(0).getString("schema"));
+                ((QueryResult) promise.future().result()).getResult().get(0).get("schema"));
     }
 
     @Test

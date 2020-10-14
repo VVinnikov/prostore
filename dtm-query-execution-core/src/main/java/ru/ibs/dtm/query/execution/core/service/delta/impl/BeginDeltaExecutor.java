@@ -48,10 +48,15 @@ public class BeginDeltaExecutor implements DeltaExecutor, StatusEventPublisher {
         val beginDelta = (BeginDeltaQuery) context.getDeltaQuery();
         deltaServiceDao.writeNewDeltaHot(datamart, beginDelta.getDeltaNum())
                 .onSuccess(newDeltaHotNum -> {
-                    DeltaRecord newDelta = createNextDeltaRecord(newDeltaHotNum, datamart);
-                    publishStatus(StatusEventCode.DELTA_OPEN, datamart, newDelta);
-                    QueryResult res = deltaQueryResultFactory.create(context, newDelta);
-                    handler.handle(Future.succeededFuture(res));
+                    try {
+                        DeltaRecord newDelta = createNextDeltaRecord(newDeltaHotNum, datamart);
+                        publishStatus(StatusEventCode.DELTA_OPEN, datamart, newDelta);
+                        QueryResult res = deltaQueryResultFactory.create(context, newDelta);
+                        handler.handle(Future.succeededFuture(res));
+                    } catch (Exception e) {
+                        handler.handle(Future.failedFuture(e));
+                    }
+
                 })
                 .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
     }

@@ -42,14 +42,11 @@ public class DeltaServiceImpl implements DeltaService {
     public Future<Long> getCnToDeltaHot(String datamart) {
         return Future.future(handler -> deltaServiceDao.getDeltaHot(datamart)
                 .onSuccess(deltaHot -> handler.handle(Future.succeededFuture(deltaHot.getCnTo())))
-                .onFailure(err -> {
+                .onFailure(err1 ->
                     deltaServiceDao.getDeltaOk(datamart)
-                            .onComplete(res -> {
-                                if (res.succeeded())
-                                handler.handle(Future.succeededFuture(res.result().getCnTo()));
-                            });
-                    handler.handle(Future.succeededFuture(-1L));
-                }));
+                            .onSuccess(res -> handler.handle(Future.succeededFuture(res.getCnTo())))
+                            .onFailure(err2 -> handler.handle(Future.succeededFuture(-1L)))
+                ));
     }
 
     @Override

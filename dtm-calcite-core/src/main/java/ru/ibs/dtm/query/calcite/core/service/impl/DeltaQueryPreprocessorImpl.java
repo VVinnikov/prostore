@@ -15,16 +15,15 @@ import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.service.DeltaService;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
+import ru.ibs.dtm.query.calcite.core.util.CalciteUtil;
 import ru.ibs.dtm.query.calcite.core.util.DeltaInformationExtractor;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
 public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
-    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private final DefinitionService<SqlNode> definitionService;
     private final DeltaService deltaService;
 
@@ -69,11 +68,13 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
 
     private void calculateDeltaValues(List<DeltaInformation> deltas, Handler<AsyncResult<List<DeltaInformation>>> handler) {
         final List<DeltaInformation> deltaResult = new ArrayList<>();
+        final List<String> errors = new ArrayList<>();
         deltas.forEach(deltaInformation -> {
             if (deltaInformation.isLatestUncommitedDelta()) {
                 deltaService.getCnToDeltaHot(deltaInformation.getSchemaName())
                         .onSuccess(deltaCnTo -> {
                             deltaInformation.setSelectOnNum(deltaCnTo);
+                            deltaResult.add(deltaInformation);
                         });
             } else {
                 if (deltaInformation.getType().equals(DeltaType.FINISHED_IN) || deltaInformation.getType().equals(DeltaType.STARTED_IN)) {
@@ -82,7 +83,7 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
                             deltaInformation.setSelectOnInterval(ar.result());
                             deltaResult.add(deltaInformation);
                         } else {
-                            handler.handle(Future.failedFuture(ar.cause()));
+                            errors.add(ar.cause().getMessage());
                         }
                     });
                 } else {
@@ -93,7 +94,18 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
                 }
             }
         });
-        handler.handle(Future.succeededFuture(deltaResult));
+        if (errors.isEmpty()) {
+            handler.handle(Future.succeededFuture(deltaResult));
+        }
+        else {
+            handler.handle(Future.failedFuture(createDeltaRangeInvalidException(errors)));
+        }
+    }
+
+    private DeltaRangeInvalidException createDeltaRangeInvalidException(List<String> errors){
+        StringBuffer exceptionMessage = new StringBuffer();
+        errors.forEach(error -> exceptionMessage.append(error).append("; "));
+        return new DeltaRangeInvalidException(exceptionMessage.toString());
     }
 
     private void calculateSelectOnNum(DeltaInformation deltaInformation, Handler<AsyncResult<Long>> handler){
@@ -103,7 +115,7 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
                         .onComplete(res -> handler.handle(res));
                 break;
             case DATETIME:
-                deltaService.getCnToByDeltaDatetime(deltaInformation.getSchemaName(), LocalDateTime.parse(deltaInformation.getDeltaTimestamp().replace("\'", ""), formatter))
+                deltaService.getCnToByDeltaDatetime(deltaInformation.getSchemaName(), LocalDateTime.parse(deltaInformation.getDeltaTimestamp().replace("\'", ""), CalciteUtil.LOCAL_DATE_TIME))
                         .onComplete(res -> handler.handle(res));
                 break;
             default:

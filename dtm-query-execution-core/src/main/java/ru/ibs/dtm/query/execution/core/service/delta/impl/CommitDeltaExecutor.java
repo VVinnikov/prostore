@@ -49,10 +49,14 @@ public class CommitDeltaExecutor implements DeltaExecutor, StatusEventPublisher 
         val commitDelta = (CommitDeltaQuery) context.getDeltaQuery();
         deltaServiceDao.writeDeltaHotSuccess(datamart, commitDelta.getDeltaDateTime())
                 .onSuccess(committedDeltaNum -> {
+                    try {
                     DeltaRecord deltaRecord = createDeltaRecord(context, commitDelta, committedDeltaNum);
                     publishStatus(StatusEventCode.DELTA_CLOSE, datamart, deltaRecord);
                     QueryResult res = deltaQueryResultFactory.create(context, deltaRecord);
                     handler.handle(Future.succeededFuture(res));
+                    } catch (Exception e) {
+                        handler.handle(Future.failedFuture(e));
+                    }
                 })
                 .onFailure(err -> handler.handle(Future.failedFuture(err)));
     }

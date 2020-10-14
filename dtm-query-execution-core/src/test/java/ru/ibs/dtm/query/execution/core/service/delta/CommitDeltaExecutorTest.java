@@ -27,6 +27,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -122,14 +123,14 @@ class CommitDeltaExecutorTest {
         DeltaRequestContext context = new DeltaRequestContext(datamartRequest);
         context.setDeltaQuery(deltaQuery);
 
-        QueryResult queryDeltaResult = new QueryResult();
-        queryDeltaResult.setRequestId(req.getRequestId());
-        queryDeltaResult.setResult(new JsonArray());
-        queryDeltaResult.getResult().add(JsonObject.mapFrom(new QueryDeltaResult(nowStatusDate, 1L)));
+        QueryResult queryResult = new QueryResult();
+        queryResult.setRequestId(req.getRequestId());
+        queryResult.setResult(new JsonArray());
+        queryResult.getResult().add(JsonObject.mapFrom(new QueryDeltaResult(nowStatusDate, 1L)));
 
         when(deltaServiceDao.writeDeltaHotSuccess(any(), any())).thenReturn(Future.succeededFuture(1L));
 
-        when(deltaQueryResultFactory.create(any(), any())).thenReturn(queryDeltaResult);
+        when(deltaQueryResultFactory.create(any(), any())).thenReturn(queryResult);
 
         commitDeltaExecutor.execute(context, handler -> {
             if (handler.succeeded()) {
@@ -160,14 +161,14 @@ class CommitDeltaExecutorTest {
         DeltaRequestContext context = new DeltaRequestContext(datamartRequest);
         context.setDeltaQuery(deltaQuery);
 
-        QueryResult queryDeltaResult = new QueryResult();
-        queryDeltaResult.setRequestId(req.getRequestId());
-        queryDeltaResult.setResult(new JsonArray());
-        queryDeltaResult.getResult().add(JsonObject.mapFrom(new QueryDeltaResult(nowStatusDate, 1L)));
+        QueryResult queryResult = new QueryResult();
+        queryResult.setRequestId(req.getRequestId());
+        queryResult.setResult(new JsonArray());
+        queryResult.getResult().add(JsonObject.mapFrom(new QueryDeltaResult(nowStatusDate, 1L)));
 
         when(deltaServiceDao.writeDeltaHotSuccess(any(), any())).thenReturn(Future.succeededFuture(1L));
 
-        when(deltaQueryResultFactory.create(any(), any())).thenReturn(queryDeltaResult);
+        when(deltaQueryResultFactory.create(any(), any())).thenReturn(queryResult);
 
         commitDeltaExecutor.execute(context, handler -> {
             if (handler.succeeded()) {
@@ -181,4 +182,39 @@ class CommitDeltaExecutorTest {
         assertEquals(res.getStatusDate(), ((QueryResult) promise.future().result()).getResult().getJsonObject(0).getString("statusDate"));
     }
 
+    @Test
+    void executeDeltaQueryResultFactoryError(){
+        req.setSql("COMMIT DELTA");
+        commitDeltaExecutor = new CommitDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
+        Promise promise = Promise.promise();
+        String nowStatusDate = "2020-06-16T14:00:11";
+
+        CommitDeltaQuery deltaQuery = new CommitDeltaQuery();
+        deltaQuery.setDeltaDateTime(null);
+
+        DatamartRequest datamartRequest = new DatamartRequest(req);
+        DeltaRequestContext context = new DeltaRequestContext(datamartRequest);
+        context.setDeltaQuery(deltaQuery);
+
+        QueryResult queryResult = new QueryResult();
+        queryResult.setRequestId(req.getRequestId());
+        queryResult.setResult(new JsonArray());
+        queryResult.getResult().add(JsonObject.mapFrom(new QueryDeltaResult(nowStatusDate, 1L)));
+
+        when(deltaServiceDao.writeDeltaHotSuccess(any(), any())).thenReturn(Future.succeededFuture(1L));
+
+        RuntimeException ex = new RuntimeException("delta query result factory error");
+        when(deltaQueryResultFactory.create(any(), any())).thenThrow(ex);
+
+        commitDeltaExecutor.execute(context, handler -> {
+            if (handler.succeeded()) {
+                promise.complete(handler.result());
+            } else {
+                promise.fail(handler.cause());
+            }
+        });
+
+        assertNotNull(promise.future().cause());
+        assertEquals(ex.getMessage(), promise.future().cause().getMessage());
+   }
 }

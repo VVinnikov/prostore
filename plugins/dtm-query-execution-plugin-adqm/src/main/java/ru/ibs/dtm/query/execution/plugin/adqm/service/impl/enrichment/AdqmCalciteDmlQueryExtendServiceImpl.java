@@ -415,6 +415,7 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
                         return createRelNodeDeltaStartedIn(conditionContext).stream();
                     case FINISHED_IN:
                         return createRelNodeDeltaFinishedIn(conditionContext).stream();
+                    case DATETIME:
                     case NUM:
                         return createRelNodeDeltaNum(conditionContext).stream();
                     default:

@@ -26,6 +26,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -35,7 +36,7 @@ class BeginDeltaExecutorTest {
 
     private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
     private final DeltaServiceDao deltaServiceDao = mock(DeltaServiceDaoImpl.class);
-    private final DeltaQueryResultFactory deltaQueryResultFactory = new DeltaQueryResultFactoryImpl();
+    private final DeltaQueryResultFactory deltaQueryResultFactory = mock(DeltaQueryResultFactoryImpl.class);
     private BeginDeltaExecutor beginDeltaExecutor;
     private QueryRequest req = new QueryRequest();
     private DeltaRecord delta = new DeltaRecord();
@@ -69,8 +70,15 @@ class BeginDeltaExecutorTest {
         DeltaRequestContext context = new DeltaRequestContext(datamartRequest);
         context.setDeltaQuery(deltaQuery);
 
-        Mockito.when(deltaServiceDao.writeNewDeltaHot(eq(datamart), any()))
+        QueryResult queryResult = new QueryResult();
+        queryResult.setRequestId(req.getRequestId());
+        queryResult.setResult(new JsonArray());
+        queryResult.getResult().add(JsonObject.mapFrom(res));
+
+        when(deltaServiceDao.writeNewDeltaHot(eq(datamart), any()))
                 .thenReturn(Future.succeededFuture(2L));
+
+        when(deltaQueryResultFactory.create(any(), any())).thenReturn(queryResult);
 
         beginDeltaExecutor.execute(context, handler -> {
             if (handler.succeeded()) {
@@ -96,14 +104,9 @@ class BeginDeltaExecutorTest {
         DeltaRequestContext context = new DeltaRequestContext(datamartRequest);
         context.setDeltaQuery(deltaQuery);
 
-        QueryResult queryDeltaResult = new QueryResult();
-        queryDeltaResult.setRequestId(req.getRequestId());
-        queryDeltaResult.setResult(new JsonArray());
-        queryDeltaResult.getResult().add(JsonObject.mapFrom(new QueryDeltaResult(statusDate, 0L)));
-
         RuntimeException exception = new RuntimeException("write new delta hot error");
 
-        Mockito.when(deltaServiceDao.writeNewDeltaHot(eq(datamart), any())).thenReturn(Future.failedFuture(exception));
+        when(deltaServiceDao.writeNewDeltaHot(eq(datamart), any())).thenReturn(Future.failedFuture(exception));
 
         beginDeltaExecutor.execute(context, handler -> {
             if (handler.succeeded()) {
@@ -130,13 +133,14 @@ class BeginDeltaExecutorTest {
         DeltaRequestContext context = new DeltaRequestContext(datamartRequest);
         context.setDeltaQuery(deltaQuery);
 
-        QueryResult queryDeltaResult = new QueryResult();
-        queryDeltaResult.setRequestId(req.getRequestId());
-        queryDeltaResult.setResult(new JsonArray());
-        queryDeltaResult.getResult().add(JsonObject.mapFrom(new QueryDeltaResult(statusDate, 2L)));
+        QueryResult queryResult = new QueryResult();
+        queryResult.setRequestId(req.getRequestId());
+        queryResult.setResult(new JsonArray());
+        queryResult.getResult().add(JsonObject.mapFrom(res));
 
-        Mockito.when(deltaServiceDao.writeNewDeltaHot(eq(datamart), any()))
-                .thenReturn(Future.succeededFuture(2L));
+        when(deltaServiceDao.writeNewDeltaHot(eq(datamart), any())).thenReturn(Future.succeededFuture(2L));
+
+        when(deltaQueryResultFactory.create(any(), any())).thenReturn(queryResult);
 
         beginDeltaExecutor.execute(context, handler -> {
             if (handler.succeeded()) {
@@ -164,7 +168,7 @@ class BeginDeltaExecutorTest {
 
         RuntimeException exception = new RuntimeException("write new delta hot error");
 
-        Mockito.when(deltaServiceDao.writeNewDeltaHot(eq(datamart), eq(2L))).thenReturn(Future.failedFuture(exception));
+        when(deltaServiceDao.writeNewDeltaHot(eq(datamart), eq(2L))).thenReturn(Future.failedFuture(exception));
 
         beginDeltaExecutor.execute(context, handler -> {
             if (handler.succeeded()) {
@@ -174,5 +178,36 @@ class BeginDeltaExecutorTest {
             }
         });
         assertEquals(exception, promise.future().cause());
+    }
+
+    @Test
+    void executeDeltaQueryResultFactoryError(){
+        req.setSql("BEGIN DELTA");
+        beginDeltaExecutor = new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
+        Promise promise = Promise.promise();
+
+        BeginDeltaQuery deltaQuery = new BeginDeltaQuery();
+        deltaQuery.setDeltaNum(null);
+
+        DatamartRequest datamartRequest = new DatamartRequest(req);
+        DeltaRequestContext context = new DeltaRequestContext(datamartRequest);
+        context.setDeltaQuery(deltaQuery);
+
+        Mockito.when(deltaServiceDao.writeNewDeltaHot(eq(datamart), any()))
+                .thenReturn(Future.succeededFuture(2L));
+
+        RuntimeException ex = new RuntimeException("delta query result factory error");
+        when(deltaQueryResultFactory.create(any(), any())).thenThrow(ex);
+
+        beginDeltaExecutor.execute(context, handler -> {
+            if (handler.succeeded()) {
+                promise.complete(handler.result());
+            } else {
+                promise.fail(handler.cause());
+            }
+        });
+
+        assertNotNull(promise.future().cause());
+        assertEquals(ex.getMessage(), promise.future().cause().getMessage());
     }
 }

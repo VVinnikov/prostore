@@ -14,30 +14,14 @@ import ru.ibs.dtm.query.calcite.core.node.SqlSelectTree;
 import ru.ibs.dtm.query.calcite.core.node.SqlTreeNode;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
-import static java.time.temporal.ChronoField.*;
-
 @Slf4j
 public class DeltaInformationExtractor {
     private static final SqlDialect DIALECT = new SqlDialect(CalciteSqlDialect.EMPTY_CONTEXT);
-    private static final DateTimeFormatter LOCAL_DATE_TIME = new DateTimeFormatterBuilder()
-            .parseCaseInsensitive()
-            .append(ISO_LOCAL_DATE)
-            .appendLiteral(' ')
-            .appendValue(HOUR_OF_DAY, 2)
-            .appendLiteral(':')
-            .appendValue(MINUTE_OF_HOUR, 2)
-            .optionalStart()
-            .appendLiteral(':')
-            .appendValue(SECOND_OF_MINUTE, 2)
-            .toFormatter();
 
     public static DeltaInformationResult extract(SqlNode root) {
         try {
@@ -164,7 +148,7 @@ public class DeltaInformationExtractor {
         DeltaType deltaType = DeltaType.NUM;
         if (!isLatestUncommitedDelta) {
             if (snapshotTime == null) {
-                deltaTime = LOCAL_DATE_TIME.format(LocalDateTime.now());
+                deltaTime = CalciteUtil.LOCAL_DATE_TIME.format(LocalDateTime.now());
             }
             else {
                 deltaTime = snapshotTime;

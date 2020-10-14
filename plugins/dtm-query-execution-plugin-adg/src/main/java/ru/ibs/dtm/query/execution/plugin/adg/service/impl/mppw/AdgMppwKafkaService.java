@@ -44,7 +44,7 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
     public void execute(MppwRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
         log.debug("mppw start");
         val mppwKafkaContext = contextFactory.create(context.getRequest());
-        if (context.getRequest().getLoadStart()) {
+        if (context.getRequest().getIsLoadStart()) {
             initializeLoading(mppwKafkaContext, asyncResultHandler);
         } else {
             cancelLoadData(mppwKafkaContext, asyncResultHandler);

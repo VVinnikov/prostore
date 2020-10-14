@@ -33,7 +33,7 @@ public class DropSchemaExecutor implements DdlExecutor<Void> {
     public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<Void>> handler) {
 
         val tableNames = adgHelperTableNamesFactory.create(
-                context.getRequest().getQueryRequest().getSystemName(),
+                context.getRequest().getQueryRequest().getEnvName(),
                 context.getRequest().getQueryRequest().getDatamartMnemonic(),
                 "table");
 

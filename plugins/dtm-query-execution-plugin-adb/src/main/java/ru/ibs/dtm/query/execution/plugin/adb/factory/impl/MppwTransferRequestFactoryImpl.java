@@ -16,9 +16,9 @@ public class MppwTransferRequestFactoryImpl implements MppwTransferRequestFactor
     @Override
     public MppwTransferDataRequest create(MppwRequestContext context, List<JsonObject> keyColumns) {
         return MppwTransferDataRequest.builder()
-                .datamart(context.getRequest().getQueryLoadParam().getDatamart())
-                .tableName(context.getRequest().getQueryLoadParam().getTableName())
-                .hotDelta(context.getRequest().getQueryLoadParam().getDeltaHot())
+                .datamart(context.getRequest().getKafkaParameter().getDatamart())
+                .tableName(context.getRequest().getKafkaParameter().getTargetTableName())
+                .hotDelta(context.getRequest().getKafkaParameter().getSysCn())
                 .columnList(getColumnList(context))
                 .keyColumnList(getKeyColumnList(keyColumns))
                 .build();
@@ -29,7 +29,8 @@ public class MppwTransferRequestFactoryImpl implements MppwTransferRequestFactor
     }
 
     private List<String> getColumnList(MppwRequestContext context) {
-        final List<String> columns = new Schema.Parser().parse(context.getRequest().getSchema().encode())
+        final List<String> columns = new Schema.Parser().parse(context.getRequest()
+                .getKafkaParameter().getUploadMetadata().getExternalTableSchema())
                 .getFields().stream().map(Schema.Field::name).collect(Collectors.toList());
         columns.add(MetadataSqlFactoryImpl.SYS_FROM_ATTR);
         columns.add(MetadataSqlFactoryImpl.SYS_TO_ATTR);

@@ -12,7 +12,7 @@ import java.io.Serializable;
 @Data
 public class RestLoadRequest implements Serializable {
     private String requestId;
-    private long hotDelta;
+    private long synCn;
     private String datamart;
     private String tableName;
     private String zookeeperHost;

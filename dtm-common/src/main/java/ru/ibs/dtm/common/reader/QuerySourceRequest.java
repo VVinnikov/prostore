@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.apache.commons.lang3.SerializationUtils;
+import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
 import ru.ibs.dtm.query.execution.model.metadata.Datamart;
 
 /**
@@ -19,6 +20,7 @@ public class QuerySourceRequest {
     @NonNull
     private QueryRequest queryRequest;
     private List<Datamart> logicalSchema;
+    private List<ColumnMetadata> metadata;
     private SourceType sourceType;
 
     public List<Datamart> getLogicalSchema() {

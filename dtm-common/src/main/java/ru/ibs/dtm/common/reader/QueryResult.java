@@ -1,23 +1,27 @@
 package ru.ibs.dtm.common.reader;
 
-import io.vertx.core.json.JsonArray;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
 import lombok.Data;
 import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
+
+import java.util.*;
 
 /**
  * Результат выполнения запроса.
  */
 @Data
 public class QueryResult {
-    private static final QueryResult emptyResult = new QueryResult(null, new JsonArray());
+    private static final QueryResult emptyResult = new QueryResult(null, new ArrayList<>());
     private UUID requestId;
-    private JsonArray result;
+    private List<Map<String, Object>> result;
     private List<ColumnMetadata> metadata;
 
-    public QueryResult(UUID requestId, JsonArray result) {
+    public QueryResult(UUID requestId, List<Map<String, Object>> result, List<ColumnMetadata> metadata) {
+        this.requestId = requestId;
+        this.result = result;
+        this.metadata = metadata;
+    }
+
+    public QueryResult(UUID requestId, List<Map<String, Object>> result) {
         this.requestId = requestId;
         this.result = result;
     }

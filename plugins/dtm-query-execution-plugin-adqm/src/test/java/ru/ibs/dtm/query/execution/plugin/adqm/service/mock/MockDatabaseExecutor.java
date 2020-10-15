@@ -3,9 +3,9 @@ package ru.ibs.dtm.query.execution.plugin.adqm.service.mock;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.json.JsonArray;
 import lombok.val;
 import org.apache.commons.lang3.tuple.Pair;
+import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 
 import java.util.Collections;
@@ -16,12 +16,12 @@ import java.util.function.Predicate;
 
 public class MockDatabaseExecutor implements DatabaseExecutor {
     private final List<Predicate<String>> expectedCalls;
-    private final Map<Predicate<String>, JsonArray> mockData;
+    private final Map<Predicate<String>, List<Map<String, Object>>> mockData;
     private int callCount;
     private boolean isStrictOrder;
 
     public MockDatabaseExecutor(final List<Predicate<String>> expectedCalls,
-                                final Map<Predicate<String>, JsonArray> mockData,
+                                final Map<Predicate<String>, List<Map<String, Object>>> mockData,
                                 boolean isStrictOrder) {
         this.expectedCalls = expectedCalls;
         this.mockData = mockData;
@@ -33,12 +33,12 @@ public class MockDatabaseExecutor implements DatabaseExecutor {
     }
 
     public MockDatabaseExecutor(final List<Predicate<String>> expectedCalls,
-                                final Map<Predicate<String>, JsonArray> mockData) {
+                                final Map<Predicate<String>, List<Map<String, Object>>> mockData) {
         this(expectedCalls, mockData, true);
     }
 
     @Override
-    public void execute(String sql, Handler<AsyncResult<JsonArray>> resultHandler) {
+    public void execute(String sql, List<ColumnMetadata> metadata, Handler<AsyncResult<List<Map<String, Object>>>> resultHandler) {
         // if we provide results, this calls are not treated as expected
         val result = findResult(sql);
         if (result.isPresent()) {
@@ -65,7 +65,7 @@ public class MockDatabaseExecutor implements DatabaseExecutor {
     }
 
     @Override
-    public void executeWithParams(String sql, List<Object> params, Handler<AsyncResult<?>> resultHandler) {
+    public void executeWithParams(String sql, List<Object> params, List<ColumnMetadata> metadata, Handler<AsyncResult<?>> resultHandler) {
         val r = call(sql);
         if (r.getLeft()) {
             resultHandler.handle(Future.succeededFuture());
@@ -99,8 +99,8 @@ public class MockDatabaseExecutor implements DatabaseExecutor {
         }
     }
 
-    private Optional<JsonArray> findResult(String sql) {
-        for (val e: mockData.entrySet()) {
+    private Optional<List<Map<String, Object>>> findResult(String sql) {
+        for (val e : mockData.entrySet()) {
             if (e.getKey().test(sql)) {
                 return Optional.of(e.getValue());
             }

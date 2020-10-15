@@ -10,19 +10,29 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 import ru.ibs.dtm.common.model.ddl.Entity;
+import ru.ibs.dtm.common.converter.SqlTypeConverter;
+import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.query.execution.core.dao.ddl.DdlServiceDao;
+import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Repository
 @Slf4j
 public class DdlServiceDaoImpl implements DdlServiceDao {
 
     private final AsyncClassicGenericQueryExecutor executor;
+    private final SqlTypeConverter typeConverter;
 
     @Autowired
-    public DdlServiceDaoImpl(@Qualifier("coreQueryExecutor") AsyncClassicGenericQueryExecutor executor) {
+    public DdlServiceDaoImpl(@Qualifier("coreQueryExecutor") AsyncClassicGenericQueryExecutor executor,
+                             @Qualifier("coreTypeToSqlTypeConverter") SqlTypeConverter typeConverter) {
         this.executor = executor;
+        this.typeConverter = typeConverter;
     }
 
     @Override
@@ -40,13 +50,21 @@ public class DdlServiceDaoImpl implements DdlServiceDao {
     }
 
     @Override
-    public void executeQuery(String sql, Handler<AsyncResult<ResultSet>> resultHandler) {
+    public void executeQuery(String sql, List<ColumnMetadata> metadata, Handler<AsyncResult<List<Map<String, Object>>>> resultHandler) {
         executor.query(dsl -> dsl.resultQuery(sql))
                 .setHandler(ar -> {
                     if (ar.succeeded()) {
                         log.debug("Execute query sql: {}, result: {}", sql, ar.result());
+                        final Map<String, ColumnType> columnTypeMap =
+                                metadata.stream().collect(Collectors.toMap(ColumnMetadata::getName, ColumnMetadata::getType));
                         if (ar.result().unwrap() instanceof ResultSet) {
-                            resultHandler.handle(Future.succeededFuture(ar.result().unwrap()));
+                            try {
+                                List<Map<String, Object>> result = createResult(columnTypeMap, ar.result().unwrap());
+                                resultHandler.handle(Future.succeededFuture(result));
+                            } catch (Exception e) {
+                                log.error("Error converting core values to jdbc types!", e);
+                                resultHandler.handle(Future.failedFuture(e));
+                            }
                         } else {
                             log.error("Cannot get the result of the query sql: {}", sql, ar.cause());
                             resultHandler.handle(Future.failedFuture(
@@ -57,6 +75,17 @@ public class DdlServiceDaoImpl implements DdlServiceDao {
                         resultHandler.handle(Future.failedFuture(ar.cause()));
                     }
                 });
+    }
+
+    private List<Map<String, Object>> createResult(Map<String, ColumnType> columnTypeMap, ResultSet rs) {
+        List<Map<String, Object>> result = new ArrayList<>();
+        rs.getRows().forEach(r -> {
+            Map<String, Object> row = new HashMap<>();
+            r.stream().forEach(c -> row.put(c.getKey(),
+                    typeConverter.convert(columnTypeMap.get(c.getKey()), c.getValue())));
+            result.add(row);
+        });
+        return result;
     }
 
     @Override

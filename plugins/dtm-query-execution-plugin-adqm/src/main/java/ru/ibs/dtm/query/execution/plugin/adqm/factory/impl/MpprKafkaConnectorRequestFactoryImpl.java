@@ -18,13 +18,14 @@ public class MpprKafkaConnectorRequestFactoryImpl implements MpprKafkaConnectorR
         val kafkaParam = mpprRequest.getKafkaParameter();
         val downloadMetadata =
                 (DownloadExternalEntityMetadata) mpprRequest.getKafkaParameter().getDownloadMetadata();
-        return new MpprKafkaConnectorRequest(
-                queryRequest.getSql(),
-                queryRequest.getDatamartMnemonic(),
-                enrichedQuery,
-                kafkaParam.getZookeeperHost(),
-                String.valueOf(kafkaParam.getZookeeperPort()),
-                kafkaParam.getTopic(),
-                downloadMetadata.getChunkSize());
+        return MpprKafkaConnectorRequest.builder()
+                .table(queryRequest.getSql())
+                .sql(enrichedQuery)
+                .datamart(queryRequest.getDatamartMnemonic())
+                .zookeeperHost(kafkaParam.getZookeeperHost())
+                .zookeeperPort(String.valueOf(kafkaParam.getZookeeperPort()))
+                .kafkaTopic(kafkaParam.getTopic())
+                .chunkSize(downloadMetadata.getChunkSize())
+                .build();
     }
 }

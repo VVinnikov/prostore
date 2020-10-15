@@ -155,6 +155,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
 
     private boolean isMppwLoadedSuccess(StatusQueryResult queryResult) {
         return queryResult.getPartitionInfo().getEnd().equals(queryResult.getPartitionInfo().getOffset())
+                && queryResult.getPartitionInfo().getEnd() != 0
                 && checkLastMessageTime(queryResult.getPartitionInfo().getLastMessageTime());
     }
 

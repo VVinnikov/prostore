@@ -90,7 +90,6 @@ class AlterViewDdlExecutorTest {
         sqlNodeName = schema + "." + viewName;
         final QueryRequest queryRequest = new QueryRequest();
         queryRequest.setRequestId(UUID.randomUUID());
-        queryRequest.setSubRequestId(UUID.randomUUID().toString());
         queryRequest.setDatamartMnemonic(schema);
         queryRequest.setSql(String.format("ALTER VIEW %s.test_view AS SELECT * FROM %s.test_table",
             schema, schema));

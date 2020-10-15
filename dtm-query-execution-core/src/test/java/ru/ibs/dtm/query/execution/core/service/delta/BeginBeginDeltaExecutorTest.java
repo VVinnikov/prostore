@@ -18,13 +18,14 @@ import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import ru.ibs.dtm.query.execution.core.factory.impl.DeltaQueryResultFactoryImpl;
 import ru.ibs.dtm.query.execution.core.service.delta.impl.BeginDeltaExecutor;
+import ru.ibs.dtm.query.execution.core.utils.QueryResultUtils;
 import ru.ibs.dtm.query.execution.plugin.api.delta.DeltaRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.delta.query.BeginDeltaQuery;
 import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -70,8 +71,7 @@ class BeginBeginDeltaExecutorTest {
 
         QueryResult queryDeltaResult = new QueryResult();
         queryDeltaResult.setRequestId(req.getRequestId());
-        queryDeltaResult.setResult(new JsonArray());
-        queryDeltaResult.getResult().add(JsonObject.mapFrom(new QueryDeltaResult(statusDate, 0L)));
+        queryDeltaResult.setResult(createResult(statusDate, 0L));
 
         RuntimeException exception = new RuntimeException("Дельта находится в процессе загрузки!");
         Mockito.doAnswer(invocation -> {
@@ -107,8 +107,7 @@ class BeginBeginDeltaExecutorTest {
 
         QueryResult queryDeltaResult = new QueryResult();
         queryDeltaResult.setRequestId(req.getRequestId());
-        queryDeltaResult.setResult(new JsonArray());
-        queryDeltaResult.getResult().add(JsonObject.mapFrom(new QueryDeltaResult(statusDate, 1L)));
+        queryDeltaResult.setResult(createResult(statusDate, 1L));
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<DeltaRecord>> handler = invocation.getArgument(1);
@@ -133,7 +132,7 @@ class BeginBeginDeltaExecutorTest {
                 promise.fail(handler.cause());
             }
         });
-        assertEquals(res.getSinId(), ((QueryResult) promise.future().result()).getResult().getJsonObject(0).getLong("sinId"));
+        assertEquals(res.getSinId(), ((QueryResult) promise.future().result()).getResult().get(0).get("sinId"));
     }
 
     @Test
@@ -153,8 +152,7 @@ class BeginBeginDeltaExecutorTest {
 
         QueryResult queryDeltaResult = new QueryResult();
         queryDeltaResult.setRequestId(req.getRequestId());
-        queryDeltaResult.setResult(new JsonArray());
-        queryDeltaResult.getResult().add(JsonObject.mapFrom(new QueryDeltaResult(statusDate, 2L)));
+        queryDeltaResult.setResult(createResult(statusDate, 2L));
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<DeltaRecord>> handler = invocation.getArgument(1);
@@ -180,7 +178,7 @@ class BeginBeginDeltaExecutorTest {
             }
         });
 
-        assertEquals(res.getSinId(), ((QueryResult) promise.future().result()).getResult().getJsonObject(0).getLong("sinId"));
+        assertEquals(res.getSinId(), ((QueryResult) promise.future().result()).getResult().get(0).get("sinId"));
     }
 
     @Test
@@ -200,8 +198,7 @@ class BeginBeginDeltaExecutorTest {
 
         QueryResult queryDeltaResult = new QueryResult();
         queryDeltaResult.setRequestId(req.getRequestId());
-        queryDeltaResult.setResult(new JsonArray());
-        queryDeltaResult.getResult().add(JsonObject.mapFrom(new QueryDeltaResult(statusDate, 2L)));
+        queryDeltaResult.setResult(createResult(statusDate, 2L));
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<DeltaRecord>> handler = invocation.getArgument(1);
@@ -237,8 +234,7 @@ class BeginBeginDeltaExecutorTest {
 
         QueryResult queryDeltaResult = new QueryResult();
         queryDeltaResult.setRequestId(req.getRequestId());
-        queryDeltaResult.setResult(new JsonArray());
-        queryDeltaResult.getResult().add(JsonObject.mapFrom(new QueryDeltaResult(statusDate, 0L)));
+        queryDeltaResult.setResult(createResult(statusDate, 0L));
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<DeltaRecord>> handler = invocation.getArgument(1);
@@ -262,6 +258,10 @@ class BeginBeginDeltaExecutorTest {
             }
         });
 
-        assertEquals(res.getSinId(), ((QueryResult) promise.future().result()).getResult().getJsonObject(0).getLong("sinId"));
+        assertEquals(res.getSinId(), ((QueryResult) promise.future().result()).getResult().get(0).get("sinId"));
+    }
+
+    private List<Map<String, Object>> createResult(String statusDate, Long sinId) {
+        return QueryResultUtils.createResultWithSingleRow(Arrays.asList("statusDate", "sinId"), Arrays.asList(statusDate, sinId));
     }
 }

@@ -3,6 +3,10 @@
 logging:
   level:
     ru.ibs.dtm.query.execution: ${WRITER_LOG_LEVEL:INFO}
+    org:
+      apache:
+        kafka:
+          clients: ERROR
 
 core:
   http:

@@ -74,7 +74,6 @@ class UploadKafkaExecutorTest {
         queryRequest = new QueryRequest();
         queryRequest.setDatamartMnemonic("test");
         queryRequest.setRequestId(UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"));
-        queryRequest.setSubRequestId("6efad624-b9da-4ba1-9fed-f2da478b08e8");
         queryRequest.setSql("INSERT INTO test.pso SELECT id, name FROM test.upload_table");
     }
 

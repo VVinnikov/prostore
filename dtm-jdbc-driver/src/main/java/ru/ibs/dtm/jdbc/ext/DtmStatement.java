@@ -68,11 +68,11 @@ public class DtmStatement implements Statement {
         if (queryResult.getResult() != null) {
             List<Field[]> result = new ArrayList<>();
             List<Map<String, Object>> rows = queryResult.getResult();
+
             rows.forEach(row -> {
                 Field[] resultFields = new Field[row.size()];
-                Object[] columns = row.keySet().toArray();
-                IntStream.range(0, columns.length).forEach(key -> {
-                    String columnName = (String) columns[key];
+                IntStream.range(0, queryResult.getMetadata().size()).forEach(key -> {
+                    String columnName = queryResult.getMetadata().get(key).getName();
                     resultFields[key] = new Field(columnName, row.get(columnName));
                 });
                 result.add(resultFields);

@@ -4,23 +4,24 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
-import io.vertx.core.json.JsonArray;
+import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
 
 import java.util.List;
+import java.util.Map;
 
 /**
- * Сервис исполнения запросов
+ * Query execution service
  */
 public interface DatabaseExecutor {
-    void execute(String sql, Handler<AsyncResult<JsonArray>> resultHandler);
+    void execute(String sql, List<ColumnMetadata> metadata, Handler<AsyncResult<List<Map<String, Object>>>> resultHandler);
 
     void executeUpdate(String sql, Handler<AsyncResult<Void>> completionHandler);
 
-    void executeWithParams(String sql, List<Object> params, Handler<AsyncResult<?>> resultHandler);
+    void executeWithParams(String sql, List<Object> params, List<ColumnMetadata> metadata, Handler<AsyncResult<?>> resultHandler);
 
-    default Future<JsonArray> execute(String sql) {
-        Promise<JsonArray> p = Promise.promise();
-        execute(sql, p);
+    default Future<List<Map<String, Object>>> execute(String sql, List<ColumnMetadata> metadata) {
+        Promise<List<Map<String, Object>>> p = Promise.promise();
+        execute(sql, metadata, p);
         return p.future();
     }
 

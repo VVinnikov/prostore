@@ -34,10 +34,14 @@ import ru.ibs.dtm.query.execution.core.dao.delta.DeltaServiceDao;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import ru.ibs.dtm.query.execution.core.service.delta.impl.BeginDeltaExecutor;
+import ru.ibs.dtm.query.execution.core.utils.QueryResultUtils;
 import ru.ibs.dtm.query.execution.plugin.api.delta.DeltaRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.delta.query.BeginDeltaQuery;
 import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -94,8 +98,7 @@ class StatusEventVerticleTest {
         context.setDeltaQuery(deltaQuery);
         val queryDeltaResult = new QueryResult();
         queryDeltaResult.setRequestId(req.getRequestId());
-        queryDeltaResult.setResult(new JsonArray());
-        queryDeltaResult.getResult().add(JsonObject.mapFrom(new QueryDeltaResult("2020-06-15T05:06:55", EXPECTED_SIN_ID)));
+        queryDeltaResult.setResult(createResult("2020-06-15T05:06:55", EXPECTED_SIN_ID));
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<DeltaRecord>> handler = invocation.getArgument(1);
             delta.setStatus(DeltaLoadStatus.SUCCESS);
@@ -130,6 +133,10 @@ class StatusEventVerticleTest {
         beginDeltaExecutor.execute(context, handler -> {
         });
         assertThat(testContext.awaitCompletion(5, TimeUnit.SECONDS)).isTrue();
+    }
+
+    private List<Map<String, Object>> createResult(String statusDate, Long sinId) {
+        return QueryResultUtils.createResultWithSingleRow(Arrays.asList("statusDate", "sinId"), Arrays.asList(statusDate, sinId));
     }
 
 }

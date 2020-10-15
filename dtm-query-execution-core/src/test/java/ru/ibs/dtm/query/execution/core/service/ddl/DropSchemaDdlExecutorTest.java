@@ -60,7 +60,6 @@ class DropSchemaDdlExecutorTest {
         schema = "shares";
         final QueryRequest queryRequest = new QueryRequest();
         queryRequest.setRequestId(UUID.randomUUID());
-        queryRequest.setSubRequestId(UUID.randomUUID().toString());
         queryRequest.setDatamartMnemonic(schema);
         final String dropSchemaSql = "drop database shares";
         queryRequest.setSql(dropSchemaSql);

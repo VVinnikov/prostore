@@ -17,13 +17,14 @@ import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import ru.ibs.dtm.query.execution.core.factory.impl.DeltaQueryResultFactoryImpl;
 import ru.ibs.dtm.query.execution.core.service.delta.impl.BeginDeltaExecutor;
+import ru.ibs.dtm.query.execution.core.utils.QueryResultUtils;
 import ru.ibs.dtm.query.execution.plugin.api.delta.DeltaRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.delta.query.BeginDeltaQuery;
 import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -72,8 +73,7 @@ class BeginDeltaExecutorTest {
 
         QueryResult queryResult = new QueryResult();
         queryResult.setRequestId(req.getRequestId());
-        queryResult.setResult(new JsonArray());
-        queryResult.getResult().add(JsonObject.mapFrom(res));
+        queryResult.setResult(createResult(statusDate, 0L));
 
         when(deltaServiceDao.writeNewDeltaHot(eq(datamart), any()))
                 .thenReturn(Future.succeededFuture(2L));
@@ -135,8 +135,7 @@ class BeginDeltaExecutorTest {
 
         QueryResult queryResult = new QueryResult();
         queryResult.setRequestId(req.getRequestId());
-        queryResult.setResult(new JsonArray());
-        queryResult.getResult().add(JsonObject.mapFrom(res));
+        queryResult.setResult(createResult(statusDate, 2L));
 
         when(deltaServiceDao.writeNewDeltaHot(eq(datamart), any())).thenReturn(Future.succeededFuture(2L));
 
@@ -150,7 +149,7 @@ class BeginDeltaExecutorTest {
             }
         });
 
-        assertEquals(res.getSinId(), ((QueryResult) promise.future().result()).getResult().getJsonObject(0).getLong("sinId"));
+        assertEquals(res.getSinId(), ((QueryResult) promise.future().result()).getResult().get(0).get("sinId"));
     }
 
     @Test
@@ -177,6 +176,7 @@ class BeginDeltaExecutorTest {
                 promise.fail(handler.cause());
             }
         });
+
         assertEquals(exception, promise.future().cause());
     }
 
@@ -209,5 +209,9 @@ class BeginDeltaExecutorTest {
 
         assertNotNull(promise.future().cause());
         assertEquals(ex.getMessage(), promise.future().cause().getMessage());
+    }
+
+    private List<Map<String, Object>> createResult(String statusDate, Long sinId) {
+        return QueryResultUtils.createResultWithSingleRow(Arrays.asList("statusDate", "sinId"), Arrays.asList(statusDate, sinId));
     }
 }

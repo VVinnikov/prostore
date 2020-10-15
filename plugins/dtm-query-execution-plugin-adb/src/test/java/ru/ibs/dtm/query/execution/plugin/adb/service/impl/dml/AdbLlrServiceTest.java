@@ -20,6 +20,7 @@ import ru.ibs.dtm.query.execution.plugin.api.service.LlrService;
 import utils.JsonUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -46,9 +47,9 @@ public class AdbLlrServiceTest {
 			return null;
 		}).when(adbQueryEnrichmentService).enrich(any(), any());
 		doAnswer((Answer<AsyncResult<List<List<?>>>>) arg0 -> {
-			((Handler<AsyncResult<List<List<?>>>>) arg0.getArgument(1)).handle(asyncResult);
+			((Handler<AsyncResult<List<List<?>>>>) arg0.getArgument(2)).handle(asyncResult);
 			return null;
-		}).when(adbDatabaseExecutor).execute(any(), any());
+		}).when(adbDatabaseExecutor).execute(any(), any(), any());
 
 		adbLLRService = new AdbLlrService(adbQueryEnrichmentService, adbDatabaseExecutor);
 	}
@@ -66,7 +67,7 @@ public class AdbLlrServiceTest {
 			queryRequest.setSql("SELECT * from PSO");
 			queryRequest.setRequestId(UUID.randomUUID());
 			queryRequest.setDatamartMnemonic("TEST_DATAMART");
-			LlrRequest llrRequest = new LlrRequest(queryRequest, schema);
+			LlrRequest llrRequest = new LlrRequest(queryRequest, schema, Collections.emptyList());
 			adbLLRService.execute(new LlrRequestContext(llrRequest), ar -> {
 				log.debug(ar.toString());
 				result.add("OK");

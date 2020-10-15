@@ -93,7 +93,6 @@ class DeltaQueryPreprocessorImplTest {
         request.setDatamartMnemonic("test_datamart");
         request.setDeltaInformations(deltaInfoList);
         request.setRequestId(UUID.randomUUID());
-        request.setSubRequestId(UUID.randomUUID().toString());
         request.setEnvName("local");
         request.setSourceType(SourceType.ADB);
         request.setSql(sql);
@@ -145,7 +144,6 @@ class DeltaQueryPreprocessorImplTest {
         request.setDatamartMnemonic("test_datamart");
         request.setDeltaInformations(deltaInfoList);
         request.setRequestId(UUID.randomUUID());
-        request.setSubRequestId(UUID.randomUUID().toString());
         request.setEnvName("local");
         request.setSourceType(SourceType.ADB);
         request.setSql(sql);
@@ -197,7 +195,6 @@ class DeltaQueryPreprocessorImplTest {
         request.setDatamartMnemonic("test_datamart");
         request.setDeltaInformations(deltaInfoList);
         request.setRequestId(UUID.randomUUID());
-        request.setSubRequestId(UUID.randomUUID().toString());
         request.setEnvName("local");
         request.setSourceType(SourceType.ADB);
         request.setSql(sql);

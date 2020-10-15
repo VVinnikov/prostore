@@ -71,7 +71,6 @@ class DropTableDdlExecutorTest {
         schema = "shares";
         final QueryRequest queryRequest = new QueryRequest();
         queryRequest.setRequestId(UUID.randomUUID());
-        queryRequest.setSubRequestId(UUID.randomUUID().toString());
         queryRequest.setDatamartMnemonic(schema);
         queryRequest.setSql("drop table accounts");
         SqlNode query = planner.parse(queryRequest.getSql());

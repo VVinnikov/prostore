@@ -29,12 +29,12 @@ import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDao
 import ru.ibs.dtm.query.execution.core.service.ddl.impl.UseSchemaDdlExecutor;
 import ru.ibs.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import ru.ibs.dtm.query.execution.core.service.metadata.impl.MetadataExecutorImpl;
+import ru.ibs.dtm.query.execution.core.utils.QueryResultUtils;
 import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
 
-import java.util.Collections;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.eq;
@@ -65,7 +65,6 @@ class UseSchemaDdlExecutorTest {
         useSchemaDdlExecutor = new UseSchemaDdlExecutor(metadataExecutor, serviceDbFacade);
         final QueryRequest queryRequest = new QueryRequest();
         queryRequest.setRequestId(UUID.randomUUID());
-        queryRequest.setSubRequestId(UUID.randomUUID().toString());
         queryRequest.setDatamartMnemonic(schema);
         queryRequest.setSql("USE shares");
         SqlNode query = planner.parse(queryRequest.getSql());
@@ -85,9 +84,8 @@ class UseSchemaDdlExecutorTest {
                         .type(ColumnType.VARCHAR).build()));
 
         result.setRequestId(context.getRequest().getQueryRequest().getRequestId());
-        JsonObject value = new JsonObject();
-        value.put("schema", schema);
-        result.setResult(new JsonArray(Collections.singletonList(value)));
+        result.setResult(QueryResultUtils.createResultWithSingleRow(Collections.singletonList("schema"),
+                Collections.singletonList(schema)));
 
         Mockito.when(datamartDao.existsDatamart(eq(schema)))
                 .thenReturn(Future.succeededFuture(true));
@@ -101,7 +99,7 @@ class UseSchemaDdlExecutorTest {
         });
         assertEquals(result, promise.future().result());
         assertEquals(context.getDatamartName(),
-                ((QueryResult) promise.future().result()).getResult().getJsonObject(0).getString("schema"));
+                ((QueryResult) promise.future().result()).getResult().get(0).get("schema"));
     }
 
     @Test

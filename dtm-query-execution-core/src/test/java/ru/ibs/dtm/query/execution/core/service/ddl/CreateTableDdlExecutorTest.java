@@ -74,7 +74,6 @@ class CreateTableDdlExecutorTest {
         schema = "shares";
         final QueryRequest queryRequest = new QueryRequest();
         queryRequest.setRequestId(UUID.randomUUID());
-        queryRequest.setSubRequestId(UUID.randomUUID().toString());
         queryRequest.setDatamartMnemonic(schema);
         queryRequest.setSql("create table accounts (id integer, name varchar(100))");
         SqlNode query = planner.parse(queryRequest.getSql());

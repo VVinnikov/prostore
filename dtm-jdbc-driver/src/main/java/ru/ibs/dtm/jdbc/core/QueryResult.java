@@ -6,24 +6,28 @@ import lombok.Data;
 import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
 
 /**
- * Результат выполнения sql-команды
+ * Sql query response
  */
 @Data
 public class QueryResult {
+
     /**
-     * Идентификатор запроса
+     * Request identifier
      */
     private String requestId;
 
     /**
-     * Список строк ответа sql-команды
+     * Query result List<Map<ColumnName, ColumnValue>>
      */
     private List<Map<String, Object>> result;
 
     /**
-     * Признак пустого запроса
+     * Is query result empty
      */
     private boolean empty;
 
+    /**
+     * List of system metadata
+     */
     private List<ColumnMetadata> metadata;
 }

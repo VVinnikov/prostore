@@ -16,11 +16,16 @@ import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import ru.ibs.dtm.query.execution.core.factory.impl.DeltaQueryResultFactoryImpl;
 import ru.ibs.dtm.query.execution.core.service.delta.impl.CommitDeltaExecutor;
+import ru.ibs.dtm.query.execution.core.utils.QueryResultUtils;
 import ru.ibs.dtm.query.execution.plugin.api.delta.DeltaRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.delta.query.CommitDeltaQuery;
 import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -160,8 +165,7 @@ class CommitDeltaExecutorTest {
 
         QueryResult queryResult = new QueryResult();
         queryResult.setRequestId(req.getRequestId());
-        queryResult.setResult(new JsonArray());
-        queryResult.getResult().add(JsonObject.mapFrom(new QueryDeltaResult(nowStatusDate, 1L)));
+        queryResult.setResult(createResult(nowStatusDate, 1L));
 
         when(deltaServiceDao.writeDeltaHotSuccess(any(), any())).thenReturn(Future.succeededFuture(1L));
 
@@ -177,6 +181,12 @@ class CommitDeltaExecutorTest {
 
         assertEquals(res.getSinId(), ((QueryResult) promise.future().result()).getResult().getJsonObject(0).getLong("sinId"));
         assertEquals(res.getStatusDate(), ((QueryResult) promise.future().result()).getResult().getJsonObject(0).getString("statusDate"));
+        assertEquals(res.getSinId(), ((QueryResult) promise.future().result()).getResult().get(0).get("sinId"));
+        assertEquals(res.getStatusDate(), ((QueryResult) promise.future().result()).getResult().get(0).get("statusDate"));
+    }
+
+    private List<Map<String, Object>> createResult(String statusDate, Long sinId) {
+        return QueryResultUtils.createResultWithSingleRow(Arrays.asList("statusDate", "sinId"), Arrays.asList(statusDate, sinId));
     }
 
     @Test

@@ -112,6 +112,8 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                                 String tableNamePattern,
                                 String columnNamePattern) throws SQLException {
         List<ColumnInfo> columns = new ArrayList<>();
+        tableNamePattern = tableNamePattern.replace("\\","");
+        System.out.printf("Table name pattern: %s", tableNamePattern);
         //Временный костыль что бы пофиксить возможный запрос всех полей в схеме.
         if (tableNamePattern.indexOf('%') != -1) {
             ResultSet tables = this.getTables(catalog, schemaPattern, null, null);
@@ -119,7 +121,7 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                 final List<ColumnInfo> databaseColumns = connection.protocol.getDatabaseColumns(
                         tables.getString(CATALOG_NAME_COLUMN),
                         tables.getString(TABLE_NAME_COLUMN));
-                System.out.printf("Received column infos: %s", databaseColumns);
+                System.out.printf("Table name: %s", tables.getString(TABLE_NAME_COLUMN));
                 columns.addAll(databaseColumns);
             }
         } else {

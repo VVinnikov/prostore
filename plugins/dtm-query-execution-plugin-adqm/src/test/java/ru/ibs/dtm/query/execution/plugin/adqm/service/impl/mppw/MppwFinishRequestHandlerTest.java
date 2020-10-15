@@ -11,8 +11,8 @@ import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockDatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockEnvironment;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockStatusReporter;
-import ru.ibs.dtm.query.execution.plugin.api.mppw.parameter.KafkaParameter;
-import ru.ibs.dtm.query.execution.plugin.api.mppw.parameter.UploadExternalMetadata;
+import ru.ibs.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaParameter;
+import ru.ibs.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 
 import java.util.*;
@@ -72,14 +72,14 @@ class MppwFinishRequestHandlerTest {
         MppwRequest request = new MppwRequest(QueryRequest.builder()
                 .requestId(UUID.randomUUID())
                 .datamartMnemonic("shares").build(),
-                true, KafkaParameter.builder()
+                true, MppwKafkaParameter.builder()
                 .datamart("shares")
                 .sysCn(101L)
                 .targetTableName("accounts")
-                .uploadMetadata(UploadExternalMetadata.builder()
-                        .externalTableSchema("")
-                        .topic(TEST_TOPIC)
+                .uploadMetadata(UploadExternalEntityMetadata.builder()
+                        .externalSchema("")
                         .build())
+                .topic(TEST_TOPIC)
                 .build());
 
         handler.execute(request).onComplete(ar -> {

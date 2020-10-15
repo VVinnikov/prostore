@@ -9,7 +9,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.common.model.ddl.EntityField;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
-import ru.ibs.dtm.query.execution.plugin.api.mppw.parameter.KafkaParameter;
+import ru.ibs.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaParameter;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 
 import java.util.List;
@@ -29,12 +29,12 @@ public class DdlUtils {
             return Optional.of("MppwRequest should not be null");
         }
 
-        final KafkaParameter kafkaParameter = request.getKafkaParameter();
+        final MppwKafkaParameter kafkaParameter = request.getKafkaParameter();
         if (kafkaParameter == null) {
             return Optional.of("MppwRequest.kafkaMppwParameter should not be null");
         }
 
-        if (request.getKafkaParameter().getUploadMetadata().getExternalTableSchema() == null) {
+        if (request.getKafkaParameter().getUploadMetadata().getExternalSchema() == null) {
             return Optional.of("MppwRequest.schema should not be null");
         }
 
@@ -43,7 +43,7 @@ public class DdlUtils {
 
     public static String getQualifiedTableName(@NonNull MppwRequest request,
                                                @NonNull AppConfiguration appConfiguration) {
-        final KafkaParameter kafkaParameter = request.getKafkaParameter();
+        final MppwKafkaParameter kafkaParameter = request.getKafkaParameter();
 
         String tableName = kafkaParameter.getTargetTableName();
         String schema = kafkaParameter.getDatamart();

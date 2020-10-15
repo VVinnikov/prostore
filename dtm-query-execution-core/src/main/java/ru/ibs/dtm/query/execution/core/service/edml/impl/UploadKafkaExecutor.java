@@ -174,7 +174,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
     @NotNull
     private StatusRequestContext createStatusRequestContext(MppwRequestContext mppwRequestContext, EdmlRequestContext context) {
         val statusRequestContext = new StatusRequestContext(new StatusRequest(context.getRequest().getQueryRequest()));
-        statusRequestContext.getRequest().setTopic(mppwRequestContext.getRequest().getKafkaParameter().getUploadMetadata().getTopic());
+        statusRequestContext.getRequest().setTopic(mppwRequestContext.getRequest().getKafkaParameter().getTopic());
         return statusRequestContext;
     }
 

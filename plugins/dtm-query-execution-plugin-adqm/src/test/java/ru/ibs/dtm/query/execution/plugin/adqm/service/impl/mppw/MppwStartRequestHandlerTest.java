@@ -18,8 +18,8 @@ import ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw.load.RestLoadIni
 import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockDatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockEnvironment;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockStatusReporter;
-import ru.ibs.dtm.query.execution.plugin.api.mppw.parameter.KafkaParameter;
-import ru.ibs.dtm.query.execution.plugin.api.mppw.parameter.UploadExternalMetadata;
+import ru.ibs.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaParameter;
+import ru.ibs.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 
 import java.util.*;
@@ -75,17 +75,17 @@ class MppwStartRequestHandlerTest {
         MppwRequest request = new MppwRequest(QueryRequest.builder()
                 .requestId(UUID.randomUUID())
                 .datamartMnemonic("shares").build(),
-                true, KafkaParameter.builder()
+                true, MppwKafkaParameter.builder()
                 .datamart("shares")
                 .sysCn(101L)
                 .targetTableName("accounts")
-                .uploadMetadata(UploadExternalMetadata.builder()
-                        .externalTableSchema(getSchema())
-                        .externalTableFormat(Format.AVRO)
-                        .externalTableUploadMessageLimit(1000)
-                        .topic(TEST_TOPIC)
-                        .zookeeperHost("zkhost")
+                .uploadMetadata(UploadExternalEntityMetadata.builder()
+                        .externalSchema(getSchema())
+                        .format(Format.AVRO)
+                        .uploadMessageLimit(1000)
                         .build())
+                .topic(TEST_TOPIC)
+                .zookeeperHost("zkhost")
                 .build());
 
         handler.execute(request).onComplete(ar -> {
@@ -131,17 +131,17 @@ class MppwStartRequestHandlerTest {
                 .requestId(UUID.randomUUID())
                 .sourceType(SourceType.ADQM)
                 .datamartMnemonic("shares").build(),
-                true, KafkaParameter.builder()
+                true, MppwKafkaParameter.builder()
                 .datamart("shares")
                 .sysCn(101L)
                 .targetTableName("accounts")
-                .uploadMetadata(UploadExternalMetadata.builder()
-                        .externalTableSchema(getSchema())
-                        .externalTableFormat(Format.AVRO)
-                        .externalTableUploadMessageLimit(1000)
-                        .topic(TEST_TOPIC)
-                        .zookeeperHost("zkhost")
+                .uploadMetadata(UploadExternalEntityMetadata.builder()
+                        .externalSchema(getSchema())
+                        .format(Format.AVRO)
+                        .uploadMessageLimit(1000)
                         .build())
+                .topic(TEST_TOPIC)
+                .zookeeperHost("zkhost")
                 .build());
         handler.execute(request).onComplete(ar -> {
             assertTrue(ar.succeeded(), ar.cause() != null ? ar.cause().getMessage() : "");

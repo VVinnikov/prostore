@@ -20,8 +20,8 @@ import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response.TtKafkaErr
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response.TtLoadDataKafkaResponse;
 import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeClient;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
-import ru.ibs.dtm.query.execution.plugin.api.mppw.parameter.KafkaParameter;
-import ru.ibs.dtm.query.execution.plugin.api.mppw.parameter.UploadExternalMetadata;
+import ru.ibs.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaParameter;
+import ru.ibs.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -183,21 +183,21 @@ class AdgMppwKafkaServiceTest {
         return new MppwRequestContext(mppwRequest);
     }
 
-    private KafkaParameter createKafkaParameter() {
-        return KafkaParameter.builder()
+    private MppwKafkaParameter createKafkaParameter() {
+        return MppwKafkaParameter.builder()
                 .sysCn(1L)
                 .datamart("test")
                 .targetTableName("tbl1")
-                .uploadMetadata(UploadExternalMetadata.builder()
+                .uploadMetadata(UploadExternalEntityMetadata.builder()
                         .name("ext_tab")
-                        .externalTableSchema(getExternalTableSchema())
-                        .externalTableUploadMessageLimit(1000)
-                        .externalTableLocationPath("kafka://kafka-1.dtm.local:9092/topic")
-                        .zookeeperHost("kafka-1.dtm.local")
-                        .zookeeperPort(9092)
-                        .topic("topic1")
-                        .externalTableFormat(Format.AVRO)
+                        .externalSchema(getExternalTableSchema())
+                        .uploadMessageLimit(1000)
+                        .locationPath("kafka://kafka-1.dtm.local:9092/topic")
+                        .format(Format.AVRO)
                         .build())
+                .zookeeperHost("kafka-1.dtm.local")
+                .zookeeperPort(9092)
+                .topic("topic1")
                 .build();
     }
 

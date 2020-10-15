@@ -1,29 +1,31 @@
 package ru.ibs.dtm.query.execution.plugin.adb.dto;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Входящий запрос
+ * Mppr request for kafka connector
  *
- * @table таблица
- * @datamart название витрины
- * @sql запрос на выборку
- * @zookeeperHost хост Zookeeper (сейчас не используется)
- * @zookeeperPort порт Zookeeper (сейчас не используется)
- * @kafkaTopic топик для выгрузки
- * @chunkSize размер чанка
+ * @table table name
+ * @datamart datamart
+ * @sql sql query
+ * @zookeeperHost Zookeeper host (not used)
+ * @zookeeperPort Zookeeper port (not used)
+ * @kafkaTopic kafka topic
+ * @chunkSize chunk size
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class MpprKafkaConnectorRequest {
-  String table;
-  String datamart;
-  String sql;
-  String zookeeperHost;
-  String zookeeperPort;
-  String kafkaTopic;
-  Integer chunkSize;
+    String table;
+    String datamart;
+    String sql;
+    String zookeeperHost;
+    String zookeeperPort;
+    String kafkaTopic;
+    Integer chunkSize;
 }

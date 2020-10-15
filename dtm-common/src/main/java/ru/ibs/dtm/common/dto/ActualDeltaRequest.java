@@ -4,21 +4,21 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 
 /**
- * DTO поиска актуальной дельты витрины на дату
+ * Actual delta request dto
  */
 @Data
 @AllArgsConstructor
 public class ActualDeltaRequest {
     /**
-     * Витрина
+     * Datamart
      */
     private String datamart;
     /**
-     * Datatime в формате 2019-12-23 15:15:14
+     * Datatime in format: 2019-12-23 15:15:14
      */
     private String dateTime;
     /**
-     * Признак для получения последней незакомиченной дельты
+     * Is last uncommited delta
      */
     private boolean isLatestUncommitedDelta;
 }

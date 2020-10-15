@@ -43,17 +43,11 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
     }
 
     @Override
-    public void execute(EdmlRequestContext context, @Deprecated EdmlQuery edmlQuery, Handler<AsyncResult<QueryResult>> resultHandler) {
+    public void execute(EdmlRequestContext context, Handler<AsyncResult<QueryResult>> resultHandler) {
         writeNewOperation(context, context.getEntity())
                 .compose(sysCn -> executeAndWriteOp(context))
                 .compose(queryResult -> writeOpSuccess(context.getSourceTable().getSchemaName(), context.getSysCn(), queryResult))
-                .onComplete(ar -> {
-                    if (ar.succeeded()) {
-                        resultHandler.handle(Future.succeededFuture(ar.result()));
-                    } else {
-                        resultHandler.handle(Future.failedFuture(ar.cause()));
-                    }
-                });
+                .onComplete(resultHandler);
     }
 
     private Future<Long> writeNewOperation(EdmlRequestContext context, Entity entity) {

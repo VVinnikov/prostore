@@ -6,6 +6,7 @@ import io.vertx.core.Vertx;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import ru.ibs.dtm.common.converter.SqlTypeConverter;
 import ru.ibs.dtm.query.execution.plugin.adb.configuration.properties.DatabaseTypes;
 import ru.ibs.dtm.query.execution.plugin.adb.configuration.properties.GreenplumProperties;
 import ru.ibs.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
@@ -28,8 +29,10 @@ public class QueryConfiguration {
 
 
   @Bean("adbQueryExecutor")
-  public AdbQueryExecutor greenplam(@Qualifier("coreVertx") Vertx vertx, GreenplumProperties greenplumProperties) {
+  public AdbQueryExecutor greenplam(@Qualifier("coreVertx") Vertx vertx,
+                                    GreenplumProperties greenplumProperties,
+                                    @Qualifier("adbTypeToSqlTypeConverter") SqlTypeConverter typeConverter) {
     PgPool pgPool = PgClient.pool(greenplumProperties.getOptions());
-    return new AdbQueryExecutor(pgPool, greenplumProperties.getFetchSize());
+    return new AdbQueryExecutor(pgPool, greenplumProperties.getFetchSize(), typeConverter);
   }
 }

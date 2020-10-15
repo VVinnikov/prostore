@@ -1,6 +1,5 @@
 package ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw;
 
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -35,21 +34,22 @@ class MppwFinishRequestHandlerTest {
 
     @Test
     public void testFinishRequestCallOrder() {
-        Map<Predicate<String>, JsonArray> mockData = new HashMap<>();
-        mockData.put(t -> t.contains(" from system.columns"), new JsonArray(Arrays.asList(
-                new JsonObject("{\"name\": \"column1\"}"),
-                new JsonObject("{\"name\": \"column2\"}"),
-                new JsonObject("{\"name\": \"column3\"}"),
-                new JsonObject("{\"name\": \"sys_from\"}"),
-                new JsonObject("{\"name\": \"sys_to\"}"),
-                new JsonObject("{\"name\": \"sys_op\"}"),
-                new JsonObject("{\"name\": \"close_date\"}"),
-                new JsonObject("{\"name\": \"sign\"}")
-        )));
-
-        mockData.put(t -> t.contains("select sorting_key from system.tables"), new JsonArray(Collections.singletonList(
-                new JsonObject("{\"sorting_key\": \"column1, column2\"}")
-        )));
+        Map<Predicate<String>, List<Map<String, Object>>> mockData = new HashMap<>();
+        mockData.put(t -> t.contains(" from system.columns"),
+                Arrays.asList(
+                        createRowMap("name", "column1"),
+                        createRowMap("name", "column2"),
+                        createRowMap("name", "column3"),
+                        createRowMap("name", "sys_from"),
+                        createRowMap("name", "sys_to"),
+                        createRowMap("name", "sys_op"),
+                        createRowMap("name", "close_date"),
+                        createRowMap("name", "sign")
+                ));
+        mockData.put(t -> t.contains("select sorting_key from system.tables"),
+                Collections.singletonList(
+                        createRowMap("sorting_key", "column1, column2")
+                ));
 
         DatabaseExecutor executor = new MockDatabaseExecutor(Arrays.asList(
                 t -> t.equalsIgnoreCase("DROP TABLE IF EXISTS dev__shares.accounts_ext_shard ON CLUSTER test_arenadata"),
@@ -86,6 +86,12 @@ class MppwFinishRequestHandlerTest {
             assertTrue(ar.succeeded(), ar.cause() != null ? ar.cause().getMessage() : "");
             assertTrue(mockReporter.wasCalled("finish"));
         });
+    }
+
+    private Map<String, Object> createRowMap(String key, Object value) {
+        Map<String, Object> map = new HashMap<>();
+        map.put(key, value);
+        return map;
     }
 
     private MockStatusReporter getMockReporter() {

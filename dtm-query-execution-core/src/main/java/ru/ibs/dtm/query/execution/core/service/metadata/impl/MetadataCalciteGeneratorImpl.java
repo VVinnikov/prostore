@@ -47,7 +47,7 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
                 } else if (col.getKind().equals(SqlKind.PRIMARY_KEY)) {
                     initPrimaryKeyColumns((SqlKeyConstraint) col, fieldMap);
                 } else {
-                    throw new RuntimeException("Attribute type "+ col.getKind () +" is not supported!");
+                    throw new RuntimeException("Attribute type " + col.getKind() + " is not supported!");
                 }
             }
             initDistributedKeyColumns(sqlCreate, fieldMap);
@@ -66,17 +66,15 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
     @NotNull
     private EntityField createField(SqlColumnDeclaration columnValue, int ordinalPos) {
         val column = getColumn(columnValue);
-        val columnType = getColumnType(columnValue);
-        val typeName = columnType.getTypeName().getSimple().toUpperCase();
-        val sqlType = SqlTypeName.get(typeName);
+        val columnTypeSpec = getColumnTypeSpec(columnValue);
         final EntityField field = new EntityField(
-            ordinalPos,
-            column.getSimple(),
-            ColumnTypeUtil.valueOf(sqlType),
-            columnType.getNullable()
+                ordinalPos,
+                column.getSimple(),
+                getColumnType(columnTypeSpec),
+                columnTypeSpec.getNullable()
         );
-        if (columnType.getTypeNameSpec() instanceof SqlBasicTypeNameSpec) {
-            val basicTypeNameSpec = (SqlBasicTypeNameSpec) columnType.getTypeNameSpec();
+        if (columnTypeSpec.getTypeNameSpec() instanceof SqlBasicTypeNameSpec) {
+            val basicTypeNameSpec = (SqlBasicTypeNameSpec) columnTypeSpec.getTypeNameSpec();
             if (field.getType() == ColumnType.TIMESTAMP || field.getType() == ColumnType.TIME) {
                 field.setAccuracy(getPrecision(basicTypeNameSpec));
             } else {
@@ -85,6 +83,16 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
             }
         }
         return field;
+    }
+
+    private ColumnType getColumnType(SqlDataTypeSpec sqlDataTypeSpec) {
+        val typeName = sqlDataTypeSpec.getTypeName().getSimple().toUpperCase();
+        val sqlType = SqlTypeName.get(typeName);
+        if (sqlType == null) {
+            return ColumnType.fromTypeString(typeName);
+        } else {
+            return ColumnTypeUtil.valueOf(sqlType);
+        }
     }
 
     private void initPrimaryKeyColumns(SqlKeyConstraint col, Map<String, EntityField> fieldMap) {
@@ -104,7 +112,7 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
         return ((SqlIdentifier) col.getOperandList().get(0));
     }
 
-    private SqlDataTypeSpec getColumnType(SqlColumnDeclaration col) {
+    private SqlDataTypeSpec getColumnTypeSpec(SqlColumnDeclaration col) {
         if (col.getOperandList().size() > 1) {
             return (SqlDataTypeSpec) col.getOperandList().get(1);
         } else {

@@ -17,6 +17,7 @@ import ru.ibs.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.QueryCostRequest;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -60,16 +61,17 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
                                     new QuerySourceRequest(
                                         queryRequestWithSourceType,
                                         request.getLogicalSchema(),
-                                        sourceType)));
-                            } else {
-                                handler.handle(Future.failedFuture(tr.cause()));
-                            }
-                        });
-                    } else {
-                        handler.handle(Future.failedFuture(ar.cause()));
-                    }
-                })
-                .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
+                                        Collections.emptyList(),
+                                                    sourceType)));
+                                } else {
+                                    handler.handle(Future.failedFuture(tr.cause()));
+                                }
+                            });
+                        } else {
+                            handler.handle(Future.failedFuture(ar.cause()));
+                        }
+                    })
+                    .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
         } else {
             val queryRequestWithSourceType = request.getQueryRequest().copy();
             queryRequestWithSourceType.setSourceType(SourceType.INFORMATION_SCHEMA);

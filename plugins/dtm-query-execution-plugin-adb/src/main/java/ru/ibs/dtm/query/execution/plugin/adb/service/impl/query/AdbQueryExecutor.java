@@ -9,65 +9,63 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
-import io.vertx.core.json.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.tuple.Pair;
+import ru.ibs.dtm.common.converter.SqlTypeConverter;
+import ru.ibs.dtm.common.model.ddl.ColumnType;
+import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
 import ru.ibs.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adb.service.impl.mppw.dto.PreparedStatementRequest;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.temporal.ChronoField;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class AdbQueryExecutor implements DatabaseExecutor {
 
     private final PgPool pool;
     private final int fetchSize;
+    private final SqlTypeConverter typeConverter;
 
-    public AdbQueryExecutor(PgPool pool, int fetchSize) {
+    public AdbQueryExecutor(PgPool pool, int fetchSize, SqlTypeConverter typeConverter) {
         this.pool = pool;
         this.fetchSize = fetchSize;
+        this.typeConverter = typeConverter;
     }
 
     @Override
-    public void execute(String sql, Handler<AsyncResult<List<JsonObject>>> resultHandler) {
+    public void execute(String sql, List<ColumnMetadata> metadata, Handler<AsyncResult<List<Map<String, Object>>>> resultHandler) {
         pool.getConnection(ar1 -> {
             if (ar1.succeeded()) {
                 PgConnection conn = ar1.result();
-                //FIXME drop tx condition
-                PgTransaction tx = conn.begin();
-                tx.prepare(sql, ar2 -> {
+                conn.prepare(sql, ar2 -> {
                     if (ar2.succeeded()) {
                         PgCursor cursor = ar2.result().cursor();
                         List<Pair<Integer, String>> columnIndexes = new ArrayList<>();
+                        final Map<String, ColumnType> columnTypeMap =
+                                metadata.stream().collect(Collectors.toMap(ColumnMetadata::getName, ColumnMetadata::getType));
                         do {
                             cursor.read(fetchSize, res -> {
                                 if (res.succeeded()) {
-                                    List<JsonObject> dataSet = new ArrayList<>();
-                                    List<String> columnsNames = res.result().columnsNames();
-                                    for (io.reactiverse.pgclient.Row row : res.result()) {
-                                        if (columnIndexes.isEmpty()) {
-                                            for (int x = 0; x < row.size(); x++) {
-                                                val columnName = row.getColumnName(x);
-                                                val index = columnsNames.indexOf(columnName);
-                                                columnIndexes.add(Pair.of(index, columnName));
-                                            }
-                                        }
-                                        JsonObject values = new JsonObject();
-                                        columnIndexes.forEach(p -> values.put(p.getValue(), convertValue(row.getValue(p.getKey()))));
-                                        dataSet.add(values);
+                                    try {
+                                        List<Map<String, Object>> result = createResult(columnTypeMap, columnIndexes, res.result());
+                                        resultHandler.handle(Future.succeededFuture(result));
+                                    } catch (Exception e) {
+                                        conn.close();
+                                        log.error("Error converting ADB values to jdbc types!", e);
+                                        resultHandler.handle(Future.failedFuture(e));
                                     }
-                                    resultHandler.handle(Future.succeededFuture(dataSet));
+                                } else {
+                                    conn.close();
+                                    log.error("Error fetching cursor", res.cause());
+                                    resultHandler.handle(Future.failedFuture(res.cause()));
                                 }
                             });
                         } while (cursor.hasMore());
-                        tx.commit();
                         conn.close();
                     } else {
                         conn.close();
@@ -82,16 +80,40 @@ public class AdbQueryExecutor implements DatabaseExecutor {
         });
     }
 
-    private Object convertValue(Object value) {
-        if (value instanceof LocalDateTime) {
-            return ((LocalDateTime) value).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
-        } else if (value instanceof LocalDate) {
-            return ((LocalDate) value).getLong(ChronoField.EPOCH_DAY);
-        } else if (value instanceof LocalTime) {
-            return ((LocalTime) value).toNanoOfDay();
-        } else {
-            return value;
+    private List<Map<String, Object>> createResult(Map<String, ColumnType> columnTypeMap,
+                                                   List<Pair<Integer, String>> columnIndexes,
+                                                   io.reactiverse.pgclient.PgRowSet pgRowSet) {
+        List<Map<String, Object>> result = new ArrayList<>();
+        List<String> columnsNames = pgRowSet.columnsNames();
+        for (io.reactiverse.pgclient.Row row : pgRowSet) {
+            initColumnNamesIfNeeded(columnIndexes, columnsNames, row);
+            Map<String, Object> rowMap = createRowMap(columnTypeMap, columnIndexes, row);
+            result.add(rowMap);
         }
+        return result;
+    }
+
+    private void initColumnNamesIfNeeded(List<Pair<Integer, String>> columnIndexes,
+                                         List<String> columnsNames, io.reactiverse.pgclient.Row row) {
+        if (columnIndexes.isEmpty()) {
+            for (int x = 0; x < row.size(); x++) {
+                val columnName = row.getColumnName(x);
+                val index = columnsNames.indexOf(columnName);
+                columnIndexes.add(Pair.of(index, columnName));
+            }
+        }
+    }
+
+    private Map<String, Object> createRowMap(Map<String, ColumnType> columnTypeMap,
+                                             List<Pair<Integer, String>> columnIndexes,
+                                             io.reactiverse.pgclient.Row row) {
+        Map<String, Object> rowMap = new HashMap<>();
+        columnIndexes.forEach(p -> {
+            rowMap.put(p.getValue(), typeConverter.convert(
+                    columnTypeMap.get(row.getColumnName(p.getKey())),
+                    row.getValue(p.getKey())));
+        });
+        return rowMap;
     }
 
     @Override
@@ -116,13 +138,23 @@ public class AdbQueryExecutor implements DatabaseExecutor {
     }
 
     @Override
-    public void executeWithParams(String sql, List<Object> params, Handler<AsyncResult<?>> resultHandler) {
+    public void executeWithParams(String sql, List<Object> params, List<ColumnMetadata> metadata, Handler<AsyncResult<?>> resultHandler) {
         pool.getConnection(ar1 -> {
             if (ar1.succeeded()) {
                 PgConnection conn = ar1.result();
+                final Map<String, ColumnType> columnTypeMap =
+                        metadata.stream().collect(Collectors.toMap(ColumnMetadata::getName, ColumnMetadata::getType));
                 conn.preparedQuery(sql, new ArrayTuple(params), ar2 -> {
                     if (ar2.succeeded()) {
-                        resultHandler.handle(Future.succeededFuture(ar2.result()));
+                        try {
+                            List<Pair<Integer, String>> columnIndexes = new ArrayList<>();
+                            List<Map<String, Object>> result = createResult(columnTypeMap, columnIndexes, ar2.result());
+                            resultHandler.handle(Future.succeededFuture(result));
+                        } catch (Exception e) {
+                            conn.close();
+                            log.error("Error converting ADB values to jdbc types!", e);
+                            resultHandler.handle(Future.failedFuture(e));
+                        }
                     } else {
                         resultHandler.handle(Future.failedFuture(ar2.cause()));
                     }
@@ -177,7 +209,7 @@ public class AdbQueryExecutor implements DatabaseExecutor {
             if (rs.succeeded()) {
                 promise.complete(tx);
             } else {
-                log.error("Ошибка выполнения запроса [{}]", request.getSql(), rs.cause());
+                log.error("Error executing query [{}]", request.getSql(), rs.cause());
                 promise.fail(rs.cause());
             }
         }));

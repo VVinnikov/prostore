@@ -12,17 +12,17 @@ import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
 public class QueryResult {
 
     /**
-     * RequestId
+     * Request identifier
      */
     private String requestId;
 
     /**
-     * List of result map
+     * Query result List<Map<ColumnName, ColumnValue>>
      */
     private List<Map<String, Object>> result;
 
     /**
-     * is result empty
+     * Is query result empty
      */
     private boolean empty;
 

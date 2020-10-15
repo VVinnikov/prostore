@@ -3,13 +3,14 @@ package ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.core.json.JsonObject;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.avro.Schema;
 import org.springframework.stereotype.Component;
+import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.common.reader.QueryResult;
+import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
 import ru.ibs.dtm.query.execution.plugin.adqm.common.DdlUtils;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
@@ -20,10 +21,7 @@ import ru.ibs.dtm.query.execution.plugin.adqm.service.StatusReporter;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw.load.*;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.lang.String.format;
@@ -80,22 +78,24 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         }
 
         String fullName = DdlUtils.getQualifiedTableName(request, appConfiguration);
-        reportStart(request.getTopic(), fullName);
+        reportStart(request.getKafkaParameter().getUploadMetadata().getTopic(), fullName);
         // 1. Determine table engine (_actual_shard)
-        Future<String> engineFull = getTableSetting(fullName + ACTUAL_POSTFIX, "engine_full");
+        final String engineFullColumn = "engine_full";
+        Future<String> engineFull = getTableSetting(fullName + ACTUAL_POSTFIX, engineFullColumn, createVarcharColumnMetadata(engineFullColumn));
         // 2. Get sorting order (_actual)
-        Future<String> sortingKey = getTableSetting(fullName + ACTUAL_SHARD_POSTFIX, "sorting_key");
+        final String sortingKeyColumn = "sorting_key";
+        Future<String> sortingKey = getTableSetting(fullName + ACTUAL_SHARD_POSTFIX, sortingKeyColumn, createVarcharColumnMetadata(sortingKeyColumn));
 
         // 3. Create _ext_shard based on schema from request
         final Schema schema;
         try {
-            schema = new Schema.Parser().parse(request.getSchema().encode());
+            schema = new Schema.Parser().parse(request.getKafkaParameter().getUploadMetadata().getExternalTableSchema());
         } catch (Exception e) {
             return Future.failedFuture(e);
         }
 
         Future<Void> extTableF = sortingKey.compose(keys ->
-                createExternalTable(request.getTopic(), fullName, schema, keys));
+                createExternalTable(request.getKafkaParameter().getUploadMetadata().getTopic(), fullName, schema, keys));
 
         // 4. Create _buffer_shard
         Future<Void> buffShardF = sortingKey.compose(keys ->
@@ -111,39 +111,42 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
 
         // 7. Create _actual_loader_shard
         Future<Void> actualLoaderF = extTableF.compose(v ->
-                createActualLoaderTable(fullName + ACTUAL_LOADER_SHARD_POSTFIX, schema, request.getQueryLoadParam().getDeltaHot()));
+                createActualLoaderTable(fullName + ACTUAL_LOADER_SHARD_POSTFIX, schema, request.getKafkaParameter().getSysCn()));
 
         return CompositeFuture.all(extTableF, buffShardF, buffF, buffLoaderF, actualLoaderF)
                 .compose(v -> createRestInitiator(request))
                 .compose(v -> Future.succeededFuture(QueryResult.emptyResult()), f -> {
-                    reportError(request.getTopic());
+                    reportError(request.getKafkaParameter().getUploadMetadata().getTopic());
                     return Future.failedFuture(f.getCause());
                 });
     }
 
-    private Future<String> getTableSetting(@NonNull String table, @NonNull String settingKey) {
+    private List<ColumnMetadata> createVarcharColumnMetadata(String column) {
+        List<ColumnMetadata> metadata = new ArrayList<>();
+        metadata.add(new ColumnMetadata(column, ColumnType.VARCHAR));
+        return metadata;
+    }
+
+    private Future<String> getTableSetting(@NonNull String table, @NonNull String settingKey, List<ColumnMetadata> metadata) {
         val nameParts = splitQualifiedTableName(table);
         if (!nameParts.isPresent()) {
             return Future.failedFuture(format("Cannot parse table name %s", table));
         }
-
         Promise<String> result = Promise.promise();
-
         String query = format(QUERY_TABLE_SETTINGS, settingKey, nameParts.get().getLeft(), nameParts.get().getRight());
-        databaseExecutor.execute(query, ar -> {
+        databaseExecutor.execute(query, metadata, ar -> {
             if (ar.failed()) {
                 result.fail(ar.cause());
                 return;
             }
-
             @SuppressWarnings("unchecked")
-            List<JsonObject> rows = ar.result().getList();
-            if (rows.size() == 0) {
+            List<Map<String, Object>> rows = ar.result();
+            if (rows.isEmpty()) {
                 result.fail(format("Cannot find %s for %s", settingKey, table));
                 return;
             }
 
-            result.complete(rows.get(0).getString(settingKey));
+            result.complete(rows.get(0).get(settingKey).toString());
         });
         return result.future();
     }
@@ -221,18 +224,18 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
 
         RestLoadRequest request = new RestLoadRequest();
         request.setRequestId(mppwRequest.getQueryRequest().getRequestId().toString());
-        request.setHotDelta(mppwRequest.getQueryLoadParam().getDeltaHot());
-        request.setDatamart(mppwRequest.getQueryLoadParam().getDatamart());
-        request.setTableName(mppwRequest.getQueryLoadParam().getTableName());
-        request.setZookeeperHost(mppwRequest.getZookeeperHost());
-        request.setZookeeperPort(mppwRequest.getZookeeperPort());
-        request.setKafkaTopic(mppwRequest.getTopic());
+        request.setSynCn(mppwRequest.getKafkaParameter().getSysCn());
+        request.setDatamart(mppwRequest.getKafkaParameter().getDatamart());
+        request.setTableName(mppwRequest.getKafkaParameter().getTargetTableName());
+        request.setZookeeperHost(mppwRequest.getKafkaParameter().getUploadMetadata().getZookeeperHost());
+        request.setZookeeperPort(mppwRequest.getKafkaParameter().getUploadMetadata().getZookeeperPort());
+        request.setKafkaTopic(mppwRequest.getKafkaParameter().getUploadMetadata().getTopic());
         request.setConsumerGroup(mppwProperties.getRestLoadConsumerGroup());
-        request.setFormat(mppwRequest.getQueryLoadParam().getFormat().getName());
-        request.setMessageProcessingLimit(mppwRequest.getQueryLoadParam().getMessageLimit());
+        request.setFormat(mppwRequest.getKafkaParameter().getUploadMetadata().getExternalTableFormat().getName());
+        request.setMessageProcessingLimit(mppwRequest.getKafkaParameter().getUploadMetadata().getExternalTableUploadMessageLimit());
 
         try {
-            val schema = new Schema.Parser().parse(mppwRequest.getSchema().encode());
+            val schema = new Schema.Parser().parse(mppwRequest.getKafkaParameter().getUploadMetadata().getExternalTableSchema());
             request.setSchema(schema);
             return restLoadInitiator.initiateLoading(request);
         } catch (Exception e) {

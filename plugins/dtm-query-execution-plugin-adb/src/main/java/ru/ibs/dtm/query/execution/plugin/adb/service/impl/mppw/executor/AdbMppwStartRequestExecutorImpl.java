@@ -4,13 +4,13 @@ import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
-import io.vertx.core.json.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.plugin.exload.Format;
 import ru.ibs.dtm.common.reader.QueryResult;
+import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
 import ru.ibs.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
 import ru.ibs.dtm.query.execution.plugin.adb.factory.MppwRestLoadRequestFactory;
 import ru.ibs.dtm.query.execution.plugin.adb.factory.MppwTransferRequestFactory;
@@ -67,13 +67,13 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
                                                                           RestLoadRequest restLoadRequest) {
         return Future.future((Promise<MppwKafkaRequestContext> promise) -> {
             final String keyColumnsSqlQuery = metadataSqlFactory.createKeyColumnsSqlQuery(
-                    context.getRequest().getQueryLoadParam().getDatamart(),
-                    context.getRequest().getQueryLoadParam().getTableName());
-            adbQueryExecutor.execute(keyColumnsSqlQuery, ar -> {
+                    context.getRequest().getKafkaParameter().getDatamart(),
+                    context.getRequest().getKafkaParameter().getTargetTableName());
+            final List<ColumnMetadata> metadata = metadataSqlFactory.createKeyColumnQueryMetadata();
+            adbQueryExecutor.execute(keyColumnsSqlQuery, metadata, ar -> {
                 if (ar.succeeded()) {
-                    final List<JsonObject> result = ar.result();
                     final MppwTransferDataRequest mppwTransferDataRequest =
-                            mppwTransferRequestFactory.create(context, result);
+                            mppwTransferRequestFactory.create(context, ar.result());
                     MppwKafkaRequestContext kafkaRequestContext =
                             new MppwKafkaRequestContext(restLoadRequest, mppwTransferDataRequest);
                     promise.complete(kafkaRequestContext);

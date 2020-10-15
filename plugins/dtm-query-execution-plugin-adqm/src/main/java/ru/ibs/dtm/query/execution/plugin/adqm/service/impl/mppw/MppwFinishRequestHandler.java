@@ -3,13 +3,13 @@ package ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.stereotype.Component;
+import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.common.reader.QueryResult;
+import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
 import ru.ibs.dtm.query.execution.plugin.adqm.common.DdlUtils;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
@@ -20,8 +20,10 @@ import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static java.lang.String.format;
@@ -66,7 +68,7 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
         }
 
         String fullName = DdlUtils.getQualifiedTableName(request, appConfiguration);
-        Long deltaHot = request.getQueryLoadParam().getDeltaHot();
+        long sysCn = request.getKafkaParameter().getSysCn();
 
         return sequenceAll(Arrays.asList(  // 1. drop shard tables
                 fullName + EXT_SHARD_POSTFIX,
@@ -76,17 +78,17 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
                 .compose(v -> sequenceAll(Arrays.asList( // 2. flush distributed tables
                         fullName + BUFFER_POSTFIX,
                         fullName + ACTUAL_POSTFIX), this::flushTable))
-                .compose(v -> closeActual(fullName, deltaHot))  // 3. insert refreshed records
+                .compose(v -> closeActual(fullName, sysCn))  // 3. insert refreshed records
                 .compose(v -> flushTable(fullName + ACTUAL_POSTFIX))  // 4. flush actual table
                 .compose(v -> sequenceAll(Arrays.asList(  // 5. drop buffer tables
                         fullName + BUFFER_POSTFIX,
                         fullName + BUFFER_SHARD_POSTFIX), this::dropTable))
                 .compose(v -> optimizeTable(fullName + ACTUAL_SHARD_POSTFIX))  // 6. merge shards
                 .compose(v -> {
-                    reportFinish(request.getTopic());
+                    reportFinish(request.getKafkaParameter().getUploadMetadata().getTopic());
                     return Future.succeededFuture(QueryResult.emptyResult());
                 }, f -> {
-                    reportError(request.getTopic());
+                    reportError(request.getKafkaParameter().getUploadMetadata().getTopic());
                     return Future.failedFuture(f.getCause());
                 });
     }
@@ -129,11 +131,9 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
         if (!parts.isPresent()) {
             return Future.failedFuture(format("Incorrect table name, cannot split to schema.table: %s", table));
         }
-
         String query = format(SELECT_COLUMNS_QUERY, parts.get().getLeft(), parts.get().getRight());
-
         Promise<String> promise = Promise.promise();
-        databaseExecutor.execute(query, ar -> {
+        databaseExecutor.execute(query, createVarcharColumnMetadata("name"), ar -> {
             if (ar.failed()) {
                 promise.fail(ar.cause());
                 return;
@@ -143,29 +143,30 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
         return promise.future();
     }
 
+    private List<ColumnMetadata> createVarcharColumnMetadata(String column) {
+        List<ColumnMetadata> metadata = new ArrayList<>();
+        metadata.add(new ColumnMetadata(column, ColumnType.VARCHAR));
+        return metadata;
+    }
+
     private Future<String> fetchSortingKey(@NonNull String table) {
         val parts = splitQualifiedTableName(table);
         if (!parts.isPresent()) {
             return Future.failedFuture(format("Incorrect table name, cannot split to schema.table: %s", table));
         }
-
-        String query = format(QUERY_TABLE_SETTINGS, "sorting_key", parts.get().getLeft(), parts.get().getRight());
-
+        final String sortingKeyColumn = "sorting_key";
+        String query = format(QUERY_TABLE_SETTINGS, sortingKeyColumn, parts.get().getLeft(), parts.get().getRight());
         Promise<String> promise = Promise.promise();
-        databaseExecutor.execute(query, ar -> {
+        databaseExecutor.execute(query, createVarcharColumnMetadata(sortingKeyColumn), ar -> {
             if (ar.failed()) {
                 promise.fail(ar.cause());
                 return;
             }
-
-            @SuppressWarnings("unchecked")
-            List<JsonObject> rows = ar.result().getList();
-            if (rows.size() == 0) {
+            if (ar.result().isEmpty()) {
                 promise.fail(format("Cannot find sorting_key for %s", table));
                 return;
             }
-
-            String sortingKey = rows.get(0).getString("sorting_key");
+            String sortingKey = ar.result().get(0).get(sortingKeyColumn).toString();
             String withoutSysFrom = Arrays.stream(sortingKey.split(",\\s*"))
                     .filter(c -> !c.equalsIgnoreCase(SYS_FROM_FIELD))
                     .collect(Collectors.joining(", "));
@@ -175,12 +176,10 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
         return promise.future();
     }
 
-    private String getColumnNames(@NonNull JsonArray result) {
-        @SuppressWarnings("unchecked")
-        List<JsonObject> rows = result.getList();
-        return rows
+    private String getColumnNames(@NonNull List<Map<String, Object>> result) {
+        return result
                 .stream()
-                .map(o -> o.getString("name"))
+                .map(o -> o.get("name").toString())
                 .filter(f -> !SYSTEM_FIELDS.contains(f))
                 .map(n -> "a." + n)
                 .collect(Collectors.joining(", "));

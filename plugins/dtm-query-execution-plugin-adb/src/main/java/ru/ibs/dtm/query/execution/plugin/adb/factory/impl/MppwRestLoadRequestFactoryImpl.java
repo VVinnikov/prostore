@@ -22,16 +22,16 @@ public class MppwRestLoadRequestFactoryImpl implements MppwRestLoadRequestFactor
     public RestLoadRequest create(MppwRequestContext context) {
         return RestLoadRequest.builder()
                 .requestId(context.getRequest().getQueryRequest().getRequestId().toString())
-                .hotDelta(context.getRequest().getQueryLoadParam().getDeltaHot())
-                .datamart(context.getRequest().getQueryLoadParam().getDatamart())
-                .tableName(context.getRequest().getQueryLoadParam().getTableName())
-                .zookeeperHost(context.getRequest().getZookeeperHost())
-                .zookeeperPort(context.getRequest().getZookeeperPort())
-                .kafkaTopic(context.getRequest().getTopic())
+                .sysCn(context.getRequest().getKafkaParameter().getSysCn())
+                .datamart(context.getRequest().getKafkaParameter().getDatamart())
+                .tableName(context.getRequest().getKafkaParameter().getTargetTableName())
+                .zookeeperHost(context.getRequest().getKafkaParameter().getUploadMetadata().getZookeeperHost())
+                .zookeeperPort(context.getRequest().getKafkaParameter().getUploadMetadata().getZookeeperPort())
+                .kafkaTopic(context.getRequest().getKafkaParameter().getUploadMetadata().getTopic())
                 .consumerGroup(mppwProperties.getConsumerGroup())
-                .format(context.getRequest().getQueryLoadParam().getFormat().getName())
-                .schema(new Schema.Parser().parse(context.getRequest().getSchema().encode()))
-                .messageProcessingLimit(context.getRequest().getQueryLoadParam().getMessageLimit())
+                .format(context.getRequest().getKafkaParameter().getUploadMetadata().getExternalTableFormat().getName())
+                .schema(new Schema.Parser().parse(context.getRequest().getKafkaParameter().getUploadMetadata().getExternalTableSchema()))
+                .messageProcessingLimit(context.getRequest().getKafkaParameter().getUploadMetadata().getExternalTableUploadMessageLimit())
                 .build();
     }
 }

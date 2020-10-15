@@ -9,7 +9,7 @@ import ru.ibs.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 
 public interface EdmlExecutor {
 
-    void execute(EdmlRequestContext context, EdmlQuery edmlQuery, Handler<AsyncResult<QueryResult>> asyncResultHandler);
+    void execute(EdmlRequestContext context, @Deprecated  EdmlQuery edmlQuery, Handler<AsyncResult<QueryResult>> asyncResultHandler);
 
     /**
      * Получить тип запроса

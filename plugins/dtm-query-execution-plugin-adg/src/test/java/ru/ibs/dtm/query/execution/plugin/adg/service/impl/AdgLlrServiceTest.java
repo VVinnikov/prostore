@@ -3,8 +3,6 @@ package ru.ibs.dtm.query.execution.plugin.adg.service.impl;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.VertxExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -23,9 +21,7 @@ import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.LlrRequest;
 import ru.ibs.dtm.query.execution.plugin.api.service.LlrService;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -38,63 +34,69 @@ import static org.mockito.Mockito.mock;
 @EnabledIfEnvironmentVariable(named = "skipITs", matches = "false")
 public class AdgLlrServiceTest {
 
-	private QueryEnrichmentService enrichmentService = mock(QueryEnrichmentService.class);
-	private QueryExecutorService executorService = mock(QueryExecutorService.class);
-	private LlrService<QueryResult> llrService = new AdgLlrService(enrichmentService, executorService);
+    private QueryEnrichmentService enrichmentService = mock(QueryEnrichmentService.class);
+    private QueryExecutorService executorService = mock(QueryExecutorService.class);
+    private LlrService<QueryResult> llrService = new AdgLlrService(enrichmentService, executorService);
 
-	@Test
-	void testExecuteNotEmptyOk() {
-		QueryRequest queryRequest = new QueryRequest();
-		queryRequest.setRequestId(UUID.randomUUID());
-		queryRequest.setSql("select name from s");
+    @Test
+    void testExecuteNotEmptyOk() {
+        QueryRequest queryRequest = new QueryRequest();
+        queryRequest.setRequestId(UUID.randomUUID());
+        queryRequest.setSql("select name from s");
 
-		QueryResultItem queryResultItem = new QueryResultItem(
-				Collections.singletonList(new ColumnMetadata("name", ColumnType.VARCHAR)),
-				Collections.singletonList(Collections.singletonList("val")));
-		QueryResult expectedResult = new QueryResult(
-				queryRequest.getRequestId(),
-				new JsonArray(Collections.singletonList(new JsonObject().put("name", "val"))));
+        QueryResultItem queryResultItem = new QueryResultItem(
+                Collections.singletonList(new ColumnMetadata("name", ColumnType.VARCHAR)),
+                Collections.singletonList(Collections.singletonList("val")));
+        List<Map<String, Object>> result = new ArrayList<>();
+        Map<String, Object> rowMap = new HashMap<>();
+        rowMap.put("name", "val");
+        result.add(rowMap);
+        QueryResult expectedResult = new QueryResult(
+                queryRequest.getRequestId(),
+                result);
 
-		prepare(queryRequest, queryResultItem);
+        prepare(queryRequest, queryResultItem);
 
-		llrService.execute(new LlrRequestContext(new LlrRequest(queryRequest, new ArrayList<>())), handler -> {
-			assertTrue(handler.succeeded());
-			assertEquals(expectedResult, handler.result());
-		});
-	}
+        llrService.execute(new LlrRequestContext(new LlrRequest(queryRequest, new ArrayList<>(),
+                Collections.singletonList(new ColumnMetadata("name", ColumnType.VARCHAR)))), handler -> {
+            assertTrue(handler.succeeded());
+            assertEquals(expectedResult, handler.result());
+        });
+    }
 
-	@Test
-	void testExecuteEmptyOk() {
-		QueryRequest queryRequest = new QueryRequest();
-		queryRequest.setRequestId(UUID.randomUUID());
-		queryRequest.setSql("select name from s");
+    @Test
+    void testExecuteEmptyOk() {
+        QueryRequest queryRequest = new QueryRequest();
+        queryRequest.setRequestId(UUID.randomUUID());
+        queryRequest.setSql("select name from s");
 
-		QueryResultItem queryResultItem = new QueryResultItem(
-				Collections.singletonList(new ColumnMetadata("name", ColumnType.VARCHAR)),
-				Collections.emptyList());
-		QueryResult expectedResult = new QueryResult(
-				queryRequest.getRequestId(),
-				new JsonArray());
+        QueryResultItem queryResultItem = new QueryResultItem(
+                Collections.singletonList(new ColumnMetadata("name", ColumnType.VARCHAR)),
+                Collections.emptyList());
+        QueryResult expectedResult = new QueryResult(
+                queryRequest.getRequestId(),
+                new ArrayList<>());
 
-		prepare(queryRequest, queryResultItem);
+        prepare(queryRequest, queryResultItem);
 
-		llrService.execute(new LlrRequestContext(new LlrRequest(queryRequest, new ArrayList<>())), handler -> {
-			assertTrue(handler.succeeded());
-			assertEquals(expectedResult, handler.result());
-		});
-	}
+        llrService.execute(new LlrRequestContext(new LlrRequest(queryRequest, new ArrayList<>(),
+                Collections.singletonList(new ColumnMetadata("name", ColumnType.VARCHAR)))), handler -> {
+            assertTrue(handler.succeeded());
+            assertEquals(expectedResult, handler.result());
+        });
+    }
 
-	private void prepare(QueryRequest queryRequest, QueryResultItem queryResultItem) {
-		doAnswer(invocation -> {
-			Handler<AsyncResult<QueryResultItem>> handler = invocation.getArgument(1);
-			handler.handle(Future.succeededFuture(queryResultItem));
-			return null;
-		}).when(executorService).execute(any(), any());
+    private void prepare(QueryRequest queryRequest, QueryResultItem queryResultItem) {
+        doAnswer(invocation -> {
+            Handler<AsyncResult<QueryResultItem>> handler = invocation.getArgument(2);
+            handler.handle(Future.succeededFuture(queryResultItem));
+            return null;
+        }).when(executorService).execute(any(), any(), any());
 
-		doAnswer(invocation -> {
-			Handler<AsyncResult<String>> handler = invocation.getArgument(1);
-			handler.handle(Future.succeededFuture(queryRequest.getSql()));
-			return null;
-		}).when(enrichmentService).enrich(any(), any());
-	}
+        doAnswer(invocation -> {
+            Handler<AsyncResult<String>> handler = invocation.getArgument(1);
+            handler.handle(Future.succeededFuture(queryRequest.getSql()));
+            return null;
+        }).when(enrichmentService).enrich(any(), any());
+    }
 }

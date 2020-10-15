@@ -1,14 +1,11 @@
 package ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw;
 
 import io.vertx.core.Future;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import lombok.val;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import ru.ibs.dtm.common.plugin.exload.Format;
-import ru.ibs.dtm.common.plugin.exload.QueryLoadParam;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
@@ -21,6 +18,8 @@ import ru.ibs.dtm.query.execution.plugin.adqm.service.impl.mppw.load.RestLoadIni
 import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockDatabaseExecutor;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockEnvironment;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.mock.MockStatusReporter;
+import ru.ibs.dtm.query.execution.plugin.api.mppw.parameter.KafkaParameter;
+import ru.ibs.dtm.query.execution.plugin.api.mppw.parameter.UploadExternalMetadata;
 import ru.ibs.dtm.query.execution.plugin.api.request.MppwRequest;
 
 import java.util.*;
@@ -48,13 +47,13 @@ class MppwStartRequestHandlerTest {
 
     @Test
     public void testStartCallOrder() {
-        Map<Predicate<String>, JsonArray> mockData = new HashMap<>();
-        mockData.put(t -> t.contains("select engine_full"), new JsonArray(Collections.singletonList(
-                new JsonObject("{\"engine_full\": \"Distributed('test_arenadata', 'shares', 'accounts_actual_shard', column1)\"}")
-        )));
-        mockData.put(t -> t.contains("select sorting_key"), new JsonArray(Collections.singletonList(
-                new JsonObject("{\"sorting_key\": \"column1, column2, sys_from\"}")
-        )));
+        Map<Predicate<String>, List<Map<String, Object>>> mockData = new HashMap<>();
+        mockData.put(t -> t.contains("select engine_full"), Collections.singletonList(
+                createRowMap("engine_full", "Distributed('test_arenadata', 'shares', 'accounts_actual_shard', column1)")
+        ));
+        mockData.put(t -> t.contains("select sorting_key"), Collections.singletonList(
+                createRowMap("sorting_key", "column1, column2, sys_from")
+        ));
 
         DatabaseExecutor executor = new MockDatabaseExecutor(Arrays.asList(
                 t -> t.contains("CREATE TABLE IF NOT EXISTS dev__shares.accounts_ext_shard ON CLUSTER test_arenadata") &&
@@ -73,12 +72,21 @@ class MppwStartRequestHandlerTest {
         MppwRequestHandler handler = new MppwStartRequestHandler(executor, ddlProperties, appConfiguration,
                 createMppwProperties(KAFKA),
                 mockReporter, mockInitiator);
-        QueryLoadParam loadParam = createQueryLoadParam();
-        JsonObject schema = createSchema();
-
-        MppwRequest request = new MppwRequest(null, loadParam, schema);
-        request.setTopic(TEST_TOPIC);
-        request.setZookeeperHost("zkhost");
+        MppwRequest request = new MppwRequest(QueryRequest.builder()
+                .requestId(UUID.randomUUID())
+                .datamartMnemonic("shares").build(),
+                true, KafkaParameter.builder()
+                .datamart("shares")
+                .sysCn(101L)
+                .targetTableName("accounts")
+                .uploadMetadata(UploadExternalMetadata.builder()
+                        .externalTableSchema(getSchema())
+                        .externalTableFormat(Format.AVRO)
+                        .externalTableUploadMessageLimit(1000)
+                        .topic(TEST_TOPIC)
+                        .zookeeperHost("zkhost")
+                        .build())
+                .build());
 
         handler.execute(request).onComplete(ar -> {
             assertTrue(ar.succeeded(), ar.cause() != null ? ar.cause().getMessage() : "");
@@ -89,13 +97,15 @@ class MppwStartRequestHandlerTest {
 
     @Test
     public void testStartCallOrderWithRest() {
-        Map<Predicate<String>, JsonArray> mockData = new HashMap<>();
-        mockData.put(t -> t.contains("select engine_full"), new JsonArray(Collections.singletonList(
-                new JsonObject("{\"engine_full\": \"Distributed('test_arenadata', 'shares', 'accounts_actual_shard', column1)\"}")
-        )));
-        mockData.put(t -> t.contains("select sorting_key"), new JsonArray(Collections.singletonList(
-                new JsonObject("{\"sorting_key\": \"column1, column2, sys_from\"}")
-        )));
+        Map<Predicate<String>, List<Map<String, Object>>> mockData = new HashMap<>();
+        mockData.put(t -> t.contains("select engine_full"),
+                Collections.singletonList(
+                        createRowMap("engine_full", "Distributed('test_arenadata', 'shares', 'accounts_actual_shard', column1)")
+                ));
+        mockData.put(t -> t.contains("select sorting_key"),
+                Collections.singletonList(
+                        createRowMap("sorting_key", "column1, column2, sys_from")
+                ));
 
         DatabaseExecutor executor = new MockDatabaseExecutor(Arrays.asList(
                 t -> t.contains("CREATE TABLE IF NOT EXISTS dev__shares.accounts_ext_shard ON CLUSTER test_arenadata") &&
@@ -117,21 +127,33 @@ class MppwStartRequestHandlerTest {
         MppwRequestHandler handler = new MppwStartRequestHandler(executor, ddlProperties, appConfiguration,
                 createMppwProperties(REST),
                 mockReporter, mockInitiator);
-        QueryLoadParam loadParam = createQueryLoadParam();
-        JsonObject schema = createSchema();
-        QueryRequest queryRequest = new QueryRequest();
-        queryRequest.setRequestId(UUID.randomUUID());
-        queryRequest.setSourceType(SourceType.ADQM);
-
-        MppwRequest request = new MppwRequest(queryRequest, loadParam, schema);
-        request.setTopic(TEST_TOPIC);
-        request.setZookeeperHost("zkhost");
-
+        MppwRequest request = new MppwRequest(QueryRequest.builder()
+                .requestId(UUID.randomUUID())
+                .sourceType(SourceType.ADQM)
+                .datamartMnemonic("shares").build(),
+                true, KafkaParameter.builder()
+                .datamart("shares")
+                .sysCn(101L)
+                .targetTableName("accounts")
+                .uploadMetadata(UploadExternalMetadata.builder()
+                        .externalTableSchema(getSchema())
+                        .externalTableFormat(Format.AVRO)
+                        .externalTableUploadMessageLimit(1000)
+                        .topic(TEST_TOPIC)
+                        .zookeeperHost("zkhost")
+                        .build())
+                .build());
         handler.execute(request).onComplete(ar -> {
             assertTrue(ar.succeeded(), ar.cause() != null ? ar.cause().getMessage() : "");
             assertTrue(mockReporter.wasCalled("start"));
             verify(mockInitiator, only()).initiateLoading(any());
         });
+    }
+
+    private Map<String, Object> createRowMap(String key, Object value) {
+        Map<String, Object> map = new HashMap<>();
+        map.put(key, value);
+        return map;
     }
 
     private MockStatusReporter createMockReporter(String expectedConsumerGroup) {
@@ -140,20 +162,8 @@ class MppwStartRequestHandlerTest {
         return new MockStatusReporter(expected);
     }
 
-    private QueryLoadParam createQueryLoadParam() {
-        val loadParam = new QueryLoadParam();
-        loadParam.setDatamart("shares");
-        loadParam.setTableName("accounts");
-        loadParam.setDeltaHot(101L);
-        loadParam.setFormat(Format.AVRO);
-        loadParam.setMessageLimit(1000);
-        return loadParam;
-    }
-
-    private JsonObject createSchema() {
-        String jsonSchema = "{\"type\":\"record\",\"name\":\"accounts\",\"namespace\":\"dm2\",\"fields\":[{\"name\":\"column1\",\"type\":[\"null\",\"long\"],\"default\":null,\"defaultValue\":\"null\"},{\"name\":\"column2\",\"type\":[\"null\",\"long\"],\"default\":null,\"defaultValue\":\"null\"},{\"name\":\"column3\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}],\"default\":null,\"defaultValue\":\"null\"},{\"name\":\"sys_op\",\"type\":\"int\",\"default\":0}]}";
-
-        return new JsonObject(jsonSchema);
+    private String getSchema() {
+        return  "{\"type\":\"record\",\"name\":\"accounts\",\"namespace\":\"dm2\",\"fields\":[{\"name\":\"column1\",\"type\":[\"null\",\"long\"],\"default\":null,\"defaultValue\":\"null\"},{\"name\":\"column2\",\"type\":[\"null\",\"long\"],\"default\":null,\"defaultValue\":\"null\"},{\"name\":\"column3\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}],\"default\":null,\"defaultValue\":\"null\"},{\"name\":\"sys_op\",\"type\":\"int\",\"default\":0}]}";
     }
 
     private MppwProperties createMppwProperties(LoadType loadType) {

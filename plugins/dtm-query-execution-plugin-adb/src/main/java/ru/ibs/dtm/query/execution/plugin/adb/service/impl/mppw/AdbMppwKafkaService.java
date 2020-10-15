@@ -35,7 +35,7 @@ public class AdbMppwKafkaService implements MppwKafkaService<QueryResult> {
                 asyncHandler.handle(Future.failedFuture("MppwRequest should not be null"));
                 return;
             }
-            final LoadType loadType = LoadType.valueOf(context.getRequest().getLoadStart());
+            final LoadType loadType = LoadType.valueOf(context.getRequest().getIsLoadStart());
             mppwExecutors.get(loadType).execute(context).onComplete(asyncHandler);
         } catch (Exception e) {
             asyncHandler.handle(Future.failedFuture(e));

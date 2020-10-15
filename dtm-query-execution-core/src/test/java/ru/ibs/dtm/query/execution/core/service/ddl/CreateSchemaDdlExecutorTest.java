@@ -61,7 +61,6 @@ class CreateSchemaDdlExecutorTest {
         schema = "shares";
         final QueryRequest queryRequest = new QueryRequest();
         queryRequest.setRequestId(UUID.randomUUID());
-        queryRequest.setSubRequestId(UUID.randomUUID().toString());
         queryRequest.setDatamartMnemonic(schema);
         queryRequest.setSql("create database shares");
         SqlNode query = planner.parse(queryRequest.getSql());

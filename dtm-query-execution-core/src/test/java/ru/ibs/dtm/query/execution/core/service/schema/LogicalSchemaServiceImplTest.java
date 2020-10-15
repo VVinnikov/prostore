@@ -55,8 +55,6 @@ class LogicalSchemaServiceImplTest {
         queryRequest = new QueryRequest();
         queryRequest.setDatamartMnemonic(DATAMART);
         queryRequest.setRequestId(UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"));
-        queryRequest.setSubRequestId("6efad624-b9da-4ba1-9fed-f2da478b08e8");
-
     }
 
     @Test

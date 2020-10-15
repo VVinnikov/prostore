@@ -168,10 +168,8 @@ public class CoordinatorReaderService implements Protocol {
     }
 
     private QueryRequest prepareQueryRequest(String sql) {
-        UUID uuid = UUID.randomUUID();
         String schema = this.schema;
-
-        QueryRequest queryRequest = new QueryRequest(uuid, schema, sql);
+        QueryRequest queryRequest = new QueryRequest(schema, sql);
         log.info("Sql query generated {}", queryRequest);
         return queryRequest;
     }

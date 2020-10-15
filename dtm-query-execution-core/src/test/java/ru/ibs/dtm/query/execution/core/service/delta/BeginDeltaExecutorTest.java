@@ -73,7 +73,7 @@ class BeginDeltaExecutorTest {
 
         QueryResult queryResult = new QueryResult();
         queryResult.setRequestId(req.getRequestId());
-        queryResult.setResult(createResult(statusDate, 0L));
+        queryResult.setResult(createResult(statusDate, 2L));
 
         when(deltaServiceDao.writeNewDeltaHot(eq(datamart), any()))
                 .thenReturn(Future.succeededFuture(2L));
@@ -88,7 +88,7 @@ class BeginDeltaExecutorTest {
             }
         });
 
-        assertEquals(res.getSinId(), ((QueryResult) promise.future().result()).getResult().getJsonObject(0).getLong("sinId"));
+        assertEquals(res.getSinId(), ((QueryResult) promise.future().result()).getResult().get(0).get("sinId"));
     }
 
     @Test

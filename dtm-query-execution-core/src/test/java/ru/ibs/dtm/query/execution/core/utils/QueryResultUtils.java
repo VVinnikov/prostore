@@ -11,8 +11,8 @@ public class QueryResultUtils {
     public static List<Map<String, Object>> createResultWithSingleRow(List<String> columns, List<Object> values){
         List<Map<String, Object>> result = new ArrayList<>();
 
-        assert columns.isEmpty() || values.isEmpty();
-        assert columns.size() != values.size();
+        assert !columns.isEmpty() || !values.isEmpty();
+        assert columns.size() == values.size();
 
         Map<String, Object> rowMap = new HashMap<>();
         IntStream.range(0, columns.size()).forEach(i -> {

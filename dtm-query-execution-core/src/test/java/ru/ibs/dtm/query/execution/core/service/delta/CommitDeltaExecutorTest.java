@@ -1,8 +1,6 @@
 package ru.ibs.dtm.query.execution.core.service.delta;
 
 import io.vertx.core.*;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.delta.QueryDeltaResult;
@@ -22,7 +20,6 @@ import ru.ibs.dtm.query.execution.plugin.api.delta.query.CommitDeltaQuery;
 import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -127,8 +124,7 @@ class CommitDeltaExecutorTest {
 
         QueryResult queryResult = new QueryResult();
         queryResult.setRequestId(req.getRequestId());
-        queryResult.setResult(new JsonArray());
-        queryResult.getResult().add(JsonObject.mapFrom(new QueryDeltaResult(nowStatusDate, 1L)));
+        queryResult.setResult(createResult(nowStatusDate, 1L));
 
         when(deltaServiceDao.writeDeltaHotSuccess(any(), any())).thenReturn(Future.succeededFuture(1L));
 
@@ -142,8 +138,8 @@ class CommitDeltaExecutorTest {
             }
         });
 
-        assertEquals(res.getSinId(), ((QueryResult) promise.future().result()).getResult().getJsonObject(0).getLong("sinId"));
-        assertEquals(res.getStatusDate(), ((QueryResult) promise.future().result()).getResult().getJsonObject(0).getString("statusDate"));
+        assertEquals(res.getSinId(), ((QueryResult) promise.future().result()).getResult().get(0).get("sinId"));
+        assertEquals(res.getStatusDate(), ((QueryResult) promise.future().result()).getResult().get(0).get("statusDate"));
     }
 
     @Test
@@ -179,8 +175,6 @@ class CommitDeltaExecutorTest {
             }
         });
 
-        assertEquals(res.getSinId(), ((QueryResult) promise.future().result()).getResult().getJsonObject(0).getLong("sinId"));
-        assertEquals(res.getStatusDate(), ((QueryResult) promise.future().result()).getResult().getJsonObject(0).getString("statusDate"));
         assertEquals(res.getSinId(), ((QueryResult) promise.future().result()).getResult().get(0).get("sinId"));
         assertEquals(res.getStatusDate(), ((QueryResult) promise.future().result()).getResult().get(0).get("statusDate"));
     }
@@ -205,8 +199,7 @@ class CommitDeltaExecutorTest {
 
         QueryResult queryResult = new QueryResult();
         queryResult.setRequestId(req.getRequestId());
-        queryResult.setResult(new JsonArray());
-        queryResult.getResult().add(JsonObject.mapFrom(new QueryDeltaResult(nowStatusDate, 1L)));
+        queryResult.setResult(createResult(nowStatusDate, 1L));
 
         when(deltaServiceDao.writeDeltaHotSuccess(any(), any())).thenReturn(Future.succeededFuture(1L));
 

@@ -6,7 +6,7 @@ import lombok.Data;
 import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
 
 /**
- * Result of executing sql-query
+ * Sql query response
  */
 @Data
 public class QueryResult {
@@ -27,7 +27,7 @@ public class QueryResult {
     private boolean empty;
 
     /**
-     * Query result metadata
+     * List of system metadata
      */
     private List<ColumnMetadata> metadata;
 }

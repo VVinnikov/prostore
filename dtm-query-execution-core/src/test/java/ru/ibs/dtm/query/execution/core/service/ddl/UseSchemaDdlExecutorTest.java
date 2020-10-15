@@ -65,7 +65,6 @@ class UseSchemaDdlExecutorTest {
         useSchemaDdlExecutor = new UseSchemaDdlExecutor(metadataExecutor, serviceDbFacade);
         final QueryRequest queryRequest = new QueryRequest();
         queryRequest.setRequestId(UUID.randomUUID());
-        queryRequest.setSubRequestId(UUID.randomUUID().toString());
         queryRequest.setDatamartMnemonic(schema);
         queryRequest.setSql("USE shares");
         SqlNode query = planner.parse(queryRequest.getSql());

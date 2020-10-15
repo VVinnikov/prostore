@@ -26,7 +26,6 @@ import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.apache.http.util.TextUtils.isEmpty;
 import static ru.ibs.dtm.jdbc.util.DriverConstants.HOST_PROPERTY;
@@ -94,7 +93,9 @@ public class CoordinatorReaderService implements Protocol {
     @Override
     public List<ColumnInfo> getDatabaseColumns(String schema, String tableName) {
         try {
+            log.debug("schema: {}, table: {}", schema, tableName);
             String uri = String.format(backendHostUrl + GET_ATTRIBUTES_URL, schema, tableName);
+            log.debug("uri: {}", uri);
             HttpGet httpGet = new HttpGet(uri);
             try (CloseableHttpResponse response = client.execute(httpGet)) {
                 checkResponseStatus(response);
@@ -168,10 +169,8 @@ public class CoordinatorReaderService implements Protocol {
     }
 
     private QueryRequest prepareQueryRequest(String sql) {
-        UUID uuid = UUID.randomUUID();
         String schema = this.schema;
-
-        QueryRequest queryRequest = new QueryRequest(uuid, schema, sql);
+        QueryRequest queryRequest = new QueryRequest(schema, sql);
         log.info("Sql query generated {}", queryRequest);
         return queryRequest;
     }

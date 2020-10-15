@@ -63,13 +63,13 @@ public class BeginDeltaExecutor implements DeltaExecutor, StatusEventPublisher {
 
     @NotNull
     private DeltaRecord createNextDeltaRecord(Long deltaHot, String datamartMnemonic) {
-        DeltaRecord newDelta = new DeltaRecord();
-        newDelta.setSinId(deltaHot);
-        newDelta.setDatamartMnemonic(datamartMnemonic);
-        newDelta.setLoadProcId(UUID.randomUUID().toString());
-        newDelta.setStatusDate(LocalDateTime.now());
-        newDelta.setStatus(DeltaLoadStatus.IN_PROCESS);
-        return newDelta;
+        return DeltaRecord.builder()
+                .sinId(deltaHot)
+                .datamartMnemonic(datamartMnemonic)
+                .loadProcId(UUID.randomUUID().toString())
+                .statusDate(LocalDateTime.now())
+                .status(DeltaLoadStatus.IN_PROCESS)
+                .build();
     }
 
     @Override

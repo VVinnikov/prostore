@@ -51,7 +51,7 @@ public class DeltaServiceImpl implements DeltaService {
 
     @Override
     public Future<SelectOnInterval> getCnFromCnToByDeltaNums(String datamart, long deltaFrom, long deltaTo) {
-        return Future.future(handler -> CompositeFuture.all(deltaServiceDao.getDeltaByNum(datamart, deltaFrom), deltaServiceDao.getDeltaByNum(datamart, deltaTo))
+        return Future.future(handler -> CompositeFuture.join(deltaServiceDao.getDeltaByNum(datamart, deltaFrom), deltaServiceDao.getDeltaByNum(datamart, deltaTo))
                 .onSuccess(ar -> {
                     Long cnFrom = ((OkDelta) ar.resultAt(0)).getCnFrom();
                     Long cnTo = ((OkDelta) ar.resultAt(1)).getCnTo();

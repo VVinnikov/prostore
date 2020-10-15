@@ -77,7 +77,7 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
                             deltaResult.add(deltaInformation);
                         });
             } else {
-                if (deltaInformation.getType().equals(DeltaType.FINISHED_IN) || deltaInformation.getType().equals(DeltaType.STARTED_IN)) {
+                if (DeltaType.FINISHED_IN.equals(deltaInformation.getType()) || DeltaType.STARTED_IN.equals(deltaInformation.getType())) {
                     calculateSelectOnInterval(deltaInformation, ar -> {
                         if (ar.succeeded()) {
                             deltaInformation.setSelectOnInterval(ar.result());
@@ -103,9 +103,7 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
     }
 
     private DeltaRangeInvalidException createDeltaRangeInvalidException(List<String> errors){
-        StringBuffer exceptionMessage = new StringBuffer();
-        errors.forEach(error -> exceptionMessage.append(error).append("; "));
-        return new DeltaRangeInvalidException(exceptionMessage.toString());
+        return new DeltaRangeInvalidException(String.join(";", errors));
     }
 
     private void calculateSelectOnNum(DeltaInformation deltaInformation, Handler<AsyncResult<Long>> handler){

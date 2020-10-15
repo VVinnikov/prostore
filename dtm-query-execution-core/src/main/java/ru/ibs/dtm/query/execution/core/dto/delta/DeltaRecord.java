@@ -1,16 +1,14 @@
 package ru.ibs.dtm.query.execution.core.dto.delta;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import ru.ibs.dtm.common.delta.DeltaLoadStatus;
 
 import java.time.LocalDateTime;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString

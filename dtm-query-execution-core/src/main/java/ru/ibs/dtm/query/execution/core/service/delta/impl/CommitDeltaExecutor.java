@@ -13,7 +13,6 @@ import ru.ibs.dtm.common.status.StatusEventCode;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
-import ru.ibs.dtm.query.execution.core.dto.delta.HotDelta;
 import ru.ibs.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import ru.ibs.dtm.query.execution.core.service.delta.DeltaExecutor;
 import ru.ibs.dtm.query.execution.core.service.delta.StatusEventPublisher;
@@ -50,7 +49,7 @@ public class CommitDeltaExecutor implements DeltaExecutor, StatusEventPublisher 
         deltaServiceDao.writeDeltaHotSuccess(datamart, commitDelta.getDeltaDateTime())
                 .onSuccess(committedDeltaNum -> {
                     try {
-                    DeltaRecord deltaRecord = createDeltaRecord(context, commitDelta, committedDeltaNum);
+                    DeltaRecord deltaRecord = createDeltaRecord(context, committedDeltaNum);
                     publishStatus(StatusEventCode.DELTA_CLOSE, datamart, deltaRecord);
                     QueryResult res = deltaQueryResultFactory.create(context, deltaRecord);
                     handler.handle(Future.succeededFuture(res));
@@ -61,14 +60,13 @@ public class CommitDeltaExecutor implements DeltaExecutor, StatusEventPublisher 
                 .onFailure(err -> handler.handle(Future.failedFuture(err)));
     }
 
-    private DeltaRecord createDeltaRecord(DeltaRequestContext context, CommitDeltaQuery commitDelta, Long deltaNum){
-        DeltaRecord deltaRecord = new DeltaRecord();
-        deltaRecord.setSinId(deltaNum);
-        deltaRecord.setStatusDate(commitDelta.getDeltaDateTime());
-        deltaRecord.setSysDate(getSysDate(context));
-        deltaRecord.setStatusDate(LocalDateTime.now());
-        deltaRecord.setStatus(DeltaLoadStatus.SUCCESS);
-        return deltaRecord;
+    private DeltaRecord createDeltaRecord(DeltaRequestContext context, Long deltaNum){
+        return DeltaRecord.builder()
+                .sinId(deltaNum)
+                .statusDate(LocalDateTime.now())
+                .sysDate(getSysDate(context))
+                .status(DeltaLoadStatus.SUCCESS)
+                .build();
     }
 
     private LocalDateTime getSysDate(DeltaRequestContext context) {

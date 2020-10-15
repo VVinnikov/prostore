@@ -5,8 +5,6 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import ru.ibs.dtm.common.delta.DeltaLoadStatus;
 import ru.ibs.dtm.common.delta.QueryDeltaResult;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
@@ -23,7 +21,6 @@ import ru.ibs.dtm.query.execution.plugin.api.delta.query.CommitDeltaQuery;
 import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

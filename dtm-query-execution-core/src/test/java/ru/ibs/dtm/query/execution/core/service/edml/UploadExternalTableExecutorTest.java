@@ -96,7 +96,7 @@ class UploadExternalTableExecutorTest {
 
         Mockito.when(deltaServiceDao.writeNewOperation(any()))
                 .thenReturn(Future.succeededFuture(sysCn));
-
+      
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
             handler.handle(Future.succeededFuture(queryResult));
@@ -273,7 +273,7 @@ class UploadExternalTableExecutorTest {
         });
         assertTrue(promise.future().failed());
     }
-
+  
     @Test
     void executeKafkaExecutionAndWriteOpError() {
         Promise promise = Promise.promise();

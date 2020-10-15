@@ -1,8 +1,6 @@
 package ru.ibs.dtm.query.calcite.core.delta.service;
 
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import lombok.val;
 import org.apache.calcite.avatica.util.Casing;
@@ -21,6 +19,7 @@ import org.mockito.Mockito;
 import ru.ibs.dtm.common.delta.DeltaInformation;
 import ru.ibs.dtm.common.delta.DeltaInterval;
 import ru.ibs.dtm.common.delta.DeltaType;
+import ru.ibs.dtm.common.delta.SelectOnInterval;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.SourceType;
 import ru.ibs.dtm.common.service.DeltaService;
@@ -37,6 +36,7 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -77,7 +77,6 @@ class DeltaQueryPreprocessorImplTest {
                 "WHERE EXISTS (SELECT id\n" +
                 "FROM (SELECT col4, col5 FROM tblz FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59' WHERE tblz.col6 = 0) AS view) order by v.col1";
         SqlNode sqlNode = planner.parse(sql);
-        List<Long> deltas = Arrays.asList(1L, 2L, 3L, 3L);
         final SqlParserPos pos = new SqlParserPos(0, 0);
         List<DeltaInformation> deltaInfoList = Arrays.asList(
                 new DeltaInformation("t3", "2018-07-29 23:59:59", false,
@@ -99,11 +98,10 @@ class DeltaQueryPreprocessorImplTest {
         request.setSql(sql);
         when(definitionService.processingQuery(any())).thenReturn(sqlNode);
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<List<Long>>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(deltas));
-            return null;
-        }).when(deltaService).getDeltasOnDateTimes(any(), any());
+        Mockito.when(deltaService.getCnToByDeltaDatetime(any(), any())).thenReturn(Future.succeededFuture(1L))
+                .thenReturn(Future.succeededFuture(2L))
+                .thenReturn(Future.succeededFuture(3L))
+                .thenReturn(Future.succeededFuture(4L));
 
         deltaQueryPreprocessor.process(request)
                 .onComplete(ar -> {
@@ -151,11 +149,11 @@ class DeltaQueryPreprocessorImplTest {
         request.setSql(sql);
         when(definitionService.processingQuery(any())).thenReturn(sqlNode);
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<List<Long>>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(deltas));
-            return null;
-        }).when(deltaService).getDeltasOnDateTimes(any(), any());
+        Mockito.when(deltaService.getCnToByDeltaNum(any(), eq(1L))).thenReturn(Future.succeededFuture(-1L));
+        Mockito.when(deltaService.getCnToByDeltaNum(any(), eq(2L))).thenReturn(Future.succeededFuture(-1L));
+
+        RuntimeException ex = new RuntimeException("delta range error");
+        Mockito.when(deltaService.getCnFromCnToByDeltaNums(any(), eq(3L), eq(4L))).thenReturn(Future.failedFuture(ex));
 
         deltaQueryPreprocessor.process(request)
                 .onComplete(ar -> {
@@ -166,19 +164,7 @@ class DeltaQueryPreprocessorImplTest {
                     }
                 });
 
-        assertNotNull(promise.future().result());
-        assertEquals(4, ((QueryRequest) promise.future().result()).getDeltaInformations().size());
-        assertEquals(Arrays.asList(1L, 2L), ((QueryRequest) promise.future().result()).getDeltaInformations().stream()
-                .filter(d -> d.getType().equals(DeltaType.NUM))
-                .map(DeltaInformation::getDeltaNum).collect(Collectors.toList()));
-        assertEquals(Collections.singletonList(new DeltaInterval(3L, 4L)),
-                ((QueryRequest) promise.future().result()).getDeltaInformations().stream()
-                        .filter(d -> d.getType().equals(DeltaType.STARTED_IN))
-                        .map(DeltaInformation::getDeltaInterval).collect(Collectors.toList()));
-        assertEquals(Collections.singletonList(new DeltaInterval(3L, 4L)),
-                ((QueryRequest) promise.future().result()).getDeltaInformations().stream()
-                        .filter(d -> d.getType().equals(DeltaType.FINISHED_IN))
-                        .map(DeltaInformation::getDeltaInterval).collect(Collectors.toList()));
+        assertNotNull(promise.future().cause());
     }
 
     @Test
@@ -196,7 +182,7 @@ class DeltaQueryPreprocessorImplTest {
         final SqlParserPos pos = new SqlParserPos(0, 0);
         List<DeltaInformation> deltaInfoList = Arrays.asList(
                 new DeltaInformation("t3", "2018-07-29 23:59:59", false,
-                        null, null, DeltaType.NUM, "test_datamart", "tblc", pos),
+                        null, null, DeltaType.DATETIME, "test_datamart", "tblc", pos),
                 new DeltaInformation("", "2019-12-23 15:15:14", false,
                         2L, null, DeltaType.NUM, "test", "tbl", pos),
                 new DeltaInformation("", "2019-12-23 15:15:14", false,
@@ -214,11 +200,11 @@ class DeltaQueryPreprocessorImplTest {
         request.setSql(sql);
         when(definitionService.processingQuery(any())).thenReturn(sqlNode);
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<List<Long>>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(deltas));
-            return null;
-        }).when(deltaService).getDeltasOnDateTimes(any(), any());
+        Mockito.when(deltaService.getCnToByDeltaDatetime(any(), any())).thenReturn(Future.succeededFuture(1L));
+        Mockito.when(deltaService.getCnToByDeltaNum(any(), eq(2L))).thenReturn(Future.succeededFuture(2L));
+
+        SelectOnInterval interval = new SelectOnInterval(3L, 4L);
+        Mockito.when(deltaService.getCnFromCnToByDeltaNums(any(), eq(3L), eq(4L))).thenReturn(Future.succeededFuture(interval));
 
         deltaQueryPreprocessor.process(request)
                 .onComplete(ar -> {
@@ -231,16 +217,19 @@ class DeltaQueryPreprocessorImplTest {
 
         assertNotNull(promise.future().result());
         assertEquals(4, ((QueryRequest) promise.future().result()).getDeltaInformations().size());
-        assertEquals(deltas, ((QueryRequest) promise.future().result()).getDeltaInformations().stream()
+        assertEquals(Collections.singletonList(1L), ((QueryRequest) promise.future().result()).getDeltaInformations().stream()
+                .filter(d -> d.getType().equals(DeltaType.DATETIME))
+                .map(DeltaInformation::getSelectOnNum).collect(Collectors.toList()));
+        assertEquals(Collections.singletonList(2L), ((QueryRequest) promise.future().result()).getDeltaInformations().stream()
                 .filter(d -> d.getType().equals(DeltaType.NUM))
-                .map(DeltaInformation::getDeltaNum).collect(Collectors.toList()));
-        assertEquals(Collections.singletonList(new DeltaInterval(3L, 4L)),
+                .map(DeltaInformation::getSelectOnNum).collect(Collectors.toList()));
+        assertEquals(Collections.singletonList(interval),
                 ((QueryRequest) promise.future().result()).getDeltaInformations().stream()
                 .filter(d -> d.getType().equals(DeltaType.STARTED_IN))
-                .map(DeltaInformation::getDeltaInterval).collect(Collectors.toList()));
-        assertEquals(Collections.singletonList(new DeltaInterval(3L, 4L)),
+                .map(DeltaInformation::getSelectOnInterval).collect(Collectors.toList()));
+        assertEquals(Collections.singletonList(interval),
                 ((QueryRequest) promise.future().result()).getDeltaInformations().stream()
                         .filter(d -> d.getType().equals(DeltaType.FINISHED_IN))
-                        .map(DeltaInformation::getDeltaInterval).collect(Collectors.toList()));
+                        .map(DeltaInformation::getSelectOnInterval).collect(Collectors.toList()));
     }
 }

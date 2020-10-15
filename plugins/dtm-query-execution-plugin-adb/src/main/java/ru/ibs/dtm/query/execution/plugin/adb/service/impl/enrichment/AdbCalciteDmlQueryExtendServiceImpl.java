@@ -81,6 +81,7 @@ public class AdbCalciteDmlQueryExtendServiceImpl implements QueryExtendService {
                 initActualTableName(mutableQualifiedName, name);
                 bottomRelNode = createRelNodeDeltaFinishedIn(deltaInfo, relBuilder, rexNodes, mutableQualifiedName);
                 break;
+            case DATETIME:
             case NUM:
                 topRelNode = createTopRelNodeDeltaNum(deltaInfo, relBuilder, rexNodes, mutableQualifiedName);
                 initActualTableName(mutableQualifiedName, name);

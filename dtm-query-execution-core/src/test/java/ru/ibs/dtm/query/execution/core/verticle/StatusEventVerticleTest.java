@@ -30,7 +30,7 @@ import ru.ibs.dtm.kafka.core.service.kafka.KafkaConsumerMonitor;
 import ru.ibs.dtm.kafka.core.service.kafka.KafkaStatusEventPublisher;
 import ru.ibs.dtm.query.execution.core.CoreTestConfiguration;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
-import ru.ibs.dtm.query.execution.core.dao.delta.DeltaServiceDao;
+import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import ru.ibs.dtm.query.execution.core.service.delta.impl.BeginDeltaExecutor;
@@ -99,19 +99,8 @@ class StatusEventVerticleTest {
         val queryDeltaResult = new QueryResult();
         queryDeltaResult.setRequestId(req.getRequestId());
         queryDeltaResult.setResult(createResult("2020-06-15T05:06:55", EXPECTED_SIN_ID));
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<DeltaRecord>> handler = invocation.getArgument(1);
-            delta.setStatus(DeltaLoadStatus.SUCCESS);
-            delta.setSinId(1L);
-            handler.handle(Future.succeededFuture(delta));
-            return null;
-        }).when(deltaServiceDao).getDeltaHotByDatamart(any(), any());
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(queryDeltaResult));
-            return null;
-        }).when(deltaServiceDao).insertDelta(any(), any());
+        when(deltaServiceDao.writeNewDeltaHot(any(), any())).thenReturn(Future.succeededFuture(1L));
         when(deltaQueryResultFactory.create(any(), any())).thenReturn(queryDeltaResult);
         Mockito.doAnswer(invocation -> {
             try {

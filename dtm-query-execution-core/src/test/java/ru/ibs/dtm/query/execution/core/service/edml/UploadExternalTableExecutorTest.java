@@ -9,7 +9,6 @@ import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import ru.ibs.dtm.common.delta.DeltaLoadStatus;
 import ru.ibs.dtm.common.dto.TableInfo;
 import ru.ibs.dtm.common.model.ddl.Entity;
 import ru.ibs.dtm.common.model.ddl.EntityType;
@@ -104,7 +103,7 @@ class UploadExternalTableExecutorTest {
 
         Mockito.when(deltaServiceDao.writeNewOperation(any()))
                 .thenReturn(Future.succeededFuture(sysCn));
-
+      
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
             handler.handle(Future.succeededFuture(queryResult));
@@ -281,7 +280,7 @@ class UploadExternalTableExecutorTest {
         });
         assertTrue(promise.future().failed());
     }
-
+  
     @Test
     void executeKafkaExecutionAndWriteOpError() {
         Promise promise = Promise.promise();

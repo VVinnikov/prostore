@@ -18,8 +18,6 @@ import ru.ibs.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import ru.ibs.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacadeImpl;
-import ru.ibs.dtm.query.execution.core.dao.delta.DeltaServiceDao;
-import ru.ibs.dtm.query.execution.core.dao.delta.impl.DeltaServiceDaoImpl;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDao;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.impl.DatamartDaoImpl;
@@ -44,7 +42,6 @@ class DropSchemaDdlExecutorTest {
     private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private final SqlParser.Config parserConfig = calciteConfiguration.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory());
     private final MetadataExecutor<DdlRequestContext> metadataExecutor = mock(MetadataExecutorImpl.class);
-    private final DeltaServiceDao deltaServiceDao = mock(DeltaServiceDaoImpl.class);
     private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
     private final ServiceDbDao serviceDbDao = mock(ServiceDbDaoImpl.class);
     private final DatamartDao datamartDao = mock(DatamartDaoImpl.class);
@@ -59,7 +56,6 @@ class DropSchemaDdlExecutorTest {
         Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
         when(serviceDbFacade.getServiceDbDao()).thenReturn(serviceDbDao);
         when(serviceDbDao.getDatamartDao()).thenReturn(datamartDao);
-        when(serviceDbFacade.getDeltaServiceDao()).thenReturn(deltaServiceDao);
         dropSchemaDdlExecutor = new DropSchemaDdlExecutor(metadataExecutor, serviceDbFacade);
         schema = "shares";
         final QueryRequest queryRequest = new QueryRequest();

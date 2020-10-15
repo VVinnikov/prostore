@@ -3,9 +3,26 @@ package ru.ibs.dtm.query.calcite.core.util;
 import org.apache.calcite.sql.type.SqlTypeName;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
 
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+
+import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
+import static java.time.temporal.ChronoField.*;
 import static org.apache.calcite.sql.type.SqlTypeName.*;
 
 public class CalciteUtil {
+    public static final DateTimeFormatter LOCAL_DATE_TIME = new DateTimeFormatterBuilder()
+            .parseCaseInsensitive()
+            .append(ISO_LOCAL_DATE)
+            .appendLiteral(' ')
+            .appendValue(HOUR_OF_DAY, 2)
+            .appendLiteral(':')
+            .appendValue(MINUTE_OF_HOUR, 2)
+            .optionalStart()
+            .appendLiteral(':')
+            .appendValue(SECOND_OF_MINUTE, 2)
+            .toFormatter();
+
     public static SqlTypeName valueOf(ColumnType type) {
         switch (type) {
             case BOOLEAN:

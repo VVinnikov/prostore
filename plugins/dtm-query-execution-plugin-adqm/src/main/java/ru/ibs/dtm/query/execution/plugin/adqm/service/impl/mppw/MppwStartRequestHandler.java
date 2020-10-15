@@ -84,7 +84,8 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         final String engineFullColumn = "engine_full";
         Future<String> engineFull = getTableSetting(fullName + ACTUAL_POSTFIX, engineFullColumn, createVarcharColumnMetadata(engineFullColumn));
         // 2. Get sorting order (_actual)
-        Future<String> sortingKey = getTableSetting(fullName + ACTUAL_SHARD_POSTFIX, "sorting_key");
+        final String sortingKeyColumn = "sorting_key";
+        Future<String> sortingKey = getTableSetting(fullName + ACTUAL_SHARD_POSTFIX, sortingKeyColumn, createVarcharColumnMetadata(sortingKeyColumn));
         val uploadMeta = (UploadExternalEntityMetadata) request.getKafkaParameter().getUploadMetadata();
         // 3. Create _ext_shard based on schema from request
         final Schema schema;

@@ -149,6 +149,9 @@ public class DeltaInformationExtractor {
         if (!isLatestUncommitedDelta) {
             if (snapshotTime == null) {
                 deltaTime = CalciteUtil.LOCAL_DATE_TIME.format(LocalDateTime.now());
+                if (deltaNum == null) {
+                    deltaType = DeltaType.DATETIME;
+                }
             }
             else {
                 deltaTime = snapshotTime;

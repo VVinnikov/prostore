@@ -75,9 +75,6 @@ public abstract class DeltaServiceDaoExecutorHelper {
 
     protected Delta deserializedDelta(byte[] bytes) {
         try {
-            if (bytes == null) {
-                return new Delta();
-            }
             return DatabindCodec.mapper().readValue(bytes, Delta.class);
         } catch (IOException e) {
             throw new DeltaException("Can't deserialize Delta", e);

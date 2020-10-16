@@ -7,8 +7,6 @@ import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.query.execution.core.configuration.AppConfiguration;
 import ru.ibs.dtm.query.execution.core.factory.QueryRequestFactory;
 
-import java.util.UUID;
-
 @Component
 public class QueryRequestFactoryImpl implements QueryRequestFactory {
 
@@ -22,7 +20,7 @@ public class QueryRequestFactoryImpl implements QueryRequestFactory {
     @Override
     public QueryRequest create(InputQueryRequest inputQueryRequest) {
         return QueryRequest.builder()
-                .requestId(UUID.randomUUID())
+                .requestId(inputQueryRequest.getRequestId())
                 .datamartMnemonic(inputQueryRequest.getDatamartMnemonic())
                 .sql(inputQueryRequest.getSql())
                 .parameters(inputQueryRequest.getParameters())

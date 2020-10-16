@@ -17,6 +17,10 @@ import java.util.UUID;
 @NoArgsConstructor
 public class QueryRequest {
     /**
+     * Request UUID
+     */
+    private UUID requestId;
+    /**
      * Datamart
      */
     @NonNull
@@ -30,4 +34,10 @@ public class QueryRequest {
      * List of parameters
      */
     private List<String> parameters;
+
+    public QueryRequest(UUID requestId, @NonNull String datamartMnemonic, @NonNull String sql) {
+        this.requestId = requestId;
+        this.datamartMnemonic = datamartMnemonic;
+        this.sql = sql;
+    }
 }

@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Input execution query request
@@ -17,6 +18,11 @@ import java.util.Objects;
 @NoArgsConstructor
 @AllArgsConstructor
 public class InputQueryRequest {
+
+    /**
+     * Request uuid
+     */
+    private UUID requestId;
 
     /**
      * Datamart name
@@ -37,6 +43,7 @@ public class InputQueryRequest {
         InputQueryRequest newQueryRequest = new InputQueryRequest();
         newQueryRequest.setSql(sql);
         newQueryRequest.setDatamartMnemonic(datamartMnemonic);
+        newQueryRequest.setRequestId(requestId);
         if (parameters != null) {
             newQueryRequest.setParameters(new ArrayList<>(parameters));
         }
@@ -48,13 +55,14 @@ public class InputQueryRequest {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         InputQueryRequest that = (InputQueryRequest) o;
-        return datamartMnemonic.equals(that.datamartMnemonic) &&
+        return requestId.equals(that.requestId) &&
+                datamartMnemonic.equals(that.datamartMnemonic) &&
                 sql.equals(that.sql) &&
                 Objects.equals(parameters, that.parameters);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(datamartMnemonic, sql, parameters);
+        return Objects.hash(requestId, datamartMnemonic, sql, parameters);
     }
 }

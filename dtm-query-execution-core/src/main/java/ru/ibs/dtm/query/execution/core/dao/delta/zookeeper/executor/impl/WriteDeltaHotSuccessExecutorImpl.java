@@ -35,7 +35,7 @@ public class WriteDeltaHotSuccessExecutorImpl extends DeltaServiceDaoExecutorHel
         Promise<Long> resultPromise = Promise.promise();
         val ctx = new DeltaContext();
         executor.getData(getDeltaPath(datamart), null, deltaStat)
-            .map(this::deserializedDelta)
+            .map(bytes -> bytes == null ? new Delta() : deserializedDelta(bytes))
             .map(delta -> {
                 ctx.setDelta(delta);
                 return delta;

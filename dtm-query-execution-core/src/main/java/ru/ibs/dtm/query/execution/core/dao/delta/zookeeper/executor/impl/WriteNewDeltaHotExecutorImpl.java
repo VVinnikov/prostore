@@ -36,7 +36,7 @@ public class WriteNewDeltaHotExecutorImpl extends DeltaServiceDaoExecutorHelper 
         val deltaStat = new Stat();
         Promise<Long> resultPromise = Promise.promise();
         executor.getData(getDeltaPath(datamart), null, deltaStat)
-            .map(this::deserializedDelta)
+            .map(bytes -> bytes == null ? new Delta() : deserializedDelta(bytes))
             .map(delta -> {
                 if (delta.getOk() != null && delta.getHot() != null) {
                     throw new DeltaAlreadyStartedException();

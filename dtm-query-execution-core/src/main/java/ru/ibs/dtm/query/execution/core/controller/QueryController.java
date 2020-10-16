@@ -27,6 +27,10 @@ public class QueryController {
         queryAnalyzer.analyzeAndExecute(inputQueryRequest, queryResult -> {
             if (queryResult.succeeded()) {
 
+                if (queryResult.result().getRequestId() == null) {
+                    queryResult.result().setRequestId(inputQueryRequest.getRequestId());
+                }
+
                 String json = Json.encode(queryResult.result());
                 log.info("Request completed: [{}]", inputQueryRequest.getSql());
                 context.response()

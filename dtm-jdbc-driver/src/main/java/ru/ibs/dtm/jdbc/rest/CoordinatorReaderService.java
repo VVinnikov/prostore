@@ -26,6 +26,7 @@ import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.apache.http.util.TextUtils.isEmpty;
 import static ru.ibs.dtm.jdbc.util.DriverConstants.HOST_PROPERTY;
@@ -169,8 +170,9 @@ public class CoordinatorReaderService implements Protocol {
     }
 
     private QueryRequest prepareQueryRequest(String sql) {
+        UUID uuid = UUID.randomUUID();
         String schema = this.schema;
-        QueryRequest queryRequest = new QueryRequest(schema, sql);
+        QueryRequest queryRequest = new QueryRequest(uuid, schema, sql);
         log.info("Sql query generated {}", queryRequest);
         return queryRequest;
     }

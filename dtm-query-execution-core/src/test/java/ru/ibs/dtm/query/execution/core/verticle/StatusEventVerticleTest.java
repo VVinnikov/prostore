@@ -1,11 +1,8 @@
 package ru.ibs.dtm.query.execution.core.verticle;
 
-import io.github.jklingsporn.vertx.jooq.classic.async.AsyncClassicGenericQueryExecutor;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.kafka.admin.KafkaAdminClient;
@@ -19,8 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
-import ru.ibs.dtm.common.delta.DeltaLoadStatus;
-import ru.ibs.dtm.common.delta.QueryDeltaResult;
 import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.common.status.PublishStatusEventRequest;
@@ -73,8 +68,6 @@ class StatusEventVerticleTest {
     DeltaQueryResultFactory deltaQueryResultFactory;
     @MockBean
     KafkaStatusEventPublisher kafkaStatusEventPublisher;
-    @MockBean
-    AsyncClassicGenericQueryExecutor executor;
     @Autowired
     private BeginDeltaExecutor beginDeltaExecutor;
 

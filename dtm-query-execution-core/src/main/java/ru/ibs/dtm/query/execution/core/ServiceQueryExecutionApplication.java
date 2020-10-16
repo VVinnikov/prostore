@@ -3,12 +3,11 @@ package ru.ibs.dtm.query.execution.core;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.admin.SpringApplicationAdminJmxAutoConfiguration;
-import org.springframework.boot.autoconfigure.jooq.JooqAutoConfiguration;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.ComponentScan;
 import ru.ibs.dtm.query.execution.core.utils.BeanNameGenerator;
 
-@SpringBootApplication(exclude = {SpringApplicationAdminJmxAutoConfiguration.class, JooqAutoConfiguration.class})
+@SpringBootApplication(exclude = {SpringApplicationAdminJmxAutoConfiguration.class})
 @ConfigurationPropertiesScan("ru.ibs.dtm")
 @ComponentScan(basePackages = {"ru.ibs.dtm.query.execution", "ru.ibs.dtm.kafka.core"}, nameGenerator = BeanNameGenerator.class)
 public class ServiceQueryExecutionApplication {

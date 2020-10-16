@@ -8,5 +8,4 @@ target/
 *.ipr
 out/
 
-/src/main/java/org/jooq/generated/
 plugins

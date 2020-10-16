@@ -44,8 +44,6 @@
         <vertx.version>3.8.5</vertx.version>
         <calcite.version>1.22.0</calcite.version>
         <junit-jupiter-engine.version>5.4.0</junit-jupiter-engine.version>
-        <jooq.version>3.13.1</jooq.version>
-        <vertx.jooq.version>5.2.0</vertx.jooq.version>
         <guava.version>28.2-jre</guava.version>
         <spring.plugin.core.version>2.0.0.RELEASE</spring.plugin.core.version>
         <tarantool.connector.version>1.9.4</tarantool.connector.version>
@@ -71,36 +69,15 @@
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
-            <properties>
-                <datasource.service.options.host>localhost</datasource.service.options.host>
-                <datasource.service.options.port>3306</datasource.service.options.port>
-                <datasource.service.options.database>dtmservice</datasource.service.options.database>
-                <datasource.service.options.user>dtmuser</datasource.service.options.user>
-                <datasource.service.options.password>Cat6Gmt7Ncr</datasource.service.options.password>
-            </properties>
         </profile>
         <profile>
             <id>dev</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
-            <properties>
-                <datasource.service.options.host>${SDB_HOST}</datasource.service.options.host>
-                <datasource.service.options.port>${SDB_PORT}</datasource.service.options.port>
-                <datasource.service.options.database>${SDB_DATABASE}</datasource.service.options.database>
-                <datasource.service.options.user>${SDB_USER}</datasource.service.options.user>
-                <datasource.service.options.password>${SDB_PASSWORD}</datasource.service.options.password>
-            </properties>
         </profile>
         <profile>
             <id>master</id>
-            <properties>
-                <datasource.service.options.host>database-1.dtm.local</datasource.service.options.host>
-                <datasource.service.options.port>3306</datasource.service.options.port>
-                <datasource.service.options.database>s_db_demo</datasource.service.options.database>
-                <datasource.service.options.user>s_demo</datasource.service.options.user>
-                <datasource.service.options.password>Coin2Excels3Funder</datasource.service.options.password>
-            </properties>
         </profile>
     </profiles>
 

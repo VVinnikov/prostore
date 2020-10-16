@@ -33,22 +33,19 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
     private final LogicViewReplacer logicViewReplacer;
     private final ColumnMetadataService columnMetadataService;
     private final InformationSchemaExecutor informationSchemaExecutor;
-    private final SystemDatamartViewsProvider systemDatamartViewsProvider;
 
     @Autowired
     public DmlServiceImpl(DataSourcePluginService dataSourcePluginService,
                           TargetDatabaseDefinitionService targetDatabaseDefinitionService,
                           DeltaQueryPreprocessor deltaQueryPreprocessor, LogicViewReplacer logicViewReplacer,
                           ColumnMetadataService columnMetadataService,
-                          InformationSchemaExecutor informationSchemaExecutor,
-                          SystemDatamartViewsProvider systemDatamartViewsProvider) {
+                          InformationSchemaExecutor informationSchemaExecutor) {
         this.dataSourcePluginService = dataSourcePluginService;
         this.targetDatabaseDefinitionService = targetDatabaseDefinitionService;
         this.deltaQueryPreprocessor = deltaQueryPreprocessor;
         this.logicViewReplacer = logicViewReplacer;
         this.informationSchemaExecutor = informationSchemaExecutor;
         this.columnMetadataService = columnMetadataService;
-        this.systemDatamartViewsProvider = systemDatamartViewsProvider;
     }
 
     @Override
@@ -91,7 +88,8 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
             if (ar.succeeded()) {
                 QuerySourceRequest querySourceRequest = ar.result();
                 if (querySourceRequest.getQueryRequest().getSourceType() == SourceType.INFORMATION_SCHEMA) {
-                    querySourceRequest.setLogicalSchema(systemDatamartViewsProvider.getLogicalSchemaFromSystemViews());
+                    //FIXME add receiving logical schema from system views
+                    //querySourceRequest.setLogicalSchema(systemDatamartViewsProvider.getLogicalSchemaFromSystemViews());
                     initColumnMetaData(querySourceRequest)
                             .compose(v -> informationSchemaExecute(querySourceRequest))
                             .onComplete(asyncResultHandler);

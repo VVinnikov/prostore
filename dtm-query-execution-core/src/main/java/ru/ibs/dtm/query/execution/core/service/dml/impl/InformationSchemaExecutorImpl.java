@@ -24,16 +24,7 @@ public class InformationSchemaExecutorImpl implements InformationSchemaExecutor 
 
     @Override
     public void execute(QuerySourceRequest request, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-        serviceDbFacade.getDdlServiceDao().executeQuery(
-                SqlPreparer.replaceQuote(MetaDataQueryPreparer.modify(request.getQueryRequest().getSql())),
-                request.getMetadata(), ar -> {
-                    if (ar.succeeded()) {
-                        QueryResult result = new QueryResult(request.getQueryRequest().getRequestId(),
-                                ar.result(), request.getMetadata());
-                        asyncResultHandler.handle(Future.succeededFuture(result));
-                    } else {
-                        asyncResultHandler.handle(Future.failedFuture(ar.cause()));
-                    }
-                });
+        //FIXME implement receiving information schema
+        asyncResultHandler.handle(Future.failedFuture("Need to implement receiving information schema"));
     }
 }

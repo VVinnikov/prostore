@@ -20,8 +20,7 @@ For MPPW support you also need to confugure & run [dtm-vendor-emulator](https://
 ### Build application
 
 #### Start required services
-To build DTM application, we use JOOQ objects generation from service db, so if we use `local` maven profile, we should start it local
- 
+
 ```shell script
 cd dtm-query-execution-core
 docker-compose -f environment/docker-compose-build.yml up -d
@@ -74,7 +73,6 @@ docker logs -f dtm-query-execution-core
 After that service will listen on the 9090 port
 
 It runs:
-* MariaDB
 * Zookeeper
 * Kafka
 * dtm-query-execution-core

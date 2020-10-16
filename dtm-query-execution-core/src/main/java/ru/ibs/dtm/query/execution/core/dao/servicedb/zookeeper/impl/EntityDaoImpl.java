@@ -37,6 +37,7 @@ public class EntityDaoImpl implements EntityDao {
 
     @Override
     public void getEntitiesMeta(String datamartMnemonic, Handler<AsyncResult<List<DatamartEntity>>> resultHandler) {
+        //TODO implemented receiving entity column informations
         getEntityNamesByDatamart(datamartMnemonic)
             .onSuccess(names -> resultHandler.handle(
                 Future.succeededFuture(

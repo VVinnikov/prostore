@@ -55,6 +55,7 @@ public class WriteOperationSuccessExecutorImpl extends DeltaServiceDaoExecutorHe
             .compose(opNum -> getWriteOpData(datamart, writeOpStat, ctx))
             .map(this::deserializeDeltaWriteOp)
             .map(writeOp -> {
+                ctx.setWriteOpVersion(writeOpStat.getVersion());
                 ctx.setWriteOp(writeOp);
                 return writeOp;
             })

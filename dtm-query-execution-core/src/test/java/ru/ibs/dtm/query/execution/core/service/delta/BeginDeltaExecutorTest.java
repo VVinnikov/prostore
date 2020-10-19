@@ -1,8 +1,8 @@
 package ru.ibs.dtm.query.execution.core.service.delta;
 
-import io.vertx.core.*;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -15,7 +15,7 @@ import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.impl.DeltaServiceDaoImpl;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.factory.DeltaQueryResultFactory;
-import ru.ibs.dtm.query.execution.core.factory.impl.DeltaQueryResultFactoryImpl;
+import ru.ibs.dtm.query.execution.core.factory.impl.delta.BeginDeltaQueryResultFactory;
 import ru.ibs.dtm.query.execution.core.service.delta.impl.BeginDeltaExecutor;
 import ru.ibs.dtm.query.execution.core.utils.QueryResultUtils;
 import ru.ibs.dtm.query.execution.plugin.api.delta.DeltaRequestContext;
@@ -24,7 +24,10 @@ import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -37,7 +40,7 @@ class BeginDeltaExecutorTest {
 
     private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
     private final DeltaServiceDao deltaServiceDao = mock(DeltaServiceDaoImpl.class);
-    private final DeltaQueryResultFactory deltaQueryResultFactory = mock(DeltaQueryResultFactoryImpl.class);
+    private final DeltaQueryResultFactory deltaQueryResultFactory = mock(BeginDeltaQueryResultFactory.class);
     private BeginDeltaExecutor beginDeltaExecutor;
     private QueryRequest req = new QueryRequest();
     private DeltaRecord delta = new DeltaRecord();
@@ -73,7 +76,7 @@ class BeginDeltaExecutorTest {
 
         QueryResult queryResult = new QueryResult();
         queryResult.setRequestId(req.getRequestId());
-        queryResult.setResult(createResult(statusDate, 2L));
+        queryResult.setResult(createResult(2L));
 
         when(deltaServiceDao.writeNewDeltaHot(eq(datamart), any()))
                 .thenReturn(Future.succeededFuture(2L));
@@ -88,7 +91,8 @@ class BeginDeltaExecutorTest {
             }
         });
 
-        assertEquals(res.getSinId(), ((QueryResult) promise.future().result()).getResult().get(0).get("sinId"));
+        assertEquals(res.getSinId(), ((QueryResult) promise.future().result()).getResult()
+                .get(0).get(BeginDeltaQueryResultFactory.DELTA_NUM_COLUMN));
     }
 
     @Test
@@ -135,7 +139,7 @@ class BeginDeltaExecutorTest {
 
         QueryResult queryResult = new QueryResult();
         queryResult.setRequestId(req.getRequestId());
-        queryResult.setResult(createResult(statusDate, 2L));
+        queryResult.setResult(createResult(2L));
 
         when(deltaServiceDao.writeNewDeltaHot(eq(datamart), any())).thenReturn(Future.succeededFuture(2L));
 
@@ -149,7 +153,8 @@ class BeginDeltaExecutorTest {
             }
         });
 
-        assertEquals(res.getSinId(), ((QueryResult) promise.future().result()).getResult().get(0).get("sinId"));
+        assertEquals(res.getSinId(), ((QueryResult) promise.future().result()).getResult()
+                .get(0).get(BeginDeltaQueryResultFactory.DELTA_NUM_COLUMN));
     }
 
     @Test
@@ -181,7 +186,7 @@ class BeginDeltaExecutorTest {
     }
 
     @Test
-    void executeDeltaQueryResultFactoryError(){
+    void executeDeltaQueryResultFactoryError() {
         req.setSql("BEGIN DELTA");
         beginDeltaExecutor = new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
         Promise promise = Promise.promise();
@@ -211,7 +216,8 @@ class BeginDeltaExecutorTest {
         assertEquals(ex.getMessage(), promise.future().cause().getMessage());
     }
 
-    private List<Map<String, Object>> createResult(String statusDate, Long sinId) {
-        return QueryResultUtils.createResultWithSingleRow(Arrays.asList("statusDate", "sinId"), Arrays.asList(statusDate, sinId));
+    private List<Map<String, Object>> createResult(Long deltaNum) {
+        return QueryResultUtils.createResultWithSingleRow(Collections.singletonList(BeginDeltaQueryResultFactory.DELTA_NUM_COLUMN),
+                Collections.singletonList(deltaNum));
     }
 }

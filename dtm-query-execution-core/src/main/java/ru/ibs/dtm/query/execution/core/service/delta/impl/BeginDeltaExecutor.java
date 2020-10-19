@@ -35,7 +35,7 @@ public class BeginDeltaExecutor implements DeltaExecutor, StatusEventPublisher {
 
     @Autowired
     public BeginDeltaExecutor(ServiceDbFacade serviceDbFacade,
-                              DeltaQueryResultFactory deltaQueryResultFactory,
+                              @Qualifier("beginDeltaQueryResultFactory") DeltaQueryResultFactory deltaQueryResultFactory,
                               @Qualifier("coreVertx") Vertx vertx) {
         this.deltaServiceDao = serviceDbFacade.getDeltaServiceDao();
         this.deltaQueryResultFactory = deltaQueryResultFactory;

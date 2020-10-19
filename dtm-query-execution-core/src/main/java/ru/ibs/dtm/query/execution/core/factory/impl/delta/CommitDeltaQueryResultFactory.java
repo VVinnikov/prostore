@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.factory.impl;
+package ru.ibs.dtm.query.execution.core.factory.impl.delta;
 
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
@@ -10,15 +10,14 @@ import ru.ibs.dtm.query.execution.plugin.api.delta.DeltaRequestContext;
 
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-@Component
-public class DeltaQueryResultFactoryImpl implements DeltaQueryResultFactory {
+@Component("commitDeltaQueryResultFactory")
+public class CommitDeltaQueryResultFactory implements DeltaQueryResultFactory {
 
-    public static final String STATUS_DATE_COLUMN = "status_date";
-    public static final String SIN_ID_COLUMN = "sin_id";
+    public static final String DELTA_DATE_COLUMN = "delta_date";
 
     @Override
     public QueryResult create(DeltaRequestContext context, DeltaRecord deltaRecord) {
@@ -26,13 +25,9 @@ public class DeltaQueryResultFactoryImpl implements DeltaQueryResultFactory {
         res.setRequestId(context.getRequest().getQueryRequest().getRequestId());
         res.setResult(new ArrayList<>());
         Map<String, Object> rowMap = new HashMap<>();
-        rowMap.put("statusDate", deltaRecord.getStatusDate().format(DateTimeFormatter.ISO_DATE_TIME));
-        rowMap.put("sinId", deltaRecord.getSinId());
+        rowMap.put(DELTA_DATE_COLUMN, deltaRecord.getStatusDate().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
         res.getResult().add(rowMap);
-        res.setMetadata(Arrays.asList(
-                new ColumnMetadata(STATUS_DATE_COLUMN, ColumnType.VARCHAR),
-                new ColumnMetadata(SIN_ID_COLUMN, ColumnType.VARCHAR)
-        ));
+        res.setMetadata(Collections.singletonList(new ColumnMetadata(DELTA_DATE_COLUMN, ColumnType.VARCHAR)));
         return res;
     }
 }

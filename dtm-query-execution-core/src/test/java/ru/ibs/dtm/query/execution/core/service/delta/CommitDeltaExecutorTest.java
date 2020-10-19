@@ -12,7 +12,7 @@ import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.impl.DeltaServiceDaoImpl;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaRecord;
 import ru.ibs.dtm.query.execution.core.factory.DeltaQueryResultFactory;
-import ru.ibs.dtm.query.execution.core.factory.impl.DeltaQueryResultFactoryImpl;
+import ru.ibs.dtm.query.execution.core.factory.impl.delta.CommitDeltaQueryResultFactory;
 import ru.ibs.dtm.query.execution.core.service.delta.impl.CommitDeltaExecutor;
 import ru.ibs.dtm.query.execution.core.utils.QueryResultUtils;
 import ru.ibs.dtm.query.execution.plugin.api.delta.DeltaRequestContext;
@@ -20,10 +20,7 @@ import ru.ibs.dtm.query.execution.plugin.api.delta.query.CommitDeltaQuery;
 import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -35,7 +32,7 @@ class CommitDeltaExecutorTest {
 
     private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
     private final DeltaServiceDao deltaServiceDao = mock(DeltaServiceDaoImpl.class);
-    private final DeltaQueryResultFactory deltaQueryResultFactory = mock(DeltaQueryResultFactoryImpl.class);
+    private final DeltaQueryResultFactory deltaQueryResultFactory = mock(CommitDeltaQueryResultFactory.class);
     private CommitDeltaExecutor commitDeltaExecutor;
     private QueryRequest req = new QueryRequest();
     private DeltaRecord delta = new DeltaRecord();
@@ -43,7 +40,7 @@ class CommitDeltaExecutorTest {
 
     @BeforeEach
     void beforeAll() {
-        req.setDatamartMnemonic("test_datamart");
+        req.setDatamartMnemonic(datamart);
         req.setRequestId(UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"));
         delta.setLoadId(0L);
         delta.setLoadProcId("load-proc-1");
@@ -111,9 +108,9 @@ class CommitDeltaExecutorTest {
         req.setSql("COMMIT DELTA");
         commitDeltaExecutor = new CommitDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
         Promise promise = Promise.promise();
-        String nowStatusDate = "2020-06-16T14:00:11";
+        String deltaDate = "2020-06-16T14:00:11";
 
-        QueryDeltaResult res = new QueryDeltaResult(nowStatusDate, 1L);
+        QueryDeltaResult res = new QueryDeltaResult(deltaDate, 1L);
 
         CommitDeltaQuery deltaQuery = new CommitDeltaQuery();
         deltaQuery.setDeltaDateTime(null);
@@ -124,7 +121,7 @@ class CommitDeltaExecutorTest {
 
         QueryResult queryResult = new QueryResult();
         queryResult.setRequestId(req.getRequestId());
-        queryResult.setResult(createResult(nowStatusDate, 1L));
+        queryResult.setResult(createResult(deltaDate));
 
         when(deltaServiceDao.writeDeltaHotSuccess(any(), any())).thenReturn(Future.succeededFuture(1L));
 
@@ -137,9 +134,8 @@ class CommitDeltaExecutorTest {
                 promise.fail(handler.cause());
             }
         });
-
-        assertEquals(res.getSinId(), ((QueryResult) promise.future().result()).getResult().get(0).get("sinId"));
-        assertEquals(res.getStatusDate(), ((QueryResult) promise.future().result()).getResult().get(0).get("statusDate"));
+        assertEquals(res.getStatusDate(), ((QueryResult) promise.future().result()).getResult()
+                .get(0).get(CommitDeltaQueryResultFactory.DELTA_DATE_COLUMN));
     }
 
     @Test
@@ -148,9 +144,9 @@ class CommitDeltaExecutorTest {
         commitDeltaExecutor = new CommitDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
         Promise promise = Promise.promise();
         String deltaInputDate = "2020-06-15T14:00:11";
-        String nowStatusDate = "2020-06-16T14:00:11";
+        String deltaDate = "2020-06-16T14:00:11";
 
-        QueryDeltaResult res = new QueryDeltaResult(nowStatusDate, 1L);
+        QueryDeltaResult res = new QueryDeltaResult(deltaDate, 1L);
 
         CommitDeltaQuery deltaQuery = new CommitDeltaQuery();
         deltaQuery.setDeltaDateTime(LocalDateTime.parse(deltaInputDate));
@@ -161,7 +157,7 @@ class CommitDeltaExecutorTest {
 
         QueryResult queryResult = new QueryResult();
         queryResult.setRequestId(req.getRequestId());
-        queryResult.setResult(createResult(nowStatusDate, 1L));
+        queryResult.setResult(createResult(deltaDate));
 
         when(deltaServiceDao.writeDeltaHotSuccess(any(), any())).thenReturn(Future.succeededFuture(1L));
 
@@ -175,20 +171,21 @@ class CommitDeltaExecutorTest {
             }
         });
 
-        assertEquals(res.getSinId(), ((QueryResult) promise.future().result()).getResult().get(0).get("sinId"));
-        assertEquals(res.getStatusDate(), ((QueryResult) promise.future().result()).getResult().get(0).get("statusDate"));
+        assertEquals(res.getStatusDate(), ((QueryResult) promise.future().result()).getResult()
+                .get(0).get(CommitDeltaQueryResultFactory.DELTA_DATE_COLUMN));
     }
 
-    private List<Map<String, Object>> createResult(String statusDate, Long sinId) {
-        return QueryResultUtils.createResultWithSingleRow(Arrays.asList("statusDate", "sinId"), Arrays.asList(statusDate, sinId));
+    private List<Map<String, Object>> createResult(String deltaDate) {
+        return QueryResultUtils.createResultWithSingleRow(Collections.singletonList(CommitDeltaQueryResultFactory.DELTA_DATE_COLUMN),
+                Collections.singletonList(deltaDate));
     }
 
     @Test
-    void executeDeltaQueryResultFactoryError(){
+    void executeDeltaQueryResultFactoryError() {
         req.setSql("COMMIT DELTA");
         commitDeltaExecutor = new CommitDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
         Promise promise = Promise.promise();
-        String nowStatusDate = "2020-06-16T14:00:11";
+        String deltaDate = "2020-06-16T14:00:11";
 
         CommitDeltaQuery deltaQuery = new CommitDeltaQuery();
         deltaQuery.setDeltaDateTime(null);
@@ -199,7 +196,7 @@ class CommitDeltaExecutorTest {
 
         QueryResult queryResult = new QueryResult();
         queryResult.setRequestId(req.getRequestId());
-        queryResult.setResult(createResult(nowStatusDate, 1L));
+        queryResult.setResult(createResult(deltaDate));
 
         when(deltaServiceDao.writeDeltaHotSuccess(any(), any())).thenReturn(Future.succeededFuture(1L));
 
@@ -216,5 +213,5 @@ class CommitDeltaExecutorTest {
 
         assertNotNull(promise.future().cause());
         assertEquals(ex.getMessage(), promise.future().cause().getMessage());
-   }
+    }
 }

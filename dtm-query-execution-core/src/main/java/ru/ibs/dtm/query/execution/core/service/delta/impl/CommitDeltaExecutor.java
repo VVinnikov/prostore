@@ -35,7 +35,7 @@ public class CommitDeltaExecutor implements DeltaExecutor, StatusEventPublisher 
 
     @Autowired
     public CommitDeltaExecutor(ServiceDbFacade serviceDbFacade,
-                               DeltaQueryResultFactory deltaQueryResultFactory,
+                               @Qualifier("commitDeltaQueryResultFactory") DeltaQueryResultFactory deltaQueryResultFactory,
                                @Qualifier("coreVertx") Vertx vertx) {
         this.deltaServiceDao = serviceDbFacade.getDeltaServiceDao();
         this.vertx = vertx;

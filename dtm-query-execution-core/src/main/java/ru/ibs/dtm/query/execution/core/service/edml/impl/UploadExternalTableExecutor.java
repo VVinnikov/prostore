@@ -15,7 +15,6 @@ import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaWriteOpRequest;
 import ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction;
-import ru.ibs.dtm.query.execution.core.dto.edml.EdmlQuery;
 import ru.ibs.dtm.query.execution.core.service.edml.EdmlExecutor;
 import ru.ibs.dtm.query.execution.core.service.edml.EdmlUploadExecutor;
 import ru.ibs.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
@@ -39,52 +38,52 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
                                        List<EdmlUploadExecutor> uploadExecutors) {
         this.deltaServiceDao = deltaServiceDao;
         this.executors = uploadExecutors.stream()
-                .collect(Collectors.toMap(EdmlUploadExecutor::getUploadType, it -> it));
+            .collect(Collectors.toMap(EdmlUploadExecutor::getUploadType, it -> it));
     }
 
     @Override
     public void execute(EdmlRequestContext context, Handler<AsyncResult<QueryResult>> resultHandler) {
         writeNewOperation(context, context.getEntity())
-                .compose(sysCn -> executeAndWriteOp(context))
-                .compose(queryResult -> writeOpSuccess(context.getSourceTable().getSchemaName(), context.getSysCn(), queryResult))
-                .onComplete(resultHandler);
+            .compose(sysCn -> executeAndWriteOp(context))
+            .compose(queryResult -> writeOpSuccess(context.getSourceTable().getSchemaName(), context.getSysCn(), queryResult))
+            .onComplete(resultHandler);
     }
 
     private Future<Long> writeNewOperation(EdmlRequestContext context, Entity entity) {
         return Future.future(writePromise -> {
             deltaServiceDao.writeNewOperation(createDeltaOp(context, entity))
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            long sysCn = ar.result();
-                            context.setSysCn(sysCn);
-                            writePromise.complete(sysCn);
-                        } else {
-                            writePromise.fail(ar.cause());
-                        }
-                    });
+                .onComplete(ar -> {
+                    if (ar.succeeded()) {
+                        long sysCn = ar.result();
+                        context.setSysCn(sysCn);
+                        writePromise.complete(sysCn);
+                    } else {
+                        writePromise.fail(ar.cause());
+                    }
+                });
         });
     }
 
     private DeltaWriteOpRequest createDeltaOp(EdmlRequestContext context, Entity entity) {
         return DeltaWriteOpRequest.builder()
-                .datamart(entity.getSchema())
-                .tableName(context.getTargetTable().getTableName())
-                .tableNameExt(entity.getName())
-                .query(context.getSqlNode().toSqlString(SQL_DIALECT).toString())
-                .build();
+            .datamart(entity.getSchema())
+            .tableName(context.getTargetTable().getTableName())
+            .tableNameExt(entity.getName())
+            .query(context.getSqlNode().toSqlString(SQL_DIALECT).toString())
+            .build();
     }
 
     private Future<QueryResult> executeAndWriteOp(EdmlRequestContext context) {
         return Future.future(promise ->
-                execute(context)
-                        .onComplete(ar -> {
-                            if (ar.succeeded()) {
-                                promise.complete(ar.result());
-                            } else {
-                                writeErrorOp(context, ar.cause())
-                                        .onFailure(promise::fail);
-                            }
-                        }));
+            execute(context)
+                .onComplete(ar -> {
+                    if (ar.succeeded()) {
+                        promise.complete(ar.result());
+                    } else {
+                        writeErrorOp(context, ar.cause())
+                            .onFailure(promise::fail);
+                    }
+                }));
     }
 
     private Future<QueryResult> execute(EdmlRequestContext context) {
@@ -108,17 +107,17 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
         return Future.future(promise -> {
             val datamartName = context.getSourceTable().getSchemaName();
             deltaServiceDao.writeOperationError(datamartName, context.getSysCn())
-                    .compose(v -> eraseWriteOp())
-                    .compose(v -> deltaServiceDao.deleteWriteOperation(datamartName, context.getSysCn()))
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            log.error("Edml write operation error!", error);
-                            promise.fail(error);
-                        } else {
-                            log.error("Can't write operation error!", ar.cause());
-                            promise.fail(ar.cause());
-                        }
-                    });
+                .compose(v -> eraseWriteOp())
+                .compose(v -> deltaServiceDao.deleteWriteOperation(datamartName, context.getSysCn()))
+                .onComplete(ar -> {
+                    if (ar.succeeded()) {
+                        log.error("Edml write operation error!", error);
+                        promise.fail(error);
+                    } else {
+                        log.error("Can't write operation error!", ar.cause());
+                        promise.fail(ar.cause());
+                    }
+                });
         });
     }
 
@@ -128,16 +127,10 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
     }
 
     private Future<QueryResult> writeOpSuccess(String datamartName, Long sysCn, QueryResult result) {
-        return Future.future(promise -> {
+        return Future.future(promise ->
             deltaServiceDao.writeOperationSuccess(datamartName, sysCn)
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            promise.complete(result);
-                        } else {
-                            promise.fail(ar.cause());
-                        }
-                    });
-        });
+                .onSuccess(v -> promise.complete(result))
+                .onFailure(promise::fail));
     }
 
     @Override

@@ -108,10 +108,10 @@ public class AdbCalciteDmlQueryExtendServiceImpl implements QueryExtendService {
                 relBuilder.call(SqlStdOperatorTable.AND,
                         relBuilder.call(SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
                                 relBuilder.field(SYS_FROM_ATTR),
-                                relBuilder.literal(deltaInfo.getDeltaInterval().getDeltaFrom())),
+                                relBuilder.literal(deltaInfo.getSelectOnInterval().getSelectOnFrom())),
                         relBuilder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
                                 relBuilder.field(SYS_FROM_ATTR),
-                                relBuilder.literal(deltaInfo.getDeltaInterval().getDeltaTo()))
+                                relBuilder.literal(deltaInfo.getSelectOnInterval().getSelectOnTo()))
                 )
         ).project(rexNodes).build();
     }
@@ -122,10 +122,10 @@ public class AdbCalciteDmlQueryExtendServiceImpl implements QueryExtendService {
                 relBuilder.call(SqlStdOperatorTable.AND,
                         relBuilder.call(SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
                                 relBuilder.field(SYS_TO_ATTR),
-                                relBuilder.literal(deltaInfo.getDeltaInterval().getDeltaFrom() - 1)),
+                                relBuilder.literal(deltaInfo.getSelectOnInterval().getSelectOnFrom() - 1)),
                         relBuilder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
                                 relBuilder.field(SYS_TO_ATTR),
-                                relBuilder.literal(deltaInfo.getDeltaInterval().getDeltaTo() - 1)),
+                                relBuilder.literal(deltaInfo.getSelectOnInterval().getSelectOnTo() - 1)),
                         relBuilder.call(SqlStdOperatorTable.EQUALS,
                                 relBuilder.field(SYS_OP_ATTR),
                                 relBuilder.literal(1))

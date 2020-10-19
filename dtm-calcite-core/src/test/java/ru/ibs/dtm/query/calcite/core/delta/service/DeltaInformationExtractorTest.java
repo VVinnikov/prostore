@@ -14,8 +14,8 @@ import org.apache.calcite.tools.Planner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.delta.DeltaInformationResult;
-import ru.ibs.dtm.common.delta.DeltaInterval;
 import ru.ibs.dtm.common.delta.DeltaType;
+import ru.ibs.dtm.common.delta.SelectOnInterval;
 import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import ru.ibs.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import ru.ibs.dtm.query.calcite.core.util.DeltaInformationExtractor;
@@ -135,10 +135,10 @@ class DeltaInformationExtractorTest {
 
         assertNotNull(deltaInformationResult.getDeltaInformations().get(0).getDeltaTimestamp());
         assertTrue(deltaInformationResult.getDeltaInformations().get(1).isLatestUncommitedDelta());
-        assertEquals(new DeltaInterval(1L,2L), deltaInformationResult.getDeltaInformations().get(2).getDeltaInterval());
+        assertEquals(new SelectOnInterval(1L,2L), deltaInformationResult.getDeltaInformations().get(2).getSelectOnInterval());
         assertEquals(DeltaType.STARTED_IN, deltaInformationResult.getDeltaInformations().get(2).getType());
-        assertEquals(4444, deltaInformationResult.getDeltaInformations().get(3).getDeltaNum());
-        assertEquals(new DeltaInterval(3L,4L), deltaInformationResult.getDeltaInformations().get(4).getDeltaInterval());
+        assertEquals(4444, deltaInformationResult.getDeltaInformations().get(3).getSelectOnNum());
+        assertEquals(new SelectOnInterval(3L,4L), deltaInformationResult.getDeltaInformations().get(4).getSelectOnInterval());
         assertEquals(DeltaType.FINISHED_IN, deltaInformationResult.getDeltaInformations().get(4).getType());
 
         val sqlWithoutForSystemTime = deltaInformationResult.getSqlWithoutSnapshots();

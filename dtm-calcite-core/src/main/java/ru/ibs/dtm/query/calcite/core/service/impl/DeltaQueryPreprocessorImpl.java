@@ -1,8 +1,6 @@
 package ru.ibs.dtm.query.calcite.core.service.impl;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
+import io.vertx.core.*;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlNode;
@@ -21,6 +19,7 @@ import ru.ibs.dtm.query.calcite.core.util.DeltaInformationExtractor;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
@@ -67,64 +66,73 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
     }
 
     private void calculateDeltaValues(List<DeltaInformation> deltas, Handler<AsyncResult<List<DeltaInformation>>> handler) {
-        final List<DeltaInformation> deltaResult = new ArrayList<>();
         final List<String> errors = new ArrayList<>();
-        deltas.forEach(deltaInformation -> {
+        CompositeFuture.join(deltas.stream()
+            .map(deltaInformation -> getCalculateDeltaInfoFuture(errors, deltaInformation))
+            .collect(Collectors.toList()))
+            .onSuccess(deltaResult -> handler.handle(Future.succeededFuture(deltaResult.list())))
+            .onFailure(error -> handler.handle(Future.failedFuture(createDeltaRangeInvalidException(errors))));
+    }
+
+    private Future<DeltaInformation> getCalculateDeltaInfoFuture(List<String> errors, DeltaInformation deltaInformation) {
+        return Future.future((Promise<DeltaInformation> deltaInfoPromise) -> {
             if (deltaInformation.isLatestUncommitedDelta()) {
                 deltaService.getCnToDeltaHot(deltaInformation.getSchemaName())
-                        .onSuccess(deltaCnTo -> {
-                            deltaInformation.setSelectOnNum(deltaCnTo);
-                            deltaResult.add(deltaInformation);
-                        });
+                    .onSuccess(deltaCnTo -> {
+                        deltaInformation.setSelectOnNum(deltaCnTo);
+                        deltaInfoPromise.complete(deltaInformation);
+                    })
+                    .onFailure(deltaInfoPromise::fail);
             } else {
                 if (DeltaType.FINISHED_IN.equals(deltaInformation.getType()) || DeltaType.STARTED_IN.equals(deltaInformation.getType())) {
                     calculateSelectOnInterval(deltaInformation, ar -> {
                         if (ar.succeeded()) {
                             deltaInformation.setSelectOnInterval(ar.result());
-                            deltaResult.add(deltaInformation);
+                            deltaInfoPromise.complete(deltaInformation);
                         } else {
                             errors.add(ar.cause().getMessage());
+                            deltaInfoPromise.fail(ar.cause());
                         }
                     });
                 } else {
                     calculateSelectOnNum(deltaInformation, ar -> {
-                        deltaInformation.setSelectOnNum(ar.result());
-                        deltaResult.add(deltaInformation);
+                        if (ar.succeeded()) {
+                            deltaInformation.setSelectOnNum(ar.result());
+                            deltaInfoPromise.complete(deltaInformation);
+                        } else {
+                            errors.add(ar.cause().getMessage());
+                            deltaInfoPromise.fail(ar.cause());
+                        }
                     });
                 }
             }
         });
-        if (errors.isEmpty()) {
-            handler.handle(Future.succeededFuture(deltaResult));
-        }
-        else {
-            handler.handle(Future.failedFuture(createDeltaRangeInvalidException(errors)));
-        }
     }
 
-    private DeltaRangeInvalidException createDeltaRangeInvalidException(List<String> errors){
+    private DeltaRangeInvalidException createDeltaRangeInvalidException(List<String> errors) {
         return new DeltaRangeInvalidException(String.join(";", errors));
     }
 
-    private void calculateSelectOnNum(DeltaInformation deltaInformation, Handler<AsyncResult<Long>> handler){
+    private void calculateSelectOnNum(DeltaInformation deltaInformation, Handler<AsyncResult<Long>> handler) {
         switch (deltaInformation.getType()) {
             case NUM:
-                deltaService.getCnToByDeltaNum(deltaInformation.getSchemaName(), deltaInformation.getDeltaNum())
-                        .onComplete(res -> handler.handle(res));
+                deltaService.getCnToByDeltaNum(deltaInformation.getSchemaName(), deltaInformation.getSelectOnNum())
+                    .onComplete(handler);
                 break;
             case DATETIME:
                 deltaService.getCnToByDeltaDatetime(deltaInformation.getSchemaName(), LocalDateTime.parse(deltaInformation.getDeltaTimestamp().replace("\'", ""), CalciteUtil.LOCAL_DATE_TIME))
-                        .onComplete(res -> handler.handle(res));
+                    .onComplete(handler);
                 break;
             default:
+                handler.handle(Future.failedFuture(new UnsupportedOperationException("Delta type not supported")));
                 break;
         }
     }
 
-    private void calculateSelectOnInterval(DeltaInformation deltaInformation, Handler<AsyncResult<SelectOnInterval>> handler){
-        Long deltaFrom = deltaInformation.getDeltaInterval().getDeltaFrom();
-        Long deltaTo = deltaInformation.getDeltaInterval().getDeltaTo();
+    private void calculateSelectOnInterval(DeltaInformation deltaInformation, Handler<AsyncResult<SelectOnInterval>> handler) {
+        Long deltaFrom = deltaInformation.getSelectOnInterval().getSelectOnFrom();
+        Long deltaTo = deltaInformation.getSelectOnInterval().getSelectOnTo();
         deltaService.getCnFromCnToByDeltaNums(deltaInformation.getSchemaName(), deltaFrom, deltaTo)
-                .onComplete(res -> handler.handle(res));
+            .onComplete(handler);
     }
 }

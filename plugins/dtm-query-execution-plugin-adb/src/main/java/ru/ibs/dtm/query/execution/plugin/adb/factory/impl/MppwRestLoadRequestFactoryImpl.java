@@ -27,7 +27,7 @@ public class MppwRestLoadRequestFactoryImpl implements MppwRestLoadRequestFactor
         val kafkaParam = context.getRequest().getKafkaParameter();
         return RestLoadRequest.builder()
                 .requestId(context.getRequest().getQueryRequest().getRequestId().toString())
-                .sysCn(kafkaParam.getSysCn())
+                .hotDelta(kafkaParam.getSysCn())
                 .datamart(kafkaParam.getDatamart())
                 .tableName(kafkaParam.getTargetTableName())
                 .zookeeperHost(kafkaParam.getZookeeperHost())
@@ -36,7 +36,7 @@ public class MppwRestLoadRequestFactoryImpl implements MppwRestLoadRequestFactor
                 .consumerGroup(mppwProperties.getConsumerGroup())
                 .format(uploadMeta.getFormat().getName())
                 .schema(new Schema.Parser().parse(uploadMeta.getExternalSchema()))
-                .messageProcessingLimit(uploadMeta.getUploadMessageLimit())
+                .messageProcessingLimit(uploadMeta.getUploadMessageLimit() == null? 0:uploadMeta.getUploadMessageLimit())
                 .build();
     }
 }

@@ -18,7 +18,7 @@ class ZookeeperConnectionProviderImplTest {
 
     @Test
     public void test() throws InterruptedException {
-        ZookeeperConnectionProviderImpl connectionManager = new ZookeeperConnectionProviderImpl(getZookeeperProperties());
+        val connectionManager = new ZookeeperConnectionProviderImpl(getZookeeperProperties(), "TEST");
         List<ZooKeeper> zooKeeperList = new ArrayList<>();
         val connectionLatch = new CountDownLatch(ZOOKEEPER_SIZE);
         for (int i = 0; i < ZOOKEEPER_SIZE; i++) {

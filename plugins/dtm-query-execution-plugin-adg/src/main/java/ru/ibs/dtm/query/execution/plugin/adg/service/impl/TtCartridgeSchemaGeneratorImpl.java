@@ -4,6 +4,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import lombok.val;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.model.ddl.Entity;
 import ru.ibs.dtm.common.model.ddl.EntityField;
@@ -26,12 +27,11 @@ import static ru.ibs.dtm.query.execution.plugin.adg.constants.ColumnFields.*;
 @Service
 public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerator {
 
-    private TarantoolDatabaseProperties tarantoolProperties;
     private final SpaceEngines engine;
 
+    @Autowired
     public TtCartridgeSchemaGeneratorImpl(TarantoolDatabaseProperties tarantoolProperties) {
-        this.tarantoolProperties = tarantoolProperties;
-        this.engine  = SpaceEngines.valueOf(tarantoolProperties.getEngine());
+        this.engine = SpaceEngines.valueOf(tarantoolProperties.getEngine());
     }
 
     @Override

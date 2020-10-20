@@ -7,8 +7,10 @@ import ru.ibs.dtm.common.reader.QueryRequest;
 import ru.ibs.dtm.common.reader.QuerySourceRequest;
 import ru.ibs.dtm.common.reader.SourceType;
 
+import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Determining the type of request by hint DATASOURCE_TYPE = 'ADB|ADG|ADQM'
@@ -28,7 +30,16 @@ public class HintExtractor {
             String strippedSql = matcher.replaceFirst(StringUtils.EMPTY).trim();
             QueryRequest newQueryRequest = request.copy();
             newQueryRequest.setSql(strippedSql);
-            sourceRequest.setSourceType(SourceType.valueOf(dataSource));
+            try {
+                sourceRequest.setSourceType(SourceType.valueOf(dataSource));
+            }
+            catch (IllegalArgumentException e)
+            {
+                throw new IllegalArgumentException("\"" + dataSource + "\""
+                    + " isn't a valid datasource type, please use one of the following: " +
+                    Arrays.stream(SourceType.values()).filter(type -> !type.equals(SourceType.INFORMATION_SCHEMA))
+                            .map(SourceType::name).collect(Collectors.joining(", ")), e);
+            }
             sourceRequest.setQueryRequest(newQueryRequest);
         } else {
             log.info("Hint not defined for request {}", request.getSql());

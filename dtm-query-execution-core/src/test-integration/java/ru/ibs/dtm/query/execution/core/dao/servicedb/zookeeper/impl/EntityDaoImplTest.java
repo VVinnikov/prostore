@@ -8,7 +8,6 @@ import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.common.model.ddl.Entity;
 import ru.ibs.dtm.common.model.ddl.EntityField;
 import ru.ibs.dtm.query.execution.core.configuration.properties.ZookeeperProperties;
-import ru.ibs.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
 import ru.ibs.dtm.query.execution.core.service.zookeeper.impl.ZookeeperConnectionProviderImpl;
 import ru.ibs.dtm.query.execution.core.service.zookeeper.impl.ZookeeperExecutorImpl;
 
@@ -30,7 +29,8 @@ class EntityDaoImplTest {
     private final Entity expectedEntity2;
 
     public EntityDaoImplTest() {
-        ZookeeperExecutor executor = new ZookeeperExecutorImpl(new ZookeeperConnectionProviderImpl(getZookeeperProperties()), Vertx.vertx());
+        val connectionManager = new ZookeeperConnectionProviderImpl(getZookeeperProperties(), "TEST");
+        val executor = new ZookeeperExecutorImpl(connectionManager, Vertx.vertx());
         datamartDao = new DatamartDaoImpl(executor, "test1");
         entityDao = new EntityDaoImpl(executor, "test1");
         expectedEntity1 = getEntity(EXPECTED_ENT_NAME1);

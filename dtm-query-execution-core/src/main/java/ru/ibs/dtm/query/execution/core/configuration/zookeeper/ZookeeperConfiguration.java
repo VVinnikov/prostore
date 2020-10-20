@@ -2,6 +2,7 @@ package ru.ibs.dtm.query.execution.core.configuration.zookeeper;
 
 import io.vertx.core.Vertx;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import ru.ibs.dtm.query.execution.core.configuration.properties.ZookeeperProperties;
@@ -15,8 +16,8 @@ import ru.ibs.dtm.query.execution.core.service.zookeeper.impl.ZookeeperExecutorI
 public class ZookeeperConfiguration {
 
     @Bean
-    public ZookeeperConnectionProvider zkConnectionManager(ZookeeperProperties properties) {
-        return new ZookeeperConnectionProviderImpl(properties);
+    public ZookeeperConnectionProvider zkConnectionManager(ZookeeperProperties properties, @Value("${core.env.name}") String envName) {
+        return new ZookeeperConnectionProviderImpl(properties, envName);
     }
 
     @Bean

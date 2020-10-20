@@ -5,7 +5,6 @@ import io.vertx.junit5.VertxTestContext;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.query.execution.core.configuration.properties.ZookeeperProperties;
-import ru.ibs.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
 import ru.ibs.dtm.query.execution.core.service.zookeeper.impl.ZookeeperConnectionProviderImpl;
 import ru.ibs.dtm.query.execution.core.service.zookeeper.impl.ZookeeperExecutorImpl;
 
@@ -20,7 +19,8 @@ class DatamartDaoImplTest {
     private final DatamartDaoImpl dao;
 
     public DatamartDaoImplTest() {
-        ZookeeperExecutor executor = new ZookeeperExecutorImpl(new ZookeeperConnectionProviderImpl(getZookeeperProperties()), Vertx.vertx());
+        val connectionManager = new ZookeeperConnectionProviderImpl(getZookeeperProperties(), "TEST");
+        val executor = new ZookeeperExecutorImpl(connectionManager, Vertx.vertx());
         dao = new DatamartDaoImpl(executor, "test1");
     }
 

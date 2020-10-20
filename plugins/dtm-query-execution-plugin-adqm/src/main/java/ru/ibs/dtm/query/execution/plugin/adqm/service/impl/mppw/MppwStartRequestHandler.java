@@ -225,7 +225,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         val uploadMeta = (UploadExternalEntityMetadata) mppwRequest.getKafkaParameter().getUploadMetadata();
         RestLoadRequest request = new RestLoadRequest();
         request.setRequestId(mppwRequest.getQueryRequest().getRequestId().toString());
-        request.setSynCn(mppwRequest.getKafkaParameter().getSysCn());
+        request.setHotDelta(mppwRequest.getKafkaParameter().getSysCn());
         request.setDatamart(mppwRequest.getKafkaParameter().getDatamart());
         request.setTableName(mppwRequest.getKafkaParameter().getTargetTableName());
         request.setZookeeperHost(mppwRequest.getKafkaParameter().getZookeeperHost());
@@ -233,7 +233,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         request.setKafkaTopic(mppwRequest.getKafkaParameter().getTopic());
         request.setConsumerGroup(mppwProperties.getRestLoadConsumerGroup());
         request.setFormat(uploadMeta.getFormat().getName());
-        request.setMessageProcessingLimit(uploadMeta.getUploadMessageLimit());
+        request.setMessageProcessingLimit(uploadMeta.getUploadMessageLimit() == null ? 0 : uploadMeta.getUploadMessageLimit());
 
         try {
             val schema = new Schema.Parser().parse(uploadMeta.getExternalSchema());

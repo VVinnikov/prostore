@@ -27,7 +27,7 @@ public class MppwKafkaRequestFactoryImpl implements MppwKafkaRequestFactory {
                         .targetTableName(context.getTargetTable().getTableName())
                         .uploadMetadata(UploadExternalEntityMetadata.builder()
                                 .name(context.getEntity().getName())
-                                .format(Format.valueOf(context.getEntity().getExternalTableFormat()))
+                                .format(Format.findByName(context.getEntity().getExternalTableFormat()))
                                 .locationPath(context.getEntity().getExternalTableLocationPath())
                                 .externalSchema(context.getEntity().getExternalTableSchema())
                                 .uploadMessageLimit(context.getEntity().getExternalTableUploadMessageLimit())

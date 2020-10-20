@@ -18,7 +18,7 @@ import java.io.Serializable;
 @NoArgsConstructor
 public class RestLoadRequest implements Serializable {
     private String requestId;
-    private long sysCn;
+    private long hotDelta;
     private String datamart;
     private String tableName;
     private String zookeeperHost;

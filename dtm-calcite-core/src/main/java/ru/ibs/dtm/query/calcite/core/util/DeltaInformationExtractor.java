@@ -7,8 +7,8 @@ import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import ru.ibs.dtm.common.delta.DeltaInformation;
 import ru.ibs.dtm.common.delta.DeltaInformationResult;
-import ru.ibs.dtm.common.delta.DeltaInterval;
 import ru.ibs.dtm.common.delta.DeltaType;
+import ru.ibs.dtm.common.delta.SelectOnInterval;
 import ru.ibs.dtm.query.calcite.core.extension.snapshot.SqlSnapshot;
 import ru.ibs.dtm.query.calcite.core.node.SqlSelectTree;
 import ru.ibs.dtm.query.calcite.core.node.SqlTreeNode;
@@ -128,8 +128,8 @@ public class DeltaInformationExtractor {
                                                    String snapshotTime,
                                                    boolean isLatestUncommitedDelta,
                                                    Long deltaNum,
-                                                   DeltaInterval startedIn,
-                                                   DeltaInterval finishedIn,
+                                                   SelectOnInterval startedIn,
+                                                   SelectOnInterval finishedIn,
                                                    SqlParserPos pos) {
         String datamart = "";
         String tableName;
@@ -159,12 +159,12 @@ public class DeltaInformationExtractor {
             }
         }
 
-        DeltaInterval deltaInterval = null;
+        SelectOnInterval selectOnInterval = null;
         if (startedIn != null) {
-            deltaInterval = startedIn;
+            selectOnInterval = startedIn;
             deltaType = DeltaType.STARTED_IN;
         } else if (finishedIn != null) {
-            deltaInterval = finishedIn;
+            selectOnInterval = finishedIn;
             deltaType = DeltaType.FINISHED_IN;
         }
 
@@ -172,9 +172,9 @@ public class DeltaInformationExtractor {
                 aliasVal,
                 deltaTime,
                 isLatestUncommitedDelta,
-                deltaNum,
-                deltaInterval,
                 deltaType,
+                deltaNum,
+            selectOnInterval,
                 datamart,
                 tableName,
                 pos);

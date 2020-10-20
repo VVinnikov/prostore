@@ -10,7 +10,7 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Planner;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import ru.ibs.dtm.common.delta.DeltaInterval;
+import ru.ibs.dtm.common.delta.SelectOnInterval;
 import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import ru.ibs.dtm.query.calcite.core.extension.snapshot.SqlSnapshot;
 import ru.ibs.dtm.query.calcite.core.framework.DtmCalciteFramework;
@@ -55,7 +55,7 @@ public class SqlSnapshotDeltaParserTest {
         DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
         Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
-        DeltaInterval startedInterval = new DeltaInterval(1L, 3L);
+        SelectOnInterval startedInterval = new SelectOnInterval(1L, 3L);
         SqlNode sqlNode = planner.parse("select * from test.pso FOR SYSTEM_TIME STARTED IN (1,3)");
         assertNull(((SqlSnapshot) ((SqlSelect) sqlNode).getFrom()).getFinishedInterval());
         assertNull(((SqlSnapshot) ((SqlSelect) sqlNode).getFrom()).getDeltaDateTime());
@@ -88,7 +88,7 @@ public class SqlSnapshotDeltaParserTest {
         DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
         Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
-        DeltaInterval finishedInterval = new DeltaInterval(1L, 3L);
+        SelectOnInterval finishedInterval = new SelectOnInterval(1L, 3L);
         SqlNode sqlNode = planner.parse("select * from test.pso FOR SYSTEM_TIME FINISHED IN (1,3)");
         assertNull(((SqlSnapshot) ((SqlSelect) sqlNode).getFrom()).getStartedInterval());
         assertNull(((SqlSnapshot) ((SqlSelect) sqlNode).getFrom()).getDeltaDateTime());

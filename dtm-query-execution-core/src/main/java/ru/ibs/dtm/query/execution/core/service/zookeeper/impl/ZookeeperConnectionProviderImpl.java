@@ -22,23 +22,39 @@ public class ZookeeperConnectionProviderImpl implements ZookeeperConnectionProvi
     private ZooKeeper connection;
     private boolean synConnected;
 
-    public ZookeeperConnectionProviderImpl(ZookeeperProperties properties) {
+    public ZookeeperConnectionProviderImpl(ZookeeperProperties properties, String envName) {
         this.properties = properties;
-        initializeChroot();
+        initializeChroot(envName);
     }
 
-    private void initializeChroot() {
+    private void initializeChroot(String envName) {
         try {
             connect(properties.getConnectionString())
                 .create(properties.getChroot(), null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             log.info("Chroot node [{}] is created", properties.getChroot());
+            initializeEnv(envName);
         } catch (KeeperException.NodeExistsException e) {
             log.debug("Chroot node [{}] is exists", properties.getChroot());
+            initializeEnv(envName);
         } catch (Exception e) {
             String errMsg = String.format("Can't create chroot node [%s] for zk datasource", properties.getChroot());
             throw new RuntimeException(errMsg, e);
         } finally {
             close();
+        }
+    }
+
+    private void initializeEnv(String envName) {
+        String envNodePath = properties.getChroot() + "/" + envName;
+        try {
+            connect(properties.getConnectionString())
+                .create(envNodePath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+            log.info("Env node [{}] is created", envNodePath);
+        } catch (KeeperException.NodeExistsException e) {
+            log.debug("Env node [{}] is exists", envNodePath);
+        } catch (Exception e) {
+            String errMsg = String.format("Can't create env node [%s] for zk datasource", envNodePath);
+            throw new RuntimeException(errMsg, e);
         }
     }
 

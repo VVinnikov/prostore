@@ -64,7 +64,7 @@ public class DeltaServiceDaoImplTest {
         properties.setConnectionString("localhost:55431");
         properties.setConnectionTimeoutMs(10_000);
         properties.setSessionTimeoutMs(30_000);
-        ZookeeperConnectionProvider manager = new ZookeeperConnectionProviderImpl(properties);
+        ZookeeperConnectionProvider manager = new ZookeeperConnectionProviderImpl(properties, ENV_NAME);
         ZookeeperExecutor executor = new ZookeeperExecutorImpl(manager, Vertx.vertx());
         DatamartDao datamartDao = new DatamartDaoImpl(executor, ENV_NAME);
         dao.addExecutor(new DeleteDeltaHotExecutorImpl(executor, ENV_NAME));

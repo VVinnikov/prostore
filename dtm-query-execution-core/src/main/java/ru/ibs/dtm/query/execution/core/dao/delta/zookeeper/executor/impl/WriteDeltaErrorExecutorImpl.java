@@ -42,6 +42,7 @@ public class WriteDeltaErrorExecutorImpl extends DeltaServiceDaoExecutorHelper i
                 } else if (deltaHotNum != null && deltaHotNum != delta.getHot().getDeltaNum()) {
                     throw new InvalidDeltaNumException();
                 }
+                delta.getHot().setCnTo(-1L);
                 delta.getHot().setRollingBack(true);
                 return delta;
             })

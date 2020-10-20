@@ -1,10 +1,10 @@
 package ru.ibs.dtm.common.delta;
 
 import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
+import lombok.Data;
 
+@Data
 @AllArgsConstructor
-@EqualsAndHashCode
 public class SelectOnInterval {
     private Long selectOnFrom;
     private Long selectOnTo;

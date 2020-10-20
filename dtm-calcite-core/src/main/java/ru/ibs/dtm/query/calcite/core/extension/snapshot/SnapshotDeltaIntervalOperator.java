@@ -3,14 +3,14 @@ package ru.ibs.dtm.query.calcite.core.extension.snapshot;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.ImmutableNullableList;
-import ru.ibs.dtm.common.delta.DeltaInterval;
+import ru.ibs.dtm.common.delta.SelectOnInterval;
 
 import java.util.List;
 
 public class SnapshotDeltaIntervalOperator extends SqlCall {
 
     private SqlNode period;
-    private DeltaInterval deltaInterval;
+    private SelectOnInterval selectOnInterval;
     private SqlOperator inOperator;
 
     private static final SqlOperator STARTED_IN_OPERATOR =
@@ -20,7 +20,7 @@ public class SnapshotDeltaIntervalOperator extends SqlCall {
         super(pos);
         this.period = period;
         this.inOperator = operator;
-        this.deltaInterval = createDeltaInterval();
+        this.selectOnInterval = createDeltaInterval();
     }
 
     @Override
@@ -37,15 +37,15 @@ public class SnapshotDeltaIntervalOperator extends SqlCall {
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
         if (this.inOperator != null) {
             writer.keyword(this.getOperator().getName());
-            writer.keyword(this.deltaInterval.getIntervalStr());
+            writer.keyword(this.selectOnInterval.getIntervalStr());
         }
     }
 
-    public DeltaInterval getDeltaInterval() {
-        return deltaInterval;
+    public SelectOnInterval getDeltaInterval() {
+        return selectOnInterval;
     }
 
-    private DeltaInterval createDeltaInterval() {
+    private SelectOnInterval createDeltaInterval() {
         if (this.inOperator != null) {
             SqlBasicCall period = (SqlBasicCall) this.period;
             if (period.getOperands().length == 0 || period.getOperands().length > 2) {
@@ -56,7 +56,7 @@ public class SnapshotDeltaIntervalOperator extends SqlCall {
             if (deltaTo < deltaFrom) {
                 throw new RuntimeException("Incorrect delta interval, deltaTo must be more than deltaFrom!");
             }
-            return new DeltaInterval(deltaFrom, deltaTo);
+            return new SelectOnInterval(deltaFrom, deltaTo);
         } else {
             return null;
         }

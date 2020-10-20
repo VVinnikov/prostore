@@ -2,7 +2,7 @@ package ru.ibs.dtm.query.calcite.core.extension.snapshot;
 
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
-import ru.ibs.dtm.common.delta.DeltaInterval;
+import ru.ibs.dtm.common.delta.SelectOnInterval;
 
 import java.util.Objects;
 
@@ -14,8 +14,8 @@ public class SqlSnapshot extends org.apache.calcite.sql.SqlSnapshot {
     private SqlNode period;
     private String deltaDateTime;
     private Boolean isLatestUncommitedDelta;
-    private DeltaInterval startedInterval;
-    private DeltaInterval finishedInterval;
+    private SelectOnInterval startedInterval;
+    private SelectOnInterval finishedInterval;
     private Long deltaNum;
     private SnapshotDeltaIntervalOperator startedOperator;
     private SnapshotDeltaIntervalOperator finishedOperator;
@@ -89,11 +89,11 @@ public class SqlSnapshot extends org.apache.calcite.sql.SqlSnapshot {
         return this.tableRef;
     }
 
-    public DeltaInterval getStartedInterval() {
+    public SelectOnInterval getStartedInterval() {
         return startedInterval;
     }
 
-    public DeltaInterval getFinishedInterval() {
+    public SelectOnInterval getFinishedInterval() {
         return finishedInterval;
     }
 

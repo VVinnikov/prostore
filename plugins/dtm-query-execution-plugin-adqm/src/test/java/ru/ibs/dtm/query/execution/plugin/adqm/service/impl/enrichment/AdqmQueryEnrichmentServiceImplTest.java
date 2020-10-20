@@ -8,7 +8,6 @@ import lombok.val;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.junit.jupiter.api.Test;
 import ru.ibs.dtm.common.delta.DeltaInformation;
-import ru.ibs.dtm.common.delta.DeltaInterval;
 import ru.ibs.dtm.common.delta.DeltaType;
 import ru.ibs.dtm.common.delta.SelectOnInterval;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
@@ -162,7 +161,7 @@ class AdqmQueryEnrichmentServiceImplTest {
         });
         assertThat(testContext.awaitCompletion(5, TimeUnit.SECONDS)).isTrue();
         assertEquals(expectedSql.trim(), actual[0].trim(),
-                String.format("Expected: %s\n Actual: %s", expectedSql.trim(), actual[0].trim()));
+            String.format("Expected: %s\n Actual: %s", expectedSql.trim(), actual[0].trim()));
     }
 
     private EnrichQueryRequest prepareRequestMultipleSchema(String sql) {
@@ -178,42 +177,40 @@ class AdqmQueryEnrichmentServiceImplTest {
         queryRequest.setDatamartMnemonic(defaultSchema);
         SqlParserPos pos = new SqlParserPos(0, 0);
         queryRequest.setDeltaInformations(Arrays.asList(
-                DeltaInformation.builder()
-                        .tableAlias("a")
-                        .deltaTimestamp("2019-12-23 15:15:14")
-                        .isLatestUncommitedDelta(false)
-                        .deltaNum(1L)
-                        .deltaInterval(null)
-                        .type(DeltaType.NUM)
-                        .schemaName(defaultSchema)
-                        .tableName(datamarts.get(0).getEntities().get(0).getName())
-                        .pos(pos)
-                        .selectOnNum(1L)
-                        .build(),
-                DeltaInformation.builder()
-                        .tableAlias("aa")
-                        .deltaTimestamp("2019-12-23 15:15:14")
-                        .isLatestUncommitedDelta(false)
-                        .deltaNum(2L)
-                        .selectOnNum(2L)
-                        .deltaInterval(null)
-                        .type(DeltaType.NUM)
-                        .schemaName(datamarts.get(1).getMnemonic())
-                        .tableName(datamarts.get(1).getEntities().get(1).getName())
-                        .pos(pos)
-                        .build(),
-                DeltaInformation.builder()
-                        .tableAlias("t")
-                        .deltaTimestamp("2019-12-23 15:15:14")
-                        .isLatestUncommitedDelta(false)
-                        .deltaNum(2L)
-                        .selectOnNum(2L)
-                        .deltaInterval(null)
-                        .type(DeltaType.NUM)
-                        .schemaName(datamarts.get(2).getMnemonic())
-                        .tableName(datamarts.get(2).getEntities().get(1).getName())
-                        .pos(pos)
-                        .build()
+            DeltaInformation.builder()
+                .tableAlias("a")
+                .deltaTimestamp("2019-12-23 15:15:14")
+                .isLatestUncommitedDelta(false)
+                .selectOnNum(1L)
+                .selectOnInterval(null)
+                .type(DeltaType.NUM)
+                .schemaName(defaultSchema)
+                .tableName(datamarts.get(0).getEntities().get(0).getName())
+                .pos(pos)
+                .selectOnNum(1L)
+                .build(),
+            DeltaInformation.builder()
+                .tableAlias("aa")
+                .deltaTimestamp("2019-12-23 15:15:14")
+                .isLatestUncommitedDelta(false)
+                .selectOnNum(2L)
+                .selectOnInterval(null)
+                .type(DeltaType.NUM)
+                .schemaName(datamarts.get(1).getMnemonic())
+                .tableName(datamarts.get(1).getEntities().get(1).getName())
+                .pos(pos)
+                .build(),
+            DeltaInformation.builder()
+                .tableAlias("t")
+                .deltaTimestamp("2019-12-23 15:15:14")
+                .isLatestUncommitedDelta(false)
+                .selectOnNum(2L)
+                .selectOnInterval(null)
+                .type(DeltaType.NUM)
+                .schemaName(datamarts.get(2).getMnemonic())
+                .tableName(datamarts.get(2).getEntities().get(1).getName())
+                .pos(pos)
+                .build()
         ));
         LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts, Collections.emptyList());
         return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
@@ -229,54 +226,50 @@ class AdqmQueryEnrichmentServiceImplTest {
         queryRequest.setDatamartMnemonic(schemaName);
         SqlParserPos pos = new SqlParserPos(0, 0);
         queryRequest.setDeltaInformations(Arrays.asList(
-                DeltaInformation.builder()
-                        .tableAlias("a")
-                        .deltaTimestamp("2019-12-23 15:15:14")
-                        .isLatestUncommitedDelta(false)
-                        .deltaNum(1L)
-                        .selectOnNum(1L)
-                        .deltaInterval(null)
-                        .type(DeltaType.NUM)
-                        .schemaName(schemaName)
-                        .tableName(datamarts.get(0).getEntities().get(0).getName())
-                        .pos(pos)
-                        .build(),
-                DeltaInformation.builder()
-                        .tableAlias("t1")
-                        .deltaTimestamp("2019-12-23 15:15:14")
-                        .isLatestUncommitedDelta(false)
-                        .deltaNum(1L)
-                        .selectOnNum(1L)
-                        .deltaInterval(null)
-                        .type(DeltaType.NUM)
-                        .schemaName(schemaName)
-                        .tableName(datamarts.get(0).getEntities().get(0).getName())
-                        .pos(pos)
-                        .build(),
-                DeltaInformation.builder()
-                        .tableAlias("t2")
-                        .deltaTimestamp("2019-12-23 15:15:14")
-                        .isLatestUncommitedDelta(false)
-                        .deltaNum(1L)
-                        .selectOnNum(1L)
-                        .deltaInterval(null)
-                        .type(DeltaType.NUM)
-                        .schemaName(schemaName)
-                        .tableName(datamarts.get(0).getEntities().get(0).getName())
-                        .pos(pos)
-                        .build(),
-                DeltaInformation.builder()
-                        .tableAlias("t3")
-                        .deltaTimestamp("2019-12-23 15:15:14")
-                        .isLatestUncommitedDelta(false)
-                        .deltaNum(1L)
-                        .selectOnNum(1L)
-                        .deltaInterval(null)
-                        .type(DeltaType.NUM)
-                        .schemaName(schemaName)
-                        .tableName(datamarts.get(0).getEntities().get(0).getName())
-                        .pos(pos)
-                        .build()
+            DeltaInformation.builder()
+                .tableAlias("a")
+                .deltaTimestamp("2019-12-23 15:15:14")
+                .isLatestUncommitedDelta(false)
+                .selectOnNum(1L)
+                .selectOnInterval(null)
+                .type(DeltaType.NUM)
+                .schemaName(schemaName)
+                .tableName(datamarts.get(0).getEntities().get(0).getName())
+                .pos(pos)
+                .build(),
+            DeltaInformation.builder()
+                .tableAlias("t1")
+                .deltaTimestamp("2019-12-23 15:15:14")
+                .isLatestUncommitedDelta(false)
+                .selectOnNum(1L)
+                .selectOnInterval(null)
+                .type(DeltaType.NUM)
+                .schemaName(schemaName)
+                .tableName(datamarts.get(0).getEntities().get(0).getName())
+                .pos(pos)
+                .build(),
+            DeltaInformation.builder()
+                .tableAlias("t2")
+                .deltaTimestamp("2019-12-23 15:15:14")
+                .isLatestUncommitedDelta(false)
+                .selectOnNum(1L)
+                .selectOnInterval(null)
+                .type(DeltaType.NUM)
+                .schemaName(schemaName)
+                .tableName(datamarts.get(0).getEntities().get(0).getName())
+                .pos(pos)
+                .build(),
+            DeltaInformation.builder()
+                .tableAlias("t3")
+                .deltaTimestamp("2019-12-23 15:15:14")
+                .isLatestUncommitedDelta(false)
+                .selectOnNum(1L)
+                .selectOnInterval(null)
+                .type(DeltaType.NUM)
+                .schemaName(schemaName)
+                .tableName(datamarts.get(0).getEntities().get(0).getName())
+                .pos(pos)
+                .build()
         ));
         LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts, Collections.emptyList());
         return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
@@ -292,32 +285,28 @@ class AdqmQueryEnrichmentServiceImplTest {
         queryRequest.setDatamartMnemonic(schemaName);
         SqlParserPos pos = new SqlParserPos(0, 0);
         queryRequest.setDeltaInformations(Arrays.asList(
-                DeltaInformation.builder()
-                        .tableAlias("a")
-                        .deltaTimestamp(null)
-                        .isLatestUncommitedDelta(false)
-                        .deltaNum(1L)
-                        .selectOnNum(1L)
-                        .deltaInterval(new DeltaInterval(1L, 5L))
-                        .selectOnInterval(new SelectOnInterval(1L, 5L))
-                        .type(DeltaType.STARTED_IN)
-                        .schemaName(schemaName)
-                        .tableName(datamarts.get(0).getEntities().get(0).getName())
-                        .pos(pos)
-                        .build(),
-                DeltaInformation.builder()
-                        .tableAlias("t")
-                        .deltaTimestamp(null)
-                        .isLatestUncommitedDelta(false)
-                        .deltaNum(1L)
-                        .selectOnNum(1L)
-                        .deltaInterval(new DeltaInterval(3L, 4L))
-                        .selectOnInterval(new SelectOnInterval(3L, 4L))
-                        .type(DeltaType.FINISHED_IN)
-                        .schemaName(schemaName)
-                        .tableName(datamarts.get(0).getEntities().get(1).getName())
-                        .pos(pos)
-                        .build()
+            DeltaInformation.builder()
+                .tableAlias("a")
+                .deltaTimestamp(null)
+                .isLatestUncommitedDelta(false)
+                .selectOnNum(1L)
+                .selectOnInterval(new SelectOnInterval(1L, 5L))
+                .type(DeltaType.STARTED_IN)
+                .schemaName(schemaName)
+                .tableName(datamarts.get(0).getEntities().get(0).getName())
+                .pos(pos)
+                .build(),
+            DeltaInformation.builder()
+                .tableAlias("t")
+                .deltaTimestamp(null)
+                .isLatestUncommitedDelta(false)
+                .selectOnNum(1L)
+                .selectOnInterval(new SelectOnInterval(3L, 4L))
+                .type(DeltaType.FINISHED_IN)
+                .schemaName(schemaName)
+                .tableName(datamarts.get(0).getEntities().get(1).getName())
+                .pos(pos)
+                .build()
         ));
         LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts, Collections.emptyList());
         return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());

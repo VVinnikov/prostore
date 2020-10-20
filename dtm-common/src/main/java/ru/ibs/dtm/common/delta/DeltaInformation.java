@@ -1,11 +1,13 @@
 package ru.ibs.dtm.common.delta;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
 @AllArgsConstructor
 @Data
+@Builder
 public class DeltaInformation {
     private final String tableAlias;
     private final String deltaTimestamp;

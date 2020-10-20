@@ -24,7 +24,8 @@ public class ConverterConfiguration {
         transformerMap.put(ColumnType.VARCHAR, Stream.of(new VarcharFromStringTransformer())
                 .collect(Collectors.toMap(ColumnTransformer::getTransformClass, cl -> cl)));
         transformerMap.put(ColumnType.CHAR, transformerMap.get(ColumnType.VARCHAR));
-        transformerMap.put(ColumnType.BIGINT, Stream.of(new BigintFromLongTransformer())
+        transformerMap.put(ColumnType.BIGINT, Stream.of(new BigintFromLongTransformer(),
+                new BigintFromBigIntegerTransformer())
                 .collect(Collectors.toMap(ColumnTransformer::getTransformClass, cl -> cl)));
         transformerMap.put(ColumnType.DOUBLE, Stream.of(new DoubleFromDoubleTransformer())
                 .collect(Collectors.toMap(ColumnTransformer::getTransformClass, cl -> cl)));

@@ -7,6 +7,7 @@ import ru.ibs.dtm.common.converter.SqlTypeConverter;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.query.execution.plugin.adqm.configuration.ConverterConfiguration;
 
+import java.math.BigInteger;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -14,9 +15,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -34,6 +33,7 @@ class AdqmTypeToSqlTypeConverterTest {
     private String timestampStrVal;
     private Boolean booleanVal;
     private String uuidStrVal;
+    private BigInteger bigInteger;
     private Map<String, Object> objMapVal;
 
     @BeforeEach
@@ -50,6 +50,7 @@ class AdqmTypeToSqlTypeConverterTest {
         timestampStrVal = "2020-10-05 14:15:16.000000";
         booleanVal = true;
         uuidStrVal = "a7180dcb-b286-4168-a34a-eb378a69abd4";
+        bigInteger = BigInteger.ONE;
         objMapVal = new HashMap<>();
         objMapVal.put("id", 1);
     }
@@ -60,7 +61,7 @@ class AdqmTypeToSqlTypeConverterTest {
         expectedValues.put(ColumnType.VARCHAR, charVal);
         expectedValues.put(ColumnType.CHAR, charVal);
         expectedValues.put(ColumnType.INT, intVal);
-        expectedValues.put(ColumnType.BIGINT, bigintVal);
+        expectedValues.put(ColumnType.BIGINT, Arrays.asList(bigintVal, bigInteger));
         expectedValues.put(ColumnType.DOUBLE, doubleVal);
         expectedValues.put(ColumnType.FLOAT, floatVal);
         expectedValues.put(ColumnType.DATE, Date.valueOf(LocalDate.ofEpochDay(dateLongVal)));
@@ -82,9 +83,13 @@ class AdqmTypeToSqlTypeConverterTest {
                 () -> assertEquals(expectedValues.get(ColumnType.INT), typeConverter.convert(ColumnType.INT, intVal)),
                 () -> assertTrue(typeConverter.convert(ColumnType.INT, intVal) instanceof Integer)
         );
-        assertAll("Bigint converting",
-                () -> assertEquals(expectedValues.get(ColumnType.BIGINT), typeConverter.convert(ColumnType.BIGINT, bigintVal)),
+        assertAll("Bigint converting from long",
+                () -> assertEquals(((List)expectedValues.get(ColumnType.BIGINT)).get(0), typeConverter.convert(ColumnType.BIGINT, bigintVal)),
                 () -> assertTrue(typeConverter.convert(ColumnType.BIGINT, bigintVal) instanceof Long)
+        );
+        assertAll("Bigint converting from BigInteger",
+                () -> assertEquals(((BigInteger)((List)expectedValues.get(ColumnType.BIGINT)).get(1)).longValue(), typeConverter.convert(ColumnType.BIGINT, bigInteger)),
+                () -> assertTrue(typeConverter.convert(ColumnType.BIGINT, bigInteger) instanceof Long)
         );
         assertAll("Double converting",
                 () -> assertEquals(expectedValues.get(ColumnType.DOUBLE), typeConverter.convert(ColumnType.DOUBLE, doubleVal)),
@@ -134,6 +139,7 @@ class AdqmTypeToSqlTypeConverterTest {
         booleanVal = null;
         uuidStrVal = null;
         objMapVal = null;
+        bigInteger = null;
 
         assertAll("Varchar converting",
                 () -> assertNull(typeConverter.convert(ColumnType.VARCHAR, charVal))
@@ -145,8 +151,11 @@ class AdqmTypeToSqlTypeConverterTest {
         assertAll("Int converting",
                 () -> assertNull(typeConverter.convert(ColumnType.INT, intVal))
         );
-        assertAll("Bigint converting",
+        assertAll("Bigint converting from long",
                 () -> assertNull(typeConverter.convert(ColumnType.BIGINT, bigintVal))
+        );
+        assertAll("Bigint converting from bigInteger",
+                () -> assertNull(typeConverter.convert(ColumnType.BIGINT, bigInteger))
         );
         assertAll("Double converting",
                 () -> assertNull(typeConverter.convert(ColumnType.DOUBLE, doubleVal))

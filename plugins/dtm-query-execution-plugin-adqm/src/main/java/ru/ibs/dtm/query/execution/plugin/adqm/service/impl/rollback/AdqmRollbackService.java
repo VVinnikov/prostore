@@ -37,7 +37,7 @@ public class AdqmRollbackService implements RollbackService<Void> {
             Promise<Void> promise = Promise.promise();
             Future<Void> executingFuture = promise.future();
             for (PreparedStatementRequest statement : rollbackRequest.getStatements()) {
-                executingFuture.compose(v -> executeSql(statement.getSql()));
+               executingFuture = executingFuture.compose(v -> executeSql(statement.getSql()));
             }
             executingFuture.onSuccess(success -> handler.handle(Future.succeededFuture()))
                 .onFailure(fail -> handler.handle(Future.failedFuture(fail)));

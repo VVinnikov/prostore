@@ -454,10 +454,10 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
         return Arrays.asList(
             ctx.builder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
                 ctx.builder.field(ctx.deltaInfo.getTableAlias(), SYS_FROM_FIELD),
-                ctx.builder.literal(ctx.deltaInfo.getDeltaNum())),
+                ctx.builder.literal(ctx.deltaInfo.getSelectOnNum())),
             ctx.builder.call(SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
                 ctx.builder.field(ctx.deltaInfo.getTableAlias(), SYS_TO_FIELD),
-                ctx.builder.literal(ctx.deltaInfo.getDeltaNum()))
+                ctx.builder.literal(ctx.deltaInfo.getSelectOnNum()))
         );
     }
 

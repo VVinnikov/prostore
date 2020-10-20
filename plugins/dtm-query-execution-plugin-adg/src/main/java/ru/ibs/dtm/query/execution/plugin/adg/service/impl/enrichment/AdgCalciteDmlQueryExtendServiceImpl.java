@@ -134,10 +134,10 @@ public class AdgCalciteDmlQueryExtendServiceImpl implements QueryExtendService {
                 relBuilder.call(SqlStdOperatorTable.AND,
                         relBuilder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
                                 relBuilder.field(SYS_FROM_FIELD),
-                                relBuilder.literal(deltaInfo.getDeltaNum())),
+                                relBuilder.literal(deltaInfo.getSelectOnNum())),
                         relBuilder.call(SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
                                 relBuilder.field(SYS_TO_FIELD),
-                                relBuilder.literal(deltaInfo.getDeltaNum()))
+                                relBuilder.literal(deltaInfo.getSelectOnNum()))
                 )
         ).project(rexNodes).build();
     }
@@ -147,7 +147,7 @@ public class AdgCalciteDmlQueryExtendServiceImpl implements QueryExtendService {
         return relBuilder.scan(tableName).filter(
                 relBuilder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
                         relBuilder.field(SYS_FROM_FIELD),
-                        relBuilder.literal(deltaInfo.getDeltaNum()))).project(rexNodes).build();
+                        relBuilder.literal(deltaInfo.getSelectOnNum()))).project(rexNodes).build();
     }
 
 }

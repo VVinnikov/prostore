@@ -157,7 +157,7 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
                                     p.fail(ar.cause());
                                 }
                             }))));
-            CompositeFuture.all(futures).setHandler(ar -> {
+            CompositeFuture.join(futures).setHandler(ar -> {
                 if (ar.succeeded()) {
                     rbPromise.complete();
                 } else {

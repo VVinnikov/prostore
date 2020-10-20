@@ -37,7 +37,7 @@ public class MetadataExecutorImpl implements MetadataExecutor<DdlRequestContext>
                                 p.fail(ar.cause());
                             }
                         }))));
-        CompositeFuture.all(futures).setHandler(ar -> {
+        CompositeFuture.join(futures).setHandler(ar -> {
             if (ar.succeeded()) {
                 handler.handle(Future.succeededFuture());
             } else {

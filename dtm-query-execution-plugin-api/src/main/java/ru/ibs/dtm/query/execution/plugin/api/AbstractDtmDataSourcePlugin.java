@@ -9,6 +9,7 @@ import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.service.*;
 import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
 import ru.ibs.dtm.query.execution.plugin.api.status.StatusRequestContext;
@@ -21,18 +22,22 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
     protected final MppwKafkaService<QueryResult> mppwKafkaService;
     protected final QueryCostService<Integer> queryCostService;
     protected final StatusService<StatusQueryResult> statusService;
+    protected final RollbackService<Void> rollbackService;
 
     public AbstractDtmDataSourcePlugin(DdlService<Void> ddlService,
                                        LlrService<QueryResult> llrService,
                                        MpprKafkaService<QueryResult> mpprKafkaService,
-                                       MppwKafkaService<QueryResult> mppwKafkaService, QueryCostService<Integer> queryCostService,
-                                       StatusService<StatusQueryResult> statusService) {
+                                       MppwKafkaService<QueryResult> mppwKafkaService,
+                                       QueryCostService<Integer> queryCostService,
+                                       StatusService<StatusQueryResult> statusService,
+                                       RollbackService<Void> rollbackService) {
         this.ddlService = ddlService;
         this.llrService = llrService;
         this.mpprKafkaService = mpprKafkaService;
         this.mppwKafkaService = mppwKafkaService;
         this.queryCostService = queryCostService;
         this.statusService = statusService;
+        this.rollbackService = rollbackService;
     }
 
     @Override
@@ -46,12 +51,12 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
     }
 
     @Override
-    public void mpprKafka(MpprRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
+    public void mppr(MpprRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
         mpprKafkaService.execute(context, asyncResultHandler);
     }
 
     @Override
-    public void mppwKafka(MppwRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
+    public void mppw(MppwRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
         mppwKafkaService.execute(context, asyncResultHandler);
     }
 
@@ -64,5 +69,10 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
     @Override
     public void status(StatusRequestContext context, Handler<AsyncResult<StatusQueryResult>> asyncResultHandler) {
         statusService.execute(context, asyncResultHandler);
+    }
+
+    @Override
+    public void rollback(RollbackRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler) {
+        rollbackService.execute(context, asyncResultHandler);
     }
 }

@@ -38,7 +38,7 @@ public class DownloadKafkaExecutor implements EdmlDownloadExecutor {
     private Future<QueryResult> execute(EdmlRequestContext context) {
         return Future.future(p -> {
             val mpprRequestContext = mpprKafkaRequestFactory.create(context);
-            pluginService.mpprKafka(edmlProperties.getSourceType(), mpprRequestContext, p);
+            pluginService.mppr(edmlProperties.getSourceType(), mpprRequestContext, p);
         });
     }
 

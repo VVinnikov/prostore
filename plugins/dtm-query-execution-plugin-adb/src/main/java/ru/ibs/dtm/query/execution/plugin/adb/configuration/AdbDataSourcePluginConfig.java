@@ -19,13 +19,15 @@ public class AdbDataSourcePluginConfig {
             @Qualifier("adbMpprKafkaService") MpprKafkaService<QueryResult> mpprKafkaService,
             @Qualifier("adbMppwKafkaService") MppwKafkaService<QueryResult> mppwKafkaService,
             @Qualifier("adbQueryCostService") QueryCostService<Integer> queryCostService,
-            @Qualifier("adbStatusService") StatusService<StatusQueryResult> statusService) {
+            @Qualifier("adbStatusService") StatusService<StatusQueryResult> statusService,
+            @Qualifier("adbRollbackService") RollbackService<Void> rollbackService) {
         return new AdbDtmDataSourcePlugin(
                 ddlService,
                 llrService,
                 mpprKafkaService,
                 mppwKafkaService,
                 queryCostService,
-                statusService);
+                statusService,
+                rollbackService);
     }
 }

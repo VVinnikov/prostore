@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.plugin.adb.service.impl.mppw.dto;
+package ru.ibs.dtm.common.plugin.sql;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

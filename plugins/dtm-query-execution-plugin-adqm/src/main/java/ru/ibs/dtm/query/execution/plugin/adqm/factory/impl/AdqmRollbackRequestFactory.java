@@ -37,20 +37,24 @@ public class AdqmRollbackRequestFactory implements RollbackRequestFactory<AdqmRo
         val cluster = ddlProperties.getCluster();
         Entity entity = rollbackRequest.getEntity();
         val entityName = entity.getName();
-        val datamart = rollbackRequest.getDatamart();
+        val dbName = getDbName(rollbackRequest);
         val sysCn = rollbackRequest.getSysCn();
         return new AdqmRollbackRequest(
             Arrays.asList(
-                PreparedStatementRequest.onlySql(getDropTableSql(datamart, entityName, "ext_shard", cluster)),
-                PreparedStatementRequest.onlySql(getDropTableSql(datamart, entityName, "buffer_loader_shard", cluster)),
-                PreparedStatementRequest.onlySql(getDropTableSql(datamart, entityName, "buffer", cluster)),
-                PreparedStatementRequest.onlySql(getDropTableSql(datamart, entityName, "buffer_shard", cluster)),
-                PreparedStatementRequest.onlySql(String.format(SYSTEM_FLUSH_TEMPLATE, datamart, entityName)),
-                PreparedStatementRequest.onlySql(gerInsertSql(datamart, entity, sysCn)),
-                PreparedStatementRequest.onlySql(String.format(SYSTEM_FLUSH_TEMPLATE, datamart, entityName)),
-                PreparedStatementRequest.onlySql(String.format(OPTIMIZE_TABLE_TEMPLATE, datamart, entityName, cluster))
+                PreparedStatementRequest.onlySql(getDropTableSql(dbName, entityName, "ext_shard", cluster)),
+                PreparedStatementRequest.onlySql(getDropTableSql(dbName, entityName, "buffer_loader_shard", cluster)),
+                PreparedStatementRequest.onlySql(getDropTableSql(dbName, entityName, "buffer", cluster)),
+                PreparedStatementRequest.onlySql(getDropTableSql(dbName, entityName, "buffer_shard", cluster)),
+                PreparedStatementRequest.onlySql(String.format(SYSTEM_FLUSH_TEMPLATE, dbName, entityName)),
+                PreparedStatementRequest.onlySql(gerInsertSql(dbName, entity, sysCn)),
+                PreparedStatementRequest.onlySql(String.format(SYSTEM_FLUSH_TEMPLATE, dbName, entityName)),
+                PreparedStatementRequest.onlySql(String.format(OPTIMIZE_TABLE_TEMPLATE, dbName, entityName, cluster))
             )
         );
+    }
+
+    private String getDbName(RollbackRequest rollbackRequest) {
+        return rollbackRequest.getQueryRequest().getEnvName() + "__" + rollbackRequest.getDatamart();
     }
 
     private String gerInsertSql(String datamart, Entity entity, long sysCn) {

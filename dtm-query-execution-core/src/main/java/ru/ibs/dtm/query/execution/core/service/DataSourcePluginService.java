@@ -10,80 +10,88 @@ import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.status.StatusRequestContext;
 
 import java.util.Set;
 
 /**
- * Сервис взаимодействия ядра с плагинами источников данных
+ * Service for interaction of the core with data source plugins
  */
 public interface DataSourcePluginService {
 
     /**
-     * <p>Получить тип Источника</p>
+     * <p>Get data source type</p>
      *
-     * @return пооддерживаемые типы источников
+     * @return Data source type
      */
     Set<SourceType> getSourceTypes();
 
     /**
-     * <p>Применение физической модели на БД</p>
+     * <p>execute DDL operation</p>
      *
-     * @param sourceType         тип источника
-     * @param context            запрос
-     * @param asyncResultHandler хэндлер асинхронной обработки результата
+     * @param sourceType         Data source type
+     * @param context            DDL context
+     * @param asyncResultHandler async handler
      */
     void ddl(SourceType sourceType,
              DdlRequestContext context,
              Handler<AsyncResult<Void>> asyncResultHandler);
 
     /**
-     * <p>Выполнить получение данных</p>
+     * <p>execute Low Latency Reading request</p>
      *
-     * @param sourceType         тип источника
-     * @param context            запрос
-     * @param asyncResultHandler хэндлер асинхронной обработки результата
+     * @param sourceType         Data source type
+     * @param context            LLR context
+     * @param asyncResultHandler async handler
      */
     void llr(SourceType sourceType,
              LlrRequestContext context,
              Handler<AsyncResult<QueryResult>> asyncResultHandler);
 
     /**
-     * <p>Выполнить извлечение данных</p>
+     * <p>execute Massively Parallel Processing Reading</p>
      *
-     * @param sourceType         тип источника
-     * @param context            запрос
-     * @param asyncResultHandler хэндлер асинхронной обработки результата
+     * @param sourceType         Data source type
+     * @param context            MPPR context
+     * @param asyncResultHandler async handler
      */
-    void mpprKafka(SourceType sourceType,
-                   MpprRequestContext context,
-                   Handler<AsyncResult<QueryResult>> asyncResultHandler);
+    void mppr(SourceType sourceType,
+              MpprRequestContext context,
+              Handler<AsyncResult<QueryResult>> asyncResultHandler);
 
     /**
-     * <p>Получить оценку стоимости выполнения запроса</p>
+     * <p>execute Massively Parallel Processing Writing</p>
+     * @param sourceType            Data source type
+     * @param mppwRequestContext    MPPW context
+     * @param resultHandler         async handler
+     */
+    void mppw(SourceType sourceType, MppwRequestContext mppwRequestContext,
+              Handler<AsyncResult<QueryResult>> resultHandler);
+
+    /**
+     * <p>Calculate executing query cost</p>
      *
-     * @param sourceType         тип источника
-     * @param context            запрос
-     * @param asyncResultHandler хэндлер асинхронной обработки результата
+     * @param sourceType         Data source type
+     * @param context            Query cost context
+     * @param asyncResultHandler async handler
      */
     void calcQueryCost(SourceType sourceType,
                        QueryCostRequestContext context,
                        Handler<AsyncResult<Integer>> asyncResultHandler);
 
     /**
-     * <p>Выполнить загрузку данных</p>
-     * @param sourceType тип источника
-     * @param mppwRequestContext запрос
-     * @param resultHandler хэндлер асинхронной обработки результата
-     */
-    void mppwKafka(SourceType sourceType, MppwRequestContext mppwRequestContext,
-                   Handler<AsyncResult<QueryResult>> resultHandler);
-
-    /**
-     * <p>Получить статус плагина</p>
-     * @param sourceType тип источника
-     * @param statusRequestContext запрос
-     * @param asyncResultHandler хэндлер асинхронной обработки результата
+     * <p>Get plugin status information</p>
+     * @param sourceType            Data source type
+     * @param statusRequestContext  Status request context
+     * @param asyncResultHandler    async handler
      */
     void status(SourceType sourceType, StatusRequestContext statusRequestContext, Handler<AsyncResult<StatusQueryResult>> asyncResultHandler);
+
+    /**
+     * @param sourceType            Data source type
+     * @param context               Rollback request context
+     * @param asyncResultHandler    async handler
+     */
+    void rollback(SourceType sourceType, RollbackRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler);
 }

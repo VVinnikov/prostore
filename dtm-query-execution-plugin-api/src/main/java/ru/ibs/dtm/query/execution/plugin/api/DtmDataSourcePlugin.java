@@ -11,72 +11,82 @@ import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.status.StatusRequestContext;
 
 /**
- * Интерфейс взаимодействия с плагинами источников данных
+ * Data source plugin interface
  */
 public interface DtmDataSourcePlugin extends Plugin<SourceType> {
 
     /**
-     * <p>Поддержка типа источника</p>
+     * <p>Data source type support</p>
      *
-     * @param sourceType тип источника
-     * @return поддерживается или нет
+     * @param sourceType data source type
+     * @return is support
      */
     default boolean supports(SourceType sourceType) {
         return getSourceType() == sourceType;
     }
 
     /**
-     * <p>Получить тип Источника</p>
+     * <p>Get data source type</p>
      *
-     * @return тип Источника
+     * @return data source type
      */
     SourceType getSourceType();
 
     /**
-     * <p>Применение DDL по созданию базы дынных</p>
+     * <p>execute DDL operation</p>
      *
-     * @param context            запрос
-     * @param asyncResultHandler хэндлер асинхронной обработки результата
+     * @param context            DDL context
+     * @param asyncResultHandler async handler
      */
     void ddl(DdlRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler);
 
     /**
-     * <p>Получение данных с помощью выполнения Low Latency запроса</p>
+     * <p>execute Low Latency Reading</p>
      *
-     * @param context            запрос
-     * @param asyncResultHandler хэндлер асинхронной обработки результата
+     * @param context            LLR context
+     * @param asyncResultHandler async handler
      */
     void llr(LlrRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler);
 
     /**
-     * <p>Выполнить извлечение данных</p>
+     * <p>execute Massively Parallel Processing Reading</p>
      *
-     * @param context            запрос
-     * @param asyncResultHandler хэндлер асинхронной обработки результата
+     * @param context            MPPR context
+     * @param asyncResultHandler async handler
      */
-    void mpprKafka(MpprRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler);
+    void mppr(MpprRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler);
 
     /**
-     * <p>Выполнить загрузку данных</p>
+     * <p>execute Massively Parallel Processing Writing</p>
      *
-     * @param context            запрос
-     * @param asyncResultHandler хэндлер асинхронной обработки результата
+     * @param context            MPPW context
+     * @param asyncResultHandler async handler
      */
-    void mppwKafka(MppwRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler);
+    void mppw(MppwRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler);
 
     /**
-     * <p>Получить оценку стоимости выполнения запроса</p>
+     * <p>Calculate executing query cost</p>
      *
-     * @param context            запрос
-     * @param asyncResultHandler хэндлер асинхронной обработки результата
+     * @param context            Query cost context
+     * @param asyncResultHandler async handler
      */
     void calcQueryCost(QueryCostRequestContext context, Handler<AsyncResult<Integer>> asyncResultHandler);
 
     /**
-     * <p>Возвращает информацию о состоянии плагина и собранную статистику</p>
+     * <p>Get plugin status information</p>
+     * @param context            Status request context
+     * @param asyncResultHandler async handler
      */
-    void status(StatusRequestContext statusRequestContext, Handler<AsyncResult<StatusQueryResult>> asyncResultHandler);
+    void status(StatusRequestContext context, Handler<AsyncResult<StatusQueryResult>> asyncResultHandler);
+
+    /**
+     *
+     * @param context            Rollback request context
+     * @param asyncResultHandler async handler
+     */
+    void rollback(RollbackRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler);
 }

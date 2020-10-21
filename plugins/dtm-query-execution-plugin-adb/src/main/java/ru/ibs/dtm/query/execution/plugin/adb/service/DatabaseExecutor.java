@@ -2,8 +2,8 @@ package ru.ibs.dtm.query.execution.plugin.adb.service;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
+import ru.ibs.dtm.common.plugin.sql.PreparedStatementRequest;
 import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
-import ru.ibs.dtm.query.execution.plugin.adb.service.impl.mppw.dto.PreparedStatementRequest;
 
 import java.util.List;
 import java.util.Map;

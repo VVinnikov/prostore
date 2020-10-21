@@ -22,6 +22,10 @@ public class HintExtractor {
         "DATASOURCE_TYPE\\s*=\\s*'([^\\s]+)'\\s*$",
         Pattern.CASE_INSENSITIVE);
 
+    private static final String AVAILABLE_TYPES = Arrays.stream(SourceType.values())
+            .filter(type -> !type.equals(SourceType.INFORMATION_SCHEMA))
+            .map(SourceType::name).collect(Collectors.joining(", "));
+
     public QuerySourceRequest extractHint(QueryRequest request) {
         QuerySourceRequest sourceRequest = new QuerySourceRequest();
         Matcher matcher = HINT_PATTERN.matcher(request.getSql());
@@ -35,10 +39,8 @@ public class HintExtractor {
             }
             catch (IllegalArgumentException e)
             {
-                throw new IllegalArgumentException("\"" + dataSource + "\""
-                    + " isn't a valid datasource type, please use one of the following: " +
-                    Arrays.stream(SourceType.values()).filter(type -> !type.equals(SourceType.INFORMATION_SCHEMA))
-                            .map(SourceType::name).collect(Collectors.joining(", ")), e);
+                throw new IllegalArgumentException(String.format("\"%s\" isn't a valid datasource type," +
+                    " please use one of the following: %s", dataSource, AVAILABLE_TYPES), e);
             }
             sourceRequest.setQueryRequest(newQueryRequest);
         } else {

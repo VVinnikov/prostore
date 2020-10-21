@@ -14,9 +14,9 @@ import lombok.val;
 import org.apache.commons.lang3.tuple.Pair;
 import ru.ibs.dtm.common.converter.SqlTypeConverter;
 import ru.ibs.dtm.common.model.ddl.ColumnType;
+import ru.ibs.dtm.common.plugin.sql.PreparedStatementRequest;
 import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
 import ru.ibs.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
-import ru.ibs.dtm.query.execution.plugin.adb.service.impl.mppw.dto.PreparedStatementRequest;
 
 import java.util.ArrayList;
 import java.util.HashMap;

@@ -83,13 +83,18 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
     private Future<QueryResult> executeAndWriteOp(EdmlRequestContext context) {
         return Future.future(promise ->
                 execute(context)
-                        .onComplete(ar -> {
-                            if (ar.succeeded()) {
-                                promise.complete(ar.result());
-                            } else {
-                                writeErrorOp(context, ar.cause())
-                                        .onFailure(promise::fail);
-                            }
+                        .onSuccess(promise::complete)
+                        .onFailure(error -> {
+                            log.error("Edml write operation error!", error);
+                            writeErrorOp(context)
+                                    .onComplete(writeErrorOpAr -> {
+                                        if (writeErrorOpAr.succeeded()) {
+                                            promise.fail(error);
+                                        } else {
+                                            log.error("Can't write operation error!", writeErrorOpAr.cause());
+                                            promise.fail(writeErrorOpAr.cause());
+                                        }
+                                    });
                         }));
     }
 
@@ -110,21 +115,13 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
         });
     }
 
-    private Future<Void> writeErrorOp(EdmlRequestContext context, Throwable error) {
+    private Future<Void> writeErrorOp(EdmlRequestContext context) {
         return Future.future(promise -> {
             val datamartName = context.getSourceTable().getSchemaName();
             deltaServiceDao.writeOperationError(datamartName, context.getSysCn())
                     .compose(v -> eraseWriteOp(context))
                     .compose(v -> deltaServiceDao.deleteWriteOperation(datamartName, context.getSysCn()))
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            log.error("Edml write operation error!", error);
-                            promise.fail(error);
-                        } else {
-                            log.error("Can't write operation error!", ar.cause());
-                            promise.fail(ar.cause());
-                        }
-                    });
+                    .setHandler(promise);
         });
     }
 

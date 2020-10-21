@@ -34,8 +34,6 @@ import ru.ibs.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService
 import ru.ibs.dtm.query.execution.core.service.impl.DataSourcePluginServiceImpl;
 import ru.ibs.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DatamartRequest;
-import ru.ibs.dtm.query.execution.plugin.api.request.RollbackRequest;
-import ru.ibs.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 
 import java.util.*;
 
@@ -51,7 +49,7 @@ class UploadExternalTableExecutorTest {
     private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
     private final ServiceDbDao serviceDbDao = mock(ServiceDbDaoImpl.class);
     private final DeltaServiceDao deltaServiceDao = mock(DeltaServiceDaoImpl.class);
-    private final List<EdmlUploadExecutor> uploadExecutors = Arrays.asList(mock(UploadKafkaExecutor.class));
+    private final List<EdmlUploadExecutor> uploadExecutors = Collections.singletonList(mock(UploadKafkaExecutor.class));
     private final RollbackRequestContextFactory rollbackRequestContextFactory = mock(RollbackRequestContextFactoryImpl.class);
     private final DataSourcePluginService pluginService = mock(DataSourcePluginServiceImpl.class);
     private UploadExternalTableExecutor uploadExternalTableExecutor;
@@ -137,7 +135,8 @@ class UploadExternalTableExecutorTest {
     void executeWriteNewOpError() {
         Promise promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
-        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao, rollbackRequestContextFactory, pluginService, uploadExecutors);
+        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
+                rollbackRequestContextFactory, pluginService, uploadExecutors);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
@@ -167,7 +166,8 @@ class UploadExternalTableExecutorTest {
     void executeWriteOpSuccessError() {
         Promise promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
-        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao, rollbackRequestContextFactory, pluginService, uploadExecutors);
+        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
+                rollbackRequestContextFactory, pluginService, uploadExecutors);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
@@ -209,14 +209,14 @@ class UploadExternalTableExecutorTest {
     void executeKafkaError() {
         Promise promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
-        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao, rollbackRequestContextFactory, pluginService, uploadExecutors);
+        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
+                rollbackRequestContextFactory, pluginService, uploadExecutors);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
 
-        final QueryResult queryResult = QueryResult.emptyResult();
         final Long sysCn = 1L;
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
@@ -263,7 +263,8 @@ class UploadExternalTableExecutorTest {
     void executeWriteOpError() {
         Promise promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
-        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao, rollbackRequestContextFactory, pluginService, uploadExecutors);
+        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
+                rollbackRequestContextFactory, pluginService, uploadExecutors);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
@@ -299,19 +300,18 @@ class UploadExternalTableExecutorTest {
         });
         assertTrue(promise.future().failed());
     }
-  
+
     @Test
     void executeDeleteWriteOpError() {
         Promise promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
-        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao, rollbackRequestContextFactory, pluginService, uploadExecutors);
+        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
+                rollbackRequestContextFactory, pluginService, uploadExecutors);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
-
-        final QueryResult queryResult = QueryResult.emptyResult();
         final Long sysCn = 1L;
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
@@ -340,9 +340,11 @@ class UploadExternalTableExecutorTest {
             return null;
         }).when(uploadExecutors.get(0)).execute(any(), any());
 
-        when(deltaServiceDao.writeOperationError(eq("test"), eq(sysCn))).thenReturn(Future.succeededFuture());
+        when(deltaServiceDao.writeOperationError(eq("test"), eq(sysCn)))
+                .thenReturn(Future.succeededFuture());
 
-        when(deltaServiceDao.deleteWriteOperation(eq("test"), eq(sysCn))).thenReturn(Future.failedFuture(new RuntimeException("")));
+        when(deltaServiceDao.deleteWriteOperation(eq("test"), eq(sysCn)))
+                .thenReturn(Future.failedFuture(new RuntimeException("")));
 
         uploadExternalTableExecutor.execute(context, ar -> {
             if (ar.succeeded()) {
@@ -358,13 +360,13 @@ class UploadExternalTableExecutorTest {
     void executeEraseOpError() {
         Promise promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
-        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao, rollbackRequestContextFactory, pluginService, uploadExecutors);
+        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
+                rollbackRequestContextFactory, pluginService, uploadExecutors);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
-        final QueryResult queryResult = QueryResult.emptyResult();
         final Long sysCn = 1L;
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
@@ -390,7 +392,8 @@ class UploadExternalTableExecutorTest {
             return null;
         }).when(uploadExecutors.get(0)).execute(any(), any());
 
-        when(deltaServiceDao.writeOperationError(eq("test"), eq(sysCn))).thenReturn(Future.succeededFuture());
+        when(deltaServiceDao.writeOperationError(eq("test"), eq(sysCn)))
+                .thenReturn(Future.succeededFuture());
 
         uploadExternalTableExecutor.execute(context, ar -> {
             if (ar.succeeded()) {

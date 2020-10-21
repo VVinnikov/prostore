@@ -5,6 +5,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.model.ddl.ExternalTableLocationType;
 import ru.ibs.dtm.common.reader.QueryResult;
@@ -22,6 +23,7 @@ public class DownloadKafkaExecutor implements EdmlDownloadExecutor {
     private final DataSourcePluginService pluginService;
     private final EdmlProperties edmlProperties;
 
+    @Autowired
     public DownloadKafkaExecutor(DataSourcePluginService pluginService,
                                  MpprKafkaRequestFactory mpprKafkaRequestFactory,
                                  EdmlProperties edmlProperties) {

@@ -2,6 +2,7 @@ package ru.ibs.dtm.query.execution.plugin.adg.service;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
+import ru.ibs.dtm.query.execution.plugin.adg.dto.rollback.ReverseHistoryTransferRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.OperationFile;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.*;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response.ResOperation;
@@ -41,4 +42,6 @@ public interface TtCartridgeClient {
 
   void executeDeleteSpacesWithPrefix(TtDeleteTablesWithPrefixRequest request,
                                     Handler<AsyncResult<TtDeleteQueueResponse>> handler);
+
+    void reverseHistoryTransfer(ReverseHistoryTransferRequest request, Handler<AsyncResult<Void>> handler);
 }

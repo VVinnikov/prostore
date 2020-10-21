@@ -1,10 +1,9 @@
 package ru.ibs.dtm.query.execution.plugin.adb.factory.impl;
 
-import io.reactiverse.pgclient.Tuple;
 import org.springframework.stereotype.Component;
+import ru.ibs.dtm.common.plugin.sql.PreparedStatementRequest;
 import ru.ibs.dtm.query.execution.plugin.adb.factory.MppwRequestFactory;
 import ru.ibs.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwTransferDataRequest;
-import ru.ibs.dtm.query.execution.plugin.adb.service.impl.mppw.dto.PreparedStatementRequest;
 
 import java.util.Arrays;
 import java.util.List;
@@ -68,10 +67,10 @@ public class MppwRequestFactoryImpl implements MppwRequestFactory {
                 request.getDatamart(), request.getTableName());
 
         return Arrays.asList(
-                new PreparedStatementRequest(insertHistorySql, Tuple.tuple()),
-                new PreparedStatementRequest(deleteActualSql, Tuple.tuple()),
-                new PreparedStatementRequest(insertActualSql, Tuple.tuple()),
-                new PreparedStatementRequest(truncateStagingSql, Tuple.tuple())
+            PreparedStatementRequest.onlySql(insertHistorySql),
+            PreparedStatementRequest.onlySql(deleteActualSql),
+            PreparedStatementRequest.onlySql(insertActualSql),
+            PreparedStatementRequest.onlySql(truncateStagingSql)
         );
     }
 }

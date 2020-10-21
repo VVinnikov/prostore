@@ -70,7 +70,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
     }
 
     private Future<MppwStopFuture> startMppw(SourceType ds, MppwRequestContext mppwRequestContext, EdmlRequestContext context) {
-        return Future.future((Promise<MppwStopFuture> promise) -> pluginService.mppwKafka(ds, mppwRequestContext, ar -> {
+        return Future.future((Promise<MppwStopFuture> promise) -> pluginService.mppw(ds, mppwRequestContext, ar -> {
             if (ar.succeeded()) {
                 log.debug("A request has been sent for the plugin: {} to start mppw download: {}", ds, mppwRequestContext.getRequest());
                 val statusRequestContext = createStatusRequestContext(mppwRequestContext, context);
@@ -214,7 +214,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
         return Future.future((Promise<QueryResult> promise) -> {
             mppwRequestContext.getRequest().setIsLoadStart(false);
             log.debug("A request has been sent for the plugin: {} to stop loading mppw: {}", ds, mppwRequestContext.getRequest());
-            pluginService.mppwKafka(ds, mppwRequestContext, ar -> {
+            pluginService.mppw(ds, mppwRequestContext, ar -> {
                 if (ar.succeeded()) {
                     log.debug("Completed stopping mppw loading by plugin: {}", ds);
                     promise.complete(ar.result());

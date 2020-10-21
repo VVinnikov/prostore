@@ -19,13 +19,15 @@ public class AdqmDataSourcePluginConfig {
             @Qualifier("adqmMpprKafkaService") MpprKafkaService<QueryResult> mpprKafkaService,
             @Qualifier("adqmMppwKafkaService") MppwKafkaService<QueryResult> mppwKafkaService,
             @Qualifier("adqmQueryCostService") QueryCostService<Integer> queryCostService,
-            @Qualifier("adqmStatusService") StatusService<StatusQueryResult> statusService) {
+            @Qualifier("adqmStatusService") StatusService<StatusQueryResult> statusService,
+            @Qualifier("adqmRollbackService") RollbackService<Void> rollbackService) {
         return new AdqmDtmDataSourcePlugin(
                 ddlService,
                 llrService,
                 mpprKafkaService,
                 mppwKafkaService,
                 queryCostService,
-                statusService);
+                statusService,
+                rollbackService);
     }
 }

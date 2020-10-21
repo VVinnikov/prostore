@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.model.ddl.Entity;
 import ru.ibs.dtm.common.model.ddl.ExternalTableLocationType;
+import ru.ibs.dtm.query.execution.core.configuration.properties.EdmlProperties;
 import ru.ibs.dtm.query.execution.core.dao.ServiceDbFacade;
 import ru.ibs.dtm.query.execution.core.dao.exception.datamart.DatamartNotExistsException;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
@@ -24,11 +25,13 @@ public class CreateDownloadExternalTableExecutor implements EddlExecutor {
 
     private final DatamartDao datamartDao;
     private final EntityDao entityDao;
+    private final EdmlProperties edmlProperties;
 
     @Autowired
-    public CreateDownloadExternalTableExecutor(ServiceDbFacade serviceDbFacade) {
+    public CreateDownloadExternalTableExecutor(ServiceDbFacade serviceDbFacade, EdmlProperties edmlProperties) {
         this.datamartDao = serviceDbFacade.getServiceDbDao().getDatamartDao();
         this.entityDao = serviceDbFacade.getServiceDbDao().getEntityDao();
+        this.edmlProperties = edmlProperties;
     }
 
     @Override
@@ -41,7 +44,7 @@ public class CreateDownloadExternalTableExecutor implements EddlExecutor {
             entity.setExternalTableLocationPath(castQuery.getLocationPath());
             entity.setExternalTableFormat(castQuery.getFormat().getName());
             entity.setExternalTableSchema(castQuery.getTableSchema());
-            entity.setExternalTableDownloadChunkSize(castQuery.getChunkSize());
+            entity.setExternalTableDownloadChunkSize(getChunkSize(castQuery));
             datamartDao.existsDatamart(schema)
                     .compose(isExistsDatamart -> isExistsDatamart ?
                             entityDao.existsEntity(schema, entity.getName()) : Future.failedFuture(new DatamartNotExistsException(schema)))
@@ -53,6 +56,10 @@ public class CreateDownloadExternalTableExecutor implements EddlExecutor {
             log.error("Error creating table by query request: {}!", query, e);
             handler.handle(Future.failedFuture(e));
         }
+    }
+
+    private Integer getChunkSize(CreateDownloadExternalTableQuery castQuery) {
+        return castQuery.getChunkSize() == null ? edmlProperties.getDefaultChunkSize() : castQuery.getChunkSize();
     }
 
     @Override

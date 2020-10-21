@@ -3,7 +3,6 @@ package ru.ibs.dtm.query.execution.plugin.adqm.service.impl.rollback;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,8 +33,7 @@ public class AdqmRollbackService implements RollbackService<Void> {
     public void execute(RollbackRequestContext context, Handler<AsyncResult<Void>> handler) {
         try {
             val rollbackRequest = rollbackRequestFactory.create(context.getRequest());
-            Promise<Void> promise = Promise.promise();
-            Future<Void> executingFuture = promise.future();
+            Future<Void> executingFuture = Future.succeededFuture();
             for (PreparedStatementRequest statement : rollbackRequest.getStatements()) {
                executingFuture = executingFuture.compose(v -> executeSql(statement.getSql()));
             }

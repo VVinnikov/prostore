@@ -25,7 +25,7 @@ public class AdqmRollbackRequestFactory implements RollbackRequestFactory<AdqmRo
         "  FROM <dbname>.<tablename>_actual\n" +
         "  WHERE sys_from = <sys_cn> AND sign = 1\n" +
         "  UNION ALL\n" +
-        "  SELECT <fields>, sys_from, 9223372036854775807 AS sys_to, 0 AS sys_op, 9223372036854775807 AS close_date, arrayJoin(-1, 1) AS sign\n" +
+        "  SELECT <fields>, sys_from, <maxLong> AS sys_to, 0 AS sys_op, <maxLong> AS close_date, arrayJoin(-1, 1) AS sign\n" +
         "  FROM <dbname>.<tablename>_actual\n" +
         "  WHERE sys_to = <sys_cn> - 1 AND sign = 1";
     private static final String OPTIMIZE_TABLE_TEMPLATE = "OPTIMIZE TABLE %s.%s_actual_shard ON CLUSTER %s FINAL";
@@ -61,6 +61,7 @@ public class AdqmRollbackRequestFactory implements RollbackRequestFactory<AdqmRo
             .replaceAll("<dbname>", datamart)
             .replaceAll("<tablename>", entity.getName())
             .replaceAll("<fields>", fields)
+            .replaceAll("<maxLong>", String.valueOf(Long.MAX_VALUE))
             .replaceAll("<sys_cn>", String.valueOf(sysCn));
     }
 

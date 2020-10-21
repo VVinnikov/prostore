@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.converter.SqlTypeConverter;
-import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
 import ru.ibs.dtm.query.execution.plugin.adg.model.metadata.ColumnTypeUtil;
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryExecutorService;
@@ -49,13 +48,10 @@ public class AdgQueryExecutorServiceImpl implements QueryExecutorService {
                     val map = (Map<?, ?>) ar.result().get(0);
                     val metadata = getMetadata((List<Map<String, String>>) map.get("metadata"));
                     val dataSet = (List<List<?>>) map.get("rows");
-                    val columnTypeMap =
-                            queryMetadata.stream()
-                                    .collect(Collectors.toMap(ColumnMetadata::getName, ColumnMetadata::getType));
                     final List<Map<String, Object>> result = new ArrayList<>();
                     try {
                         dataSet.forEach(row -> {
-                            val rowMap = createRowMap(metadata, columnTypeMap, row);
+                            val rowMap = createRowMap(metadata, row);
                             result.add(rowMap);
                         });
                     } catch (Exception e) {
@@ -77,15 +73,11 @@ public class AdgQueryExecutorServiceImpl implements QueryExecutorService {
         }
     }
 
-    private Map<String, Object> createRowMap(List<ColumnMetadata> metadata,
-                                             Map<String, ColumnType> columnTypeMap,
-                                             List<?> row) {
+    private Map<String, Object> createRowMap(List<ColumnMetadata> metadata, List<?> row) {
         Map<String, Object> rowMap = new HashMap<>();
         for (int i = 0; i < row.size(); i++) {
-            Object value = row.get(i);
-            final String columnName = metadata.get(i).getName();
-            rowMap.put(columnName,
-                    typeConverter.convert(columnTypeMap.get(columnName), value));
+            final ColumnMetadata columnMetadata = metadata.get(i);
+            rowMap.put(columnMetadata.getName(), typeConverter.convert(columnMetadata.getType(), row.get(i)));
         }
         return rowMap;
     }

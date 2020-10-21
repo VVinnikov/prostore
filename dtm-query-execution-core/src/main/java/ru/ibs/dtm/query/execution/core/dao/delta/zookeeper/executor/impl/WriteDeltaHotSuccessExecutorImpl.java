@@ -37,6 +37,9 @@ public class WriteDeltaHotSuccessExecutorImpl extends DeltaServiceDaoExecutorHel
         executor.getData(getDeltaPath(datamart), null, deltaStat)
             .map(bytes -> bytes == null ? new Delta() : deserializedDelta(bytes))
             .map(delta -> {
+                if (delta.getHot() == null) {
+                    throw new DeltaNotStartedException();
+                }
                 ctx.setDelta(delta);
                 return delta;
             })
@@ -79,9 +82,7 @@ public class WriteDeltaHotSuccessExecutorImpl extends DeltaServiceDaoExecutorHel
     }
 
     private Future<Delta> createDeltaPaths(String datamart, LocalDateTime deltaHotDate, Delta delta) {
-        if (delta.getHot() == null) {
-            return Future.failedFuture(new DeltaHotNotStartedException());
-        } else if (deltaHotDate != null && deltaHotDate.isBefore(delta.getOk().getDeltaDate())) {
+        if (deltaHotDate != null && deltaHotDate.isBefore(delta.getOk().getDeltaDate())) {
             return Future.failedFuture(new InvalidDeltaDateException());
         } else {
             return createDeltaDatePath(datamart, delta)

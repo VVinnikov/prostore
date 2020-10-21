@@ -82,7 +82,6 @@ class UploadKafkaExecutorTest {
         TestSuite suite = TestSuite.create("mppwLoadTest");
         suite.test("executeMppwAllSuccess", context -> {
             Async async = context.async();
-            JsonObject schema = new JsonObject();
             Promise promise = Promise.promise();
             KafkaAdminProperty kafkaAdminProperty = new KafkaAdminProperty();
             kafkaAdminProperty.setInputStreamTimeoutMs(inpuStreamTimeoutMs);
@@ -123,12 +122,12 @@ class UploadKafkaExecutorTest {
                 final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(2);
                 handler.handle(Future.succeededFuture());
                 return null;
-            }).when(pluginService).mppwKafka(eq(SourceType.ADB), eq(mppwAdbContext), any());
+            }).when(pluginService).mppw(eq(SourceType.ADB), eq(mppwAdbContext), any());
             Mockito.doAnswer(invocation -> {
                 final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(2);
                 handler.handle(Future.succeededFuture());
                 return null;
-            }).when(pluginService).mppwKafka(eq(SourceType.ADG), eq(mppwAdgContext), any());
+            }).when(pluginService).mppw(eq(SourceType.ADG), eq(mppwAdgContext), any());
 
             Mockito.doAnswer(invocation -> {
                 final Handler<AsyncResult<StatusQueryResult>> handler = invocation.getArgument(2);
@@ -150,7 +149,7 @@ class UploadKafkaExecutorTest {
                     handler.handle(Future.succeededFuture(new QueryResult()));
                 }
                 return null;
-            }).when(pluginService).mppwKafka(any(), any(), any());
+            }).when(pluginService).mppw(any(), any(), any());
 
             uploadKafkaExecutor.execute(edmlRequestContext, ar -> {
                 if (ar.succeeded()) {
@@ -230,7 +229,7 @@ class UploadKafkaExecutorTest {
                     handler.handle(Future.succeededFuture(new QueryResult()));
                 }
                 return null;
-            }).when(pluginService).mppwKafka(any(), any(), any());
+            }).when(pluginService).mppw(any(), any(), any());
 
             uploadKafkaExecutor.execute(edmlRequestContext, ar -> {
                 if (ar.succeeded()) {
@@ -313,7 +312,7 @@ class UploadKafkaExecutorTest {
                     handler.handle(Future.succeededFuture(new QueryResult()));
                 }
                 return null;
-            }).when(pluginService).mppwKafka(any(), any(), any());
+            }).when(pluginService).mppw(any(), any(), any());
 
             uploadKafkaExecutor.execute(edmlRequestContext, ar -> {
                 if (ar.succeeded()) {
@@ -395,7 +394,7 @@ class UploadKafkaExecutorTest {
                     handler.handle(Future.succeededFuture(new QueryResult()));
                 }
                 return null;
-            }).when(pluginService).mppwKafka(any(), any(), any());
+            }).when(pluginService).mppw(any(), any(), any());
 
             uploadKafkaExecutor.execute(edmlRequestContext, ar -> {
                 if (ar.succeeded()) {
@@ -476,7 +475,7 @@ class UploadKafkaExecutorTest {
                     handler.handle(Future.succeededFuture(new QueryResult()));
                 }
                 return null;
-            }).when(pluginService).mppwKafka(any(), any(), any());
+            }).when(pluginService).mppw(any(), any(), any());
 
             uploadKafkaExecutor.execute(edmlRequestContext, ar -> {
                 if (ar.succeeded()) {
@@ -557,7 +556,7 @@ class UploadKafkaExecutorTest {
                     handler.handle(Future.succeededFuture(new QueryResult()));
                 }
                 return null;
-            }).when(pluginService).mppwKafka(any(), any(), any());
+            }).when(pluginService).mppw(any(), any(), any());
 
             uploadKafkaExecutor.execute(edmlRequestContext, ar -> {
                 if (ar.succeeded()) {

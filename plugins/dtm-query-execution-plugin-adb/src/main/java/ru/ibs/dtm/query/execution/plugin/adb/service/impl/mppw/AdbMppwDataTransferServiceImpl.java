@@ -6,9 +6,9 @@ import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import ru.ibs.dtm.common.plugin.sql.PreparedStatementRequest;
 import ru.ibs.dtm.query.execution.plugin.adb.factory.MppwRequestFactory;
 import ru.ibs.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwTransferDataRequest;
-import ru.ibs.dtm.query.execution.plugin.adb.service.impl.mppw.dto.PreparedStatementRequest;
 import ru.ibs.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 
 import java.util.List;

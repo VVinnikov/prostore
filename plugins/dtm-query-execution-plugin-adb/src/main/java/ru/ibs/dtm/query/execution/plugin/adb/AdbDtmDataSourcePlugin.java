@@ -15,8 +15,9 @@ public class AdbDtmDataSourcePlugin extends AbstractDtmDataSourcePlugin {
             MpprKafkaService<QueryResult> adbMpprKafkaService,
             MppwKafkaService<QueryResult> adbMppwKafkaService,
             QueryCostService<Integer> adbQueryCostService,
-            StatusService<StatusQueryResult> statusService) {
-        super(ddlService, adbLlrService, adbMpprKafkaService, adbMppwKafkaService, adbQueryCostService, statusService);
+            StatusService<StatusQueryResult> statusService,
+            RollbackService<Void> rollbackService) {
+        super(ddlService, adbLlrService, adbMpprKafkaService, adbMppwKafkaService, adbQueryCostService, statusService, rollbackService);
     }
 
     @Override

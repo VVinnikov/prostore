@@ -19,6 +19,7 @@ import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.status.StatusRequestContext;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,11 +55,11 @@ public class TargetDatabaseDefinitionServiceImplTest {
                         }
 
                         @Override
-                        public void mpprKafka(MpprRequestContext request, Handler<AsyncResult<QueryResult>> handler) {
+                        public void mppr(MpprRequestContext request, Handler<AsyncResult<QueryResult>> handler) {
                         }
 
                         @Override
-                        public void mppwKafka(MppwRequestContext request, Handler<AsyncResult<QueryResult>> handler) {
+                        public void mppw(MppwRequestContext request, Handler<AsyncResult<QueryResult>> handler) {
                         }
 
                         @Override
@@ -67,7 +68,12 @@ public class TargetDatabaseDefinitionServiceImplTest {
                         }
 
                         @Override
-                        public void status(StatusRequestContext statusRequestContext, Handler<AsyncResult<StatusQueryResult>> asyncResultHandler) {
+                        public void status(StatusRequestContext context, Handler<AsyncResult<StatusQueryResult>> asyncResultHandler) {
+
+                        }
+
+                        @Override
+                        public void rollback(RollbackRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler) {
 
                         }
                     }

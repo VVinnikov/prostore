@@ -18,6 +18,7 @@ import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
+import ru.ibs.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.status.StatusRequestContext;
 
 import java.util.Set;
@@ -62,17 +63,17 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     }
 
     @Override
-    public void mpprKafka(SourceType sourceType,
-                          MpprRequestContext context,
-                          Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-        taskVerticleExecutor.execute(p -> getPlugin(sourceType).mpprKafka(context, p), asyncResultHandler);
+    public void mppr(SourceType sourceType,
+                     MpprRequestContext context,
+                     Handler<AsyncResult<QueryResult>> asyncResultHandler) {
+        taskVerticleExecutor.execute(p -> getPlugin(sourceType).mppr(context, p), asyncResultHandler);
     }
 
     @Override
-    public void mppwKafka(SourceType sourceType,
-                          MppwRequestContext context,
-                          Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-        taskVerticleExecutor.execute(p -> getPlugin(sourceType).mppwKafka(context, p), asyncResultHandler);
+    public void mppw(SourceType sourceType,
+                     MppwRequestContext context,
+                     Handler<AsyncResult<QueryResult>> asyncResultHandler) {
+        taskVerticleExecutor.execute(p -> getPlugin(sourceType).mppw(context, p), asyncResultHandler);
     }
 
     @Override
@@ -83,9 +84,15 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     }
 
     @Override
-    public void status(SourceType sourceType, StatusRequestContext statusRequestContext,
+    public void status(SourceType sourceType, StatusRequestContext context,
                        Handler<AsyncResult<StatusQueryResult>> asyncResultHandler) {
-        taskVerticleExecutor.execute(p -> getPlugin(sourceType).status(statusRequestContext, p), asyncResultHandler);
+        taskVerticleExecutor.execute(p -> getPlugin(sourceType).status(context, p), asyncResultHandler);
+    }
+
+    @Override
+    public void rollback(SourceType sourceType, RollbackRequestContext context,
+                         Handler<AsyncResult<Void>> asyncResultHandler) {
+        taskVerticleExecutor.execute(p -> getPlugin(sourceType).rollback(context, p), asyncResultHandler);
     }
 
     private DtmDataSourcePlugin getPlugin(SourceType sourceType) {

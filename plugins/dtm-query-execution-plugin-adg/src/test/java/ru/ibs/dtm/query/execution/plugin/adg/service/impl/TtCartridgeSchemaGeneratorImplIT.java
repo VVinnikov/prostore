@@ -14,7 +14,7 @@ import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.common.model.ddl.Entity;
 import ru.ibs.dtm.common.model.ddl.EntityField;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.OperationYaml;
-import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeClient;
+import ru.ibs.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeSchemaGenerator;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
@@ -32,7 +32,7 @@ class TtCartridgeSchemaGeneratorImplIT {
   private TtCartridgeSchemaGenerator generator;
 
   @Autowired
-  private TtCartridgeClient client;
+  private AdgCartridgeClient client;
 
   @Autowired
   @Qualifier("yamlMapper")

@@ -20,13 +20,13 @@ import ru.ibs.dtm.query.execution.plugin.adg.dto.rollback.ReverseHistoryTransfer
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.OperationFile;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.*;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response.*;
-import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeClient;
+import ru.ibs.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 
 import java.util.List;
 
 @Slf4j
 @Service
-public class TtCartridgeClientImpl implements TtCartridgeClient {
+public class AdgCartridgeClientImpl implements AdgCartridgeClient {
   private static final String STAGE_DATA_TABLE_NAME = "_stage_data_table_name";
   private static final String ACTUAL_DATA_TABLE_NAME = "_actual_data_table_name";
   private static final String HISTORICAL_DATA_TABLE_NAME = "_historical_data_table_name";
@@ -37,9 +37,9 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
   private final CircuitBreaker circuitBreaker;
 
   @Autowired
-  public TtCartridgeClientImpl(TarantoolCartridgeProperties cartridgeProperties,
-                               @Qualifier("adgWebClient") WebClient webClient,
-                               @Qualifier("adgCircuitBreaker") CircuitBreaker circuitBreaker) {
+  public AdgCartridgeClientImpl(TarantoolCartridgeProperties cartridgeProperties,
+                                @Qualifier("adgWebClient") WebClient webClient,
+                                @Qualifier("adgCircuitBreaker") CircuitBreaker circuitBreaker) {
     this.cartridgeProperties = cartridgeProperties;
     this.webClient = webClient;
     this.circuitBreaker = circuitBreaker;

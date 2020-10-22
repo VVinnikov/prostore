@@ -18,7 +18,7 @@ import ru.ibs.dtm.query.execution.plugin.adg.factory.impl.AdgHelperTableNamesFac
 import ru.ibs.dtm.query.execution.plugin.adg.factory.impl.AdgMppwKafkaContextFactoryImpl;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response.AdgCartridgeError;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response.TtLoadDataKafkaResponse;
-import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeClient;
+import ru.ibs.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaParameter;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
@@ -33,7 +33,7 @@ import static org.mockito.Mockito.*;
 @EnabledIfEnvironmentVariable(named = "skipITs", matches = "false")
 class AdgMppwKafkaServiceTest {
 
-    private final TtCartridgeClient client = mock(TtCartridgeClient.class);
+    private final AdgCartridgeClient client = mock(AdgCartridgeClient.class);
     private final AdgMppwKafkaService service = getAdgMppwKafkaService();
 
     @BeforeEach

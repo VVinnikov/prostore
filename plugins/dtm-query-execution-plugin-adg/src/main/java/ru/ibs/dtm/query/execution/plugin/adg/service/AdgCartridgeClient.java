@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * REST-клиент общения с Tarantool Cartridge
  */
-public interface TtCartridgeClient {
+public interface AdgCartridgeClient {
   void getFiles(Handler<AsyncResult<ResOperation>> handler);
 
   void setFiles(List<OperationFile> files, Handler<AsyncResult<ResOperation>> handler);

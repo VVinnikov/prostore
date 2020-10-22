@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.exception.CrashException;
 import ru.ibs.dtm.query.execution.plugin.adg.factory.ReverseHistoryTransferRequestFactory;
-import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeClient;
+import ru.ibs.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import ru.ibs.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.service.RollbackService;
 
@@ -18,7 +18,7 @@ import ru.ibs.dtm.query.execution.plugin.api.service.RollbackService;
 public class AdgRollbackService implements RollbackService<Void> {
     private static final String ERR_MSG = "Can't rollback delta";
     private final ReverseHistoryTransferRequestFactory requestFactory;
-    private final TtCartridgeClient cartridgeClient;
+    private final AdgCartridgeClient cartridgeClient;
 
     @Override
     public void execute(RollbackRequestContext context, Handler<AsyncResult<Void>> handler) {

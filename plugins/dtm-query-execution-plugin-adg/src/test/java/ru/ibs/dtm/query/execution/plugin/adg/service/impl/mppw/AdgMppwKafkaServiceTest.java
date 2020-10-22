@@ -16,7 +16,7 @@ import ru.ibs.dtm.query.execution.plugin.adg.configuration.AdgConnectorApiProper
 import ru.ibs.dtm.query.execution.plugin.adg.configuration.AdgMppwKafkaProperties;
 import ru.ibs.dtm.query.execution.plugin.adg.factory.impl.AdgHelperTableNamesFactoryImpl;
 import ru.ibs.dtm.query.execution.plugin.adg.factory.impl.AdgMppwKafkaContextFactoryImpl;
-import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response.TarantoolError;
+import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response.AdgCartridgeError;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response.TtLoadDataKafkaResponse;
 import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeClient;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
@@ -216,7 +216,7 @@ class AdgMppwKafkaServiceTest {
     private void badSubscribeApiMock2() {
         doAnswer(invocation -> {
             Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new TarantoolError("error", "connector error")));
+            handler.handle(Future.failedFuture(new AdgCartridgeError("error", "connector error")));
             return null;
         }).when(client).subscribe(any(), any());
     }
@@ -230,7 +230,7 @@ class AdgMppwKafkaServiceTest {
 
         doAnswer(invocation -> {
             Handler<AsyncResult<TtLoadDataKafkaResponse>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new TarantoolError("error", "connector error")));
+            handler.handle(Future.failedFuture(new AdgCartridgeError("error", "connector error")));
             return null;
         }).when(client).loadData(any(), any());
 
@@ -270,7 +270,7 @@ class AdgMppwKafkaServiceTest {
     private void badCancelApiMock() {
         doAnswer(invocation -> {
             Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new TarantoolError("error", "connector error")));
+            handler.handle(Future.failedFuture(new AdgCartridgeError("error", "connector error")));
             return null;
         }).when(client).cancelSubscription(any(), any());
     }

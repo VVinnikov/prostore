@@ -7,6 +7,6 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class TtLoadDataKafkaError extends TarantoolError {
+public class TtLoadDataKafkaError extends AdgCartridgeError {
     private long messageCount;
 }

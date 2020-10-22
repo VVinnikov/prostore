@@ -88,7 +88,7 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
         handler.handle(Future.succeededFuture());
         log.debug("UploadData Successful");
       } else if (statusCode == 500) {
-        handler.handle(Future.failedFuture(response.bodyAsJson(TarantoolError.class)));
+        handler.handle(Future.failedFuture(response.bodyAsJson(AdgCartridgeError.class)));
       } else {
         unexpectedResponse(handler, response);
       }
@@ -120,7 +120,7 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
         handler.handle(Future.succeededFuture());
         log.debug("Subscription Successful");
       } else if (statusCode == 500) {
-        handler.handle(Future.failedFuture(response.bodyAsJson(TarantoolError.class)));
+        handler.handle(Future.failedFuture(response.bodyAsJson(AdgCartridgeError.class)));
       } else {
         unexpectedResponse(handler, response);
       }
@@ -157,7 +157,7 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
       } else if (statusCode == 500) {
         handler.handle(Future.failedFuture(response.bodyAsJson(TtLoadDataKafkaError.class)));
       } else if (statusCode == 404) {
-        handler.handle(Future.failedFuture(response.bodyAsJson(TarantoolError.class)));
+        handler.handle(Future.failedFuture(response.bodyAsJson(AdgCartridgeError.class)));
       } else {
         unexpectedResponse(handler, response);
       }
@@ -217,7 +217,7 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
       if (statusCode == 200) {
         handler.handle(Future.succeededFuture());
       } else if (statusCode == 404 || statusCode == 500) {
-        handler.handle(Future.failedFuture(response.bodyAsJson(TarantoolError.class)));
+        handler.handle(Future.failedFuture(response.bodyAsJson(AdgCartridgeError.class)));
       } else {
         unexpectedResponse(handler, response);
       }
@@ -299,7 +299,7 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
         handler.handle(Future.succeededFuture(successResponse));
         log.debug("spaces added to delete queue successful");
       } else if (statusCode == 500) {
-        handler.handle(Future.failedFuture(response.bodyAsJson(TarantoolError.class)));
+        handler.handle(Future.failedFuture(response.bodyAsJson(AdgCartridgeError.class)));
       }  else {
         unexpectedResponse(handler, response);
       }
@@ -353,7 +353,7 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
         log.debug("spaces [{}] dropped successful",successResponse);
       }
       else if (statusCode == 500) {
-        handler.handle(Future.failedFuture(response.bodyAsJson(TarantoolError.class)));
+        handler.handle(Future.failedFuture(response.bodyAsJson(AdgCartridgeError.class)));
       } else {
         unexpectedResponse(handler,response);
       }
@@ -385,7 +385,7 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
       if (statusCode == 200) {
         handler.handle(Future.succeededFuture());
       } else if (statusCode == 404 || statusCode == 500) {
-        handler.handle(Future.failedFuture(response.bodyAsJson(TarantoolError.class)));
+        handler.handle(Future.failedFuture(response.bodyAsJson(AdgCartridgeError.class)));
       } else {
         unexpectedResponse(handler, response);
       }

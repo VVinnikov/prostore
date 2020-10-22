@@ -17,7 +17,7 @@ class ReverseHistoryTransferRequestFactoryImplTest {
         .historyTableName("env1__dtm1__tbl1_history")
         .stagingTableName("env1__dtm1__tbl1_staging")
         .actualTableName("env1__dtm1__tbl1_actual")
-        .eraseOperationBathSize(300)
+        .eraseOperationBatchSize(300)
         .sysCn(11)
         .build();
 

@@ -81,7 +81,7 @@ adg:
     cartridge:
       url: ${TARANTOOL_CATRIDGE_URL:http://127.0.0.1:8081}
   rollback:
-    eraseOperationBathSize: 300
+    eraseOperationBatchSize: 300
 
 adqm:
   datasource:

@@ -88,7 +88,7 @@ adg:
       maxNumberOfMessagesPerPartition: 200
       callbackFunctionSecIdle: 100
   rollback:
-    eraseOperationBathSize: 300
+    eraseOperationBatchSize: 300
   circuitbreaker:
     maxFailures: 5
     timeout: 30000

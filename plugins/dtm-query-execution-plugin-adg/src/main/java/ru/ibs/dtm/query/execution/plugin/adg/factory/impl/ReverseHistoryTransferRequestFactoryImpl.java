@@ -22,7 +22,7 @@ public class ReverseHistoryTransferRequestFactoryImpl implements ReverseHistoryT
         val datamart = context.getRequest().getDatamart();
         val helperTableNames = helperTableNamesFactory.create(envName, datamart, tableName);
         return ReverseHistoryTransferRequest.builder()
-            .eraseOperationBathSize(rollbackProperties.getEraseOperationBathSize())
+            .eraseOperationBatchSize(rollbackProperties.getEraseOperationBatchSize())
             .stagingTableName(helperTableNames.getStaging())
             .historyTableName(helperTableNames.getHistory())
             .actualTableName(helperTableNames.getActual())

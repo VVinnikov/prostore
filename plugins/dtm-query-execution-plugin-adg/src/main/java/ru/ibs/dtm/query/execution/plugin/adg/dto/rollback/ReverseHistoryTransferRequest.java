@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ReverseHistoryTransferRequest {
-    private int eraseOperationBathSize;
+    private int eraseOperationBatchSize;
     private String stagingTableName;
     private String actualTableName;
     private String historyTableName;

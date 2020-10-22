@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class TarantoolError extends RuntimeException {
+public class AdgCartridgeError extends RuntimeException {
     private String code;
     private String message;
 

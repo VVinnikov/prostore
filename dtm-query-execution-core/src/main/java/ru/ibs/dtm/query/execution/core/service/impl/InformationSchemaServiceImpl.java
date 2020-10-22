@@ -9,13 +9,14 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.model.ddl.Entity;
 import ru.ibs.dtm.common.model.ddl.EntityType;
-import ru.ibs.dtm.query.calcite.core.service.HSQLQueryService;
+import ru.ibs.dtm.query.execution.core.service.DdlQueryGenerator;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import ru.ibs.dtm.query.execution.core.service.InformationSchemaService;
 import ru.ibs.dtm.query.execution.core.service.hsql.HSQLClient;
 import ru.ibs.dtm.query.execution.core.utils.InformationSchemaUtils;
 
+import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -29,25 +30,30 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     private HSQLClient client;
     private DatamartDao datamartDao;
     private EntityDao entityDao;
-    private HSQLQueryService queryService;
+    private DdlQueryGenerator ddlQueryGenerator;
     private ApplicationContext applicationContext;
 
     public InformationSchemaServiceImpl(HSQLClient client,
                                         DatamartDao datamartDao,
                                         EntityDao entityDao,
-                                        HSQLQueryService queryService,
+                                        DdlQueryGenerator ddlQueryGenerator,
                                         ApplicationContext applicationContext) {
         this.client = client;
         this.datamartDao = datamartDao;
         this.entityDao = entityDao;
-        this.queryService = queryService;
+        this.ddlQueryGenerator = ddlQueryGenerator;
         this.applicationContext = applicationContext;
+    }
+
+    @PostConstruct
+    public void init() {
         initialize();
     }
 
     @Override
-    public void initialize(){
-        createInformationSchemaViews().compose(r -> createSchemasFromDatasource())
+    public void initialize() {
+        createInformationSchemaViews()
+                .compose(r -> createSchemasFromDatasource())
                 .onSuccess(success -> log.info("Inforamation schema initialized successfully"))
                 .onFailure(err -> {
                     log.error("Error while creating information schema views", err);
@@ -56,11 +62,11 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
                 });
     }
 
-    private Future<Void> createInformationSchemaViews(){
+    private Future<Void> createInformationSchemaViews() {
         return client.executeBatch(informationSchemaViewsQueries());
     }
 
-    private List<String> informationSchemaViewsQueries(){
+    private List<String> informationSchemaViewsQueries() {
         return Arrays.asList(
                 String.format(InformationSchemaUtils.CREATE_SCHEMA, "DTM"),
                 InformationSchemaUtils.LOGIC_SCHEMA_DATAMARTS,
@@ -93,7 +99,7 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
                 .compose(entities -> client.executeBatch(getEntitiesCreateQueries(entities)));
     }
 
-    private Future<List<Entity>> getEntitiesByNames(String datamart, List<String> entitiesNames){
+    private Future<List<Entity>> getEntitiesByNames(String datamart, List<String> entitiesNames) {
         return Future.future(promise -> {
             CompositeFuture.join(entitiesNames.stream()
                     .map(entity -> entityDao.getEntity(datamart, entity))
@@ -103,15 +109,15 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
         });
     }
 
-    private List<String> getEntitiesCreateQueries(List<Entity> entities){
+    private List<String> getEntitiesCreateQueries(List<Entity> entities) {
         List<String> viewEntities = new ArrayList<>();
         List<String> tableEntities = new ArrayList<>();
         entities.forEach(entity -> {
             if (EntityType.VIEW.equals(entity.getEntityType())) {
-                viewEntities.add(queryService.generateCreateViewQuery(entity));
+                viewEntities.add(ddlQueryGenerator.generateCreateViewQuery(entity));
             }
             if (EntityType.TABLE.equals(entity.getEntityType())) {
-                tableEntities.add(queryService.generateCreateTableQuery(entity));
+                tableEntities.add(ddlQueryGenerator.generateCreateTableQuery(entity));
             }
         });
         return Stream.concat(tableEntities.stream(), viewEntities.stream())

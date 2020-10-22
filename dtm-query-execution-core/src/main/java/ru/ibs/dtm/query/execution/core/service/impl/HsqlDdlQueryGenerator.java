@@ -1,14 +1,16 @@
-package ru.ibs.dtm.query.calcite.core.service.impl;
+package ru.ibs.dtm.query.execution.core.service.impl;
 
 import lombok.val;
+import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.model.ddl.*;
-import ru.ibs.dtm.query.calcite.core.service.HSQLQueryService;
+import ru.ibs.dtm.query.execution.core.service.DdlQueryGenerator;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class HSQLQueryServiceImpl implements HSQLQueryService {
+@Component
+public class HsqlDdlQueryGenerator implements DdlQueryGenerator {
 
     public static final String DELIMITER = ", ";
 
@@ -57,12 +59,25 @@ public class HSQLQueryServiceImpl implements HSQLQueryService {
         return sb.toString();
     }
 
-    private String getColumnType(EntityField field){
-        return ColumnType.VARCHAR.equals(field.getType()) ? "VARCHAR" + getVarcharSize(field) : field.getType().toString();
+    private String getColumnType(EntityField field) {
+        switch (field.getType()) {
+            case INT:
+                return "INTEGER";
+            case UUID:
+                return "VARCHAR(36)";
+            case CHAR:
+            case VARCHAR:
+            case TIME:
+            case TIMESTAMP:
+                return getFieldTypeWithSize(field);
+            default:
+                return field.getType().toString();
+        }
     }
 
-    private static String getVarcharSize(EntityField field) {
-        return field.getSize() == null ? "" : "(" + field.getSize() + ")";
+    private String getFieldTypeWithSize(EntityField field) {
+        val size = field.getSize() == null ? "" : "(" + field.getSize() + ")";
+        return field.getType().toString() + size;
     }
 
     private void appendPrimaryKeys(StringBuilder builder, String tableName, Collection<EntityField> pkList) {

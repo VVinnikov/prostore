@@ -15,9 +15,7 @@ import ru.ibs.dtm.common.service.DeltaService;
 import ru.ibs.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import ru.ibs.dtm.query.calcite.core.service.DefinitionService;
 import ru.ibs.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
-import ru.ibs.dtm.query.calcite.core.service.HSQLQueryService;
 import ru.ibs.dtm.query.calcite.core.service.impl.DeltaQueryPreprocessorImpl;
-import ru.ibs.dtm.query.calcite.core.service.impl.HSQLQueryServiceImpl;
 
 import javax.annotation.PostConstruct;
 
@@ -60,10 +58,5 @@ public class CalciteConfiguration {
     @Bean("coreSqlDialect")
     public SqlDialect coreSqlDialect() {
         return new SqlDialect(SqlDialect.EMPTY_CONTEXT);
-    }
-
-    @Bean
-    public HSQLQueryService hsqlQueryService() {
-        return new HSQLQueryServiceImpl();
     }
 }

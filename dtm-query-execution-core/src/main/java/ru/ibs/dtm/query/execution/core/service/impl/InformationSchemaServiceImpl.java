@@ -32,7 +32,11 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     private HSQLQueryService queryService;
     private ApplicationContext applicationContext;
 
-    public InformationSchemaServiceImpl(HSQLClient client, DatamartDao datamartDao, EntityDao entityDao, HSQLQueryService queryService, ApplicationContext applicationContext) {
+    public InformationSchemaServiceImpl(HSQLClient client,
+                                        DatamartDao datamartDao,
+                                        EntityDao entityDao,
+                                        HSQLQueryService queryService,
+                                        ApplicationContext applicationContext) {
         this.client = client;
         this.datamartDao = datamartDao;
         this.entityDao = entityDao;

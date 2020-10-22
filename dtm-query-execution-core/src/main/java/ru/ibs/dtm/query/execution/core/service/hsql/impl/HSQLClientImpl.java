@@ -63,6 +63,7 @@ public class HSQLClientImpl implements HSQLClient {
                 } else {
                     val connection = conn.result();
                     connection.batch(queries, r -> {
+                        connection.close();
                         if (r.failed()) {
                             log.error("Error while executing queries batch:\n {}", String.join(";\n", queries), r.cause());
                             promise.fail(r.cause());

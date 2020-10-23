@@ -1,6 +1,6 @@
-package ru.ibs.dtm.query.execution.core.service;
+package io.arenadata.dtm.query.execution.core.service;
 
-import ru.ibs.dtm.common.model.ddl.Entity;
+import io.arenadata.dtm.common.model.ddl.Entity;
 
 public interface DdlQueryGenerator {
 

@@ -1,5 +1,13 @@
-package ru.ibs.dtm.query.execution.core.service.impl;
+package io.arenadata.dtm.query.execution.core.service.impl;
 
+import io.arenadata.dtm.common.model.ddl.Entity;
+import io.arenadata.dtm.common.model.ddl.EntityType;
+import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
+import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
+import io.arenadata.dtm.query.execution.core.service.DdlQueryGenerator;
+import io.arenadata.dtm.query.execution.core.service.InformationSchemaService;
+import io.arenadata.dtm.query.execution.core.service.hsql.HSQLClient;
+import io.arenadata.dtm.query.execution.core.utils.InformationSchemaUtils;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
@@ -7,14 +15,6 @@ import lombok.val;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
-import ru.ibs.dtm.common.model.ddl.Entity;
-import ru.ibs.dtm.common.model.ddl.EntityType;
-import ru.ibs.dtm.query.execution.core.service.DdlQueryGenerator;
-import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
-import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
-import ru.ibs.dtm.query.execution.core.service.InformationSchemaService;
-import ru.ibs.dtm.query.execution.core.service.hsql.HSQLClient;
-import ru.ibs.dtm.query.execution.core.utils.InformationSchemaUtils;
 
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;

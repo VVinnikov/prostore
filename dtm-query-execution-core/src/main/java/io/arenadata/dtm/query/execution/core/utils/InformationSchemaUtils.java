@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.utils;
+package io.arenadata.dtm.query.execution.core.utils;
 
 public class InformationSchemaUtils {
 

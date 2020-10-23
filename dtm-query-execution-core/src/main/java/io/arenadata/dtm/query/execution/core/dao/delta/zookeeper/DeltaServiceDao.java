@@ -1,10 +1,10 @@
-package ru.ibs.dtm.query.execution.core.dao.delta.zookeeper;
+package io.arenadata.dtm.query.execution.core.dao.delta.zookeeper;
 
+import io.arenadata.dtm.query.execution.core.dto.delta.DeltaWriteOp;
+import io.arenadata.dtm.query.execution.core.dto.delta.DeltaWriteOpRequest;
+import io.arenadata.dtm.query.execution.core.dto.delta.HotDelta;
+import io.arenadata.dtm.query.execution.core.dto.delta.OkDelta;
 import io.vertx.core.Future;
-import ru.ibs.dtm.query.execution.core.dto.delta.DeltaWriteOp;
-import ru.ibs.dtm.query.execution.core.dto.delta.DeltaWriteOpRequest;
-import ru.ibs.dtm.query.execution.core.dto.delta.HotDelta;
-import ru.ibs.dtm.query.execution.core.dto.delta.OkDelta;
 
 import java.time.LocalDateTime;
 import java.util.List;

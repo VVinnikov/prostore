@@ -1,12 +1,12 @@
-package ru.ibs.dtm.query.execution.core.service.hsql.impl;
+package io.arenadata.dtm.query.execution.core.service.hsql.impl;
 
+import io.arenadata.dtm.query.execution.core.service.hsql.HSQLClient;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.jdbc.JDBCClient;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import ru.ibs.dtm.query.execution.core.service.hsql.HSQLClient;
 
 import java.util.List;
 

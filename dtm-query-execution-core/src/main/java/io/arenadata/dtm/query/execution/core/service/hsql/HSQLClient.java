@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.service.hsql;
+package io.arenadata.dtm.query.execution.core.service.hsql;
 
 import io.vertx.core.Future;
 

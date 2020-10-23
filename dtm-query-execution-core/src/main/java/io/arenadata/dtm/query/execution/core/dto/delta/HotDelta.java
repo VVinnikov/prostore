@@ -1,10 +1,10 @@
 package io.arenadata.dtm.query.execution.core.dto.delta;
 
+import io.arenadata.dtm.query.execution.core.dto.delta.operation.WriteOpFinish;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.ibs.dtm.query.execution.core.dto.delta.operation.WriteOpFinish;
 
 import java.util.List;
 

@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.dao.exception.delta;
+package io.arenadata.dtm.query.execution.core.dao.exception.delta;
 
 public class DeltaAlreadyIsRollingBackException extends DeltaException {
     private static final String MESSAGE = "Delta already is rolling back";

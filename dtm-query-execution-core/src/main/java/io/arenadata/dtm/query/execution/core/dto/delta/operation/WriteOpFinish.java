@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.core.dto.delta.operation;
+package io.arenadata.dtm.query.execution.core.dto.delta.operation;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

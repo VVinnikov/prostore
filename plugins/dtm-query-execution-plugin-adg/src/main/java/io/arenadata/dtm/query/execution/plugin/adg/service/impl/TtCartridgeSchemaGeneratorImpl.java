@@ -27,6 +27,8 @@ import static io.arenadata.dtm.query.execution.plugin.adg.constants.ColumnFields
 @Service
 public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerator {
 
+    public static final String SEC_INDEX_PREFIX = "x_";
+    public static final String TABLE_NAME_DELIMITER = "__";
     private final SpaceEngines engine;
 
     @Autowired
@@ -41,18 +43,19 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
         }
         val spaces = yaml.getSpaces();
         QueryRequest queryRequest = context.getRequest().getQueryRequest();
-        String prefix = queryRequest.getEnvName() + "__" + queryRequest.getDatamartMnemonic() + "__";
+        String prefix = queryRequest.getEnvName() + TABLE_NAME_DELIMITER +
+                queryRequest.getDatamartMnemonic() + TABLE_NAME_DELIMITER;
         Entity entity = context.getRequest().getEntity();
         int indexComma = entity.getName().indexOf(".");
         String table = entity.getName().substring(indexComma + 1).toLowerCase();
 
-        spaces.put(prefix + table + ACTUAL_POSTFIX, create(entity.getFields(), engine));
+        spaces.put(prefix + table + ACTUAL_POSTFIX, create(entity.getFields(), engine, ACTUAL_POSTFIX));
         spaces.put(prefix + table + STAGING_POSTFIX, createStagingSpace(entity.getFields(), engine));
-        spaces.put(prefix + table + HISTORY_POSTFIX, create(entity.getFields(), engine));
+        spaces.put(prefix + table + HISTORY_POSTFIX, create(entity.getFields(), engine, HISTORY_POSTFIX));
         handler.handle(Future.succeededFuture(yaml));
     }
 
-    public static Space create(List<EntityField> fields, SpaceEngines engine) {
+    public static Space create(List<EntityField> fields, SpaceEngines engine, String tablePostfix) {
         List<SpaceIndexPart> primaryKeyParts = getPrimaryKeyParts(fields);
         primaryKeyParts.add(new SpaceIndexPart(SYS_FROM_FIELD, SpaceAttributeTypes.NUMBER.getName(), false));
         return new Space(
@@ -61,17 +64,62 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
                 engine,
                 false,
                 getShardingKey(fields),
-                Arrays.asList(
-                        new SpaceIndex(true, primaryKeyParts, SpaceIndexTypes.TREE, ID),
+                createSpaceIndexes(fields, tablePostfix));
+    }
+
+    private static List<SpaceIndex> createSpaceIndexes(List<EntityField> fields, String tablePosfix) {
+        switch (tablePosfix) {
+            case ACTUAL_POSTFIX:
+                return Arrays.asList(
+                        new SpaceIndex(true, getPrimaryKeyPartsWithSysFrom(fields), SpaceIndexTypes.TREE, ID),
+                        new SpaceIndex(false, Collections.singletonList(
+                                new SpaceIndexPart(SYS_FROM_FIELD, SpaceAttributeTypes.NUMBER.getName(), false)
+                        ), SpaceIndexTypes.TREE, SYS_FROM_FIELD),
                         new SpaceIndex(false, Collections.singletonList(
                                 new SpaceIndexPart(BUCKET_ID, SpaceAttributeTypes.UNSIGNED.getName(), false)
                         ), SpaceIndexTypes.TREE, BUCKET_ID)
-                ));
+                );
+            case HISTORY_POSTFIX:
+                return Arrays.asList(
+                        new SpaceIndex(true, getPrimaryKeyPartsWithSysFrom(fields), SpaceIndexTypes.TREE, ID),
+                        new SpaceIndex(false, Collections.singletonList(
+                                new SpaceIndexPart(SYS_FROM_FIELD, SpaceAttributeTypes.NUMBER.getName(), false)
+                        ), SpaceIndexTypes.TREE, SEC_INDEX_PREFIX + SYS_FROM_FIELD),
+                        new SpaceIndex(false, Arrays.asList(
+                                new SpaceIndexPart(SYS_TO_FIELD, SpaceAttributeTypes.NUMBER.getName(), true),
+                                new SpaceIndexPart(SYS_OP_FIELD, SpaceAttributeTypes.NUMBER.getName(), false)
+                        ), SpaceIndexTypes.TREE, SEC_INDEX_PREFIX + SYS_TO_FIELD),
+                        new SpaceIndex(false, Collections.singletonList(
+                                new SpaceIndexPart(BUCKET_ID, SpaceAttributeTypes.UNSIGNED.getName(), false)
+                        ), SpaceIndexTypes.TREE, BUCKET_ID)
+                );
+            case STAGING_POSTFIX:
+                return Arrays.asList(
+                        new SpaceIndex(true, getPrimaryKeyParts(fields), SpaceIndexTypes.TREE, ID),
+                        new SpaceIndex(false, Collections.singletonList(
+                                new SpaceIndexPart(BUCKET_ID, SpaceAttributeTypes.UNSIGNED.getName(), false)
+                        ), SpaceIndexTypes.TREE, BUCKET_ID)
+                );
+            default:
+                throw new RuntimeException(String.format("Table type [%s] doesn't support", tablePosfix));
+        }
+    }
+
+    private static List<SpaceIndexPart> getPrimaryKeyPartsWithSysFrom(List<EntityField> fields) {
+        final List<SpaceIndexPart> spaceIndexParts = EntityFieldUtils.getPrimaryKeyList(fields).stream()
+                .map(f -> new SpaceIndexPart(f.getName(),
+                        SpaceAttributeTypeUtil.toAttributeType(f.getType()).getName(),
+                        f.getNullable()))
+                .collect(Collectors.toList());
+        spaceIndexParts.add(new SpaceIndexPart(SYS_FROM_FIELD, SpaceAttributeTypes.NUMBER.getName(), false));
+        return spaceIndexParts;
     }
 
     private static List<SpaceIndexPart> getPrimaryKeyParts(List<EntityField> fields) {
         return EntityFieldUtils.getPrimaryKeyList(fields).stream()
-                .map(f -> new SpaceIndexPart(f.getName(), SpaceAttributeTypeUtil.toAttributeType(f.getType()).getName(), f.getNullable()))
+                .map(f -> new SpaceIndexPart(f.getName(),
+                        SpaceAttributeTypeUtil.toAttributeType(f.getType()).getName(),
+                        f.getNullable()))
                 .collect(Collectors.toList());
     }
 
@@ -82,12 +130,7 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
                 engine,
                 false,
                 getShardingKey(fields),
-                Arrays.asList(
-                        new SpaceIndex(true, getPrimaryKeyParts(fields), SpaceIndexTypes.TREE, ID),
-                        new SpaceIndex(false, Collections.singletonList(
-                                new SpaceIndexPart(BUCKET_ID, SpaceAttributeTypes.UNSIGNED.getName(), false)
-                        ), SpaceIndexTypes.TREE, BUCKET_ID)
-                ));
+                createSpaceIndexes(fields, STAGING_POSTFIX));
     }
 
     private static List<String> getShardingKey(List<EntityField> fields) {

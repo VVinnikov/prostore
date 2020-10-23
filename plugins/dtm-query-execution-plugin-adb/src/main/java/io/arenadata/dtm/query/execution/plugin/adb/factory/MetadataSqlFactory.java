@@ -20,5 +20,7 @@ public interface MetadataSqlFactory {
 
     String createKeyColumnsSqlQuery(String schema, String tableName);
 
+    String createSecondaryIndexSqlQuery(String schema, String tableName);
+
     List<ColumnMetadata> createKeyColumnQueryMetadata();
 }

@@ -1,4 +1,4 @@
-package ru.ibs.dtm.query.execution.plugin.adg.factory;
+package ru.ibs.dtm.query.execution.plugin.adg.factory.impl;
 
 import org.apache.calcite.linq4j.tree.Expression;
 import org.springframework.stereotype.Service;

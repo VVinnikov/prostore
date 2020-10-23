@@ -14,7 +14,7 @@ import ru.ibs.dtm.query.execution.plugin.adg.model.callback.function.TtTransferD
 import ru.ibs.dtm.query.execution.plugin.adg.model.callback.params.TtTransferDataScdCallbackParameter;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtSubscriptionKafkaRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtTransferDataEtlRequest;
-import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeClient;
+import ru.ibs.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.service.MppwKafkaService;
 
@@ -29,10 +29,10 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
     private final AdgMppwKafkaContextFactory contextFactory;
     private final Map<String, String> initializedLoadingByTopic;
     private final AdgMppwKafkaProperties properties;
-    private final TtCartridgeClient cartridgeClient;
+    private final AdgCartridgeClient cartridgeClient;
 
     public AdgMppwKafkaService(AdgMppwKafkaContextFactory contextFactory,
-                               TtCartridgeClient cartridgeClient,
+                               AdgCartridgeClient cartridgeClient,
                                AdgMppwKafkaProperties properties) {
         this.contextFactory = contextFactory;
         this.cartridgeClient = cartridgeClient;

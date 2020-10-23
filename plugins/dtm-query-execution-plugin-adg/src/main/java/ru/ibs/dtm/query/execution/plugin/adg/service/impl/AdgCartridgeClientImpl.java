@@ -16,16 +16,17 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import ru.ibs.dtm.query.execution.plugin.adg.configuration.TarantoolCartridgeProperties;
+import ru.ibs.dtm.query.execution.plugin.adg.dto.rollback.ReverseHistoryTransferRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.OperationFile;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.*;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response.*;
-import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeClient;
+import ru.ibs.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 
 import java.util.List;
 
 @Slf4j
 @Service
-public class TtCartridgeClientImpl implements TtCartridgeClient {
+public class AdgCartridgeClientImpl implements AdgCartridgeClient {
   private static final String STAGE_DATA_TABLE_NAME = "_stage_data_table_name";
   private static final String ACTUAL_DATA_TABLE_NAME = "_actual_data_table_name";
   private static final String HISTORICAL_DATA_TABLE_NAME = "_historical_data_table_name";
@@ -36,9 +37,9 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
   private final CircuitBreaker circuitBreaker;
 
   @Autowired
-  public TtCartridgeClientImpl(TarantoolCartridgeProperties cartridgeProperties,
-                               @Qualifier("adgWebClient") WebClient webClient,
-                               @Qualifier("adgCircuitBreaker") CircuitBreaker circuitBreaker) {
+  public AdgCartridgeClientImpl(TarantoolCartridgeProperties cartridgeProperties,
+                                @Qualifier("adgWebClient") WebClient webClient,
+                                @Qualifier("adgCircuitBreaker") CircuitBreaker circuitBreaker) {
     this.cartridgeProperties = cartridgeProperties;
     this.webClient = webClient;
     this.circuitBreaker = circuitBreaker;
@@ -87,7 +88,7 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
         handler.handle(Future.succeededFuture());
         log.debug("UploadData Successful");
       } else if (statusCode == 500) {
-        handler.handle(Future.failedFuture(response.bodyAsJson(TtKafkaError.class)));
+        handler.handle(Future.failedFuture(response.bodyAsJson(AdgCartridgeError.class)));
       } else {
         unexpectedResponse(handler, response);
       }
@@ -119,7 +120,7 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
         handler.handle(Future.succeededFuture());
         log.debug("Subscription Successful");
       } else if (statusCode == 500) {
-        handler.handle(Future.failedFuture(response.bodyAsJson(TtKafkaError.class)));
+        handler.handle(Future.failedFuture(response.bodyAsJson(AdgCartridgeError.class)));
       } else {
         unexpectedResponse(handler, response);
       }
@@ -156,7 +157,7 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
       } else if (statusCode == 500) {
         handler.handle(Future.failedFuture(response.bodyAsJson(TtLoadDataKafkaError.class)));
       } else if (statusCode == 404) {
-        handler.handle(Future.failedFuture(response.bodyAsJson(TtKafkaError.class)));
+        handler.handle(Future.failedFuture(response.bodyAsJson(AdgCartridgeError.class)));
       } else {
         unexpectedResponse(handler, response);
       }
@@ -216,7 +217,7 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
       if (statusCode == 200) {
         handler.handle(Future.succeededFuture());
       } else if (statusCode == 404 || statusCode == 500) {
-        handler.handle(Future.failedFuture(response.bodyAsJson(TtKafkaError.class)));
+        handler.handle(Future.failedFuture(response.bodyAsJson(AdgCartridgeError.class)));
       } else {
         unexpectedResponse(handler, response);
       }
@@ -298,7 +299,7 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
         handler.handle(Future.succeededFuture(successResponse));
         log.debug("spaces added to delete queue successful");
       } else if (statusCode == 500) {
-        handler.handle(Future.failedFuture(response.bodyAsJson(TtKafkaError.class)));
+        handler.handle(Future.failedFuture(response.bodyAsJson(AdgCartridgeError.class)));
       }  else {
         unexpectedResponse(handler, response);
       }
@@ -352,7 +353,7 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
         log.debug("spaces [{}] dropped successful",successResponse);
       }
       else if (statusCode == 500) {
-        handler.handle(Future.failedFuture(response.bodyAsJson(TtKafkaError.class)));
+        handler.handle(Future.failedFuture(response.bodyAsJson(AdgCartridgeError.class)));
       } else {
         unexpectedResponse(handler,response);
       }
@@ -361,4 +362,36 @@ public class TtCartridgeClientImpl implements TtCartridgeClient {
       handler.handle(Future.failedFuture(ex));
     }
   }
+
+  @Override
+  public void reverseHistoryTransfer(ReverseHistoryTransferRequest request, Handler<AsyncResult<Void>> handler) {
+    val uri = cartridgeProperties.getUrl() + cartridgeProperties.getReverseHistoryTransferUrl();
+    log.debug("send to [{}] request [{}]", uri, request);
+    webClient.deleteAbs(uri)
+        .send(ar -> {
+          if (ar.succeeded()) {
+            val response = ar.result();
+            handleReverseHistoryTransfer(response, handler);
+          } else {
+            handler.handle(Future.failedFuture(ar.cause()));
+          }
+        });
+  }
+
+  private void handleReverseHistoryTransfer(HttpResponse<Buffer> response, Handler<AsyncResult<Void>> handler) {
+    try {
+      log.trace("handle [reverse history transfer] response [{}]", response);
+      val statusCode = response.statusCode();
+      if (statusCode == 200) {
+        handler.handle(Future.succeededFuture());
+      } else if (statusCode == 404 || statusCode == 500) {
+        handler.handle(Future.failedFuture(response.bodyAsJson(AdgCartridgeError.class)));
+      } else {
+        unexpectedResponse(handler, response);
+      }
+    } catch (Exception ex) {
+      handler.handle(Future.failedFuture(ex));
+    }
+  }
+
 }

@@ -178,6 +178,7 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
         val viewName = viewNameNode.tryGetTableName()
                 .orElseThrow(() -> new RuntimeException("Unable to get name of view"));
         val viewQuery = getViewQuery(tree);
+        ctx.setDatamartName(schemaName);
         return Entity.builder()
                 .name(viewName)
                 .schema(schemaName)

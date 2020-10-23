@@ -13,8 +13,8 @@ import ru.ibs.dtm.common.model.ddl.Entity;
 import ru.ibs.dtm.query.execution.plugin.adg.factory.AdgHelperTableNamesFactory;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtDeleteTablesQueueRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtDeleteTablesRequest;
+import ru.ibs.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryExecutorService;
-import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeClient;
 import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeProvider;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
@@ -31,13 +31,13 @@ public class DropTableExecutor implements DdlExecutor<Void> {
 
     private final QueryExecutorService executorService;
     private final TtCartridgeProvider cartridgeProvider;
-    private final TtCartridgeClient cartridgeClient;
+    private final AdgCartridgeClient cartridgeClient;
     private final AdgHelperTableNamesFactory adgHelperTableNamesFactory;
 
     @Autowired
     public DropTableExecutor(QueryExecutorService executorService,
                              TtCartridgeProvider cartridgeProvider,
-                             TtCartridgeClient cartridgeClient,
+                             AdgCartridgeClient cartridgeClient,
                              AdgHelperTableNamesFactory adgHelperTableNamesFactory) {
         this.executorService = executorService;
         this.cartridgeProvider = cartridgeProvider;

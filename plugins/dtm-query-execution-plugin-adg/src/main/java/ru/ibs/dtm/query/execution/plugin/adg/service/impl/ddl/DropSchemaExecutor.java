@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.query.execution.plugin.adg.factory.AdgHelperTableNamesFactory;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtDeleteTablesWithPrefixRequest;
-import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeClient;
+import ru.ibs.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import ru.ibs.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
@@ -19,11 +19,11 @@ import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
 @Component
 public class DropSchemaExecutor implements DdlExecutor<Void> {
 
-    private final TtCartridgeClient cartridgeClient;
+    private final AdgCartridgeClient cartridgeClient;
     private final AdgHelperTableNamesFactory adgHelperTableNamesFactory;
 
     @Autowired
-    public DropSchemaExecutor(TtCartridgeClient cartridgeClient,
+    public DropSchemaExecutor(AdgCartridgeClient cartridgeClient,
                               AdgHelperTableNamesFactory adgHelperTableNamesFactory) {
         this.cartridgeClient = cartridgeClient;
         this.adgHelperTableNamesFactory = adgHelperTableNamesFactory;

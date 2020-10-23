@@ -59,5 +59,4 @@ public class CalciteConfiguration {
     public SqlDialect coreSqlDialect() {
         return new SqlDialect(SqlDialect.EMPTY_CONTEXT);
     }
-
 }

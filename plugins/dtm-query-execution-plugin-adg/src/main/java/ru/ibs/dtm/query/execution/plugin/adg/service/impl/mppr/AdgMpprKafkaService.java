@@ -11,8 +11,8 @@ import org.springframework.stereotype.Service;
 import ru.ibs.dtm.common.reader.QueryResult;
 import ru.ibs.dtm.query.execution.plugin.adg.dto.EnrichQueryRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtUploadDataKafkaRequest;
+import ru.ibs.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryEnrichmentService;
-import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeClient;
 import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppr.kafka.DownloadExternalEntityMetadata;
 import ru.ibs.dtm.query.execution.plugin.api.request.MpprRequest;
@@ -25,7 +25,7 @@ import java.util.UUID;
 @Service("adgMpprKafkaService")
 public class AdgMpprKafkaService implements MpprKafkaService<QueryResult> {
     private final QueryEnrichmentService adbQueryEnrichmentService;
-    private final TtCartridgeClient ttCartridgeClient;
+    private final AdgCartridgeClient adgCartridgeClient;
 
     @Override
     public void execute(MpprRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
@@ -52,7 +52,7 @@ public class AdgMpprKafkaService implements MpprKafkaService<QueryResult> {
                 downloadMetadata.getChunkSize(),
                 new JsonObject(downloadMetadata.getExternalSchema())
         );
-        ttCartridgeClient.uploadData(request, ar -> {
+        adgCartridgeClient.uploadData(request, ar -> {
                     UUID requestId = queryRequest.getQueryRequest().getRequestId();
                     if (ar.succeeded()) {
                         log.info("Uploading data from ADG was successful on request: {}", requestId);

@@ -256,7 +256,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     [ <DISTRIBUTED> <BY> distributedBy = ParenthesizedSimpleIdentifierList() ]
     [ <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) ]
     {
-        return new ru.ibs.dtm.query.calcite.core.extension.ddl.SqlCreateTable(s.end(this), replace, ifNotExists, id,
+        return new SqlCreateTable(s.end(this), replace, ifNotExists, id,
             tableElementList, query, distributedBy);
     }
 }
@@ -276,7 +276,7 @@ SqlCreate SqlCreateDownloadExternalTable(Span s, boolean replace) :
     <FORMAT> format = StringLiteral()
     [ <CHUNK_SIZE> chunkSize = NumericLiteral() ]
     {
-        return new ru.ibs.dtm.query.calcite.core.extension.eddl.SqlCreateDownloadExternalTable(s.end(this),
+        return new SqlCreateDownloadExternalTable(s.end(this),
             ifNotExists, id, tableElementList, location, format, chunkSize);
     }
 }
@@ -296,7 +296,7 @@ SqlCreate SqlCreateUploadExternalTable(Span s, boolean replace) :
     <FORMAT> format = StringLiteral()
     [ <MESSAGE_LIMIT> messageLimit = NumericLiteral() ]
     {
-        return new ru.ibs.dtm.query.calcite.core.extension.eddl.SqlCreateUploadExternalTable(s.end(this),
+        return new SqlCreateUploadExternalTable(s.end(this),
             ifNotExists, id, tableElementList, location, format, messageLimit);
 }
 }
@@ -308,7 +308,7 @@ SqlCreate SqlCreateDatabase(Span s, boolean replace) :
 {
    <DATABASE> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
    {
-    return new ru.ibs.dtm.query.calcite.core.extension.eddl.SqlCreateDatabase(s.end(this), ifNotExists, id);
+    return new SqlCreateDatabase(s.end(this), ifNotExists, id);
     }
 }
 SqlCreate SqlCreateView(Span s, boolean replace) :
@@ -321,7 +321,7 @@ SqlCreate SqlCreateView(Span s, boolean replace) :
     <VIEW> id = CompoundIdentifier()
     [ columnList = ParenthesizedSimpleIdentifierList() ]
     <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) {
-        return new ru.ibs.dtm.query.calcite.core.extension.ddl.SqlCreateView(s.end(this), replace, id, columnList, query);
+        return new SqlCreateView(s.end(this), replace, id, columnList, query);
     }
 }
 SqlAlter SqlAlterView(Span s) :
@@ -334,7 +334,7 @@ SqlAlter SqlAlterView(Span s) :
     <VIEW> id = CompoundIdentifier()
     [ columnList = ParenthesizedSimpleIdentifierList() ]
     <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) {
-        return new ru.ibs.dtm.query.calcite.core.extension.ddl.SqlAlterView(s.end(this), id, columnList, query);
+        return new SqlAlterView(s.end(this), id, columnList, query);
 }
 }
 SqlCreate SqlCreateMaterializedView(Span s, boolean replace) :
@@ -365,7 +365,7 @@ SqlNode SqlBeginDelta() :
     }
     [ <SET> num = NumericLiteral() ]
 {
-    return new ru.ibs.dtm.query.calcite.core.extension.delta.SqlBeginDelta(beginPos, num);
+    return new SqlBeginDelta(beginPos, num);
 }
 }
 SqlNode SqlCommitDelta() :
@@ -380,7 +380,7 @@ SqlNode SqlCommitDelta() :
     }
     [ <SET> dateTime = StringLiteral() ]
 {
-    return new ru.ibs.dtm.query.calcite.core.extension.delta.SqlCommitDelta(commitPos, dateTime);
+    return new SqlCommitDelta(commitPos, dateTime);
 }
 }
 private void FunctionJarDef(SqlNodeList usingList) :
@@ -475,7 +475,7 @@ SqlDrop DropDatabase(Span s, boolean replace) :
 }
 {
    <DATABASE> ifExists = IfExistsOpt() id = CompoundIdentifier() {
-      return new ru.ibs.dtm.query.calcite.core.extension.eddl.DropDatabase(s.end(this),ifExists,id);
+      return new DropDatabase(s.end(this),ifExists,id);
    }
 }
 SqlDrop SqlDropUploadExternalTable(Span s, boolean replace) :
@@ -485,7 +485,7 @@ SqlDrop SqlDropUploadExternalTable(Span s, boolean replace) :
 }
 {
     <UPLOAD> <EXTERNAL> <TABLE> ifExists = IfExistsOpt() id = CompoundIdentifier() {
-        return new ru.ibs.dtm.query.calcite.core.extension.eddl.SqlDropUploadExternalTable(s.end(this), ifExists, id);
+        return new SqlDropUploadExternalTable(s.end(this), ifExists, id);
     }
 }
 SqlDrop SqlDropDownloadExternalTable(Span s, boolean replace) :
@@ -495,7 +495,7 @@ SqlDrop SqlDropDownloadExternalTable(Span s, boolean replace) :
 }
 {
     <DOWNLOAD> <EXTERNAL> <TABLE> ifExists = IfExistsOpt() id = CompoundIdentifier() {
-        return new ru.ibs.dtm.query.calcite.core.extension.eddl.SqlDropDownloadExternalTable(s.end(this), ifExists, id);
+        return new SqlDropDownloadExternalTable(s.end(this), ifExists, id);
 }
 }
 SqlDrop SqlDropView(Span s, boolean replace) :
@@ -542,6 +542,6 @@ SqlNode SqlUseSchema() :
         pos = getPos();
 }
     {
-        return new ru.ibs.dtm.query.calcite.core.extension.ddl.SqlUseSchema(pos, id);
+        return new io.arenadata.dtm.query.calcite.core.extension.ddl.SqlUseSchema(pos, id);
     }
 }

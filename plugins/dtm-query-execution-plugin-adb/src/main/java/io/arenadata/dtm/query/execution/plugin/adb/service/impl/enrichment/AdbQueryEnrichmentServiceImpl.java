@@ -1,0 +1,64 @@
+package io.arenadata.dtm.query.execution.plugin.adb.service.impl.enrichment;
+
+import io.arenadata.dtm.common.dto.QueryParserRequest;
+import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
+import io.arenadata.dtm.query.execution.plugin.adb.calcite.AdbCalciteContextProvider;
+import io.arenadata.dtm.query.execution.plugin.adb.dto.EnrichQueryRequest;
+import io.arenadata.dtm.query.execution.plugin.adb.service.QueryEnrichmentService;
+import io.arenadata.dtm.query.execution.plugin.adb.service.QueryGenerator;
+import io.arenadata.dtm.query.execution.plugin.adb.service.SchemaExtender;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
+
+@Service
+@Slf4j
+public class AdbQueryEnrichmentServiceImpl implements QueryEnrichmentService {
+    private final AdbCalciteContextProvider contextProvider;
+    private final SchemaExtender schemaExtender;
+    private final QueryParserService queryParserService;
+    private final QueryGenerator adbQueryGenerator;
+
+    public AdbQueryEnrichmentServiceImpl(
+            @Qualifier("adbCalciteDMLQueryParserService") QueryParserService queryParserService,
+            AdbQueryGeneratorImpl adbQueryGeneratorimpl,
+            AdbCalciteContextProvider contextProvider,
+            @Qualifier("adbSchemaExtender") SchemaExtender schemaExtender
+    ) {
+        this.queryParserService = queryParserService;
+        this.adbQueryGenerator = adbQueryGeneratorimpl;
+        this.contextProvider = contextProvider;
+        this.schemaExtender = schemaExtender;
+    }
+
+    @Override
+    public void enrich(EnrichQueryRequest request, Handler<AsyncResult<String>> asyncHandler) {
+        queryParserService.parse(new QueryParserRequest(request.getQueryRequest(), request.getSchema()), ar -> {
+            if (ar.succeeded()) {
+                val parserResponse = ar.result();
+                contextProvider.enrichContext(parserResponse.getCalciteContext(),
+                        schemaExtender.generatePhysicalSchemas(request.getSchema()));
+                // формируем новый sql-запрос
+                adbQueryGenerator.mutateQuery(parserResponse.getRelNode(),
+                        parserResponse.getQueryRequest().getDeltaInformations(),
+                        parserResponse.getCalciteContext(),
+                        enrichedQueryResult -> {
+                            if (enrichedQueryResult.succeeded()) {
+                                log.trace("Request generated: {}", enrichedQueryResult.result());
+                                asyncHandler.handle(Future.succeededFuture(enrichedQueryResult.result()));
+                            } else {
+                                log.debug("Error while enriching request", enrichedQueryResult.cause());
+                                asyncHandler.handle(Future.failedFuture(enrichedQueryResult.cause()));
+                            }
+                        });
+            } else {
+                asyncHandler.handle(Future.failedFuture(ar.cause()));
+            }
+        });
+
+    }
+}

@@ -4,7 +4,7 @@ JDBC драйвер для подключения к витрине.
 
 ### Подключение через SQL-клиенты
 
-Класс драйвера  ``ru.ibs.dtm.jdbc.DtmDriver``
+Класс драйвера  ``io.arenadata.dtm.jdbc.DtmDriver``
 
 Строка подключения : ``jdbc:adtm://{host}:{port}/{datamartMnemonics}``
 

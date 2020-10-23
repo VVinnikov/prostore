@@ -121,6 +121,9 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.SourceStringReader;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.trace.CalciteTrace;
+import io.arenadata.dtm.query.calcite.core.extension.ddl.*;
+import io.arenadata.dtm.query.calcite.core.extension.delta.*;
+import io.arenadata.dtm.query.calcite.core.extension.eddl.*;
 
 import org.slf4j.Logger;
 
@@ -649,7 +652,7 @@ SqlNode OrderedQueryOrExpr(ExprContext exprContext) :
             if (orderBy == null) {
                 orderBy = SqlNodeList.EMPTY;
             }
-            e = new ru.ibs.dtm.query.calcite.core.extension.dml.LimitableSqlOrderBy(getPos(), e, orderBy, start, count, isLimited);
+            e = new io.arenadata.dtm.query.calcite.core.extension.dml.LimitableSqlOrderBy(getPos(), e, orderBy, start, count, isLimited);
 
         }
         return e;
@@ -2800,7 +2803,7 @@ SqlNode Snapshot(SqlNode tableRef) :
             period = SqlLiteral.createNull(getPos());
         }
 
-        return new ru.ibs.dtm.query.calcite.core.extension.snapshot.SqlSnapshot(getPos(),
+        return new io.arenadata.dtm.query.calcite.core.extension.snapshot.SqlSnapshot(getPos(),
         tableRef, period, startedInOp, finishedInOp, num, isLatestUncommitedDelta);
     }
 }

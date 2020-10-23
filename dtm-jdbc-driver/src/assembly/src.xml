@@ -1,5 +1,5 @@
-<assembly xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/3.3.0">
+<assembly
+>
     <id>src</id>
     <formats>
         <format>jar</format>
@@ -16,11 +16,11 @@
                 <include>org.apache.httpcomponents:httpclient</include>
                 <include>org.apache.httpcomponents:httpcore</include>
                 <include>commons-logging:commons-logging</include>
-                <include>ru.ibs.dtm:dtm-common</include>
+                <include>io.arenadata.dtm:dtm-common</include>
                 <include>ch.qos.logback:logback-classic</include>
                 <include>ch.qos.logback:logback-core</include>
                 <include>org.slf4j:slf4j-api</include>
-                <include>ru.ibs.dtm:dtm-jdbc</include>
+                <include>io.arenadata.dtm:dtm-jdbc</include>
             </includes>
         </dependencySet>
     </dependencySets>

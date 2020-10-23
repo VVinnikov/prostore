@@ -16,6 +16,7 @@ import ru.ibs.dtm.query.execution.core.dao.exception.delta.DeltaNotFinishedExcep
 import ru.ibs.dtm.query.execution.core.dao.exception.delta.TableBlockedException;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.impl.DatamartDaoImpl;
+import ru.ibs.dtm.query.execution.core.dto.delta.DeltaWriteOp;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaWriteOpRequest;
 import ru.ibs.dtm.query.execution.core.dto.delta.OkDelta;
 import ru.ibs.dtm.query.execution.core.service.zookeeper.ZookeeperConnectionProvider;
@@ -25,13 +26,13 @@ import ru.ibs.dtm.query.execution.core.service.zookeeper.impl.ZookeeperExecutorI
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class DeltaServiceDaoImplTest {
@@ -79,6 +80,7 @@ public class DeltaServiceDaoImplTest {
         dao.addExecutor(new WriteNewOperationExecutorImpl(executor, ENV_NAME));
         dao.addExecutor(new WriteOperationErrorExecutorImpl(executor, ENV_NAME));
         dao.addExecutor(new WriteOperationSuccessExecutorImpl(executor, ENV_NAME));
+        dao.addExecutor(new GetDeltaWriteOperationsExecutorImpl(executor, ENV_NAME));
         val testContext = new VertxTestContext();
         datamartDao.createDatamart(DATAMART)
             .onSuccess(r -> testContext.completeNow())
@@ -412,6 +414,42 @@ public class DeltaServiceDaoImplTest {
         assertThat(testContext.awaitCompletion(120, TimeUnit.SECONDS)).isTrue();
         assertTrue(testContext.failed());
         assertTrue(testContext.causeOfFailure() instanceof TableBlockedException);
+    }
+
+    @Test
+    void getWriteOpListTest() throws InterruptedException {
+        val testContext = new VertxTestContext();
+        List<Long> sysCns = new ArrayList<>();
+        final List<String> tables = Arrays.asList("tbl0", "tbl1", "tbl2", "tbl3", "tbl4");
+        final Map<String, Long> expectedCnMap = new HashMap<>();
+        expectedCnMap.put(tables.get(0), 5L);
+        expectedCnMap.put(tables.get(1), 1L);
+        expectedCnMap.put(tables.get(2), 2L);
+        expectedCnMap.put(tables.get(3), 3L);
+        expectedCnMap.put(tables.get(4), 4L);
+        List<DeltaWriteOp> actualWriteOpList = new ArrayList<>();
+        dao.writeNewDeltaHot(DATAMART)
+                .compose(r -> dao.writeNewOperation(getOpRequest(tables.get(0)))).map(sysCns::add)
+                .compose(r -> dao.writeNewOperation(getOpRequest(tables.get(1)))).map(sysCns::add)
+                .compose(r -> dao.writeNewOperation(getOpRequest(tables.get(2)))).map(sysCns::add)
+                .compose(r -> dao.writeNewOperation(getOpRequest(tables.get(3)))).map(sysCns::add)
+                .compose(r -> dao.writeNewOperation(getOpRequest(tables.get(4)))).map(sysCns::add)
+                .compose(r -> dao.writeOperationSuccess(DATAMART, sysCns.get(0)))
+                .compose(r -> dao.writeNewOperation(getOpRequest(tables.get(0)))).map(sysCns::add)
+                .compose(r -> dao.getDeltaWriteOperations(DATAMART))
+                .onSuccess(r -> {
+                    log.info("result: [{}]", r);
+                    actualWriteOpList.addAll(r);
+                    testContext.completeNow();
+                })
+                .onFailure(error -> {
+                    log.error("error", error);
+                    testContext.failNow(error);
+                });
+        assertThat(testContext.awaitCompletion(120, TimeUnit.SECONDS)).isTrue();
+        assertTrue(testContext.completed());
+        assertFalse(actualWriteOpList.isEmpty());
+        actualWriteOpList.forEach(wrOp -> assertEquals(expectedCnMap.get(wrOp.getTableName()), wrOp.getSysCn()));
     }
 
     private DeltaWriteOpRequest getOpRequest(String tableName) {

@@ -6,12 +6,15 @@ import org.springframework.stereotype.Service;
 import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.DeltaDaoExecutorRepository;
 import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.executor.*;
+import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.executor.impl.GetDeltaWriteOperationsExecutorImpl;
+import ru.ibs.dtm.query.execution.core.dto.delta.DeltaWriteOp;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaWriteOpRequest;
 import ru.ibs.dtm.query.execution.core.dto.delta.HotDelta;
 import ru.ibs.dtm.query.execution.core.dto.delta.OkDelta;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -91,6 +94,11 @@ public class DeltaServiceDaoImpl implements DeltaServiceDao, DeltaDaoExecutorRep
     @Override
     public Future<HotDelta> getDeltaHot(String datamart) {
         return getExecutor(GetDeltaHotExecutor.class).execute(datamart);
+    }
+
+    @Override
+    public Future<List<DeltaWriteOp>> getDeltaWriteOperations(String datamart) {
+        return getExecutor(GetDeltaWriteOperationsExecutor.class).execute(datamart);
     }
 
     @Override

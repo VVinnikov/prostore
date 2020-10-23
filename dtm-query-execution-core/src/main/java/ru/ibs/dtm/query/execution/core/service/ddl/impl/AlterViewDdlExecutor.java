@@ -42,6 +42,7 @@ public class AlterViewDdlExecutor extends CreateViewDdlExecutor {
             .onFailure(error -> handler.handle(Future.failedFuture(error)))
             .onSuccess(ctx -> {
                 val viewEntity = ctx.getViewEntity();
+                context.setDatamartName(viewEntity.getSchema());
                 entityDao.getEntity(viewEntity.getSchema(), viewEntity.getName())
                     .map(this::checkEntityType)
                     .compose(r -> entityDao.updateEntity(viewEntity))

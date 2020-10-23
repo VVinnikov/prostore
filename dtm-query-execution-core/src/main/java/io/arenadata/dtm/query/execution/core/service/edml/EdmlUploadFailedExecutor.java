@@ -1,7 +1,7 @@
-package ru.ibs.dtm.query.execution.core.service.edml;
+package io.arenadata.dtm.query.execution.core.service.edml;
 
+import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import io.vertx.core.Future;
-import ru.ibs.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 
 public interface EdmlUploadFailedExecutor {
 

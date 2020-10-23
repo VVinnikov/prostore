@@ -1,5 +1,15 @@
-package ru.ibs.dtm.query.execution.core.service.edml.impl;
+package io.arenadata.dtm.query.execution.core.service.edml.impl;
 
+import io.arenadata.dtm.common.model.ddl.Entity;
+import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
+import io.arenadata.dtm.common.reader.QueryResult;
+import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
+import io.arenadata.dtm.query.execution.core.dto.delta.DeltaWriteOpRequest;
+import io.arenadata.dtm.query.execution.core.dto.edml.EdmlAction;
+import io.arenadata.dtm.query.execution.core.service.edml.EdmlExecutor;
+import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadExecutor;
+import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadFailedExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -8,22 +18,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlDialect;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import ru.ibs.dtm.common.model.ddl.Entity;
-import ru.ibs.dtm.common.model.ddl.ExternalTableLocationType;
-import ru.ibs.dtm.common.reader.QueryResult;
-import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
-import ru.ibs.dtm.query.execution.core.dto.delta.DeltaWriteOpRequest;
-import ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction;
-import ru.ibs.dtm.query.execution.core.service.edml.EdmlExecutor;
-import ru.ibs.dtm.query.execution.core.service.edml.EdmlUploadExecutor;
-import ru.ibs.dtm.query.execution.core.service.edml.EdmlUploadFailedExecutor;
-import ru.ibs.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static ru.ibs.dtm.query.execution.core.dto.edml.EdmlAction.UPLOAD;
+import static io.arenadata.dtm.query.execution.core.dto.edml.EdmlAction.UPLOAD;
 
 @Service
 @Slf4j

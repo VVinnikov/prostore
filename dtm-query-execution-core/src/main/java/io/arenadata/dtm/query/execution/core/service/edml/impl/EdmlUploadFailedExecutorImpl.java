@@ -1,17 +1,17 @@
-package ru.ibs.dtm.query.execution.core.service.edml.impl;
+package io.arenadata.dtm.query.execution.core.service.edml.impl;
 
+import io.arenadata.dtm.common.exception.CrashException;
+import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
+import io.arenadata.dtm.query.execution.core.factory.RollbackRequestContextFactory;
+import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadFailedExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import ru.ibs.dtm.common.exception.CrashException;
-import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
-import ru.ibs.dtm.query.execution.core.factory.RollbackRequestContextFactory;
-import ru.ibs.dtm.query.execution.core.service.DataSourcePluginService;
-import ru.ibs.dtm.query.execution.core.service.edml.EdmlUploadFailedExecutor;
-import ru.ibs.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
-import ru.ibs.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 
 import java.util.ArrayList;
 import java.util.List;

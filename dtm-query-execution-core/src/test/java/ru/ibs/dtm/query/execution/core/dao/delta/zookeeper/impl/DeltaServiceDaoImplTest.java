@@ -18,6 +18,7 @@ import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.impl.DatamartDaoImpl;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaWriteOp;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaWriteOpRequest;
+import ru.ibs.dtm.query.execution.core.dto.delta.HotDelta;
 import ru.ibs.dtm.query.execution.core.dto.delta.OkDelta;
 import ru.ibs.dtm.query.execution.core.service.zookeeper.ZookeeperConnectionProvider;
 import ru.ibs.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
@@ -28,8 +29,6 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -41,6 +40,7 @@ public class DeltaServiceDaoImplTest {
     public static final String BAD_DTM = "bad_dtm";
     private TestingServer testingServer;
     private DeltaServiceDaoImpl dao;
+    private HotDelta hotDelta;
 
     public DeltaServiceDaoImplTest() throws Exception {
         new AppConfiguration(null).objectMapper();

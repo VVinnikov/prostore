@@ -4,6 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import ru.ibs.dtm.query.execution.core.dto.delta.operation.WriteOpFinish;
+
+import java.util.List;
 
 @Data
 @Builder
@@ -15,4 +18,5 @@ public class HotDelta {
     private Long cnTo;
     private long cnMax;
     private boolean rollingBack;
+    private List<WriteOpFinish> writeOperationsFinished;
 }

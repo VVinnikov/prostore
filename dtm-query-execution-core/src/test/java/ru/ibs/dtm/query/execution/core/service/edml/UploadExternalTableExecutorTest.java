@@ -28,6 +28,7 @@ import ru.ibs.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDao
 import ru.ibs.dtm.query.execution.core.factory.RollbackRequestContextFactory;
 import ru.ibs.dtm.query.execution.core.factory.impl.RollbackRequestContextFactoryImpl;
 import ru.ibs.dtm.query.execution.core.service.DataSourcePluginService;
+import ru.ibs.dtm.query.execution.core.service.edml.impl.EdmlUploadFailedExecutorImpl;
 import ru.ibs.dtm.query.execution.core.service.edml.impl.UploadExternalTableExecutor;
 import ru.ibs.dtm.query.execution.core.service.edml.impl.UploadKafkaExecutor;
 import ru.ibs.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
@@ -46,12 +47,9 @@ import static org.mockito.Mockito.when;
 
 class UploadExternalTableExecutorTest {
 
-    private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
-    private final ServiceDbDao serviceDbDao = mock(ServiceDbDaoImpl.class);
     private final DeltaServiceDao deltaServiceDao = mock(DeltaServiceDaoImpl.class);
     private final List<EdmlUploadExecutor> uploadExecutors = Collections.singletonList(mock(UploadKafkaExecutor.class));
-    private final RollbackRequestContextFactory rollbackRequestContextFactory = mock(RollbackRequestContextFactoryImpl.class);
-    private final DataSourcePluginService pluginService = mock(DataSourcePluginServiceImpl.class);
+    private final EdmlUploadFailedExecutor uploadFailedExecutor = mock(EdmlUploadFailedExecutorImpl.class);
     private UploadExternalTableExecutor uploadExternalTableExecutor;
     private CalciteConfiguration config = new CalciteConfiguration();
     private CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
@@ -77,14 +75,14 @@ class UploadExternalTableExecutorTest {
                 .schema("test")
                 .externalTableSchema("")
                 .build();
-        when(serviceDbFacade.getServiceDbDao()).thenReturn(serviceDbDao);
     }
 
     @Test
     void executeKafkaSuccess() {
         Promise promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
-        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao, rollbackRequestContextFactory, pluginService, uploadExecutors);
+        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
+                uploadFailedExecutor, uploadExecutors);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
@@ -101,14 +99,6 @@ class UploadExternalTableExecutorTest {
 
         when(deltaServiceDao.writeNewOperation(any()))
                 .thenReturn(Future.succeededFuture(sysCn));
-
-        when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
-
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Void>> handler = invocation.getArgument(2);
-            handler.handle(Future.succeededFuture());
-            return null;
-        }).when(pluginService).rollback(any(), any(), any());
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
@@ -136,7 +126,7 @@ class UploadExternalTableExecutorTest {
         Promise promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
         uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
-                rollbackRequestContextFactory, pluginService, uploadExecutors);
+                uploadFailedExecutor, uploadExecutors);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
@@ -167,7 +157,7 @@ class UploadExternalTableExecutorTest {
         Promise promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
         uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
-                rollbackRequestContextFactory, pluginService, uploadExecutors);
+                uploadFailedExecutor, uploadExecutors);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
@@ -210,7 +200,7 @@ class UploadExternalTableExecutorTest {
         Promise promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
         uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
-                rollbackRequestContextFactory, pluginService, uploadExecutors);
+                uploadFailedExecutor, uploadExecutors);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
@@ -228,26 +218,18 @@ class UploadExternalTableExecutorTest {
         when(deltaServiceDao.writeNewOperation(any()))
                 .thenReturn(Future.succeededFuture(sysCn));
 
-        when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
-
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Void>> handler = invocation.getArgument(2);
-            handler.handle(Future.succeededFuture());
-            return null;
-        }).when(pluginService).rollback(any(), any(), any());
-
-        when(deltaServiceDao.writeNewOperation(any()))
-                .thenReturn(Future.succeededFuture(sysCn));
-
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
             handler.handle(Future.failedFuture(new RuntimeException("")));
             return null;
         }).when(uploadExecutors.get(0)).execute(any(), any());
 
-        when(deltaServiceDao.writeOperationError(eq("test"), eq(sysCn))).thenReturn(Future.succeededFuture());
+        when(uploadFailedExecutor.execute(any())).thenReturn(Future.succeededFuture());
 
-        when(deltaServiceDao.deleteWriteOperation(eq("test"), eq(sysCn))).thenReturn(Future.succeededFuture());
+        when(deltaServiceDao.writeOperationError(eq("test"), eq(sysCn)))
+                .thenReturn(Future.succeededFuture());
+
+        when(uploadFailedExecutor.execute(any())).thenReturn(Future.succeededFuture());
 
         uploadExternalTableExecutor.execute(context, ar -> {
             if (ar.succeeded()) {
@@ -264,7 +246,7 @@ class UploadExternalTableExecutorTest {
         Promise promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
         uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
-                rollbackRequestContextFactory, pluginService, uploadExecutors);
+                uploadFailedExecutor, uploadExecutors);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
@@ -302,11 +284,11 @@ class UploadExternalTableExecutorTest {
     }
 
     @Test
-    void executeDeleteWriteOpError() {
+    void executeUploadFailedError() {
         Promise promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
         uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
-                rollbackRequestContextFactory, pluginService, uploadExecutors);
+                uploadFailedExecutor, uploadExecutors);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
@@ -323,17 +305,6 @@ class UploadExternalTableExecutorTest {
         when(deltaServiceDao.writeNewOperation(any()))
                 .thenReturn(Future.succeededFuture(sysCn));
 
-        when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
-
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Void>> handler = invocation.getArgument(2);
-            handler.handle(Future.succeededFuture());
-            return null;
-        }).when(pluginService).rollback(any(), any(), any());
-
-        when(deltaServiceDao.writeNewOperation(any()))
-                .thenReturn(Future.succeededFuture(sysCn));
-
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
             handler.handle(Future.failedFuture(new RuntimeException("")));
@@ -343,57 +314,7 @@ class UploadExternalTableExecutorTest {
         when(deltaServiceDao.writeOperationError(eq("test"), eq(sysCn)))
                 .thenReturn(Future.succeededFuture());
 
-        when(deltaServiceDao.deleteWriteOperation(eq("test"), eq(sysCn)))
-                .thenReturn(Future.failedFuture(new RuntimeException("")));
-
-        uploadExternalTableExecutor.execute(context, ar -> {
-            if (ar.succeeded()) {
-                promise.complete();
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
-        assertTrue(promise.future().failed());
-    }
-
-    @Test
-    void executeEraseOpError() {
-        Promise promise = Promise.promise();
-        when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
-        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
-                rollbackRequestContextFactory, pluginService, uploadExecutors);
-        String selectSql = "(select id, lst_nam FROM test.upload_table)";
-        String insertSql = "insert into test.pso " + selectSql;
-        queryRequest.setSql(insertSql);
-        DatamartRequest request = new DatamartRequest(queryRequest);
-        SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
-        final Long sysCn = 1L;
-
-        EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
-
-        context.setTargetTable(new TableInfo("test", "pso"));
-        context.setSourceTable(new TableInfo("test", "upload_table"));
-        context.setEntity(entity);
-
-        when(deltaServiceDao.writeNewOperation(any()))
-                .thenReturn(Future.succeededFuture(sysCn));
-
-        when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
-
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Void>> handler = invocation.getArgument(2);
-            handler.handle(Future.failedFuture(new RuntimeException("")));
-            return null;
-        }).when(pluginService).rollback(any(), any(), any());
-
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new RuntimeException("")));
-            return null;
-        }).when(uploadExecutors.get(0)).execute(any(), any());
-
-        when(deltaServiceDao.writeOperationError(eq("test"), eq(sysCn)))
-                .thenReturn(Future.succeededFuture());
+        when(uploadFailedExecutor.execute(any())).thenReturn(Future.failedFuture(new RuntimeException("")));
 
         uploadExternalTableExecutor.execute(context, ar -> {
             if (ar.succeeded()) {

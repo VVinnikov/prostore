@@ -70,7 +70,7 @@ public class GetDeltaWriteOperationsExecutorImpl extends DeltaServiceDaoExecutor
     }
 
     private Future<DeltaWriteOp> getDeltaWriteOp(String datamart, Long opNum) {
-        return executor.getData(getWriteOpPath(datamart, opNum), null, new Stat())
+        return executor.getData(getWriteOpPath(datamart, opNum))
                 .map(this::deserializeDeltaWriteOp)
                 .map(deltaWriteOp -> {
                     deltaWriteOp.setSysCn(deltaWriteOp.getCnFrom() + opNum);

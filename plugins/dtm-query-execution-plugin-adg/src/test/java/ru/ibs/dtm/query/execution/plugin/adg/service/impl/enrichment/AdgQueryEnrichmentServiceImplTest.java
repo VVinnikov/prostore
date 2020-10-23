@@ -20,8 +20,8 @@ import ru.ibs.dtm.query.execution.plugin.adg.calcite.AdgCalciteContextProvider;
 import ru.ibs.dtm.query.execution.plugin.adg.calcite.AdgCalciteSchemaFactory;
 import ru.ibs.dtm.query.execution.plugin.adg.configuration.AdgCalciteConfiguration;
 import ru.ibs.dtm.query.execution.plugin.adg.dto.EnrichQueryRequest;
-import ru.ibs.dtm.query.execution.plugin.adg.factory.AdgSchemaFactory;
 import ru.ibs.dtm.query.execution.plugin.adg.factory.impl.AdgHelperTableNamesFactoryImpl;
+import ru.ibs.dtm.query.execution.plugin.adg.factory.impl.AdgSchemaFactory;
 import ru.ibs.dtm.query.execution.plugin.adg.service.QueryEnrichmentService;
 import ru.ibs.dtm.query.execution.plugin.api.request.LlrRequest;
 

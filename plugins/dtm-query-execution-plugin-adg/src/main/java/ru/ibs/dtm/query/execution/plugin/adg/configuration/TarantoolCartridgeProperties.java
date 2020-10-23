@@ -22,4 +22,6 @@ public class TarantoolCartridgeProperties {
   private String kafkaUploadDataUrl = "/api/v1/kafka/dataunload/query";
 
   private String tableBatchDeleteUrl = "/api/v1/ddl/table/batchDelete";
+
+  private String reverseHistoryTransferUrl = "/api/v1/ddl/table/reverseHistoryTransfer";
 }

@@ -14,7 +14,7 @@ import ru.ibs.dtm.common.service.DeltaService;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.OperationFile;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.request.TtUploadDataKafkaRequest;
 import ru.ibs.dtm.query.execution.plugin.adg.model.cartridge.response.ResConfig;
-import ru.ibs.dtm.query.execution.plugin.adg.service.TtCartridgeClient;
+import ru.ibs.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -22,12 +22,12 @@ import java.util.stream.Collectors;
 
 @SpringBootTest
 @ExtendWith(VertxExtension.class)
-class TtCartridgeClientImplIT {
+class AdgCartridgeClientImplIT {
   @MockBean
   private DeltaService deltaService;
 
   @Autowired
-  private TtCartridgeClient client;
+  private AdgCartridgeClient client;
 
   @Test
   void getFiles(VertxTestContext testContext) throws Throwable {

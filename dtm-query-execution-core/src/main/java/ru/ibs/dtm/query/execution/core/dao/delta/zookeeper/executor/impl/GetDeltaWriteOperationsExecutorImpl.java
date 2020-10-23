@@ -6,14 +6,12 @@ import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.data.Stat;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaDaoExecutor;
 import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaServiceDaoExecutorHelper;
 import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.executor.GetDeltaWriteOperationsExecutor;
 import ru.ibs.dtm.query.execution.core.dao.exception.delta.DeltaException;
-import ru.ibs.dtm.query.execution.core.dao.exception.delta.DeltaWriteOpNotFoundException;
 import ru.ibs.dtm.query.execution.core.dto.delta.DeltaWriteOp;
 import ru.ibs.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
 
@@ -44,7 +42,7 @@ public class GetDeltaWriteOperationsExecutorImpl extends DeltaServiceDaoExecutor
                             datamart);
                     log.error(errMsg, error);
                     if (error instanceof KeeperException.NoNodeException) {
-                        resultPromise.fail(new DeltaWriteOpNotFoundException(error));
+                        resultPromise.complete(null);
                     } else if (error instanceof DeltaException) {
                         resultPromise.fail(error);
                     } else {

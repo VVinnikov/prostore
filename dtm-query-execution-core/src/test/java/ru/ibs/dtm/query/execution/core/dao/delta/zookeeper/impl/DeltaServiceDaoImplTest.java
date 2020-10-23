@@ -452,6 +452,25 @@ public class DeltaServiceDaoImplTest {
         actualWriteOpList.forEach(wrOp -> assertEquals(expectedCnMap.get(wrOp.getTableName()), wrOp.getSysCn()));
     }
 
+    @Test
+    void getNullWriteOpList() throws InterruptedException {
+        val testContext = new VertxTestContext();
+        List<List<DeltaWriteOp>> result = new ArrayList<>();
+        dao.getDeltaWriteOperations(DATAMART)
+                .onSuccess(r -> {
+                    log.info("result: [{}]", r);
+                    result.add(r);
+                    testContext.completeNow();
+                })
+                .onFailure(error -> {
+                    log.error("error", error);
+                    testContext.failNow(error);
+                });
+        assertThat(testContext.awaitCompletion(120, TimeUnit.SECONDS)).isTrue();
+        assertTrue(testContext.completed());
+        assertNull(result.get(0));
+    }
+
     private DeltaWriteOpRequest getOpRequest(String tableName) {
         return DeltaWriteOpRequest.builder()
             .tableNameExt(tableName + "_ext")

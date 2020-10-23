@@ -15,4 +15,5 @@ public class DeltaWriteOp {
     private String tableNameExt;
     private String query;
     private int status;
+    private Long sysCn;
 }

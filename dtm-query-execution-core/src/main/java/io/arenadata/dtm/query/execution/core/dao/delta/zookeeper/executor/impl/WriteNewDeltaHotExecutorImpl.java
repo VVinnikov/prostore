@@ -27,7 +27,7 @@ import java.util.Arrays;
 public class WriteNewDeltaHotExecutorImpl extends DeltaServiceDaoExecutorHelper implements WriteNewDeltaHotExecutor {
 
     public WriteNewDeltaHotExecutorImpl(ZookeeperExecutor executor,
-                                           @Value("${core.env.name}") String envName) {
+                                        @Value("${core.env.name}") String envName) {
         super(executor, envName);
     }
 
@@ -36,50 +36,51 @@ public class WriteNewDeltaHotExecutorImpl extends DeltaServiceDaoExecutorHelper 
         val deltaStat = new Stat();
         Promise<Long> resultPromise = Promise.promise();
         executor.getData(getDeltaPath(datamart), null, deltaStat)
-            .map(bytes -> bytes == null ? new Delta() : deserializedDelta(bytes))
-            .map(delta -> {
-                if (delta.getOk() != null && delta.getHot() != null) {
-                    throw new DeltaAlreadyStartedException();
-                }
-                var deltaNum = 0L;
-                var cnFrom = 0L;
-                if (delta.getOk() != null) {
-                    deltaNum = delta.getOk().getDeltaNum() + 1;
-                    cnFrom = delta.getOk().getCnTo() + 1;
-                }
-                if (deltaHotNum != null && deltaHotNum != deltaNum) {
-                    throw new InvalidDeltaNumException();
-                }
-                val hotDelta = HotDelta.builder()
-                    .deltaNum(deltaNum)
-                    .cnFrom(cnFrom)
-                    .cnMax(cnFrom - 1)
-                    .build();
-                return delta.toBuilder()
-                    .hot(hotDelta)
-                    .build();
-            })
-            .compose(delta -> executor
-                .multi(getWriteNewDeltaHot(datamart, delta, deltaStat.getVersion()))
-                .map(r -> delta))
-            .onSuccess(delta -> {
-                log.debug("write new delta hot by datamart[{}] completed successfully: [{}]", datamart, delta.getHot());
-                resultPromise.complete(delta.getHot().getDeltaNum());
-            })
-            .onFailure(error -> {
-                val errMsg = String.format("can't write new delta hot on datamart[%s], deltaHotNumber[%d]",
-                    datamart,
-                    deltaHotNum);
-                log.error(errMsg, error);
-                if (error instanceof KeeperException.NodeExistsException
-                    || error instanceof KeeperException.BadVersionException) {
-                    resultPromise.fail(new DeltaAlreadyStartedException(error));
-                } else if (error instanceof DeltaException) {
-                    resultPromise.fail(error);
-                } else {
-                    resultPromise.fail(new DeltaException(errMsg, error));
-                }
-            });
+                .map(bytes -> bytes == null ? new Delta() : deserializedDelta(bytes))
+                .map(delta -> {
+                    if (delta.getOk() != null && delta.getHot() != null) {
+                        throw new DeltaAlreadyStartedException();
+                    }
+                    var deltaNum = 0L;
+                    var cnFrom = 0L;
+                    if (delta.getOk() != null) {
+                        deltaNum = delta.getOk().getDeltaNum() + 1;
+                        cnFrom = delta.getOk().getCnTo() + 1;
+                    }
+                    if (deltaHotNum != null && deltaHotNum != deltaNum) {
+                        throw new InvalidDeltaNumException();
+                    }
+                    val hotDelta = HotDelta.builder()
+                            .deltaNum(deltaNum)
+                            .cnFrom(cnFrom)
+                            .cnMax(cnFrom - 1)
+                            .rollingBack(false)
+                            .build();
+                    return delta.toBuilder()
+                            .hot(hotDelta)
+                            .build();
+                })
+                .compose(delta -> executor
+                        .multi(getWriteNewDeltaHot(datamart, delta, deltaStat.getVersion()))
+                        .map(r -> delta))
+                .onSuccess(delta -> {
+                    log.debug("Write new delta hot by datamart[{}] completed successfully: [{}]", datamart, delta.getHot());
+                    resultPromise.complete(delta.getHot().getDeltaNum());
+                })
+                .onFailure(error -> {
+                    val errMsg = String.format("Can't write new delta hot on datamart[%s], deltaHotNumber[%d]",
+                            datamart,
+                            deltaHotNum);
+                    log.error(errMsg, error);
+                    if (error instanceof KeeperException.NodeExistsException
+                            || error instanceof KeeperException.BadVersionException) {
+                        resultPromise.fail(new DeltaAlreadyStartedException(error));
+                    } else if (error instanceof DeltaException) {
+                        resultPromise.fail(error);
+                    } else {
+                        resultPromise.fail(new DeltaException(errMsg, error));
+                    }
+                });
 
         return resultPromise.future();
     }
@@ -88,9 +89,9 @@ public class WriteNewDeltaHotExecutorImpl extends DeltaServiceDaoExecutorHelper 
                                              Delta delta,
                                              int deltaVersion) {
         return Arrays.asList(
-            createDatamartNodeOp(getDatamartPath(datamart), "/run"),
-            createDatamartNodeOp(getDatamartPath(datamart), "/block"),
-            Op.setData(getDeltaPath(datamart), serializedDelta(delta), deltaVersion)
+                createDatamartNodeOp(getDatamartPath(datamart), "/run"),
+                createDatamartNodeOp(getDatamartPath(datamart), "/block"),
+                Op.setData(getDeltaPath(datamart), serializedDelta(delta), deltaVersion)
         );
     }
 

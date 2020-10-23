@@ -1,14 +1,5 @@
-package io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.impl;
+package ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.executor.impl;
 
-import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaDaoExecutor;
-import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaServiceDaoExecutorHelper;
-import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.WriteDeltaErrorExecutor;
-import io.arenadata.dtm.query.execution.core.dao.exception.delta.DeltaException;
-import io.arenadata.dtm.query.execution.core.dao.exception.delta.DeltaHotNotStartedException;
-import io.arenadata.dtm.query.execution.core.dao.exception.delta.DeltaNotFinishedException;
-import io.arenadata.dtm.query.execution.core.dao.exception.delta.InvalidDeltaNumException;
-import io.arenadata.dtm.query.execution.core.dto.delta.Delta;
-import io.arenadata.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +9,12 @@ import org.apache.zookeeper.Op;
 import org.apache.zookeeper.data.Stat;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaDaoExecutor;
+import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaServiceDaoExecutorHelper;
+import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.executor.WriteDeltaErrorExecutor;
+import ru.ibs.dtm.query.execution.core.dao.exception.delta.*;
+import ru.ibs.dtm.query.execution.core.dto.delta.Delta;
+import ru.ibs.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
 
 import java.util.Arrays;
 
@@ -41,6 +38,8 @@ public class WriteDeltaErrorExecutorImpl extends DeltaServiceDaoExecutorHelper i
                     throw new DeltaHotNotStartedException();
                 } else if (deltaHotNum != null && deltaHotNum != delta.getHot().getDeltaNum()) {
                     throw new InvalidDeltaNumException();
+                } else if (delta.getHot().isRollingBack()){
+                    throw new DeltaAlreadyIsRollingBackException();
                 }
                 delta.getHot().setCnTo(-1L);
                 delta.getHot().setRollingBack(true);
@@ -48,11 +47,11 @@ public class WriteDeltaErrorExecutorImpl extends DeltaServiceDaoExecutorHelper i
             })
             .compose(delta -> executor.multi(getErrorOps(datamart, delta, deltaStat.getVersion())))
             .onSuccess(r -> {
-                log.debug("write delta error by datamart[{}], deltaNum[{}] completed successfully", datamart, deltaHotNum);
+                log.debug("Write delta error by datamart[{}], deltaNum[{}] completed successfully", datamart, deltaHotNum);
                 resultPromise.complete();
             })
             .onFailure(error -> {
-                val errMsg = String.format("can't write delta error on datamart[%s], deltaNum[%s]",
+                val errMsg = String.format("Can't write delta error on datamart[%s], deltaNum[%s]",
                     datamart,
                     deltaHotNum);
                 log.error(errMsg, error);

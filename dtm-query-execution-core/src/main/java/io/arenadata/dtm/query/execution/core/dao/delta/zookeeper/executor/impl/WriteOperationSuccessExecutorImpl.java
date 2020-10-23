@@ -1,15 +1,5 @@
-package io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.impl;
+package ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.executor.impl;
 
-import io.arenadata.dtm.common.exception.CrashException;
-import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaDaoExecutor;
-import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaServiceDaoExecutorHelper;
-import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.WriteOperationSuccessExecutor;
-import io.arenadata.dtm.query.execution.core.dao.exception.delta.DeltaException;
-import io.arenadata.dtm.query.execution.core.dao.exception.delta.DeltaNotExistException;
-import io.arenadata.dtm.query.execution.core.dto.delta.Delta;
-import io.arenadata.dtm.query.execution.core.dto.delta.DeltaWriteOp;
-import io.arenadata.dtm.query.execution.core.dto.delta.HotDelta;
-import io.arenadata.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import lombok.Data;
@@ -19,11 +9,19 @@ import org.apache.zookeeper.Op;
 import org.apache.zookeeper.data.Stat;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import ru.ibs.dtm.common.exception.CrashException;
+import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaDaoExecutor;
+import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaServiceDaoExecutorHelper;
+import ru.ibs.dtm.query.execution.core.dao.delta.zookeeper.executor.WriteOperationSuccessExecutor;
+import ru.ibs.dtm.query.execution.core.dao.exception.delta.DeltaException;
+import ru.ibs.dtm.query.execution.core.dao.exception.delta.DeltaNotExistException;
+import ru.ibs.dtm.query.execution.core.dto.delta.Delta;
+import ru.ibs.dtm.query.execution.core.dto.delta.DeltaWriteOp;
+import ru.ibs.dtm.query.execution.core.dto.delta.HotDelta;
+import ru.ibs.dtm.query.execution.core.dto.delta.operation.WriteOpFinish;
+import ru.ibs.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
 
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -42,41 +40,41 @@ public class WriteOperationSuccessExecutorImpl extends DeltaServiceDaoExecutorHe
         val writeOpStat = new Stat();
         val ctx = new WriteOpContext(datamart, sysCn);
         getDatamartDeltaData(datamart, deltaStat)
-            .map(bytes -> {
-                val delta = deserializedDelta(bytes);
-                if (delta.getHot() == null) {
-                    throw new CrashException("Delta hot not exists", new DeltaNotExistException());
-                }
-                ctx.setDelta(delta);
-                ctx.setOpNum(sysCn - delta.getHot().getCnFrom());
-                ctx.setDeltaVersion(deltaStat.getVersion());
-                return ctx;
-            })
-            .compose(opNum -> getWriteOpData(datamart, writeOpStat, ctx))
-            .map(this::deserializeDeltaWriteOp)
-            .map(writeOp -> {
-                ctx.setWriteOpVersion(writeOpStat.getVersion());
-                ctx.setWriteOp(writeOp);
-                return writeOp;
-            })
-            .compose(writeOp -> executor.getChildren(getDatamartPath(datamart) + "/run"))
-            .map(opPaths -> updateDeltaHot(ctx, opPaths))
-            .compose(delta -> executor.multi(getUpdateOperationNodesOps(ctx)))
-            .onSuccess(delta -> {
-                log.debug("write delta operation \"success\" by datamart[{}], sysCn[{}] completed successfully", datamart, sysCn);
-                resultPromise.complete();
-            })
-            .onFailure(error -> {
-                val errMsg = String.format("can't write operation error by datamart[%s], sysCn[%d]",
-                    datamart,
-                    sysCn);
-                log.error(errMsg, error);
-                if (error instanceof DeltaException) {
-                    resultPromise.fail(error);
-                } else {
-                    resultPromise.fail(new DeltaException(errMsg, error));
-                }
-            });
+                .map(bytes -> {
+                    val delta = deserializedDelta(bytes);
+                    if (delta.getHot() == null) {
+                        throw new CrashException("Delta hot not exists", new DeltaNotExistException());
+                    }
+                    ctx.setDelta(delta);
+                    ctx.setOpNum(sysCn - delta.getHot().getCnFrom());
+                    ctx.setDeltaVersion(deltaStat.getVersion());
+                    return ctx;
+                })
+                .compose(opNum -> getWriteOpData(datamart, writeOpStat, ctx))
+                .map(this::deserializeDeltaWriteOp)
+                .map(writeOp -> {
+                    ctx.setWriteOpVersion(writeOpStat.getVersion());
+                    ctx.setWriteOp(writeOp);
+                    return writeOp;
+                })
+                .compose(writeOp -> executor.getChildren(getDatamartPath(datamart) + "/run"))
+                .map(opPaths -> updateDeltaHot(ctx, opPaths))
+                .compose(delta -> executor.multi(getUpdateOperationNodesOps(ctx)))
+                .onSuccess(delta -> {
+                    log.debug("Write delta operation \"success\" by datamart[{}], sysCn[{}] completed successfully", datamart, sysCn);
+                    resultPromise.complete();
+                })
+                .onFailure(error -> {
+                    val errMsg = String.format("Can't write operation error by datamart[%s], sysCn[%d]",
+                            datamart,
+                            sysCn);
+                    log.error(errMsg, error);
+                    if (error instanceof DeltaException) {
+                        resultPromise.fail(error);
+                    } else {
+                        resultPromise.fail(new DeltaException(errMsg, error));
+                    }
+                });
         return resultPromise.future();
     }
 
@@ -94,9 +92,9 @@ public class WriteOperationSuccessExecutorImpl extends DeltaServiceDaoExecutorHe
 
     private Iterable<Op> getUpdateOperationNodesOps(WriteOpContext ctx) {
         return Arrays.asList(
-            Op.delete(getWriteOpPath(ctx.getDatamart(), ctx.getOpNum()), ctx.getWriteOpVersion()),
-            Op.delete(getBlockTablePath(ctx), -1),
-            Op.setData(getDeltaPath(ctx.getDatamart()), serializedDelta(ctx.getDelta()), ctx.getDeltaVersion())
+                Op.delete(getWriteOpPath(ctx.getDatamart(), ctx.getOpNum()), ctx.getWriteOpVersion()),
+                Op.delete(getBlockTablePath(ctx), -1),
+                Op.setData(getDeltaPath(ctx.getDatamart()), serializedDelta(ctx.getDelta()), ctx.getDeltaVersion())
         );
     }
 
@@ -106,12 +104,13 @@ public class WriteOperationSuccessExecutorImpl extends DeltaServiceDaoExecutorHe
 
     private HotDelta updateDeltaHot(WriteOpContext ctx, List<String> opPaths) {
         List<Long> opNums = opPaths.stream()
-            .map(path -> Long.parseLong(path.substring(path.lastIndexOf("/") + 1)))
-            .collect(Collectors.toList());
+                .map(path -> Long.parseLong(path.substring(path.lastIndexOf("/") + 1)))
+                .collect(Collectors.toList());
         val hotDelta = ctx.getDelta().getHot();
         val opN = ctx.getSysCn() - hotDelta.getCnFrom();
         val opMax = hotDelta.getCnMax() - hotDelta.getCnFrom();
         val cnMax = Math.max(ctx.getSysCn(), hotDelta.getCnMax());
+        initWriteOperationsFinished(ctx, hotDelta);
         getLastOpDoneInSequence(opN, opMax, opNums).ifPresent(lastOpDone -> {
             val cnTo = hotDelta.getCnFrom() + lastOpDone;
             hotDelta.setCnTo(cnTo);
@@ -120,16 +119,39 @@ public class WriteOperationSuccessExecutorImpl extends DeltaServiceDaoExecutorHe
         return hotDelta;
     }
 
+    private void initWriteOperationsFinished(WriteOpContext ctx, HotDelta hotDelta) {
+        if (hotDelta.getWriteOperationsFinished() == null) {
+            List<WriteOpFinish> writeOpFinishList = new ArrayList<>();
+            writeOpFinishList.add(createNewWriteOpFinish(ctx));
+            hotDelta.setWriteOperationsFinished(writeOpFinishList);
+        } else {
+            val writeOpFinish = hotDelta.getWriteOperationsFinished().stream()
+                    .filter(wof -> wof.getTableName().equals(ctx.getWriteOp().getTableName()))
+                    .findFirst();
+            if (writeOpFinish.isPresent()) {
+                writeOpFinish.get().getCnList().add(ctx.getSysCn());
+            } else {
+                hotDelta.getWriteOperationsFinished().add(createNewWriteOpFinish(ctx));
+            }
+        }
+    }
+
+    private WriteOpFinish createNewWriteOpFinish(WriteOpContext ctx) {
+        List<Long> cnList = new ArrayList<>();
+        cnList.add(ctx.getSysCn());
+        return new WriteOpFinish(ctx.getWriteOp().getTableName(), cnList);
+    }
+
     private Optional<Long> getLastOpDoneInSequence(long opN, long opMax, List<Long> opNums) {
         if (opNums.stream().anyMatch(op -> op < opN)) {
             return Optional.empty();
         } else {
             return Optional.of(
-                opNums.stream()
-                    .filter(op -> op > opN)
-                    .min(Comparator.naturalOrder())
-                    .map(minOp -> minOp - 1)
-                    .orElse(Math.max(opN, opMax))
+                    opNums.stream()
+                            .filter(op -> op > opN)
+                            .min(Comparator.naturalOrder())
+                            .map(minOp -> minOp - 1)
+                            .orElse(Math.max(opN, opMax))
             );
         }
     }

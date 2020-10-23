@@ -37,7 +37,7 @@ public class AlterViewDdlExecutor extends CreateViewDdlExecutor {
 
     @Override
     public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<QueryResult>> handler) {
-        checkNotExistsSnapshot(context)
+        checkViewQuery(context)
             .compose(v -> getCreateViewContext(context))
             .onFailure(error -> handler.handle(Future.failedFuture(error)))
             .onSuccess(ctx -> {

@@ -5,13 +5,13 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.jdbc.JDBCClient;
 import io.vertx.ext.sql.ResultSet;
 import io.vertx.ext.sql.SQLClient;
 import io.vertx.ext.sql.SQLConnection;
 import lombok.extern.slf4j.Slf4j;
 import ru.ibs.dtm.common.converter.SqlTypeConverter;
-import ru.ibs.dtm.common.model.ddl.ColumnType;
 import ru.ibs.dtm.query.execution.model.metadata.ColumnMetadata;
 import ru.ibs.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 
@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Slf4j
 public class AdqmQueryExecutor implements DatabaseExecutor {
@@ -38,13 +39,11 @@ public class AdqmQueryExecutor implements DatabaseExecutor {
         sqlClient.getConnection(ar1 -> {
             if (ar1.succeeded()) {
                 SQLConnection conn = ar1.result();
-                final Map<String, ColumnType> columnTypeMap =
-                        metadata.stream().collect(Collectors.toMap(ColumnMetadata::getName, ColumnMetadata::getType));
                 conn.query(sql, ar2 -> {
                     if (ar2.succeeded()) {
                         ResultSet rs = ar2.result();
                         try {
-                            List<Map<String, Object>> result = createResult(columnTypeMap, rs);
+                            List<Map<String, Object>> result = createResult(metadata, rs);
                             resultHandler.handle(Future.succeededFuture(result));
                         } catch (Exception e) {
                             log.error("Error converting ADQM values to jdbc types!", e);
@@ -62,15 +61,33 @@ public class AdqmQueryExecutor implements DatabaseExecutor {
         });
     }
 
-    private List<Map<String, Object>> createResult(Map<String, ColumnType> columnTypeMap, ResultSet rs) {
+    private List<Map<String, Object>> createResult(List<ColumnMetadata> metadata, ResultSet rs) {
         List<Map<String, Object>> result = new ArrayList<>();
-        rs.getRows().forEach(r -> {
-            Map<String, Object> row = new HashMap<>();
-            r.stream().forEach(c -> row.put(c.getKey(),
-                    typeConverter.convert(columnTypeMap.get(c.getKey()), c.getValue())));
-            result.add(row);
+        Map<String, Integer> columnIndexMap = new HashMap<>();
+        rs.getRows().forEach(row -> {
+            if (columnIndexMap.isEmpty()) {
+                initColumnIndexMap(columnIndexMap, row);
+            }
+            result.add(createRowMap(metadata, columnIndexMap, row));
         });
         return result;
+    }
+
+    private void initColumnIndexMap(Map<String, Integer> columnIndexMap, JsonObject row) {
+        final List<String> fields = new ArrayList<>(row.fieldNames());
+        columnIndexMap.putAll(IntStream.range(0, fields.size())
+                .boxed()
+                .collect(Collectors.toMap(fields::get, i -> i)));
+    }
+
+    private Map<String, Object> createRowMap(List<ColumnMetadata> metadata, Map<String, Integer> columnIndexMap,
+                                             JsonObject row) {
+        Map<String, Object> rowMap = new HashMap<>();
+        row.stream().forEach(column -> {
+            final ColumnMetadata columnMetadata = metadata.get(columnIndexMap.get(column.getKey()));
+            rowMap.put(columnMetadata.getName(), typeConverter.convert(columnMetadata.getType(), column.getValue()));
+        });
+        return rowMap;
     }
 
     @Override
@@ -100,12 +117,10 @@ public class AdqmQueryExecutor implements DatabaseExecutor {
         sqlClient.getConnection(ar1 -> {
             if (ar1.succeeded()) {
                 SQLConnection conn = ar1.result();
-                final Map<String, ColumnType> columnTypeMap =
-                        metadata.stream().collect(Collectors.toMap(ColumnMetadata::getName, ColumnMetadata::getType));
                 conn.queryWithParams(sql, new JsonArray(params), ar2 -> {
                     if (ar2.succeeded()) {
                         try {
-                            List<Map<String, Object>> result = createResult(columnTypeMap, ar2.result());
+                            List<Map<String, Object>> result = createResult(metadata, ar2.result());
                             resultHandler.handle(Future.succeededFuture(result));
                         } catch (Exception e) {
                             log.error("Error converting ADQM values to jdbc types!", e);

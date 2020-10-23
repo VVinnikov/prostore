@@ -22,6 +22,7 @@ import ru.ibs.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.request.DdlRequest;
+import ru.ibs.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
 import ru.ibs.dtm.query.execution.plugin.api.status.StatusRequestContext;
 
@@ -49,7 +50,6 @@ public class DtmDataSourcePluginIT {
 
         @Override
         public void ddl(DdlRequestContext ddlRequest, Handler<AsyncResult<Void>> handler) {
-            ddlService.execute(ddlRequest, handler);
         }
 
         @Override
@@ -58,12 +58,12 @@ public class DtmDataSourcePluginIT {
         }
 
         @Override
-        public void mpprKafka(MpprRequestContext mpprRequest, Handler<AsyncResult<QueryResult>> handler) {
+        public void mppr(MpprRequestContext mpprRequest, Handler<AsyncResult<QueryResult>> handler) {
 
         }
 
         @Override
-        public void mppwKafka(MppwRequestContext mppwRequest, Handler<AsyncResult<QueryResult>> handler) {
+        public void mppw(MppwRequestContext mppwRequest, Handler<AsyncResult<QueryResult>> handler) {
 
         }
 
@@ -73,7 +73,12 @@ public class DtmDataSourcePluginIT {
         }
 
         @Override
-        public void status(StatusRequestContext statusRequestContext, Handler<AsyncResult<StatusQueryResult>> asyncResultHandler) {
+        public void status(StatusRequestContext context, Handler<AsyncResult<StatusQueryResult>> asyncResultHandler) {
+
+        }
+
+        @Override
+        public void rollback(RollbackRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler) {
 
         }
     };

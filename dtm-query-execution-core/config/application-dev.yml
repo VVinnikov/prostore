@@ -87,6 +87,8 @@ adg:
     kafka:
       maxNumberOfMessagesPerPartition: 200
       callbackFunctionSecIdle: 100
+  rollback:
+    eraseOperationBatchSize: 300
   circuitbreaker:
     maxFailures: 5
     timeout: 30000

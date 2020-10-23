@@ -10,5 +10,6 @@ public enum SqlProcessingType {
   MPPW,
   COST,
   DELTA,
-  STATUS
+  STATUS,
+  ROLLBACK
 }

@@ -10,7 +10,7 @@ import ru.ibs.dtm.query.execution.plugin.api.service.*;
 import ru.ibs.dtm.query.execution.plugin.api.service.ddl.DdlService;
 
 @Configuration
-public class AdgPluginConfig {
+public class AdgDataSourcePluginConfig {
 
     @Bean("adgDtmDataSourcePlugin")
     public AdgDataSourcePlugin adbDataSourcePlugin(
@@ -19,7 +19,15 @@ public class AdgPluginConfig {
             @Qualifier("adgMpprKafkaService") MpprKafkaService<QueryResult> mpprKafkaService,
             @Qualifier("adgMppwKafkaService") MppwKafkaService<QueryResult> mppwKafkaService,
             @Qualifier("adgQueryCostService") QueryCostService<Integer> queryCostService,
-            @Qualifier("adgStatusService") StatusService<StatusQueryResult> statusService) {
-        return new AdgDataSourcePlugin(ddlService, llrService, mpprKafkaService, mppwKafkaService, queryCostService, statusService);
+            @Qualifier("adgStatusService") StatusService<StatusQueryResult> statusService,
+            @Qualifier("adgRollbackService") RollbackService<Void> rollbackService) {
+        return new AdgDataSourcePlugin(
+                ddlService,
+                llrService,
+                mpprKafkaService,
+                mppwKafkaService,
+                queryCostService,
+                statusService,
+                rollbackService);
     }
 }

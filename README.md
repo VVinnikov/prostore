@@ -112,7 +112,7 @@ Use profile `local` for project builder.
 
 Setup run configuration for core application:
  1. Working dir - `dtm-query-execution-core`.
- 2. Main class - `ru.ibs.dtm.query.execution.core.ServiceQueryExecutionApplication`.
+ 2. Main class - `io.arenadata.dtm.query.execution.core.ServiceQueryExecutionApplication`.
  3. VM options - `-Dspring.profiles.active=dev`.
 
 ## Setup JDBC test client

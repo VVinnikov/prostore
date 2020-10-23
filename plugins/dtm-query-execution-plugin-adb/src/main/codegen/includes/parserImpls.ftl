@@ -270,7 +270,7 @@ SqlCreate SqlCreateDownloadExternalTable(Span s, boolean replace) :
     <LOCATION> location = StringLiteral()
     <FORMAT> format = StringLiteral()
     {
-        return new ru.ibs.dtm.query.execution.plugin.adb.calcite.eddl.SqlCreateDownloadExternalTable(s.end(this),
+        return new io.arenadata.dtm.query.execution.plugin.adb.calcite.eddl.SqlCreateDownloadExternalTable(s.end(this),
             ifNotExists, id, location, format);
     }
 }
@@ -399,7 +399,7 @@ SqlDrop SqlDropDownloadExternalTable(Span s, boolean replace) :
 }
 {
     <DOWNLOAD> <EXTERNAL> <TABLE> ifExists = IfExistsOpt() id = CompoundIdentifier() {
-        return new ru.ibs.dtm.query.execution.plugin.adb.calcite.eddl.SqlDropDownloadExternalTable(s.end(this), ifExists, id);
+        return new io.arenadata.dtm.query.execution.plugin.adb.calcite.eddl.SqlDropDownloadExternalTable(s.end(this), ifExists, id);
     }
 }
 

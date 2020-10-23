@@ -12,7 +12,7 @@
     <name>DTM Core</name>
 
     <parent>
-        <groupId>ru.ibs.dtm</groupId>
+        <groupId>io.arenadata.dtm</groupId>
         <artifactId>parent</artifactId>
         <version>3.1.0-SNAPSHOT</version>
     </parent>
@@ -20,17 +20,17 @@
     <dependencies>
         <!-- DTM -->
         <dependency>
-            <groupId>ru.ibs.dtm</groupId>
+            <groupId>io.arenadata.dtm</groupId>
             <artifactId>dtm-common</artifactId>
             <version>3.1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>ru.ibs.dtm</groupId>
+            <groupId>io.arenadata.dtm</groupId>
             <artifactId>dtm-query-execution-plugin-api</artifactId>
             <version>3.1.0-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
-                    <groupId>ru.ibs</groupId>
+                    <groupId>io.arenadata</groupId>
                     <artifactId>dtm-common</artifactId>
                 </exclusion>
             </exclusions>
@@ -38,7 +38,7 @@
 
         <!-- Plugins -->
         <dependency>
-            <groupId>ru.ibs.dtm</groupId>
+            <groupId>io.arenadata.dtm</groupId>
             <artifactId>dtm-query-execution-plugin-adg</artifactId>
             <version>${project.version}</version>
             <exclusions>
@@ -49,7 +49,7 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>ru.ibs.dtm</groupId>
+            <groupId>io.arenadata.dtm</groupId>
             <artifactId>dtm-query-execution-plugin-adb</artifactId>
             <version>${project.version}</version>
             <exclusions>
@@ -60,7 +60,7 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>ru.ibs.dtm</groupId>
+            <groupId>io.arenadata.dtm</groupId>
             <artifactId>dtm-query-execution-plugin-adqm</artifactId>
             <version>${project.version}</version>
             <exclusions>
@@ -71,23 +71,23 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>ru.ibs.dtm</groupId>
+            <groupId>io.arenadata.dtm</groupId>
             <artifactId>dtm-calcite-core</artifactId>
             <version>${project.version}</version>
             <exclusions>
                 <exclusion>
-                    <groupId>ru.ibs</groupId>
+                    <groupId>io.arenadata</groupId>
                     <artifactId>dtm-common</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>ru.ibs.dtm</groupId>
+            <groupId>io.arenadata.dtm</groupId>
             <artifactId>dtm-kafka-core</artifactId>
             <version>${project.version}</version>
             <exclusions>
                 <exclusion>
-                    <groupId>ru.ibs</groupId>
+                    <groupId>io.arenadata</groupId>
                     <artifactId>dtm-common</artifactId>
                 </exclusion>
             </exclusions>
@@ -253,7 +253,7 @@
                         <configuration>
                             <artifactItems>
                                 <artifactItem>
-                                    <groupId>ru.ibs.dtm</groupId>
+                                    <groupId>io.arenadata.dtm</groupId>
                                     <artifactId>dtm-query-execution-plugin-adb</artifactId>
                                     <type>jar</type>
                                     <overWrite>false</overWrite>
@@ -263,7 +263,7 @@
                                     <excludes>**/*.class,**/*.xml,**/*test.class</excludes>
                                 </artifactItem>
                                 <artifactItem>
-                                    <groupId>ru.ibs.dtm</groupId>
+                                    <groupId>io.arenadata.dtm</groupId>
                                     <artifactId>dtm-query-execution-plugin-adg</artifactId>
                                     <type>jar</type>
                                     <overWrite>false</overWrite>
@@ -273,7 +273,7 @@
                                     <excludes>**/*.class,**/*.xml,**/*test.class</excludes>
                                 </artifactItem>
                                 <artifactItem>
-                                    <groupId>ru.ibs.dtm</groupId>
+                                    <groupId>io.arenadata.dtm</groupId>
                                     <artifactId>dtm-query-execution-plugin-adqm</artifactId>
                                     <type>jar</type>
                                     <overWrite>false</overWrite>

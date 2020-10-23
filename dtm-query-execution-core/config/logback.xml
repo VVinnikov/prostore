@@ -7,5 +7,5 @@
         <appender-ref ref="CONSOLE"/>
     </root>
 
-    <logger name="ru.ibs.dtm" level="TRACE"/>
+    <logger name="io.arenadata.dtm" level="TRACE"/>
 </configuration>

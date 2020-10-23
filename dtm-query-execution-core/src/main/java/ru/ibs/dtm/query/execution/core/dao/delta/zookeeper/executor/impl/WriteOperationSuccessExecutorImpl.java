@@ -7,7 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.zookeeper.Op;
 import org.apache.zookeeper.data.Stat;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import ru.ibs.dtm.common.exception.CrashException;
@@ -137,7 +136,6 @@ public class WriteOperationSuccessExecutorImpl extends DeltaServiceDaoExecutorHe
         }
     }
 
-    @NotNull
     private WriteOpFinish createNewWriteOpFinish(WriteOpContext ctx) {
         List<Long> cnList = new ArrayList<>();
         cnList.add(ctx.getSysCn());

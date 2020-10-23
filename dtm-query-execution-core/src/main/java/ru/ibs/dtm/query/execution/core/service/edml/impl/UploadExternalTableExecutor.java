@@ -46,25 +46,27 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
 
     @Override
     public void execute(EdmlRequestContext context, Handler<AsyncResult<QueryResult>> resultHandler) {
-        writeNewOperation(context, context.getEntity())
-                .compose(sysCn -> executeAndWriteOp(context))
+        writeNewOperationIfNeeded(context, context.getEntity())
+                .compose(v -> executeAndWriteOp(context))
                 .compose(queryResult -> writeOpSuccess(context.getSourceTable().getSchemaName(), context.getSysCn(), queryResult))
                 .onComplete(resultHandler);
     }
 
-    private Future<Long> writeNewOperation(EdmlRequestContext context, Entity entity) {
-        return Future.future(writePromise -> {
-            deltaServiceDao.writeNewOperation(createDeltaOp(context, entity))
+    private Future<Long> writeNewOperationIfNeeded(EdmlRequestContext context, Entity entity) {
+        if (context.getSysCn() != null) {
+            return Future.succeededFuture();
+        } else {
+            return Future.future(writePromise -> deltaServiceDao.writeNewOperation(createDeltaOp(context, entity))
                     .onComplete(ar -> {
                         if (ar.succeeded()) {
                             long sysCn = ar.result();
                             context.setSysCn(sysCn);
-                            writePromise.complete(sysCn);
+                            writePromise.complete();
                         } else {
                             writePromise.fail(ar.cause());
                         }
-                    });
-        });
+                    }));
+        }
     }
 
     private DeltaWriteOpRequest createDeltaOp(EdmlRequestContext context, Entity entity) {

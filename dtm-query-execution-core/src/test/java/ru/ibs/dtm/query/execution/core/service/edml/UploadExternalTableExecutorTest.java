@@ -78,7 +78,7 @@ class UploadExternalTableExecutorTest {
     }
 
     @Test
-    void executeKafkaSuccess() {
+    void executeKafkaSuccessWithSysCnExists() {
         Promise promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
         uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
@@ -90,6 +90,51 @@ class UploadExternalTableExecutorTest {
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
         final QueryResult queryResult = QueryResult.emptyResult();
         final Long sysCn = 1L;
+
+        EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
+
+        context.setTargetTable(new TableInfo("test", "pso"));
+        context.setSourceTable(new TableInfo("test", "upload_table"));
+        context.setEntity(entity);
+        context.setSysCn(sysCn);
+
+        when(deltaServiceDao.writeNewOperation(any()))
+                .thenReturn(Future.succeededFuture(sysCn));
+
+        Mockito.doAnswer(invocation -> {
+            final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
+            handler.handle(Future.succeededFuture(queryResult));
+            return null;
+        }).when(uploadExecutors.get(0)).execute(any(), any());
+
+        when(deltaServiceDao.writeOperationSuccess(eq(queryRequest.getDatamartMnemonic()),
+                eq(sysCn))).thenReturn(Future.succeededFuture());
+
+        uploadExternalTableExecutor.execute(context, ar -> {
+            if (ar.succeeded()) {
+                promise.complete(ar.result());
+            } else {
+                promise.fail(ar.cause());
+            }
+        });
+
+        assertTrue(promise.future().succeeded());
+        assertEquals(queryResult, promise.future().result());
+    }
+
+    @Test
+    void executeKafkaSuccessWithoutSysCn() {
+        Promise promise = Promise.promise();
+        when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
+        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
+                uploadFailedExecutor, uploadExecutors);
+        String selectSql = "(select id, lst_nam FROM test.upload_table)";
+        String insertSql = "insert into test.pso " + selectSql;
+        queryRequest.setSql(insertSql);
+        DatamartRequest request = new DatamartRequest(queryRequest);
+        SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
+        final QueryResult queryResult = QueryResult.emptyResult();
+        final Long sysCn = 2L;
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
 
@@ -116,9 +161,9 @@ class UploadExternalTableExecutorTest {
                 promise.fail(ar.cause());
             }
         });
-
         assertTrue(promise.future().succeeded());
         assertEquals(queryResult, promise.future().result());
+        assertEquals(context.getSysCn(), sysCn);
     }
 
     @Test

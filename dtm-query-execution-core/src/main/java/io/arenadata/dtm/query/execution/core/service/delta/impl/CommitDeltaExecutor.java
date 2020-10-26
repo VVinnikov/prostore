@@ -32,9 +32,9 @@ import static io.arenadata.dtm.query.execution.plugin.api.delta.query.DeltaActio
 @Slf4j
 public class CommitDeltaExecutor implements DeltaExecutor, StatusEventPublisher {
 
+    private final DeltaQueryResultFactory deltaQueryResultFactory;
+    private final DeltaServiceDao deltaServiceDao;
     private final Vertx vertx;
-    private DeltaServiceDao deltaServiceDao;
-    private DeltaQueryResultFactory deltaQueryResultFactory;
 
     @Autowired
     public CommitDeltaExecutor(ServiceDbFacade serviceDbFacade,

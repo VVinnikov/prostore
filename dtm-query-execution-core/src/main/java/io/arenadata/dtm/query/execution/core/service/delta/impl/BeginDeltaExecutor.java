@@ -32,8 +32,8 @@ import static io.arenadata.dtm.query.execution.plugin.api.delta.query.DeltaActio
 @Slf4j
 public class BeginDeltaExecutor implements DeltaExecutor, StatusEventPublisher {
 
-    private DeltaServiceDao deltaServiceDao;
-    private DeltaQueryResultFactory deltaQueryResultFactory;
+    private final DeltaQueryResultFactory deltaQueryResultFactory;
+    private final DeltaServiceDao deltaServiceDao;
     private final Vertx vertx;
 
     @Autowired

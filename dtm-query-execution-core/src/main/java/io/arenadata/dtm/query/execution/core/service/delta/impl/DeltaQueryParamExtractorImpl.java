@@ -3,11 +3,13 @@ package io.arenadata.dtm.query.execution.core.service.delta.impl;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.calcite.core.extension.delta.SqlBeginDelta;
 import io.arenadata.dtm.query.calcite.core.extension.delta.SqlCommitDelta;
+import io.arenadata.dtm.query.calcite.core.extension.delta.SqlRollbackDelta;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaQueryParamExtractor;
 import io.arenadata.dtm.query.execution.plugin.api.delta.query.BeginDeltaQuery;
 import io.arenadata.dtm.query.execution.plugin.api.delta.query.CommitDeltaQuery;
 import io.arenadata.dtm.query.execution.plugin.api.delta.query.DeltaQuery;
+import io.arenadata.dtm.query.execution.plugin.api.delta.query.RollbackDeltaQuery;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -32,8 +34,8 @@ public class DeltaQueryParamExtractorImpl implements DeltaQueryParamExtractor {
 
     @Autowired
     public DeltaQueryParamExtractorImpl(
-            @Qualifier("coreCalciteDefinitionService") DefinitionService<SqlNode> definitionService,
-            Vertx coreVertx
+        @Qualifier("coreCalciteDefinitionService") DefinitionService<SqlNode> definitionService,
+        Vertx coreVertx
     ) {
         this.definitionService = definitionService;
         this.coreVertx = coreVertx;
@@ -64,6 +66,8 @@ public class DeltaQueryParamExtractorImpl implements DeltaQueryParamExtractor {
             createBeginDeltaQuery((SqlBeginDelta) sqlNode, asyncResultHandler);
         } else if (sqlNode instanceof SqlCommitDelta) {
             createCommitDeltaQuery((SqlCommitDelta) sqlNode, asyncResultHandler);
+        } else if (sqlNode instanceof SqlRollbackDelta) {
+            createRollbackDeltaQuery((SqlRollbackDelta) sqlNode, asyncResultHandler);
         } else {
             asyncResultHandler.handle(Future.failedFuture("Query [" + sqlNode + "] is not a DELTA operator."));
         }
@@ -86,6 +90,12 @@ public class DeltaQueryParamExtractorImpl implements DeltaQueryParamExtractor {
             log.error("Parameter conversion error 'dateTime'", e);
             asyncResultHandler.handle(Future.failedFuture(e.getMessage()));
         }
+    }
+
+    private void createRollbackDeltaQuery(SqlRollbackDelta sqlNode, Handler<AsyncResult<DeltaQuery>> asyncResultHandler) {
+        RollbackDeltaQuery deltaQuery = new RollbackDeltaQuery();
+        log.debug("Extracted parameters rollbackDeltaQuery: {}", deltaQuery);
+        asyncResultHandler.handle(Future.succeededFuture(deltaQuery));
     }
 
     private LocalDateTime getDeltaDateTime(SqlCommitDelta sqlNode) {

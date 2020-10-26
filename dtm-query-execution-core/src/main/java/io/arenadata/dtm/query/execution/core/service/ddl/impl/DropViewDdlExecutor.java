@@ -41,6 +41,7 @@ public class DropViewDdlExecutor extends QueryResultDdlExecutor {
                 .orElseThrow(() -> new RuntimeException("Unable to get schema of view"));
             val viewName = viewNameNode.tryGetTableName()
                 .orElseThrow(() -> new RuntimeException("Unable to get name of view"));
+            context.setDatamartName(schemaName);
             entityDao.getEntity(schemaName, viewName)
                 .compose(this::checkEntityType)
                 .compose(v -> entityDao.deleteEntity(schemaName, viewName))

@@ -2,7 +2,7 @@
 
 logging:
   level:
-    ru.ibs.dtm.query.execution: TRACE
+    io.arenadata.dtm.query.execution: TRACE
 
 core:
   http:
@@ -47,7 +47,7 @@ core:
     admin:
       inputStreamTimeoutMs: ${KAFKA_INPUT_STREAM_TIMEOUT_MS:2000}
     status.event.publish:
-      enabled: false
+      enabled: true
       topic: status.event
     statusMonitorUrl: ${STATUS_MONITOR_URL:http://10.92.3.3:9095/status}
 

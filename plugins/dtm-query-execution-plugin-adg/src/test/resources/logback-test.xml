@@ -8,7 +8,7 @@
     </encoder>
   </appender>
 
-  <logger name="ru.ibs.dtm" level="trace"/>
+  <logger name="io.arenadata.dtm" level="trace"/>
 
   <root level="warn">
     <appender-ref ref="CONSOLE"/>

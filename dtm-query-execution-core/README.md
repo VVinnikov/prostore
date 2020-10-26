@@ -3,7 +3,7 @@
 ## Запуск плагина на на примере ADB (dtm-query-execution-adb)
 
 Запустить через IDEA, указав main-класс:
-`ru.ibs.dtm.query.execution.core.ServiceQueryExecutionApplication`
+`io.arenadata.dtm.query.execution.core.ServiceQueryExecutionApplication`
 
 VM Options добавить:
 `-Dspring.config.location=classpath:application.yml,classpath:config/plugin/adb/application.yml`

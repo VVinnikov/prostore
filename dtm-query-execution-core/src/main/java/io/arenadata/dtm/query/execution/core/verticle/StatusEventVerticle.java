@@ -38,9 +38,7 @@ public class StatusEventVerticle extends AbstractVerticle {
             val datamart = statusMessage.headers().get(DataHeader.DATAMART.getValue());
             val eventRequest = statusEventFactoryRegistry.get(eventCode).create(datamart, statusMessage.body());
             kafkaStatusEventPublisher.publish(eventRequest, ar -> {
-                if (ar.succeeded()) {
-                    log.debug("StatusEvent publish completed [{}]", eventRequest);
-                } else {
+                if (ar.failed()) {
                     log.error("StatusEvent publish error", ar.cause());
                 }
             });

@@ -58,8 +58,16 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
     }
 
     private void createTable(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {
-        String createSql = sqlFactory.createTableScripts(context.getRequest().getEntity());
-        adbQueryExecutor.executeUpdate(createSql, handler);
+        String createTablesSql = sqlFactory.createTableScripts(context.getRequest().getEntity());
+        String createIndexesSql = sqlFactory.createSecondaryIndexSqlQuery(context.getRequest().getEntity().getSchema(),
+                context.getRequest().getEntity().getName());
+        executeQuery(createTablesSql)
+                .compose(v -> executeQuery(createIndexesSql))
+                .onComplete(handler);
+    }
+
+    private Future<Void> executeQuery(String sqlQuery) {
+        return Future.future(promise -> adbQueryExecutor.executeUpdate(sqlQuery, promise));
     }
 
     private DdlRequestContext createDropRequestContext(DdlRequestContext context) {

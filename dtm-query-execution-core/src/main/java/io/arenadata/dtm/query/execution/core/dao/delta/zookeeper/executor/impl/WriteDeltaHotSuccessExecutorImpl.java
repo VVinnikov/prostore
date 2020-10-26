@@ -50,7 +50,7 @@ public class WriteDeltaHotSuccessExecutorImpl extends DeltaServiceDaoExecutorHel
                     .deltaDate(deltaHotDate == null ? LocalDateTime.now() : deltaHotDate)
                     .deltaNum(delta.getHot().getDeltaNum())
                     .cnFrom(delta.getHot().getCnFrom())
-                    .cnTo(delta.getHot().getCnTo() == null ? 0 : delta.getHot().getCnTo())
+                    .cnTo(delta.getHot().getCnTo() == null ? delta.getHot().getCnFrom() : delta.getHot().getCnTo())
                     .build())
                 .build())
             .compose(delta -> executor.multi(getWriteDeltaHotSuccessOps(datamart, delta, deltaStat.getVersion())))

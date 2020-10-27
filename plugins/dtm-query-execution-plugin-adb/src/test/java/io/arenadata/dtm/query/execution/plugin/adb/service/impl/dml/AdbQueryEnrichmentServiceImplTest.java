@@ -32,6 +32,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
@@ -108,6 +109,30 @@ public class AdbQueryEnrichmentServiceImplTest {
                 if (ar.succeeded()) {
                     result[0] = ar.result();
                     assertGrep(result[0], "sys_from <= 1 AND sys_to >= 1");
+                }
+                async.complete();
+            });
+            async.awaitSuccess(10000);
+        });
+        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+    }
+
+    @Test
+    void enrichWithFinishedIn() {
+        EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaFinishedIn(
+            "SELECT account_id FROM shares.accounts");
+        String[] result = {""};
+
+        TestSuite suite = TestSuite.create("the_test_suite");
+        suite.test("executeQuery", context -> {
+            Async async = context.async();
+            adbQueryEnrichmentService.enrich(enrichQueryRequest, ar -> {
+                if (ar.succeeded()) {
+                    result[0] = ar.result();
+                    assertEquals(
+                        "SELECT account_id FROM shares.accounts_history WHERE sys_to >= 0 AND (sys_to <= 0 AND sys_op = 1)",
+                        result[0]
+                    );
                 }
                 async.complete();
             });
@@ -386,6 +411,32 @@ public class AdbQueryEnrichmentServiceImplTest {
                 .type(DeltaType.FINISHED_IN)
                 .schemaName(schemaName)
                 .tableName(datamarts.get(0).getEntities().get(1).getName())
+                .pos(pos)
+                .build()
+        ));
+        LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts, Collections.emptyList());
+        return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
+    }
+
+    private EnrichQueryRequest prepareRequestDeltaFinishedIn(String sql) {
+        List<Datamart> datamarts = Arrays.asList(getSchema("shares", true));
+        String schemaName = datamarts.get(0).getMnemonic();
+        QueryRequest queryRequest = new QueryRequest();
+        queryRequest.setSql(sql);
+        queryRequest.setRequestId(UUID.randomUUID());
+        queryRequest.setDatamartMnemonic(schemaName);
+        SqlParserPos pos = new SqlParserPos(0, 0);
+        queryRequest.setDeltaInformations(Arrays.asList(
+            DeltaInformation.builder()
+                .tableAlias("a")
+                .deltaTimestamp(null)
+                .isLatestUncommitedDelta(false)
+                .selectOnNum(1L)
+                .selectOnInterval(new SelectOnInterval(1L, 1L))
+                .selectOnInterval(new SelectOnInterval(1L, 1L))
+                .type(DeltaType.FINISHED_IN)
+                .schemaName(schemaName)
+                .tableName(datamarts.get(0).getEntities().get(0).getName())
                 .pos(pos)
                 .build()
         ));

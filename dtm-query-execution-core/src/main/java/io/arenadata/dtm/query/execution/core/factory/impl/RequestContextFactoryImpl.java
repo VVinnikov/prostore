@@ -4,6 +4,10 @@ import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlUseSchema;
 import io.arenadata.dtm.query.calcite.core.extension.delta.SqlBeginDelta;
 import io.arenadata.dtm.query.calcite.core.extension.delta.SqlCommitDelta;
+import io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaByDateTime;
+import io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaByNum;
+import io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaHot;
+import io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaOk;
 import io.arenadata.dtm.query.execution.core.factory.RequestContextFactory;
 import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
@@ -30,14 +34,14 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
     @Override
     public RequestContext<? extends DatamartRequest> create(QueryRequest request, SqlNode node) {
         val changedQueryRequest = changeSql(request, node);
-        if (node instanceof SqlDdl || node instanceof SqlAlter) {
+        if (isDdlRequest(node)) {
             switch (node.getKind()) {
                 case OTHER_DDL:
                     return new EddlRequestContext(new DatamartRequest(changedQueryRequest));
                 default:
                     return new DdlRequestContext(new DdlRequest(changedQueryRequest), node);
             }
-        } else if (node instanceof SqlBeginDelta || node instanceof SqlCommitDelta) {
+        } else if (isDeltaRequest(node)) {
             return new DeltaRequestContext(new DatamartRequest(changedQueryRequest));
         } else if (node instanceof SqlUseSchema) {
             return new DdlRequestContext(new DdlRequest(changedQueryRequest), node);
@@ -49,6 +53,19 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
             default:
                 return new DmlRequestContext(new DmlRequest(changedQueryRequest), node);
         }
+    }
+
+    private boolean isDdlRequest(SqlNode node) {
+        return node instanceof SqlDdl || node instanceof SqlAlter;
+    }
+
+    private boolean isDeltaRequest(SqlNode node) {
+        return node instanceof SqlBeginDelta
+                || node instanceof SqlCommitDelta
+                || node instanceof SqlGetDeltaOk
+                || node instanceof SqlGetDeltaHot
+                || node instanceof SqlGetDeltaByDateTime
+                || node instanceof SqlGetDeltaByNum;
     }
 
     private QueryRequest changeSql(QueryRequest request, SqlNode node) {

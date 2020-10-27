@@ -30,9 +30,9 @@ public class WriteDeltaHotSuccessExecutorImpl extends DeltaServiceDaoExecutorHel
     }
 
     @Override
-    public Future<Long> execute(String datamart, LocalDateTime deltaHotDate) {
+    public Future<LocalDateTime> execute(String datamart, LocalDateTime deltaHotDate) {
         val deltaStat = new Stat();
-        Promise<Long> resultPromise = Promise.promise();
+        Promise<LocalDateTime> resultPromise = Promise.promise();
         val ctx = new DeltaContext();
         executor.getData(getDeltaPath(datamart), null, deltaStat)
             .map(bytes -> bytes == null ? new Delta() : deserializedDelta(bytes))
@@ -56,7 +56,7 @@ public class WriteDeltaHotSuccessExecutorImpl extends DeltaServiceDaoExecutorHel
             .compose(delta -> executor.multi(getWriteDeltaHotSuccessOps(datamart, delta, deltaStat.getVersion())))
             .onSuccess(r -> {
                 log.debug("write delta hot \"success\" by datamart[{}], deltaHotDate[{}] completed successfully", datamart, deltaHotDate);
-                resultPromise.complete(ctx.getDelta().getHot().getDeltaNum());
+                resultPromise.complete(ctx.getDelta().getOk().getDeltaDate());
             })
             .onFailure(error -> {
                 val errMsg = String.format("can't write delta hot \"success\" by datamart[%s], deltaDate[%s]",

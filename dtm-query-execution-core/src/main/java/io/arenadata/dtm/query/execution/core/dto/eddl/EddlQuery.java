@@ -2,8 +2,6 @@ package io.arenadata.dtm.query.execution.core.dto.eddl;
 
 import lombok.Data;
 
-import javax.validation.constraints.NotNull;
-
 /**
  * Запрос eddl
  */
@@ -13,7 +11,6 @@ public abstract class EddlQuery {
     /**
      * Тип запроса
      */
-    @NotNull
     private EddlAction action;
 
     /**

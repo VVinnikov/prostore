@@ -51,6 +51,10 @@ data: {
       "DELTA_NUM",
       "LATEST_UNCOMMITED_DELTA"
       "USE"
+      "GET_DELTA_OK"
+      "GET_DELTA_HOT"
+      "GET_DELTA_BY_DATETIME"
+      "GET_DELTA_BY_NUM"
     ]
 
     # List of keywords from "keywords" section that are not reserved.
@@ -399,6 +403,10 @@ data: {
         "SqlBeginDelta()"
         "SqlCommitDelta()"
         "SqlUseSchema()"
+        "SqlGetDeltaOk()"
+        "SqlGetDeltaHot()"
+        "SqlGetDeltaByDateTime()"
+        "SqlGetDeltaByNum()"
     ]
 
     # List of methods for parsing custom literals.

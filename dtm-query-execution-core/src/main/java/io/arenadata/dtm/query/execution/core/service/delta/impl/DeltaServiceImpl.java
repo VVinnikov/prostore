@@ -5,8 +5,8 @@ import io.arenadata.dtm.query.execution.core.service.delta.DeltaExecutor;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaQueryParamExtractor;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaService;
 import io.arenadata.dtm.query.execution.plugin.api.delta.DeltaRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.delta.query.DeltaAction;
-import io.arenadata.dtm.query.execution.plugin.api.delta.query.DeltaQuery;
+import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaAction;
+import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaQuery;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -49,9 +49,9 @@ public class DeltaServiceImpl implements DeltaService<QueryResult> {
         deltaQueryParamExtractor.extract(context.getRequest().getQueryRequest(), exParamHandler -> {
             if (exParamHandler.succeeded()) {
                 DeltaQuery deltaQuery = exParamHandler.result();
-                context.setDeltaQuery(deltaQuery);
+                deltaQuery.setDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic());
                 executors.get(deltaQuery.getDeltaAction())
-                        .execute(context, deltaExecHandler -> {
+                        .execute(deltaQuery, deltaExecHandler -> {
                             if (deltaExecHandler.succeeded()) {
                                 QueryResult queryDeltaResult = deltaExecHandler.result();
                                 log.debug("Query result: {}, queryResult : {}",

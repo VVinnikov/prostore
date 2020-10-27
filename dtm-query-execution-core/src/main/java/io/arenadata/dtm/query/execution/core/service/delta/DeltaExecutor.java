@@ -1,28 +1,29 @@
 package io.arenadata.dtm.query.execution.core.service.delta;
 
 import io.arenadata.dtm.common.reader.QueryResult;
+import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaQuery;
 import io.arenadata.dtm.query.execution.plugin.api.delta.DeltaRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.delta.query.DeltaAction;
+import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaAction;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 
 /**
- * Исполнитель delta запросов
+ * Delta request executor
  */
 public interface DeltaExecutor {
 
     /**
-     * <p>Выполнить delta запрос</p>
+     * <p>Execute delta query</p>
      *
-     * @param context            контекст запрсоа
-     * @param asyncResultHandler хэндлер асинхронной обработки результата
+     * @param deltaQuery         delta query
+     * @param asyncResultHandler asyncResultHandler
      */
-    void execute(DeltaRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler);
+    void execute(DeltaQuery deltaQuery, Handler<AsyncResult<QueryResult>> asyncResultHandler);
 
     /**
-     * Получить тип delta запроса
+     * Get delta query action
      *
-     * @return тип запроса
+     * @return delta action type
      */
     DeltaAction getAction();
 }

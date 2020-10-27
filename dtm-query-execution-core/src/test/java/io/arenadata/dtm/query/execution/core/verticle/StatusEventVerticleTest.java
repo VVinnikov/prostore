@@ -13,9 +13,10 @@ import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao
 import io.arenadata.dtm.query.execution.core.dto.delta.DeltaRecord;
 import io.arenadata.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.service.delta.impl.BeginDeltaExecutor;
+import io.arenadata.dtm.query.execution.core.utils.DeltaQueryUtil;
 import io.arenadata.dtm.query.execution.core.utils.QueryResultUtils;
 import io.arenadata.dtm.query.execution.plugin.api.delta.DeltaRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.delta.query.BeginDeltaQuery;
+import io.arenadata.dtm.query.execution.core.dto.delta.query.BeginDeltaQuery;
 import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -30,14 +31,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -65,6 +64,7 @@ class StatusEventVerticleTest {
     @MockBean
     DeltaServiceDao deltaServiceDao;
     @MockBean
+    @Qualifier("beginDeltaQueryResultFactory")
     DeltaQueryResultFactory deltaQueryResultFactory;
     @MockBean
     KafkaStatusEventPublisher kafkaStatusEventPublisher;
@@ -75,26 +75,27 @@ class StatusEventVerticleTest {
     void beforeAll() {
         req.setDatamartMnemonic(EXPECTED_DATAMART);
         req.setRequestId(UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"));
-        delta.setLoadId(0L);
-        delta.setLoadProcId("load-proc-1");
-        delta.setDatamartMnemonic(req.getDatamartMnemonic());
+        delta.setDatamart(req.getDatamartMnemonic());
         when(serviceDbFacade.getDeltaServiceDao()).thenReturn(deltaServiceDao);
     }
 
     @Test
     void publishDeltaOpenEvent(VertxTestContext testContext) throws InterruptedException {
         req.setSql("BEGIN DELTA");
-        val deltaQuery = new BeginDeltaQuery();
-        deltaQuery.setDeltaNum(null);
-        val datamartRequest = new DatamartRequest(req);
-        val context = new DeltaRequestContext(datamartRequest);
-        context.setDeltaQuery(deltaQuery);
-        val queryDeltaResult = new QueryResult();
-        queryDeltaResult.setRequestId(req.getRequestId());
-        queryDeltaResult.setResult(createResult("2020-06-15T05:06:55", EXPECTED_SIN_ID));
+        long deltaNum = 1L;
+        BeginDeltaQuery deltaQuery = BeginDeltaQuery.builder()
+                .datamart("test")
+                .requestId(req.getRequestId())
+                .build();
+
+        QueryResult queryResult = new QueryResult();
+        queryResult.setRequestId(req.getRequestId());
+        queryResult.setResult(createResult(deltaNum));
 
         when(deltaServiceDao.writeNewDeltaHot(any(), any())).thenReturn(Future.succeededFuture(1L));
-        when(deltaQueryResultFactory.create(any(), any())).thenReturn(queryDeltaResult);
+        when(deltaQueryResultFactory.create(any()))
+                .thenReturn(queryResult);
+
         Mockito.doAnswer(invocation -> {
             try {
                 final PublishStatusEventRequest<OpenDeltaEvent> request = invocation.getArgument(0);
@@ -112,13 +113,14 @@ class StatusEventVerticleTest {
             }
             return null;
         }).when(kafkaStatusEventPublisher).publish(any(), any());
-        beginDeltaExecutor.execute(context, handler -> {
+        beginDeltaExecutor.execute(deltaQuery, handler -> {
         });
         assertThat(testContext.awaitCompletion(5, TimeUnit.SECONDS)).isTrue();
     }
 
-    private List<Map<String, Object>> createResult(String statusDate, Long sinId) {
-        return QueryResultUtils.createResultWithSingleRow(Arrays.asList("statusDate", "sinId"), Arrays.asList(statusDate, sinId));
+    private List<Map<String, Object>> createResult(Long deltaNum) {
+        return QueryResultUtils.createResultWithSingleRow(Collections.singletonList(DeltaQueryUtil.NUM_FIELD),
+                Collections.singletonList(deltaNum));
     }
 
 }

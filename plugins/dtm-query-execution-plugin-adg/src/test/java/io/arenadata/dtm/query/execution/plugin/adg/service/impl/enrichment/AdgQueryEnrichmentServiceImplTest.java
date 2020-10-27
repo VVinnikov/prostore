@@ -32,6 +32,7 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AdgQueryEnrichmentServiceImplTest {
@@ -68,14 +69,20 @@ public class AdgQueryEnrichmentServiceImplTest {
 
     @Test
     void enrichWithDeltaNum() throws Throwable {
-        enrich(prepareRequestDeltaNum("SELECT account_id FROM shares.accounts"),
+        enrichWithGrep(prepareRequestDeltaNum("SELECT account_id FROM shares.accounts"),
             Arrays.asList("\"local__shares__accounts_history\" WHERE \"sys_from\" <= 1 AND \"sys_to\" >= 1",
                 "\"local__shares__accounts_actual\" WHERE \"sys_from\" <= 1"));
     }
 
     @Test
+    void enrichWithFinishedIn() throws Throwable {
+        enrichWithEquals(prepareRequestDeltaFinishedIn("SELECT account_id FROM shares.accounts"),
+            Collections.singletonList("SELECT \"account_id\" FROM \"local__shares__accounts_history\" WHERE \"sys_to\" >= 0 AND (\"sys_to\" <= 0 AND \"sys_op\" = 1)"));
+    }
+
+    @Test
     void enrichWithDeltaInterval() throws Throwable {
-        enrich(prepareRequestDeltaInterval("select *, CASE WHEN (account_type = 'D' AND  amount >= 0) " +
+        enrichWithGrep(prepareRequestDeltaInterval("select *, CASE WHEN (account_type = 'D' AND  amount >= 0) " +
             "OR (account_type = 'C' AND  amount <= 0) THEN 'OK    ' ELSE 'NOT OK' END\n" +
             "  from (\n" +
             "    select a.account_id, coalesce(sum(amount),0) amount, account_type\n" +
@@ -90,14 +97,14 @@ public class AdgQueryEnrichmentServiceImplTest {
 
     @Test
     void enrichWithQuotes() throws Throwable {
-        enrich(prepareRequestDeltaNum("SELECT \"account_id\" FROM \"shares\".\"accounts\""),
+        enrichWithGrep(prepareRequestDeltaNum("SELECT \"account_id\" FROM \"shares\".\"accounts\""),
             Arrays.asList("\"local__shares__accounts_history\" where \"sys_from\" <= 1 and \"sys_to\" >= 1",
                 "\"local__shares__accounts_actual\" where \"sys_from\" <= 1"));
     }
 
     @Test
     void enrichWithMultipleSchemas() throws Throwable {
-        enrich(prepareRequestMultipleSchema("SELECT a.account_id FROM accounts a " +
+        enrichWithGrep(prepareRequestMultipleSchema("SELECT a.account_id FROM accounts a " +
                 "JOIN shares_2.accounts aa ON aa.account_id = a.account_id " +
                 "JOIN test_datamart.transactions t ON t.account_id = a.account_id"),
             Arrays.asList(
@@ -109,7 +116,19 @@ public class AdgQueryEnrichmentServiceImplTest {
                 "\"local__test_datamart__transactions_actual\" WHERE \"sys_from\" <= 2"));
     }
 
-    private void enrich(EnrichQueryRequest enrichRequest, List<String> expectedValues) throws Throwable {
+    private void enrichWithGrep(EnrichQueryRequest enrichRequest,
+                                List<String> expectedValues) {
+        enrichWith(enrichRequest, expectedValues, true);
+    }
+
+    private void enrichWithEquals(EnrichQueryRequest enrichRequest,
+                                List<String> expectedValues) {
+        enrichWith(enrichRequest, expectedValues, false);
+    }
+
+    private void enrichWith(EnrichQueryRequest enrichRequest,
+                            List<String> expectedValues,
+                            boolean grep) {
         String[] sqlResult = {""};
 
         TestSuite suite = TestSuite.create("the_test_suite");
@@ -118,7 +137,11 @@ public class AdgQueryEnrichmentServiceImplTest {
             enrichService.enrich(enrichRequest, ar -> {
                 if (ar.succeeded()) {
                     sqlResult[0] = ar.result();
-                    expectedValues.forEach(v -> assertGrep(sqlResult[0], v));
+                    if (grep) {
+                        expectedValues.forEach(v -> assertGrep(sqlResult[0], v));
+                    } else {
+                        expectedValues.forEach(v -> assertEquals(v, sqlResult[0]));
+                    }
                     async.complete();
                 } else {
                     sqlResult[0] = "-1";
@@ -253,6 +276,33 @@ public class AdgQueryEnrichmentServiceImplTest {
                         .tableName(datamarts.get(0).getEntities().get(1).getName())
                         .pos(pos)
                         .build()
+        ));
+        LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts, Collections.emptyList());
+        return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
+    }
+
+    private EnrichQueryRequest prepareRequestDeltaFinishedIn(String sql) {
+        List<Datamart> datamarts = Collections.singletonList(getSchema("shares", true));
+        String schemaName = datamarts.get(0).getMnemonic();
+        QueryRequest queryRequest = new QueryRequest();
+        queryRequest.setSql(sql);
+        queryRequest.setEnvName("local");
+        queryRequest.setRequestId(UUID.randomUUID());
+        queryRequest.setDatamartMnemonic(schemaName);
+        SqlParserPos pos = new SqlParserPos(0, 0);
+        queryRequest.setDeltaInformations(Collections.singletonList(
+            DeltaInformation.builder()
+                .tableAlias("a")
+                .deltaTimestamp(null)
+                .isLatestUncommitedDelta(false)
+                .selectOnNum(1L)
+                .selectOnInterval(new SelectOnInterval(1L, 1L))
+                .selectOnInterval(new SelectOnInterval(1L, 1L))
+                .type(DeltaType.FINISHED_IN)
+                .schemaName(schemaName)
+                .tableName(datamarts.get(0).getEntities().get(0).getName())
+                .pos(pos)
+                .build()
         ));
         LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts, Collections.emptyList());
         return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());

@@ -28,7 +28,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static io.arenadata.dtm.query.execution.plugin.api.delta.query.DeltaAction.ROLLBACK_DELTA;
@@ -57,13 +56,14 @@ public class RollbackDeltaExecutor implements DeltaExecutor, StatusEventPublishe
 
     @Override
     public void execute(DeltaRequestContext context, Handler<AsyncResult<QueryResult>> handler) {
-        val datamart = context.getRequest().getQueryRequest().getDatamartMnemonic();
+        val queryRequest = context.getRequest().getQueryRequest();
+        val datamart = queryRequest.getDatamartMnemonic();
 
         deltaServiceDao.writeDeltaError(datamart, null)
-            .map(Optional.empty())
             .otherwise(this::skipDeltaAlreadyIsRollingBackError)
             .compose(v -> deltaServiceDao.getDeltaHot(datamart))
-            .compose(hotDelta -> rollbackTables(datamart, hotDelta, context.getRequest().getQueryRequest()))
+            .compose(hotDelta -> rollbackTables(datamart, hotDelta, queryRequest)
+                .map(v -> hotDelta))
             .compose(hotDelta -> deltaServiceDao.deleteDeltaHot(datamart)
                 .map(hotDelta.getDeltaNum()))
             .onSuccess(deltaNum -> {
@@ -85,29 +85,29 @@ public class RollbackDeltaExecutor implements DeltaExecutor, StatusEventPublishe
     }
 
     @SneakyThrows
-    private Optional<Object> skipDeltaAlreadyIsRollingBackError(Throwable error) {
+    private Void skipDeltaAlreadyIsRollingBackError(Throwable error) {
         if (error instanceof DeltaAlreadyIsRollingBackException) {
-            return Optional.empty();
+            return null;
         } else {
             throw error;
         }
     }
 
-    private Future<HotDelta> rollbackTables(String datamart,
+    private Future<Void> rollbackTables(String datamart,
                                             HotDelta hotDelta,
                                             QueryRequest queryRequest) {
         val operationsFinished = hotDelta.getWriteOperationsFinished();
         return operationsFinished != null ?
-            getRollbackTablesFuture(datamart, hotDelta, queryRequest) : Future.succeededFuture(hotDelta);
+            getRollbackTablesFuture(datamart, hotDelta, queryRequest) : Future.succeededFuture();
     }
 
-    private Future<HotDelta> getRollbackTablesFuture(String datamart,
+    private Future<Void> getRollbackTablesFuture(String datamart,
                                                      HotDelta hotDelta,
                                                      QueryRequest queryRequest) {
         return CompositeFuture.join(hotDelta.getWriteOperationsFinished().stream()
             .map(writeOpFinish -> rollbackTable(datamart, writeOpFinish, queryRequest))
             .collect(Collectors.toList()))
-            .map(hotDelta);
+            .compose(AsyncUtils::toEmptyVoidFuture);
     }
 
     private Future<Void> rollbackTable(String datamart,

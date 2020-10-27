@@ -398,6 +398,7 @@ data: {
     statementParserMethods: [
         "SqlBeginDelta()"
         "SqlCommitDelta()"
+        "SqlRollbackDelta()"
         "SqlUseSchema()"
     ]
 

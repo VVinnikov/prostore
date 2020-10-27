@@ -96,6 +96,14 @@ public class RollbackDeltaExecutor implements DeltaExecutor, StatusEventPublishe
     private Future<HotDelta> rollbackTables(String datamart,
                                             HotDelta hotDelta,
                                             QueryRequest queryRequest) {
+        val operationsFinished = hotDelta.getWriteOperationsFinished();
+        return operationsFinished != null ?
+            getRollbackTablesFuture(datamart, hotDelta, queryRequest) : Future.succeededFuture(hotDelta);
+    }
+
+    private Future<HotDelta> getRollbackTablesFuture(String datamart,
+                                                     HotDelta hotDelta,
+                                                     QueryRequest queryRequest) {
         return CompositeFuture.join(hotDelta.getWriteOperationsFinished().stream()
             .map(writeOpFinish -> rollbackTable(datamart, writeOpFinish, queryRequest))
             .collect(Collectors.toList()))

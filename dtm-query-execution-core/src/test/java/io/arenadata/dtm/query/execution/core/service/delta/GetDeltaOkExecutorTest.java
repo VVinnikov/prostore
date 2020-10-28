@@ -51,6 +51,7 @@ class GetDeltaOkExecutorTest {
         deltaOkExecutor = new GetDeltaOkExecutor(serviceDbFacade, deltaQueryResultFactory);
         Promise promise = Promise.promise();
         GetDeltaOkQuery deltaQuery = GetDeltaOkQuery.builder()
+                .request(req)
                 .datamart(datamart)
                 .build();
         final LocalDateTime deltaDate = LocalDateTime.parse("2020-06-15 14:00:11",
@@ -96,6 +97,7 @@ class GetDeltaOkExecutorTest {
         deltaOkExecutor = new GetDeltaOkExecutor(serviceDbFacade, deltaQueryResultFactory);
         Promise promise = Promise.promise();
         GetDeltaOkQuery deltaQuery = GetDeltaOkQuery.builder()
+                .request(req)
                 .datamart(datamart)
                 .build();
 
@@ -125,6 +127,7 @@ class GetDeltaOkExecutorTest {
         deltaOkExecutor = new GetDeltaOkExecutor(serviceDbFacade, deltaQueryResultFactory);
         Promise promise = Promise.promise();
         GetDeltaOkQuery deltaQuery = GetDeltaOkQuery.builder()
+                .request(req)
                 .datamart(datamart)
                 .build();
 
@@ -146,6 +149,7 @@ class GetDeltaOkExecutorTest {
         deltaOkExecutor = new GetDeltaOkExecutor(serviceDbFacade, deltaQueryResultFactory);
         Promise promise = Promise.promise();
         GetDeltaOkQuery deltaQuery = GetDeltaOkQuery.builder()
+                .request(req)
                 .datamart(datamart)
                 .build();
 

@@ -44,11 +44,11 @@ public class GetDeltaHotExecutor implements DeltaExecutor {
         if (delta != null) {
             QueryResult queryResult = deltaQueryResultFactory.create(createDeltaRecord(delta,
                     deltaQuery.getDatamart()));
-            queryResult.setRequestId(deltaQuery.getRequestId());
+            queryResult.setRequestId(deltaQuery.getRequest().getRequestId());
             return queryResult;
         } else {
             QueryResult queryResult = deltaQueryResultFactory.createEmpty();
-            queryResult.setRequestId(deltaQuery.getRequestId());
+            queryResult.setRequestId(deltaQuery.getRequest().getRequestId());
             return queryResult;
         }
     }

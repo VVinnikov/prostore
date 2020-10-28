@@ -74,7 +74,7 @@ public class CommitDeltaExecutor implements DeltaExecutor, StatusEventPublisher 
         DeltaRecord deltaRecord = createDeltaRecord(commitDeltaQuery.getDatamart(), deltaDate);
         publishStatus(StatusEventCode.DELTA_CLOSE, commitDeltaQuery.getDatamart(), deltaRecord);
         QueryResult res = deltaQueryResultFactory.create(deltaRecord);
-        res.setRequestId(commitDeltaQuery.getRequestId());
+        res.setRequestId(commitDeltaQuery.getRequest().getRequestId());
         return res;
     }
 

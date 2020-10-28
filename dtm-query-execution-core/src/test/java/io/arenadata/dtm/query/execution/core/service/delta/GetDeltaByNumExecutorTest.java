@@ -55,6 +55,7 @@ class GetDeltaByNumExecutorTest {
         final long cnFrom = 0L;
         final long deltaNum = 1L;
         GetDeltaByNumQuery deltaQuery = GetDeltaByNumQuery.builder()
+                .request(req)
                 .deltaNum(deltaNum)
                 .datamart(datamart)
                 .build();
@@ -99,6 +100,7 @@ class GetDeltaByNumExecutorTest {
         Promise promise = Promise.promise();
         final long deltaNum = 1L;
         GetDeltaByNumQuery deltaQuery = GetDeltaByNumQuery.builder()
+                .request(req)
                 .deltaNum(deltaNum)
                 .datamart(datamart)
                 .build();
@@ -131,6 +133,7 @@ class GetDeltaByNumExecutorTest {
         Promise promise = Promise.promise();
         final long deltaNum = 1L;
         GetDeltaByNumQuery deltaQuery = GetDeltaByNumQuery.builder()
+                .request(req)
                 .deltaNum(deltaNum)
                 .datamart(datamart)
                 .build();
@@ -157,6 +160,7 @@ class GetDeltaByNumExecutorTest {
         final long cnFrom = 0L;
         final long deltaNum = 1L;
         GetDeltaByNumQuery deltaQuery = GetDeltaByNumQuery.builder()
+                .request(req)
                 .deltaNum(deltaNum)
                 .datamart(datamart)
                 .build();

@@ -54,6 +54,7 @@ class GetDeltaByDateTimeExecutorTest {
         final long deltaNum = 1L;
         GetDeltaByDateTimeQuery deltaQuery = GetDeltaByDateTimeQuery.builder()
                 .deltaDate(deltaDate)
+                .request(req)
                 .datamart(datamart)
                 .build();
 
@@ -98,6 +99,7 @@ class GetDeltaByDateTimeExecutorTest {
         final LocalDateTime deltaDate = LocalDateTime.parse("2020-06-15 14:00:11",
                 DeltaQueryUtil.DELTA_DATE_TIME_FORMATTER);
         GetDeltaByDateTimeQuery deltaQuery = GetDeltaByDateTimeQuery.builder()
+                .request(req)
                 .deltaDate(deltaDate)
                 .datamart(datamart)
                 .build();
@@ -127,11 +129,11 @@ class GetDeltaByDateTimeExecutorTest {
     void executeDeltaByDateTimeError() {
         deltaByDateTimeExecutor = new GetDeltaByDateTimeExecutor(serviceDbFacade, deltaQueryResultFactory);
         Promise promise = Promise.promise();
-        final long deltaNum = 1L;
         final LocalDateTime deltaDate = LocalDateTime.parse("2020-06-15 14:00:11",
                 DeltaQueryUtil.DELTA_DATE_TIME_FORMATTER);
         GetDeltaByDateTimeQuery deltaQuery = GetDeltaByDateTimeQuery.builder()
                 .deltaDate(deltaDate)
+                .request(req)
                 .datamart(datamart)
                 .build();
 
@@ -157,6 +159,7 @@ class GetDeltaByDateTimeExecutorTest {
         final long cnFrom = 0L;
         final long deltaNum = 1L;
         GetDeltaByDateTimeQuery deltaQuery = GetDeltaByDateTimeQuery.builder()
+                .request(req)
                 .deltaDate(deltaDate)
                 .datamart(datamart)
                 .build();

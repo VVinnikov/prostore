@@ -50,6 +50,7 @@ public class DeltaServiceImpl implements DeltaService<QueryResult> {
             if (exParamHandler.succeeded()) {
                 DeltaQuery deltaQuery = exParamHandler.result();
                 deltaQuery.setDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic());
+                deltaQuery.setRequest(context.getRequest().getQueryRequest());
                 executors.get(deltaQuery.getDeltaAction())
                         .execute(deltaQuery, deltaExecHandler -> {
                             if (deltaExecHandler.succeeded()) {

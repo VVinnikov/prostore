@@ -60,6 +60,7 @@ class CommitDeltaExecutorTest {
         final LocalDateTime deltaDate = LocalDateTime.parse(deltaDateStr,
                 DeltaQueryUtil.DELTA_DATE_TIME_FORMATTER);
         CommitDeltaQuery deltaQuery = CommitDeltaQuery.builder()
+                .request(req)
                 .datamart(datamart)
                 .build();
 
@@ -94,6 +95,7 @@ class CommitDeltaExecutorTest {
         final LocalDateTime deltaDate = LocalDateTime.parse(deltaInputDate,
                 DeltaQueryUtil.DELTA_DATE_TIME_FORMATTER);
         CommitDeltaQuery deltaQuery = CommitDeltaQuery.builder()
+                .request(req)
                 .datamart(datamart)
                 .deltaDate(deltaDate)
                 .build();
@@ -127,6 +129,7 @@ class CommitDeltaExecutorTest {
         Promise promise = Promise.promise();
 
         CommitDeltaQuery deltaQuery = CommitDeltaQuery.builder()
+                .request(req)
                 .datamart(datamart)
                 .build();
 
@@ -160,6 +163,7 @@ class CommitDeltaExecutorTest {
                 DeltaQueryUtil.DELTA_DATE_TIME_FORMATTER);
 
         CommitDeltaQuery deltaQuery = CommitDeltaQuery.builder()
+                .request(req)
                 .datamart(datamart)
                 .deltaDate(deltaDate)
                 .build();
@@ -187,6 +191,7 @@ class CommitDeltaExecutorTest {
                 DeltaQueryUtil.DELTA_DATE_TIME_FORMATTER);
 
         CommitDeltaQuery deltaQuery = CommitDeltaQuery.builder()
+                .request(req)
                 .datamart(datamart)
                 .build();
 

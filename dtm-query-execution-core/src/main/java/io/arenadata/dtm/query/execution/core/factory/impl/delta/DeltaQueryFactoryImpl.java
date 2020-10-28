@@ -2,6 +2,7 @@ package io.arenadata.dtm.query.execution.core.factory.impl.delta;
 
 import io.arenadata.dtm.query.calcite.core.extension.delta.SqlBeginDelta;
 import io.arenadata.dtm.query.calcite.core.extension.delta.SqlCommitDelta;
+import io.arenadata.dtm.query.calcite.core.extension.delta.SqlRollbackDelta;
 import io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaByDateTime;
 import io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaByNum;
 import io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaHot;
@@ -52,6 +53,8 @@ public class DeltaQueryFactoryImpl implements DeltaQueryFactory {
             return GetDeltaByDateTimeQuery.builder()
                     .deltaDate(getDeltaDateTime(((SqlGetDeltaByDateTime) sqlNode).getDeltaDateTime()))
                     .build();
+        } else if (sqlNode instanceof SqlRollbackDelta) {
+            return RollbackDeltaQuery.builder().build();
         } else {
             throw new RuntimeException(String.format("Query [%s] is not a DELTA operator",
                     sqlNode.toSqlString(sqlDialect)));

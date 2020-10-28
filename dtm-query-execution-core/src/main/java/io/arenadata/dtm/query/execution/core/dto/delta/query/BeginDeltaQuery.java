@@ -1,12 +1,11 @@
 package io.arenadata.dtm.query.execution.core.dto.delta.query;
 
+import io.arenadata.dtm.common.reader.QueryRequest;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.ToString;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 import static io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaAction.BEGIN_DELTA;
 
@@ -15,11 +14,11 @@ import static io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaAction.
 public class BeginDeltaQuery extends DeltaQuery {
 
     @Builder
-    public BeginDeltaQuery(UUID requestId,
+    public BeginDeltaQuery(QueryRequest request,
                            String datamart,
                            Long deltaNum,
                            LocalDateTime deltaDate) {
-        super(requestId, datamart, deltaNum, deltaDate);
+        super(request, datamart, deltaNum, deltaDate);
     }
 
     @Override

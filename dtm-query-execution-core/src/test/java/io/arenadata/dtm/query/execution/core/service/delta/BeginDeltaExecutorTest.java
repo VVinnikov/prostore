@@ -57,7 +57,7 @@ class BeginDeltaExecutorTest {
         long deltaNum = 1L;
         BeginDeltaQuery deltaQuery = BeginDeltaQuery.builder()
                 .datamart(datamart)
-                .requestId(req.getRequestId())
+                .request(req)
                 .build();
 
         QueryResult queryResult = new QueryResult();
@@ -90,7 +90,7 @@ class BeginDeltaExecutorTest {
         BeginDeltaQuery deltaQuery = BeginDeltaQuery.builder()
                 .datamart(datamart)
                 .deltaNum(deltaNum)
-                .requestId(req.getRequestId())
+                .request(req)
                 .build();
 
         QueryResult queryResult = new QueryResult();
@@ -123,7 +123,7 @@ class BeginDeltaExecutorTest {
         final long deltaNum = 2L;
         BeginDeltaQuery deltaQuery = BeginDeltaQuery.builder()
                 .datamart(datamart)
-                .requestId(req.getRequestId())
+                .request(req)
                 .build();
 
         QueryResult queryResult = new QueryResult();
@@ -153,7 +153,7 @@ class BeginDeltaExecutorTest {
 
         BeginDeltaQuery deltaQuery = BeginDeltaQuery.builder()
                 .datamart(datamart)
-                .requestId(req.getRequestId())
+                .request(req)
                 .build();
 
         when(deltaServiceDao.writeNewDeltaHot(eq(datamart)))
@@ -178,7 +178,7 @@ class BeginDeltaExecutorTest {
         final long deltaNum = 2L;
         BeginDeltaQuery deltaQuery = BeginDeltaQuery.builder()
                 .datamart(datamart)
-                .requestId(req.getRequestId())
+                .request(req)
                 .build();
 
         QueryResult queryResult = new QueryResult();

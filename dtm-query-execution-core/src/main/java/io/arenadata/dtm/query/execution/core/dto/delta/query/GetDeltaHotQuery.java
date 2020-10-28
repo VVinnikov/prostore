@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.dto.delta.query;
 
+import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.core.dto.delta.operation.WriteOpFinish;
 import lombok.Builder;
 import lombok.Data;
@@ -7,9 +8,8 @@ import lombok.EqualsAndHashCode;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
-import static io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaAction.*;
+import static io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaAction.GET_DELTA_HOT;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -22,7 +22,7 @@ public class GetDeltaHotQuery extends DeltaQuery {
     private List<WriteOpFinish> writeOpFinishList;
 
     @Builder
-    public GetDeltaHotQuery(UUID requestId,
+    public GetDeltaHotQuery(QueryRequest request,
                             String datamart,
                             Long deltaNum,
                             LocalDateTime deltaDate,
@@ -31,7 +31,7 @@ public class GetDeltaHotQuery extends DeltaQuery {
                             Long cnMax,
                             boolean isRollingBack,
                             List<WriteOpFinish> writeOpFinishList) {
-        super(requestId, datamart, deltaNum, deltaDate);
+        super(request, datamart, deltaNum, deltaDate);
         this.cnFrom = cnFrom;
         this.cnTo = cnTo;
         this.cnMax = cnMax;

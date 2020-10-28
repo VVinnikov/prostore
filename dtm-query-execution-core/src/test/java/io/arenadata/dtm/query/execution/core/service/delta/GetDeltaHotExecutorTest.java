@@ -51,6 +51,7 @@ class GetDeltaHotExecutorTest {
         deltaHotExecutor = new GetDeltaHotExecutor(serviceDbFacade, deltaQueryResultFactory);
         Promise promise = Promise.promise();
         GetDeltaHotQuery deltaQuery = GetDeltaHotQuery.builder()
+                .request(req)
                 .datamart(datamart)
                 .build();
         final long cnFrom = 0L;
@@ -110,6 +111,7 @@ class GetDeltaHotExecutorTest {
         deltaHotExecutor = new GetDeltaHotExecutor(serviceDbFacade, deltaQueryResultFactory);
         Promise promise = Promise.promise();
         GetDeltaHotQuery deltaQuery = GetDeltaHotQuery.builder()
+                .request(req)
                 .datamart(datamart)
                 .build();
 
@@ -139,6 +141,7 @@ class GetDeltaHotExecutorTest {
         deltaHotExecutor = new GetDeltaHotExecutor(serviceDbFacade, deltaQueryResultFactory);
         Promise promise = Promise.promise();
         GetDeltaHotQuery deltaQuery = GetDeltaHotQuery.builder()
+                .request(req)
                 .datamart(datamart)
                 .build();
 
@@ -160,6 +163,7 @@ class GetDeltaHotExecutorTest {
         deltaHotExecutor = new GetDeltaHotExecutor(serviceDbFacade, deltaQueryResultFactory);
         Promise promise = Promise.promise();
         GetDeltaHotQuery deltaQuery = GetDeltaHotQuery.builder()
+                .request(req)
                 .datamart(datamart)
                 .build();
         final long cnFrom = 0L;

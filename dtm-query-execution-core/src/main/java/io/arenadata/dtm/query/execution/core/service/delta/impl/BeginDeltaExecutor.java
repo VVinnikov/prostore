@@ -72,7 +72,7 @@ public class BeginDeltaExecutor implements DeltaExecutor, StatusEventPublisher {
         DeltaRecord deltaRecord = createDeltaRecord(deltaQuery.getDatamart(), deltaHotNum);
         publishStatus(StatusEventCode.DELTA_OPEN, deltaQuery.getDatamart(), deltaRecord);
         QueryResult res = deltaQueryResultFactory.create(deltaRecord);
-        res.setRequestId(deltaQuery.getRequestId());
+        res.setRequestId(deltaQuery.getRequest().getRequestId());
         return res;
     }
 

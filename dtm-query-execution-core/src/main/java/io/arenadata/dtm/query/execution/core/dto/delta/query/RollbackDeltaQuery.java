@@ -6,15 +6,14 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.time.LocalDateTime;
-
-import static io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaAction.GET_DELTA_BY_NUM;
+import java.util.UUID;
 
 @Data
-@EqualsAndHashCode(callSuper = true)
-public class GetDeltaByNumQuery extends DeltaQuery {
+@EqualsAndHashCode(callSuper = false)
+public class RollbackDeltaQuery extends DeltaQuery {
 
     @Builder
-    public GetDeltaByNumQuery(QueryRequest request,
+    public RollbackDeltaQuery(QueryRequest request,
                               String datamart,
                               Long deltaNum,
                               LocalDateTime deltaDate) {
@@ -23,6 +22,6 @@ public class GetDeltaByNumQuery extends DeltaQuery {
 
     @Override
     public DeltaAction getDeltaAction() {
-        return GET_DELTA_BY_NUM;
+        return DeltaAction.ROLLBACK_DELTA;
     }
 }

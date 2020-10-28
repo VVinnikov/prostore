@@ -85,7 +85,7 @@ class StatusEventVerticleTest {
         long deltaNum = 1L;
         BeginDeltaQuery deltaQuery = BeginDeltaQuery.builder()
                 .datamart("test")
-                .requestId(req.getRequestId())
+                .request(req)
                 .build();
 
         QueryResult queryResult = new QueryResult();

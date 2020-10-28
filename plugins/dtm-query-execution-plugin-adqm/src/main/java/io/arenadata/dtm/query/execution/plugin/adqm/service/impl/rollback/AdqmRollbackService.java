@@ -14,8 +14,6 @@ import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-
 @Slf4j
 @Service("adqmRollbackService")
 public class AdqmRollbackService implements RollbackService<Void> {
@@ -46,7 +44,7 @@ public class AdqmRollbackService implements RollbackService<Void> {
     }
 
     private Future<Void> executeSql(String sql) {
-        return Future.future(p -> adqmQueryExecutor.execute(sql, Collections.emptyList(), ar -> {
+        return Future.future(p -> adqmQueryExecutor.executeUpdate(sql, ar -> {
             if (ar.succeeded()) {
                 p.complete();
             } else {

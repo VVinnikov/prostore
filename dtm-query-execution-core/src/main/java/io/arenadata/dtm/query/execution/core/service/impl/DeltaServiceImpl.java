@@ -41,12 +41,21 @@ public class DeltaServiceImpl implements DeltaService {
     @Override
     public Future<Long> getCnToDeltaHot(String datamart) {
         return Future.future(handler -> deltaServiceDao.getDeltaHot(datamart)
-                .onSuccess(deltaHot -> handler.handle(Future.succeededFuture(deltaHot.getCnTo())))
-                .onFailure(err1 ->
-                    deltaServiceDao.getDeltaOk(datamart)
-                            .onSuccess(res -> handler.handle(Future.succeededFuture(res.getCnTo())))
-                            .onFailure(err2 -> handler.handle(Future.succeededFuture(-1L)))
-                ));
+                .onSuccess(deltaHot -> {
+                    if (deltaHot != null) {
+                        handler.handle(Future.succeededFuture(deltaHot.getCnTo()));
+                    } else {
+                        deltaServiceDao.getDeltaOk(datamart)
+                            .onSuccess(okDelta -> {
+                                if (okDelta != null) {
+                                    handler.handle(Future.succeededFuture(okDelta.getCnTo()));
+                                } else {
+                                    handler.handle(Future.succeededFuture(-1L));
+                                }
+                            })
+                            .onFailure(handler::fail);
+                    }
+                }));
     }
 
     @Override

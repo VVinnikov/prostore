@@ -14,6 +14,7 @@ import org.apache.calcite.tools.RelBuilder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -78,9 +79,7 @@ public class AdbCalciteDmlQueryExtendServiceImpl implements QueryExtendService {
                 break;
             case FINISHED_IN:
                 topRelNode = createRelNodeDeltaFinishedIn(deltaInfo, relBuilder, rexNodes, mutableQualifiedName);
-                initActualTableName(mutableQualifiedName, name);
-                bottomRelNode = createRelNodeDeltaFinishedIn(deltaInfo, relBuilder, rexNodes, mutableQualifiedName);
-                break;
+                return relBuilder.push(topRelNode).build();
             case DATETIME:
             case NUM:
                 topRelNode = createTopRelNodeDeltaNum(deltaInfo, relBuilder, rexNodes, mutableQualifiedName);
@@ -89,7 +88,7 @@ public class AdbCalciteDmlQueryExtendServiceImpl implements QueryExtendService {
                 break;
             default:
                 throw new RuntimeException(String.format("Incorrect delta type %s, expected values: %s!",
-                        deltaInfo.getType(), DeltaType.values()));
+                        deltaInfo.getType(), Arrays.toString(DeltaType.values())));
         }
         return relBuilder.push(topRelNode).push(bottomRelNode).union(true).build();
     }
@@ -102,57 +101,65 @@ public class AdbCalciteDmlQueryExtendServiceImpl implements QueryExtendService {
         mutableQualifiedName.set(mutableQualifiedName.size() - 1, name + TABLE_PREFIX + ACTUAL_TABLE);
     }
 
-    private RelNode createRelNodeDeltaStartedIn(DeltaInformation deltaInfo, RelBuilder relBuilder,
-                                                List<RexNode> rexNodes, List<String> mutableQualifiedName) {
+    private RelNode createRelNodeDeltaStartedIn(DeltaInformation deltaInfo,
+                                                RelBuilder relBuilder,
+                                                List<RexNode> rexNodes,
+                                                List<String> mutableQualifiedName) {
         return relBuilder.scan(mutableQualifiedName).filter(
-                relBuilder.call(SqlStdOperatorTable.AND,
-                        relBuilder.call(SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
-                                relBuilder.field(SYS_FROM_ATTR),
-                                relBuilder.literal(deltaInfo.getSelectOnInterval().getSelectOnFrom())),
-                        relBuilder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
-                                relBuilder.field(SYS_FROM_ATTR),
-                                relBuilder.literal(deltaInfo.getSelectOnInterval().getSelectOnTo()))
-                )
-        ).project(rexNodes).build();
-    }
-
-    private RelNode createRelNodeDeltaFinishedIn(DeltaInformation deltaInfo, RelBuilder relBuilder,
-                                                 List<RexNode> rexNodes, List<String> mutableQualifiedName) {
-        return relBuilder.scan(mutableQualifiedName).filter(
-                relBuilder.call(SqlStdOperatorTable.AND,
-                        relBuilder.call(SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
-                                relBuilder.field(SYS_TO_ATTR),
-                                relBuilder.literal(deltaInfo.getSelectOnInterval().getSelectOnFrom() - 1)),
-                        relBuilder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
-                                relBuilder.field(SYS_TO_ATTR),
-                                relBuilder.literal(deltaInfo.getSelectOnInterval().getSelectOnTo() - 1)),
-                        relBuilder.call(SqlStdOperatorTable.EQUALS,
-                                relBuilder.field(SYS_OP_ATTR),
-                                relBuilder.literal(1))
-                )
-        ).project(rexNodes).build();
-    }
-
-    private RelNode createTopRelNodeDeltaNum(DeltaInformation deltaInfo, RelBuilder relBuilder,
-                                             List<RexNode> rexNodes, List<String> mutableQualifiedName) {
-        return relBuilder.scan(mutableQualifiedName).filter(
-                relBuilder.call(SqlStdOperatorTable.AND,
-                        relBuilder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
-                                relBuilder.field(SYS_FROM_ATTR),
-                                relBuilder.literal(deltaInfo.getSelectOnNum())),
-                        relBuilder.call(SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
-                                relBuilder.field(SYS_TO_ATTR),
-                                relBuilder.literal(deltaInfo.getSelectOnNum()))
-                )
-        ).project(rexNodes).build();
-    }
-
-    private RelNode createBottomRelNodeDeltaNum(DeltaInformation deltaInfo, RelBuilder relBuilder,
-                                                List<RexNode> rexNodes, List<String> mutableQualifiedName) {
-        return relBuilder.scan(mutableQualifiedName).filter(
+            relBuilder.call(SqlStdOperatorTable.AND,
+                relBuilder.call(SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
+                    relBuilder.field(SYS_FROM_ATTR),
+                    relBuilder.literal(deltaInfo.getSelectOnInterval().getSelectOnFrom())),
                 relBuilder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
-                        relBuilder.field(SYS_FROM_ATTR),
-                        relBuilder.literal(deltaInfo.getSelectOnNum()))).project(rexNodes).build();
+                    relBuilder.field(SYS_FROM_ATTR),
+                    relBuilder.literal(deltaInfo.getSelectOnInterval().getSelectOnTo()))
+            )
+        ).project(rexNodes).build();
+    }
+
+    private RelNode createRelNodeDeltaFinishedIn(DeltaInformation deltaInfo,
+                                                 RelBuilder relBuilder,
+                                                 List<RexNode> rexNodes,
+                                                 List<String> mutableQualifiedName) {
+        return relBuilder.scan(mutableQualifiedName).filter(
+            relBuilder.call(SqlStdOperatorTable.AND,
+                relBuilder.call(SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
+                    relBuilder.field(SYS_TO_ATTR),
+                    relBuilder.literal(deltaInfo.getSelectOnInterval().getSelectOnFrom() - 1)),
+                relBuilder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
+                    relBuilder.field(SYS_TO_ATTR),
+                    relBuilder.literal(deltaInfo.getSelectOnInterval().getSelectOnTo() - 1)),
+                relBuilder.call(SqlStdOperatorTable.EQUALS,
+                    relBuilder.field(SYS_OP_ATTR),
+                    relBuilder.literal(1))
+            )
+        ).project(rexNodes).build();
+    }
+
+    private RelNode createTopRelNodeDeltaNum(DeltaInformation deltaInfo,
+                                             RelBuilder relBuilder,
+                                             List<RexNode> rexNodes,
+                                             List<String> mutableQualifiedName) {
+        return relBuilder.scan(mutableQualifiedName).filter(
+            relBuilder.call(SqlStdOperatorTable.AND,
+                relBuilder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
+                    relBuilder.field(SYS_FROM_ATTR),
+                    relBuilder.literal(deltaInfo.getSelectOnNum())),
+                relBuilder.call(SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
+                    relBuilder.field(SYS_TO_ATTR),
+                    relBuilder.literal(deltaInfo.getSelectOnNum()))
+            )
+        ).project(rexNodes).build();
+    }
+
+    private RelNode createBottomRelNodeDeltaNum(DeltaInformation deltaInfo,
+                                                RelBuilder relBuilder,
+                                                List<RexNode> rexNodes,
+                                                List<String> mutableQualifiedName) {
+        return relBuilder.scan(mutableQualifiedName).filter(
+            relBuilder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
+                relBuilder.field(SYS_FROM_ATTR),
+                relBuilder.literal(deltaInfo.getSelectOnNum()))).project(rexNodes).build();
     }
 
 }

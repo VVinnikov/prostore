@@ -402,6 +402,7 @@ data: {
     statementParserMethods: [
         "SqlBeginDelta()"
         "SqlCommitDelta()"
+        "SqlRollbackDelta()"
         "SqlUseSchema()"
         "SqlGetDeltaOk()"
         "SqlGetDeltaHot()"

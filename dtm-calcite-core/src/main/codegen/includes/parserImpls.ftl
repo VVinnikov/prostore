@@ -383,6 +383,19 @@ SqlNode SqlCommitDelta() :
     return new SqlCommitDelta(commitPos, dateTime);
 }
 }
+SqlNode SqlRollbackDelta() :
+{
+    SqlParserPos rollbackPos;
+}
+{
+    <ROLLBACK> <DELTA>
+    {
+            rollbackPos = getPos();
+    }
+{
+return new SqlRollbackDelta(rollbackPos);
+}
+}
 private void FunctionJarDef(SqlNodeList usingList) :
 {
     final SqlDdlNodes.FileType fileType;

@@ -8,6 +8,7 @@ import io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaB
 import io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaByNum;
 import io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaHot;
 import io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaOk;
+import io.arenadata.dtm.query.calcite.core.extension.delta.SqlRollbackDelta;
 import io.arenadata.dtm.query.execution.core.factory.RequestContextFactory;
 import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
@@ -65,7 +66,8 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
                 || node instanceof SqlGetDeltaOk
                 || node instanceof SqlGetDeltaHot
                 || node instanceof SqlGetDeltaByDateTime
-                || node instanceof SqlGetDeltaByNum;
+                || node instanceof SqlGetDeltaByNum
+                || node instanceof SqlRollbackDelta;
     }
 
     private QueryRequest changeSql(QueryRequest request, SqlNode node) {

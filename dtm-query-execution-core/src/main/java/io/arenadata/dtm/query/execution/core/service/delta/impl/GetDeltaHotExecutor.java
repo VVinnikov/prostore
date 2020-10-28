@@ -36,27 +36,32 @@ public class GetDeltaHotExecutor implements DeltaExecutor {
     }
 
     private Future<QueryResult> getDeltaHot(DeltaQuery deltaQuery) {
-        return Future.future(promise -> {
-            deltaServiceDao.getDeltaHot(deltaQuery.getDatamart())
-                    .onSuccess(deltaHot -> {
-                        QueryResult res = deltaQueryResultFactory.create(createDeltaRecord(deltaHot,
-                                deltaQuery.getDatamart()));
-                        res.setRequestId(deltaQuery.getRequestId());
-                        promise.complete(res);
-                    })
-                    .onFailure(promise::fail);
-        });
+        return deltaServiceDao.getDeltaHot(deltaQuery.getDatamart())
+                .map(deltaHot -> createResult(deltaHot, deltaQuery));
     }
 
-    private DeltaRecord createDeltaRecord(HotDelta deltaHot, String datamart) {
-        return deltaHot == null ? null : DeltaRecord.builder()
+    private QueryResult createResult(HotDelta delta, DeltaQuery deltaQuery) {
+        if (delta != null) {
+            QueryResult queryResult = deltaQueryResultFactory.create(createDeltaRecord(delta,
+                    deltaQuery.getDatamart()));
+            queryResult.setRequestId(deltaQuery.getRequestId());
+            return queryResult;
+        } else {
+            QueryResult queryResult = deltaQueryResultFactory.createEmpty();
+            queryResult.setRequestId(deltaQuery.getRequestId());
+            return queryResult;
+        }
+    }
+
+    private DeltaRecord createDeltaRecord(HotDelta delta, String datamart) {
+        return DeltaRecord.builder()
                 .datamart(datamart)
-                .deltaNum(deltaHot.getDeltaNum())
-                .cnFrom(deltaHot.getCnFrom())
-                .cnTo(deltaHot.getCnTo())
-                .cnMax(deltaHot.getCnMax())
-                .rollingBack(deltaHot.isRollingBack())
-                .writeOperationsFinished(deltaHot.getWriteOperationsFinished())
+                .deltaNum(delta.getDeltaNum())
+                .cnFrom(delta.getCnFrom())
+                .cnTo(delta.getCnTo())
+                .cnMax(delta.getCnMax())
+                .rollingBack(delta.isRollingBack())
+                .writeOperationsFinished(delta.getWriteOperationsFinished())
                 .build();
     }
 

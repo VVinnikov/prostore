@@ -10,4 +10,6 @@ import java.time.format.DateTimeFormatter;
 public interface DeltaQueryResultFactory {
 
     QueryResult create(DeltaRecord deltaQuery);
+
+    QueryResult createEmpty();
 }

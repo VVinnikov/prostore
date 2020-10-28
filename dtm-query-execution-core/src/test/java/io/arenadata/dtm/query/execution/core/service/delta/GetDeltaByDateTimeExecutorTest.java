@@ -109,7 +109,7 @@ class GetDeltaByDateTimeExecutorTest {
         when(deltaServiceDao.getDeltaByDateTime(eq(datamart), eq(deltaDate)))
                 .thenReturn(Future.succeededFuture(null));
 
-        when(deltaQueryResultFactory.create(any()))
+        when(deltaQueryResultFactory.createEmpty())
                 .thenReturn(queryResult);
 
         deltaByDateTimeExecutor.execute(deltaQuery, handler -> {

@@ -110,7 +110,7 @@ class GetDeltaByNumExecutorTest {
         when(deltaServiceDao.getDeltaByNum(eq(datamart), eq(deltaNum)))
                 .thenReturn(Future.succeededFuture(null));
 
-        when(deltaQueryResultFactory.create(any()))
+        when(deltaQueryResultFactory.createEmpty())
                 .thenReturn(queryResult);
 
         deltaByNumExecutor.execute(deltaQuery, handler -> {

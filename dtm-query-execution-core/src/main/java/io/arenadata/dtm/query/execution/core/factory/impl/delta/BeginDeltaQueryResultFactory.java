@@ -28,13 +28,19 @@ public class BeginDeltaQueryResultFactory implements DeltaQueryResultFactory {
 
     @Override
     public QueryResult create(DeltaRecord deltaRecord) {
+        final QueryResult result = createEmpty();
+        Map<String, Object> rowMap = new HashMap<>();
+        rowMap.put(DeltaQueryUtil.NUM_FIELD, converter.convert(result.getMetadata().get(0).getType(),
+                deltaRecord.getDeltaNum()));
+        result.getResult().add(rowMap);
+        return result;
+    }
+
+    @Override
+    public QueryResult createEmpty() {
         QueryResult res = new QueryResult();
         res.setResult(new ArrayList<>());
         res.setMetadata(Collections.singletonList(new ColumnMetadata(DeltaQueryUtil.NUM_FIELD, ColumnType.BIGINT)));
-        Map<String, Object> rowMap = new HashMap<>();
-        rowMap.put(DeltaQueryUtil.NUM_FIELD, converter.convert(res.getMetadata().get(0).getType(),
-                deltaRecord.getDeltaNum()));
-        res.getResult().add(rowMap);
         return res;
     }
 }

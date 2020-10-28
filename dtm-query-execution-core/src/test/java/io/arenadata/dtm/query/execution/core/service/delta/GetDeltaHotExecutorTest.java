@@ -120,7 +120,7 @@ class GetDeltaHotExecutorTest {
         when(deltaServiceDao.getDeltaHot(eq(datamart)))
                 .thenReturn(Future.succeededFuture(null));
 
-        when(deltaQueryResultFactory.create(any()))
+        when(deltaQueryResultFactory.createEmpty())
                 .thenReturn(queryResult);
 
         deltaHotExecutor.execute(deltaQuery, handler -> {

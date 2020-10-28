@@ -27,26 +27,30 @@ public class DeltaHotQueryResultFactory implements DeltaQueryResultFactory {
 
     @Override
     public QueryResult create(DeltaRecord deltaRecord) {
-        QueryResult res = new QueryResult();
-        res.setResult(new ArrayList<>());
-        res.setMetadata(getMetadata());
-        if (deltaRecord != null) {
-            Map<String, Object> rowMap = new HashMap<>();
-            rowMap.put(DeltaQueryUtil.NUM_FIELD, converter.convert(res.getMetadata().get(0).getType(),
-                    deltaRecord.getDeltaNum()));
-            rowMap.put(DeltaQueryUtil.CN_FROM_FIELD, converter.convert(res.getMetadata().get(1).getType(),
-                    deltaRecord.getCnFrom()));
-            rowMap.put(DeltaQueryUtil.CN_TO_FIELD, converter.convert(res.getMetadata().get(2).getType(),
-                    deltaRecord.getCnTo()));
-            rowMap.put(DeltaQueryUtil.CN_MAX_FIELD, converter.convert(res.getMetadata().get(3).getType(),
-                    deltaRecord.getCnMax()));
-            rowMap.put(DeltaQueryUtil.IS_ROLLING_BACK_FIELD, converter.convert(res.getMetadata().get(4).getType(),
-                    deltaRecord.isRollingBack()));
-            rowMap.put(DeltaQueryUtil.WRITE_OP_FINISHED_FIELD, converter.convert(res.getMetadata().get(5).getType(),
-                    getWriteOpFinishListString(deltaRecord)));
-            res.getResult().add(rowMap);
-        }
-        return res;
+        final QueryResult result = createEmpty();
+        Map<String, Object> rowMap = new HashMap<>();
+        rowMap.put(DeltaQueryUtil.NUM_FIELD, converter.convert(result.getMetadata().get(0).getType(),
+                deltaRecord.getDeltaNum()));
+        rowMap.put(DeltaQueryUtil.CN_FROM_FIELD, converter.convert(result.getMetadata().get(1).getType(),
+                deltaRecord.getCnFrom()));
+        rowMap.put(DeltaQueryUtil.CN_TO_FIELD, converter.convert(result.getMetadata().get(2).getType(),
+                deltaRecord.getCnTo()));
+        rowMap.put(DeltaQueryUtil.CN_MAX_FIELD, converter.convert(result.getMetadata().get(3).getType(),
+                deltaRecord.getCnMax()));
+        rowMap.put(DeltaQueryUtil.IS_ROLLING_BACK_FIELD, converter.convert(result.getMetadata().get(4).getType(),
+                deltaRecord.isRollingBack()));
+        rowMap.put(DeltaQueryUtil.WRITE_OP_FINISHED_FIELD, converter.convert(result.getMetadata().get(5).getType(),
+                getWriteOpFinishListString(deltaRecord)));
+        result.getResult().add(rowMap);
+        return result;
+    }
+
+    @Override
+    public QueryResult createEmpty() {
+        QueryResult result = new QueryResult();
+        result.setResult(new ArrayList<>());
+        result.setMetadata(getMetadata());
+        return result;
     }
 
     private String getWriteOpFinishListString(DeltaRecord deltaRecord) {

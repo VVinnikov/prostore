@@ -16,17 +16,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+
 @Component
-public class GetDeltaByNumExecutor implements DeltaExecutor {
+public class GetDeltaByNumExecutor extends GetDeltaOkExecutor implements DeltaExecutor {
 
     private final DeltaServiceDao deltaServiceDao;
-    private final DeltaQueryResultFactory deltaQueryResultFactory;
 
     @Autowired
     public GetDeltaByNumExecutor(ServiceDbFacade serviceDbFacade,
                                  @Qualifier("deltaOkQueryResultFactory") DeltaQueryResultFactory deltaQueryResultFactory) {
+        super(serviceDbFacade, deltaQueryResultFactory);
         this.deltaServiceDao = serviceDbFacade.getDeltaServiceDao();
-        this.deltaQueryResultFactory = deltaQueryResultFactory;
     }
 
     @Override
@@ -36,25 +37,8 @@ public class GetDeltaByNumExecutor implements DeltaExecutor {
     }
 
     private Future<QueryResult> getDeltaOk(DeltaQuery deltaQuery) {
-        return Future.future(promise ->
-                deltaServiceDao.getDeltaByNum(deltaQuery.getDatamart(), deltaQuery.getDeltaNum())
-                        .onSuccess(deltaOk -> {
-                            QueryResult res = deltaQueryResultFactory.create(createDeltaRecord(deltaOk,
-                                    deltaQuery.getDatamart()));
-                            res.setRequestId(deltaQuery.getRequestId());
-                            promise.complete(res);
-                        })
-                        .onFailure(promise::fail));
-    }
-
-    private DeltaRecord createDeltaRecord(OkDelta deltaOk, String datamart) {
-        return deltaOk == null ? null : DeltaRecord.builder()
-                .datamart(datamart)
-                .deltaNum(deltaOk.getDeltaNum())
-                .cnFrom(deltaOk.getCnFrom())
-                .cnTo(deltaOk.getCnTo())
-                .deltaDate(deltaOk.getDeltaDate())
-                .build();
+        return deltaServiceDao.getDeltaByNum(deltaQuery.getDatamart(), deltaQuery.getDeltaNum())
+                .map(deltaOk -> createResult(deltaOk, deltaQuery));
     }
 
     @Override

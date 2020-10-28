@@ -16,6 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+
 @Component
 public class GetDeltaOkExecutor implements DeltaExecutor {
 
@@ -36,24 +38,30 @@ public class GetDeltaOkExecutor implements DeltaExecutor {
     }
 
     private Future<QueryResult> getDeltaOk(DeltaQuery deltaQuery) {
-        return Future.future(promise ->
-                deltaServiceDao.getDeltaOk(deltaQuery.getDatamart())
-                        .onSuccess(deltaOk -> {
-                            QueryResult res = deltaQueryResultFactory.create(createDeltaRecord(deltaOk,
-                                    deltaQuery.getDatamart()));
-                            res.setRequestId(deltaQuery.getRequestId());
-                            promise.complete(res);
-                        })
-                        .onFailure(promise::fail));
+        return deltaServiceDao.getDeltaOk(deltaQuery.getDatamart())
+                .map(deltaOk -> createResult(deltaOk, deltaQuery));
     }
 
-    private DeltaRecord createDeltaRecord(OkDelta deltaOk, String datamart) {
-        return deltaOk == null ? null : DeltaRecord.builder()
+    protected QueryResult createResult(OkDelta delta, DeltaQuery deltaQuery) {
+        if (delta != null) {
+            QueryResult queryResult = deltaQueryResultFactory.create(createDeltaRecord(delta,
+                    deltaQuery.getDatamart()));
+            queryResult.setRequestId(deltaQuery.getRequestId());
+            return queryResult;
+        } else {
+            QueryResult queryResult = deltaQueryResultFactory.createEmpty();
+            queryResult.setRequestId(deltaQuery.getRequestId());
+            return queryResult;
+        }
+    }
+
+    private DeltaRecord createDeltaRecord(OkDelta delta, String datamart) {
+        return DeltaRecord.builder()
                 .datamart(datamart)
-                .deltaNum(deltaOk.getDeltaNum())
-                .cnFrom(deltaOk.getCnFrom())
-                .cnTo(deltaOk.getCnTo())
-                .deltaDate(deltaOk.getDeltaDate())
+                .deltaNum(delta.getDeltaNum())
+                .cnFrom(delta.getCnFrom())
+                .cnTo(delta.getCnTo())
+                .deltaDate(delta.getDeltaDate())
                 .build();
     }
 

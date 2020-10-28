@@ -15,7 +15,10 @@ import static io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaAction.
 public class BeginDeltaQuery extends DeltaQuery {
 
     @Builder
-    public BeginDeltaQuery(UUID requestId, String datamart, Long deltaNum, LocalDateTime deltaDate) {
+    public BeginDeltaQuery(UUID requestId,
+                           String datamart,
+                           Long deltaNum,
+                           LocalDateTime deltaDate) {
         super(requestId, datamart, deltaNum, deltaDate);
     }
 

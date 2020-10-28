@@ -14,7 +14,10 @@ import static io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaAction.
 public class CommitDeltaQuery extends DeltaQuery {
 
     @Builder
-    public CommitDeltaQuery(UUID requestId, String datamart, Long deltaNum, LocalDateTime deltaDate) {
+    public CommitDeltaQuery(UUID requestId,
+                            String datamart,
+                            Long deltaNum,
+                            LocalDateTime deltaDate) {
         super(requestId, datamart, deltaNum, deltaDate);
     }
 

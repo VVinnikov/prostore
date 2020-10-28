@@ -106,7 +106,7 @@ class GetDeltaOkExecutorTest {
         when(deltaServiceDao.getDeltaOk(eq(datamart)))
                 .thenReturn(Future.succeededFuture(null));
 
-        when(deltaQueryResultFactory.create(any()))
+        when(deltaQueryResultFactory.createEmpty())
                 .thenReturn(queryResult);
 
         deltaOkExecutor.execute(deltaQuery, handler -> {

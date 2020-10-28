@@ -16,7 +16,12 @@ public class GetDeltaOkQuery extends DeltaQuery {
     private Long cnTo;
 
     @Builder
-    public GetDeltaOkQuery(UUID requestId, String datamart, Long deltaNum, LocalDateTime deltaDate, Long cnFrom, Long cnTo) {
+    public GetDeltaOkQuery(UUID requestId,
+                           String datamart,
+                           Long deltaNum,
+                           LocalDateTime deltaDate,
+                           Long cnFrom,
+                           Long cnTo) {
         super(requestId, datamart, deltaNum, deltaDate);
         this.cnFrom = cnFrom;
         this.cnTo = cnTo;

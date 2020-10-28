@@ -22,8 +22,14 @@ public class GetDeltaHotQuery extends DeltaQuery {
     private List<WriteOpFinish> writeOpFinishList;
 
     @Builder
-    public GetDeltaHotQuery(UUID requestId, String datamart, Long deltaNum, LocalDateTime deltaDate,
-                            Long cnFrom, Long cnTo, Long cnMax, boolean isRollingBack,
+    public GetDeltaHotQuery(UUID requestId,
+                            String datamart,
+                            Long deltaNum,
+                            LocalDateTime deltaDate,
+                            Long cnFrom,
+                            Long cnTo,
+                            Long cnMax,
+                            boolean isRollingBack,
                             List<WriteOpFinish> writeOpFinishList) {
         super(requestId, datamart, deltaNum, deltaDate);
         this.cnFrom = cnFrom;

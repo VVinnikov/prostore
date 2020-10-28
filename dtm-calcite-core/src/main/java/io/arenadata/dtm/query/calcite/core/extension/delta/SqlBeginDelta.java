@@ -6,7 +6,7 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 
 import java.util.List;
 
-public class SqlBeginDelta extends SqlCall {
+public class SqlBeginDelta extends SqlDeltaCall {
 
     private DeltaNumOperator deltaNumOperator;
     private static final SqlOperator BEGIN_DELTA_OPERATOR =

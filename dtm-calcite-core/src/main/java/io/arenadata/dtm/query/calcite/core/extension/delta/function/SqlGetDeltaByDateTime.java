@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.calcite.core.extension.delta.function;
 
-import com.google.common.collect.ImmutableList;
+import io.arenadata.dtm.query.calcite.core.extension.delta.SqlDeltaCall;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
@@ -8,7 +8,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-public class SqlGetDeltaByDateTime extends SqlCall {
+public class SqlGetDeltaByDateTime extends SqlDeltaCall {
 
     private String deltaDateTime;
     private static final SqlOperator OPERATOR =
@@ -16,7 +16,7 @@ public class SqlGetDeltaByDateTime extends SqlCall {
 
     public SqlGetDeltaByDateTime(SqlParserPos pos, SqlNode deltaDateTimeStr) {
         super(pos);
-        this.deltaDateTime = getDeltaDateTime(Objects.requireNonNull((SqlCharStringLiteral)deltaDateTimeStr));
+        this.deltaDateTime = getDeltaDateTime(Objects.requireNonNull((SqlCharStringLiteral) deltaDateTimeStr));
     }
 
     private String getDeltaDateTime(SqlCharStringLiteral deltaDateTimeStr) {

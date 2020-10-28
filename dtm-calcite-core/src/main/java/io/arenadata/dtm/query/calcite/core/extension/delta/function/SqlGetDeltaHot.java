@@ -1,13 +1,13 @@
 package io.arenadata.dtm.query.calcite.core.extension.delta.function;
 
-import com.google.common.collect.ImmutableList;
+import io.arenadata.dtm.query.calcite.core.extension.delta.SqlDeltaCall;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
 import java.util.Collections;
 import java.util.List;
 
-public class SqlGetDeltaHot extends SqlCall {
+public class SqlGetDeltaHot extends SqlDeltaCall {
 
     private static final SqlOperator OPERATOR =
             new SqlSpecialOperator("GET_DELTA_HOT", SqlKind.OTHER_DDL);

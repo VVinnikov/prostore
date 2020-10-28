@@ -6,7 +6,7 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 
 import java.util.List;
 
-public class SqlCommitDelta extends SqlCall {
+public class SqlCommitDelta extends SqlDeltaCall {
 
     private DeltaDateTimeOperator deltaDateTimeOperator;
     private static final SqlOperator COMMIT_DELTA_OPERATOR =

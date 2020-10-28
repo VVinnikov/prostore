@@ -6,7 +6,7 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 import java.util.Collections;
 import java.util.List;
 
-public class SqlRollbackDelta extends SqlCall {
+public class SqlRollbackDelta extends SqlDeltaCall {
 
     private static final SqlOperator ROLLBACK_DELTA_OPERATOR =
         new SqlSpecialOperator("ROLLBACK DELTA", SqlKind.OTHER_DDL);

@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adg.service.impl;
 import io.arenadata.dtm.query.execution.plugin.adg.configuration.TarantoolCartridgeProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.dto.rollback.ReverseHistoryTransferRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.OperationFile;
+import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.OperationYaml;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.*;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.*;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
@@ -392,4 +393,96 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
         }
     }
 
+    public void executeCreateSpacesQueued(OperationYaml request, Handler<AsyncResult<Void>> handler) {
+        val uri = cartridgeProperties.getUrl() + cartridgeProperties.getTableQueuedCreate();
+        webClient.postAbs(uri)
+                .sendJson(request, ar -> {
+                    if(ar.succeeded()) {
+                        val response = ar.result();
+                        handleExecuteCreateSpacesQueued(response,handler);
+                    } else {
+                        handler.handle(Future.failedFuture(ar.cause()));
+                    }
+                });
+
+    }
+
+    private void handleExecuteCreateSpacesQueued(HttpResponse<Buffer> response, Handler<AsyncResult<Void>> handler) {
+        try {
+            log.trace("handle [executeCreateSpacesQueued] response [{}]", response);
+            val statusCode = response.statusCode();
+            if (statusCode == 200) {
+                handler.handle(Future.succeededFuture());
+            } else if (statusCode == 500) {
+                handler.handle(Future.failedFuture(response.bodyAsJson((AdgCartridgeError.class))));
+            } else {
+                unexpectedResponse(handler, response);
+            }
+        } catch (Exception ex) {
+            handler.handle(Future.failedFuture(ex));
+        }
+    }
+
+    public void executeDeleteSpacesQueued(TtDeleteTablesRequest request, Handler<AsyncResult<Void>> handler) {
+        val uri = cartridgeProperties.getUrl() + cartridgeProperties.getTableQueuedDelete();
+        log.debug("send to [{}] request [{}]", uri, request);
+        webClient.deleteAbs(uri)
+                .sendJson(request,ar -> {
+                    if (ar.succeeded()) {
+                        val response = ar.result();
+                        handleExecuteDeleteSpacesQueued(response,handler);
+                    } else {
+                        handler.handle(Future.failedFuture(ar.cause()));
+                    }
+                });
+    }
+
+    private void handleExecuteDeleteSpacesQueued(HttpResponse<Buffer> response, Handler<AsyncResult<Void>> handler) {
+        try {
+            log.trace("handle [executeDeleteSpacesQueued] response [{}]", response);
+            val statusCode = response.statusCode();
+            if (statusCode == 200) {
+                handler.handle(Future.succeededFuture());
+            } else if (statusCode == 500) {
+                handler.handle(Future.failedFuture(response.bodyAsJson((AdgCartridgeError.class))));
+            } else {
+                unexpectedResponse(handler, response);
+            }
+        } catch (Exception ex) {
+            handler.handle(Future.failedFuture(ex));
+        }
+    }
+
+    public void executeDeleteSpacesWithPrefixQueued(TtDeleteTablesWithPrefixRequest request,
+                                                    Handler<AsyncResult<Void>> handler) {
+        val uri = cartridgeProperties.getUrl() + cartridgeProperties.getTableQueuedDelete() + "/prefix/" +
+                request.getTablePrefix();
+        log.debug("send to [{}] request [{}]", uri, request);
+        webClient.deleteAbs(uri)
+                .send(ar -> {
+                    if (ar.succeeded()) {
+                        val response = ar.result();
+                        handleExecuteDeleteSpacesWithPrefixQueued(response,handler);
+                    } else {
+                        handler.handle(Future.failedFuture(ar.cause()));
+                    }
+                });
+
+    }
+
+    private void handleExecuteDeleteSpacesWithPrefixQueued(HttpResponse<Buffer> response, Handler<AsyncResult<Void>> handler) {
+        try {
+            log.trace("handle [executeDeleteSpacesWithPrefixQueued] response [{}]", response);
+            val statusCode = response.statusCode();
+            if (statusCode == 200) {
+                handler.handle(Future.succeededFuture());
+            } else if (statusCode == 500) {
+                handler.handle(Future.failedFuture(response.bodyAsJson((AdgCartridgeError.class))));
+            } else {
+                unexpectedResponse(handler, response);
+            }
+        } catch (Exception ex) {
+            handler.handle(Future.failedFuture(ex));
+        }
+    }
 }

@@ -16,9 +16,9 @@ import lombok.val;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.commons.lang3.StringUtils;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -66,15 +66,18 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
     }
 
     private void calculateDeltaValues(List<DeltaInformation> deltas, Handler<AsyncResult<List<DeltaInformation>>> handler) {
-        final List<String> errors = new ArrayList<>();
+        final Set<String> errors = new HashSet<>();
         CompositeFuture.join(deltas.stream()
             .map(deltaInformation -> getCalculateDeltaInfoFuture(errors, deltaInformation))
             .collect(Collectors.toList()))
             .onSuccess(deltaResult -> handler.handle(Future.succeededFuture(deltaResult.list())))
-            .onFailure(error -> handler.handle(Future.failedFuture(createDeltaRangeInvalidException(errors))));
+            .onFailure(error -> {
+                errors.add(error.getMessage());
+                handler.handle(Future.failedFuture(createDeltaRangeInvalidException(errors)));
+            });
     }
 
-    private Future<DeltaInformation> getCalculateDeltaInfoFuture(List<String> errors, DeltaInformation deltaInformation) {
+    private Future<DeltaInformation> getCalculateDeltaInfoFuture(Set<String> errors, DeltaInformation deltaInformation) {
         return Future.future((Promise<DeltaInformation> deltaInfoPromise) -> {
             if (deltaInformation.isLatestUncommitedDelta()) {
                 deltaService.getCnToDeltaHot(deltaInformation.getSchemaName())
@@ -109,7 +112,7 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
         });
     }
 
-    private DeltaRangeInvalidException createDeltaRangeInvalidException(List<String> errors) {
+    private DeltaRangeInvalidException createDeltaRangeInvalidException(Set<String> errors) {
         return new DeltaRangeInvalidException(String.join(";", errors));
     }
 
@@ -120,7 +123,8 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
                     .onComplete(handler);
                 break;
             case DATETIME:
-                deltaService.getCnToByDeltaDatetime(deltaInformation.getSchemaName(), LocalDateTime.parse(deltaInformation.getDeltaTimestamp().replace("\'", ""), CalciteUtil.LOCAL_DATE_TIME))
+                val localDateTime = deltaInformation.getDeltaTimestamp().replace("\'", "");
+                deltaService.getCnToByDeltaDatetime(deltaInformation.getSchemaName(), CalciteUtil.parseLocalDateTime(localDateTime))
                     .onComplete(handler);
                 break;
             default:
@@ -128,6 +132,7 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
                 break;
         }
     }
+
 
     private void calculateSelectOnInterval(DeltaInformation deltaInformation, Handler<AsyncResult<SelectOnInterval>> handler) {
         Long deltaFrom = deltaInformation.getSelectOnInterval().getSelectOnFrom();

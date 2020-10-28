@@ -1,27 +1,26 @@
 package io.arenadata.dtm.query.calcite.core.util;
 
 import io.arenadata.dtm.common.model.ddl.ColumnType;
+import lombok.val;
 import org.apache.calcite.sql.type.SqlTypeName;
 
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
 
-import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
-import static java.time.temporal.ChronoField.*;
 import static org.apache.calcite.sql.type.SqlTypeName.*;
 
 public class CalciteUtil {
-    public static final DateTimeFormatter LOCAL_DATE_TIME = new DateTimeFormatterBuilder()
-            .parseCaseInsensitive()
-            .append(ISO_LOCAL_DATE)
-            .appendLiteral(' ')
-            .appendValue(HOUR_OF_DAY, 2)
-            .appendLiteral(':')
-            .appendValue(MINUTE_OF_HOUR, 2)
-            .optionalStart()
-            .appendLiteral(':')
-            .appendValue(SECOND_OF_MINUTE, 2)
-            .toFormatter();
+    private static final String LOCAL_DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss[.SSS]";
+    public static final DateTimeFormatter LOCAL_DATE_TIME = DateTimeFormatter.ofPattern(LOCAL_DATE_TIME_PATTERN);
+
+    public static LocalDateTime parseLocalDateTime(String localDateTime) {
+        try {
+            return LocalDateTime.parse(localDateTime, CalciteUtil.LOCAL_DATE_TIME);
+        } catch (Exception e) {
+            val errMsg = String.format("Time[%s] is not in format: [%s]", localDateTime, LOCAL_DATE_TIME_PATTERN);
+            throw new RuntimeException(errMsg, e);
+        }
+    }
 
     public static SqlTypeName valueOf(ColumnType type) {
         switch (type) {

@@ -21,6 +21,6 @@ public class OpenDeltaStatusEventFactory extends AbstractStatusEventFactory<Delt
 
     @Override
     protected OpenDeltaEvent createEventMessage(StatusEventKey eventKey, DeltaRecord eventData) {
-        return new OpenDeltaEvent(eventData.getSinId());
+        return new OpenDeltaEvent(eventData.getDeltaNum());
     }
 }

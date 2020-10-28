@@ -1,15 +1,16 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl.ddl;
 
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
+import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.OperationYaml;
+import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.ResOperation;
+import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.adg.service.TtCartridgeProvider;
+import io.arenadata.dtm.query.execution.plugin.adg.service.TtCartridgeSchemaGenerator;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
+import io.vertx.core.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
@@ -21,13 +22,17 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class CreateTableExecutor implements DdlExecutor<Void> {
 
-    private final TtCartridgeProvider cartridgeProvider;
     private final DropTableExecutor dropTableExecutor;
+    private final TtCartridgeSchemaGenerator generator;
+    private final AdgCartridgeClient client;
 
     @Autowired
-    public CreateTableExecutor(TtCartridgeProvider cartridgeProvider, DropTableExecutor dropTableExecutor) {
-        this.cartridgeProvider = cartridgeProvider;
+    public CreateTableExecutor(DropTableExecutor dropTableExecutor,
+                               TtCartridgeSchemaGenerator generator,
+                               AdgCartridgeClient client) {
         this.dropTableExecutor = dropTableExecutor;
+        this.generator = generator;
+        this.client = client;
     }
 
     @Override
@@ -42,7 +47,9 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
             DdlRequestContext dropCtx = createDropRequestContext(context);
             dropTableExecutor.execute(dropCtx, SqlKind.DROP_TABLE.lowerName, ar -> {
                 if (ar.succeeded()) {
-                    createTable(context, handler);
+                    Future.future((Promise<OperationYaml> promise) -> generator.generate(context,new OperationYaml(),promise))
+                            .compose(operationYaml ->  Future.future((Promise<Void> promise) -> client.executeCreateSpacesQueued(operationYaml,promise)))
+                            .onComplete(handler);
                 } else {
                     handler.handle(Future.failedFuture(ar.cause()));
                 }
@@ -55,12 +62,6 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
 
     private DdlRequestContext createDropRequestContext(DdlRequestContext context) {
         return new DdlRequestContext(new DdlRequest(context.getRequest().getQueryRequest().copy(), context.getRequest().getEntity()));
-    }
-
-    private void createTable(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {
-        Future.future((Promise<Void> promise) -> cartridgeProvider.apply(context, promise))
-                .onSuccess(s -> handler.handle(Future.succeededFuture()))
-                .onFailure(f -> handler.handle(Future.failedFuture(f)));
     }
 
     @Override

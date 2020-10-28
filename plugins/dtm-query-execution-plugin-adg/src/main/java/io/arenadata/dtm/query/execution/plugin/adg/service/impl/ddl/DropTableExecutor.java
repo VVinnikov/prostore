@@ -59,20 +59,11 @@ public class DropTableExecutor implements DdlExecutor<Void> {
                 tableNames.getActual(),
                 tableNames.getHistory()
         ));
-        cartridgeClient.addSpacesToDeleteQueue(request, ar -> {
+
+        cartridgeClient.executeDeleteSpacesQueued(request, ar -> {
             if(ar.succeeded()) {
-                val response = ar.result();
-                val deleteRequest = new TtDeleteTablesQueueRequest(response.getBatchId());
-                cartridgeClient.executeDeleteQueue(deleteRequest, delAr -> {
-                    if(delAr.succeeded()) {
-                        handler.handle(Future.succeededFuture());
-                    }
-                    else {
-                        handler.handle(Future.failedFuture(delAr.cause()));
-                    }
-                });
-            }
-            else {
+                handler.handle(Future.succeededFuture());
+            } else {
                 handler.handle(Future.failedFuture(ar.cause()));
             }
         });

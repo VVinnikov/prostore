@@ -23,5 +23,9 @@ public class TarantoolCartridgeProperties {
 
   private String tableBatchDeleteUrl = "/api/v1/ddl/table/batchDelete";
 
+  private String tableQueuedCreate = "/api/v1/ddl/table/queuedCreate";
+
+  private String tableQueuedDelete = "/api/v1/ddl/table/queuedDelete";
+
   private String reverseHistoryTransferUrl = "/api/v1/ddl/table/reverseHistoryTransfer";
 }

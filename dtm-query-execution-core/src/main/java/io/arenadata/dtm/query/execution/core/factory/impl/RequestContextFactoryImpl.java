@@ -2,9 +2,7 @@ package io.arenadata.dtm.query.execution.core.factory.impl;
 
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlUseSchema;
-import io.arenadata.dtm.query.calcite.core.extension.delta.SqlBeginDelta;
-import io.arenadata.dtm.query.calcite.core.extension.delta.SqlCommitDelta;
-import io.arenadata.dtm.query.calcite.core.extension.delta.SqlRollbackDelta;
+import io.arenadata.dtm.query.calcite.core.extension.delta.SqlDeltaCall;
 import io.arenadata.dtm.query.execution.core.factory.RequestContextFactory;
 import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
@@ -31,14 +29,14 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
     @Override
     public RequestContext<? extends DatamartRequest> create(QueryRequest request, SqlNode node) {
         val changedQueryRequest = changeSql(request, node);
-        if (node instanceof SqlDdl || node instanceof SqlAlter) {
+        if (isDdlRequest(node)) {
             switch (node.getKind()) {
                 case OTHER_DDL:
                     return new EddlRequestContext(new DatamartRequest(changedQueryRequest));
                 default:
                     return new DdlRequestContext(new DdlRequest(changedQueryRequest), node);
             }
-        } else if (node instanceof SqlBeginDelta || node instanceof SqlCommitDelta || node instanceof SqlRollbackDelta) {
+        } else if (node instanceof SqlDeltaCall) {
             return new DeltaRequestContext(new DatamartRequest(changedQueryRequest));
         } else if (node instanceof SqlUseSchema) {
             return new DdlRequestContext(new DdlRequest(changedQueryRequest), node);
@@ -50,6 +48,10 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
             default:
                 return new DmlRequestContext(new DmlRequest(changedQueryRequest), node);
         }
+    }
+
+    private boolean isDdlRequest(SqlNode node) {
+        return node instanceof SqlDdl || node instanceof SqlAlter;
     }
 
     private QueryRequest changeSql(QueryRequest request, SqlNode node) {

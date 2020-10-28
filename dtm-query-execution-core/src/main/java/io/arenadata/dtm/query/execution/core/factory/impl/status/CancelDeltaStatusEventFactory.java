@@ -21,6 +21,6 @@ public class CancelDeltaStatusEventFactory extends AbstractStatusEventFactory<De
 
     @Override
     protected CancelDeltaEvent createEventMessage(StatusEventKey eventKey, DeltaRecord eventData) {
-        return new CancelDeltaEvent(eventData.getSinId());
+        return new CancelDeltaEvent(eventData.getDeltaNum());
     }
 }

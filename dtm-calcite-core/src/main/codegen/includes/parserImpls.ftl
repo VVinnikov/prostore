@@ -558,3 +558,65 @@ SqlNode SqlUseSchema() :
         return new io.arenadata.dtm.query.calcite.core.extension.ddl.SqlUseSchema(pos, id);
     }
 }
+SqlNode SqlGetDeltaOk() :
+{
+    SqlParserPos pos;
+}
+{
+    <GET_DELTA_OK>
+    {
+        pos = getPos();
+    }
+    <LPAREN> <RPAREN>
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaOk(pos);
+    }
+}
+SqlNode SqlGetDeltaHot() :
+{
+    SqlParserPos pos;
+}
+{
+    <GET_DELTA_HOT>
+    {
+        pos = getPos();
+    }
+    <LPAREN> <RPAREN>
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaHot(pos);
+    }
+}
+SqlNode SqlGetDeltaByDateTime() :
+{
+    Span s;
+    SqlNode deltaDateTime = null;
+}
+{
+    <GET_DELTA_BY_DATETIME>
+    {
+        s = span();
+    }
+    <LPAREN>
+        deltaDateTime = StringLiteral()
+    <RPAREN>
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaByDateTime(s.end(this), deltaDateTime);
+    }
+}
+SqlNode SqlGetDeltaByNum() :
+{
+    Span s;
+    SqlNode deltaNum = null;
+}
+{
+    <GET_DELTA_BY_NUM>
+    {
+        s = span();
+    }
+    <LPAREN>
+        deltaNum = NumericLiteral()
+    <RPAREN>
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaByNum(s.end(this), deltaNum);
+    }
+}

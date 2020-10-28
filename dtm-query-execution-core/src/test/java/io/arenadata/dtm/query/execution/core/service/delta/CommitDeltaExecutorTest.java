@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.core.service.delta;
 
-import io.arenadata.dtm.common.delta.QueryDeltaResult;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
@@ -8,13 +7,12 @@ import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacadeImpl;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.impl.DeltaServiceDaoImpl;
 import io.arenadata.dtm.query.execution.core.dto.delta.DeltaRecord;
+import io.arenadata.dtm.query.execution.core.dto.delta.query.CommitDeltaQuery;
 import io.arenadata.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.delta.CommitDeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.service.delta.impl.CommitDeltaExecutor;
+import io.arenadata.dtm.query.execution.core.utils.DeltaQueryUtil;
 import io.arenadata.dtm.query.execution.core.utils.QueryResultUtils;
-import io.arenadata.dtm.query.execution.plugin.api.delta.DeltaRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.delta.query.CommitDeltaQuery;
-import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
@@ -28,8 +26,9 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -47,142 +46,139 @@ class CommitDeltaExecutorTest {
     void beforeAll() {
         req.setDatamartMnemonic(datamart);
         req.setRequestId(UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"));
-        delta.setLoadId(0L);
-        delta.setLoadProcId("load-proc-1");
-        delta.setDatamartMnemonic(req.getDatamartMnemonic());
+        delta.setDatamart(req.getDatamartMnemonic());
         when(serviceDbFacade.getDeltaServiceDao()).thenReturn(deltaServiceDao);
+    }
+
+    @Test
+    void executeSuccess() {
+        Promise promise = Promise.promise();
+        commitDeltaExecutor = new CommitDeltaExecutor(serviceDbFacade,
+                deltaQueryResultFactory, Vertx.vertx());
+        req.setSql("COMMIT DELTA");
+        String deltaDateStr = "2020-06-16 14:00:11";
+        final LocalDateTime deltaDate = LocalDateTime.parse(deltaDateStr,
+                DeltaQueryUtil.DELTA_DATE_TIME_FORMATTER);
+        CommitDeltaQuery deltaQuery = CommitDeltaQuery.builder()
+                .request(req)
+                .datamart(datamart)
+                .build();
+
+        QueryResult queryResult = new QueryResult();
+        queryResult.setRequestId(req.getRequestId());
+        queryResult.setResult(createResult(deltaDate));
+
+        when(deltaServiceDao.writeDeltaHotSuccess(eq(datamart)))
+                .thenReturn(Future.succeededFuture(deltaDate));
+
+        when(deltaQueryResultFactory.create(any())).thenReturn(queryResult);
+
+        commitDeltaExecutor.execute(deltaQuery, handler -> {
+            if (handler.succeeded()) {
+                promise.complete(handler.result());
+            } else {
+                promise.fail(handler.cause());
+            }
+        });
+        assertEquals(deltaDate, ((QueryResult) promise.future().result()).getResult()
+                .get(0).get(DeltaQueryUtil.DATE_TIME_FIELD));
+    }
+
+    @Test
+    void executeWithDatetimeSuccess() {
+        Promise promise = Promise.promise();
+        commitDeltaExecutor = new CommitDeltaExecutor(serviceDbFacade,
+                deltaQueryResultFactory, Vertx.vertx());
+        String deltaInputDate = "2020-06-15 14:00:11";
+        req.setSql("COMMIT DELTA '" + deltaInputDate + "'");
+
+        final LocalDateTime deltaDate = LocalDateTime.parse(deltaInputDate,
+                DeltaQueryUtil.DELTA_DATE_TIME_FORMATTER);
+        CommitDeltaQuery deltaQuery = CommitDeltaQuery.builder()
+                .request(req)
+                .datamart(datamart)
+                .deltaDate(deltaDate)
+                .build();
+
+        QueryResult queryResult = new QueryResult();
+        queryResult.setRequestId(req.getRequestId());
+        queryResult.setResult(createResult(deltaDate));
+
+        when(deltaServiceDao.writeDeltaHotSuccess(any(), any()))
+                .thenReturn(Future.succeededFuture(deltaDate));
+
+        when(deltaQueryResultFactory.create(any())).thenReturn(queryResult);
+
+        commitDeltaExecutor.execute(deltaQuery, handler -> {
+            if (handler.succeeded()) {
+                promise.complete(handler.result());
+            } else {
+                promise.fail(handler.cause());
+            }
+        });
+
+        assertEquals(deltaDate, ((QueryResult) promise.future().result()).getResult()
+                .get(0).get(DeltaQueryUtil.DATE_TIME_FIELD));
     }
 
     @Test
     void executeWriteDeltaHotSuccessError() {
         req.setSql("COMMIT DELTA");
-        commitDeltaExecutor = new CommitDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
+        commitDeltaExecutor = new CommitDeltaExecutor(serviceDbFacade,
+                deltaQueryResultFactory, Vertx.vertx());
         Promise promise = Promise.promise();
 
-        CommitDeltaQuery deltaQuery = new CommitDeltaQuery();
-        deltaQuery.setDeltaDateTime(null);
+        CommitDeltaQuery deltaQuery = CommitDeltaQuery.builder()
+                .request(req)
+                .datamart(datamart)
+                .build();
 
-        DatamartRequest datamartRequest = new DatamartRequest(req);
-        DeltaRequestContext context = new DeltaRequestContext(datamartRequest);
-        context.setDeltaQuery(deltaQuery);
+        QueryResult queryResult = new QueryResult();
+        queryResult.setRequestId(req.getRequestId());
 
-        RuntimeException exception = new RuntimeException("write delta hot success error");
+        RuntimeException exception = new RuntimeException("");
 
-        when(deltaServiceDao.writeDeltaHotSuccess(any(), any())).thenReturn(Future.failedFuture(exception));
+        when(deltaServiceDao.writeDeltaHotSuccess(eq(datamart)))
+                .thenReturn(Future.failedFuture(exception));
 
-        commitDeltaExecutor.execute(context, handler -> {
+        commitDeltaExecutor.execute(deltaQuery, handler -> {
             if (handler.succeeded()) {
                 promise.complete(handler.result());
             } else {
                 promise.fail(handler.cause());
             }
         });
-        assertEquals(exception, promise.future().cause());
+        assertTrue(promise.future().failed());
     }
 
     @Test
     void executeWithDatetimeWriteDeltaHotSuccessError() {
-        req.setSql("COMMIT DELTA '2020-06-11T14:00:11'");
-        commitDeltaExecutor = new CommitDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
         Promise promise = Promise.promise();
-        String deltaDate = "2020-06-12T18:00:01";
+        commitDeltaExecutor = new CommitDeltaExecutor(serviceDbFacade,
+                deltaQueryResultFactory, Vertx.vertx());
+        String deltaInputDate = "2020-06-12 18:00:01";
+        req.setSql("COMMIT DELTA '" + deltaInputDate + "'");
 
-        CommitDeltaQuery deltaQuery = new CommitDeltaQuery();
-        deltaQuery.setDeltaDateTime(LocalDateTime.parse(deltaDate));
+        final LocalDateTime deltaDate = LocalDateTime.parse(deltaInputDate,
+                DeltaQueryUtil.DELTA_DATE_TIME_FORMATTER);
 
-        DatamartRequest datamartRequest = new DatamartRequest(req);
-        DeltaRequestContext context = new DeltaRequestContext(datamartRequest);
-        context.setDeltaQuery(deltaQuery);
+        CommitDeltaQuery deltaQuery = CommitDeltaQuery.builder()
+                .request(req)
+                .datamart(datamart)
+                .deltaDate(deltaDate)
+                .build();
 
-        RuntimeException exception = new RuntimeException("write delta hot success error");
+        when(deltaServiceDao.writeDeltaHotSuccess(eq(datamart), eq(deltaDate)))
+                .thenReturn(Future.failedFuture(new RuntimeException("")));
 
-        when(deltaServiceDao.writeDeltaHotSuccess(any(), any())).thenReturn(Future.failedFuture(exception));
-
-        commitDeltaExecutor.execute(context, handler -> {
+        commitDeltaExecutor.execute(deltaQuery, handler -> {
             if (handler.succeeded()) {
                 promise.complete(handler.result());
             } else {
                 promise.fail(handler.cause());
             }
         });
-        assertEquals(exception, promise.future().cause());
-    }
-
-    @Test
-    void executeSuccess() {
-        req.setSql("COMMIT DELTA");
-        commitDeltaExecutor = new CommitDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
-        Promise promise = Promise.promise();
-        String deltaDate = "2020-06-16T14:00:11";
-
-        QueryDeltaResult res = new QueryDeltaResult(deltaDate, 1L);
-
-        CommitDeltaQuery deltaQuery = new CommitDeltaQuery();
-        deltaQuery.setDeltaDateTime(null);
-
-        DatamartRequest datamartRequest = new DatamartRequest(req);
-        DeltaRequestContext context = new DeltaRequestContext(datamartRequest);
-        context.setDeltaQuery(deltaQuery);
-
-        QueryResult queryResult = new QueryResult();
-        queryResult.setRequestId(req.getRequestId());
-        queryResult.setResult(createResult(deltaDate));
-
-        when(deltaServiceDao.writeDeltaHotSuccess(any(), any())).thenReturn(Future.succeededFuture(1L));
-
-        when(deltaQueryResultFactory.create(any(), any())).thenReturn(queryResult);
-
-        commitDeltaExecutor.execute(context, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
-        assertEquals(res.getStatusDate(), ((QueryResult) promise.future().result()).getResult()
-                .get(0).get(CommitDeltaQueryResultFactory.DELTA_DATE_COLUMN));
-    }
-
-    @Test
-    void executeWithDatetimeSuccess() {
-        req.setSql("COMMIT DELTA '2020-06-15T14:00:11'");
-        commitDeltaExecutor = new CommitDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
-        Promise promise = Promise.promise();
-        String deltaInputDate = "2020-06-15T14:00:11";
-        String deltaDate = "2020-06-16T14:00:11";
-
-        QueryDeltaResult res = new QueryDeltaResult(deltaDate, 1L);
-
-        CommitDeltaQuery deltaQuery = new CommitDeltaQuery();
-        deltaQuery.setDeltaDateTime(LocalDateTime.parse(deltaInputDate));
-
-        DatamartRequest datamartRequest = new DatamartRequest(req);
-        DeltaRequestContext context = new DeltaRequestContext(datamartRequest);
-        context.setDeltaQuery(deltaQuery);
-
-        QueryResult queryResult = new QueryResult();
-        queryResult.setRequestId(req.getRequestId());
-        queryResult.setResult(createResult(deltaDate));
-
-        when(deltaServiceDao.writeDeltaHotSuccess(any(), any())).thenReturn(Future.succeededFuture(1L));
-
-        when(deltaQueryResultFactory.create(any(), any())).thenReturn(queryResult);
-
-        commitDeltaExecutor.execute(context, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
-
-        assertEquals(res.getStatusDate(), ((QueryResult) promise.future().result()).getResult()
-                .get(0).get(CommitDeltaQueryResultFactory.DELTA_DATE_COLUMN));
-    }
-
-    private List<Map<String, Object>> createResult(String deltaDate) {
-        return QueryResultUtils.createResultWithSingleRow(Collections.singletonList(CommitDeltaQueryResultFactory.DELTA_DATE_COLUMN),
-                Collections.singletonList(deltaDate));
+        assertTrue(promise.future().failed());
     }
 
     @Test
@@ -190,33 +186,37 @@ class CommitDeltaExecutorTest {
         req.setSql("COMMIT DELTA");
         commitDeltaExecutor = new CommitDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
         Promise promise = Promise.promise();
-        String deltaDate = "2020-06-16T14:00:11";
+        String deltaDateStr = "2020-06-16 14:00:11";
+        final LocalDateTime deltaDate = LocalDateTime.parse(deltaDateStr,
+                DeltaQueryUtil.DELTA_DATE_TIME_FORMATTER);
 
-        CommitDeltaQuery deltaQuery = new CommitDeltaQuery();
-        deltaQuery.setDeltaDateTime(null);
-
-        DatamartRequest datamartRequest = new DatamartRequest(req);
-        DeltaRequestContext context = new DeltaRequestContext(datamartRequest);
-        context.setDeltaQuery(deltaQuery);
+        CommitDeltaQuery deltaQuery = CommitDeltaQuery.builder()
+                .request(req)
+                .datamart(datamart)
+                .build();
 
         QueryResult queryResult = new QueryResult();
         queryResult.setRequestId(req.getRequestId());
         queryResult.setResult(createResult(deltaDate));
 
-        when(deltaServiceDao.writeDeltaHotSuccess(any(), any())).thenReturn(Future.succeededFuture(1L));
+        when(deltaServiceDao.writeDeltaHotSuccess(eq(datamart)))
+                .thenReturn(Future.succeededFuture(deltaDate));
 
-        RuntimeException ex = new RuntimeException("delta query result factory error");
-        when(deltaQueryResultFactory.create(any(), any())).thenThrow(ex);
+        when(deltaQueryResultFactory.create(any()))
+                .thenThrow(new RuntimeException(""));
 
-        commitDeltaExecutor.execute(context, handler -> {
+        commitDeltaExecutor.execute(deltaQuery, handler -> {
             if (handler.succeeded()) {
                 promise.complete(handler.result());
             } else {
                 promise.fail(handler.cause());
             }
         });
+        assertTrue(promise.future().failed());
+    }
 
-        assertNotNull(promise.future().cause());
-        assertEquals(ex.getMessage(), promise.future().cause().getMessage());
+    private List<Map<String, Object>> createResult(LocalDateTime deltaDate) {
+        return QueryResultUtils.createResultWithSingleRow(Collections.singletonList(DeltaQueryUtil.DATE_TIME_FIELD),
+                Collections.singletonList(deltaDate));
     }
 }

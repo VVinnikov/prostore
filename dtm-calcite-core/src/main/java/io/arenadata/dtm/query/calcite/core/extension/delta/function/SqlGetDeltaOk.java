@@ -1,24 +1,24 @@
-package io.arenadata.dtm.query.calcite.core.extension.delta;
+package io.arenadata.dtm.query.calcite.core.extension.delta.function;
 
+import io.arenadata.dtm.query.calcite.core.extension.delta.SqlDeltaCall;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
 import java.util.Collections;
 import java.util.List;
 
-public class SqlRollbackDelta extends SqlDeltaCall {
+public class SqlGetDeltaOk extends SqlDeltaCall {
 
-    private static final SqlOperator ROLLBACK_DELTA_OPERATOR =
-        new SqlSpecialOperator("ROLLBACK DELTA", SqlKind.OTHER_DDL);
+    private static final SqlOperator OPERATOR =
+            new SqlSpecialOperator("GET_DELTA_OK", SqlKind.OTHER_DDL);
 
-
-    public SqlRollbackDelta(SqlParserPos pos) {
+    public SqlGetDeltaOk(SqlParserPos pos) {
         super(pos);
     }
 
     @Override
     public SqlOperator getOperator() {
-        return ROLLBACK_DELTA_OPERATOR;
+        return OPERATOR;
     }
 
     @Override
@@ -28,6 +28,6 @@ public class SqlRollbackDelta extends SqlDeltaCall {
 
     @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
-        writer.keyword(this.getOperator().getName());
+        writer.literal(OPERATOR + "()");
     }
 }

@@ -404,7 +404,6 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
                         handler.handle(Future.failedFuture(ar.cause()));
                     }
                 });
-
     }
 
     private void handleExecuteCreateSpacesQueued(HttpResponse<Buffer> response, Handler<AsyncResult<Void>> handler) {

@@ -48,6 +48,10 @@ core:
       enabled: false
       topic: status.event
     statusMonitorUrl: ${STATUS_MONITOR_URL:http://127.0.0.1:9095/status}
+  cache:
+    initialCapacity: ${CACHE_INITIAL_CAPACITY:100000}
+    maximumSize: ${CACHE_MAXIMUM_SIZE:100000}
+    expireAfterAccessMinites: ${CACHE_EXPIRE_AFTER_ACCESS_MINITES:100000}
 
 adb:
   datasource:

@@ -10,5 +10,5 @@ import org.springframework.stereotype.Component;
 public class CacheProperties {
     private Integer initialCapacity;
     private Integer maximumSize;
-    private Integer expireAfterAccessMinites;
+    private Integer expireAfterAccessMinutes;
 }

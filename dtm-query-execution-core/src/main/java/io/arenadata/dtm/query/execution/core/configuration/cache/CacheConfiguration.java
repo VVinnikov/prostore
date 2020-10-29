@@ -28,7 +28,7 @@ public class CacheConfiguration {
         return Caffeine.newBuilder()
             .initialCapacity(cacheProperties.getInitialCapacity())
             .maximumSize(cacheProperties.getMaximumSize())
-            .expireAfterAccess(cacheProperties.getExpireAfterAccessMinites(), TimeUnit.MINUTES)
+            .expireAfterAccess(cacheProperties.getExpireAfterAccessMinutes(), TimeUnit.MINUTES)
             .recordStats();
     }
 

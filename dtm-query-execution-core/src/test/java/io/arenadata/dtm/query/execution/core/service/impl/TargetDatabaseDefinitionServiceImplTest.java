@@ -78,7 +78,8 @@ public class TargetDatabaseDefinitionServiceImplTest {
                         }
                     }
                 ),
-                workerVerticleExecutor));
+                workerVerticleExecutor),
+            mock(InformationSchemaServiceImpl.class));
     }
 
     @Test

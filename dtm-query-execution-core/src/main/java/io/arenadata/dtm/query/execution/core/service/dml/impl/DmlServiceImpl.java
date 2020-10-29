@@ -7,6 +7,7 @@ import io.arenadata.dtm.common.reader.QuerySourceRequest;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.service.InformationSchemaService;
 import io.arenadata.dtm.query.execution.core.service.TargetDatabaseDefinitionService;
 import io.arenadata.dtm.query.execution.core.service.dml.ColumnMetadataService;
 import io.arenadata.dtm.query.execution.core.service.dml.InformationSchemaExecutor;
@@ -22,7 +23,6 @@ import lombok.SneakyThrows;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 @Service("coreDmlService")
 public class DmlServiceImpl implements DmlService<QueryResult> {
 
@@ -32,19 +32,22 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
     private final LogicViewReplacer logicViewReplacer;
     private final ColumnMetadataService columnMetadataService;
     private final InformationSchemaExecutor informationSchemaExecutor;
+    private final InformationSchemaService informationSchemaService;
 
     @Autowired
     public DmlServiceImpl(DataSourcePluginService dataSourcePluginService,
                           TargetDatabaseDefinitionService targetDatabaseDefinitionService,
                           DeltaQueryPreprocessor deltaQueryPreprocessor, LogicViewReplacer logicViewReplacer,
                           ColumnMetadataService columnMetadataService,
-                          InformationSchemaExecutor informationSchemaExecutor) {
+                          InformationSchemaExecutor informationSchemaExecutor,
+                          InformationSchemaService informationSchemaService) {
         this.dataSourcePluginService = dataSourcePluginService;
         this.targetDatabaseDefinitionService = targetDatabaseDefinitionService;
         this.deltaQueryPreprocessor = deltaQueryPreprocessor;
         this.logicViewReplacer = logicViewReplacer;
         this.informationSchemaExecutor = informationSchemaExecutor;
         this.columnMetadataService = columnMetadataService;
+        this.informationSchemaService = informationSchemaService;
     }
 
     @Override
@@ -86,17 +89,10 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
         targetDatabaseDefinitionService.getTargetSource(request, ar -> {
             if (ar.succeeded()) {
                 QuerySourceRequest querySourceRequest = ar.result();
-                if (querySourceRequest.getQueryRequest().getSourceType() == SourceType.INFORMATION_SCHEMA) {
-                    //FIXME add receiving logical schema from system views
-                    //querySourceRequest.setLogicalSchema(systemDatamartViewsProvider.getLogicalSchemaFromSystemViews());
-                    initColumnMetaData(querySourceRequest)
-                            .compose(v -> informationSchemaExecute(querySourceRequest))
-                            .onComplete(asyncResultHandler);
-                } else {
-                    initColumnMetaData(querySourceRequest)
-                            .compose(v -> pluginExecute(querySourceRequest))
-                            .onComplete(asyncResultHandler);
-                }
+                initColumnMetaData(querySourceRequest)
+                    .compose(v -> querySourceRequest.getQueryRequest().getSourceType() == SourceType.INFORMATION_SCHEMA
+                            ? informationSchemaExecute(querySourceRequest) : pluginExecute(querySourceRequest))
+                    .onComplete(asyncResultHandler);
             } else {
                 asyncResultHandler.handle(Future.failedFuture(ar.cause()));
             }

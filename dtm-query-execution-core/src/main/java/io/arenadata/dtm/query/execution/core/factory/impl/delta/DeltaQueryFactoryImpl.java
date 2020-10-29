@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 
 import static io.arenadata.dtm.query.execution.core.utils.DeltaQueryUtil.DELTA_DATE_TIME_FORMATTER;
+import static io.arenadata.dtm.query.execution.core.utils.DeltaQueryUtil.DELTA_DATE_TIME_PATTERN;
 
 @Component
 @Slf4j
@@ -63,7 +64,12 @@ public class DeltaQueryFactoryImpl implements DeltaQueryFactory {
 
     private LocalDateTime getDeltaDateTime(String deltaDateTimeStr) {
         if (deltaDateTimeStr != null) {
-            return LocalDateTime.parse(deltaDateTimeStr, DELTA_DATE_TIME_FORMATTER);
+            try {
+                return LocalDateTime.parse(deltaDateTimeStr, DELTA_DATE_TIME_FORMATTER);
+            } catch (Exception e) {
+                throw new RuntimeException(String.format("Incorrect format of delta date value: %s, correct template: %s",
+                        deltaDateTimeStr, DELTA_DATE_TIME_PATTERN), e);
+            }
         } else {
             return null;
         }

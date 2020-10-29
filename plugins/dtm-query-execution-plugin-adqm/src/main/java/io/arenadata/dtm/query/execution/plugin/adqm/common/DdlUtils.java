@@ -62,8 +62,7 @@ public class DdlUtils {
 
     public static String classTypeToNative(@NonNull ColumnType type) {
         switch (type) {
-            case UUID: return "UUID";
-
+            case UUID:
             case ANY:
             case CHAR:
             case VARCHAR: return "String";

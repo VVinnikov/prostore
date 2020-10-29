@@ -34,10 +34,6 @@ import java.util.stream.Stream;
 @Component
 public class InformationSchemaServiceImpl implements InformationSchemaService {
 
-    private static final String DOUBLE_TYPE = "DOUBLE";
-    private static final String FLOAT_TYPE = "FLOAT";
-    private static final String VARCHAR_TYPE = "VARCHAR";
-    private static final String INT_TYPE = "INT";
     private static final int TABLE_NAME_COLUMN_INDEX = 0;
     private static final int ORDINAL_POSITION_COLUMN_INDEX = 1;
     private static final int COLUMN_NAME_COLUMN_INDEX = 2;
@@ -94,23 +90,28 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     }
 
     private void createTable(SqlCreateTable createTable) {
-        val distributedByColumns = createTable.getDistributedBy().getDistributedBy().getList().stream().map(SqlNode::toString).collect(Collectors.toList());
+        val distributedByColumns = createTable.getDistributedBy().getDistributedBy().getList().stream()
+                .map(SqlNode::toString)
+                .collect(Collectors.toList());
         val schemaTable = createTable.getOperandList().get(0).toString();
         val table = getTableName(schemaTable);
         val creatTableQuery = sqlWithoutDistributedBy(createTable);
 
         List<String> commentQueries = new ArrayList<>();
         val columns = ((SqlNodeList) createTable.getOperandList().get(1)).getList();
-        columns.stream().filter(node -> node instanceof SqlColumnDeclaration).map(node -> (SqlColumnDeclaration) node)
+        columns.stream()
+                .filter(node -> node instanceof SqlColumnDeclaration)
+                .map(node -> (SqlColumnDeclaration) node)
                 .forEach(column -> {
                     val name = column.getOperandList().get(0).toString();
-                    val type = column.getOperandList().get(1).toString();
+                    val typeString = getTypeWithoutSize(column.getOperandList().get(1).toString());
+                    val type = ColumnType.fromTypeString(typeString);
                     switch (type) {
-                        case DOUBLE_TYPE:
-                        case FLOAT_TYPE:
-                        case INT_TYPE:
-                        case VARCHAR_TYPE:
-                            commentQueries.add(commentOnColumn(schemaTable, name, type));
+                        case DOUBLE:
+                        case FLOAT:
+                        case INT:
+                        case VARCHAR:
+                            commentQueries.add(commentOnColumn(schemaTable, name, typeString));
                             break;
                         default:
                             break;
@@ -121,6 +122,14 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
                 .compose(r -> client.executeQuery(createShardingKeyIndex(table, schemaTable, distributedByColumns)))
                 .compose(r -> client.executeBatch(commentQueries))
                 .onFailure(err -> shutdown(err));
+    }
+
+    private String getTypeWithoutSize(String type) {
+        val idx = type.indexOf("(");
+        if (idx != -1) {
+            return type.substring(0, idx);
+        }
+        return type;
     }
 
     private String sqlWithoutDistributedBy(SqlCreateTable createTable) {

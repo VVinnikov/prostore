@@ -15,6 +15,7 @@ import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestConte
 import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.plugin.core.PluginRegistry;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Service;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @EnablePluginRegistries({DtmDataSourcePlugin.class})
 public class DataSourcePluginServiceImpl implements DataSourcePluginService {
@@ -41,6 +43,7 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
         this.sourceTypes = pluginRegistry.getPlugins().stream()
             .map(DtmDataSourcePlugin::getSourceType)
             .collect(Collectors.toSet());
+        log.info("Active Plugins: {}", sourceTypes.toString());
     }
 
     @Override

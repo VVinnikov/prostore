@@ -16,12 +16,14 @@ import io.vertx.core.Future;
 import io.vertx.core.json.JsonArray;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -41,8 +43,9 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     private EntityDao entityDao;
     private DdlQueryGenerator ddlQueryGenerator;
     private ApplicationContext applicationContext;
-    private List<Entity> entities;
+    private Map<String, Entity> entities;
 
+    @Autowired
     public InformationSchemaServiceImpl(HSQLClient client,
                                         DatamartDao datamartDao,
                                         EntityDao entityDao,
@@ -64,7 +67,7 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     public void initialize() {
         createInformationSchemaViews()
                 .compose(r -> createSchemasFromDatasource())
-                .compose(a -> initLogicSchema())
+                .compose(a -> initEntities())
                 .onSuccess(success -> {
                     log.info("Information schema initialized successfully");
                 })
@@ -76,70 +79,72 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     }
 
     @Override
-    public List<Entity> getEntities()
-    {
+    public Map<String, Entity> getEntities() {
         return entities;
     }
 
-    private Future<Void> initLogicSchema()
-    {
-        return Future.future(promise -> {
-            String query = String.format("SELECT TABLE_NAME, ORDINAL_POSITION, COLUMN_NAME," +
-                "  case" +
-                "    when DATA_TYPE = 'DOUBLE PRECISION' then 'DOUBLE'" +
-                "    when DATA_TYPE = 'CHARACTER VARYING' then 'VARCHAR'" +
-                "    when DATA_TYPE = 'INTEGER' then 'INT'" +
-                "    when DATA_TYPE = 'CHARACTER' then 'CHAR'" +
-                "    else DATA_TYPE end as DATA_TYPE," +
-                " IS_NULLABLE" +
-                " FROM information_schema.columns WHERE TABLE_SCHEMA = '%s' and TABLE_NAME in (%s);",
+    private Future<Void> initEntities() {
+        return Future.future(promise -> client.getQueryResult(createInitEntitiesQuery())
+                .onSuccess(resultSet -> {
+                    Map<String, List<EntityField>> fieldsByView = resultSet.getResults().stream()
+                            .collect(Collectors.groupingBy(col -> col.getString(TABLE_NAME_COLUMN_INDEX),
+                                    Collectors.mapping(this::createField, Collectors.toList())));
+                    entities = Arrays.stream(InformationSchemaView.values())
+                            .flatMap(view -> {
+                                final String viewRealName = view.getRealName().toUpperCase();
+                                return Optional.ofNullable(fieldsByView.get(viewRealName))
+                                        .map(fields -> createEntity(view, fields).stream())
+                                        .orElseThrow(() -> new RuntimeException(
+                                                String.format("View [%s.%s] doesn't exist",
+                                                        InformationSchemaView.DTM_SCHEMA_NAME, viewRealName)));
+                            })
+                            .collect(Collectors.toMap(Entity::getName, Function.identity()));
+                    promise.complete();
+                })
+                .onFailure(promise::fail));
+    }
+
+    private String createInitEntitiesQuery() {
+        return String.format("SELECT TABLE_NAME, ORDINAL_POSITION, COLUMN_NAME," +
+                        "  case" +
+                        "    when DATA_TYPE = 'DOUBLE PRECISION' then 'DOUBLE'" +
+                        "    when DATA_TYPE = 'CHARACTER VARYING' then 'VARCHAR'" +
+                        "    when DATA_TYPE = 'INTEGER' then 'INT'" +
+                        "    when DATA_TYPE = 'CHARACTER' then 'CHAR'" +
+                        "    else DATA_TYPE end as DATA_TYPE," +
+                        " IS_NULLABLE" +
+                        " FROM information_schema.columns WHERE TABLE_SCHEMA = '%s' and TABLE_NAME in (%s);",
                 InformationSchemaView.DTM_SCHEMA_NAME,
                 Arrays.stream(InformationSchemaView.values())
-                    .map(view -> String.format("'%s'", view.getRealName().toUpperCase()))
-                    .collect(Collectors.joining(",")));
-            client.getQueryResult(query).onSuccess(resultSet -> {
-                Map<String, List<EntityField>> fieldsByView = resultSet.getResults().stream()
-                        .collect(Collectors.groupingBy(col -> col.getString(TABLE_NAME_COLUMN_INDEX),
-                                Collectors.mapping(this::getField, Collectors.toList())));
-                entities = Arrays.stream(InformationSchemaView.values())
-                    .flatMap(view -> {
-                        final String viewRealName = view.getRealName().toUpperCase();
-                        return Optional.ofNullable(fieldsByView.get(viewRealName))
-                            .map(fields -> getEntity(view, fields).stream())
-                            .orElseThrow(() -> new RuntimeException(
-                                String.format("View [%s.%s] doesn't exist", InformationSchemaView.DTM_SCHEMA_NAME,
-                                    viewRealName)));
-                    })
-                    .collect(Collectors.toList());
-                promise.complete();
-            })
-            .onFailure(promise::fail);
-        });
+                        .map(view -> String.format("'%s'", view.getRealName().toUpperCase()))
+                        .collect(Collectors.joining(",")));
     }
 
-    private EntityField getField(final JsonArray jsonArray)
-    {
-        return new EntityField(jsonArray.getInteger(ORDINAL_POSITION_COLUMN_INDEX),
-            jsonArray.getString(COLUMN_NAME_COLUMN_INDEX),
-            ColumnType.valueOf(jsonArray.getString(DATA_TYPE_COLUMN_INDEX)),
-            IS_NULLABLE_COLUMN_TRUE.equals(jsonArray.getString(IS_NULLABLE_COLUMN_INDEX)));
+    private EntityField createField(final JsonArray jsonArray) {
+        return EntityField.builder()
+                .ordinalPosition(jsonArray.getInteger(ORDINAL_POSITION_COLUMN_INDEX))
+                .name(jsonArray.getString(COLUMN_NAME_COLUMN_INDEX))
+                .type(ColumnType.valueOf(jsonArray.getString(DATA_TYPE_COLUMN_INDEX)))
+                .nullable(IS_NULLABLE_COLUMN_TRUE.equals(jsonArray.getString(IS_NULLABLE_COLUMN_INDEX)))
+                .build();
     }
 
-    private List<Entity> getEntity(final InformationSchemaView view, final List<EntityField> fields)
-    {
+    private List<Entity> createEntity(final InformationSchemaView view, final List<EntityField> fields) {
         return Arrays.asList(
-            Entity.builder()
-                .schema(InformationSchemaView.SCHEMA_NAME)
-                .entityType(EntityType.VIEW)
-                .name(view.name())
-                .viewQuery(String.format("select * from %s.%s", InformationSchemaView.DTM_SCHEMA_NAME,
-                    view.getRealName()))
-                .fields(fields).build(),
-            Entity.builder()
-                .schema(InformationSchemaView.DTM_SCHEMA_NAME)
-                .entityType(EntityType.TABLE)
-                .name(view.getRealName())
-                .fields(fields).build());
+                Entity.builder()
+                        .schema(InformationSchemaView.SCHEMA_NAME)
+                        .entityType(EntityType.VIEW)
+                        .name(view.name())
+                        .viewQuery(String.format("select * from %s.%s", InformationSchemaView.DTM_SCHEMA_NAME,
+                                view.getRealName()))
+                        .fields(fields)
+                        .build(),
+                Entity.builder()
+                        .schema(InformationSchemaView.DTM_SCHEMA_NAME)
+                        .entityType(EntityType.TABLE)
+                        .name(view.getRealName().toUpperCase())
+                        .fields(fields)
+                        .build());
     }
 
     private Future<Void> createInformationSchemaViews() {

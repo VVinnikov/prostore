@@ -2,11 +2,11 @@ package io.arenadata.dtm.query.execution.core.service;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
 
-import java.util.List;
+import java.util.Map;
 
 public interface InformationSchemaService {
 
     void initialize();
 
-    List<Entity> getEntities();
+    Map<String, Entity> getEntities();
 }

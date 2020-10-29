@@ -4,6 +4,7 @@ import io.arenadata.dtm.common.reader.InformationSchemaView;
 import io.arenadata.dtm.common.reader.QuerySourceRequest;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.service.InformationSchemaService;
 import io.arenadata.dtm.query.execution.core.service.TargetDatabaseDefinitionService;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
@@ -26,6 +27,7 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
 
     private final LogicalSchemaProvider logicalSchemaProvider;
     private final DataSourcePluginService pluginService;
+    private final InformationSchemaService informationSchemaService;
 
     @Override
     public void getTargetSource(QuerySourceRequest request, Handler<AsyncResult<QuerySourceRequest>> handler) {
@@ -46,21 +48,31 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
     }
 
     private void getTargetSourceWithoutHint(QuerySourceRequest request, Handler<AsyncResult<QuerySourceRequest>> handler) {
-        if (!InformationSchemaView.SCHEMA_NAME.equals(request.getQueryRequest().getDatamartMnemonic().toUpperCase())) {
+        if (InformationSchemaView.SCHEMA_NAME.equals(request.getQueryRequest().getDatamartMnemonic().toUpperCase())) {
+            val queryRequestWithSourceType = request.getQueryRequest().copy();
+            queryRequestWithSourceType.setSourceType(SourceType.INFORMATION_SCHEMA);
+            val result = new QuerySourceRequest(
+                    queryRequestWithSourceType,
+                    SourceType.INFORMATION_SCHEMA);
+            result.setLogicalSchema(Collections.singletonList(
+                    new Datamart(InformationSchemaView.DTM_SCHEMA_NAME, true,
+                            new ArrayList<>(informationSchemaService.getEntities().values()))));
+            handler.handle(Future.succeededFuture(result));
+        } else {
             getLogicalSchema(request)
-                .onComplete(ar -> {
-                    if (ar.succeeded()) {
-                        request.setLogicalSchema(ar.result());
-                        getTargetSourceFromCost(request, tr -> {
-                            if (tr.succeeded()) {
-                                val sourceType = tr.result();
-                                val queryRequestWithSourceType = request.getQueryRequest().copy();
-                                queryRequestWithSourceType.setSourceType(sourceType);
-                                handler.handle(Future.succeededFuture(
-                                    new QuerySourceRequest(
-                                        queryRequestWithSourceType,
-                                        request.getLogicalSchema(),
-                                        Collections.emptyList(),
+                    .onComplete(ar -> {
+                        if (ar.succeeded()) {
+                            request.setLogicalSchema(ar.result());
+                            getTargetSourceFromCost(request, tr -> {
+                                if (tr.succeeded()) {
+                                    val sourceType = tr.result();
+                                    val queryRequestWithSourceType = request.getQueryRequest().copy();
+                                    queryRequestWithSourceType.setSourceType(sourceType);
+                                    handler.handle(Future.succeededFuture(
+                                            new QuerySourceRequest(
+                                                    queryRequestWithSourceType,
+                                                    request.getLogicalSchema(),
+                                                    Collections.emptyList(),
                                                     sourceType)));
                                 } else {
                                     handler.handle(Future.failedFuture(tr.cause()));
@@ -71,13 +83,6 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
                         }
                     })
                     .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
-        } else {
-            val queryRequestWithSourceType = request.getQueryRequest().copy();
-            queryRequestWithSourceType.setSourceType(SourceType.INFORMATION_SCHEMA);
-            val result = new QuerySourceRequest(
-                queryRequestWithSourceType,
-                SourceType.INFORMATION_SCHEMA);
-            handler.handle(Future.succeededFuture(result));
         }
     }
 

@@ -8,6 +8,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
+import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -26,9 +27,14 @@ public class InformationSchemaExecutorImpl implements InformationSchemaExecutor 
     @Override
     public void execute(QuerySourceRequest request, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
         client.getQueryResult(request.getQueryRequest().getSql())
-            .onSuccess(r -> asyncResultHandler.handle(Future.succeededFuture(
-                new QueryResult(request.getQueryRequest().getRequestId(),
-                    r.getRows().stream().map(JsonObject::getMap).collect(Collectors.toList()), request.getMetadata()))))
+            .onSuccess(resultSet ->
+            {
+                val result = resultSet.getRows().stream()
+                        .map(JsonObject::getMap)
+                        .collect(Collectors.toList());
+                asyncResultHandler.handle(Future.succeededFuture(
+                    new QueryResult(request.getQueryRequest().getRequestId(), result, request.getMetadata())));
+            })
             .onFailure(r -> asyncResultHandler.handle(Future.failedFuture(r.getCause())));
     }
 }

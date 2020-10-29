@@ -38,39 +38,39 @@ public class HSQLClientImpl implements HSQLClient {
     @Override
     public Future<Void> executeQuery(String query){
         return execute(String.format("Error occurred while executing query: %s", query),
-            (sqlConnection, r) -> sqlConnection.execute(query, r));
+            (sqlConnection, handler) -> sqlConnection.execute(query, handler));
     }
 
     @Override
     public Future<Void> executeBatch(List<String> queries) {
         return execute(String.format("Error while executing queries batch:\n %s", String.join(";\n", queries)),
-            (sqlConnection, r) -> sqlConnection.batch(queries,
-                s -> r.handle(s.succeeded() ? Future.succeededFuture() : Future.failedFuture(s.cause()))));
+            (sqlConnection, handler) -> sqlConnection.batch(queries,
+                batchHandler -> handler.handle(batchHandler.succeeded() ? Future.succeededFuture()
+                        : Future.failedFuture(batchHandler.cause()))));
     }
 
     @Override
     public Future<ResultSet> getQueryResult(String query){
         return execute(String.format("Error occurred while executing query: %s", query),
-            (sqlConnection, r) -> sqlConnection.query(query, r));
+            (sqlConnection, handler) -> sqlConnection.query(query, handler));
     }
 
-    private <T> Future<T> execute(String error, BiConsumer<SQLConnection, Handler<AsyncResult<T>>> consumer)
-    {
+    private <T> Future<T> execute(String error, BiConsumer<SQLConnection, Handler<AsyncResult<T>>> consumer) {
         return Future.future(promise -> jdbcClient.getConnection(conn -> {
-            if (conn.failed()) {
-                log.error("Could not open hsqldb connection", conn.cause());
-                promise.fail(conn.cause());
-            } else {
+            if (conn.succeeded()) {
                 val connection = conn.result();
-                consumer.accept(connection, r -> {
+                consumer.accept(connection, handler -> {
                     connection.close();
-                    if (r.failed()) {
-                        log.error(error, r.cause());
-                        promise.fail(r.cause());
+                    if (handler.succeeded()) {
+                        promise.complete(handler.result());
                     } else {
-                        promise.complete(r.result());
+                        log.error(error, handler.cause());
+                        promise.fail(handler.cause());
                     }
                 });
+            } else {
+                log.error("Could not open hsqldb connection", conn.cause());
+                promise.fail(conn.cause());
             }
         }));
     }

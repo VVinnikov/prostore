@@ -14,12 +14,10 @@ import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import lombok.val;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
@@ -29,6 +27,7 @@ public class DatamartViewWrapLoaderImpl implements DatamartViewWrapLoader {
     private final EntityDao entityDao;
     private final InformationSchemaService informationSchemaService;
 
+    @Autowired
     public DatamartViewWrapLoaderImpl(ServiceDbFacade serviceDbFacade, InformationSchemaService informationSchemaService) {
         this.entityDao = serviceDbFacade.getServiceDbDao().getEntityDao();
         this.informationSchemaService = informationSchemaService;
@@ -77,20 +76,13 @@ public class DatamartViewWrapLoaderImpl implements DatamartViewWrapLoader {
     }
 
     private Future<Entity> getEntity(String datamart, String viewName) {
-        if(InformationSchemaView.SCHEMA_NAME.equals(datamart.toUpperCase()))
-        {
-            String upViewName = viewName.toUpperCase();
-            return informationSchemaService.getEntities().stream()
-                .filter(entity -> entity.getName().equals(upViewName))
-                .map(Future::succeededFuture)
-                .findAny()
-                .orElse(Future.failedFuture(String.format("Entity [%s.%s] doesn't exist", datamart, viewName)));
-        }
-        else if(InformationSchemaView.DTM_SCHEMA_NAME.equals(datamart.toUpperCase()))
-        {
+        if (InformationSchemaView.SCHEMA_NAME.equals(datamart.toUpperCase())) {
+            return Optional.ofNullable(informationSchemaService.getEntities().get(viewName.toUpperCase()))
+                    .map(Future::succeededFuture)
+                    .orElse(Future.failedFuture(String.format("Entity [%s.%s] doesn't exist", datamart, viewName)));
+        } else if (InformationSchemaView.DTM_SCHEMA_NAME.equals(datamart.toUpperCase())) {
             return Future.succeededFuture();
-        }
-        else {
+        } else {
             return entityDao.getEntity(datamart, viewName);
         }
     }

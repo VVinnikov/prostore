@@ -9,33 +9,33 @@ public class MetaDataQueryPreparerTest {
 
   @Test
   void findInformationSchemaViewsSingle() {
-    String sql = "select * from INFORMATION_SCHEMA.DELTAS";
+    String sql = "select * from INFORMATION_SCHEMA.TABLE_CONSTRAINTS";
 
-    assertEquals(InformationSchemaView.DELTAS,
+    assertEquals(InformationSchemaView.TABLE_CONSTRAINTS,
       MetaDataQueryPreparer.findInformationSchemaViews(sql).get(0).getView());
   }
 
   @Test
   void findInformationSchemaViewsSingleWithQuotesInTable() {
-    String sql = "select * from INFORMATION_SCHEMA.\"DELTAS\"";
+    String sql = "select * from INFORMATION_SCHEMA.\"TABLE_CONSTRAINTS\"";
 
-    assertEquals(InformationSchemaView.DELTAS,
+    assertEquals(InformationSchemaView.TABLE_CONSTRAINTS,
       MetaDataQueryPreparer.findInformationSchemaViews(sql).get(0).getView());
   }
 
   @Test
   void findInformationSchemaViewsSingleWithQuotesInSchema() {
-    String sql = "select * from \"INFORMATION_SCHEMA\".DELTAS";
+    String sql = "select * from \"INFORMATION_SCHEMA\".TABLE_CONSTRAINTS";
 
-    assertEquals(InformationSchemaView.DELTAS,
+    assertEquals(InformationSchemaView.TABLE_CONSTRAINTS,
       MetaDataQueryPreparer.findInformationSchemaViews(sql).get(0).getView());
   }
 
   @Test
   void findInformationSchemaViewsSingleWithQuotesInTableAndSchema() {
-    String sql = "select * from \"INFORMATION_SCHEMA\".\"DELTAS\"";
+    String sql = "select * from \"INFORMATION_SCHEMA\".\"TABLE_CONSTRAINTS\"";
 
-    assertEquals(InformationSchemaView.DELTAS,
+    assertEquals(InformationSchemaView.TABLE_CONSTRAINTS,
       MetaDataQueryPreparer.findInformationSchemaViews(sql).get(0).getView());
   }
 
@@ -43,7 +43,7 @@ public class MetaDataQueryPreparerTest {
   void findInformationSchemaViewsSingleCaseInsensitive() {
     String sql = "select * from infORMATION_SCheMA.SCheMaTa";
 
-    assertEquals(InformationSchemaView.SCHEMES,
+    assertEquals(InformationSchemaView.SCHEMATA,
       MetaDataQueryPreparer.findInformationSchemaViews(sql).get(0).getView());
   }
 

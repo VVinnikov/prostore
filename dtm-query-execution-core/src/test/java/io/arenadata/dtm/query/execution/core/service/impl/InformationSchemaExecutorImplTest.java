@@ -4,9 +4,10 @@ import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QuerySourceRequest;
 import io.arenadata.dtm.common.reader.SourceType;
-import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.service.dml.InformationSchemaExecutor;
 import io.arenadata.dtm.query.execution.core.service.dml.impl.InformationSchemaExecutorImpl;
+import io.arenadata.dtm.query.execution.core.service.hsql.HSQLClient;
+import io.arenadata.dtm.query.execution.core.service.hsql.impl.HSQLClientImpl;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import org.junit.jupiter.api.Test;
 
@@ -18,8 +19,8 @@ import static org.mockito.Mockito.mock;
 
 public class InformationSchemaExecutorImplTest {
 
-    private ServiceDbFacade serviceDbFacade = mock(ServiceDbFacade.class);
-    private InformationSchemaExecutor informationSchemaExecutor = new InformationSchemaExecutorImpl(serviceDbFacade);
+    private HSQLClient client = mock(HSQLClientImpl.class);
+    private InformationSchemaExecutor informationSchemaExecutor = new InformationSchemaExecutorImpl(client);
 
     @Test
     void executeQuery() {

@@ -1,11 +1,11 @@
 package io.arenadata.dtm.query.execution.core.service.impl;
 
+import io.arenadata.dtm.common.reader.InformationSchemaView;
 import io.arenadata.dtm.common.reader.QuerySourceRequest;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.TargetDatabaseDefinitionService;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
-import io.arenadata.dtm.query.execution.core.utils.MetaDataQueryPreparer;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.QueryCostRequest;
@@ -14,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -47,7 +46,7 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
     }
 
     private void getTargetSourceWithoutHint(QuerySourceRequest request, Handler<AsyncResult<QuerySourceRequest>> handler) {
-        if (CollectionUtils.isEmpty(MetaDataQueryPreparer.findInformationSchemaViews(request.getQueryRequest().getSql()))) {
+        if (!InformationSchemaView.SCHEMA_NAME.equals(request.getQueryRequest().getDatamartMnemonic().toUpperCase())) {
             getLogicalSchema(request)
                 .onComplete(ar -> {
                     if (ar.succeeded()) {

@@ -98,7 +98,8 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
         taskVerticleExecutor.execute(p -> getPlugin(sourceType).rollback(context, p), asyncResultHandler);
     }
 
-    private DtmDataSourcePlugin getPlugin(SourceType sourceType) {
+    @Override
+    public DtmDataSourcePlugin getPlugin(SourceType sourceType) {
         return pluginRegistry.getRequiredPluginFor(sourceType);
     }
 }

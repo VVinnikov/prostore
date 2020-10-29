@@ -36,40 +36,49 @@ public class EdmlUploadFailedExecutorImpl implements EdmlUploadFailedExecutor {
     @Override
     public Future<Void> execute(EdmlRequestContext context) {
         return Future.future(promise -> eraseWriteOp(context)
-                .compose(v -> deltaServiceDao.deleteWriteOperation(context.getSourceTable().getSchemaName(),
-                        context.getSysCn()))
-                .setHandler(promise));
+            .compose(v -> deltaServiceDao.deleteWriteOperation(context.getSourceTable().getSchemaName(),
+                context.getSysCn()))
+            .setHandler(promise));
     }
 
     private Future<Void> eraseWriteOp(EdmlRequestContext context) {
         return Future.future(rbPromise -> {
-            List<Future> futures = new ArrayList<>();
             final RollbackRequestContext rollbackRequestContext =
-                    rollbackRequestContextFactory.create(context);
+                rollbackRequestContextFactory.create(context);
+            eraseWriteOp(rollbackRequestContext)
+                .onSuccess(rbPromise::complete)
+                .onFailure(rbPromise::fail);
+        });
+    }
+
+    @Override
+    public Future<Void> eraseWriteOp(RollbackRequestContext context) {
+        return Future.future(rbPromise -> {
+            List<Future> futures = new ArrayList<>();
             dataSourcePluginService.getSourceTypes().forEach(sourceType ->
-                    futures.add(Future.future(p -> dataSourcePluginService.rollback(
-                            sourceType,
-                            rollbackRequestContext,
-                            ar -> {
-                                if (ar.succeeded()) {
-                                    log.debug("Rollback data in plugin [{}], datamart [{}], " +
-                                                    "table [{}], sysCn [{}] finished successfully",
-                                            sourceType,
-                                            context.getEntity().getSchema(),
-                                            context.getTargetTable().getTableName(),
-                                            context.getSysCn());
-                                    p.complete();
-                                } else {
-                                    log.error("Error rollback data in plugin [{}], " +
-                                                    "datamart [{}], table [{}], sysCn [{}]",
-                                            sourceType,
-                                            context.getEntity().getSchema(),
-                                            context.getTargetTable().getTableName(),
-                                            context.getSysCn(),
-                                            ar.cause());
-                                    p.fail(ar.cause());
-                                }
-                            }))));
+                futures.add(Future.future(p -> dataSourcePluginService.rollback(
+                    sourceType,
+                    context,
+                    ar -> {
+                        if (ar.succeeded()) {
+                            log.debug("Rollback data in plugin [{}], datamart [{}], " +
+                                    "table [{}], sysCn [{}] finished successfully",
+                                sourceType,
+                                context.getRequest().getDatamart(),
+                                context.getRequest().getTargetTable(),
+                                context.getRequest().getSysCn());
+                            p.complete();
+                        } else {
+                            log.error("Error rollback data in plugin [{}], " +
+                                    "datamart [{}], table [{}], sysCn [{}]",
+                                sourceType,
+                                context.getRequest().getDatamart(),
+                                context.getRequest().getTargetTable(),
+                                context.getRequest().getSysCn(),
+                                ar.cause());
+                            p.fail(ar.cause());
+                        }
+                    }))));
             CompositeFuture.join(futures).setHandler(ar -> {
                 if (ar.succeeded()) {
                     rbPromise.complete();

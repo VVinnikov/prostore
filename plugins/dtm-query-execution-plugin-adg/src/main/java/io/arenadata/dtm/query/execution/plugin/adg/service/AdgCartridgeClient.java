@@ -2,6 +2,7 @@ package io.arenadata.dtm.query.execution.plugin.adg.service;
 
 import io.arenadata.dtm.query.execution.plugin.adg.dto.rollback.ReverseHistoryTransferRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.OperationFile;
+import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.OperationYaml;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.*;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.ResOperation;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.TtDeleteBatchResponse;
@@ -43,5 +44,12 @@ public interface AdgCartridgeClient {
   void executeDeleteSpacesWithPrefix(TtDeleteTablesWithPrefixRequest request,
                                     Handler<AsyncResult<TtDeleteQueueResponse>> handler);
 
-    void reverseHistoryTransfer(ReverseHistoryTransferRequest request, Handler<AsyncResult<Void>> handler);
+  void reverseHistoryTransfer(ReverseHistoryTransferRequest request, Handler<AsyncResult<Void>> handler);
+
+  void executeCreateSpacesQueued(OperationYaml request, Handler<AsyncResult<Void>> handler);
+
+  void executeDeleteSpacesQueued(TtDeleteTablesRequest request, Handler<AsyncResult<Void>> handler);
+
+  void executeDeleteSpacesWithPrefixQueued(TtDeleteTablesWithPrefixRequest request,
+                                           Handler<AsyncResult<Void>> handler);
 }

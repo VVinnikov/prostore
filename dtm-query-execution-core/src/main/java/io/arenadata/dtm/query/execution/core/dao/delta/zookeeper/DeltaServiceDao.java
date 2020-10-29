@@ -36,7 +36,7 @@ public interface DeltaServiceDao {
      *
      * @param datamart - datamart name
      */
-    Future<Long> writeDeltaHotSuccess(String datamart);
+    Future<LocalDateTime> writeDeltaHotSuccess(String datamart);
 
     /**
      * State delta_hot commit
@@ -44,7 +44,7 @@ public interface DeltaServiceDao {
      * @param datamart     - datamart name
      * @param deltaHotDate - delta hot date
      */
-    Future<Long> writeDeltaHotSuccess(String datamart, LocalDateTime deltaHotDate);
+    Future<LocalDateTime> writeDeltaHotSuccess(String datamart, LocalDateTime deltaHotDate);
 
     /**
      * State the delta_hot rollback started

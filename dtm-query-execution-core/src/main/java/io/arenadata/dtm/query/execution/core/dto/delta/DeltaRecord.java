@@ -2,9 +2,11 @@ package io.arenadata.dtm.query.execution.core.dto.delta;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.arenadata.dtm.common.delta.DeltaLoadStatus;
+import io.arenadata.dtm.query.execution.core.dto.delta.operation.WriteOpFinish;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
@@ -13,12 +15,13 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @ToString
 public class DeltaRecord {
-
-    private Long loadId;
-    private String datamartMnemonic;
-    private LocalDateTime sysDate;
-    private LocalDateTime statusDate;
-    private Long sinId;
-    private String loadProcId;
+    private String datamart;
+    private LocalDateTime deltaDate;
+    private Long deltaNum;
+    private Long cnFrom;
+    private Long cnTo;
+    private Long cnMax;
+    private boolean rollingBack;
+    private List<WriteOpFinish> writeOperationsFinished;
     private DeltaLoadStatus status;
 }

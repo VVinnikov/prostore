@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.arenadata.dtm.async.AsyncUtils;
 import io.arenadata.dtm.common.model.ddl.Entity;
+import io.arenadata.dtm.query.execution.core.configuration.cache.CacheConfiguration;
 import io.arenadata.dtm.query.execution.core.dao.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.exception.entity.EntityAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.dao.exception.entity.EntityNotExistsException;
@@ -17,6 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.zookeeper.KeeperException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Repository;
 
 import java.io.IOException;
@@ -76,6 +79,7 @@ public class EntityDaoImpl implements EntityDao {
     }
 
     @Override
+    @CacheEvict(value = CacheConfiguration.ENTITY_CACHE, key = "{#entity.getSchema(), #entity.getName()}")
     public Future<Void> updateEntity(Entity entity) {
         try {
             byte[] entityData = DatabindCodec.mapper().writeValueAsBytes(entity);
@@ -104,6 +108,7 @@ public class EntityDaoImpl implements EntityDao {
     }
 
     @Override
+    @CacheEvict(value = CacheConfiguration.ENTITY_CACHE, key = "{#datamartMnemonic, #entityName}")
     public Future<Void> deleteEntity(String datamartMnemonic, String entityName) {
         val nameWithSchema = getNameWithSchema(datamartMnemonic, entityName);
         return executor.delete(getTargetPath(datamartMnemonic, entityName), -1)
@@ -121,6 +126,7 @@ public class EntityDaoImpl implements EntityDao {
     }
 
     @Override
+    @Cacheable(value = CacheConfiguration.ENTITY_CACHE, key = "{#datamartMnemonic, #entityName}")
     public Future<Entity> getEntity(String datamartMnemonic, String entityName) {
         val nameWithSchema = getNameWithSchema(datamartMnemonic, entityName);
         return executor.getData(getTargetPath(datamartMnemonic, entityName))

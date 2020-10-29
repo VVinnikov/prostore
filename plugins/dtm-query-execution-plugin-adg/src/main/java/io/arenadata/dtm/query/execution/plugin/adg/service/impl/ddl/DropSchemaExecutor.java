@@ -39,7 +39,7 @@ public class DropSchemaExecutor implements DdlExecutor<Void> {
 
         val request = new TtDeleteTablesWithPrefixRequest(tableNames.getPrefix());
 
-        cartridgeClient.executeDeleteSpacesWithPrefix(request, ar -> {
+        cartridgeClient.executeDeleteSpacesWithPrefixQueued(request, ar -> {
             if(ar.succeeded()) {
                 handler.handle(Future.succeededFuture());
             } else {

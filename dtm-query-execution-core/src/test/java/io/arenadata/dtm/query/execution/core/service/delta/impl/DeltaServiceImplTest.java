@@ -6,7 +6,7 @@ import io.arenadata.dtm.query.execution.core.service.delta.DeltaExecutor;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaQueryParamExtractor;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaService;
 import io.arenadata.dtm.query.execution.plugin.api.delta.DeltaRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.delta.query.BeginDeltaQuery;
+import io.arenadata.dtm.query.execution.core.dto.delta.query.BeginDeltaQuery;
 import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
 import io.vertx.core.Promise;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,11 +34,8 @@ class DeltaServiceImplTest {
     @Test
     void executeWithNullDatamart() {
         Promise promise = Promise.promise();
-        BeginDeltaQuery deltaQuery = new BeginDeltaQuery();
-        deltaQuery.setDeltaNum(null);
         DatamartRequest datamartRequest = new DatamartRequest(request);
         DeltaRequestContext context = new DeltaRequestContext(datamartRequest);
-        context.setDeltaQuery(deltaQuery);
 
         request.setDatamartMnemonic(null);
         deltaService.execute(context, ar -> {
@@ -54,12 +51,9 @@ class DeltaServiceImplTest {
     @Test
     void executeWithEmptyDatamart() {
         Promise promise = Promise.promise();
-        BeginDeltaQuery deltaQuery = new BeginDeltaQuery();
-        deltaQuery.setDeltaNum(null);
+
         DatamartRequest datamartRequest = new DatamartRequest(request);
         DeltaRequestContext context = new DeltaRequestContext(datamartRequest);
-        context.setDeltaQuery(deltaQuery);
-
         request.setDatamartMnemonic("");
         deltaService.execute(context, handler -> {
             if (handler.succeeded()) {

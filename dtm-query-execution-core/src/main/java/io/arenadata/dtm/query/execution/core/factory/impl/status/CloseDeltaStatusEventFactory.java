@@ -21,6 +21,6 @@ public class CloseDeltaStatusEventFactory extends AbstractStatusEventFactory<Del
 
     @Override
     protected CloseDeltaEvent createEventMessage(StatusEventKey eventKey, DeltaRecord eventData) {
-        return new CloseDeltaEvent(eventData.getSinId(), eventData.getStatusDate());
+        return new CloseDeltaEvent(eventData.getDeltaDate());
     }
 }

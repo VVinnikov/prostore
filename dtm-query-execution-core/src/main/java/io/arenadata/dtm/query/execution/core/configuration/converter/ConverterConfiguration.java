@@ -31,7 +31,8 @@ public class ConverterConfiguration {
                 .collect(Collectors.toMap(ColumnTransformer::getTransformClass, cl -> cl)));
         transformerMap.put(ColumnType.TIME, Stream.of(new TimeFromLocalTimeTransformer())
                 .collect(Collectors.toMap(ColumnTransformer::getTransformClass, cl -> cl)));
-        transformerMap.put(ColumnType.TIMESTAMP, Stream.of(new TimestampFromStringTransformer())
+        transformerMap.put(ColumnType.TIMESTAMP, Stream.of(new TimestampFromStringTransformer(),
+                new TimestampFromLocalDateTimeTransformer())
                 .collect(Collectors.toMap(ColumnTransformer::getTransformClass, cl -> cl)));
         transformerMap.put(ColumnType.BOOLEAN, Stream.of(new BooleanFromBooleanTransformer())
                 .collect(Collectors.toMap(ColumnTransformer::getTransformClass, cl -> cl)));

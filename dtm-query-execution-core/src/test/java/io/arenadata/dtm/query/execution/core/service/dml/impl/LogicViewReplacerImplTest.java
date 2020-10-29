@@ -11,7 +11,9 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
+import io.arenadata.dtm.query.execution.core.service.InformationSchemaService;
 import io.arenadata.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
+import io.arenadata.dtm.query.execution.core.service.impl.InformationSchemaServiceImpl;
 import io.vertx.core.Future;
 import io.vertx.junit5.VertxTestContext;
 import lombok.extern.slf4j.Slf4j;
@@ -85,6 +87,8 @@ class LogicViewReplacerImplTest {
     private final DefinitionService<SqlNode> definitionService =
         new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
 
+    private final InformationSchemaService informationSchemaService = mock(InformationSchemaServiceImpl.class);
+
     @BeforeEach
     void setUp() {
         when(serviceDbFacade.getServiceDbDao()).thenReturn(serviceDbDao);
@@ -104,7 +108,7 @@ class LogicViewReplacerImplTest {
                     "WHERE tblX.Col6 = 0")
                 .build()));
 
-        val loader = new DatamartViewWrapLoaderImpl(serviceDao);
+        val loader = new DatamartViewWrapLoaderImpl(serviceDao, informationSchemaService);
         val replacer = new LogicViewReplacerImpl(definitionService, new SqlSnapshotReplacerImpl(), loader);
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
             "FROM view FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' v";
@@ -132,7 +136,7 @@ class LogicViewReplacerImplTest {
                     "WHERE tblX.Col6 = 0")
                 .build()));
 
-        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade);
+        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade, informationSchemaService);
         val replacer = new LogicViewReplacerImpl(definitionService, new SqlSnapshotReplacerImpl(), loader);
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
             "FROM test.view v";
@@ -160,7 +164,7 @@ class LogicViewReplacerImplTest {
                     "WHERE tblX.Col6 = 0")
                 .build()));
 
-        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade);
+        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade, informationSchemaService);
         val replacer = new LogicViewReplacerImpl(definitionService, new SqlSnapshotReplacerImpl(), loader);
         val sql = "SELECT view.Col1 as c, view.Col2 r\n" +
             "FROM view";
@@ -188,7 +192,7 @@ class LogicViewReplacerImplTest {
                     "WHERE tblX.Col6 = 0")
                 .build()));
 
-        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade);
+        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade, informationSchemaService);
         val replacer = new LogicViewReplacerImpl(definitionService, new SqlSnapshotReplacerImpl(), loader);
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
             "FROM tbl FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' t\n" +
@@ -218,7 +222,7 @@ class LogicViewReplacerImplTest {
                     "WHERE tblX.Col6 = 0")
                 .build()));
 
-        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade);
+        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade, informationSchemaService);
         val replacer = new LogicViewReplacerImpl(definitionService, new SqlSnapshotReplacerImpl(), loader);
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
             "FROM tbl FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' t\n" +
@@ -247,7 +251,7 @@ class LogicViewReplacerImplTest {
                     "FROM tblX \n" +
                     "WHERE tblX.Col6 = 0")
                 .build()));
-        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade);
+        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade, informationSchemaService);
         val replacer = new LogicViewReplacerImpl(definitionService, new SqlSnapshotReplacerImpl(), loader);
         val sql = "SELECT t.Col1 as c, (select id from view limit 1) r\n" +
             "FROM tblt t";
@@ -282,7 +286,7 @@ class LogicViewReplacerImplTest {
                         "WHERE tblC.Col9 = 0")
                     .build())
             );
-        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade);
+        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade, informationSchemaService);
         val replacer = new LogicViewReplacerImpl(definitionService, new SqlSnapshotReplacerImpl(), loader);
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
             "FROM view FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' v";

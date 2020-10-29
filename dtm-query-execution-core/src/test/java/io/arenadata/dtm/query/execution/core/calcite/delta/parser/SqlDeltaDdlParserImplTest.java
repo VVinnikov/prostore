@@ -184,19 +184,6 @@ public class SqlDeltaDdlParserImplTest {
     }
 
     @Test
-    void parseGetDeltaByDateTimeError() {
-        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
-        FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
-
-        assertAll("Try validate GetDeltaByDateTime error queries",
-                () -> assertThrows(SqlParseException.class, () -> planner.parse("GET_DELTA_BY_DATETIME('')")),
-                () -> assertThrows(SqlParseException.class, () -> planner.parse("GET_DELTA_BY_DATETIME('2020-10-2615:00:11')")),
-                () -> assertThrows(SqlParseException.class, () -> planner.parse("GET_DELTA_BY_DATETIME('null')")  )
-        );
-    }
-
-    @Test
     void parseGetDeltaByNum() throws SqlParseException {
         DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();

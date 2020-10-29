@@ -14,16 +14,15 @@ import java.math.RoundingMode;
 import java.net.URL;
 import java.sql.Date;
 import java.sql.*;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 
 public class DtmResultSet implements ResultSet {
 
-    private final SimpleDateFormat dateTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-    private final TimeZone defaultDateTimeTimeZone = TimeZone.getDefault();
     private final List<ColumnMetadata> metadata;
     private List<Field[]> fields;
     private int currentRow = -1;
@@ -119,7 +118,34 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public Object getObject(int columnIndex) throws SQLException {
-        return this.getValue(columnIndex);
+        final ColumnMetadata columnMetadata = metadata.get(columnIndex - 1);
+        switch (columnMetadata.getType()) {
+            case INT:
+                return this.getInt(columnIndex);
+            case BIGINT:
+                return this.getLong(columnIndex);
+            case VARCHAR:
+            case ANY:
+            case CHAR:
+            case UUID:
+            case BLOB:
+                return this.getString(columnIndex);
+            case FLOAT:
+                return this.getFloat(columnIndex);
+            case DOUBLE:
+                return this.getDouble(columnIndex);
+            case BOOLEAN:
+                return this.getBoolean(columnIndex);
+            case DATE:
+                return this.getDate(columnIndex);
+            case TIME:
+                return this.getTime(columnIndex);
+            case TIMESTAMP:
+                return this.getTimestamp(columnIndex);
+            default:
+                throw new SQLException(String.format("Column type %s for index %s not found!",
+                        columnMetadata.getType(), columnIndex));
+        }
     }
 
     @Override
@@ -216,12 +242,10 @@ public class DtmResultSet implements ResultSet {
     @Override
     public Date getDate(int columnIndex) throws SQLException {
         final Object value = this.getValue(columnIndex);
-        if (value != null && !value.toString().equals("0000-00-00")) {
-            try {
-                return new Date(this.dateFormat.parse(value.toString()).getTime());
-            } catch (ParseException e) {
-                throw new SQLException("Incorrect date value", e);
-            }
+        if (value != null) {
+            //TODO implement getting ZoneId from configuration
+            return Date.valueOf(LocalDateTime.ofInstant(Instant.ofEpochMilli((Long) value),
+                    ZoneId.systemDefault()).toLocalDate());
         } else {
             return null;
         }
@@ -235,26 +259,10 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public Timestamp getTimestamp(int columnIndex) throws SQLException {
-        final Long value = getTimestampAsLong(columnIndex);
-        return value == null ? null : new Timestamp(value);
-    }
-
-    private Long getTimestampAsLong(int columnIndex) throws SQLException {
         final Object value = this.getValue(columnIndex);
-        return this.toTimestamp(value, this.defaultDateTimeTimeZone);
-    }
-
-    private Long toTimestamp(Object value, TimeZone timeZone) {
-        if (value != null && !value.toString().equals("0000-00-00 00:00:00")) {
-            try {
-                this.dateTimeFormat.setTimeZone(timeZone);
-                return this.dateTimeFormat.parse(value.toString()).getTime();
-            } catch (ParseException var4) {
-                throw new RuntimeException(var4);
-            }
-        } else {
-            return null;
-        }
+        //TODO implement getting ZoneId from configuration
+        return value == null ? null : Timestamp.valueOf(LocalDateTime.ofInstant(Instant.ofEpochMilli((Long) value),
+                ZoneId.systemDefault()));
     }
 
     @Override

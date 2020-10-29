@@ -30,12 +30,22 @@ public class InformationSchemaUtils {
                     "WHERE table_schema NOT IN ('DTM', 'INFORMATION_SCHEMA', 'SYSTEM_LOBS')";
     public static final String LOGIC_SCHEMA_ENTITY_CONSTRAINTS =
             "CREATE VIEW IF NOT EXISTS DTM.logic_schema_entity_constraints AS\n" +
-                    "    SELECT constraint_catalog, constraint_schema, constraint_name, table_schema, table_name, 'primary key' AS CONSTRAINT_TYPE\n" +
-                    "    FROM information_schema.KEY_COLUMN_USAGE\n" +
-                    "    WHERE constraint_schema not in ('DTM', 'INFORMATION_SCHEMA', 'SYSTEM_LOBS') AND constraint_name = 'PRIMARY'\n" +
-                    "  UNION ALL\n" +
-                    "    SELECT constraint_catalog, constraint_schema, constraint_name, table_schema, table_name, 'sharding key' AS CONSTRAINT_TYPE\n" +
-                    "    FROM information_schema.KEY_COLUMN_USAGE\n" +
-                    "    WHERE constraint_schema NOT IN ('DTM', 'INFORMATION_SCHEMA', 'SYSTEM_LOBS') AND constraint_name like '%_sk_%'";
+                    "SELECT kcu.constraint_catalog,\n" +
+                    "       kcu.constraint_schema,\n" +
+                    "       si.index_name as constraint_name,\n" +
+                    "       kcu.table_schema,\n" +
+                    "       kcu.table_name,\n" +
+                    "       case\n" +
+                    "           when si.INDEX_NAME like 'SK_%' then 'sharding key'\n" +
+                    "           when si.INDEX_NAME like '%_PK_%' then 'primary key'\n" +
+                    "           ELSE '-'\n" +
+                    "           end       AS CONSTRAINT_TYPE\n" +
+                    "FROM information_schema.KEY_COLUMN_USAGE kcu,\n" +
+                    "     information_schema.SYSTEM_INDEXSTATS si\n" +
+                    "WHERE kcu.CONSTRAINT_CATALOG = si.TABLE_CATALOG\n" +
+                    "  and kcu.TABLE_CATALOG = si.TABLE_CATALOG\n" +
+                    "  and kcu.TABLE_SCHEMA = si.TABLE_SCHEMA\n" +
+                    "  and kcu.TABLE_NAME = si.TABLE_NAME\n" +
+                    "  and kcu.constraint_schema NOT IN ('DTM', 'INFORMATION_SCHEMA', 'SYSTEM_LOBS')";
     public static final String CREATE_SCHEMA = "CREATE SCHEMA IF NOT EXISTS %s";
 }

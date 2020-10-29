@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.impl;
 
+import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.reader.InformationSchemaView;
 import io.arenadata.dtm.common.reader.QuerySourceRequest;
 import io.arenadata.dtm.common.reader.SourceType;
@@ -48,7 +49,7 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
     }
 
     private void getTargetSourceWithoutHint(QuerySourceRequest request, Handler<AsyncResult<QuerySourceRequest>> handler) {
-        if (InformationSchemaView.SCHEMA_NAME.equals(request.getQueryRequest().getDatamartMnemonic().toUpperCase())) {
+        if (isInformationSchema(request.getQueryRequest().getDeltaInformations())) {
             val queryRequestWithSourceType = request.getQueryRequest().copy();
             queryRequestWithSourceType.setSourceType(SourceType.INFORMATION_SCHEMA);
             val result = new QuerySourceRequest(
@@ -84,6 +85,13 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
                     })
                     .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
         }
+    }
+
+    private boolean isInformationSchema(List<DeltaInformation> deltaInformationList)
+    {
+        return deltaInformationList.stream()
+                .anyMatch(deltaInformation -> InformationSchemaView.DTM_SCHEMA_NAME
+                        .equalsIgnoreCase(deltaInformation.getSchemaName()));
     }
 
     private Future<List<Datamart>> getLogicalSchema(QuerySourceRequest request) {

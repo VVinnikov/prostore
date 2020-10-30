@@ -38,7 +38,6 @@ public class DropSchemaDdlExecutor extends DropTableDdlExecutor {
             context.setDatamartName(schemaName);
             datamartDao.existsDatamart(schemaName)
                 .compose(isExists -> isExists ? dropDatamartInPlugins(context) : getNotExistsDatamartFuture(schemaName))
-                .compose(r -> dropDatamartInPlugins(context))
                 .compose(r -> dropDatamart(context))
                 .onSuccess(success -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
                 .onFailure(fail -> handler.handle(Future.failedFuture(fail)));

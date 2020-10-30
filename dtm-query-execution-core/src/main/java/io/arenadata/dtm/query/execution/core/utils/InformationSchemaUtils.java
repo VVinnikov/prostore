@@ -47,5 +47,10 @@ public class InformationSchemaUtils {
                     "  and kcu.TABLE_SCHEMA = si.TABLE_SCHEMA\n" +
                     "  and kcu.TABLE_NAME = si.TABLE_NAME\n" +
                     "  and kcu.constraint_schema NOT IN ('DTM', 'INFORMATION_SCHEMA', 'SYSTEM_LOBS')";
+
     public static final String CREATE_SCHEMA = "CREATE SCHEMA IF NOT EXISTS %s";
+
+    public static final String CREATE_SHARDING_KEY_INDEX = "CREATE INDEX IF NOT EXISTS sk_%s on %s (%s)";
+
+    public static final String COMMENT_ON_COLUMN = "COMMENT ON COLUMN %s.%s IS '%s'";
 }

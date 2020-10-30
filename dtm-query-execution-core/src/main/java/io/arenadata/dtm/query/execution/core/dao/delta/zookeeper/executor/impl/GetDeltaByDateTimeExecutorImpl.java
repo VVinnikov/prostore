@@ -68,8 +68,8 @@ public class GetDeltaByDateTimeExecutorImpl extends DeltaServiceDaoExecutorHelpe
         return resultPromise.future();
     }
 
-    private Future<OkDelta> findByDays(String datamart, LocalDateTime dateTime) {
-        val date = dateTime.toLocalDate();
+    private Future<OkDelta> findByDays(String datamart, LocalDateTime targetDateTime) {
+        val date = targetDateTime.toLocalDate();
         Promise<OkDelta> resultPromise = Promise.promise();
         getDatamartDeltaDays(datamart, date)
             .onSuccess(days -> {
@@ -77,7 +77,7 @@ public class GetDeltaByDateTimeExecutorImpl extends DeltaServiceDaoExecutorHelpe
                     val dayIterator = days.iterator();
                     findByDay(datamart,
                         dayIterator,
-                        dateTime,
+                        targetDateTime,
                         resultPromise);
                 } else {
                     resultPromise.fail(new DeltaNotFoundException());
@@ -98,15 +98,15 @@ public class GetDeltaByDateTimeExecutorImpl extends DeltaServiceDaoExecutorHelpe
 
     private void findByDay(String datamart,
                            Iterator<LocalDate> dayIterator,
-                           LocalDateTime dateTime,
+                           LocalDateTime targetDateTime,
                            Promise<OkDelta> resultPromise) {
         val day = dayIterator.next();
-        getDeltaOkByMaxDeltaDateTime(datamart, day, dateTime)
+        getDeltaOkByMaxDeltaDateTime(datamart, day, targetDateTime)
             .onSuccess(okDelta -> {
                 if (okDelta != null) {
                     resultPromise.complete(okDelta);
                 } else if (dayIterator.hasNext()) {
-                    findByDay(datamart, dayIterator, dateTime, resultPromise);
+                    findByDay(datamart, dayIterator, targetDateTime, resultPromise);
                 } else {
                     resultPromise.fail(new DeltaNotExistException());
                 }
@@ -116,12 +116,12 @@ public class GetDeltaByDateTimeExecutorImpl extends DeltaServiceDaoExecutorHelpe
 
     private Future<OkDelta> getDeltaOkByMaxDeltaDateTime(String datamart,
                                                          LocalDate day,
-                                                         LocalDateTime expectedDateTime) {
-        val expectedTime = expectedDateTime.toLocalTime();
+                                                         LocalDateTime targetDateTime) {
+        val targetTime = targetDateTime.toLocalTime();
         return executor.getChildren(getDeltaDatePath(datamart, day))
             .map(times -> times.stream()
                 .map(LocalTime::parse)
-                .filter(time -> expectedTime.isAfter(time) || expectedTime.equals(time))
+                .filter(time -> targetTime.isAfter(time) || targetTime.equals(time))
                 .max(Comparator.naturalOrder()))
             .compose(timeOpt -> timeOpt
                 .map(localTime -> {

@@ -37,5 +37,10 @@ public class InformationSchemaUtils {
                     "    SELECT constraint_catalog, constraint_schema, constraint_name, table_schema, table_name, 'sharding key' AS CONSTRAINT_TYPE\n" +
                     "    FROM information_schema.KEY_COLUMN_USAGE\n" +
                     "    WHERE constraint_schema NOT IN ('DTM', 'INFORMATION_SCHEMA', 'SYSTEM_LOBS') AND constraint_name like '%_sk_%'";
+
     public static final String CREATE_SCHEMA = "CREATE SCHEMA IF NOT EXISTS %s";
+
+    public static final String CREATE_SHARDING_KEY_INDEX = "CREATE INDEX IF NOT EXISTS sk_%s on %s (%s)";
+
+    public static final String COMMENT_ON_COLUMN = "COMMENT ON COLUMN %s.%s IS '%s'";
 }

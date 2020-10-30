@@ -4,6 +4,7 @@ import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.status.StatusEventCode;
 import io.arenadata.dtm.common.status.ddl.DatamartSchemaChangedEvent;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlUseSchema;
+import io.arenadata.dtm.query.execution.core.service.InformationSchemaService;
 import io.arenadata.dtm.query.execution.core.service.delta.StatusEventPublisher;
 import io.arenadata.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
@@ -31,12 +32,15 @@ public class DdlServiceImpl implements DdlService<QueryResult>, StatusEventPubli
 
     private final CoreCalciteDefinitionService coreCalciteDefinitionService;
     private final Map<SqlKind, DdlExecutor<QueryResult>> executorMap;
+    private final InformationSchemaService informationSchemaService;
     private final Vertx vertx;
 
     @Autowired
     public DdlServiceImpl(CoreCalciteDefinitionService coreCalciteDefinitionService,
+                          InformationSchemaService informationSchemaService,
                           @Qualifier("coreVertx") Vertx vertx) {
         this.coreCalciteDefinitionService = coreCalciteDefinitionService;
+        this.informationSchemaService = informationSchemaService;
         this.vertx = vertx;
         this.executorMap = new HashMap<>();
     }
@@ -71,6 +75,7 @@ public class DdlServiceImpl implements DdlService<QueryResult>, StatusEventPubli
                     .execute(context, getSqlNodeName(sqlCall.getOperandList()), ddlAr -> {
                         if (ddlAr.succeeded()) {
                             handler.handle(Future.succeededFuture(ddlAr.result()));
+                            informationSchemaService.update(sqlCall);
                             publishStatus(
                                 StatusEventCode.DATAMART_SCHEMA_CHANGED,
                                 context.getDatamartName(),

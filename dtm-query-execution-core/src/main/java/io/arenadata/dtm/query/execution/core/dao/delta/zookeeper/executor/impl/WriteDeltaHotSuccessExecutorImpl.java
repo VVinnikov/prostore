@@ -53,10 +53,12 @@ public class WriteDeltaHotSuccessExecutorImpl extends DeltaServiceDaoExecutorHel
                     .cnTo(delta.getHot().getCnTo() == null ? delta.getHot().getCnFrom() : delta.getHot().getCnTo())
                     .build())
                 .build())
-            .compose(delta -> executor.multi(getWriteDeltaHotSuccessOps(datamart, delta, deltaStat.getVersion())))
-            .onSuccess(r -> {
-                log.debug("write delta hot \"success\" by datamart[{}], deltaHotDate[{}] completed successfully", datamart, deltaHotDate);
-                resultPromise.complete(ctx.getDelta().getOk().getDeltaDate());
+            .compose(delta -> executor.multi(getWriteDeltaHotSuccessOps(datamart, delta, deltaStat.getVersion())).map(delta))
+            .onSuccess(delta -> {
+                log.debug("write delta hot \"success\" by datamart[{}], deltaHotDate[{}] completed successfully",
+                    datamart,
+                    delta.getOk().getDeltaDate());
+                resultPromise.complete(delta.getOk().getDeltaDate());
             })
             .onFailure(error -> {
                 val errMsg = String.format("can't write delta hot \"success\" by datamart[%s], deltaDate[%s]",

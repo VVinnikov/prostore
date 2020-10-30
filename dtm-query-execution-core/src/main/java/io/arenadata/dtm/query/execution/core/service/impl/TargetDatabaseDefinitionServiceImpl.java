@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.impl;
 
+import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.reader.InformationSchemaView;
 import io.arenadata.dtm.common.reader.QuerySourceRequest;
 import io.arenadata.dtm.common.reader.SourceType;
@@ -16,10 +17,8 @@ import lombok.val;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -48,7 +47,7 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
     }
 
     private void getTargetSourceWithoutHint(QuerySourceRequest request, Handler<AsyncResult<QuerySourceRequest>> handler) {
-        if (InformationSchemaView.SCHEMA_NAME.equals(request.getQueryRequest().getDatamartMnemonic().toUpperCase())) {
+        if (isInformationSchema(request.getQueryRequest().getDeltaInformations())) {
             val queryRequestWithSourceType = request.getQueryRequest().copy();
             queryRequestWithSourceType.setSourceType(SourceType.INFORMATION_SCHEMA);
             val result = new QuerySourceRequest(
@@ -83,6 +82,21 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
                         }
                     })
                     .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
+        }
+    }
+
+    private boolean isInformationSchema(List<DeltaInformation> deltaInformationList) {
+        Set<String> unicSchemes = deltaInformationList.stream()
+            .map(DeltaInformation::getSchemaName)
+            .map(String::toUpperCase)
+            .collect(Collectors.toSet());
+
+        boolean informationSchemaExists = unicSchemes.contains(InformationSchemaView.DTM_SCHEMA_NAME);
+
+        if (unicSchemes.size() > 1 && informationSchemaExists) {
+            throw new IllegalArgumentException("Simultaneous query to the information schema and user schema isn't supported");
+        } else {
+            return informationSchemaExists;
         }
     }
 

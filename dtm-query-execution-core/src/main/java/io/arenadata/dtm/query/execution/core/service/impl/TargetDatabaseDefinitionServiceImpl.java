@@ -87,8 +87,7 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
         }
     }
 
-    private boolean isInformationSchema(List<DeltaInformation> deltaInformationList)
-    {
+    private boolean isInformationSchema(List<DeltaInformation> deltaInformationList) {
         return deltaInformationList.stream()
                 .anyMatch(deltaInformation -> InformationSchemaView.DTM_SCHEMA_NAME
                         .equalsIgnoreCase(deltaInformation.getSchemaName()));

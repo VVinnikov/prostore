@@ -4,6 +4,7 @@ import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityType;
+import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
 import io.arenadata.dtm.common.reader.InformationSchemaView;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
@@ -16,6 +17,8 @@ import io.vertx.core.Future;
 import io.vertx.core.json.JsonArray;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.calcite.sql.*;
+import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
@@ -64,18 +67,103 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     }
 
     @Override
+    public void update(SqlCall sql) {
+        switch (sql.getKind()) {
+            case CREATE_TABLE:
+                createTable((SqlCreateTable) sql);
+                return;
+            case CREATE_SCHEMA:
+            case DROP_SCHEMA:
+                client.executeQuery(sql.toString().replace("DATABASE", "SCHEMA").replace("`", ""))
+                        .onFailure(err -> shutdown(err));
+                return;
+            case CREATE_VIEW:
+            case ALTER_VIEW:
+            case DROP_VIEW:
+            case DROP_TABLE:
+                client.executeQuery(sql.toString().replace("`", ""))
+                        .onFailure(err -> shutdown(err));
+                return;
+            default:
+                return;
+        }
+    }
+
+    private void createTable(SqlCreateTable createTable) {
+        val distributedByColumns = createTable.getDistributedBy().getDistributedBy().getList().stream()
+                .map(SqlNode::toString)
+                .collect(Collectors.toList());
+        val schemaTable = createTable.getOperandList().get(0).toString();
+        val table = getTableName(schemaTable);
+        val creatTableQuery = sqlWithoutDistributedBy(createTable);
+
+        List<String> commentQueries = new ArrayList<>();
+        val columns = ((SqlNodeList) createTable.getOperandList().get(1)).getList();
+        columns.stream()
+                .filter(node -> node instanceof SqlColumnDeclaration)
+                .map(node -> (SqlColumnDeclaration) node)
+                .forEach(column -> {
+                    val name = column.getOperandList().get(0).toString();
+                    val typeString = getTypeWithoutSize(column.getOperandList().get(1).toString());
+                    val type = ColumnType.fromTypeString(typeString);
+                    switch (type) {
+                        case DOUBLE:
+                        case FLOAT:
+                        case INT:
+                        case VARCHAR:
+                            commentQueries.add(commentOnColumn(schemaTable, name, typeString));
+                            break;
+                        default:
+                            break;
+                    }
+                });
+
+        client.executeQuery(creatTableQuery)
+                .compose(r -> client.executeQuery(createShardingKeyIndex(table, schemaTable, distributedByColumns)))
+                .compose(r -> client.executeBatch(commentQueries))
+                .onFailure(err -> shutdown(err));
+    }
+
+    private String getTypeWithoutSize(String type) {
+        val idx = type.indexOf("(");
+        if (idx != -1) {
+            return type.substring(0, idx);
+        }
+        return type;
+    }
+
+    private String sqlWithoutDistributedBy(SqlCreateTable createTable) {
+        String sqlString = createTable.toString();
+        return sqlString.substring(0, sqlString.indexOf("DISTRIBUTED BY") - 1).replace("`", "");
+    }
+
+    private String commentOnColumn(String schemaTable, String column, String comment) {
+        return String.format(InformationSchemaUtils.COMMENT_ON_COLUMN, schemaTable, column, comment);
+    }
+
+    private String createShardingKeyIndex(String table, String schemaTable, List<String> columns) {
+        return String.format(InformationSchemaUtils.CREATE_SHARDING_KEY_INDEX,
+                table, schemaTable, String.join(", ", columns));
+    }
+
+    private String getTableName(String schemaTable) {
+        return schemaTable.substring(schemaTable.indexOf(".") + 1);
+    }
+
+    @Override
     public void initialize() {
         createInformationSchemaViews()
                 .compose(r -> createSchemasFromDatasource())
                 .compose(a -> initEntities())
-                .onSuccess(success -> {
-                    log.info("Information schema initialized successfully");
-                })
-                .onFailure(err -> {
-                    log.error("Error while creating information schema views", err);
-                    val exitCode = SpringApplication.exit(applicationContext, () -> 1);
-                    System.exit(exitCode);
-                });
+                .onSuccess(success -> log.info("Information schema initialized successfully"))
+                .onFailure(err -> shutdown(err));
+    }
+
+    private void shutdown(Throwable err) {
+        log.error("Error while creating/updating information schema", err);
+        val exitCode = SpringApplication.exit(applicationContext, () -> 1);
+        System.exit(exitCode);
+
     }
 
     @Override

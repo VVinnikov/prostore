@@ -83,7 +83,10 @@ public class EdmlUploadFailedExecutorImpl implements EdmlUploadFailedExecutor {
                 if (ar.succeeded()) {
                     rbPromise.complete();
                 } else {
-                    rbPromise.fail(new CrashException("Error in rolling back data", ar.cause()));
+                    log.error("Error in rolling back data", ar.cause());
+                    rbPromise.fail(
+                        new CrashException("Error in rolling back data → Fatal error. Operation failed on execute and failed on undo.", ar.cause())
+                    );
                 }
             });
         });

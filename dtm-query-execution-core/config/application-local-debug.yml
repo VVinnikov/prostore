@@ -5,6 +5,9 @@ logging:
     io.arenadata.dtm.query.execution: ${WRITER_LOG_LEVEL:INFO}
 
 core:
+  plugins:
+    active: ${CORE_PLUGINS_ACTIVE:ADG, ADB, ADQM}
+
   http:
     port: ${SERVER_PORT:8088}
 

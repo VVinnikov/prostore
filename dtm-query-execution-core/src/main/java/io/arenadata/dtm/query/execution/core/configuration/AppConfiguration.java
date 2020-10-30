@@ -7,12 +7,14 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.arenadata.dtm.common.schema.codec.AvroEncoder;
 import io.vertx.core.json.jackson.DatabindCodec;
+import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.env.Environment;
 
+@Setter
 @Configuration
 public class AppConfiguration {
 

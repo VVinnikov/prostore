@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.core.service;
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
@@ -62,9 +63,10 @@ public interface DataSourcePluginService {
 
     /**
      * <p>execute Massively Parallel Processing Writing</p>
-     * @param sourceType            Data source type
-     * @param mppwRequestContext    MPPW context
-     * @param resultHandler         async handler
+     *
+     * @param sourceType         Data source type
+     * @param mppwRequestContext MPPW context
+     * @param resultHandler      async handler
      */
     void mppw(SourceType sourceType, MppwRequestContext mppwRequestContext,
               Handler<AsyncResult<QueryResult>> resultHandler);
@@ -82,16 +84,25 @@ public interface DataSourcePluginService {
 
     /**
      * <p>Get plugin status information</p>
-     * @param sourceType            Data source type
-     * @param statusRequestContext  Status request context
-     * @param asyncResultHandler    async handler
+     *
+     * @param sourceType           Data source type
+     * @param statusRequestContext Status request context
+     * @param asyncResultHandler   async handler
      */
     void status(SourceType sourceType, StatusRequestContext statusRequestContext, Handler<AsyncResult<StatusQueryResult>> asyncResultHandler);
 
     /**
-     * @param sourceType            Data source type
-     * @param context               Rollback request context
-     * @param asyncResultHandler    async handler
+     * @param sourceType         Data source type
+     * @param context            Rollback request context
+     * @param asyncResultHandler async handler
      */
     void rollback(SourceType sourceType, RollbackRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler);
+
+    /**
+     * Get plugin by source type
+     *
+     * @param sourceType Data source type
+     * @return plugin
+     */
+    DtmDataSourcePlugin getPlugin(SourceType sourceType);
 }

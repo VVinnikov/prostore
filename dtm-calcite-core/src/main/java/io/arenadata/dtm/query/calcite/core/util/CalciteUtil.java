@@ -10,7 +10,7 @@ import java.time.format.DateTimeFormatter;
 import static org.apache.calcite.sql.type.SqlTypeName.*;
 
 public class CalciteUtil {
-    private static final String LOCAL_DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss[.SSS]";
+    private static final String LOCAL_DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
     public static final DateTimeFormatter LOCAL_DATE_TIME = DateTimeFormatter.ofPattern(LOCAL_DATE_TIME_PATTERN);
 
     public static LocalDateTime parseLocalDateTime(String localDateTime) {

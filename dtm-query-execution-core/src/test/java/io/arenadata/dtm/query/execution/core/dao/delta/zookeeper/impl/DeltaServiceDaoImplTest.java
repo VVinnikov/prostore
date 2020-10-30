@@ -92,7 +92,7 @@ public class DeltaServiceDaoImplTest {
     public void fullSuccess() throws InterruptedException {
         val testContext = new VertxTestContext();
         List<Long> sysCns = new ArrayList<>();
-        val expectedTime = LocalDateTime.now();
+        val expectedTime = LocalDateTime.now().withNano(0);
         val expectedDelta = OkDelta.builder()
             .deltaDate(expectedTime)
             .deltaNum(1)

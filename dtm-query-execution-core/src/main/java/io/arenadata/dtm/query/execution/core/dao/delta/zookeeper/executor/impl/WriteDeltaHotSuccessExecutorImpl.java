@@ -47,7 +47,7 @@ public class WriteDeltaHotSuccessExecutorImpl extends DeltaServiceDaoExecutorHel
                 Future.succeededFuture(delta) : createDeltaPaths(datamart, deltaHotDate, delta))
             .map(delta -> Delta.builder()
                 .ok(OkDelta.builder()
-                    .deltaDate(deltaHotDate == null ? LocalDateTime.now() : deltaHotDate)
+                    .deltaDate(deltaHotDate == null ? LocalDateTime.now().withNano(0) : deltaHotDate)
                     .deltaNum(delta.getHot().getDeltaNum())
                     .cnFrom(delta.getHot().getCnFrom())
                     .cnTo(delta.getHot().getCnTo() == null ? delta.getHot().getCnFrom() : delta.getHot().getCnTo())

@@ -17,10 +17,8 @@ import lombok.val;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -88,9 +86,18 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
     }
 
     private boolean isInformationSchema(List<DeltaInformation> deltaInformationList) {
-        return deltaInformationList.stream()
-                .anyMatch(deltaInformation -> InformationSchemaView.DTM_SCHEMA_NAME
-                        .equalsIgnoreCase(deltaInformation.getSchemaName()));
+        Set<String> unicSchemes = deltaInformationList.stream()
+            .map(DeltaInformation::getSchemaName)
+            .map(String::toUpperCase)
+            .collect(Collectors.toSet());
+
+        boolean informationSchemaExists = unicSchemes.contains(InformationSchemaView.DTM_SCHEMA_NAME);
+
+        if (unicSchemes.size() > 1 && informationSchemaExists) {
+            throw new IllegalArgumentException("Simultaneous query to the information schema and user schema isn't supported");
+        } else {
+            return informationSchemaExists;
+        }
     }
 
     private Future<List<Datamart>> getLogicalSchema(QuerySourceRequest request) {

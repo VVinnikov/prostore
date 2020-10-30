@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 public class GetDeltaByDateTimeExecutorImpl extends DeltaServiceDaoExecutorHelper implements GetDeltaByDateTimeExecutor {
 
     public GetDeltaByDateTimeExecutorImpl(ZookeeperExecutor executor,
-                                             @Value("${core.env.name}") String envName) {
+                                          @Value("${core.env.name}") String envName) {
         super(executor, envName);
     }
 
@@ -68,14 +68,17 @@ public class GetDeltaByDateTimeExecutorImpl extends DeltaServiceDaoExecutorHelpe
         return resultPromise.future();
     }
 
-    private Future<OkDelta> findByDays(String datamart, LocalDateTime dateTime) {
-        val date = dateTime.toLocalDate();
+    private Future<OkDelta> findByDays(String datamart, LocalDateTime targetDateTime) {
+        val date = targetDateTime.toLocalDate();
         Promise<OkDelta> resultPromise = Promise.promise();
         getDatamartDeltaDays(datamart, date)
             .onSuccess(days -> {
                 if (days.size() > 0) {
                     val dayIterator = days.iterator();
-                    findByDay(datamart, dayIterator, resultPromise);
+                    findByDay(datamart,
+                        dayIterator,
+                        targetDateTime,
+                        resultPromise);
                 } else {
                     resultPromise.fail(new DeltaNotFoundException());
                 }
@@ -89,20 +92,21 @@ public class GetDeltaByDateTimeExecutorImpl extends DeltaServiceDaoExecutorHelpe
             .map(daysStr -> daysStr.stream()
                 .map(LocalDate::parse)
                 .filter(day -> date.isAfter(day) || date.isEqual(day))
-                .sorted(Comparator.naturalOrder())
+                .sorted(Comparator.reverseOrder())
                 .collect(Collectors.toList()));
     }
 
     private void findByDay(String datamart,
                            Iterator<LocalDate> dayIterator,
+                           LocalDateTime targetDateTime,
                            Promise<OkDelta> resultPromise) {
         val day = dayIterator.next();
-        getDeltaOkByMaxDeltaDateTime(datamart, day)
+        getDeltaOkByMaxDeltaDateTime(datamart, day, targetDateTime)
             .onSuccess(okDelta -> {
                 if (okDelta != null) {
                     resultPromise.complete(okDelta);
                 } else if (dayIterator.hasNext()) {
-                    findByDay(datamart, dayIterator, resultPromise);
+                    findByDay(datamart, dayIterator, targetDateTime, resultPromise);
                 } else {
                     resultPromise.fail(new DeltaNotExistException());
                 }
@@ -110,10 +114,14 @@ public class GetDeltaByDateTimeExecutorImpl extends DeltaServiceDaoExecutorHelpe
             .onFailure(resultPromise::fail);
     }
 
-    private Future<OkDelta> getDeltaOkByMaxDeltaDateTime(String datamart, LocalDate day) {
+    private Future<OkDelta> getDeltaOkByMaxDeltaDateTime(String datamart,
+                                                         LocalDate day,
+                                                         LocalDateTime targetDateTime) {
+        val targetTime = targetDateTime.toLocalTime();
         return executor.getChildren(getDeltaDatePath(datamart, day))
             .map(times -> times.stream()
                 .map(LocalTime::parse)
+                .filter(time -> targetTime.isAfter(time) || targetTime.equals(time))
                 .max(Comparator.naturalOrder()))
             .compose(timeOpt -> timeOpt
                 .map(localTime -> {

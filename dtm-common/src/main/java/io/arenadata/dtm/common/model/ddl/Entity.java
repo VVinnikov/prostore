@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Physical model of the service database table
@@ -31,7 +32,7 @@ public class Entity implements Serializable {
     private String externalTableLocationPath;
     private Integer externalTableDownloadChunkSize;
     private Integer externalTableUploadMessageLimit;
-    private SourceType destination;
+    private Set<SourceType> destination;
     private List<EntityField> fields;
 
     public Entity(String nameWithSchema, List<EntityField> fields) {

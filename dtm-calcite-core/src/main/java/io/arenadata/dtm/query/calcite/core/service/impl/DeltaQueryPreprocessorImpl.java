@@ -24,9 +24,9 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
+    private final DeltaInformationExtractor deltaInformationExtractor;
     private final DefinitionService<SqlNode> definitionService;
     private final DeltaService deltaService;
-    private DeltaInformationExtractor deltaInformationExtractor;
 
     public DeltaQueryPreprocessorImpl(DefinitionService<SqlNode> definitionService,
                                       DeltaService deltaService,

@@ -4,6 +4,7 @@ import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.delta.DeltaType;
 import io.arenadata.dtm.common.delta.SelectOnInterval;
 import io.arenadata.dtm.common.exception.DeltaRangeInvalidException;
+import io.arenadata.dtm.common.reader.InformationSchemaView;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.service.DeltaService;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
@@ -79,7 +80,9 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
 
     private Future<DeltaInformation> getCalculateDeltaInfoFuture(Set<String> errors, DeltaInformation deltaInformation) {
         return Future.future((Promise<DeltaInformation> deltaInfoPromise) -> {
-            if (deltaInformation.isLatestUncommitedDelta()) {
+            if (InformationSchemaView.DTM_SCHEMA_NAME.equalsIgnoreCase(deltaInformation.getSchemaName())) {
+                deltaInfoPromise.complete(deltaInformation);
+            } else if (deltaInformation.isLatestUncommitedDelta()) {
                 deltaService.getCnToDeltaHot(deltaInformation.getSchemaName())
                     .onSuccess(deltaCnTo -> {
                         deltaInformation.setSelectOnNum(deltaCnTo);

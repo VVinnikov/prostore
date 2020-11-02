@@ -3,10 +3,10 @@ package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.status.StatusEventCode;
 import io.arenadata.dtm.common.status.ddl.DatamartSchemaChangedEvent;
-import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlUseSchema;
 import io.arenadata.dtm.query.execution.core.service.InformationSchemaService;
 import io.arenadata.dtm.query.execution.core.service.delta.StatusEventPublisher;
 import io.arenadata.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
+import io.arenadata.dtm.query.execution.core.utils.ParseQueryUtils;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
@@ -23,7 +23,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -34,14 +33,16 @@ public class DdlServiceImpl implements DdlService<QueryResult>, StatusEventPubli
     private final Map<SqlKind, DdlExecutor<QueryResult>> executorMap;
     private final InformationSchemaService informationSchemaService;
     private final Vertx vertx;
+    private final ParseQueryUtils parseQueryUtils;
 
     @Autowired
     public DdlServiceImpl(CoreCalciteDefinitionService coreCalciteDefinitionService,
                           InformationSchemaService informationSchemaService,
-                          @Qualifier("coreVertx") Vertx vertx) {
+                          @Qualifier("coreVertx") Vertx vertx, ParseQueryUtils parseQueryUtils) {
         this.coreCalciteDefinitionService = coreCalciteDefinitionService;
         this.informationSchemaService = informationSchemaService;
         this.vertx = vertx;
+        this.parseQueryUtils = parseQueryUtils;
         this.executorMap = new HashMap<>();
     }
 
@@ -72,7 +73,7 @@ public class DdlServiceImpl implements DdlService<QueryResult>, StatusEventPubli
             final SqlCall sqlCall = getSqlCall(ar);
             if (executorMap.containsKey(sqlCall.getKind())) {
                 executorMap.get(sqlCall.getKind())
-                    .execute(context, getSqlNodeName(sqlCall.getOperandList()), ddlAr -> {
+                    .execute(context, parseQueryUtils.getDatamartName(sqlCall.getOperandList()), ddlAr -> {
                         if (ddlAr.succeeded()) {
                             handler.handle(Future.succeededFuture(ddlAr.result()));
                             informationSchemaService.update(sqlCall);
@@ -103,15 +104,9 @@ public class DdlServiceImpl implements DdlService<QueryResult>, StatusEventPubli
             return (SqlCall) ar.result();
         } else if (ar.result() instanceof SqlDdl) {
             return (SqlCall) ar.result();
-        } else if (ar.result() instanceof SqlUseSchema) {
-            return (SqlCall) ar.result();
         } else {
             throw new RuntimeException("Not supported request type");
         }
-    }
-
-    private String getSqlNodeName(List<SqlNode> operandList) {
-        return operandList.stream().filter(t -> t instanceof SqlIdentifier).findFirst().get().toString();
     }
 
     @Override

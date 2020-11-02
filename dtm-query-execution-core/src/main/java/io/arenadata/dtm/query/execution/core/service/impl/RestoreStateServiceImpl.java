@@ -60,12 +60,12 @@ public class RestoreStateServiceImpl implements RestoreStateService {
     @Override
     public void restoreState(){
         datamartDao.getDatamarts()
-                .compose(this::getOperations)
+                .compose(this::processDatamarts)
                 .onSuccess(success -> log.info("State sucessfully restored"))
                 .onFailure(err -> log.error("Error while trying to restore state", err));
     }
 
-    private Future<Void> getOperations(List<String> datamarts) {
+    private Future<Void> processDatamarts(List<String> datamarts) {
         return Future.future(p -> {
             CompositeFuture.join(datamarts.stream()
                     .map(this::getAndProcessOpertations)
@@ -77,10 +77,10 @@ public class RestoreStateServiceImpl implements RestoreStateService {
 
     private Future<Void> getAndProcessOpertations(String datamart) {
         return deltaServiceDao.getDeltaWriteOperations(datamart)
-                .compose(ops -> operationsProcess(datamart, ops));
+                .compose(ops -> processOperations(datamart, ops));
     }
 
-    private Future<Void> operationsProcess(String datamart, List<DeltaWriteOp> ops) {
+    private Future<Void> processOperations(String datamart, List<DeltaWriteOp> ops) {
         if (ops == null) {
             return Future.succeededFuture();
         }

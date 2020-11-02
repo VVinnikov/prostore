@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.sql.*;
+import java.time.ZoneId;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
@@ -17,6 +18,7 @@ import java.util.concurrent.Executor;
 public class DtmConnection implements Connection {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("io.arenadata.dtm.driver.jdbc.DtmDriver");
+    private static final String DEFAULT_TIME_ZONE = "UTC";
     /**
      * Протокол, по которому будет получена информация для текущего подключения
      */
@@ -357,6 +359,14 @@ public class DtmConnection implements Connection {
 
     public String getUser() {
         return user;
+    }
+
+    public ZoneId getZoneId() {
+        if (info == null || info.getProperty("zoneId") == null) {
+            return ZoneId.of(DEFAULT_TIME_ZONE);
+        } else {
+            return ZoneId.of(info.getProperty("zoneId"));
+        }
     }
 
 }

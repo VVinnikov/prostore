@@ -12,14 +12,12 @@ import java.io.Reader;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URL;
-import java.sql.Date;
 import java.sql.*;
-import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.*;
+import java.time.*;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 public class DtmResultSet implements ResultSet {
 
@@ -30,14 +28,16 @@ public class DtmResultSet implements ResultSet {
     private Connection connection;
     private ResultSetMetaData rsMetaData;
     private List<ColumnInfo> columns;
+    private final ZoneId zoneId;
 
-    public DtmResultSet(Connection connection, List<Field[]> fields, List<ColumnMetadata> metadata, List<ColumnInfo> columns) {
+    public DtmResultSet(DtmConnection connection, List<Field[]> fields, List<ColumnMetadata> metadata, List<ColumnInfo> columns) {
         this.connection = connection;
         this.fields = fields;
         thisRow = (fields == null || fields.isEmpty()) ?
                 new Field[0] : fields.get(0);
         this.metadata = metadata;
         this.columns = columns;
+        this.zoneId = connection.getZoneId();
     }
 
     public static DtmResultSet createEmptyResultSet() {
@@ -243,9 +243,8 @@ public class DtmResultSet implements ResultSet {
     public Date getDate(int columnIndex) throws SQLException {
         final Object value = this.getValue(columnIndex);
         if (value != null) {
-            //TODO implement getting ZoneId from configuration
             return Date.valueOf(LocalDateTime.ofInstant(Instant.ofEpochMilli((Long) value),
-                    ZoneId.systemDefault()).toLocalDate());
+                    this.zoneId).toLocalDate());
         } else {
             return null;
         }
@@ -260,9 +259,7 @@ public class DtmResultSet implements ResultSet {
     @Override
     public Timestamp getTimestamp(int columnIndex) throws SQLException {
         final Object value = this.getValue(columnIndex);
-        //TODO implement getting ZoneId from configuration
-        return value == null ? null : Timestamp.valueOf(LocalDateTime.ofInstant(Instant.ofEpochMilli((Long) value),
-                ZoneId.systemDefault()));
+        return value == null ? null : Timestamp.from(Instant.ofEpochMilli((Long) value));
     }
 
     @Override

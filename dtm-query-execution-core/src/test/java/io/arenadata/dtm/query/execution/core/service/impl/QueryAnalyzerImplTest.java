@@ -5,8 +5,10 @@ import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
+import io.arenadata.dtm.query.calcite.core.service.impl.DeltaInformationExtractorImpl;
 import io.arenadata.dtm.query.execution.core.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
+import io.arenadata.dtm.query.execution.core.configuration.properties.CoreDtmSettings;
 import io.arenadata.dtm.query.execution.core.factory.RequestContextFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.QueryRequestFactoryImpl;
 import io.arenadata.dtm.query.execution.core.factory.impl.RequestContextFactoryImpl;
@@ -32,6 +34,8 @@ import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.env.Environment;
 
+import java.time.ZoneId;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -52,7 +56,7 @@ class QueryAnalyzerImplTest {
             requestContextFactory,
             vertx,
             new HintExtractor(),
-            new DatamartMnemonicExtractor(),
+            new DatamartMnemonicExtractor(new DeltaInformationExtractorImpl(new CoreDtmSettings(ZoneId.of("UTC")))),
             new DefaultDatamartSetter(),
             new SemicolonRemoverImpl(), new QueryRequestFactoryImpl(new AppConfiguration(mock(Environment.class))));
 

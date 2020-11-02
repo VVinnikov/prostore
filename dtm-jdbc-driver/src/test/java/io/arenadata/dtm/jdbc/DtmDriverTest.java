@@ -18,9 +18,9 @@ public class DtmDriverTest {
         DtmConnection conn = new DtmConnection(host, user, schema, null, url);
         DtmStatement stmnt = (DtmStatement) conn.createStatement();
         DtmStatement stmnt2 = (DtmStatement) conn.createStatement();
-        final ResultSet resultSet1 = stmnt.executeQuery("USE dtm_687");
-        final ResultSet resultSet2 = stmnt.executeQuery("select * from dtm_687.transactions");
-        resultSet2.getObject(3);
+        final ResultSet resultSet1 = stmnt.executeQuery("USE dtm_714");
+        final ResultSet resultSet2 = stmnt.executeQuery("get_delta_ok();");
+        resultSet2.getObject(2);
         DtmDatabaseMetaData dtmDatabaseMetaData = new DtmDatabaseMetaData(conn);
         //final ResultSet columns = dtmDatabaseMetaData.getColumns("dtm_579", "%", "transactions_2", "%");
     }

@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adg.configuration;
 
+import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.TarantoolDatabaseProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.service.TtClient;
 import io.arenadata.dtm.query.execution.plugin.adg.service.TtPool;
 import io.arenadata.dtm.query.execution.plugin.adg.service.impl.TtClientFactory;

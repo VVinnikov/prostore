@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adb.configuration;
 
+import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.converter.transformer.*;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import org.springframework.context.annotation.Bean;
@@ -14,7 +15,7 @@ import java.util.stream.Stream;
 public class ConverterConfiguration {
 
     @Bean("adbTransformerMap")
-    public Map<ColumnType, Map<Class<?>, ColumnTransformer>> transformerMap() {
+    public Map<ColumnType, Map<Class<?>, ColumnTransformer>> transformerMap(DtmConfig dtmSettings) {
         Map<ColumnType, Map<Class<?>, ColumnTransformer>> transformerMap = new HashMap<>();
         transformerMap.put(ColumnType.INT, Stream.of(new IntFromIntegerTransformer())
                 .collect(Collectors.toMap(ColumnTransformer::getTransformClass, cl -> cl)));
@@ -32,7 +33,8 @@ public class ConverterConfiguration {
                 .collect(Collectors.toMap(ColumnTransformer::getTransformClass, cl -> cl)));
         transformerMap.put(ColumnType.TIME, Stream.of(new TimeFromLocalTimeTransformer())
                 .collect(Collectors.toMap(ColumnTransformer::getTransformClass, cl -> cl)));
-        transformerMap.put(ColumnType.TIMESTAMP, Stream.of(new TimestampFromLocalDateTimeTransformer())
+        transformerMap.put(ColumnType.TIMESTAMP, Stream.of(
+                new TimestampFromLocalDateTimeTransformer(dtmSettings.getTimeZone()))
                 .collect(Collectors.toMap(ColumnTransformer::getTransformClass, cl -> cl)));
         transformerMap.put(ColumnType.BOOLEAN, Stream.of(new BooleanFromBooleanTransformer())
                 .collect(Collectors.toMap(ColumnTransformer::getTransformClass, cl -> cl)));

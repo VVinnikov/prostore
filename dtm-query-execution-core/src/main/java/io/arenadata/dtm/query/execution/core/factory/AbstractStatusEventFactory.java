@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.factory;
 
+import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.status.PublishStatusEventRequest;
 import io.arenadata.dtm.common.status.StatusEventKey;
 import io.vertx.core.json.jackson.DatabindCodec;
@@ -13,9 +14,11 @@ import java.util.UUID;
 
 public abstract class AbstractStatusEventFactory<IN, OUT> implements StatusEventFactory<OUT> {
     private final Class<IN> inClass;
+    private final DtmConfig dtmSettings;
 
-    protected AbstractStatusEventFactory(Class<IN> inClass) {
+    protected AbstractStatusEventFactory(Class<IN> inClass, DtmConfig dtmSettings) {
         this.inClass = inClass;
+        this.dtmSettings = dtmSettings;
     }
 
     protected abstract OUT createEventMessage(StatusEventKey eventKey, IN eventData);
@@ -30,6 +33,9 @@ public abstract class AbstractStatusEventFactory<IN, OUT> implements StatusEvent
 
     @NotNull
     private StatusEventKey getEventKey(String datamart) {
-        return new StatusEventKey(datamart, LocalDateTime.now(), getEventCode(), UUID.randomUUID());
+        return new StatusEventKey(datamart,
+                LocalDateTime.now(dtmSettings.getTimeZone()),
+                getEventCode(),
+                UUID.randomUUID());
     }
 }

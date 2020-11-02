@@ -1,9 +1,12 @@
 package io.arenadata.dtm.query.execution.core.configuration.calcite;
 
+import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.service.DeltaService;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
+import io.arenadata.dtm.query.calcite.core.service.DeltaInformationExtractor;
 import io.arenadata.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
+import io.arenadata.dtm.query.calcite.core.service.impl.DeltaInformationExtractorImpl;
 import io.arenadata.dtm.query.calcite.core.service.impl.DeltaQueryPreprocessorImpl;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
@@ -48,11 +51,18 @@ public class CalciteConfiguration {
     }
 
     @Bean
+    public DeltaInformationExtractor deltaInformationExtractor(DtmConfig dtmSettings) {
+        return new DeltaInformationExtractorImpl(dtmSettings);
+    }
+
+    @Bean
     public DeltaQueryPreprocessor deltaQueryPreprocessor(
             @Qualifier("coreCalciteDefinitionService") DefinitionService<SqlNode> definitionService,
-            DeltaService deltaService
-    ) {
-        return new DeltaQueryPreprocessorImpl(definitionService, deltaService);
+            DeltaService deltaService,
+            DeltaInformationExtractor deltaInformationExtractor) {
+        return new DeltaQueryPreprocessorImpl(definitionService,
+                deltaService,
+                deltaInformationExtractor);
     }
 
     @Bean("coreSqlDialect")

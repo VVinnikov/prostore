@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.edml.impl;
 
+import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
@@ -43,15 +44,21 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
     private final EdmlProperties edmlProperties;
     private final KafkaProperties kafkaProperties;
     private final Vertx vertx;
+    private final DtmConfig dtmSettings;
 
     @Autowired
-    public UploadKafkaExecutor(DataSourcePluginService pluginService, MppwKafkaRequestFactory mppwKafkaRequestFactory,
-                               EdmlProperties edmlProperties, KafkaProperties kafkaProperties, @Qualifier("coreVertx") Vertx vertx) {
+    public UploadKafkaExecutor(DataSourcePluginService pluginService,
+                               MppwKafkaRequestFactory mppwKafkaRequestFactory,
+                               EdmlProperties edmlProperties,
+                               KafkaProperties kafkaProperties,
+                               @Qualifier("coreVertx") Vertx vertx,
+                               DtmConfig dtmSettings) {
         this.pluginService = pluginService;
         this.mppwKafkaRequestFactory = mppwKafkaRequestFactory;
         this.edmlProperties = edmlProperties;
         this.kafkaProperties = kafkaProperties;
         this.vertx = vertx;
+        this.dtmSettings = dtmSettings;
     }
 
     @Override
@@ -75,7 +82,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                 log.debug("A request has been sent for the plugin: {} to start mppw download: {}", ds, mppwRequestContext.getRequest());
                 val statusRequestContext = createStatusRequestContext(mppwRequestContext, context);
                 val mppwLoadStatusResult = MppwLoadStatusResult.builder()
-                        .lastOffsetTime(LocalDateTime.now())
+                        .lastOffsetTime(LocalDateTime.now(dtmSettings.getTimeZone()))
                         .lastOffset(0L)
                         .build();
                 vertx.setPeriodic(edmlProperties.getPluginStatusCheckPeriodMs(), timerId -> {
@@ -148,7 +155,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
 
     private void updateMppwLoadStatus(MppwLoadStatusResult mppwLoadStatusResult, StatusQueryResult result) {
         if (result.getPartitionInfo().getOffset() > mppwLoadStatusResult.getLastOffset()) {
-            mppwLoadStatusResult.setLastOffsetTime(LocalDateTime.now());
+            mppwLoadStatusResult.setLastOffsetTime(LocalDateTime.now(dtmSettings.getTimeZone()));
             mppwLoadStatusResult.setLastOffset(result.getPartitionInfo().getOffset());
         }
     }
@@ -161,13 +168,13 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
 
     private boolean isMppwLoadingInitFailure(MppwLoadStatusResult mppwLoadStatusResult) {
         return mppwLoadStatusResult.getLastOffset() == 0L &&
-                LocalDateTime.now().isAfter(mppwLoadStatusResult.getLastOffsetTime()
+                LocalDateTime.now(dtmSettings.getTimeZone()).isAfter(mppwLoadStatusResult.getLastOffsetTime()
                         .plus(edmlProperties.getFirstOffsetTimeoutMs(), ChronoField.MILLI_OF_DAY.getBaseUnit()));
     }
 
     private boolean isLastOffsetNotIncrease(MppwLoadStatusResult mppwLoadStatusResult) {
         return mppwLoadStatusResult.getLastOffset() != 0L &&
-                LocalDateTime.now().isAfter(mppwLoadStatusResult.getLastOffsetTime()
+                LocalDateTime.now(dtmSettings.getTimeZone()).isAfter(mppwLoadStatusResult.getLastOffsetTime()
                         .plus(edmlProperties.getChangeOffsetTimeoutMs(), ChronoField.MILLI_OF_DAY.getBaseUnit()));
     }
 
@@ -263,7 +270,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
         }
         LocalDateTime endMessageTimeWithTimeout = endMessageTime.plus(kafkaProperties.getAdmin().getInputStreamTimeoutMs(),
                 ChronoField.MILLI_OF_DAY.getBaseUnit());
-        return endMessageTimeWithTimeout.isBefore(LocalDateTime.now());
+        return endMessageTimeWithTimeout.isBefore(LocalDateTime.now(dtmSettings.getTimeZone()));
     }
 
     @Override

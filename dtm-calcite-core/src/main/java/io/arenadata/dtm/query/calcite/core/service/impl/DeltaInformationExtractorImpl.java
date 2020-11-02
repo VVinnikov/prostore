@@ -1,5 +1,6 @@
-package io.arenadata.dtm.query.calcite.core.util;
+package io.arenadata.dtm.query.calcite.core.service.impl;
 
+import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.delta.DeltaInformationResult;
 import io.arenadata.dtm.common.delta.DeltaType;
@@ -7,6 +8,8 @@ import io.arenadata.dtm.common.delta.SelectOnInterval;
 import io.arenadata.dtm.query.calcite.core.extension.snapshot.SqlSnapshot;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.calcite.core.node.SqlTreeNode;
+import io.arenadata.dtm.query.calcite.core.service.DeltaInformationExtractor;
+import io.arenadata.dtm.query.calcite.core.util.CalciteUtil;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.*;
@@ -14,16 +17,23 @@ import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class DeltaInformationExtractor {
+public class DeltaInformationExtractorImpl implements DeltaInformationExtractor {
     private static final SqlDialect DIALECT = new SqlDialect(CalciteSqlDialect.EMPTY_CONTEXT);
+    private final DtmConfig dtmSettings;
 
-    public static DeltaInformationResult extract(SqlNode root) {
+    public DeltaInformationExtractorImpl(DtmConfig dtmSettings) {
+        this.dtmSettings = dtmSettings;
+    }
+
+    @Override
+    public DeltaInformationResult extract(SqlNode root) {
         try {
             val tree = new SqlSelectTree(root);
             val allTableAndSnapshots = tree.findAllTableAndSnapshots();
@@ -36,20 +46,20 @@ public class DeltaInformationExtractor {
         }
     }
 
-    private static List<DeltaInformation> getDeltaInformations(SqlSelectTree tree, List<SqlTreeNode> nodes) {
+    private List<DeltaInformation> getDeltaInformations(SqlSelectTree tree, List<SqlTreeNode> nodes) {
         return nodes.stream()
                 .map(n -> getDeltaInformationAndReplace(tree, n))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
-    private static List<SqlTreeNode> getSnapshots(List<SqlTreeNode> nodes) {
+    private List<SqlTreeNode> getSnapshots(List<SqlTreeNode> nodes) {
         return nodes.stream()
                 .filter(n -> n.getNode() instanceof SqlSnapshot)
                 .collect(Collectors.toList());
     }
 
-    private static void replaceSnapshots(List<SqlTreeNode> snapshots) {
+    private void replaceSnapshots(List<SqlTreeNode> snapshots) {
         for (int i = snapshots.size() - 1; i >= 0; i--) {
             val snapshot = snapshots.get(i);
             SqlSnapshot nodeSqlSnapshot = snapshot.getNode();
@@ -57,7 +67,8 @@ public class DeltaInformationExtractor {
         }
     }
 
-    public static DeltaInformation getDeltaInformation(SqlSelectTree tree, SqlTreeNode n) {
+    @Override
+    public DeltaInformation getDeltaInformation(SqlSelectTree tree, SqlTreeNode n) {
         Optional<SqlTreeNode> optParent = tree.getParentByChild(n);
         if (optParent.isPresent()) {
             SqlTreeNode parent = optParent.get();
@@ -68,7 +79,8 @@ public class DeltaInformationExtractor {
         return getDeltaInformation(n);
     }
 
-    public static DeltaInformation getDeltaInformationAndReplace(SqlSelectTree tree, SqlTreeNode n) {
+    @Override
+    public DeltaInformation getDeltaInformationAndReplace(SqlSelectTree tree, SqlTreeNode n) {
         Optional<SqlTreeNode> optParent = tree.getParentByChild(n);
         if (optParent.isPresent()) {
             SqlTreeNode parent = optParent.get();
@@ -79,7 +91,7 @@ public class DeltaInformationExtractor {
         return getDeltaInformation(n);
     }
 
-    private static DeltaInformation getDeltaInformation(SqlTreeNode n) {
+    private DeltaInformation getDeltaInformation(SqlTreeNode n) {
         if (n.getNode() instanceof SqlIdentifier) {
             return fromIdentifier(n.getNode(), null, null, false,
                     null, null, null, null);
@@ -92,7 +104,7 @@ public class DeltaInformationExtractor {
         }
     }
 
-    private static DeltaInformation fromSqlBasicCall(SqlBasicCall basicCall, boolean replace) {
+    private DeltaInformation fromSqlBasicCall(SqlBasicCall basicCall, boolean replace) {
         DeltaInformation deltaInformation = null;
         if (basicCall.getKind() == SqlKind.AS) {
             if (basicCall.operands.length != 2) {
@@ -117,20 +129,20 @@ public class DeltaInformationExtractor {
         return deltaInformation;
     }
 
-    private static DeltaInformation fromSnapshot(SqlSnapshot snapshot, SqlIdentifier alias) {
+    private DeltaInformation fromSnapshot(SqlSnapshot snapshot, SqlIdentifier alias) {
         return fromIdentifier((SqlIdentifier) snapshot.getTableRef(), alias, snapshot.getDeltaDateTime(),
                 snapshot.getLatestUncommitedDelta(), snapshot.getDeltaNum(), snapshot.getStartedInterval(),
                 snapshot.getFinishedInterval(), snapshot.getParserPosition());
     }
 
-    private static DeltaInformation fromIdentifier(SqlIdentifier id,
-                                                   SqlIdentifier alias,
-                                                   String snapshotTime,
-                                                   boolean isLatestUncommitedDelta,
-                                                   Long deltaNum,
-                                                   SelectOnInterval startedIn,
-                                                   SelectOnInterval finishedIn,
-                                                   SqlParserPos pos) {
+    private DeltaInformation fromIdentifier(SqlIdentifier id,
+                                            SqlIdentifier alias,
+                                            String snapshotTime,
+                                            boolean isLatestUncommitedDelta,
+                                            Long deltaNum,
+                                            SelectOnInterval startedIn,
+                                            SelectOnInterval finishedIn,
+                                            SqlParserPos pos) {
         String datamart = "";
         String tableName;
         if (id.names.size() > 1) {
@@ -148,12 +160,11 @@ public class DeltaInformationExtractor {
         DeltaType deltaType = DeltaType.NUM;
         if (!isLatestUncommitedDelta) {
             if (snapshotTime == null) {
-                deltaTime = CalciteUtil.LOCAL_DATE_TIME.format(LocalDateTime.now());
+                deltaTime = CalciteUtil.LOCAL_DATE_TIME.format(LocalDateTime.now(this.dtmSettings.getTimeZone()));
                 if (deltaNum == null) {
                     deltaType = DeltaType.DATETIME;
                 }
-            }
-            else {
+            } else {
                 deltaTime = snapshotTime;
                 deltaType = DeltaType.DATETIME;
             }
@@ -174,7 +185,7 @@ public class DeltaInformationExtractor {
                 isLatestUncommitedDelta,
                 deltaType,
                 deltaNum,
-            selectOnInterval,
+                selectOnInterval,
                 datamart,
                 tableName,
                 pos);

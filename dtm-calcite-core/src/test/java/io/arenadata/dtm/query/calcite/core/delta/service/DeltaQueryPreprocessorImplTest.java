@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.calcite.core.delta.service;
 
+import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.delta.DeltaType;
 import io.arenadata.dtm.common.delta.SelectOnInterval;
@@ -9,8 +10,10 @@ import io.arenadata.dtm.common.service.DeltaService;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
+import io.arenadata.dtm.query.calcite.core.service.DeltaInformationExtractor;
 import io.arenadata.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
 import io.arenadata.dtm.query.calcite.core.service.impl.CalciteDefinitionService;
+import io.arenadata.dtm.query.calcite.core.service.impl.DeltaInformationExtractorImpl;
 import io.arenadata.dtm.query.calcite.core.service.impl.DeltaQueryPreprocessorImpl;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -29,6 +32,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -44,6 +48,12 @@ class DeltaQueryPreprocessorImplTest {
     private final DefinitionService<SqlNode> definitionService = mock(CalciteDefinitionService.class);
     private final DeltaService deltaService = mock(DeltaService.class);
     private CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
+    private final DeltaInformationExtractor deltaInformationExtractor = new DeltaInformationExtractorImpl(new DtmConfig() {
+        @Override
+        public ZoneId getTimeZone() {
+            return ZoneId.of("UTC");
+        }
+    });
     private SqlParser.Config parserConfig;
     private DeltaQueryPreprocessor deltaQueryPreprocessor;
     private Planner planner;
@@ -62,7 +72,7 @@ class DeltaQueryPreprocessorImplTest {
         DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
         planner = DtmCalciteFramework.getPlanner(frameworkConfig);
-        deltaQueryPreprocessor = new DeltaQueryPreprocessorImpl(definitionService, deltaService);
+        deltaQueryPreprocessor = new DeltaQueryPreprocessorImpl(definitionService, deltaService, deltaInformationExtractor);
     }
 
     @Test

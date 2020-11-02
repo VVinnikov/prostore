@@ -8,7 +8,10 @@ import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
+import io.arenadata.dtm.query.calcite.core.service.DeltaInformationExtractor;
+import io.arenadata.dtm.query.calcite.core.service.impl.DeltaInformationExtractorImpl;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
+import io.arenadata.dtm.query.execution.core.configuration.properties.CoreDtmSettings;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacadeImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
@@ -24,6 +27,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.time.ZoneId;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,6 +42,8 @@ class LogicalSchemaServiceImplTest {
     public static final String TABLE_PSO = "pso";
     public static final String TABLE_DOC = "doc";
     private final CalciteConfiguration config = new CalciteConfiguration();
+    private final DeltaInformationExtractor deltaInformationExtractor =
+            new DeltaInformationExtractorImpl(new CoreDtmSettings(ZoneId.of("UTC")));
     private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private final DefinitionService<SqlNode> definitionService =
         new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
@@ -51,7 +57,7 @@ class LogicalSchemaServiceImplTest {
     void setUp() {
         when(serviceDbFacade.getServiceDbDao()).thenReturn(serviceDbDao);
         when(serviceDbDao.getEntityDao()).thenReturn(entityDao);
-        logicalSchemaService = new LogicalSchemaServiceImpl(serviceDbFacade, definitionService);
+        logicalSchemaService = new LogicalSchemaServiceImpl(serviceDbFacade, definitionService, deltaInformationExtractor);
         queryRequest = new QueryRequest();
         queryRequest.setDatamartMnemonic(DATAMART);
         queryRequest.setRequestId(UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"));

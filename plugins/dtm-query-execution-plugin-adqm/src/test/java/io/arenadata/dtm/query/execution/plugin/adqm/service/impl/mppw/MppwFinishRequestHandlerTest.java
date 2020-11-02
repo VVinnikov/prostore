@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw;
 
+import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
@@ -14,6 +15,7 @@ import io.arenadata.dtm.query.execution.plugin.api.request.MppwRequest;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.time.ZoneId;
 import java.util.*;
 import java.util.function.Predicate;
 
@@ -22,6 +24,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class MppwFinishRequestHandlerTest {
     private static final DdlProperties ddlProperties = new DdlProperties();
     private static final AppConfiguration appConfiguration = new AppConfiguration(new MockEnvironment());
+    private final DtmConfig dtmConfig = new DtmConfig() {
+        @Override
+        public ZoneId getTimeZone() {
+            return ZoneId.of("UTC");
+        }
+    };
     private static final String TEST_TOPIC = "adqm_topic";
 
     @BeforeAll
@@ -66,7 +74,11 @@ class MppwFinishRequestHandlerTest {
         ), mockData);
 
         MockStatusReporter mockReporter = getMockReporter();
-        MppwRequestHandler handler = new MppwFinishRequestHandler(executor, ddlProperties, appConfiguration, mockReporter);
+        MppwRequestHandler handler = new MppwFinishRequestHandler(executor,
+                ddlProperties,
+                appConfiguration,
+                mockReporter,
+                dtmConfig);
 
         MppwRequest request = new MppwRequest(QueryRequest.builder()
                 .requestId(UUID.randomUUID())

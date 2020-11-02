@@ -1,11 +1,12 @@
 package io.arenadata.dtm.query.execution.core.utils;
 
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
-import io.arenadata.dtm.query.calcite.core.util.DeltaInformationExtractor;
+import io.arenadata.dtm.query.calcite.core.service.DeltaInformationExtractor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.logging.log4j.util.Strings;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Objects;
@@ -14,10 +15,18 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component
 public class DatamartMnemonicExtractor {
+
+    private final DeltaInformationExtractor deltaInformationExtractor;
+
+    @Autowired
+    public DatamartMnemonicExtractor(DeltaInformationExtractor deltaInformationExtractor) {
+        this.deltaInformationExtractor = deltaInformationExtractor;
+    }
+
     public String extract(SqlNode sqlNode) {
         val selectTree = new SqlSelectTree(sqlNode);
         val tables = selectTree.findAllTableAndSnapshots().stream()
-                .map(node -> DeltaInformationExtractor.getDeltaInformation(selectTree, node))
+                .map(node -> deltaInformationExtractor.getDeltaInformation(selectTree, node))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
         if (tables.isEmpty()) {

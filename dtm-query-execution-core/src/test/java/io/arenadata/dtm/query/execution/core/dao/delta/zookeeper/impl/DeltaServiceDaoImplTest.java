@@ -1,6 +1,8 @@
 package io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.impl;
 
+import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.query.execution.core.configuration.AppConfiguration;
+import io.arenadata.dtm.query.execution.core.configuration.properties.CoreDtmSettings;
 import io.arenadata.dtm.query.execution.core.configuration.properties.ZookeeperProperties;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.impl.*;
 import io.arenadata.dtm.query.execution.core.dao.exception.delta.DeltaAlreadyStartedException;
@@ -27,6 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -41,6 +44,7 @@ public class DeltaServiceDaoImplTest {
     private TestingServer testingServer;
     private DeltaServiceDaoImpl dao;
     private HotDelta hotDelta;
+    private DtmConfig dtmSettings;
 
     public DeltaServiceDaoImplTest() throws Exception {
         new AppConfiguration(null).objectMapper();
@@ -60,6 +64,7 @@ public class DeltaServiceDaoImplTest {
     }
 
     private void initExecutors(DeltaServiceDaoImpl dao) throws Exception {
+        dtmSettings = new CoreDtmSettings(ZoneId.of("UTC"));
         ZookeeperProperties properties = new ZookeeperProperties();
         properties.setChroot("/arena");
         properties.setConnectionString("localhost:55431");
@@ -75,7 +80,7 @@ public class DeltaServiceDaoImplTest {
         dao.addExecutor(new GetDeltaHotExecutorImpl(executor, ENV_NAME));
         dao.addExecutor(new GetDeltaOkExecutorImpl(executor, ENV_NAME));
         dao.addExecutor(new WriteDeltaErrorExecutorImpl(executor, ENV_NAME));
-        dao.addExecutor(new WriteDeltaHotSuccessExecutorImpl(executor, ENV_NAME));
+        dao.addExecutor(new WriteDeltaHotSuccessExecutorImpl(executor, ENV_NAME, dtmSettings));
         dao.addExecutor(new WriteNewDeltaHotExecutorImpl(executor, ENV_NAME));
         dao.addExecutor(new WriteNewOperationExecutorImpl(executor, ENV_NAME));
         dao.addExecutor(new WriteOperationErrorExecutorImpl(executor, ENV_NAME));
@@ -92,7 +97,7 @@ public class DeltaServiceDaoImplTest {
     public void fullSuccess() throws InterruptedException {
         val testContext = new VertxTestContext();
         List<Long> sysCns = new ArrayList<>();
-        val expectedTime = LocalDateTime.now().withNano(0);
+        val expectedTime = LocalDateTime.now(dtmSettings.getTimeZone()).withNano(0);
         val expectedDelta = OkDelta.builder()
             .deltaDate(expectedTime)
             .deltaNum(1)
@@ -116,7 +121,8 @@ public class DeltaServiceDaoImplTest {
                 log.info("" + r);
                 return r;
             })
-            .compose(r -> dao.writeDeltaHotSuccess(DATAMART, LocalDateTime.now().minusHours(1)))
+            .compose(r -> dao.writeDeltaHotSuccess(DATAMART,
+                    LocalDateTime.now(dtmSettings.getTimeZone()).minusHours(1)))
             .compose(r -> dao.getDeltaOk(DATAMART))
             .map(r -> {
                 log.info("" + r);
@@ -164,8 +170,8 @@ public class DeltaServiceDaoImplTest {
                 return r;
             })
             .compose(r -> dao.writeNewDeltaHot(DATAMART))
-            .compose(r -> dao.writeDeltaHotSuccess(DATAMART, LocalDateTime.now().plusHours(1)))
-            .compose(r -> dao.getDeltaByDateTime(DATAMART, LocalDateTime.now()))
+            .compose(r -> dao.writeDeltaHotSuccess(DATAMART, LocalDateTime.now(dtmSettings.getTimeZone()).plusHours(1)))
+            .compose(r -> dao.getDeltaByDateTime(DATAMART, LocalDateTime.now(dtmSettings.getTimeZone())))
             .onSuccess(r -> {
                 actualDeltas[1] = r;
                 log.info("result: [{}]", r);

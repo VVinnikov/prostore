@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adg.factory.impl;
 
-import io.arenadata.dtm.query.execution.plugin.adg.configuration.AdgRollbackProperties;
+import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.AdgRollbackProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.dto.rollback.ReverseHistoryTransferRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.AdgHelperTableNamesFactory;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.ReverseHistoryTransferRequestFactory;

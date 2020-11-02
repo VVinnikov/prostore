@@ -41,9 +41,13 @@ public class GetDeltaByDateTimeExecutorImpl extends DeltaServiceDaoExecutorHelpe
         executor.getData(getDeltaPath(datamart))
             .map(bytes -> {
                 val delta = deserializedDelta(bytes);
-                ctx.setDelta(delta);
-                val deltaDateTime = delta.getOk().getDeltaDate();
-                return deltaDateTime.isBefore(dateTime) || deltaDateTime.isEqual(dateTime);
+                if (delta.getOk() != null) {
+                    ctx.setDelta(delta);
+                    val deltaDateTime = delta.getOk().getDeltaDate();
+                    return deltaDateTime.isBefore(dateTime) || deltaDateTime.isEqual(dateTime);
+                } else {
+                    throw new DeltaNotExistException();
+                }
             })
             .compose(isDeltaOk -> isDeltaOk ?
                 Future.succeededFuture(ctx.getDelta().getOk())

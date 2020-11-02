@@ -25,7 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class SelectDmlExecutor implements DmlExecutor<QueryResult> {
+public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
 
     private final DataSourcePluginService dataSourcePluginService;
     private final TargetDatabaseDefinitionService targetDatabaseDefinitionService;
@@ -35,11 +35,12 @@ public class SelectDmlExecutor implements DmlExecutor<QueryResult> {
     private final InformationSchemaExecutor informationSchemaExecutor;
 
     @Autowired
-    public SelectDmlExecutor(DataSourcePluginService dataSourcePluginService,
-                             TargetDatabaseDefinitionService targetDatabaseDefinitionService,
-                             DeltaQueryPreprocessor deltaQueryPreprocessor, LogicViewReplacer logicViewReplacer,
-                             ColumnMetadataService columnMetadataService,
-                             InformationSchemaExecutor informationSchemaExecutor) {
+    public LlrDmlExecutor(DataSourcePluginService dataSourcePluginService,
+                          TargetDatabaseDefinitionService targetDatabaseDefinitionService,
+                          DeltaQueryPreprocessor deltaQueryPreprocessor,
+                          LogicViewReplacer logicViewReplacer,
+                          ColumnMetadataService columnMetadataService,
+                          InformationSchemaExecutor informationSchemaExecutor) {
         this.dataSourcePluginService = dataSourcePluginService;
         this.targetDatabaseDefinitionService = targetDatabaseDefinitionService;
         this.deltaQueryPreprocessor = deltaQueryPreprocessor;

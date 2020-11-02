@@ -1,6 +1,7 @@
 package io.arenadata.dtm.common.model.ddl;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.arenadata.dtm.common.reader.SourceType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -30,7 +31,7 @@ public class Entity implements Serializable {
     private String externalTableLocationPath;
     private Integer externalTableDownloadChunkSize;
     private Integer externalTableUploadMessageLimit;
-    private List<String> destination;
+    private SourceType destination;
     private List<EntityField> fields;
 
     public Entity(String nameWithSchema, List<EntityField> fields) {

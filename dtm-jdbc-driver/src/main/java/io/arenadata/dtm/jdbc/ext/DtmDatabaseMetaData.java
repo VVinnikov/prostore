@@ -44,7 +44,11 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                 new Field(SCHEMA_NAME_COLUMN, ""),
                 new Field(CATALOG_NAME_COLUMN, "")
         });
-        return new DtmResultSet(connection, result, getMetadata(result), Collections.emptyList());
+        return new DtmResultSet(connection,
+                result,
+                getMetadata(result),
+                Collections.emptyList(),
+                DtmConnection.DEFAULT_TIME_ZONE);
     }
 
     @Override
@@ -53,7 +57,11 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
             List<Field[]> result = connection.protocol.getDatabaseSchemas().stream()
                     .map(schemaInfo -> new Field[]{new Field(CATALOG_NAME_COLUMN, schemaInfo.getMnemonic())})
                     .collect(Collectors.toList());
-            this.catalogs = new DtmResultSet(connection, result, getMetadata(result), Collections.emptyList());
+            this.catalogs = new DtmResultSet(connection,
+                    result,
+                    getMetadata(result),
+                    Collections.emptyList(),
+                    DtmConnection.DEFAULT_TIME_ZONE);
         }
         return catalogs;
     }
@@ -93,7 +101,11 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                         new Field(REF_GENERATION_COLUMN, null),
                         new Field(TABLE_OWNER_COLUMN, getUserName())
                 }).collect(Collectors.toList());
-        return new DtmResultSet(connection, result, getMetadata(result), Collections.emptyList());
+        return new DtmResultSet(connection,
+                result,
+                getMetadata(result),
+                Collections.emptyList(),
+                DtmConnection.DEFAULT_TIME_ZONE);
     }
 
     @Override
@@ -103,7 +115,11 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                 new Field(TABLE_TYPE_COLUMN, SYSTEM_VIEW_TYPE),
                 new Field(TABLE_TYPE_COLUMN, VIEW_TYPE)
         });
-        return new DtmResultSet(connection, result, getMetadata(result), Collections.emptyList());
+        return new DtmResultSet(connection,
+                result,
+                getMetadata(result),
+                Collections.emptyList(),
+                DtmConnection.DEFAULT_TIME_ZONE);
     }
 
     @Override
@@ -154,7 +170,11 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                         new Field(IS_AUTOINCREMENT_COLUMN, "NO"),
                         new Field(IS_GENERATEDCOLUMN_COLUMN, "NO")
                 }).collect(Collectors.toList());
-        return new DtmResultSet(connection, result, getMetadata(result), columns);
+        return new DtmResultSet(connection,
+                result,
+                getMetadata(result),
+                columns,
+                DtmConnection.DEFAULT_TIME_ZONE);
     }
 
     private boolean isNullable(ColumnInfo columnInfo) {

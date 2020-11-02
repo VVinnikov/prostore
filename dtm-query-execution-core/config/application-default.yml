@@ -14,6 +14,9 @@ core:
   env:
     name: ${DTM_NAME:test}
 
+  settings:
+    timeZone: ${CORE_TIME_ZONE:UTC}
+
   datasource:
     edml:
       sourceType: ${EDML_DATASOURCE:ADB}
@@ -27,6 +30,7 @@ core:
       connection-timeout-ms: ${ZOOKEEPER_DS_CONNECTION_TIMEOUT_MS:30000}
       session-timeout-ms: ${ZOOKEEPER_DS_SESSION_TIMEOUT_MS:86400000}
       chroot: ${ZOOKEEPER_DS_CHROOT:/adtm}
+
   vertx:
     pool:
       task-pool: 10
@@ -55,6 +59,7 @@ core:
       enabled: false
       topic: status.event
     statusMonitorUrl: ${STATUS_MONITOR_URL:http://127.0.0.1:9095/status}
+
   cache:
     initialCapacity: ${CACHE_INITIAL_CAPACITY:100000}
     maximumSize: ${CACHE_MAXIMUM_SIZE:100000}
@@ -95,13 +100,16 @@ adg:
       retryCount: ${TARANTOOL_DB_RETRY_COUNT:0}
     cartridge:
       url: ${TARANTOOL_CATRIDGE_URL:http://10.92.3.33:8081}
+
   mppw:
     consumerGroup: ${ADG_CONSUMER_GROUP:tarantool-group-csv}
     kafka:
       maxNumberOfMessagesPerPartition: 200
       callbackFunctionSecIdle: 100
+
   rollback:
     eraseOperationBatchSize: 300
+
   circuitbreaker:
     maxFailures: 5
     timeout: 30000

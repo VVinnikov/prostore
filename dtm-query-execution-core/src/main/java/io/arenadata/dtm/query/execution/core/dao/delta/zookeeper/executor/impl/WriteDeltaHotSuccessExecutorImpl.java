@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.impl;
 
+import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaDaoExecutor;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaServiceDaoExecutorHelper;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.WriteDeltaHotSuccessExecutor;
@@ -14,6 +15,7 @@ import lombok.val;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
 import org.apache.zookeeper.data.Stat;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -24,9 +26,14 @@ import java.util.Arrays;
 @Component
 public class WriteDeltaHotSuccessExecutorImpl extends DeltaServiceDaoExecutorHelper implements WriteDeltaHotSuccessExecutor {
 
+    private final DtmConfig dtmSettings;
+
+    @Autowired
     public WriteDeltaHotSuccessExecutorImpl(ZookeeperExecutor executor,
-                                            @Value("${core.env.name}") String envName) {
+                                            @Value("${core.env.name}") String envName,
+                                            DtmConfig dtmSettings) {
         super(executor, envName);
+        this.dtmSettings = dtmSettings;
     }
 
     @Override
@@ -47,7 +54,8 @@ public class WriteDeltaHotSuccessExecutorImpl extends DeltaServiceDaoExecutorHel
                 Future.succeededFuture(delta) : createDeltaPaths(datamart, deltaHotDate, delta))
             .map(delta -> Delta.builder()
                 .ok(OkDelta.builder()
-                    .deltaDate(deltaHotDate == null ? LocalDateTime.now().withNano(0) : deltaHotDate)
+                    .deltaDate(deltaHotDate == null ?
+                            LocalDateTime.now(this.dtmSettings.getTimeZone()).withNano(0) : deltaHotDate)
                     .deltaNum(delta.getHot().getDeltaNum())
                     .cnFrom(delta.getHot().getCnFrom())
                     .cnTo(delta.getHot().getCnTo() == null ? delta.getHot().getCnFrom() : delta.getHot().getCnTo())

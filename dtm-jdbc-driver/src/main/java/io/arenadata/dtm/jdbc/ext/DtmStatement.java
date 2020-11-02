@@ -5,6 +5,7 @@ import io.arenadata.dtm.jdbc.core.QueryResult;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.*;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -77,9 +78,12 @@ public class DtmStatement implements Statement {
                 });
                 result.add(resultFields);
             });
-            resultSet = new DtmResultSet(connection, result, queryResult.getMetadata(), Collections.emptyList());
+            resultSet = new DtmResultSet(connection,
+                    result,
+                    queryResult.getMetadata(),
+                    Collections.emptyList(),
+                    ZoneId.of(queryResult.getTimeZone()));
         }
-
         return resultSet != null;
     }
 

@@ -1,7 +1,9 @@
 package io.arenadata.dtm.query.execution.core.service.delta;
 
+import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.delta.SelectOnInterval;
 import io.arenadata.dtm.common.service.DeltaService;
+import io.arenadata.dtm.query.execution.core.configuration.properties.CoreDtmSettings;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacadeImpl;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
@@ -15,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -28,11 +31,15 @@ class DeltaServiceImplTest {
     private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
     private final DeltaServiceDao deltaServiceDao = mock(DeltaServiceDaoImpl.class);
     private DeltaService deltaService;
+    private DtmConfig dtmSettings = mock(CoreDtmSettings.class);
+    private ZoneId timeZone;
 
     @BeforeEach
     void setUp() {
         when(serviceDbFacade.getDeltaServiceDao()).thenReturn(deltaServiceDao);
+        when(dtmSettings.getTimeZone()).thenReturn(ZoneId.of("UTC"));
         deltaService = new DeltaServiceImpl(serviceDbFacade);
+        timeZone = dtmSettings.getTimeZone();
     }
 
     @Test
@@ -123,7 +130,7 @@ class DeltaServiceImplTest {
     void getCnToByDeltaDatetimeSuccess(){
         Promise promise = Promise.promise();
         String datamart = "datamart";
-        LocalDateTime deltaDatetime = LocalDateTime.now();
+        LocalDateTime deltaDatetime = LocalDateTime.now(timeZone);
         Long cnTo = 1L;
         OkDelta okDelta = OkDelta.builder().cnTo(cnTo).build();
 
@@ -140,7 +147,7 @@ class DeltaServiceImplTest {
     void getCnToByDeltaDatetimeError(){
         Promise promise = Promise.promise();
         String datamart = "datamart";
-        LocalDateTime deltaDatetime = LocalDateTime.now();
+        LocalDateTime deltaDatetime = LocalDateTime.now(timeZone);
 
         RuntimeException exOk = new RuntimeException("empty delta ok");
         when(deltaServiceDao.getDeltaByDateTime(eq(datamart), eq(deltaDatetime))).thenReturn(Future.failedFuture(exOk));

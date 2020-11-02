@@ -14,6 +14,9 @@ core:
   env:
     name: ${DTM_NAME:dr}
 
+  settings:
+    timeZone: ${CORE_TIME_ZONE:UTC}
+
   datasource:
     edml:
       sourceType: ${EDML_DATASOURCE:ADG}
@@ -50,6 +53,7 @@ core:
       enabled: false
       topic: status.event
     statusMonitorUrl: ${STATUS_MONITOR_URL:http://10.92.3.3:9095/status}
+
   cache:
     initialCapacity: ${CACHE_INITIAL_CAPACITY:100000}
     maximumSize: ${CACHE_MAXIMUM_SIZE:100000}
@@ -95,8 +99,10 @@ adg:
     kafka:
       maxNumberOfMessagesPerPartition: 200
       callbackFunctionSecIdle: 100
+
   rollback:
     eraseOperationBatchSize: 300
+
   circuitbreaker:
     maxFailures: 5
     timeout: 30000

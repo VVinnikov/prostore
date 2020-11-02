@@ -3,6 +3,7 @@ package io.arenadata.dtm.common.reader;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import lombok.Data;
 
+import java.time.ZoneId;
 import java.util.*;
 
 /**
@@ -14,6 +15,7 @@ public class QueryResult {
     private UUID requestId;
     private List<Map<String, Object>> result;
     private List<ColumnMetadata> metadata;
+    private String timeZone;
 
     public QueryResult(UUID requestId, List<Map<String, Object>> result, List<ColumnMetadata> metadata) {
         this.requestId = requestId;

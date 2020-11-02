@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.dml;
 
-import com.google.common.collect.Lists;
 import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.delta.DeltaType;
 import io.arenadata.dtm.common.delta.SelectOnInterval;
@@ -450,7 +449,7 @@ public class AdbQueryEnrichmentServiceImplTest {
             .schema(schemaName)
             .name("accounts")
             .build();
-        List<EntityField> accAttrs = Lists.newArrayList(
+        List<EntityField> accAttrs = Arrays.asList(
             EntityField.builder()
                 .type(ColumnType.BIGINT)
                 .name("account_id")
@@ -479,7 +478,7 @@ public class AdbQueryEnrichmentServiceImplTest {
             .name("transactions")
             .build();
 
-        List<EntityField> trAttr = Lists.newArrayList(
+        List<EntityField> trAttr = Arrays.asList(
             EntityField.builder()
                 .type(ColumnType.BIGINT)
                 .name("transaction_id")

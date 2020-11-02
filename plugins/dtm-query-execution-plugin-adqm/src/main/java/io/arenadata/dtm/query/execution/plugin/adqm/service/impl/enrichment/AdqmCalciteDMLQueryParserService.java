@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static io.arenadata.dtm.query.execution.plugin.adqm.service.impl.enrichment.AdqmSchemaExtenderImpl.SYSTEM_FIELDS;
+import static io.arenadata.dtm.query.execution.plugin.adqm.service.impl.enrichment.AdqmSchemaExtenderImpl.getExtendedColumns;
 
 @Service("adqmCalciteDMLQueryParserService")
 public class AdqmCalciteDMLQueryParserService extends CalciteDMLQueryParserService {
@@ -37,7 +37,7 @@ public class AdqmCalciteDMLQueryParserService extends CalciteDMLQueryParserServi
         List<Entity> extendedDatamartClasses = new ArrayList<>();
         logicalSchema.getEntities().forEach(entity -> {
             val extendedFields = new ArrayList<>(entity.getFields());
-            extendedFields.addAll(SYSTEM_FIELDS);
+            extendedFields.addAll(getExtendedColumns());
             extendedDatamartClasses.add(entity.toBuilder()
                 .fields(extendedFields)
                 .build());

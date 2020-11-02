@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl.enrichment;
 
-import com.google.common.collect.Lists;
 import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.delta.DeltaType;
 import io.arenadata.dtm.common.delta.SelectOnInterval;
@@ -314,8 +313,7 @@ public class AdgQueryEnrichmentServiceImplTest {
             .schema(schemaName)
             .name("accounts")
             .build();
-
-        List<EntityField> accAttrs = Lists.newArrayList(
+        List<EntityField> accAttrs = Arrays.asList(
             EntityField.builder()
                 .type(ColumnType.BIGINT)
                 .name("account_id")
@@ -344,7 +342,7 @@ public class AdgQueryEnrichmentServiceImplTest {
             .name("transactions")
             .build();
 
-        List<EntityField> trAttr = Lists.newArrayList(
+        List<EntityField> trAttr = Arrays.asList(
             EntityField.builder()
                 .type(ColumnType.BIGINT)
                 .name("transaction_id")

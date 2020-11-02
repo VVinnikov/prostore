@@ -11,10 +11,7 @@ import io.arenadata.dtm.query.execution.core.dto.edml.EdmlAction;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.EdmlService;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
+import io.vertx.core.*;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlDialect;
@@ -52,34 +49,35 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
                 .setHandler(resultHandler);
     }
 
+
     private Future<EdmlAction> defineExternalTableAndType(EdmlRequestContext context) {
         return Future.future(edmlQueryPromise -> {
             initSourceAndTargetTables(context);
-            getExternalEntity(Optional.empty(),
-                    context.getTargetTable().getSchemaName(),
-                    context.getTargetTable().getTableName(),
-                    EntityType.DOWNLOAD_EXTERNAL_TABLE)
-                    .compose(entity -> getExternalEntity(entity,
-                            context.getSourceTable().getSchemaName(),
-                            context.getSourceTable().getTableName(),
-                            EntityType.UPLOAD_EXTERNAL_TABLE))
-                    .onSuccess(entity -> {
-                        if (entity.isPresent()) {
-                            Entity extEntity = entity.get();
-                            if (extEntity.getEntityType() == EntityType.DOWNLOAD_EXTERNAL_TABLE) {
-                                context.setEntity(extEntity);
+            getEntities(context)
+                    .onSuccess(entities -> {
+                        val source = entities.get(0);
+                        val destination = entities.get(1);
+                        context.setDestinationEntity(destination);
+                        context.setSourceEntity(source);
+                        if (destination.getEntityType() == EntityType.DOWNLOAD_EXTERNAL_TABLE) {
                                 edmlQueryPromise.complete(EdmlAction.DOWNLOAD);
-                            } else if (extEntity.getEntityType() == EntityType.UPLOAD_EXTERNAL_TABLE) {
-                                context.setEntity(extEntity);
+                        } else if (source.getEntityType() == EntityType.UPLOAD_EXTERNAL_TABLE) {
                                 edmlQueryPromise.complete(EdmlAction.UPLOAD);
-                            }
-                        } else {
-                            edmlQueryPromise.fail(String.format("Can't determine external table in query [%s]",
-                                    context.getSqlNode().toSqlString(SQL_DIALECT).toString()));
                         }
                     })
-                    .onFailure(edmlQueryPromise::fail);
+                    .onFailure(fail -> edmlQueryPromise.fail(String.format("Can't determine external table in query [%s]",
+                                    context.getSqlNode().toSqlString(SQL_DIALECT).toString())));
         });
+    }
+
+    private Future<List<Entity>> getEntities(EdmlRequestContext context) {
+        val schema = context.getSourceTable().getSchemaName();
+        val sourceTable = context.getSourceTable().getTableName();
+        val destinationTable = context.getDestinationTable().getTableName();
+        return Future.future(p -> CompositeFuture.join(entityDao.getEntity(schema, sourceTable), entityDao.getEntity(schema, destinationTable))
+                .onSuccess(entities -> p.complete(entities.list()))
+                .onFailure(err -> p.fail(err))
+        );
     }
 
     private Future<QueryResult> execute(EdmlRequestContext context, EdmlAction edmlAction) {
@@ -100,32 +98,8 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
                 .map(n -> new TableInfo(n.tryGetSchemaName().orElse(defDatamartMnemonic),
                         n.tryGetTableName().orElseThrow(() -> getCantGetTableNameError(context))))
                 .collect(Collectors.toList());
-        context.setTargetTable(tableInfos.get(0));
+        context.setDestinationTable(tableInfos.get(0));
         context.setSourceTable(tableInfos.get(1));
-    }
-
-    private Future<Optional<Entity>> getExternalEntity(Optional<Entity> entity, String datamartName, String entityName, EntityType type) {
-        return Future.future(entityPromise -> {
-            if (entity.isPresent()) {
-                entityPromise.complete(entity);
-            } else {
-                entityDao.getEntity(datamartName, entityName)
-                        .onSuccess(extEntity -> {
-                            if (type == extEntity.getEntityType()) {
-                                entityPromise.complete(Optional.of(extEntity));
-                            } else {
-                                entityPromise.complete(Optional.empty());
-                            }
-                        })
-                        .onFailure(error -> {
-                            log.error("Table [{}] in datamart [{}] doesn't exist!",
-                                    entityName,
-                                    datamartName, error);
-                            entityPromise.fail(error);
-
-                        });
-            }
-        });
     }
 
     private RuntimeException getCantGetTableNameError(EdmlRequestContext context) {

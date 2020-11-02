@@ -17,20 +17,20 @@ public class MppwKafkaRequestFactoryImpl implements MppwKafkaRequestFactory {
     @Override
     public MppwRequestContext create(EdmlRequestContext context) {
         LocationUriParser.KafkaTopicUri kafkaTopicUri =
-                LocationUriParser.parseKafkaLocationPath(context.getEntity().getExternalTableLocationPath());
+                LocationUriParser.parseKafkaLocationPath(context.getSourceEntity().getExternalTableLocationPath());
         val request = MppwRequest.builder()
                 .queryRequest(context.getRequest().getQueryRequest())
                 .isLoadStart(true)
                 .kafkaParameter(MppwKafkaParameter.builder()
-                        .datamart(context.getEntity().getSchema())
+                        .datamart(context.getSourceEntity().getSchema())
                         .sysCn(context.getSysCn())
-                        .targetTableName(context.getTargetTable().getTableName())
+                        .targetTableName(context.getDestinationTable().getTableName())
                         .uploadMetadata(UploadExternalEntityMetadata.builder()
-                                .name(context.getEntity().getName())
-                                .format(Format.findByName(context.getEntity().getExternalTableFormat()))
-                                .locationPath(context.getEntity().getExternalTableLocationPath())
-                                .externalSchema(context.getEntity().getExternalTableSchema())
-                                .uploadMessageLimit(context.getEntity().getExternalTableUploadMessageLimit())
+                                .name(context.getSourceEntity().getName())
+                                .format(Format.findByName(context.getSourceEntity().getExternalTableFormat()))
+                                .locationPath(context.getSourceEntity().getExternalTableLocationPath())
+                                .externalSchema(context.getSourceEntity().getExternalTableSchema())
+                                .uploadMessageLimit(context.getSourceEntity().getExternalTableUploadMessageLimit())
                                 .build())
                         .zookeeperHost(kafkaTopicUri.getHost())
                         .zookeeperPort(kafkaTopicUri.getPort())

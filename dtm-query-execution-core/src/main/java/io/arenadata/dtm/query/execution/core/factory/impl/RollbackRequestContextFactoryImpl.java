@@ -14,9 +14,9 @@ public class RollbackRequestContextFactoryImpl implements RollbackRequestContext
         return new RollbackRequestContext(RollbackRequest.builder()
                 .queryRequest(context.getRequest().getQueryRequest())
                 .datamart(context.getSourceTable().getSchemaName())
-                .targetTable(context.getTargetTable().getTableName())
+                .destinationTable(context.getDestinationTable().getTableName())
                 .sysCn(context.getSysCn())
-                .entity(context.getEntity())
+                .entity(context.getDestinationEntity())
                 .build());
     }
 }

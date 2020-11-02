@@ -85,9 +85,9 @@ class UploadExternalTableExecutorTest {
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
 
-        context.setTargetTable(new TableInfo("test", "pso"));
+        context.setDestinationTable(new TableInfo("test", "pso"));
         context.setSourceTable(new TableInfo("test", "upload_table"));
-        context.setEntity(entity);
+        context.setSourceEntity(entity);
         context.setSysCn(sysCn);
 
         when(deltaServiceDao.writeNewOperation(any()))
@@ -130,9 +130,9 @@ class UploadExternalTableExecutorTest {
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
 
-        context.setTargetTable(new TableInfo("test", "pso"));
+        context.setDestinationTable(new TableInfo("test", "pso"));
         context.setSourceTable(new TableInfo("test", "upload_table"));
-        context.setEntity(entity);
+        context.setSourceEntity(entity);
 
         when(deltaServiceDao.writeNewOperation(any()))
                 .thenReturn(Future.succeededFuture(sysCn));
@@ -172,9 +172,9 @@ class UploadExternalTableExecutorTest {
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
 
-        context.setTargetTable(new TableInfo("test", "pso"));
+        context.setDestinationTable(new TableInfo("test", "pso"));
         context.setSourceTable(new TableInfo("test", "upload_table"));
-        context.setEntity(entity);
+        context.setSourceEntity(entity);
 
         when(deltaServiceDao.writeNewOperation(any()))
                 .thenReturn(Future.failedFuture(new RuntimeException("")));
@@ -206,9 +206,9 @@ class UploadExternalTableExecutorTest {
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
 
-        context.setTargetTable(new TableInfo("test", "pso"));
+        context.setDestinationTable(new TableInfo("test", "pso"));
         context.setSourceTable(new TableInfo("test", "upload_table"));
-        context.setEntity(entity);
+        context.setSourceEntity(entity);
 
         when(deltaServiceDao.writeNewOperation(any()))
                 .thenReturn(Future.succeededFuture(sysCn));
@@ -248,9 +248,9 @@ class UploadExternalTableExecutorTest {
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
 
-        context.setTargetTable(new TableInfo("test", "pso"));
+        context.setDestinationTable(new TableInfo("test", "pso"));
         context.setSourceTable(new TableInfo("test", "upload_table"));
-        context.setEntity(entity);
+        context.setSourceEntity(entity);
 
         when(deltaServiceDao.writeNewOperation(any()))
                 .thenReturn(Future.succeededFuture(sysCn));
@@ -294,9 +294,9 @@ class UploadExternalTableExecutorTest {
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
 
-        context.setTargetTable(new TableInfo("test", "pso"));
+        context.setDestinationTable(new TableInfo("test", "pso"));
         context.setSourceTable(new TableInfo("test", "upload_table"));
-        context.setEntity(entity);
+        context.setSourceEntity(entity);
 
         when(deltaServiceDao.writeNewOperation(any()))
                 .thenReturn(Future.succeededFuture(sysCn));
@@ -335,9 +335,9 @@ class UploadExternalTableExecutorTest {
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
 
-        context.setTargetTable(new TableInfo("test", "pso"));
+        context.setDestinationTable(new TableInfo("test", "pso"));
         context.setSourceTable(new TableInfo("test", "upload_table"));
-        context.setEntity(entity);
+        context.setSourceEntity(entity);
 
         when(deltaServiceDao.writeNewOperation(any()))
                 .thenReturn(Future.succeededFuture(sysCn));

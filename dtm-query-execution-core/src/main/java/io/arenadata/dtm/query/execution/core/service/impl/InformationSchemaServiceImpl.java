@@ -18,6 +18,7 @@ import io.vertx.core.json.JsonArray;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
@@ -70,11 +71,7 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
                 return;
             case CREATE_SCHEMA:
             case DROP_SCHEMA:
-                val dropSchemaSql = sql.toString()
-                    .replace("DATABASE", "SCHEMA")
-                    .replace("`", "");
-                    client.executeQuery(dropSchemaSql + " CASCADE")
-                    .onFailure(this::shutdown);
+                createOrDropSchema(sql);
                 return;
             case CREATE_VIEW:
             case ALTER_VIEW:
@@ -85,6 +82,19 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
                 return;
             default:
                 throw new IllegalArgumentException("Sql type not supported: " + sql.getKind());
+        }
+    }
+
+    private void createOrDropSchema(SqlCall sql) {
+        val schemaSql = sql.toString()
+            .replace("DATABASE", "SCHEMA")
+            .replace("`", "");
+        if (SqlKind.DROP_SCHEMA == sql.getKind()) {
+            client.executeQuery(schemaSql + " CASCADE")
+                .onFailure(this::shutdown);
+        } else {
+            client.executeQuery(schemaSql)
+                .onFailure(this::shutdown);
         }
     }
 

@@ -70,7 +70,10 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
                 return;
             case CREATE_SCHEMA:
             case DROP_SCHEMA:
-                client.executeQuery(sql.toString().replace("DATABASE", "SCHEMA").replace("`", ""))
+                val dropSchemaSql = sql.toString()
+                    .replace("DATABASE", "SCHEMA")
+                    .replace("`", "");
+                    client.executeQuery(dropSchemaSql + " CASCADE")
                     .onFailure(this::shutdown);
                 return;
             case CREATE_VIEW:

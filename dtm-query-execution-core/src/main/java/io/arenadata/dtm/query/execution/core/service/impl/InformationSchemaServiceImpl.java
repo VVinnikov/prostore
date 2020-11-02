@@ -17,6 +17,7 @@ import io.vertx.core.Future;
 import io.vertx.core.json.JsonArray;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import lombok.var;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
@@ -86,16 +87,12 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     }
 
     private void createOrDropSchema(SqlCall sql) {
-        val schemaSql = sql.toString()
+        var schemaSql = sql.toString()
             .replace("DATABASE", "SCHEMA")
             .replace("`", "");
-        if (SqlKind.DROP_SCHEMA == sql.getKind()) {
-            client.executeQuery(schemaSql + " CASCADE")
-                .onFailure(this::shutdown);
-        } else {
-            client.executeQuery(schemaSql)
-                .onFailure(this::shutdown);
-        }
+        schemaSql = SqlKind.DROP_SCHEMA == sql.getKind() ? schemaSql + " CASCADE" : schemaSql;
+        client.executeQuery(schemaSql)
+            .onFailure(this::shutdown);
     }
 
     private void createTable(SqlCreateTable createTable) {

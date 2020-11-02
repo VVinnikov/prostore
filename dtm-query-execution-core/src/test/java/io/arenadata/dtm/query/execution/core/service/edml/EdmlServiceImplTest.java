@@ -120,7 +120,7 @@ class EdmlServiceImplTest {
         });
         assertTrue(promise.future().succeeded());
         assertEquals(context.getSourceTable(), sourceTable);
-        assertEquals(context.getTargetTable(), targetTable);
+        assertEquals(context.getDestinationTable(), targetTable);
     }
 
     @Test
@@ -174,7 +174,7 @@ class EdmlServiceImplTest {
             }
         });
         assertTrue(promise.future().succeeded());
-        assertEquals(context.getEntity(), uploadEntity);
+        assertEquals(context.getSourceEntity(), uploadEntity);
     }
 
     @Test

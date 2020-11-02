@@ -29,7 +29,7 @@ class ReverseHistoryTransferRequestFactoryImplTest {
         );
         val request = factory.create(new RollbackRequestContext(RollbackRequest.builder()
             .sysCn(11)
-            .targetTable("tbl1")
+            .destinationTable("tbl1")
             .datamart("dtm1")
             .queryRequest(QueryRequest.builder()
                 .envName("env1")

@@ -59,7 +59,7 @@ class AdbRollbackServiceTest {
             .datamart("test")
             .sysCn(1L)
             .queryRequest(new QueryRequest())
-            .targetTable("test_table")
+            .destinationTable("test_table")
             .entity(entity)
             .build();
         RollbackRequestContext context = new RollbackRequestContext(rollbackRequest);
@@ -111,7 +111,7 @@ class AdbRollbackServiceTest {
             .datamart("test")
             .sysCn(1L)
             .queryRequest(new QueryRequest())
-            .targetTable("test_table")
+            .destinationTable("test_table")
             .entity(entity)
             .build();
         RollbackRequestContext context = new RollbackRequestContext(rollbackRequest);

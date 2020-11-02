@@ -95,7 +95,7 @@ class UploadKafkaExecutorTest {
 
             DatamartRequest request = new DatamartRequest(queryRequest);
             EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
-            edmlRequestContext.setTargetTable(new TableInfo("test", "pso"));
+            edmlRequestContext.setDestinationTable(new TableInfo("test", "pso"));
             edmlRequestContext.setSourceTable(new TableInfo("test", "upload_table"));
 
             final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
@@ -185,7 +185,7 @@ class UploadKafkaExecutorTest {
 
             DatamartRequest request = new DatamartRequest(queryRequest);
             EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
-            edmlRequestContext.setTargetTable(new TableInfo("test", "pso"));
+            edmlRequestContext.setDestinationTable(new TableInfo("test", "pso"));
             edmlRequestContext.setSourceTable(new TableInfo("test", "upload_table"));
 
             final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
@@ -267,7 +267,7 @@ class UploadKafkaExecutorTest {
 
             DatamartRequest request = new DatamartRequest(queryRequest);
             EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
-            edmlRequestContext.setTargetTable(new TableInfo("test", "pso"));
+            edmlRequestContext.setDestinationTable(new TableInfo("test", "pso"));
             edmlRequestContext.setSourceTable(new TableInfo("test", "upload_table"));
 
             final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
@@ -349,7 +349,7 @@ class UploadKafkaExecutorTest {
 
             DatamartRequest request = new DatamartRequest(queryRequest);
             EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
-            edmlRequestContext.setTargetTable(new TableInfo("test", "pso"));
+            edmlRequestContext.setDestinationTable(new TableInfo("test", "pso"));
             edmlRequestContext.setSourceTable(new TableInfo("test", "upload_table"));
 
             final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
@@ -431,7 +431,7 @@ class UploadKafkaExecutorTest {
 
             DatamartRequest request = new DatamartRequest(queryRequest);
             EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
-            edmlRequestContext.setTargetTable(new TableInfo("test", "pso"));
+            edmlRequestContext.setDestinationTable(new TableInfo("test", "pso"));
             edmlRequestContext.setSourceTable(new TableInfo("test", "upload_table"));
 
             final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
@@ -512,7 +512,7 @@ class UploadKafkaExecutorTest {
 
             DatamartRequest request = new DatamartRequest(queryRequest);
             EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
-            edmlRequestContext.setTargetTable(new TableInfo("test", "pso"));
+            edmlRequestContext.setDestinationTable(new TableInfo("test", "pso"));
             edmlRequestContext.setSourceTable(new TableInfo("test", "upload_table"));
 
             final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());

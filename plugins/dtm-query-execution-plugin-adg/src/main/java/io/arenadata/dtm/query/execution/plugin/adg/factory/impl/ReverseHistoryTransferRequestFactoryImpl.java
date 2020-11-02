@@ -18,7 +18,7 @@ public class ReverseHistoryTransferRequestFactoryImpl implements ReverseHistoryT
     @Override
     public ReverseHistoryTransferRequest create(RollbackRequestContext context) {
         val envName = context.getRequest().getQueryRequest().getEnvName();
-        val tableName = context.getRequest().getTargetTable();
+        val tableName = context.getRequest().getDestinationTable();
         val datamart = context.getRequest().getDatamart();
         val helperTableNames = helperTableNamesFactory.create(envName, datamart, tableName);
         return ReverseHistoryTransferRequest.builder()

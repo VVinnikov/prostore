@@ -9,8 +9,8 @@ import java.util.Objects;
 
 public class SqlUseSchema extends SqlCall {
 
-    private SqlIdentifier datamart;
-    private static final SqlOperator USE_OPERATOR = new SqlSpecialOperator("USE", SqlKind.OTHER_DDL);
+    private final SqlIdentifier datamart;
+    private static final SqlOperator USE_OPERATOR = new SqlSpecialOperator("USE", SqlKind.OTHER);
 
     public SqlUseSchema(SqlParserPos pos, SqlIdentifier datamart) {
         super(pos);

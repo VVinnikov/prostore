@@ -38,8 +38,6 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
             }
         } else if (node instanceof SqlDeltaCall) {
             return new DeltaRequestContext(new DatamartRequest(changedQueryRequest));
-        } else if (node instanceof SqlUseSchema) {
-            return new DdlRequestContext(new DdlRequest(changedQueryRequest), node);
         }
 
         switch (node.getKind()) {

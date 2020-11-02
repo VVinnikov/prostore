@@ -1,5 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.metadata.impl;
 
+import io.arenadata.dtm.common.model.ddl.Entity;
+import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
@@ -10,8 +12,7 @@ import io.vertx.core.Handler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Component
 public class MetadataExecutorImpl implements MetadataExecutor<DdlRequestContext> {
@@ -26,7 +27,11 @@ public class MetadataExecutorImpl implements MetadataExecutor<DdlRequestContext>
     @Override
     public void execute(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {
         List<Future> futures = new ArrayList<>();
-        dataSourcePluginService.getSourceTypes().forEach(sourceType ->
+        Set<SourceType> destination = Optional.ofNullable(context.getRequest().getEntity())
+                .map(Entity::getDestination)
+                .filter(set -> !set.isEmpty())
+                .orElse(dataSourcePluginService.getSourceTypes());
+        destination.forEach(sourceType ->
                 futures.add(Future.future(p -> dataSourcePluginService.ddl(
                         sourceType,
                         context,

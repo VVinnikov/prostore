@@ -57,6 +57,7 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
                 try {
                     List<Entity> entities = success.list();
                     val schemaKeyDatamartTableMap = entities.stream()
+                        .map(Entity::clone)
                         .collect(Collectors.toMap(this::createDatamartSchemaKey, Function.identity()));
                     resultHandler.handle(Future.succeededFuture(schemaKeyDatamartTableMap));
                 } catch (Exception ex) {

@@ -1,10 +1,7 @@
 package io.arenadata.dtm.common.model.ddl;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.io.Serializable;
 import java.util.List;
@@ -16,7 +13,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
-public class Entity implements Serializable {
+public class Entity implements Serializable, Cloneable {
 
     private static final String DEFAULT_SCHEMA = "test";
 
@@ -55,5 +52,10 @@ public class Entity implements Serializable {
         return schema + "." + name;
     }
 
+    @Override
+    @SneakyThrows
+    public Entity clone() {
+        return (Entity) super.clone();
+    }
 }
 

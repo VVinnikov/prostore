@@ -23,20 +23,20 @@ import static io.arenadata.dtm.query.execution.plugin.adqm.common.Constants.*;
  */
 @Service("adqmSchemaExtender")
 public class AdqmSchemaExtenderImpl implements SchemaExtender {
+
+    public static final List<EntityField> SYSTEM_FIELDS = Arrays.asList(
+        generateNewField(SYS_OP_FIELD, ColumnType.INT),
+        generateNewField(SYS_TO_FIELD, ColumnType.BIGINT),
+        generateNewField(SYS_FROM_FIELD, ColumnType.BIGINT),
+        generateNewField(SIGN_FIELD, ColumnType.INT),
+        generateNewField(CLOSE_DATE_FIELD, ColumnType.DATE)
+    );
+
     private final AdqmHelperTableNamesFactory helperTableNamesFactory;
+
 
     public AdqmSchemaExtenderImpl(AdqmHelperTableNamesFactory helperTableNamesFactory) {
         this.helperTableNamesFactory = helperTableNamesFactory;
-    }
-
-    public static List<EntityField> getExtendedColumns() {
-        return Arrays.asList(
-            generateNewField(SYS_OP_FIELD, ColumnType.INT),
-            generateNewField(SYS_TO_FIELD, ColumnType.BIGINT),
-            generateNewField(SYS_FROM_FIELD, ColumnType.BIGINT),
-            generateNewField(SIGN_FIELD, ColumnType.INT),
-            generateNewField(CLOSE_DATE_FIELD, ColumnType.DATE)
-        );
     }
 
     private static EntityField generateNewField(String name, ColumnType columnType) {
@@ -61,9 +61,7 @@ public class AdqmSchemaExtenderImpl implements SchemaExtender {
                 logicalSchema.getMnemonic(),
                 entity.getName());
             entity.setSchema(helperTableNames.getSchema());
-            val extendedEntityFields = new ArrayList<>(entity.getFields());
-            extendedEntityFields.addAll(getExtendedColumns());
-            entity.setFields(extendedEntityFields);
+            extendEntityFields(entity.getFields());
             extendedEntities.add(entity);
             extendedEntities.add(getExtendedSchema(entity, helperTableNames.getActual()));
             extendedEntities.add(getExtendedSchema(entity, helperTableNames.getActualShard()));
@@ -73,6 +71,12 @@ public class AdqmSchemaExtenderImpl implements SchemaExtender {
             .ifPresent(datamartTable -> extendedSchema.setMnemonic(datamartTable.getSchema()));
         extendedSchema.setEntities(extendedEntities);
         return extendedSchema;
+    }
+
+    private void extendEntityFields(List<EntityField> entityFields) {
+        SYSTEM_FIELDS.stream()
+            .filter(sysField -> !entityFields.contains(sysField))
+            .forEach(entityFields::add);
     }
 
     private Entity getExtendedSchema(Entity entity, String tableName) {

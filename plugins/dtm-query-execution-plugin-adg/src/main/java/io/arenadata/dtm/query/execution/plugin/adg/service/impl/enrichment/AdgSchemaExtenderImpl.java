@@ -11,6 +11,7 @@ import lombok.val;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,10 +23,22 @@ import static io.arenadata.dtm.query.execution.plugin.adg.constants.ColumnFields
  */
 @Service("adgSchemaExtender")
 public class AdgSchemaExtenderImpl implements SchemaExtender {
+    private static final List<EntityField> SYSTEM_FIELDS = Arrays.asList(
+        generateNewField(SYS_OP_FIELD),
+        generateNewField(SYS_TO_FIELD),
+        generateNewField(SYS_FROM_FIELD)
+    );
     private final AdgHelperTableNamesFactory helperTableNamesFactory;
 
     public AdgSchemaExtenderImpl(AdgHelperTableNamesFactory helperTableNamesFactory) {
         this.helperTableNamesFactory = helperTableNamesFactory;
+    }
+
+    private static EntityField generateNewField(String name) {
+        return EntityField.builder()
+            .type(ColumnType.INT)
+            .name(name)
+            .build();
     }
 
     @Override
@@ -42,9 +55,7 @@ public class AdgSchemaExtenderImpl implements SchemaExtender {
             val helperTableNames = helperTableNamesFactory.create(systemName,
                 logicalSchema.getMnemonic(),
                 entity.getName());
-            val extendedEntityFields = new ArrayList<>(entity.getFields());
-            extendedEntityFields.addAll(getExtendedColumns());
-            entity.setFields(extendedEntityFields);
+            extendEntityFields(entity.getFields());
             extendedDatamartClasses.add(entity);
             extendedDatamartClasses.add(getExtendedSchema(entity, helperTableNames.getHistory()));
             extendedDatamartClasses.add(getExtendedSchema(entity, helperTableNames.getStaging()));
@@ -64,19 +75,10 @@ public class AdgSchemaExtenderImpl implements SchemaExtender {
             .build();
     }
 
-    private List<EntityField> getExtendedColumns() {
-        List<EntityField> tableAttributeList = new ArrayList<>();
-        tableAttributeList.add(generateNewField(SYS_OP_FIELD));
-        tableAttributeList.add(generateNewField(SYS_TO_FIELD));
-        tableAttributeList.add(generateNewField(SYS_FROM_FIELD));
-        return tableAttributeList;
-    }
-
-    private EntityField generateNewField(String name) {
-        return EntityField.builder()
-            .type(ColumnType.INT)
-            .name(name)
-            .build();
+    private void extendEntityFields(List<EntityField> entityFields) {
+        SYSTEM_FIELDS.stream()
+            .filter(sysField -> !entityFields.contains(sysField))
+            .forEach(entityFields::add);
     }
 
 }

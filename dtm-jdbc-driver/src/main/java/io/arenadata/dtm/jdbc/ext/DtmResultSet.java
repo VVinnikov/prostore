@@ -13,13 +13,17 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URL;
 import java.sql.*;
-import java.time.*;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 public class DtmResultSet implements ResultSet {
+
 
     private final List<ColumnMetadata> metadata;
     private List<Field[]> fields;
@@ -30,20 +34,26 @@ public class DtmResultSet implements ResultSet {
     private List<ColumnInfo> columns;
     private final ZoneId zoneId;
 
-    public DtmResultSet(DtmConnection connection, List<Field[]> fields, List<ColumnMetadata> metadata, List<ColumnInfo> columns) {
+    public DtmResultSet(DtmConnection connection,
+                        List<Field[]> fields,
+                        List<ColumnMetadata> metadata,
+                        List<ColumnInfo> columns,
+                        ZoneId timeZone) {
         this.connection = connection;
         this.fields = fields;
         thisRow = (fields == null || fields.isEmpty()) ?
                 new Field[0] : fields.get(0);
         this.metadata = metadata;
         this.columns = columns;
-        this.zoneId = connection.getZoneId();
+        this.zoneId = timeZone;
     }
 
     public static DtmResultSet createEmptyResultSet() {
         return new DtmResultSet(null,
                 Collections.singletonList(new Field[]{new Field("insert_id", "")}),
-                Collections.emptyList(), Collections.emptyList());
+                Collections.emptyList(),
+                Collections.emptyList(),
+                DtmConnection.DEFAULT_TIME_ZONE);
     }
 
     public List<ColumnInfo> getColumns() {

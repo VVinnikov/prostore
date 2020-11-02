@@ -2,6 +2,7 @@ package io.arenadata.dtm.query.execution.core.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.reader.InputQueryRequest;
 import io.arenadata.dtm.query.execution.core.service.QueryAnalyzer;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -18,12 +19,15 @@ import org.springframework.util.MimeTypeUtils;
 public class QueryController {
     private final QueryAnalyzer queryAnalyzer;
     private final ObjectMapper objectMapper;
+    private final DtmConfig dtmSettings;
 
     @Autowired
     public QueryController(QueryAnalyzer queryAnalyzer,
-                           @Qualifier("coreObjectMapper") ObjectMapper objectMapper) {
+                           @Qualifier("coreObjectMapper") ObjectMapper objectMapper,
+                           DtmConfig dtmSettings) {
         this.queryAnalyzer = queryAnalyzer;
         this.objectMapper = objectMapper;
+        this.dtmSettings = dtmSettings;
     }
 
     public void executeQueryWithoutParams(RoutingContext context) {
@@ -35,7 +39,7 @@ public class QueryController {
                 if (queryResult.result().getRequestId() == null) {
                     queryResult.result().setRequestId(inputQueryRequest.getRequestId());
                 }
-
+                queryResult.result().setTimeZone(this.dtmSettings.getTimeZone().toString());
                 log.info("Request completed: [{}]", inputQueryRequest.getSql());
                 try {
                     final String json = objectMapper.writeValueAsString(queryResult.result());

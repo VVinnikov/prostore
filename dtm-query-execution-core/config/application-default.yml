@@ -81,6 +81,9 @@ adb:
     poolSize: ${ADB_MPPW_POOL_SIZE:2}
     stopTimeoutMs: ${ADB_MPPW_STOP_TIMEOUT_MS:86400000}
 
+  web-client:
+    max-pool-size: ${ADB_WEB_CLIENT_MAX_POOL_SIZE:100}
+
 adg:
   tarantool:
     db:
@@ -105,6 +108,9 @@ adg:
     fallbackOnFailure: false
     resetTimeout: 10000
 
+  web-client:
+    max-pool-size: ${ADG_WEB_CLIENT_MAX_POOL_SIZE:100}
+
 adqm:
   datasource:
     database: ${ADQM_DB_NAME:upload}
@@ -123,3 +129,6 @@ adqm:
     loadType: ${ADQM_MPPW_LOAD_TYPE:REST}
     restLoadUrl: ${ADQM_REST_LOAD_URL:http://10.92.3.3:8090/newdata/adqm}
     restLoadConsumerGroup: ${ADQM_REST_LOAD_GROUP:adb-emulator-load-adqm}
+
+  web-client:
+    max-pool-size: ${ADQM_WEB_CLIENT_MAX_POOL_SIZE:100}

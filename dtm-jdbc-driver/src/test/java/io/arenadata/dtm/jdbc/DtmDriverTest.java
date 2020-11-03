@@ -1,11 +1,14 @@
 package io.arenadata.dtm.jdbc;
 
-import io.arenadata.dtm.jdbc.ext.DtmConnection;
+import io.arenadata.dtm.jdbc.core.BaseConnection;
+import io.arenadata.dtm.jdbc.ext.DtmConnectionImpl;
 import io.arenadata.dtm.jdbc.ext.DtmDatabaseMetaData;
 import io.arenadata.dtm.jdbc.ext.DtmStatement;
+import io.arenadata.dtm.jdbc.model.TableInfo;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 
 public class DtmDriverTest {
 
@@ -15,11 +18,12 @@ public class DtmDriverTest {
         String schema = "";
         String url = String.format("jdbc:adtm://%s/", host);
 
-        DtmConnection conn = new DtmConnection(host, user, schema, null, url);
+        BaseConnection conn = new DtmConnectionImpl(host, user, schema, null, url);
         DtmStatement stmnt = (DtmStatement) conn.createStatement();
         DtmStatement stmnt2 = (DtmStatement) conn.createStatement();
+        final List<TableInfo> tables = conn.getQueryExecutor().getTables("dtm_714");
         final ResultSet resultSet1 = stmnt.executeQuery("USE dtm_714");
-        final ResultSet resultSet2 = stmnt.executeQuery("get_delta_ok();");
+        final ResultSet resultSet2 = stmnt.executeQuery("get_delta_ok(); get_delta_ok();");
         resultSet2.getObject(2);
         DtmDatabaseMetaData dtmDatabaseMetaData = new DtmDatabaseMetaData(conn);
         //final ResultSet columns = dtmDatabaseMetaData.getColumns("dtm_579", "%", "transactions_2", "%");

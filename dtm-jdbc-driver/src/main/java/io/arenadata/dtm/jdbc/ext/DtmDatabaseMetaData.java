@@ -1,6 +1,7 @@
 package io.arenadata.dtm.jdbc.ext;
 
 import io.arenadata.dtm.common.model.ddl.ColumnType;
+import io.arenadata.dtm.jdbc.core.BaseConnection;
 import io.arenadata.dtm.jdbc.core.Field;
 import io.arenadata.dtm.jdbc.model.ColumnInfo;
 import io.arenadata.dtm.jdbc.model.TableInfo;
@@ -14,14 +15,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.arenadata.dtm.jdbc.util.DriverConstants.*;
+import static io.arenadata.dtm.jdbc.util.DriverInfo.*;
 import static org.apache.http.util.TextUtils.isEmpty;
 
 public class DtmDatabaseMetaData implements DatabaseMetaData {
 
-    private final DtmConnection connection;
+    private final BaseConnection connection;
     private ResultSet catalogs;
 
-    public DtmDatabaseMetaData(DtmConnection dtmConnection) {
+    public DtmDatabaseMetaData(BaseConnection dtmConnection) {
         this.connection = dtmConnection;
     }
 
@@ -39,36 +41,28 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
     }
 
     @Override
-    public ResultSet getSchemas(String catalog, String schemaPattern) {
+    public ResultSet getSchemas(String catalog, String schemaPattern) throws SQLException {
         List<Field[]> result = Collections.singletonList(new Field[]{
                 new Field(SCHEMA_NAME_COLUMN, ""),
                 new Field(CATALOG_NAME_COLUMN, "")
         });
-        return new DtmResultSet(connection,
-                result,
-                getMetadata(result),
-                Collections.emptyList(),
-                DtmConnection.DEFAULT_TIME_ZONE);
+        return ((DtmStatement) this.connection.createStatement()).createDriverResultSet(result, getMetadata(result));
     }
 
     @Override
-    public ResultSet getCatalogs() {
+    public ResultSet getCatalogs() throws SQLException {
         if (catalogs == null) {
-            List<Field[]> result = connection.protocol.getDatabaseSchemas().stream()
+            List<Field[]> result = connection.getQueryExecutor().getSchemas().stream()
                     .map(schemaInfo -> new Field[]{new Field(CATALOG_NAME_COLUMN, schemaInfo.getMnemonic())})
                     .collect(Collectors.toList());
-            this.catalogs = new DtmResultSet(connection,
-                    result,
-                    getMetadata(result),
-                    Collections.emptyList(),
-                    DtmConnection.DEFAULT_TIME_ZONE);
+            this.catalogs = ((DtmStatement) this.connection.createStatement()).createDriverResultSet(result, getMetadata(result));
         }
         return catalogs;
     }
 
     private List<ColumnMetadata> getMetadata(List<Field[]> result) {
         if (result.isEmpty()) {
-           return Collections.emptyList();
+            return Collections.emptyList();
         } else {
             Field[] fields = result.get(0);
             return Stream.of(fields)
@@ -88,7 +82,7 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
         } else {
             catalogNames = Collections.singletonList(catalog);
         }
-        final List<TableInfo> databaseTables = connection.protocol.getDatabaseTables(catalog);
+        final List<TableInfo> databaseTables = this.connection.getQueryExecutor().getTables(catalog);
         List<Field[]> result = catalogNames.stream()
                 .flatMap(schemasName -> databaseTables.stream())
                 .map(tableInfo -> new Field[]{
@@ -101,25 +95,17 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                         new Field(REF_GENERATION_COLUMN, null),
                         new Field(TABLE_OWNER_COLUMN, getUserName())
                 }).collect(Collectors.toList());
-        return new DtmResultSet(connection,
-                result,
-                getMetadata(result),
-                Collections.emptyList(),
-                DtmConnection.DEFAULT_TIME_ZONE);
+        return ((DtmStatement) this.connection.createStatement()).createDriverResultSet(result, getMetadata(result));
     }
 
     @Override
-    public ResultSet getTableTypes() {
+    public ResultSet getTableTypes() throws SQLException {
         List<Field[]> result = Collections.singletonList(new Field[]{
                 new Field(TABLE_TYPE_COLUMN, TABLE_TYPE),
                 new Field(TABLE_TYPE_COLUMN, SYSTEM_VIEW_TYPE),
                 new Field(TABLE_TYPE_COLUMN, VIEW_TYPE)
         });
-        return new DtmResultSet(connection,
-                result,
-                getMetadata(result),
-                Collections.emptyList(),
-                DtmConnection.DEFAULT_TIME_ZONE);
+        return ((DtmStatement) this.connection.createStatement()).createDriverResultSet(result, getMetadata(result));
     }
 
     @Override
@@ -128,21 +114,23 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                                 String tableNamePattern,
                                 String columnNamePattern) throws SQLException {
         List<ColumnInfo> columns = new ArrayList<>();
-        tableNamePattern = tableNamePattern.replace("\\","");
+        tableNamePattern = tableNamePattern.replace("\\", "");
         System.out.printf("Table name pattern: %s", tableNamePattern);
         //Временный костыль что бы пофиксить возможный запрос всех полей в схеме.
         if (tableNamePattern.indexOf('%') != -1) {
             ResultSet tables = this.getTables(catalog, schemaPattern, null, null);
             while (tables.next()) {
-                final List<ColumnInfo> databaseColumns = connection.protocol.getDatabaseColumns(
+                final List<ColumnInfo> databaseColumns = this.connection.getQueryExecutor().getTableColumns(
                         tables.getString(CATALOG_NAME_COLUMN),
                         tables.getString(TABLE_NAME_COLUMN));
                 System.out.printf("Table name: %s", tables.getString(TABLE_NAME_COLUMN));
                 columns.addAll(databaseColumns);
             }
         } else {
-            columns = connection.protocol.getDatabaseColumns(catalog, tableNamePattern);
+            columns = this.connection.getQueryExecutor().getTableColumns(catalog, tableNamePattern);
         }
+        this.connection.getCachedFieldMetadata().clear();
+        this.connection.getCachedFieldMetadata().addAll(columns);
         List<Field[]> result = columns.stream()
                 .map(columnInfo -> new Field[]{
                         new Field(CATALOG_NAME_COLUMN, columnInfo.getDatamartMnemonic()),
@@ -155,14 +143,14 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                         new Field(BUFFER_LENGTH_COLUMN, 0),
                         new Field(DECIMAL_DIGITS_COLUMN, columnInfo.getAccuracy()),
                         new Field(NUM_PREC_RADIX_COLUMN, null),
-                        new Field(NULLABLE_COLUMN, isNullable(columnInfo)? 1: 0),
+                        new Field(NULLABLE_COLUMN, isNullable(columnInfo) ? 1 : 0),
                         new Field(REMARKS_COLUMN, ""),
                         new Field(COLUMN_DEF_COLUMN, ""),
                         new Field(SQL_DATA_TYPE_COLUMN, 0),
                         new Field(SQL_DATETIME_SUB_COLUMN, 0),
                         new Field(CHAR_OCTET_LENGTH_COLUMN, null),
                         new Field(ORDINAL_POSITION_COLUMN, columnInfo.getOrdinalPosition()),
-                        new Field(IS_NULLABLE_COLUMN, isNullable(columnInfo) ?"YES": "NO"),
+                        new Field(IS_NULLABLE_COLUMN, isNullable(columnInfo) ? "YES" : "NO"),
                         new Field(SCOPE_CATALOG_COLUMN, null),
                         new Field(SCOPE_SCHEMA_COLUMN, null),
                         new Field(SCOPE_TABLE_COLUMN, null),
@@ -170,11 +158,7 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                         new Field(IS_AUTOINCREMENT_COLUMN, "NO"),
                         new Field(IS_GENERATEDCOLUMN_COLUMN, "NO")
                 }).collect(Collectors.toList());
-        return new DtmResultSet(connection,
-                result,
-                getMetadata(result),
-                columns,
-                DtmConnection.DEFAULT_TIME_ZONE);
+        return ((DtmStatement) this.connection.createStatement()).createDriverResultSet(result, getMetadata(result));
     }
 
     private boolean isNullable(ColumnInfo columnInfo) {
@@ -188,17 +172,17 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public String getDatabaseProductVersion() {
-        return DRIVER_NAME;
+        return this.connection.getDBVersionNumber();
     }
 
     @Override
     public String getURL() {
-        return connection.getUrl();
+        return this.connection.getUrl();
     }
 
     @Override
     public String getUserName() {
-        return connection.getUser();
+        return this.connection.getUserName();
     }
 
     @Override
@@ -238,22 +222,22 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public String getDriverName() throws SQLException {
-        return "Dtm Jdbc Driver";
+        return DRIVER_NAME;
     }
 
     @Override
     public String getDriverVersion() throws SQLException {
-        return "2.6.0";
+        return DRIVER_VERSION;
     }
 
     @Override
     public int getDriverMajorVersion() {
-        return 2;
+        return MAJOR_VERSION;
     }
 
     @Override
     public int getDriverMinorVersion() {
-        return 6;
+        return MINOR_VERSION;
     }
 
     @Override
@@ -842,6 +826,7 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public ResultSet getTypeInfo() throws SQLException {
+        //FIXME
         /* Реализованы 3 основных типа, как оказалось, для исправления в рамках DTM-98
         не потребовалось, но в последствии типы БД могут потребоваться, поэтому оставлю это здесь.
         String[] columnNames = new String[]{
@@ -953,7 +938,7 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
     }
 
     @Override
-    public Connection getConnection() throws SQLException {
+    public BaseConnection getConnection() throws SQLException {
         return connection;
     }
 
@@ -1007,22 +992,32 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public int getDatabaseMajorVersion() throws SQLException {
-        return 2;
+        final String[] dbVersionArr = this.connection.getDBVersionNumber().split("\\.");
+        if (dbVersionArr.length > 0) {
+            return Integer.parseInt(dbVersionArr[0]);
+        } else {
+            return 0;
+        }
     }
 
     @Override
     public int getDatabaseMinorVersion() throws SQLException {
-        return 6;
+        final String[] dbVersionArr = this.connection.getDBVersionNumber().split("\\.");
+        if (dbVersionArr.length > 1) {
+            return Integer.parseInt(dbVersionArr[1]);
+        } else {
+            return 0;
+        }
     }
 
     @Override
     public int getJDBCMajorVersion() throws SQLException {
-        return 0;
+        return JDBC_MAJOR_VERSION;
     }
 
     @Override
     public int getJDBCMinorVersion() throws SQLException {
-        return 0;
+        return JDBC_MINOR_VERSION;
     }
 
     @Override

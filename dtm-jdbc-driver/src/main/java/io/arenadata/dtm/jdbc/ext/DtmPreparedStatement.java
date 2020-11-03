@@ -1,5 +1,6 @@
 package io.arenadata.dtm.jdbc.ext;
 
+import io.arenadata.dtm.jdbc.core.BaseConnection;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.InputStream;
@@ -9,12 +10,11 @@ import java.net.URL;
 import java.sql.*;
 import java.util.Calendar;
 
-// TODO Реализовать методы по мере необходимости
 @Slf4j
 public class DtmPreparedStatement extends DtmStatement implements PreparedStatement {
     private final String sql;
 
-    public DtmPreparedStatement(DtmConnection c, int rsType, int rsConcurrency, String sql) {
+    public DtmPreparedStatement(BaseConnection c, int rsType, int rsConcurrency, String sql) {
         super(c, rsType, rsConcurrency);
         this.sql = sql;
     }
@@ -22,7 +22,7 @@ public class DtmPreparedStatement extends DtmStatement implements PreparedStatem
     @Override
     public ResultSet executeQuery() throws SQLException {
         execute();
-        return resultSet;
+        return result.getResultSet();
     }
 
     @Override
@@ -167,7 +167,7 @@ public class DtmPreparedStatement extends DtmStatement implements PreparedStatem
 
     @Override
     public ResultSetMetaData getMetaData() throws SQLException {
-        return resultSet.getMetaData();
+        return result.getResultSet().getMetaData();
     }
 
     @Override

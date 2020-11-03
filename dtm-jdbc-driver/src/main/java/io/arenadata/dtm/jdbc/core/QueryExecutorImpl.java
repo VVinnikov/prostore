@@ -1,0 +1,163 @@
+package io.arenadata.dtm.jdbc.core;
+
+import io.arenadata.dtm.jdbc.model.ColumnInfo;
+import io.arenadata.dtm.jdbc.model.SchemaInfo;
+import io.arenadata.dtm.jdbc.model.TableInfo;
+import io.arenadata.dtm.jdbc.protocol.http.HttpReaderService;
+import io.arenadata.dtm.jdbc.protocol.Protocol;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+
+import java.io.IOException;
+import java.sql.SQLException;
+import java.sql.SQLWarning;
+import java.time.ZoneId;
+import java.util.*;
+import java.util.stream.IntStream;
+
+public class QueryExecutorImpl implements QueryExecutor {
+    /**
+     * Host
+     */
+    private String host;
+    /**
+     * User
+     */
+    private String user;
+    /**
+     * Schema for current connection
+     */
+    private String schema;
+    /**
+     * Connection url
+     */
+    private String url;
+    /**
+     * Properties of current connection
+     */
+    private Properties info;
+    /**
+     * Http client for rest
+     */
+    private CloseableHttpClient client;
+    /**
+     * Protocol for receiving/sending data
+     */
+    protected Protocol protocol;
+
+
+    public QueryExecutorImpl(String host, String user, String schema, Properties info) {
+        this.host = host;
+        this.user = user;
+        this.schema = schema;
+        this.info = info;
+        this.client = HttpClients.createDefault();
+        this.protocol = new HttpReaderService(this.client, this.host, this.schema);
+    }
+
+    @Override
+    public void execute(Query query, List<Object> parameters, ResultHandler resultHandler) {
+        executeInternal(query, parameters, resultHandler);
+    }
+
+    @Override
+    public void execute(List<Query> queries, List<List<Object>> parametersList, ResultHandler resultHandler) {
+        try {
+            for (int i = 0; i < queries.size(); i++) {
+                List<Object> parameters = parametersList.isEmpty() ? Collections.emptyList() : parametersList.get(i);
+                executeInternal(queries.get(i), parameters, resultHandler);
+            }
+        } catch (Exception e) {
+            resultHandler.handleError(new SQLException("Error executing queries", e));
+        }
+    }
+
+    private void executeInternal(Query query, List<Object> parameters, ResultHandler resultHandler) {
+        try {
+            final QueryResult queryResult;
+            queryResult = this.protocol.executeQuery(query.getNativeSql());
+            if (queryResult.getResult() != null) {
+                List<Field[]> result = new ArrayList<>();
+                List<Map<String, Object>> rows = queryResult.getResult();
+
+                rows.forEach(row -> {
+                    Field[] resultFields = new Field[row.size()];
+                    IntStream.range(0, queryResult.getMetadata().size()).forEach(key -> {
+                        String columnName = queryResult.getMetadata().get(key).getName();
+                        resultFields[key] = new Field(columnName, row.get(columnName));
+                    });
+                    result.add(resultFields);
+                });
+                resultHandler.handleResultRows(query, result, queryResult.getMetadata(), ZoneId.of(queryResult.getTimeZone()));
+            }
+        } catch (SQLException e) {
+            resultHandler.handleError(e);
+        }
+    }
+
+    @Override
+    public List<Query> createQuery(String sql) throws SQLException {
+        return SqlParser.parseSql(sql);
+    }
+
+    @Override
+    public List<SchemaInfo> getSchemas() {
+        return this.protocol.getDatabaseSchemas();
+    }
+
+    @Override
+    public List<TableInfo> getTables(String schema) {
+        return this.protocol.getDatabaseTables(schema);
+    }
+
+    @Override
+    public List<ColumnInfo> getTableColumns(String schema, String table) {
+        return this.protocol.getDatabaseColumns(schema, table);
+    }
+
+    @Override
+    public String getUser() {
+        return this.user;
+    }
+
+    @Override
+    public String getDatabase() {
+        return this.schema;
+    }
+
+    @Override
+    public void setDatabase(String database) {
+        this.schema = database;
+    }
+
+    @Override
+    public String getServerVersion() {
+        return "3.2.0";
+    }
+
+    @Override
+    public String getUrl() {
+        return this.url;
+    }
+
+    @Override
+    public SQLWarning getWarnings() {
+        return null;
+    }
+
+    @Override
+    public boolean isClosed() {
+        return this.client == null;
+    }
+
+    @Override
+    public void close() {
+        try {
+            client.close();
+            client = null;
+            protocol = null;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}

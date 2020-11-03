@@ -37,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
 class AdqmQueryEnrichmentServiceImplTest {
+    public static final int TIMEOUT_SECONDS = 10;
     private final QueryEnrichmentService enrichService;
     private final String[] expectedSqls;
 
@@ -159,7 +160,7 @@ class AdqmQueryEnrichmentServiceImplTest {
                 testContext.failNow(ar.cause());
             }
         });
-        assertThat(testContext.awaitCompletion(5, TimeUnit.SECONDS)).isTrue();
+        assertThat(testContext.awaitCompletion(TIMEOUT_SECONDS, TimeUnit.SECONDS)).isTrue();
         assertEquals(expectedSql.trim(), actual[0].trim(),
             String.format("Expected: %s\n Actual: %s", expectedSql.trim(), actual[0].trim()));
     }

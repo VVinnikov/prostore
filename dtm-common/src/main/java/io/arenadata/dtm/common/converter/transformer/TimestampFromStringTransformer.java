@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 @Data
@@ -15,10 +16,13 @@ import java.time.format.DateTimeFormatter;
 public class TimestampFromStringTransformer implements ColumnTransformer<Timestamp, String> {
 
     private DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+    private ZoneId zoneId = ZoneId.of("UTC");
 
     @Override
     public Timestamp transform(String value) {
-        return value == null ? null : Timestamp.valueOf(LocalDateTime.parse(value, dateTimeFormatter));
+        return value == null ? null : Timestamp.from(LocalDateTime
+                .parse(value, dateTimeFormatter)
+                .atZone(zoneId).toInstant());
     }
 
     @Override

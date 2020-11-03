@@ -19,10 +19,11 @@ import static io.arenadata.dtm.query.execution.plugin.api.service.SqlProcessingT
 @Setter
 @ToString
 public class EdmlRequestContext extends RequestContext<DatamartRequest> {
-    private Entity entity;
+    private Entity sourceEntity;
+    private Entity destinationEntity;
     private Long sysCn;
     private TableInfo sourceTable;
-    private TableInfo targetTable;
+    private TableInfo destinationTable;
     private final SqlInsert sqlNode;
     private String dmlSubquery;
     private List<Datamart> logicalSchema;

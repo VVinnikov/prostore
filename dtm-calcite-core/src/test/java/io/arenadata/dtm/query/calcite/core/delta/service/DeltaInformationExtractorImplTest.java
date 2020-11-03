@@ -1,11 +1,13 @@
 package io.arenadata.dtm.query.calcite.core.delta.service;
 
+import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.delta.DeltaInformationResult;
 import io.arenadata.dtm.common.delta.DeltaType;
 import io.arenadata.dtm.common.delta.SelectOnInterval;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.framework.DtmCalciteFramework;
-import io.arenadata.dtm.query.calcite.core.util.DeltaInformationExtractor;
+import io.arenadata.dtm.query.calcite.core.service.DeltaInformationExtractor;
+import io.arenadata.dtm.query.calcite.core.service.impl.DeltaInformationExtractorImpl;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.avatica.util.Casing;
@@ -20,15 +22,23 @@ import org.apache.calcite.tools.Planner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.ZoneId;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-class DeltaInformationExtractorTest {
+class DeltaInformationExtractorImplTest {
 
     private static final String FOR_SYSTEM_TIME = "FOR SYSTEM_TIME";
 
     private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private Planner planner;
+    private final DeltaInformationExtractor deltaInformationExtractor = new DeltaInformationExtractorImpl(new DtmConfig() {
+        @Override
+        public ZoneId getTimeZone() {
+            return ZoneId.of("UTC");
+        }
+    });
 
     @BeforeEach
     void setUp() {
@@ -56,7 +66,7 @@ class DeltaInformationExtractorTest {
                 "WHERE EXISTS (SELECT id\n" +
                 "FROM (SELECT col4, col5 FROM tblz FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59' WHERE tblz.col6 = 0) AS view) order by v.col1";
         SqlNode sqlNode = planner.parse(sql);
-        val deltaInformationResult = DeltaInformationExtractor.extract(sqlNode);
+        val deltaInformationResult = deltaInformationExtractor.extract(sqlNode);
         log.info(deltaInformationResult.toString());
         assertEquals(4, deltaInformationResult.getDeltaInformations().size());
         val sqlWithoutForSystemTime = deltaInformationResult
@@ -71,7 +81,7 @@ class DeltaInformationExtractorTest {
                 "FROM test.tbl FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' v";
         SqlNode sqlNode = planner.parse(sql);
         log.info(sql);
-        val deltaInformationResult = DeltaInformationExtractor.extract(sqlNode);
+        val deltaInformationResult = deltaInformationExtractor.extract(sqlNode);
         assertEquals(1, deltaInformationResult.getDeltaInformations().size());
         val sqlWithoutForSystemTime = deltaInformationResult
                 .getSqlWithoutSnapshots();
@@ -85,7 +95,7 @@ class DeltaInformationExtractorTest {
         val sql = "SELECT v.col1 AS c FROM (SELECT v.col1 AS c FROM tbl as z) v";
         SqlNode sqlNode = planner.parse(sql);
         log.info(sql);
-        val deltaInformationResult = DeltaInformationExtractor.extract(sqlNode);
+        val deltaInformationResult = deltaInformationExtractor.extract(sqlNode);
         assertEquals(1, deltaInformationResult.getDeltaInformations().size());
         val sqlWithoutForSystemTime = deltaInformationResult
                 .getSqlWithoutSnapshots();
@@ -104,7 +114,7 @@ class DeltaInformationExtractorTest {
                 "FROM (SELECT col4, col5 FROM tblz FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59' WHERE tblz.col6 = 0) AS view) order by v.col1";
         SqlNode sqlNode = planner.parse(sql);
         log.info(sql);
-        DeltaInformationResult deltaInformationResult = DeltaInformationExtractor.extract(sqlNode);
+        DeltaInformationResult deltaInformationResult = deltaInformationExtractor.extract(sqlNode);
         assertEquals(4, deltaInformationResult.getDeltaInformations().size());
         assertTrue(deltaInformationResult.getDeltaInformations().get(1).isLatestUncommitedDelta());
         assertTrue(deltaInformationResult.getDeltaInformations().get(2).isLatestUncommitedDelta());
@@ -130,7 +140,7 @@ class DeltaInformationExtractorTest {
                 "FROM (SELECT col4, col5 FROM tblz FOR SYSTEM_TIME FINISHED IN (3,4) WHERE tblz.col6 = 0) AS view) order by v.col1";
         SqlNode sqlNode = planner.parse(sql);
         log.info(sql);
-        DeltaInformationResult deltaInformationResult = DeltaInformationExtractor.extract(sqlNode);
+        DeltaInformationResult deltaInformationResult = deltaInformationExtractor.extract(sqlNode);
         assertEquals(5, deltaInformationResult.getDeltaInformations().size());
 
         assertNotNull(deltaInformationResult.getDeltaInformations().get(0).getDeltaTimestamp());

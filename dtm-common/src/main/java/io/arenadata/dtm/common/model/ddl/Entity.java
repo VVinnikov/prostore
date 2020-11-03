@@ -18,7 +18,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
-public class Entity implements Serializable {
+public class Entity implements Serializable, Cloneable {
 
     private static final String DEFAULT_SCHEMA = "test";
 
@@ -57,5 +57,10 @@ public class Entity implements Serializable {
         return schema + "." + name;
     }
 
+    @Override
+    @SneakyThrows
+    public Entity clone() {
+        return (Entity) super.clone();
+    }
 }
 

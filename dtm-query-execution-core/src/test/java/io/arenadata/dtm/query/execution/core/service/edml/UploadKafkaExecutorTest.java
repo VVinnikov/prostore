@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.edml;
 
+import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.configuration.kafka.KafkaAdminProperty;
 import io.arenadata.dtm.common.dto.TableInfo;
 import io.arenadata.dtm.common.plugin.exload.Format;
@@ -9,6 +10,7 @@ import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.kafka.core.configuration.properties.KafkaProperties;
+import io.arenadata.dtm.query.execution.core.configuration.properties.CoreDtmSettings;
 import io.arenadata.dtm.query.execution.core.configuration.properties.EdmlProperties;
 import io.arenadata.dtm.query.execution.core.factory.MppwKafkaRequestFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.MppwKafkaRequestFactoryImpl;
@@ -36,6 +38,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoField;
 import java.util.*;
 import java.util.stream.LongStream;
@@ -53,6 +56,7 @@ class UploadKafkaExecutorTest {
     private final EdmlProperties edmlProperties = mock(EdmlProperties.class);
     private final KafkaProperties kafkaProperties = mock(KafkaProperties.class);
     private EdmlUploadExecutor uploadKafkaExecutor;
+    private DtmConfig dtmSettings = mock(CoreDtmSettings.class);
     private Vertx vertx = Vertx.vertx();
     private Set<SourceType> sourceTypes;
     private QueryRequest queryRequest;
@@ -64,17 +68,20 @@ class UploadKafkaExecutorTest {
     private Integer changeOffsetTimeoutMs = 10000;
     private long msgCommitTimeoutMs = 1000L;
     private long msgProcessTimeoutMs = 100L;
+    private ZoneId timeZone;
 
     @BeforeEach
     void setUp() {
         uploadKafkaExecutor = new UploadKafkaExecutor(pluginService, mppwKafkaRequestFactory,
-                edmlProperties, kafkaProperties, vertx);
+                edmlProperties, kafkaProperties, vertx, dtmSettings);
         sourceTypes = new HashSet<>();
         sourceTypes.addAll(Arrays.asList(SourceType.ADB, SourceType.ADG));
         queryRequest = new QueryRequest();
         queryRequest.setDatamartMnemonic("test");
         queryRequest.setRequestId(UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"));
         queryRequest.setSql("INSERT INTO test.pso SELECT id, name FROM test.upload_table");
+        when(dtmSettings.getTimeZone()).thenReturn(ZoneId.of("UTC"));
+        timeZone = dtmSettings.getTimeZone();
     }
 
     @Test
@@ -88,7 +95,7 @@ class UploadKafkaExecutorTest {
 
             DatamartRequest request = new DatamartRequest(queryRequest);
             EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
-            edmlRequestContext.setTargetTable(new TableInfo("test", "pso"));
+            edmlRequestContext.setDestinationTable(new TableInfo("test", "pso"));
             edmlRequestContext.setSourceTable(new TableInfo("test", "upload_table"));
 
             final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
@@ -178,7 +185,7 @@ class UploadKafkaExecutorTest {
 
             DatamartRequest request = new DatamartRequest(queryRequest);
             EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
-            edmlRequestContext.setTargetTable(new TableInfo("test", "pso"));
+            edmlRequestContext.setDestinationTable(new TableInfo("test", "pso"));
             edmlRequestContext.setSourceTable(new TableInfo("test", "upload_table"));
 
             final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
@@ -260,7 +267,7 @@ class UploadKafkaExecutorTest {
 
             DatamartRequest request = new DatamartRequest(queryRequest);
             EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
-            edmlRequestContext.setTargetTable(new TableInfo("test", "pso"));
+            edmlRequestContext.setDestinationTable(new TableInfo("test", "pso"));
             edmlRequestContext.setSourceTable(new TableInfo("test", "upload_table"));
 
             final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
@@ -342,7 +349,7 @@ class UploadKafkaExecutorTest {
 
             DatamartRequest request = new DatamartRequest(queryRequest);
             EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
-            edmlRequestContext.setTargetTable(new TableInfo("test", "pso"));
+            edmlRequestContext.setDestinationTable(new TableInfo("test", "pso"));
             edmlRequestContext.setSourceTable(new TableInfo("test", "upload_table"));
 
             final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
@@ -424,7 +431,7 @@ class UploadKafkaExecutorTest {
 
             DatamartRequest request = new DatamartRequest(queryRequest);
             EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
-            edmlRequestContext.setTargetTable(new TableInfo("test", "pso"));
+            edmlRequestContext.setDestinationTable(new TableInfo("test", "pso"));
             edmlRequestContext.setSourceTable(new TableInfo("test", "upload_table"));
 
             final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
@@ -505,7 +512,7 @@ class UploadKafkaExecutorTest {
 
             DatamartRequest request = new DatamartRequest(queryRequest);
             EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
-            edmlRequestContext.setTargetTable(new TableInfo("test", "pso"));
+            edmlRequestContext.setDestinationTable(new TableInfo("test", "pso"));
             edmlRequestContext.setSourceTable(new TableInfo("test", "upload_table"));
 
             final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
@@ -576,8 +583,8 @@ class UploadKafkaExecutorTest {
 
     private void initStatusResultQueue(Queue<StatusQueryResult> adbStatusResultQueue,
                                        long statusResultCount, long endOffset) {
-        final LocalDateTime lastCommitTime = LocalDateTime.now();
-        final LocalDateTime lastMessageTime = LocalDateTime.now();
+        final LocalDateTime lastCommitTime = LocalDateTime.now(timeZone);
+        final LocalDateTime lastMessageTime = LocalDateTime.now(timeZone);
         LongStream.range(0L, statusResultCount).forEach(key -> {
             adbStatusResultQueue.add(createStatusQueryResult(
                     lastMessageTime.plus(msgProcessTimeoutMs * key, ChronoField.MILLI_OF_DAY.getBaseUnit()),
@@ -588,8 +595,8 @@ class UploadKafkaExecutorTest {
 
     private void initStatusResultQueueWithOffset(Queue<StatusQueryResult> adbStatusResultQueue,
                                                  long statusResultCount, long endOffset, long offset) {
-        final LocalDateTime lastCommitTime = LocalDateTime.now();
-        final LocalDateTime lastMessageTime = LocalDateTime.now();
+        final LocalDateTime lastCommitTime = LocalDateTime.now(timeZone);
+        final LocalDateTime lastMessageTime = LocalDateTime.now(timeZone);
         LongStream.range(0L, statusResultCount).forEach(key -> {
             adbStatusResultQueue.add(createStatusQueryResult(
                     lastMessageTime.plus(msgProcessTimeoutMs * key, ChronoField.MILLI_OF_DAY.getBaseUnit()),

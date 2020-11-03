@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl;
 
-import io.arenadata.dtm.query.execution.plugin.adg.configuration.TarantoolCartridgeProperties;
+import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.TarantoolCartridgeProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.dto.rollback.ReverseHistoryTransferRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.OperationFile;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.OperationYaml;

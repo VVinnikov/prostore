@@ -8,9 +8,9 @@ import io.arenadata.dtm.common.reader.InformationSchemaView;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.service.DeltaService;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
+import io.arenadata.dtm.query.calcite.core.service.DeltaInformationExtractor;
 import io.arenadata.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
 import io.arenadata.dtm.query.calcite.core.util.CalciteUtil;
-import io.arenadata.dtm.query.calcite.core.util.DeltaInformationExtractor;
 import io.vertx.core.*;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -24,12 +24,16 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
+    private final DeltaInformationExtractor deltaInformationExtractor;
     private final DefinitionService<SqlNode> definitionService;
     private final DeltaService deltaService;
 
-    public DeltaQueryPreprocessorImpl(DefinitionService<SqlNode> definitionService, DeltaService deltaService) {
+    public DeltaQueryPreprocessorImpl(DefinitionService<SqlNode> definitionService,
+                                      DeltaService deltaService,
+                                      DeltaInformationExtractor deltaInformationExtractor) {
         this.definitionService = definitionService;
         this.deltaService = deltaService;
+        this.deltaInformationExtractor = deltaInformationExtractor;
     }
 
     @Override
@@ -41,7 +45,7 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
                     handler.fail(String.format("Undefined request%s", request));
                 } else {
                     val sqlNode = definitionService.processingQuery(request.getSql());
-                    val deltaInfoRes = DeltaInformationExtractor.extract(sqlNode);
+                    val deltaInfoRes = deltaInformationExtractor.extract(sqlNode);
                     calculateDeltaValues(deltaInfoRes.getDeltaInformations(), ar -> {
                         if (ar.succeeded()) {
                             try {
@@ -69,13 +73,13 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
     private void calculateDeltaValues(List<DeltaInformation> deltas, Handler<AsyncResult<List<DeltaInformation>>> handler) {
         final Set<String> errors = new HashSet<>();
         CompositeFuture.join(deltas.stream()
-            .map(deltaInformation -> getCalculateDeltaInfoFuture(errors, deltaInformation))
-            .collect(Collectors.toList()))
-            .onSuccess(deltaResult -> handler.handle(Future.succeededFuture(deltaResult.list())))
-            .onFailure(error -> {
-                errors.add(error.getMessage());
-                handler.handle(Future.failedFuture(createDeltaRangeInvalidException(errors)));
-            });
+                .map(deltaInformation -> getCalculateDeltaInfoFuture(errors, deltaInformation))
+                .collect(Collectors.toList()))
+                .onSuccess(deltaResult -> handler.handle(Future.succeededFuture(deltaResult.list())))
+                .onFailure(error -> {
+                    errors.add(error.getMessage());
+                    handler.handle(Future.failedFuture(createDeltaRangeInvalidException(errors)));
+                });
     }
 
     private Future<DeltaInformation> getCalculateDeltaInfoFuture(Set<String> errors, DeltaInformation deltaInformation) {
@@ -84,11 +88,11 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
                 deltaInfoPromise.complete(deltaInformation);
             } else if (deltaInformation.isLatestUncommitedDelta()) {
                 deltaService.getCnToDeltaHot(deltaInformation.getSchemaName())
-                    .onSuccess(deltaCnTo -> {
-                        deltaInformation.setSelectOnNum(deltaCnTo);
-                        deltaInfoPromise.complete(deltaInformation);
-                    })
-                    .onFailure(deltaInfoPromise::fail);
+                        .onSuccess(deltaCnTo -> {
+                            deltaInformation.setSelectOnNum(deltaCnTo);
+                            deltaInfoPromise.complete(deltaInformation);
+                        })
+                        .onFailure(deltaInfoPromise::fail);
             } else {
                 if (DeltaType.FINISHED_IN.equals(deltaInformation.getType()) || DeltaType.STARTED_IN.equals(deltaInformation.getType())) {
                     calculateSelectOnInterval(deltaInformation, ar -> {
@@ -123,12 +127,12 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
         switch (deltaInformation.getType()) {
             case NUM:
                 deltaService.getCnToByDeltaNum(deltaInformation.getSchemaName(), deltaInformation.getSelectOnNum())
-                    .onComplete(handler);
+                        .onComplete(handler);
                 break;
             case DATETIME:
                 val localDateTime = deltaInformation.getDeltaTimestamp().replace("\'", "");
                 deltaService.getCnToByDeltaDatetime(deltaInformation.getSchemaName(), CalciteUtil.parseLocalDateTime(localDateTime))
-                    .onComplete(handler);
+                        .onComplete(handler);
                 break;
             default:
                 handler.handle(Future.failedFuture(new UnsupportedOperationException("Delta type not supported")));
@@ -141,6 +145,6 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
         Long deltaFrom = deltaInformation.getSelectOnInterval().getSelectOnFrom();
         Long deltaTo = deltaInformation.getSelectOnInterval().getSelectOnTo();
         deltaService.getCnFromCnToByDeltaNums(deltaInformation.getSchemaName(), deltaFrom, deltaTo)
-            .onComplete(handler);
+                .onComplete(handler);
     }
 }

@@ -2,12 +2,16 @@ package io.arenadata.dtm.query.execution.core.utils;
 
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
+import io.arenadata.dtm.query.calcite.core.service.impl.DeltaInformationExtractorImpl;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
+import io.arenadata.dtm.query.execution.core.configuration.properties.CoreDtmSettings;
 import io.arenadata.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
 import lombok.val;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.junit.jupiter.api.Test;
+
+import java.time.ZoneId;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -17,7 +21,8 @@ class DatamartMnemonicExtractorTest {
     private CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private final DefinitionService<SqlNode> definitionService =
             new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
-    private final DatamartMnemonicExtractor extractor = new DatamartMnemonicExtractor();
+    private final DatamartMnemonicExtractor extractor = new DatamartMnemonicExtractor(
+            new DeltaInformationExtractorImpl(new CoreDtmSettings(ZoneId.of("UTC"))));
 
     @Test
     void extractFromSelect() {

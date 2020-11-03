@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw;
 
+import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
@@ -16,6 +17,7 @@ import io.vertx.core.Promise;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -50,14 +52,19 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
     private final DdlProperties ddlProperties;
     private final AppConfiguration appConfiguration;
     private final StatusReporter statusReporter;
+    private final DtmConfig dtmConfig;
 
+    @Autowired
     public MppwFinishRequestHandler(final DatabaseExecutor databaseExecutor,
                                     final DdlProperties ddlProperties,
-                                    final AppConfiguration appConfiguration, StatusReporter statusReporter) {
+                                    final AppConfiguration appConfiguration,
+                                    StatusReporter statusReporter,
+                                    DtmConfig dtmConfig) {
         this.databaseExecutor = databaseExecutor;
         this.ddlProperties = ddlProperties;
         this.appConfiguration = appConfiguration;
         this.statusReporter = statusReporter;
+        this.dtmConfig = dtmConfig;
     }
 
     @Override
@@ -102,7 +109,7 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
     }
 
     private Future<Void> closeActual(@NonNull String table, long deltaHot) {
-        LocalDateTime ldt = LocalDateTime.now();
+        LocalDateTime ldt = LocalDateTime.now(dtmConfig.getTimeZone());
         String now = ldt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
         Future<String> columnNames = fetchColumnNames(table + ACTUAL_POSTFIX);

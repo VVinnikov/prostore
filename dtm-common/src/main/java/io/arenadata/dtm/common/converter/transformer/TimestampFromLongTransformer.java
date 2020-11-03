@@ -1,18 +1,19 @@
 package io.arenadata.dtm.common.converter.transformer;
 
 import io.arenadata.dtm.common.model.ddl.ColumnType;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 
+@Data
+@NoArgsConstructor
 public class TimestampFromLongTransformer implements ColumnTransformer<Timestamp, Long> {
 
     @Override
     public Timestamp transform(Long value) {
-        //TODO implement getting ZoneId from configuration
-        return value == null ? null : Timestamp.valueOf(LocalDateTime.ofInstant(Instant.ofEpochMilli(value), ZoneId.systemDefault()));
+        return value == null ? null : Timestamp.from(Instant.ofEpochMilli(value));
     }
 
     @Override

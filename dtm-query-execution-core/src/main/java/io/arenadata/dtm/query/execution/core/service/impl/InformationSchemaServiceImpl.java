@@ -109,18 +109,11 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
             .filter(node -> node instanceof SqlColumnDeclaration)
             .map(node -> (SqlColumnDeclaration) node)
             .forEach(column -> {
-                val name = column.getOperandList().get(0).toString();
+                val columnName = column.getOperandList().get(0).toString();
                 val typeString = getTypeWithoutSize(column.getOperandList().get(1).toString());
                 val type = ColumnType.fromTypeString(typeString);
-                switch (type) {
-                    case DOUBLE:
-                    case FLOAT:
-                    case INT:
-                    case VARCHAR:
-                        commentQueries.add(commentOnColumn(schemaTable, name, typeString));
-                        break;
-                    default:
-                        break;
+                if (needComment(type)) {
+                    commentQueries.add(commentOnColumn(schemaTable, columnName, typeString));
                 }
             });
 
@@ -289,15 +282,42 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     private List<String> getEntitiesCreateQueries(List<Entity> entities) {
         List<String> viewEntities = new ArrayList<>();
         List<String> tableEntities = new ArrayList<>();
+        List<String> commentQueries = new ArrayList<>();
+        List<String> createShardingKeys = new ArrayList<>();
         entities.forEach(entity -> {
             if (EntityType.VIEW.equals(entity.getEntityType())) {
                 viewEntities.add(ddlQueryGenerator.generateCreateViewQuery(entity));
             }
             if (EntityType.TABLE.equals(entity.getEntityType())) {
                 tableEntities.add(ddlQueryGenerator.generateCreateTableQuery(entity));
+                entity.getFields().stream()
+                        .forEach(field -> {
+                            val type = field.getType();
+                            if (needComment(type)) {
+                                    commentQueries.add(commentOnColumn(entity.getNameWithSchema(), field.getName(), type.toString()));
+                            }
+                        });
+                val shardingKeyColumns = entity.getFields().stream()
+                        .filter(field -> field.getShardingOrder() != null)
+                        .map(field -> field.getName())
+                        .collect(Collectors.toList());
+                createShardingKeys.add(createShardingKeyIndex(entity.getName(), entity.getNameWithSchema(), shardingKeyColumns));
             }
         });
-        return Stream.concat(tableEntities.stream(), viewEntities.stream())
-            .collect(Collectors.toList());
+        return Stream.of(tableEntities, viewEntities, commentQueries, createShardingKeys)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
+    }
+
+    private boolean needComment(ColumnType type) {
+        switch (type) {
+            case DOUBLE:
+            case FLOAT:
+            case INT:
+            case VARCHAR:
+                return true;
+            default:
+                return false;
+        }
     }
 }

@@ -2,8 +2,8 @@ package io.arenadata.dtm.query.execution.plugin.adg.service.impl.mppw;
 
 import io.arenadata.dtm.common.plugin.exload.Format;
 import io.arenadata.dtm.common.reader.QueryRequest;
-import io.arenadata.dtm.query.execution.plugin.adg.configuration.AdgConnectorApiProperties;
-import io.arenadata.dtm.query.execution.plugin.adg.configuration.AdgMppwKafkaProperties;
+import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.AdgConnectorApiProperties;
+import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.AdgMppwKafkaProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.impl.AdgHelperTableNamesFactoryImpl;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.impl.AdgMppwKafkaContextFactoryImpl;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.AdgCartridgeError;

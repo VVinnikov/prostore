@@ -19,19 +19,19 @@ public class MpprKafkaRequestFactoryImpl implements MpprKafkaRequestFactory {
     @Override
     public MpprRequestContext create(EdmlRequestContext context) {
         LocationUriParser.KafkaTopicUri kafkaTopicUri =
-                LocationUriParser.parseKafkaLocationPath(context.getEntity().getExternalTableLocationPath());
+                LocationUriParser.parseKafkaLocationPath(context.getDestinationEntity().getExternalTableLocationPath());
         val request = MpprRequest.builder()
                 .queryRequest(context.getRequest().getQueryRequest())
                 .logicalSchema(context.getLogicalSchema())
                 .kafkaParameter(MpprKafkaParameter.builder()
-                        .datamart(context.getEntity().getSchema())
+                        .datamart(context.getSourceEntity().getSchema())
                         .dmlSubquery(context.getDmlSubquery())
                         .downloadMetadata(DownloadExternalEntityMetadata.builder()
-                                .name(context.getEntity().getName())
-                                .format(Format.findByName(context.getEntity().getExternalTableFormat()))
-                                .externalSchema(context.getEntity().getExternalTableSchema())
-                                .locationPath(context.getEntity().getExternalTableLocationPath())
-                                .chunkSize(context.getEntity().getExternalTableDownloadChunkSize())
+                                .name(context.getDestinationEntity().getName())
+                                .format(Format.findByName(context.getDestinationEntity().getExternalTableFormat()))
+                                .externalSchema(context.getDestinationEntity().getExternalTableSchema())
+                                .locationPath(context.getDestinationEntity().getExternalTableLocationPath())
+                                .chunkSize(context.getDestinationEntity().getExternalTableDownloadChunkSize())
                                 .build())
                         .zookeeperHost(kafkaTopicUri.getHost())
                         .zookeeperPort(kafkaTopicUri.getPort())

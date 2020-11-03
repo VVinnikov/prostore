@@ -77,7 +77,7 @@ class AdqmRollbackRequestFactoryTest {
                 .envName("env_1")
                 .build())
             .sysCn(11)
-            .targetTable("tbl1")
+            .destinationTable("tbl1")
             .build());
         log.info(adqmRollbackRequest.toString());
         assertEquals(EXPECTED_SQLS, adqmRollbackRequest.getStatements().stream()

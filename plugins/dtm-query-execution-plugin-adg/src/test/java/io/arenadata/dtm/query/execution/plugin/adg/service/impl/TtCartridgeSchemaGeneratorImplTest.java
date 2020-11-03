@@ -10,7 +10,7 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.SourceType;
-import io.arenadata.dtm.query.execution.plugin.adg.configuration.TarantoolDatabaseProperties;
+import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.TarantoolDatabaseProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.OperationYaml;
 import io.arenadata.dtm.query.execution.plugin.adg.service.TtCartridgeSchemaGenerator;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;

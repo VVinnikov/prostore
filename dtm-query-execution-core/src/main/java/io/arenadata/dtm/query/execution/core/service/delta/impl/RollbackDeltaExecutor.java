@@ -116,7 +116,7 @@ public class RollbackDeltaExecutor implements DeltaExecutor, StatusEventPublishe
                         CompositeFuture.join(
                                 writeOpFinish.getCnList().stream()
                                         .map(sysCn -> RollbackRequest.builder()
-                                                .targetTable(entity.getName())
+                                                .destinationTable(entity.getName())
                                                 .queryRequest(queryRequest)
                                                 .datamart(datamart)
                                                 .entity(entity)

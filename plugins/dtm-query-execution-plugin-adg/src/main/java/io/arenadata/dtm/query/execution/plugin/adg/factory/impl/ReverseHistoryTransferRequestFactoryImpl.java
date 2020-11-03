@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adg.factory.impl;
 
-import io.arenadata.dtm.query.execution.plugin.adg.configuration.AdgRollbackProperties;
+import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.AdgRollbackProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.dto.rollback.ReverseHistoryTransferRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.AdgHelperTableNamesFactory;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.ReverseHistoryTransferRequestFactory;
@@ -18,7 +18,7 @@ public class ReverseHistoryTransferRequestFactoryImpl implements ReverseHistoryT
     @Override
     public ReverseHistoryTransferRequest create(RollbackRequestContext context) {
         val envName = context.getRequest().getQueryRequest().getEnvName();
-        val tableName = context.getRequest().getTargetTable();
+        val tableName = context.getRequest().getDestinationTable();
         val datamart = context.getRequest().getDatamart();
         val helperTableNames = helperTableNamesFactory.create(envName, datamart, tableName);
         return ReverseHistoryTransferRequest.builder()

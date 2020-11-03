@@ -6,7 +6,7 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
-import io.arenadata.dtm.query.calcite.core.util.DeltaInformationExtractor;
+import io.arenadata.dtm.query.calcite.core.service.DeltaInformationExtractor;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaService;
@@ -32,12 +32,15 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
 
     private final DefinitionService<SqlNode> definitionService;
     private final EntityDao entityDao;
+    private final DeltaInformationExtractor deltaInformationExtractor;
 
     @Autowired
     public LogicalSchemaServiceImpl(ServiceDbFacade serviceDbFacade,
-                                    @Qualifier("coreCalciteDefinitionService") DefinitionService<SqlNode> definitionService) {
+                                    @Qualifier("coreCalciteDefinitionService") DefinitionService<SqlNode> definitionService,
+                                    DeltaInformationExtractor deltaInformationExtractor) {
         this.definitionService = definitionService;
         entityDao = serviceDbFacade.getServiceDbDao().getEntityDao();
+        this.deltaInformationExtractor = deltaInformationExtractor;
     }
 
     @Override
@@ -45,11 +48,11 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
         try {
             final List<DatamartInfo> datamartInfoList = getDatamartInfoListFromQuery(request.getSql());
             CompositeFuture.join(
-                datamartInfoList.stream()
-                    .flatMap(di -> di.getTables().stream()
-                        .map(tableName -> new DatamartSchemaKey(di.getSchemaName(), tableName)))
-                    .map(dsKey -> entityDao.getEntity(dsKey.getSchema(), dsKey.getTable()))
-                    .collect(Collectors.toList())
+                    datamartInfoList.stream()
+                            .flatMap(di -> di.getTables().stream()
+                                    .map(tableName -> new DatamartSchemaKey(di.getSchemaName(), tableName)))
+                            .map(dsKey -> entityDao.getEntity(dsKey.getSchema(), dsKey.getTable()))
+                            .collect(Collectors.toList())
             ).onFailure(error -> {
                 log.error("Error initializing table attributes!", error);
                 resultHandler.handle(Future.failedFuture(error));
@@ -57,6 +60,7 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
                 try {
                     List<Entity> entities = success.list();
                     val schemaKeyDatamartTableMap = entities.stream()
+                        .map(Entity::clone)
                         .collect(Collectors.toMap(this::createDatamartSchemaKey, Function.identity()));
                     resultHandler.handle(Future.succeededFuture(schemaKeyDatamartTableMap));
                 } catch (Exception ex) {
@@ -75,17 +79,17 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
         val tree = new SqlSelectTree(sqlNode);
         val datamartMap = new HashMap<String, DatamartInfo>();
         tree.findAllTableAndSnapshots().stream()
-            .map(node -> DeltaInformationExtractor.getDeltaInformation(tree, node))
-            .filter(Objects::nonNull)
-            .collect(Collectors.toList())
-            .forEach(node -> {
-                //it is assumed that at this stage, the request will already contain defaultDatamart where required
-                String schemaName = node.getSchemaName();
-                String tableName = node.getTableName();
-                DatamartInfo datamartInfo = datamartMap.getOrDefault(schemaName, new DatamartInfo(schemaName, new HashSet<>()));
-                datamartInfo.getTables().add(tableName);
-                datamartMap.putIfAbsent(datamartInfo.getSchemaName(), datamartInfo);
-            });
+                .map(node -> deltaInformationExtractor.getDeltaInformation(tree, node))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList())
+                .forEach(node -> {
+                    //it is assumed that at this stage, the request will already contain defaultDatamart where required
+                    String schemaName = node.getSchemaName();
+                    String tableName = node.getTableName();
+                    DatamartInfo datamartInfo = datamartMap.getOrDefault(schemaName, new DatamartInfo(schemaName, new HashSet<>()));
+                    datamartInfo.getTables().add(tableName);
+                    datamartMap.putIfAbsent(datamartInfo.getSchemaName(), datamartInfo);
+                });
         return new ArrayList<>(datamartMap.values());
     }
 

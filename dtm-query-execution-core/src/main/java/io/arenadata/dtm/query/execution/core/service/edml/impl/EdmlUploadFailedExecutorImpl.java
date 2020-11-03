@@ -65,7 +65,7 @@ public class EdmlUploadFailedExecutorImpl implements EdmlUploadFailedExecutor {
                                     "table [{}], sysCn [{}] finished successfully",
                                 sourceType,
                                 context.getRequest().getDatamart(),
-                                context.getRequest().getTargetTable(),
+                                context.getRequest().getDestinationTable(),
                                 context.getRequest().getSysCn());
                             p.complete();
                         } else {
@@ -73,7 +73,7 @@ public class EdmlUploadFailedExecutorImpl implements EdmlUploadFailedExecutor {
                                     "datamart [{}], table [{}], sysCn [{}]",
                                 sourceType,
                                 context.getRequest().getDatamart(),
-                                context.getRequest().getTargetTable(),
+                                context.getRequest().getDestinationTable(),
                                 context.getRequest().getSysCn(),
                                 ar.cause());
                             p.fail(ar.cause());

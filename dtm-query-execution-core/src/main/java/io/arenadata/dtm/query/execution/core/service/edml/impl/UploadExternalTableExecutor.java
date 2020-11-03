@@ -46,7 +46,7 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
 
     @Override
     public void execute(EdmlRequestContext context, Handler<AsyncResult<QueryResult>> resultHandler) {
-        writeNewOperationIfNeeded(context, context.getEntity())
+        writeNewOperationIfNeeded(context, context.getSourceEntity())
                 .compose(v -> executeAndWriteOp(context))
                 .compose(queryResult -> writeOpSuccess(context.getSourceTable().getSchemaName(), context.getSysCn(), queryResult))
                 .onComplete(resultHandler);
@@ -72,7 +72,7 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
     private DeltaWriteOpRequest createDeltaOp(EdmlRequestContext context, Entity entity) {
         return DeltaWriteOpRequest.builder()
                 .datamart(entity.getSchema())
-                .tableName(context.getTargetTable().getTableName())
+                .tableName(context.getDestinationTable().getTableName())
                 .tableNameExt(entity.getName())
                 .query(context.getSqlNode().toSqlString(SQL_DIALECT).toString())
                 .build();
@@ -99,8 +99,8 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
 
     private Future<QueryResult> execute(EdmlRequestContext context) {
         return Future.future((Promise<QueryResult> promise) -> {
-            if (ExternalTableLocationType.KAFKA == context.getEntity().getExternalTableLocationType()) {
-                executors.get(context.getEntity().getExternalTableLocationType()).execute(context, ar -> {
+            if (ExternalTableLocationType.KAFKA == context.getSourceEntity().getExternalTableLocationType()) {
+                executors.get(context.getSourceEntity().getExternalTableLocationType()).execute(context, ar -> {
                     if (ar.succeeded()) {
                         promise.complete(ar.result());
                     } else {
@@ -108,7 +108,7 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
                     }
                 });
             } else {
-                log.error("Loading type {} not implemented", context.getEntity().getExternalTableLocationType());
+                log.error("Loading type {} not implemented", context.getSourceEntity().getExternalTableLocationType());
                 promise.fail(new RuntimeException("Other download types are not yet implemented!"));
             }
         });

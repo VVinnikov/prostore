@@ -85,8 +85,8 @@ class DownloadExternalTableExecutorTest {
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
-        context.setEntity(entity);
-        context.setTargetTable(new TableInfo("test", "download_table"));
+        context.setSourceEntity(entity);
+        context.setDestinationTable(new TableInfo("test", "download_table"));
         context.setSourceTable(new TableInfo("test", "pso"));
 
         QueryRequest copyRequest = context.getRequest().getQueryRequest();
@@ -131,8 +131,8 @@ class DownloadExternalTableExecutorTest {
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
-        context.setEntity(entity);
-        context.setTargetTable(new TableInfo("test", "download_table"));
+        context.setSourceEntity(entity);
+        context.setDestinationTable(new TableInfo("test", "download_table"));
         context.setSourceTable(new TableInfo("test", "pso"));
 
         QueryRequest copyRequest = context.getRequest().getQueryRequest();
@@ -167,8 +167,8 @@ class DownloadExternalTableExecutorTest {
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
-        context.setEntity(entity);
-        context.setTargetTable(new TableInfo("test", "download_table"));
+        context.setSourceEntity(entity);
+        context.setDestinationTable(new TableInfo("test", "download_table"));
         context.setSourceTable(new TableInfo("test", "pso"));
 
         QueryRequest copyRequest = context.getRequest().getQueryRequest();
@@ -206,8 +206,8 @@ class DownloadExternalTableExecutorTest {
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
-        context.setEntity(entity);
-        context.setTargetTable(new TableInfo("test", "download_table"));
+        context.setSourceEntity(entity);
+        context.setDestinationTable(new TableInfo("test", "download_table"));
         context.setSourceTable(new TableInfo("test", "pso"));
 
         QueryRequest copyRequest = context.getRequest().getQueryRequest();

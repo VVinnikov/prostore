@@ -77,17 +77,17 @@ class EdmlUploadFailedExecutorImplTest {
 
         EdmlRequestContext context = new EdmlRequestContext(request, null);
 
-        context.setTargetTable(new TableInfo("test", "pso"));
+        context.setDestinationTable(new TableInfo("test", "pso"));
         context.setSourceTable(new TableInfo("test", "upload_table"));
-        context.setEntity(entity);
+        context.setSourceEntity(entity);
         context.setSysCn(1L);
 
         final RollbackRequestContext rollbackRequestContext = new RollbackRequestContext(RollbackRequest.builder()
                 .queryRequest(context.getRequest().getQueryRequest())
                 .datamart(context.getSourceTable().getSchemaName())
-                .targetTable(context.getTargetTable().getTableName())
+                .destinationTable(context.getDestinationTable().getTableName())
                 .sysCn(context.getSysCn())
-                .entity(context.getEntity())
+                .entity(context.getSourceEntity())
                 .build());
 
         when(rollbackRequestContextFactory.create(any()))
@@ -121,9 +121,9 @@ class EdmlUploadFailedExecutorImplTest {
 
         EdmlRequestContext context = new EdmlRequestContext(request, null);
 
-        context.setTargetTable(new TableInfo("test", "pso"));
+        context.setDestinationTable(new TableInfo("test", "pso"));
         context.setSourceTable(new TableInfo("test", "upload_table"));
-        context.setEntity(entity);
+        context.setSourceEntity(entity);
         context.setSysCn(1L);
 
         when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
@@ -152,9 +152,9 @@ class EdmlUploadFailedExecutorImplTest {
 
         EdmlRequestContext context = new EdmlRequestContext(request, null);
 
-        context.setTargetTable(new TableInfo("test", "pso"));
+        context.setDestinationTable(new TableInfo("test", "pso"));
         context.setSourceTable(new TableInfo("test", "upload_table"));
-        context.setEntity(entity);
+        context.setSourceEntity(entity);
         context.setSysCn(1L);
 
         when(pluginService.getSourceTypes()).thenReturn(sourceTypes);

@@ -20,8 +20,13 @@ public class SqlCreateTable extends SqlCreate {
 	private static final SqlOperator OPERATOR =
 			new SqlSpecialOperator("CREATE TABLE", SqlKind.CREATE_TABLE);
 
-	public SqlCreateTable(SqlParserPos pos, boolean replace, boolean ifNotExists,
-						  SqlIdentifier name, SqlNodeList columnList, SqlNode query, SqlNodeList distributedBy,
+	public SqlCreateTable(SqlParserPos pos,
+						  boolean replace,
+						  boolean ifNotExists,
+						  SqlIdentifier name,
+						  SqlNodeList columnList,
+						  SqlNode query,
+						  SqlNodeList distributedBy,
 						  SqlNodeList destination) {
 		super(OPERATOR, pos, false, ifNotExists);
 		this.name = name;

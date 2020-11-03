@@ -2,6 +2,8 @@ package io.arenadata.dtm.query.execution.core.configuration.vertx;
 
 import io.arenadata.dtm.query.execution.core.service.InformationSchemaService;
 import io.arenadata.dtm.query.execution.core.service.RestoreStateService;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
 import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +16,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Configuration
@@ -36,23 +39,30 @@ public class VertxConfiguration implements ApplicationListener<ApplicationReadyE
         val restoreStateService = event.getApplicationContext().getBean(RestoreStateService.class);
         informationSchemaService.createInformationSchemaViews()
             .compose(v -> restoreStateService.restoreState())
-            .onSuccess(success -> deployVerticle(event))
+            .compose(v -> deployVerticle(event))
             .onFailure(err -> {
                 val exitCode = SpringApplication.exit(event.getApplicationContext(), () -> 1);
                 System.exit(exitCode);
             });
     }
 
-    private void deployVerticle(ApplicationReadyEvent event) {
+    private Future<Object> deployVerticle(ApplicationReadyEvent event) {
         Vertx vertx = event.getApplicationContext().getBean("coreVertx", Vertx.class);
         Map<String, Verticle> verticles = event.getApplicationContext().getBeansOfType(Verticle.class);
         log.info("Verticals found: {}", verticles.size());
-        verticles.forEach((key, value) -> vertx.deployVerticle(value, ar -> {
-            if (ar.succeeded()) {
-                log.debug("Vertical '{}' deployed successfully", key);
-            } else {
-                log.error("Vertical deploy error", ar.cause());
-            }
-        }));
+        return CompositeFuture.join(verticles.entrySet().stream()
+            .map(verticleEntry -> Future.future(p -> {
+                vertx.deployVerticle(verticleEntry.getValue(), ar -> {
+                    if (ar.succeeded()) {
+                        log.debug("Vertical '{}' deployed successfully", verticleEntry.getKey());
+                        p.complete();
+                    } else {
+                        log.error("Vertical deploy error", ar.cause());
+                        p.fail(ar.cause());
+                    }
+                });
+            }))
+            .collect(Collectors.toList()))
+            .mapEmpty();
     }
 }

@@ -2,8 +2,6 @@ package io.arenadata.dtm.query.execution.core.configuration.vertx;
 
 import io.arenadata.dtm.query.execution.core.service.InformationSchemaService;
 import io.arenadata.dtm.query.execution.core.service.RestoreStateService;
-import io.vertx.core.CompositeFuture;
-import io.vertx.core.Future;
 import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
 import lombok.extern.slf4j.Slf4j;
@@ -15,8 +13,6 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -37,7 +33,9 @@ public class VertxConfiguration implements ApplicationListener<ApplicationReadyE
     @Override
     public void onApplicationEvent(ApplicationReadyEvent event) {
         val informationSchemaService = event.getApplicationContext().getBean(InformationSchemaService.class);
+        val restoreStateService = event.getApplicationContext().getBean(RestoreStateService.class);
         informationSchemaService.createInformationSchemaViews()
+            .compose(v -> restoreStateService.restoreState())
             .onSuccess(success -> deployVerticle(event))
             .onFailure(err -> {
                 val exitCode = SpringApplication.exit(event.getApplicationContext(), () -> 1);
@@ -49,24 +47,12 @@ public class VertxConfiguration implements ApplicationListener<ApplicationReadyE
         Vertx vertx = event.getApplicationContext().getBean("coreVertx", Vertx.class);
         Map<String, Verticle> verticles = event.getApplicationContext().getBeansOfType(Verticle.class);
         log.info("Verticals found: {}", verticles.size());
-        List<Future> futures = new ArrayList<>();
-        verticles.forEach((key, value) -> futures.add(Future.future(p -> {
-            vertx.deployVerticle(value, ar -> {
-                if (ar.succeeded()) {
-                    log.debug("Vertical '{}' deployed successfully", key);
-                    p.complete();
-                } else {
-                    log.error("Vertical deploy error", ar.cause());
-                    p.fail(ar.cause());
-                }
-            });
-        })));
-        val restoreStateService = event.getApplicationContext().getBean(RestoreStateService.class);
-        CompositeFuture.join(futures)
-                .setHandler(ar -> {
-                    if (ar.succeeded()) {
-                        restoreStateService.restoreState();
-                    }
-                });
+        verticles.forEach((key, value) -> vertx.deployVerticle(value, ar -> {
+            if (ar.succeeded()) {
+                log.debug("Vertical '{}' deployed successfully", key);
+            } else {
+                log.error("Vertical deploy error", ar.cause());
+            }
+        }));
     }
 }

@@ -58,8 +58,8 @@ public class RestoreStateServiceImpl implements RestoreStateService {
     }
 
     @Override
-    public void restoreState(){
-        datamartDao.getDatamarts()
+    public Future<Void> restoreState(){
+        return datamartDao.getDatamarts()
                 .compose(this::processDatamarts)
                 .onSuccess(success -> log.info("State sucessfully restored"))
                 .onFailure(err -> log.error("Error while trying to restore state", err));

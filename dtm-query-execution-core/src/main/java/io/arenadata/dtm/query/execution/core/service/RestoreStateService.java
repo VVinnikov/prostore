@@ -1,6 +1,8 @@
 package io.arenadata.dtm.query.execution.core.service;
 
+import io.vertx.core.Future;
+
 public interface RestoreStateService {
 
-    void restoreState();
+    Future<Void> restoreState();
 }

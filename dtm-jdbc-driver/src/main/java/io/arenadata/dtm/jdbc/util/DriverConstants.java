@@ -1,8 +1,6 @@
 package io.arenadata.dtm.jdbc.util;
 
 public class DriverConstants {
-    public static final String DRIVER_NAME = "DTM JDBC Driver";
-    public static final String DATABASE_PRODUCT_NAME = "DTM";
     public static final String CONNECT_URL_PREFIX = "jdbc:adtm://";
 
     //Параметры подключения

@@ -1,63 +1,42 @@
 package io.arenadata.dtm.jdbc.ext;
 
-import io.arenadata.dtm.jdbc.rest.CoordinatorReaderService;
-import io.arenadata.dtm.jdbc.rest.Protocol;
+import io.arenadata.dtm.jdbc.core.BaseStatement;
+import io.arenadata.dtm.jdbc.core.ConnectionFactory;
+import io.arenadata.dtm.jdbc.core.BaseConnection;
+import io.arenadata.dtm.jdbc.core.QueryExecutor;
+import io.arenadata.dtm.jdbc.model.ColumnInfo;
 import io.arenadata.dtm.jdbc.util.DtmException;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.sql.*;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 
-public class DtmConnection implements Connection {
+public class DtmConnectionImpl implements BaseConnection {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("io.arenadata.dtm.driver.jdbc.DtmDriver");
     public static final ZoneId DEFAULT_TIME_ZONE = ZoneId.of("UTC");
     /**
-     * Протокол, по которому будет получена информация для текущего подключения
-     */
-    protected Protocol protocol;
-    /**
-     * Урл подключения jdbc драйвера
-     */
-    private String url;
-    /**
-     * Настройки подключения
-     */
-    private Properties info;
-    /**
-     * Текущий пользователь
-     */
-    private String user;
-    /**
-     * Схема текущего подключения
-     */
-    private String schema;
-    /**
-     * Уровень удержания resultSet'a
+     * Hold level of resultSet
      */
     private int rsHoldability = ResultSet.CLOSE_CURSORS_AT_COMMIT;
     /**
-     * Состояние разрешения автокоммитов в подключении
+     * Autocommit permission state on connection
      */
     private boolean autoCommit = true;
+    private List<ColumnInfo> cachedFieldMetadata = new ArrayList<>();   //TODO need to update after changing table metadata
     /**
-     * Клиент для rest-подключения к источнику информации Protocol
+     * Executor for query
      */
-    private CloseableHttpClient client = HttpClients.createDefault();
+    private QueryExecutor queryExecutor;
 
-    public DtmConnection(String dbHost, String user, String schema, Properties info, String url) {
-        this.url = url;
-        this.info = info;
-        this.user = user;
-        this.schema = schema;
-        this.protocol = new CoordinatorReaderService(client, dbHost, schema);
+    public DtmConnectionImpl(String dbHost, String user, String schema, Properties info, String url) throws SQLException {
+        this.queryExecutor = ConnectionFactory.openConnection(dbHost, user, schema, url, info);
         LOGGER.info("Connection created host = {} schema = {} user = {}", dbHost, schema, user);
     }
 
@@ -68,7 +47,7 @@ public class DtmConnection implements Connection {
     }
 
     @Override
-    public Statement createStatement() throws SQLException {
+    public BaseStatement createStatement() throws SQLException {
         return createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
     }
 
@@ -78,7 +57,7 @@ public class DtmConnection implements Connection {
     }
 
     @Override
-    public Statement createStatement(int resultSetType, int resultSetConcurrency) throws SQLException {
+    public BaseStatement createStatement(int resultSetType, int resultSetConcurrency) throws SQLException {
         checkClosed();
         return createStatement(resultSetType, resultSetConcurrency, getHoldability());
     }
@@ -124,18 +103,12 @@ public class DtmConnection implements Connection {
 
     @Override
     public void close() throws SQLException {
-        try {
-            client.close();
-            client = null;
-            protocol = null;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        this.getQueryExecutor().close();
     }
 
     @Override
     public boolean isClosed() throws SQLException {
-        return client == null;
+        return this.getQueryExecutor().isClosed();
     }
 
     private void checkClosed() throws SQLException {
@@ -156,12 +129,12 @@ public class DtmConnection implements Connection {
 
     @Override
     public String getCatalog() throws SQLException {
-        return this.schema;
+        return this.getQueryExecutor().getDatabase();
     }
 
     @Override
     public void setCatalog(String catalog) throws SQLException {
-        this.schema = catalog;
+        this.getQueryExecutor().setDatabase(catalog);
     }
 
     @Override
@@ -183,7 +156,6 @@ public class DtmConnection implements Connection {
     public void clearWarnings() throws SQLException {
 
     }
-
 
     @Override
     public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency) throws SQLException {
@@ -231,7 +203,7 @@ public class DtmConnection implements Connection {
     }
 
     @Override
-    public Statement createStatement(int resultSetType, int resultSetConcurrency, int resultSetHoldability) {
+    public BaseStatement createStatement(int resultSetType, int resultSetConcurrency, int resultSetHoldability) {
         return new DtmStatement(this, resultSetType, resultSetConcurrency);
     }
 
@@ -353,12 +325,28 @@ public class DtmConnection implements Connection {
         return iface.isAssignableFrom(getClass());
     }
 
+    @Override
     public String getUrl() {
-        return url;
+        return this.queryExecutor.getUrl();
     }
 
-    public String getUser() {
-        return user;
+    @Override
+    public String getUserName() {
+        return this.queryExecutor.getUser();
     }
 
+    @Override
+    public String getDBVersionNumber() {
+        return this.queryExecutor.getServerVersion();
+    }
+
+    @Override
+    public List<ColumnInfo> getCachedFieldMetadata() {
+        return this.cachedFieldMetadata;
+    }
+
+    @Override
+    public QueryExecutor getQueryExecutor() {
+        return queryExecutor;
+    }
 }

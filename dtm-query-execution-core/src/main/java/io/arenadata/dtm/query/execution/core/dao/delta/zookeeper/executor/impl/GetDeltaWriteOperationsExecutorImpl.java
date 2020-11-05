@@ -34,7 +34,7 @@ public class GetDeltaWriteOperationsExecutorImpl extends DeltaServiceDaoExecutor
         executor.exists(getDatamartPath(datamart) + "/run")
             .compose(isExists -> isExists ?
                 executeIfExists(datamart, resultPromise) :
-                Future.succeededFuture(Collections.emptyList()));
+                Future.future(v -> resultPromise.complete(Collections.emptyList())));
         return resultPromise.future();
     }
 

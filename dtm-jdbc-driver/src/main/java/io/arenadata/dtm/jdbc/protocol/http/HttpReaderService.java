@@ -1,4 +1,4 @@
-package io.arenadata.dtm.jdbc.rest;
+package io.arenadata.dtm.jdbc.protocol.http;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,6 +8,7 @@ import io.arenadata.dtm.jdbc.core.QueryResult;
 import io.arenadata.dtm.jdbc.model.ColumnInfo;
 import io.arenadata.dtm.jdbc.model.SchemaInfo;
 import io.arenadata.dtm.jdbc.model.TableInfo;
+import io.arenadata.dtm.jdbc.protocol.Protocol;
 import io.arenadata.dtm.jdbc.util.DtmException;
 import io.arenadata.dtm.jdbc.util.ResponseException;
 import lombok.SneakyThrows;
@@ -32,10 +33,10 @@ import static io.arenadata.dtm.jdbc.util.DriverConstants.HOST_PROPERTY;
 import static org.apache.http.util.TextUtils.isEmpty;
 
 /**
- * Контроллер взаимодействия с Сервисом чтения по REST
+ * Http implementation of data reader service
  */
 @Slf4j
-public class CoordinatorReaderService implements Protocol {
+public class HttpReaderService implements Protocol {
 
     private static final String GET_META_URL = "/meta";
     private static final String GET_ENTITIES_URL = "/meta/%s/entities";
@@ -46,7 +47,7 @@ public class CoordinatorReaderService implements Protocol {
     private String schema;
 
     @SneakyThrows
-    public CoordinatorReaderService(CloseableHttpClient client, String dbHost, String schema) {
+    public HttpReaderService(CloseableHttpClient client, String dbHost, String schema) {
         if (isEmpty(dbHost)) {
             throw new DtmException(String.format("Unable to create connection because parameter '%s' is not specified", HOST_PROPERTY));
         }

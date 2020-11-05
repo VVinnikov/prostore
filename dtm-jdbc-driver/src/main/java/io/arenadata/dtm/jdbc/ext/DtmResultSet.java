@@ -1,7 +1,7 @@
 package io.arenadata.dtm.jdbc.ext;
 
+import io.arenadata.dtm.jdbc.core.BaseConnection;
 import io.arenadata.dtm.jdbc.core.Field;
-import io.arenadata.dtm.jdbc.model.ColumnInfo;
 import io.arenadata.dtm.jdbc.util.DtmException;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import lombok.SneakyThrows;
@@ -23,28 +23,20 @@ import java.util.List;
 import java.util.Map;
 
 public class DtmResultSet implements ResultSet {
-
-
     private final List<ColumnMetadata> metadata;
     private List<Field[]> fields;
     private int currentRow = -1;
     private Field[] thisRow;
-    private Connection connection;
+    private BaseConnection connection;
     private ResultSetMetaData rsMetaData;
-    private List<ColumnInfo> columns;
     private final ZoneId zoneId;
 
-    public DtmResultSet(DtmConnection connection,
-                        List<Field[]> fields,
-                        List<ColumnMetadata> metadata,
-                        List<ColumnInfo> columns,
-                        ZoneId timeZone) {
+    public DtmResultSet(BaseConnection connection, List<Field[]> fields, List<ColumnMetadata> metadata, ZoneId timeZone) {
         this.connection = connection;
         this.fields = fields;
-        thisRow = (fields == null || fields.isEmpty()) ?
+        this.thisRow = (fields == null || fields.isEmpty()) ?
                 new Field[0] : fields.get(0);
         this.metadata = metadata;
-        this.columns = columns;
         this.zoneId = timeZone;
     }
 
@@ -52,20 +44,15 @@ public class DtmResultSet implements ResultSet {
         return new DtmResultSet(null,
                 Collections.singletonList(new Field[]{new Field("insert_id", "")}),
                 Collections.emptyList(),
-                Collections.emptyList(),
-                DtmConnection.DEFAULT_TIME_ZONE);
-    }
-
-    public List<ColumnInfo> getColumns() {
-        return columns;
+                DtmConnectionImpl.DEFAULT_TIME_ZONE);
     }
 
     @Override
     public boolean next() {
-        if (currentRow + 1 >= fields.size()) {
+        if (this.currentRow + 1 >= this.fields.size()) {
             return false;
         } else {
-            currentRow++;
+            this.currentRow++;
         }
         initRowBuffer();
         return true;
@@ -73,18 +60,18 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public boolean first() throws SQLException {
-        if (fields.size() <= 0) {
+        if (this.fields.size() <= 0) {
             return false;
         }
 
-        currentRow = 0;
+        this.currentRow = 0;
         initRowBuffer();
 
         return true;
     }
 
     private void initRowBuffer() {
-        thisRow = fields.get(currentRow);
+        this.thisRow = this.fields.get(this.currentRow);
     }
 
     @Override
@@ -110,8 +97,8 @@ public class DtmResultSet implements ResultSet {
     }
 
     private int findColumnIndex(String columnName) {
-        for (int i = 1; i <= thisRow.length; i++) {
-            if (thisRow[i - 1].getColumnLabel().equals(columnName)) {
+        for (int i = 1; i <= this.thisRow.length; i++) {
+            if (this.thisRow[i - 1].getColumnLabel().equals(columnName)) {
                 return i;
             }
         }
@@ -120,15 +107,15 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public ResultSetMetaData getMetaData() {
-        if (rsMetaData == null) {
-            rsMetaData = new DtmResultSetMetaData(connection, metadata, this);
+        if (this.rsMetaData == null) {
+            this.rsMetaData = new DtmResultSetMetaData(this.connection, this.metadata);
         }
-        return rsMetaData;
+        return this.rsMetaData;
     }
 
     @Override
     public Object getObject(int columnIndex) throws SQLException {
-        final ColumnMetadata columnMetadata = metadata.get(columnIndex - 1);
+        final ColumnMetadata columnMetadata = this.metadata.get(columnIndex - 1);
         switch (columnMetadata.getType()) {
             case INT:
                 return this.getInt(columnIndex);
@@ -164,7 +151,7 @@ public class DtmResultSet implements ResultSet {
     }
 
     private Object getValue(int columnIndex) throws SQLException {
-        Field field = thisRow[columnIndex - 1];
+        Field field = this.thisRow[columnIndex - 1];
         if (field == null) {
             throw new SQLException(String.format("Field for index %s not found!", columnIndex));
         }
@@ -780,7 +767,7 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public Date getDate(int columnIndex, Calendar cal) throws SQLException {
-        val value = (LocalDate) thisRow[columnIndex - 1].getValue();
+        val value = (LocalDate) this.thisRow[columnIndex - 1].getValue();
         return Date.valueOf(value);
     }
 

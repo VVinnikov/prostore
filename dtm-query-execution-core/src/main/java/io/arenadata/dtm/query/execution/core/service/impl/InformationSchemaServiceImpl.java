@@ -6,6 +6,7 @@ import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.InformationSchemaView;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
+import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateView;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.service.DdlQueryGenerator;
@@ -75,6 +76,8 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
                 createOrDropSchema(sql);
                 return;
             case CREATE_VIEW:
+                createOrReplaceView((SqlCreateView) sql);
+                return;
             case ALTER_VIEW:
             case DROP_VIEW:
             case DROP_TABLE:
@@ -83,6 +86,19 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
                 return;
             default:
                 throw new IllegalArgumentException("Sql type not supported: " + sql.getKind());
+        }
+    }
+
+    private void createOrReplaceView(SqlCreateView sqlCreateView) {
+        if (sqlCreateView.getReplace()) {
+            client.executeQuery(String.format(InformationSchemaUtils.DROP_VIEW, sqlCreateView.getName()))
+                .compose(v -> client.executeQuery(String.format(InformationSchemaUtils.CREATE_VIEW,
+                    sqlCreateView.getName(),
+                    sqlCreateView.getQuery().toString().replace("`", ""))))
+                .onFailure(this::shutdown);
+        } else {
+            client.executeQuery(sqlCreateView.toString().replace("`", ""))
+                .onFailure(this::shutdown);
         }
     }
 
@@ -291,22 +307,22 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
             if (EntityType.TABLE.equals(entity.getEntityType())) {
                 tableEntities.add(ddlQueryGenerator.generateCreateTableQuery(entity));
                 entity.getFields().stream()
-                        .forEach(field -> {
-                            val type = field.getType();
-                            if (needComment(type)) {
-                                    commentQueries.add(commentOnColumn(entity.getNameWithSchema(), field.getName(), type.toString()));
-                            }
-                        });
+                    .forEach(field -> {
+                        val type = field.getType();
+                        if (needComment(type)) {
+                            commentQueries.add(commentOnColumn(entity.getNameWithSchema(), field.getName(), type.toString()));
+                        }
+                    });
                 val shardingKeyColumns = entity.getFields().stream()
-                        .filter(field -> field.getShardingOrder() != null)
-                        .map(field -> field.getName())
-                        .collect(Collectors.toList());
+                    .filter(field -> field.getShardingOrder() != null)
+                    .map(field -> field.getName())
+                    .collect(Collectors.toList());
                 createShardingKeys.add(createShardingKeyIndex(entity.getName(), entity.getNameWithSchema(), shardingKeyColumns));
             }
         });
         return Stream.of(tableEntities, viewEntities, commentQueries, createShardingKeys)
-                .flatMap(Collection::stream)
-                .collect(Collectors.toList());
+            .flatMap(Collection::stream)
+            .collect(Collectors.toList());
     }
 
     private boolean needComment(ColumnType type) {

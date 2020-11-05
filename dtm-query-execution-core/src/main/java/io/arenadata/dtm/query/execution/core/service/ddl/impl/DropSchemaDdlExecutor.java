@@ -5,6 +5,7 @@ import io.arenadata.dtm.query.calcite.core.extension.eddl.DropDatabase;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
+import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.vertx.core.AsyncResult;
@@ -20,7 +21,7 @@ import static io.arenadata.dtm.query.execution.plugin.api.ddl.DdlType.DROP_SCHEM
 
 @Slf4j
 @Component
-public class DropSchemaDdlExecutor extends DropTableDdlExecutor {
+public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
     private final DatamartDao datamartDao;
 
     @Autowired

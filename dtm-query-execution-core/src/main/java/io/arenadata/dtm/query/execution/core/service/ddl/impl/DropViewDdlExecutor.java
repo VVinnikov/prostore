@@ -7,6 +7,7 @@ import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.exception.entity.ViewNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
+import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.utils.SqlPreparer;
@@ -18,22 +19,28 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlKind;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
 public class DropViewDdlExecutor extends QueryResultDdlExecutor {
+    private final EntityCacheService entityCacheService;
     protected final EntityDao entityDao;
 
     @Autowired
-    public DropViewDdlExecutor(MetadataExecutor<DdlRequestContext> metadataExecutor,
+    public DropViewDdlExecutor(@Qualifier("entityCacheService") EntityCacheService entityCacheService,
+                               MetadataExecutor<DdlRequestContext> metadataExecutor,
                                ServiceDbFacade serviceDbFacade) {
         super(metadataExecutor, serviceDbFacade);
+        this.entityCacheService = entityCacheService;
         entityDao = serviceDbFacade.getServiceDbDao().getEntityDao();
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<QueryResult>> handler) {
+    public void execute(DdlRequestContext context,
+                        String sqlNodeName,
+                        Handler<AsyncResult<QueryResult>> handler) {
         try {
             val tree = new SqlSelectTree(context.getQuery());
             val viewNameNode = SqlPreparer.getViewNameNode(tree);
@@ -42,6 +49,7 @@ public class DropViewDdlExecutor extends QueryResultDdlExecutor {
             val viewName = viewNameNode.tryGetTableName()
                 .orElseThrow(() -> new RuntimeException("Unable to get name of view"));
             context.setDatamartName(schemaName);
+            entityCacheService.remove(schemaName, viewName);
             entityDao.getEntity(schemaName, viewName)
                 .compose(this::checkEntityType)
                 .compose(v -> entityDao.deleteEntity(schemaName, viewName))

@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
+import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
 import io.arenadata.dtm.query.execution.core.service.dml.ColumnMetadataService;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
@@ -23,12 +24,14 @@ public class AlterViewDdlExecutor extends CreateViewDdlExecutor {
 
     public static final String ALTER_VIEW_QUERY_PATH = "ALTER_VIEW.SELECT";
 
-    public AlterViewDdlExecutor(MetadataExecutor<DdlRequestContext> metadataExecutor,
+    public AlterViewDdlExecutor(@Qualifier("entityCacheService") EntityCacheService entityCacheService,
+                                MetadataExecutor<DdlRequestContext> metadataExecutor,
                                 LogicalSchemaProvider logicalSchemaProvider,
                                 ColumnMetadataService columnMetadataService,
                                 ServiceDbFacade serviceDbFacade,
                                 @Qualifier("coreSqlDialect") SqlDialect sqlDialect) {
-        super(metadataExecutor,
+        super(entityCacheService,
+            metadataExecutor,
             logicalSchemaProvider,
             columnMetadataService,
             serviceDbFacade,

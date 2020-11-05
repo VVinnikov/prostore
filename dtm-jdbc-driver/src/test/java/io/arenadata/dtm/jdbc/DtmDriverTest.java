@@ -22,9 +22,11 @@ public class DtmDriverTest {
         DtmStatement stmnt = (DtmStatement) conn.createStatement();
         DtmStatement stmnt2 = (DtmStatement) conn.createStatement();
         final List<TableInfo> tables = conn.getQueryExecutor().getTables("dtm_714");
+        final ResultSet createDb = stmnt.executeQuery("CREATE DATABASE dtm_test_sql;");
+        final ResultSet dropDb = stmnt.executeQuery("DROP DATABASE dtm_test_sql;");
         final ResultSet resultSet1 = stmnt.executeQuery("USE dtm_714");
-        final ResultSet resultSet2 = stmnt.executeQuery("get_delta_ok(); get_delta_ok();");
-        resultSet2.getObject(2);
+        //final ResultSet resultSet2 = stmnt.executeQuery("get_delta_ok(); get_delta_ok();");
+        //resultSet2.getObject(2);
         DtmDatabaseMetaData dtmDatabaseMetaData = new DtmDatabaseMetaData(conn);
         //final ResultSet columns = dtmDatabaseMetaData.getColumns("dtm_579", "%", "transactions_2", "%");
     }

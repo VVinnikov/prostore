@@ -3,8 +3,9 @@ package io.arenadata.dtm.jdbc.core;
 import io.arenadata.dtm.jdbc.model.ColumnInfo;
 import io.arenadata.dtm.jdbc.model.SchemaInfo;
 import io.arenadata.dtm.jdbc.model.TableInfo;
-import io.arenadata.dtm.jdbc.protocol.http.HttpReaderService;
 import io.arenadata.dtm.jdbc.protocol.Protocol;
+import io.arenadata.dtm.jdbc.protocol.http.HttpReaderService;
+import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 
@@ -79,7 +80,8 @@ public class QueryExecutorImpl implements QueryExecutor {
             if (queryResult.getResult() != null) {
                 List<Field[]> result = new ArrayList<>();
                 List<Map<String, Object>> rows = queryResult.getResult();
-
+                List<ColumnMetadata> metadata = queryResult.getMetadata() == null ?
+                        Collections.emptyList() : queryResult.getMetadata();
                 rows.forEach(row -> {
                     Field[] resultFields = new Field[row.size()];
                     IntStream.range(0, queryResult.getMetadata().size()).forEach(key -> {
@@ -88,7 +90,7 @@ public class QueryExecutorImpl implements QueryExecutor {
                     });
                     result.add(resultFields);
                 });
-                resultHandler.handleResultRows(query, result, queryResult.getMetadata(), ZoneId.of(queryResult.getTimeZone()));
+                resultHandler.handleResultRows(query, result, metadata, ZoneId.of(queryResult.getTimeZone()));
             }
         } catch (SQLException e) {
             resultHandler.handleError(e);

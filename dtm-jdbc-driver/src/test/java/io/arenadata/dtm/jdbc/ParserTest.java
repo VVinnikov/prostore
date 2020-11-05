@@ -23,6 +23,7 @@ public class ParserTest {
                 "select id from t1;select id from t2; select id from t3;",
                 "select id from t1;select id from t4; select id from t4",
                 "insert into t select id from t_ext;",
+                "select * from t where c1 = '\'';",
                 "use t;",
                 "begin delta;",
                 "create table t (id int, name varchar(100));",

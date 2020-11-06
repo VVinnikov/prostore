@@ -56,13 +56,13 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
                             .collect(Collectors.toList()));
                 });
             } else {
-                String error = String.format("Not supported DDL query type [%s]", context);
+                String error = String.format("Not supported DDL query type [%s]", context.getQuery());
                 log.error(error);
                 handler.handle(Future.failedFuture(error));
             }
         } catch (Exception e) {
             log.error(e.getMessage());
-            handler.handle(Future.failedFuture(String.format("Not supported request type [%s]", context)));
+            handler.handle(Future.failedFuture(String.format("Not supported request type [%s]", context.getQuery())));
         }
     }
 

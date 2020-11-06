@@ -12,6 +12,7 @@ import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.exception.entity.EntityAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.dao.exception.entity.ViewNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
+import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.dml.ColumnMetadataService;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
@@ -49,16 +50,19 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
     private static final String VIEW_AND_TABLE_PATTERN = "(?i).*(JOIN|SELECT)\\.(|AS\\.)(SNAPSHOT|IDENTIFIER)$";
     protected final SqlDialect sqlDialect;
     protected final EntityDao entityDao;
+    protected final EntityCacheService entityCacheService;
     private final LogicalSchemaProvider logicalSchemaProvider;
     private final ColumnMetadataService columnMetadataService;
 
     @Autowired
-    public CreateViewDdlExecutor(MetadataExecutor<DdlRequestContext> metadataExecutor,
+    public CreateViewDdlExecutor(@Qualifier("entityCacheService") EntityCacheService entityCacheService,
+                                 MetadataExecutor<DdlRequestContext> metadataExecutor,
                                  LogicalSchemaProvider logicalSchemaProvider,
                                  ColumnMetadataService columnMetadataService,
                                  ServiceDbFacade serviceDbFacade,
                                  @Qualifier("coreSqlDialect") SqlDialect sqlDialect) {
         super(metadataExecutor, serviceDbFacade);
+        this.entityCacheService = entityCacheService;
         this.logicalSchemaProvider = logicalSchemaProvider;
         this.columnMetadataService = columnMetadataService;
         this.sqlDialect = sqlDialect;
@@ -68,20 +72,20 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
     @Override
     public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<QueryResult>> handler) {
         checkViewQuery(context)
-                .compose(v -> getCreateViewContext(context))
-                .onFailure(error -> handler.handle(Future.failedFuture(error)))
-                .onSuccess(ctx -> createOrReplaceEntity(ctx, handler));
+            .compose(v -> getCreateViewContext(context))
+            .onFailure(error -> handler.handle(Future.failedFuture(error)))
+            .onSuccess(ctx -> createOrReplaceEntity(ctx, handler));
     }
 
     protected Future<Void> checkViewQuery(DdlRequestContext context) {
         return checkSnapshotNotExist(context)
-                .compose(v -> checkEntitiesType(context));
+            .compose(v -> checkEntitiesType(context));
     }
 
     private Future<Void> checkSnapshotNotExist(DdlRequestContext context) {
         return Future.future(p -> {
             List<SqlTreeNode> bySnapshot = new SqlSelectTree(context.getQuery())
-                    .findNodesByPath(SqlSelectTree.SELECT_AS_SNAPSHOT);
+                .findNodesByPath(SqlSelectTree.SELECT_AS_SNAPSHOT);
             if (bySnapshot.isEmpty()) {
                 p.complete();
             } else {
@@ -93,22 +97,22 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
     private Future<Void> checkEntitiesType(DdlRequestContext context) {
         return Future.future(promise -> {
             final List<SqlTreeNode> nodes = new SqlSelectTree(context.getQuery())
-                    .findNodesByPathRegex(VIEW_AND_TABLE_PATTERN);
+                .findNodesByPathRegex(VIEW_AND_TABLE_PATTERN);
             final List<Future> entityFutures = getEntitiesFutures(context, nodes);
             CompositeFuture.join(entityFutures)
-                    .onSuccess(result -> {
-                        final List<Object> entities = result.list();
-                        entities.forEach(e -> {
-                            final Entity entity = (Entity) e;
-                            if (entity.getEntityType() != EntityType.TABLE) {
-                                promise.fail(new RuntimeException(
-                                        String.format("View query supports only %s type, but actual %s",
-                                                EntityType.TABLE, entity.getEntityType())));
-                            }
-                        });
-                        promise.complete();
-                    })
-                    .onFailure(promise::fail);
+                .onSuccess(result -> {
+                    final List<Object> entities = result.list();
+                    entities.forEach(e -> {
+                        final Entity entity = (Entity) e;
+                        if (entity.getEntityType() != EntityType.TABLE) {
+                            promise.fail(new RuntimeException(
+                                String.format("View query supports only %s type, but actual %s",
+                                    EntityType.TABLE, entity.getEntityType())));
+                        }
+                    });
+                    promise.complete();
+                })
+                .onFailure(promise::fail);
         });
     }
 
@@ -116,20 +120,21 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
     private List<Future> getEntitiesFutures(DdlRequestContext context, List<SqlTreeNode> nodes) {
         final List<Future> entityFutures = new ArrayList<>();
         nodes.forEach(node -> {
-            String datamart = context.getRequest().getQueryRequest().getDatamartMnemonic();
+            String datamartName = context.getRequest().getQueryRequest().getDatamartMnemonic();
             String tableName;
             final Optional<String> schema = node.tryGetSchemaName();
             final Optional<String> table = node.tryGetTableName();
             if (schema.isPresent()) {
-                datamart = schema.get();
+                datamartName = schema.get();
             }
             if (table.isPresent()) {
                 tableName = table.get();
             } else {
                 throw new RuntimeException(String.format("Can't extract table name from query %s",
-                        context.getQuery().toSqlString(sqlDialect).toString()));
+                    context.getQuery().toSqlString(sqlDialect).toString()));
             }
-            entityFutures.add(entityDao.getEntity(datamart, tableName));
+            entityCacheService.remove(datamartName, tableName);
+            entityFutures.add(entityDao.getEntity(datamartName, tableName));
         });
         return entityFutures;
     }
@@ -139,27 +144,27 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
             val tree = new SqlSelectTree(context.getQuery());
             val viewQuery = getViewQuery(tree);
             QueryRequest request = QueryRequest.builder()
-                    .datamartMnemonic(context.getDatamartName())
-                    .requestId(UUID.randomUUID())
-                    .sql(viewQuery)
-                    .build();
+                .datamartMnemonic(context.getDatamartName())
+                .requestId(UUID.randomUUID())
+                .sql(viewQuery)
+                .build();
             getEntityFuture(context, request)
-                    .map(entity -> {
-                        String sql = context.getRequest().getQueryRequest().getSql();
-                        return CreateViewContext.builder()
-                                .createOrReplace(SqlPreparer.isCreateOrReplace(sql))
-                                .viewEntity(entity)
-                                .sql(sql)
-                                .build();
-                    })
-                    .onComplete(p);
+                .map(entity -> {
+                    String sql = context.getRequest().getQueryRequest().getSql();
+                    return CreateViewContext.builder()
+                        .createOrReplace(SqlPreparer.isCreateOrReplace(sql))
+                        .viewEntity(entity)
+                        .sql(sql)
+                        .build();
+                })
+                .onComplete(p);
         });
     }
 
     private Future<Entity> getEntityFuture(DdlRequestContext ctx, QueryRequest request) {
         return getLogicalSchema(request)
-                .compose(datamarts -> getColumnMetadata(request, datamarts))
-                .map(columnMetadata -> toViewEntity(ctx, columnMetadata));
+            .compose(datamarts -> getColumnMetadata(request, datamarts))
+            .map(columnMetadata -> toViewEntity(ctx, columnMetadata));
     }
 
     private Future<List<Datamart>> getLogicalSchema(QueryRequest request) {
@@ -174,33 +179,33 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
         val tree = new SqlSelectTree(ctx.getQuery());
         val viewNameNode = SqlPreparer.getViewNameNode(tree);
         val schemaName = viewNameNode.tryGetSchemaName()
-                .orElseThrow(() -> new RuntimeException("Unable to get schema of view"));
+            .orElseThrow(() -> new RuntimeException("Unable to get schema of view"));
         val viewName = viewNameNode.tryGetTableName()
-                .orElseThrow(() -> new RuntimeException("Unable to get name of view"));
+            .orElseThrow(() -> new RuntimeException("Unable to get name of view"));
         val viewQuery = getViewQuery(tree);
         ctx.setDatamartName(schemaName);
         return Entity.builder()
-                .name(viewName)
-                .schema(schemaName)
-                .entityType(EntityType.VIEW)
-                .viewQuery(viewQuery)
-                .fields(getEntityFields(columnMetadata))
-                .build();
+            .name(viewName)
+            .schema(schemaName)
+            .entityType(EntityType.VIEW)
+            .viewQuery(viewQuery)
+            .fields(getEntityFields(columnMetadata))
+            .build();
     }
 
     private List<EntityField> getEntityFields(List<ColumnMetadata> columnMetadata) {
         return IntStream.range(0, columnMetadata.size())
-                .mapToObj(position -> toEntityField(columnMetadata.get(position), position))
-                .collect(Collectors.toList());
+            .mapToObj(position -> toEntityField(columnMetadata.get(position), position))
+            .collect(Collectors.toList());
     }
 
     private EntityField toEntityField(ColumnMetadata cm, int position) {
         return EntityField.builder()
-                .name(cm.getName())
-                .nullable(true)
-                .type(cm.getType())
-                .ordinalPosition(position)
-                .build();
+            .name(cm.getName())
+            .nullable(true)
+            .type(cm.getType())
+            .ordinalPosition(position)
+            .build();
     }
 
     protected String getViewQuery(SqlSelectTree tree) {
@@ -214,13 +219,14 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
 
     private void createOrReplaceEntity(CreateViewContext ctx, Handler<AsyncResult<QueryResult>> handler) {
         val viewEntity = ctx.getViewEntity();
+        entityCacheService.remove(viewEntity.getSchema(), viewEntity.getName());
         entityDao.createEntity(viewEntity)
-                .otherwise(error -> checkCreateOrReplace(ctx, error))
-                .compose(r -> entityDao.getEntity(viewEntity.getSchema(), viewEntity.getName()))
-                .map(this::checkEntityType)
-                .compose(r -> entityDao.updateEntity(viewEntity))
-                .onSuccess(success -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
-                .onFailure(error -> handler.handle(Future.failedFuture(error)));
+            .otherwise(error -> checkCreateOrReplace(ctx, error))
+            .compose(r -> entityDao.getEntity(viewEntity.getSchema(), viewEntity.getName()))
+            .map(this::checkEntityType)
+            .compose(r -> entityDao.updateEntity(viewEntity))
+            .onSuccess(success -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
+            .onFailure(error -> handler.handle(Future.failedFuture(error)));
     }
 
     private Void checkCreateOrReplace(CreateViewContext ctx, Throwable error) {

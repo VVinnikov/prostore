@@ -6,6 +6,7 @@ import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.exception.entity.EntityNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
+import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
@@ -17,20 +18,23 @@ import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlKind;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
 public class DropTableDdlExecutor extends QueryResultDdlExecutor {
 
+    private final EntityCacheService entityCacheService;
     private final EntityDao entityDao;
 
     @Autowired
-    public DropTableDdlExecutor(MetadataExecutor<DdlRequestContext> metadataExecutor,
+    public DropTableDdlExecutor(@Qualifier("entityCacheService") EntityCacheService entityCacheService,
+                                MetadataExecutor<DdlRequestContext> metadataExecutor,
                                 ServiceDbFacade serviceDbFacade) {
         super(metadataExecutor, serviceDbFacade);
+        this.entityCacheService = entityCacheService;
         entityDao = serviceDbFacade.getServiceDbDao().getEntityDao();
     }
 
@@ -39,6 +43,7 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
         try {
             String schema = getSchemaName(context.getRequest().getQueryRequest(), sqlNodeName);
             String tableName = getTableName(sqlNodeName);
+            entityCacheService.remove(schema, tableName);
             Entity entity = createClassTable(schema, tableName);
             context.getRequest().setEntity(entity);
             context.setDatamartName(schema);
@@ -52,7 +57,6 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
         }
     }
 
-    @NotNull
     private Entity createClassTable(String schema, String tableName) {
         return new Entity(getTableNameWithSchema(schema, tableName), null);
     }

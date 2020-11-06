@@ -17,6 +17,7 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDa
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.DatamartDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
+import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
 import io.arenadata.dtm.query.execution.core.service.ddl.impl.AlterViewDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.dml.ColumnMetadataService;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
@@ -61,10 +62,11 @@ class AlterViewDdlExecutorTest {
     private final LogicalSchemaProvider logicalSchemaProvider = mock(LogicalSchemaProviderImpl.class);
     private final ColumnMetadataService columnMetadataService = mock(ColumnMetadataService.class);
     private final MetadataExecutor<DdlRequestContext> metadataExecutor = mock(MetadataExecutorImpl.class);
+    private final EntityCacheService entityCacheService = mock(EntityCacheService.class);
     private final CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
     private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private final SqlParser.Config parserConfig = calciteConfiguration
-            .configEddlParser(calciteCoreConfiguration.eddlParserImplFactory());
+        .configEddlParser(calciteCoreConfiguration.eddlParserImplFactory());
     private AlterViewDdlExecutor alterViewDdlExecutor;
     private String sqlNodeName;
     private String schema;
@@ -76,11 +78,12 @@ class AlterViewDdlExecutorTest {
         when(serviceDbDao.getEntityDao()).thenReturn(entityDao);
         when(serviceDbDao.getDatamartDao()).thenReturn(datamartDao);
 
-        alterViewDdlExecutor = new AlterViewDdlExecutor(metadataExecutor,
-                logicalSchemaProvider,
-                columnMetadataService,
-                serviceDbFacade,
-                new SqlDialect(SqlDialect.EMPTY_CONTEXT));
+        alterViewDdlExecutor = new AlterViewDdlExecutor(entityCacheService,
+            metadataExecutor,
+            logicalSchemaProvider,
+            columnMetadataService,
+            serviceDbFacade,
+            new SqlDialect(SqlDialect.EMPTY_CONTEXT));
         schema = "shares";
 
         Mockito.doAnswer(invocation -> {
@@ -92,11 +95,11 @@ class AlterViewDdlExecutorTest {
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<List<Datamart>>> handler = invocation.getArgument(1);
             handler.handle(Future.succeededFuture(
-                    Collections.singletonList(new Datamart(
-                            schema,
-                            true,
-                            Collections.singletonList(entityList.get(0))
-                    ))
+                Collections.singletonList(new Datamart(
+                    schema,
+                    true,
+                    Collections.singletonList(entityList.get(0))
+                ))
             ));
             return null;
         }).when(logicalSchemaProvider).getSchema(any(), any());
@@ -115,7 +118,7 @@ class AlterViewDdlExecutorTest {
         queryRequest.setRequestId(UUID.randomUUID());
         queryRequest.setDatamartMnemonic(schema);
         queryRequest.setSql(String.format("ALTER VIEW %s.%s AS SELECT * FROM %s.%s",
-                schema, entityList.get(0).getName(), schema, entityList.get(1).getName()));
+            schema, entityList.get(0).getName(), schema, entityList.get(1).getName()));
         SqlNode query = planner.parse(queryRequest.getSql());
         DdlRequestContext context = new DdlRequestContext(new DdlRequest(queryRequest));
         context.getRequest().setQueryRequest(queryRequest);
@@ -124,28 +127,28 @@ class AlterViewDdlExecutorTest {
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<List<ColumnMetadata>>> handler = invocation.getArgument(1);
             handler.handle(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()
-                    .name("id")
-                    .type(ColumnType.BIGINT)
-                    .build())));
+                .name("id")
+                .type(ColumnType.BIGINT)
+                .build())));
             return null;
         }).when(columnMetadataService).getColumnMetadata(any(), any());
 
         Mockito.when(entityDao.getEntity(eq(schema), eq(entityList.get(1).getName())))
-                .thenReturn(Future.succeededFuture(entityList.get(1)));
+            .thenReturn(Future.succeededFuture(entityList.get(1)));
 
         Mockito.when(entityDao.getEntity(eq(schema), eq(entityList.get(0).getName())))
-                .thenReturn(Future.succeededFuture(entityList.get(0)));
+            .thenReturn(Future.succeededFuture(entityList.get(0)));
 
         Mockito.when(entityDao.updateEntity(any()))
-                .thenReturn(Future.succeededFuture());
+            .thenReturn(Future.succeededFuture());
 
         alterViewDdlExecutor.execute(context, sqlNodeName, ar -> {
-                    if (ar.succeeded()) {
-                        promise.complete(ar.result());
-                    } else {
-                        promise.fail(ar.cause());
-                    }
+                if (ar.succeeded()) {
+                    promise.complete(ar.result());
+                } else {
+                    promise.fail(ar.cause());
                 }
+            }
         );
         assertTrue(promise.future().succeeded());
     }
@@ -161,10 +164,10 @@ class AlterViewDdlExecutorTest {
         queryRequest.setRequestId(UUID.randomUUID());
         queryRequest.setDatamartMnemonic(schema);
         queryRequest.setSql(String.format("ALTER VIEW %s.%s AS SELECT * " +
-                        "FROM (select a.id FROM %s a " +
-                        "JOIN %s.%s t on t.id = a.id)",
-                schema, entityList.get(0).getName(), entityList.get(2).getName(),
-                schema, entityList.get(3).getName()));
+                "FROM (select a.id FROM %s a " +
+                "JOIN %s.%s t on t.id = a.id)",
+            schema, entityList.get(0).getName(), entityList.get(2).getName(),
+            schema, entityList.get(3).getName()));
 
         SqlNode query = planner.parse(queryRequest.getSql());
 
@@ -175,31 +178,31 @@ class AlterViewDdlExecutorTest {
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<List<ColumnMetadata>>> handler = invocation.getArgument(1);
             handler.handle(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()
-                    .name("id")
-                    .type(ColumnType.BIGINT)
-                    .build())));
+                .name("id")
+                .type(ColumnType.BIGINT)
+                .build())));
             return null;
         }).when(columnMetadataService).getColumnMetadata(any(), any());
 
         Mockito.when(entityDao.getEntity(eq(schema), eq(entityList.get(2).getName())))
-                .thenReturn(Future.succeededFuture(entityList.get(2)));
+            .thenReturn(Future.succeededFuture(entityList.get(2)));
 
         Mockito.when(entityDao.getEntity(eq(schema), eq(entityList.get(3).getName())))
-                .thenReturn(Future.succeededFuture(entityList.get(3)));
+            .thenReturn(Future.succeededFuture(entityList.get(3)));
 
         Mockito.when(entityDao.getEntity(eq(schema), eq(entityList.get(0).getName())))
-                .thenReturn(Future.succeededFuture(entityList.get(0)));
+            .thenReturn(Future.succeededFuture(entityList.get(0)));
 
         Mockito.when(entityDao.updateEntity(any()))
-                .thenReturn(Future.succeededFuture());
+            .thenReturn(Future.succeededFuture());
 
         alterViewDdlExecutor.execute(context, sqlNodeName, ar -> {
-                    if (ar.succeeded()) {
-                        promise.complete(ar.result());
-                    } else {
-                        promise.fail(ar.cause());
-                    }
+                if (ar.succeeded()) {
+                    promise.complete(ar.result());
+                } else {
+                    promise.fail(ar.cause());
                 }
+            }
         );
         assertTrue(promise.future().succeeded());
     }
@@ -215,34 +218,34 @@ class AlterViewDdlExecutorTest {
         queryRequest.setRequestId(UUID.randomUUID());
         queryRequest.setDatamartMnemonic(schema);
         queryRequest.setSql(String.format("ALTER VIEW %s.%s AS SELECT * FROM %s.%s",
-                schema, entityList.get(0).getName(), schema, entityList.get(1).getName()));
+            schema, entityList.get(0).getName(), schema, entityList.get(1).getName()));
         SqlNode query = planner.parse(queryRequest.getSql());
 
         DdlRequestContext context = new DdlRequestContext(new DdlRequest(queryRequest));
         context.getRequest().setQueryRequest(queryRequest);
         context.setQuery(query);
         Mockito.when(entityDao.getEntity(eq(schema), eq(entityList.get(1).getName())))
-                .thenReturn(Future.succeededFuture(entityList.get(1)));
+            .thenReturn(Future.succeededFuture(entityList.get(1)));
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<List<ColumnMetadata>>> handler = invocation.getArgument(1);
             handler.handle(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()
-                    .name("id")
-                    .type(ColumnType.BIGINT)
-                    .build())));
+                .name("id")
+                .type(ColumnType.BIGINT)
+                .build())));
             return null;
         }).when(columnMetadataService).getColumnMetadata(any(), any());
 
         Mockito.when(entityDao.getEntity(eq(schema), eq(entityList.get(0).getName())))
-                .thenReturn(Future.failedFuture(new ViewNotExistsException(entityList.get(0).getName())));
+            .thenReturn(Future.failedFuture(new ViewNotExistsException(entityList.get(0).getName())));
 
         alterViewDdlExecutor.execute(context, sqlNodeName, ar -> {
-                    if (ar.succeeded()) {
-                        promise.complete(ar.result());
-                    } else {
-                        promise.fail(ar.cause());
-                    }
+                if (ar.succeeded()) {
+                    promise.complete(ar.result());
+                } else {
+                    promise.fail(ar.cause());
                 }
+            }
         );
         assertTrue(promise.future().failed());
     }
@@ -258,7 +261,7 @@ class AlterViewDdlExecutorTest {
         queryRequest.setRequestId(UUID.randomUUID());
         queryRequest.setDatamartMnemonic(schema);
         queryRequest.setSql(String.format("ALTER VIEW %s.%s AS SELECT * FROM %s.%s",
-                schema, entityList.get(0).getName(), schema, entityList.get(1).getName()));
+            schema, entityList.get(0).getName(), schema, entityList.get(1).getName()));
         SqlNode query = planner.parse(queryRequest.getSql());
 
         DdlRequestContext context = new DdlRequestContext(new DdlRequest(queryRequest));
@@ -266,30 +269,30 @@ class AlterViewDdlExecutorTest {
         context.setQuery(query);
 
         Mockito.when(entityDao.getEntity(eq(schema), eq(entityList.get(1).getName())))
-                .thenReturn(Future.succeededFuture(entityList.get(1)));
+            .thenReturn(Future.succeededFuture(entityList.get(1)));
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<List<ColumnMetadata>>> handler = invocation.getArgument(1);
             handler.handle(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()
-                    .name("id")
-                    .type(ColumnType.BIGINT)
-                    .build())));
+                .name("id")
+                .type(ColumnType.BIGINT)
+                .build())));
             return null;
         }).when(columnMetadataService).getColumnMetadata(any(), any());
 
         Mockito.when(entityDao.getEntity(eq(schema), eq(entityList.get(0).getName())))
-                .thenReturn(Future.succeededFuture(entityList.get(0)));
+            .thenReturn(Future.succeededFuture(entityList.get(0)));
 
         Mockito.when(entityDao.updateEntity(any()))
-                .thenReturn(Future.failedFuture("Update error"));
+            .thenReturn(Future.failedFuture("Update error"));
 
         alterViewDdlExecutor.execute(context, sqlNodeName, ar -> {
-                    if (ar.succeeded()) {
-                        promise.complete(ar.result());
-                    } else {
-                        promise.fail(ar.cause());
-                    }
+                if (ar.succeeded()) {
+                    promise.complete(ar.result());
+                } else {
+                    promise.fail(ar.cause());
                 }
+            }
         );
         assertTrue(promise.future().failed());
     }
@@ -305,7 +308,7 @@ class AlterViewDdlExecutorTest {
         queryRequest.setRequestId(UUID.randomUUID());
         queryRequest.setDatamartMnemonic(schema);
         queryRequest.setSql(String.format("ALTER VIEW %s.%s AS SELECT * FROM %s.%s",
-                schema, entityList.get(0).getName(), schema, entityList.get(0).getName()));
+            schema, entityList.get(0).getName(), schema, entityList.get(0).getName()));
         SqlNode query = planner.parse(queryRequest.getSql());
 
         DdlRequestContext context = new DdlRequestContext(new DdlRequest(queryRequest));
@@ -315,62 +318,62 @@ class AlterViewDdlExecutorTest {
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<List<ColumnMetadata>>> handler = invocation.getArgument(1);
             handler.handle(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()
-                    .name("id")
-                    .type(ColumnType.BIGINT)
-                    .build())));
+                .name("id")
+                .type(ColumnType.BIGINT)
+                .build())));
             return null;
         }).when(columnMetadataService).getColumnMetadata(any(), any());
 
         Mockito.when(entityDao.getEntity(eq(schema), eq(entityList.get(1).getName())))
-                .thenReturn(Future.succeededFuture(entityList.get(1)));
+            .thenReturn(Future.succeededFuture(entityList.get(1)));
 
         Mockito.when(entityDao.getEntity(eq(schema), eq(entityList.get(1).getName())))
-                .thenReturn(Future.succeededFuture(entityList.get(1)));
+            .thenReturn(Future.succeededFuture(entityList.get(1)));
 
         alterViewDdlExecutor.execute(context, sqlNodeName, ar -> {
-                    if (ar.succeeded()) {
-                        promise.complete(ar.result());
-                    } else {
-                        promise.fail(ar.cause());
-                    }
+                if (ar.succeeded()) {
+                    promise.complete(ar.result());
+                } else {
+                    promise.fail(ar.cause());
                 }
+            }
         );
         assertTrue(promise.future().failed());
     }
 
     private void initEntityList() {
         List<EntityField> fields = Collections.singletonList(
-                EntityField.builder()
-                        .ordinalPosition(0)
-                        .name("id")
-                        .type(ColumnType.BIGINT)
-                        .nullable(false)
-                        .build());
+            EntityField.builder()
+                .ordinalPosition(0)
+                .name("id")
+                .type(ColumnType.BIGINT)
+                .nullable(false)
+                .build());
         Entity entity1 = Entity.builder()
-                .schema(schema)
-                .name("test_view")
-                .viewQuery(String.format("SELECT * FROM %s.%s", schema, "test_table"))
-                .fields(fields)
-                .entityType(EntityType.VIEW)
-                .build();
+            .schema(schema)
+            .name("test_view")
+            .viewQuery(String.format("SELECT * FROM %s.%s", schema, "test_table"))
+            .fields(fields)
+            .entityType(EntityType.VIEW)
+            .build();
         Entity entity2 = Entity.builder()
-                .schema(schema)
-                .name("test_table")
-                .fields(fields)
-                .entityType(EntityType.TABLE)
-                .build();
+            .schema(schema)
+            .name("test_table")
+            .fields(fields)
+            .entityType(EntityType.TABLE)
+            .build();
         Entity entity3 = Entity.builder()
-                .schema(schema)
-                .name("accounts")
-                .fields(fields)
-                .entityType(EntityType.TABLE)
-                .build();
+            .schema(schema)
+            .name("accounts")
+            .fields(fields)
+            .entityType(EntityType.TABLE)
+            .build();
         Entity entity4 = Entity.builder()
-                .schema(schema)
-                .name("transactions")
-                .fields(fields)
-                .entityType(EntityType.TABLE)
-                .build();
+            .schema(schema)
+            .name("transactions")
+            .fields(fields)
+            .entityType(EntityType.TABLE)
+            .build();
         entityList.add(entity1);
         entityList.add(entity2);
         entityList.add(entity3);

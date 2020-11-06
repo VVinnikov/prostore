@@ -1,6 +1,6 @@
 package io.arenadata.dtm.jdbc;
 
-import io.arenadata.dtm.jdbc.ext.DtmConnection;
+import io.arenadata.dtm.jdbc.ext.DtmConnectionImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,8 +34,8 @@ public class DtmDriver implements Driver {
         return makeConnection(url, info);
     }
 
-    private static Connection makeConnection(String url, Properties info) {
-        return new DtmConnection(dbHost(info), user(info), schema(info), info, url);
+    private static Connection makeConnection(String url, Properties info) throws SQLException {
+        return new DtmConnectionImpl(dbHost(info), user(info), schema(info), info, url);
     }
 
     private static String schema(Properties info) {

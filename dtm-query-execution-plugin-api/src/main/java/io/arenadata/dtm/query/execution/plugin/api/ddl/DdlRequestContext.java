@@ -7,6 +7,9 @@ import lombok.Data;
 import lombok.ToString;
 import org.apache.calcite.sql.SqlNode;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static io.arenadata.dtm.query.execution.plugin.api.ddl.DdlType.UNKNOWN;
 import static io.arenadata.dtm.query.execution.plugin.api.service.SqlProcessingType.DDL;
 
@@ -18,6 +21,7 @@ public class DdlRequestContext extends RequestContext<DdlRequest> {
     private String datamartName;
     private SqlNode query;
     private String systemName;
+    private List<PostSqlActionType> postActions;
 
     public DdlRequestContext(final DdlRequest request) {
         this(request, null);
@@ -28,6 +32,7 @@ public class DdlRequestContext extends RequestContext<DdlRequest> {
         this.ddlType = UNKNOWN;
         this.query = query;
         this.systemName = "local";
+        this.postActions = new ArrayList<>();
     }
 
     @Override

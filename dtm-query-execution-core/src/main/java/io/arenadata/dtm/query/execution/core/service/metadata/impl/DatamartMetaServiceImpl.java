@@ -49,21 +49,23 @@ public class DatamartMetaServiceImpl implements DatamartMetaService {
     @Override
     public void getAttributesMeta(String datamartMnemonic, String entityMnemonic, Handler<AsyncResult<List<EntityAttribute>>> resultHandler) {
         entityDao.getEntity(datamartMnemonic, entityMnemonic)
-            .onFailure(error -> resultHandler.handle(Future.failedFuture(error)))
-            .onSuccess(entity -> {
-                resultHandler.handle(Future.succeededFuture(entity.getFields().stream()
-                    .map(ef -> EntityAttribute.builder()
-                        .accuracy(ef.getAccuracy())
-                        .distributeKeykOrder(ef.getShardingOrder())
-                        .primaryKeyOrder(ef.getPrimaryOrder())
-                        .dataType(ef.getType())
-                        .length(ef.getSize())
-                        .mnemonic(ef.getName())
-                        .ordinalPosition(ef.getOrdinalPosition())
-                        .nullable(ef.getNullable())
-                        .accuracy(ef.getAccuracy())
-                        .build())
-                    .collect(Collectors.toList())));
-            });
+                .onFailure(error -> resultHandler.handle(Future.failedFuture(error)))
+                .onSuccess(entity -> {
+                    resultHandler.handle(Future.succeededFuture(entity.getFields().stream()
+                            .map(ef -> EntityAttribute.builder()
+                                    .datamartMnemonic(datamartMnemonic)
+                                    .entityMnemonic(entityMnemonic)
+                                    .accuracy(ef.getAccuracy())
+                                    .distributeKeykOrder(ef.getShardingOrder())
+                                    .primaryKeyOrder(ef.getPrimaryOrder())
+                                    .dataType(ef.getType())
+                                    .length(ef.getSize())
+                                    .mnemonic(ef.getName())
+                                    .ordinalPosition(ef.getOrdinalPosition())
+                                    .nullable(ef.getNullable())
+                                    .accuracy(ef.getAccuracy())
+                                    .build())
+                            .collect(Collectors.toList())));
+                });
     }
 }

@@ -24,6 +24,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
@@ -76,10 +77,16 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
             case ALTER_VIEW:
             case DROP_VIEW:
             case DROP_TABLE:
-                return client.executeQuery(sql.toString().replace("`", ""));
+                return client.executeQuery(sql.toString().replace("`", ""))
+                        .onFailure(this::shutdown);
             default:
                 throw new IllegalArgumentException("Sql type not supported: " + sql.getKind());
         }
+    }
+
+    private void shutdown(Throwable throwable) {
+        val exitCode = SpringApplication.exit(applicationContext, () -> 1);
+        System.exit(exitCode);
     }
 
     private Future<Void> createOrReplaceView(SqlCreateView sqlCreateView) {
@@ -89,7 +96,8 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
                     sqlCreateView.getName(),
                     sqlCreateView.getQuery().toString().replace("`", ""))));
         } else {
-            return client.executeQuery(sqlCreateView.toString().replace("`", ""));
+            return client.executeQuery(sqlCreateView.toString().replace("`", ""))
+                    .onFailure(this::shutdown);
         }
     }
 
@@ -98,7 +106,8 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
             .replace("DATABASE", "SCHEMA")
             .replace("`", "");
         schemaSql = SqlKind.DROP_SCHEMA == sql.getKind() ? schemaSql + " CASCADE" : schemaSql;
-        return client.executeQuery(schemaSql);
+        return client.executeQuery(schemaSql)
+                .onFailure(this::shutdown);
     }
 
     private Future<Void> createTable(SqlCreateTable createTable) {
@@ -125,7 +134,8 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
 
         return client.executeQuery(creatTableQuery)
             .compose(r -> client.executeQuery(createShardingKeyIndex(table, schemaTable, distributedByColumns)))
-            .compose(r -> client.executeBatch(commentQueries));
+            .compose(r -> client.executeBatch(commentQueries))
+            .onFailure(this::shutdown);
     }
 
     private String getTypeWithoutSize(String type) {

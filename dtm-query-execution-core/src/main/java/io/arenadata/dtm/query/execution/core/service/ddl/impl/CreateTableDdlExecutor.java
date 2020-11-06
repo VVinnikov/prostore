@@ -3,11 +3,13 @@ package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.QueryResult;
+import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
+import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
@@ -25,6 +27,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 @Slf4j
 @Component
@@ -33,15 +37,18 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
     private final MetadataCalciteGenerator metadataCalciteGenerator;
     private final DatamartDao datamartDao;
     private final EntityDao entityDao;
+    private final DataSourcePluginService dataSourcePluginService;
 
     @Autowired
     public CreateTableDdlExecutor(MetadataExecutor<DdlRequestContext> metadataExecutor,
                                   ServiceDbFacade serviceDbFacade,
-                                  MetadataCalciteGenerator metadataCalciteGenerator) {
+                                  MetadataCalciteGenerator metadataCalciteGenerator,
+                                  DataSourcePluginService dataSourcePluginService) {
         super(metadataExecutor, serviceDbFacade);
         this.metadataCalciteGenerator = metadataCalciteGenerator;
         datamartDao = serviceDbFacade.getServiceDbDao().getDatamartDao();
         entityDao = serviceDbFacade.getServiceDbDao().getEntityDao();
+        this.dataSourcePluginService = dataSourcePluginService;
     }
 
     @Override
@@ -53,7 +60,10 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
             SqlCreateTable sqlCreate = (SqlCreateTable) context.getQuery();
             val entity = metadataCalciteGenerator.generateTableMetadata(sqlCreate);
             entity.setEntityType(EntityType.TABLE);
-            entity.setDestination(sqlCreate.getDestination());
+            Set<SourceType> requestDestination = ((SqlCreateTable) context.getQuery()).getDestination();
+            Set<SourceType> destination = Optional.ofNullable(requestDestination)
+                    .orElse(dataSourcePluginService.getSourceTypes());
+            entity.setDestination(destination);
             checkRequiredKeys(entity.getFields());
             context.getRequest().setEntity(entity);
             context.setDatamartName(schema);

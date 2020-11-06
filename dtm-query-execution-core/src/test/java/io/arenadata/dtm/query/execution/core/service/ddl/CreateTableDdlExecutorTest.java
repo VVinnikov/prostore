@@ -4,6 +4,7 @@ import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.reader.QueryRequest;
+import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
@@ -16,7 +17,9 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDa
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.DatamartDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
+import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.ddl.impl.CreateTableDdlExecutor;
+import io.arenadata.dtm.query.execution.core.service.impl.DataSourcePluginServiceImpl;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.impl.MetadataCalciteGeneratorImpl;
@@ -37,6 +40,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -56,6 +61,7 @@ class CreateTableDdlExecutorTest {
     private final ServiceDbDao serviceDbDao = mock(ServiceDbDaoImpl.class);
     private final DatamartDao datamartDao = mock(DatamartDaoImpl.class);
     private final EntityDao entityDao = mock(EntityDaoImpl.class);
+    private final DataSourcePluginService dataSourcePluginService = mock(DataSourcePluginServiceImpl.class);
     private QueryResultDdlExecutor createTableDdlExecutor;
     private DdlRequestContext context;
     private Entity entity;
@@ -69,7 +75,14 @@ class CreateTableDdlExecutorTest {
         when(serviceDbFacade.getServiceDbDao()).thenReturn(serviceDbDao);
         when(serviceDbDao.getEntityDao()).thenReturn(entityDao);
         when(serviceDbDao.getDatamartDao()).thenReturn(datamartDao);
-        createTableDdlExecutor = new CreateTableDdlExecutor(metadataExecutor, serviceDbFacade, metadataCalciteGenerator);
+        Set<SourceType> sourceTypes = new HashSet<>();
+        sourceTypes.add(SourceType.ADB);
+        sourceTypes.add(SourceType.ADG);
+        sourceTypes.add(SourceType.ADQM);
+        when(dataSourcePluginService.getSourceTypes()).thenReturn(sourceTypes);
+        when(dataSourcePluginService.getSourceTypes()).thenReturn(sourceTypes);
+        createTableDdlExecutor = new CreateTableDdlExecutor(metadataExecutor, serviceDbFacade, metadataCalciteGenerator,
+                dataSourcePluginService);
 
         schema = "shares";
         final QueryRequest queryRequest = new QueryRequest();

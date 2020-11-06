@@ -19,7 +19,6 @@ import io.vertx.core.json.JsonArray;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import lombok.var;
-import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
@@ -66,52 +65,52 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     }
 
     @Override
-    public void update(SqlCall sql) {
+    public Future<Void> update(SqlNode sql) {
         switch (sql.getKind()) {
             case CREATE_TABLE:
-                createTable((SqlCreateTable) sql);
-                return;
+                return createTable((SqlCreateTable) sql);
             case CREATE_SCHEMA:
             case DROP_SCHEMA:
-                createOrDropSchema(sql);
-                return;
+                return createOrDropSchema(sql);
             case CREATE_VIEW:
-                createOrReplaceView((SqlCreateView) sql);
-                return;
+                return createOrReplaceView((SqlCreateView) sql);
             case ALTER_VIEW:
             case DROP_VIEW:
             case DROP_TABLE:
-                client.executeQuery(sql.toString().replace("`", ""))
-                    .onFailure(this::shutdown);
-                return;
+                return client.executeQuery(sql.toString().replace("`", ""))
+                        .onFailure(this::shutdown);
             default:
                 throw new IllegalArgumentException("Sql type not supported: " + sql.getKind());
         }
     }
 
-    private void createOrReplaceView(SqlCreateView sqlCreateView) {
+    private void shutdown(Throwable throwable) {
+        val exitCode = SpringApplication.exit(applicationContext, () -> 1);
+        System.exit(exitCode);
+    }
+
+    private Future<Void> createOrReplaceView(SqlCreateView sqlCreateView) {
         if (sqlCreateView.getReplace()) {
-            client.executeQuery(String.format(InformationSchemaUtils.DROP_VIEW, sqlCreateView.getName()))
+            return client.executeQuery(String.format(InformationSchemaUtils.DROP_VIEW, sqlCreateView.getName()))
                 .compose(v -> client.executeQuery(String.format(InformationSchemaUtils.CREATE_VIEW,
                     sqlCreateView.getName(),
-                    sqlCreateView.getQuery().toString().replace("`", ""))))
-                .onFailure(this::shutdown);
+                    sqlCreateView.getQuery().toString().replace("`", ""))));
         } else {
-            client.executeQuery(sqlCreateView.toString().replace("`", ""))
-                .onFailure(this::shutdown);
+            return client.executeQuery(sqlCreateView.toString().replace("`", ""))
+                    .onFailure(this::shutdown);
         }
     }
 
-    private void createOrDropSchema(SqlCall sql) {
+    private Future<Void> createOrDropSchema(SqlNode sql) {
         var schemaSql = sql.toString()
             .replace("DATABASE", "SCHEMA")
             .replace("`", "");
         schemaSql = SqlKind.DROP_SCHEMA == sql.getKind() ? schemaSql + " CASCADE" : schemaSql;
-        client.executeQuery(schemaSql)
-            .onFailure(this::shutdown);
+        return client.executeQuery(schemaSql)
+                .onFailure(this::shutdown);
     }
 
-    private void createTable(SqlCreateTable createTable) {
+    private Future<Void> createTable(SqlCreateTable createTable) {
         val distributedByColumns = createTable.getDistributedBy().getDistributedBy().getList().stream()
             .map(SqlNode::toString)
             .collect(Collectors.toList());
@@ -133,15 +132,10 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
                 }
             });
 
-        client.executeQuery(creatTableQuery)
+        return client.executeQuery(creatTableQuery)
             .compose(r -> client.executeQuery(createShardingKeyIndex(table, schemaTable, distributedByColumns)))
             .compose(r -> client.executeBatch(commentQueries))
             .onFailure(this::shutdown);
-    }
-
-    private void shutdown(Throwable throwable) {
-        val exitCode = SpringApplication.exit(applicationContext, () -> 1);
-        System.exit(exitCode);
     }
 
     private String getTypeWithoutSize(String type) {

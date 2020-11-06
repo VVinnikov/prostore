@@ -13,4 +13,6 @@ public interface DdlService<T> extends DatamartExecutionService<DdlRequestContex
     }
 
     void addExecutor(DdlExecutor<T> executor);
+
+    default void addPostExecutor(DdlPostExecutor executor) {}
 }

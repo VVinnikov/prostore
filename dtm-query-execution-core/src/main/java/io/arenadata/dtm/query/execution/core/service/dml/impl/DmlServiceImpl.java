@@ -22,6 +22,7 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
         this.executorMap = new HashMap<>();
     }
 
+    @Override
     public void execute(DmlRequestContext context, Handler<AsyncResult<QueryResult>> handler) {
         executorMap.get(context.getQuery().getKind()).execute(context, handler);
     }

@@ -7,10 +7,9 @@ import io.arenadata.dtm.common.reader.QuerySourceRequest;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
-import io.arenadata.dtm.query.execution.core.service.TargetDatabaseDefinitionService;
-import io.arenadata.dtm.query.execution.core.service.dml.ColumnMetadataService;
-import io.arenadata.dtm.query.execution.core.service.dml.InformationSchemaExecutor;
-import io.arenadata.dtm.query.execution.core.service.dml.LogicViewReplacer;
+import io.arenadata.dtm.query.execution.core.service.dml.*;
+import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
+import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.api.dml.DmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
@@ -18,11 +17,14 @@ import io.arenadata.dtm.query.execution.plugin.api.service.dml.DmlExecutor;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.apache.calcite.sql.SqlKind;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
@@ -33,6 +35,8 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
     private final LogicViewReplacer logicViewReplacer;
     private final ColumnMetadataService columnMetadataService;
     private final InformationSchemaExecutor informationSchemaExecutor;
+    private final InformationSchemaDefinitionService informationSchemaDefinitionService;
+    private final LogicalSchemaProvider logicalSchemaProvider;
 
     @Autowired
     public LlrDmlExecutor(DataSourcePluginService dataSourcePluginService,
@@ -40,13 +44,17 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                           DeltaQueryPreprocessor deltaQueryPreprocessor,
                           LogicViewReplacer logicViewReplacer,
                           ColumnMetadataService columnMetadataService,
-                          InformationSchemaExecutor informationSchemaExecutor) {
+                          InformationSchemaExecutor informationSchemaExecutor,
+                          InformationSchemaDefinitionService informationSchemaDefinitionService,
+                          LogicalSchemaProvider logicalSchemaProvider) {
         this.dataSourcePluginService = dataSourcePluginService;
         this.targetDatabaseDefinitionService = targetDatabaseDefinitionService;
         this.deltaQueryPreprocessor = deltaQueryPreprocessor;
         this.logicViewReplacer = logicViewReplacer;
         this.informationSchemaExecutor = informationSchemaExecutor;
         this.columnMetadataService = columnMetadataService;
+        this.informationSchemaDefinitionService = informationSchemaDefinitionService;
+        this.logicalSchemaProvider = logicalSchemaProvider;
     }
 
     @Override
@@ -56,22 +64,23 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
             val sourceRequest = new QuerySourceRequest(queryRequest, queryRequest.getSourceType());
             logicViewReplace(sourceRequest.getQueryRequest())
                     .compose(deltaQueryPreprocessor::process)
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            sourceRequest.setQueryRequest(ar.result());
-                            setTargetSourceAndExecute(sourceRequest, asyncResultHandler);
-                        } else {
-                            asyncResultHandler.handle(Future.failedFuture(ar.cause()));
-                        }
-                    });
+                    .map(request -> {
+                        sourceRequest.setQueryRequest(request);
+                        return request;
+                    })
+                    .compose(v -> informationSchemaDefinitionService.tryGetInformationSchemaRequest(sourceRequest))
+                    .compose(v -> getLogicalSchema(sourceRequest))
+                    .compose(logicalSchema -> initColumnMetaData(logicalSchema, sourceRequest))
+                    .compose(this::executeRequest)
+                    .onComplete(asyncResultHandler);
         } catch (Exception e) {
             asyncResultHandler.handle(Future.failedFuture(e));
         }
     }
 
-    @Override
-    public SqlKind getSqlKind() {
-        return SqlKind.SELECT;
+    private Future<List<Datamart>> getLogicalSchema(QuerySourceRequest request) {
+        return Future.future((Promise<List<Datamart>> promise) ->
+                logicalSchemaProvider.getSchema(request.getQueryRequest(), promise));
     }
 
     private Future<QueryRequest> logicViewReplace(QueryRequest request) {
@@ -86,17 +95,30 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
         }));
     }
 
-    private void setTargetSourceAndExecute(QuerySourceRequest request,
-                                           Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-        targetDatabaseDefinitionService.getTargetSource(request, ar -> {
-            if (ar.succeeded()) {
-                QuerySourceRequest querySourceRequest = ar.result();
-                initColumnMetaData(querySourceRequest)
-                    .compose(v -> querySourceRequest.getQueryRequest().getSourceType() == SourceType.INFORMATION_SCHEMA
-                            ? informationSchemaExecute(querySourceRequest) : pluginExecute(querySourceRequest))
-                    .onComplete(asyncResultHandler);
+    private Future<QuerySourceRequest> initColumnMetaData(List<Datamart> logicalSchema, QuerySourceRequest request) {
+        return Future.future(p -> {
+            request.setLogicalSchema(logicalSchema);
+            val parserRequest = new QueryParserRequest(request.getQueryRequest(), request.getLogicalSchema());
+            columnMetadataService.getColumnMetadata(parserRequest, ar -> {
+                if (ar.succeeded()) {
+                    request.setMetadata(ar.result());
+                    p.complete(request);
+                } else {
+                    p.fail(ar.cause());
+                }
+            });
+        });
+    }
+
+    private Future<QueryResult> executeRequest(QuerySourceRequest sourceRequest) {
+        return Future.future(promise -> {
+            if (sourceRequest.getSourceType() == SourceType.INFORMATION_SCHEMA) {
+                informationSchemaExecute(sourceRequest)
+                        .onComplete(promise);
             } else {
-                asyncResultHandler.handle(Future.failedFuture(ar.cause()));
+                defineTargetSourceType(sourceRequest)
+                        .compose(this::pluginExecute)
+                        .onComplete(promise);
             }
         });
     }
@@ -105,26 +127,25 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
         return Future.future(p -> informationSchemaExecutor.execute(querySourceRequest, p));
     }
 
+    private Future<QuerySourceRequest> defineTargetSourceType(QuerySourceRequest sourceRequest) {
+        return Future.future(promise -> targetDatabaseDefinitionService.getTargetSource(sourceRequest, promise));
+    }
+
     @SneakyThrows
     private Future<QueryResult> pluginExecute(QuerySourceRequest request) {
         return Future.future(p -> dataSourcePluginService.llr(
                 request.getQueryRequest().getSourceType(),
                 new LlrRequestContext(
-                        new LlrRequest(request.getQueryRequest(), request.getLogicalSchema(), request.getMetadata())),
+                        new LlrRequest(
+                                request.getQueryRequest(),
+                                request.getLogicalSchema(),
+                                request.getMetadata())
+                ),
                 p));
     }
 
-    private Future<Void> initColumnMetaData(QuerySourceRequest request) {
-        return Future.future(p -> {
-            val parserRequest = new QueryParserRequest(request.getQueryRequest(), request.getLogicalSchema());
-            columnMetadataService.getColumnMetadata(parserRequest, ar -> {
-                if (ar.succeeded()) {
-                    request.setMetadata(ar.result());
-                    p.complete();
-                } else {
-                    p.fail(ar.cause());
-                }
-            });
-        });
+    @Override
+    public SqlKind getSqlKind() {
+        return SqlKind.SELECT;
     }
 }

@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.service.dml.impl;
+package io.arenadata.dtm.query.execution.core.service.dml;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
@@ -12,6 +12,9 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDa
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
 import io.arenadata.dtm.query.execution.core.service.InformationSchemaService;
+import io.arenadata.dtm.query.execution.core.service.dml.impl.DatamartViewWrapLoaderImpl;
+import io.arenadata.dtm.query.execution.core.service.dml.impl.LogicViewReplacerImpl;
+import io.arenadata.dtm.query.execution.core.service.dml.impl.SqlSnapshotReplacerImpl;
 import io.arenadata.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
 import io.arenadata.dtm.query.execution.core.service.impl.InformationSchemaServiceImpl;
 import io.vertx.core.Future;

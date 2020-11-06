@@ -55,8 +55,8 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
             context.setDatamartName(schema);
             context.setDdlType(DdlType.DROP_TABLE);
             dropTable(context, containsIfExistsCheck(context.getRequest().getQueryRequest().getSql()))
-                .onSuccess(r -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
-                .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
+                    .onSuccess(r -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
+                    .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
         } catch (Exception e) {
             log.error("Error deleting table!", e);
             handler.handle(Future.failedFuture(e));
@@ -69,9 +69,9 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
 
     protected Future<Void> dropTable(DdlRequestContext context, boolean ifExists) {
         return getEntity(context, ifExists)
-            .compose(entity -> Optional.ofNullable(entity)
-                    .map(e -> updateEntity(context, e))
-                    .orElse(Future.succeededFuture()));
+                .compose(entity -> Optional.ofNullable(entity)
+                        .map(e -> updateEntity(context, e))
+                        .orElse(Future.succeededFuture()));
     }
 
     private boolean containsIfExistsCheck(String sql) {
@@ -83,30 +83,30 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
             val entityName = context.getRequest().getEntity().getName();
             val datamartName = context.getDatamartName();
             entityDao.getEntity(datamartName, entityName)
-                .onSuccess(entity -> {
-                    if (EntityType.TABLE == entity.getEntityType()) {
-                        entityPromise.complete(entity);
-                    } else {
-                        val errMsg = String.format("Table [%s] in datamart [%s] doesn't exist!", entityName, datamartName);
-                        log.error(errMsg);
-                        entityPromise.fail(errMsg);
-                    }
-                })
-                .onFailure(error -> {
-                    if (error instanceof EntityNotExistsException && ifExists) {
-                        entityPromise.complete(null);
-                    } else {
-                        log.error("Table [{}] in datamart [{}] doesn't exist!",
-                            entityName,
-                            datamartName, error);
-                        entityPromise.fail(error);
-                    }
-                });
+                    .onSuccess(entity -> {
+                        if (EntityType.TABLE == entity.getEntityType()) {
+                            entityPromise.complete(entity);
+                        } else {
+                            val errMsg = String.format("Table [%s] in datamart [%s] doesn't exist!",
+                                    entityName, datamartName);
+                            log.error(errMsg);
+                            entityPromise.fail(errMsg);
+                        }
+                    })
+                    .onFailure(error -> {
+                        if (error instanceof EntityNotExistsException && ifExists) {
+                            entityPromise.complete(null);
+                        } else {
+                            log.error("Table [{}] in datamart [{}] doesn't exist!",
+                                    entityName,
+                                    datamartName, error);
+                            entityPromise.fail(error);
+                        }
+                    });
         });
     }
 
-    private Future<Void> updateEntity(DdlRequestContext context, Entity entity)
-    {
+    private Future<Void> updateEntity(DdlRequestContext context, Entity entity) {
         Set<SourceType> entityDestination = entity.getDestination();
         Set<SourceType> requestDestination = Optional.ofNullable(((SqlDropTable) context.getQuery()).getDestination())
                 .orElse(entityDestination);
@@ -131,7 +131,7 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
                     });
         } else {
             return Future.failedFuture(
-                    new IllegalArgumentException(String.format("%s doesn't exist in %s", entity.getName(),
+                    new IllegalArgumentException(String.format("Table [%s] doesn't exist in [%s]", entity.getName(),
                             notExistDestination)));
         }
     }
@@ -142,8 +142,8 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
                 metaPromise.complete();
             } else {
                 log.error("Error deleting table [{}], datamart [{}] in datasources!",
-                    context.getRequest().getEntity().getName(),
-                    context.getDatamartName(), ar.cause());
+                        context.getRequest().getEntity().getName(),
+                        context.getDatamartName(), ar.cause());
                 metaPromise.fail(ar.cause());
             }
         }));
@@ -155,7 +155,7 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
         return SqlKind.DROP_TABLE;
     }
 
-    public List<PostSqlActionType> getPostActions(){
+    public List<PostSqlActionType> getPostActions() {
         return Collections.singletonList(PostSqlActionType.PUBLISH_STATUS);
-    };
+    }
 }

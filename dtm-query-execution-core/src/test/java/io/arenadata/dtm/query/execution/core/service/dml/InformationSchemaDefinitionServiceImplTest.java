@@ -4,7 +4,6 @@ import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QuerySourceRequest;
-import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.service.InformationSchemaService;
 import io.arenadata.dtm.query.execution.core.service.dml.impl.InformationSchemaDefinitionServiceImpl;
 import io.arenadata.dtm.query.execution.core.service.impl.InformationSchemaServiceImpl;
@@ -14,7 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -53,13 +52,13 @@ class InformationSchemaDefinitionServiceImplTest {
         informationSchemaDefinitionService.tryGetInformationSchemaRequest(sourceRequest)
                 .onComplete(handler -> {
                     if (handler.succeeded()) {
-                        promise.complete(handler.result().getSourceType());
+                        promise.complete(handler.result());
                     } else {
                         promise.fail(handler.cause());
                     }
                 });
         assertTrue(promise.future().succeeded());
-        assertEquals(SourceType.INFORMATION_SCHEMA, promise.future().result());
+        assertTrue(((Optional<QuerySourceRequest>)promise.future().result()).isPresent());
     }
 
     @Test
@@ -81,7 +80,7 @@ class InformationSchemaDefinitionServiceImplTest {
         informationSchemaDefinitionService.tryGetInformationSchemaRequest(sourceRequest)
                 .onComplete(handler -> {
                     if (handler.succeeded()) {
-                        promise.complete(handler.result().getSourceType());
+                        promise.complete(handler.result());
                     } else {
                         promise.fail(handler.cause());
                     }
@@ -106,13 +105,13 @@ class InformationSchemaDefinitionServiceImplTest {
         informationSchemaDefinitionService.tryGetInformationSchemaRequest(sourceRequest)
                 .onComplete(handler -> {
                     if (handler.succeeded()) {
-                        promise.complete(handler.result().getSourceType());
+                        promise.complete(handler.result());
                     } else {
                         promise.fail(handler.cause());
                     }
                 });
         assertTrue(promise.future().succeeded());
-        assertEquals(sourceRequest.getSourceType(), promise.future().result());
+        assertFalse(((Optional<QuerySourceRequest>)promise.future().result()).isPresent());
     }
 
 }

@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -28,7 +29,7 @@ public class InformationSchemaDefinitionServiceImpl implements InformationSchema
     }
 
     @Override
-    public Future<QuerySourceRequest> tryGetInformationSchemaRequest(QuerySourceRequest request) {
+    public Future<Optional<QuerySourceRequest>> tryGetInformationSchemaRequest(QuerySourceRequest request) {
         return Future.future(promise -> {
             if (isInformationSchemaRequest(request)) {
                 val queryRequestWithSourceType = request.getQueryRequest().copy();
@@ -39,9 +40,9 @@ public class InformationSchemaDefinitionServiceImpl implements InformationSchema
                 result.setLogicalSchema(Collections.singletonList(
                         new Datamart(InformationSchemaView.DTM_SCHEMA_NAME, true,
                                 new ArrayList<>(informationSchemaService.getEntities().values()))));
-                promise.complete(result);
+                promise.complete(Optional.of(result));
             } else {
-                promise.complete(request);
+                promise.complete(Optional.empty());
             }
         });
     }

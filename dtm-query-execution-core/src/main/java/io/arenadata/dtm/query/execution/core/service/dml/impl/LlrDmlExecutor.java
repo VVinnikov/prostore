@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
@@ -69,18 +70,13 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                         return request;
                     })
                     .compose(v -> informationSchemaDefinitionService.tryGetInformationSchemaRequest(sourceRequest))
-                    .compose(v -> getLogicalSchema(sourceRequest))
-                    .compose(logicalSchema -> initColumnMetaData(logicalSchema, sourceRequest))
+                    .compose(request -> initLogicalSchema(request, sourceRequest))
+                    .compose(this::initColumnMetaData)
                     .compose(this::executeRequest)
                     .onComplete(asyncResultHandler);
         } catch (Exception e) {
             asyncResultHandler.handle(Future.failedFuture(e));
         }
-    }
-
-    private Future<List<Datamart>> getLogicalSchema(QuerySourceRequest request) {
-        return Future.future((Promise<List<Datamart>> promise) ->
-                logicalSchemaProvider.getSchema(request.getQueryRequest(), promise));
     }
 
     private Future<QueryRequest> logicViewReplace(QueryRequest request) {
@@ -95,9 +91,28 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
         }));
     }
 
-    private Future<QuerySourceRequest> initColumnMetaData(List<Datamart> logicalSchema, QuerySourceRequest request) {
+    private Future<QuerySourceRequest> initLogicalSchema(Optional<QuerySourceRequest> infoSchemaRequest,
+                                                         QuerySourceRequest sourceRequest) {
+        if (infoSchemaRequest.isPresent()) {
+            return Future.succeededFuture(infoSchemaRequest.get());
+        } else {
+            return getLogicalSchema(sourceRequest)
+                    .map(logicalSchema -> {
+                        sourceRequest.setLogicalSchema(logicalSchema);
+                        return sourceRequest;
+                    });
+        }
+    }
+
+    private Future<List<Datamart>> getLogicalSchema(QuerySourceRequest sourceRequest) {
+        return Future.future((Promise<List<Datamart>> promise) -> {
+            final QueryRequest queryRequest = sourceRequest.getQueryRequest();
+            logicalSchemaProvider.getSchema(queryRequest, promise);
+        });
+    }
+
+    private Future<QuerySourceRequest> initColumnMetaData(QuerySourceRequest request) {
         return Future.future(p -> {
-            request.setLogicalSchema(logicalSchema);
             val parserRequest = new QueryParserRequest(request.getQueryRequest(), request.getLogicalSchema());
             columnMetadataService.getColumnMetadata(parserRequest, ar -> {
                 if (ar.succeeded()) {

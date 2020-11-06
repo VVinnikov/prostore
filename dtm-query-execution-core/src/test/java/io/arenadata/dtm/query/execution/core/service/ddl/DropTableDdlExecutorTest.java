@@ -5,6 +5,7 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.QueryRequest;
+import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
@@ -37,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -87,6 +89,7 @@ class DropTableDdlExecutorTest {
         String sqlNodeName = "accounts";
         Entity entity = new Entity(sqlNodeName, schema, Arrays.asList(f1, f2));
         entity.setEntityType(EntityType.TABLE);
+        entity.setDestination(Collections.singleton(SourceType.ADB));
         context.getRequest().setEntity(entity);
     }
 
@@ -112,8 +115,8 @@ class DropTableDdlExecutorTest {
             } else {
                 promise.fail(ar.cause());
             }
+            assertNotNull(promise.future().result());
         });
-        assertNotNull(promise.future().result());
     }
 
     @Test

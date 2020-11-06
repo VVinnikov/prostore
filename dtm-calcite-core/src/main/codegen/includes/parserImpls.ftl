@@ -477,10 +477,13 @@ SqlDrop SqlDropTable(Span s, boolean replace) :
 {
     final boolean ifExists;
     final SqlIdentifier id;
+    SqlNodeList destination = null;
 }
 {
-    <TABLE> ifExists = IfExistsOpt() id = CompoundIdentifier() {
-        return SqlDdlNodes.dropTable(s.end(this), ifExists, id);
+    <TABLE> ifExists = IfExistsOpt() id = CompoundIdentifier()
+    [ <DATASOURCE_TYPE> destination = ParenthesizedSimpleIdentifierList() ]
+    {
+        return new SqlDropTable(s.end(this), ifExists, id, destination);
     }
 }
 SqlDrop DropDatabase(Span s, boolean replace) :

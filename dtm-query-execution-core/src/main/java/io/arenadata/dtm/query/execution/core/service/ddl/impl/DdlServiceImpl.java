@@ -66,8 +66,7 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
         }
     }
 
-    private Future<Void> executePostAction(PostSqlActionType postType, DdlRequestContext context)
-    {
+    private Future<Void> executePostAction(PostSqlActionType postType, DdlRequestContext context) {
         return Optional.ofNullable(postExecutorMap.get(postType))
                 .map(postExecutor -> postExecutor.execute(context))
                 .orElse(Future.failedFuture(String.format("Not supported DDL post executor type [%s]", postType)));

@@ -12,7 +12,6 @@ import io.vertx.core.*;
 import lombok.val;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -23,15 +22,12 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
 
     private final DataSourcePluginService pluginService;
     private final EntityDao entityDao;
-    private final Set<SourceType> activePlugins;
 
     @Autowired
     public TargetDatabaseDefinitionServiceImpl(DataSourcePluginService pluginService,
-                                               EntityDao entityDao,
-                                               @Value("${core.plugins.active}") String activePlugins) {
+                                               EntityDao entityDao) {
         this.pluginService = pluginService;
         this.entityDao = entityDao;
-        this.activePlugins = getActivePlugins(activePlugins);
     }
 
     @Override
@@ -50,7 +46,6 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
                 })
                 .onComplete(handler);
     }
-
 
     private Future<List<Entity>> getEntitiesSourceTypes(QuerySourceRequest request) {
         return Future.future(promise -> {
@@ -97,9 +92,9 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
         final Set<SourceType> stResult = new HashSet<>();
         entities.forEach(e -> {
             if (stResult.isEmpty()) {
-                stResult.addAll(getSourceTypesOrDefault(e.getDestination()));
+                stResult.addAll(e.getDestination());
             } else {
-                final List<SourceType> newStResult = getSourceTypesOrDefault(e.getDestination()).stream()
+                final List<SourceType> newStResult = e.getDestination().stream()
                         .filter(stResult::contains)
                         .collect(Collectors.toList());
                 stResult.clear();
@@ -107,10 +102,6 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
             }
         });
         return stResult;
-    }
-
-    private Set<SourceType> getSourceTypesOrDefault(Set<SourceType> sourceTypes) {
-        return sourceTypes == null ? this.activePlugins : sourceTypes;
     }
 
     private Future<SourceType> getTargetSourceByCalcQueryCost(Set<SourceType> sourceTypes, QuerySourceRequest request) {
@@ -146,9 +137,5 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
                 }
             });
         });
-    }
-
-    private Set<SourceType> getActivePlugins(String activePlugins) {
-        return SourceType.getFromStringWithDelim(activePlugins, ",");
     }
 }

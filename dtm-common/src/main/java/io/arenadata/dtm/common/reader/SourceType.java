@@ -36,10 +36,4 @@ public enum SourceType {
                 .filter(st -> st != SourceType.INFORMATION_SCHEMA)
                 .collect(Collectors.toSet());
     }
-
-    public static Set<SourceType> getFromStringWithDelim(String types, String delimiter) {
-        return Arrays.stream(types.split(delimiter))
-                .map(p -> SourceType.valueOfAvailable(p.trim()))
-                .collect(Collectors.toSet());
-    }
 }

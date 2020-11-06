@@ -41,8 +41,7 @@ class TargetDatabaseDefinitionServiceImplTest {
     @BeforeEach
     void setUp() {
         targetDatabaseDefinitionService = new TargetDatabaseDefinitionServiceImpl(dataSourcePluginService,
-                entityDao,
-                "ADB, ADG, ADQM");
+                entityDao);
     }
 
     @Test
@@ -265,7 +264,7 @@ class TargetDatabaseDefinitionServiceImplTest {
                 "ON t2.id = t1.id JOIN dtm_2.table_3 t3 ON t3.id = t2.id");
         List<Datamart> schema = createLogicalSchema();
         schema.get(1).getEntities().get(0)
-                .setDestination(null);
+                .setDestination(new HashSet<>(Arrays.asList(SourceType.ADB, SourceType.ADG, SourceType.ADQM)));
 
         final Integer adbQueryCost = 0;
         final Integer adgQueryCost = 0;
@@ -375,6 +374,7 @@ class TargetDatabaseDefinitionServiceImplTest {
                         .name("table_1")
                         .schema("dtm_1")
                         .entityType(EntityType.TABLE)
+                        .destination(new HashSet<>(Arrays.asList(SourceType.ADB, SourceType.ADG, SourceType.ADQM)))
                         .fields(Arrays.asList(EntityField.builder()
                                         .name("id")
                                         .nullable(false)
@@ -394,6 +394,7 @@ class TargetDatabaseDefinitionServiceImplTest {
                         .name("table_2")
                         .schema("dtm_1")
                         .entityType(EntityType.TABLE)
+                        .destination(new HashSet<>(Arrays.asList(SourceType.ADB, SourceType.ADG, SourceType.ADQM)))
                         .fields(Arrays.asList(EntityField.builder()
                                         .name("id")
                                         .nullable(false)

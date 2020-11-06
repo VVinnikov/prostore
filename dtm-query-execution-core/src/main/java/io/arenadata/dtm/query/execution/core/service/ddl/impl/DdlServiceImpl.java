@@ -51,9 +51,7 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
                     } else {
                         handler.handle(Future.failedFuture(ddlAr.cause()));
                     }
-                    CompositeFuture.join(context.getPostActions().stream()
-                            .map(postType -> executePostAction(postType, context))
-                            .collect(Collectors.toList()));
+                    executePostActions(context);
                 });
             } else {
                 String error = String.format("Not supported DDL query type [%s]", context.getQuery());
@@ -66,10 +64,14 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
         }
     }
 
-    private Future<Void> executePostAction(PostSqlActionType postType, DdlRequestContext context) {
-        return Optional.ofNullable(postExecutorMap.get(postType))
-                .map(postExecutor -> postExecutor.execute(context))
-                .orElse(Future.failedFuture(String.format("Not supported DDL post executor type [%s]", postType)));
+    private void executePostActions(DdlRequestContext context) {
+        CompositeFuture.join(context.getPostActions().stream()
+                .map(postType -> Optional.ofNullable(postExecutorMap.get(postType))
+                        .map(postExecutor -> postExecutor.execute(context))
+                        .orElse(Future.failedFuture(String.format("Not supported DDL post executor type [%s]",
+                                postType))))
+                .collect(Collectors.toList()))
+                .onFailure(error -> log.error(error.getMessage()));
     }
 
     private SqlCall getSqlCall(SqlNode sqlNode) {

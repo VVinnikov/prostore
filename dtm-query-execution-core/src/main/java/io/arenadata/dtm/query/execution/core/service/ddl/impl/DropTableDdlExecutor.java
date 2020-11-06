@@ -3,6 +3,8 @@ package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.QueryResult;
+import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlDropTable;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.exception.entity.EntityNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
@@ -11,6 +13,7 @@ import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlType;
+import io.arenadata.dtm.query.execution.plugin.api.ddl.PostSqlActionType;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -21,6 +24,9 @@ import org.apache.calcite.sql.SqlKind;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -63,7 +69,9 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
 
     protected Future<Void> dropTable(DdlRequestContext context, boolean ifExists) {
         return getEntity(context, ifExists)
-            .compose(entity -> dropEntityIfExists(context, entity));
+            .compose(entity -> Optional.ofNullable(entity)
+                    .map(e -> updateEntity(context, e))
+                    .orElse(Future.succeededFuture()));
     }
 
     private boolean containsIfExistsCheck(String sql) {
@@ -97,12 +105,34 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
         });
     }
 
-    private Future<Void> dropEntityIfExists(DdlRequestContext context, Entity entity) {
-        if (entity != null) {
+    private Future<Void> updateEntity(DdlRequestContext context, Entity entity)
+    {
+        Set<SourceType> entityDestination = entity.getDestination();
+        Set<SourceType> requestDestination = Optional.ofNullable(((SqlDropTable) context.getQuery()).getDestination())
+                .orElse(entityDestination);
+        context.getRequest().getEntity().setDestination(requestDestination);
+        String notExistDestination = requestDestination.stream()
+                .filter(type -> !entityDestination.contains(type))
+                .map(SourceType::name)
+                .collect(Collectors.joining(", "));
+        if (notExistDestination.isEmpty()) {
             return dropEntityFromPlugins(context)
-                .compose(r -> entityDao.deleteEntity(context.getDatamartName(), entity.getName()));
+                    .compose(r -> {
+                        entity.setDestination(entityDestination.stream()
+                                .filter(sourceType -> !requestDestination.contains(sourceType))
+                                .collect(Collectors.toSet()));
+
+                        if (entity.getDestination().isEmpty()) {
+                            context.getPostActions().add(PostSqlActionType.UPDATE_INFORMATION_SCHEMA);
+                            return entityDao.deleteEntity(context.getDatamartName(), entity.getName());
+                        } else {
+                            return entityDao.updateEntity(entity);
+                        }
+                    });
         } else {
-            return Future.succeededFuture();
+            return Future.failedFuture(
+                    new IllegalArgumentException(String.format("%s doesn't exist in %s", entity.getName(),
+                            notExistDestination)));
         }
     }
 
@@ -124,4 +154,8 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
     public SqlKind getSqlKind() {
         return SqlKind.DROP_TABLE;
     }
+
+    public List<PostSqlActionType> getPostActions(){
+        return Collections.singletonList(PostSqlActionType.PUBLISH_STATUS);
+    };
 }

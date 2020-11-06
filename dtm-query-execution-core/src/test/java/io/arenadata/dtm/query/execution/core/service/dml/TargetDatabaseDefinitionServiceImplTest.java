@@ -40,7 +40,9 @@ class TargetDatabaseDefinitionServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        targetDatabaseDefinitionService = new TargetDatabaseDefinitionServiceImpl(dataSourcePluginService, entityDao);
+        targetDatabaseDefinitionService = new TargetDatabaseDefinitionServiceImpl(dataSourcePluginService,
+                entityDao,
+                "ADB, ADG, ADQM");
     }
 
     @Test

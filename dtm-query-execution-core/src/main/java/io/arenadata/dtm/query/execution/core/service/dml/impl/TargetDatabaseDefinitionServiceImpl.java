@@ -12,6 +12,7 @@ import io.vertx.core.*;
 import lombok.val;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -20,15 +21,17 @@ import java.util.stream.Collectors;
 @Service
 public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefinitionService {
 
-
     private final DataSourcePluginService pluginService;
     private final EntityDao entityDao;
+    private final Set<SourceType> activePlugins;
 
     @Autowired
     public TargetDatabaseDefinitionServiceImpl(DataSourcePluginService pluginService,
-                                               EntityDao entityDao) {
+                                               EntityDao entityDao,
+                                               @Value("${core.plugins.active}") String activePlugins) {
         this.pluginService = pluginService;
         this.entityDao = entityDao;
+        this.activePlugins = getActivePlugins(activePlugins);
     }
 
     @Override
@@ -107,7 +110,7 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
     }
 
     private Set<SourceType> getSourceTypesOrDefault(Set<SourceType> sourceTypes) {
-        return sourceTypes == null ? SourceType.pluginsSourceTypes() : sourceTypes;
+        return sourceTypes == null ? this.activePlugins : sourceTypes;
     }
 
     private Future<SourceType> getTargetSourceByCalcQueryCost(Set<SourceType> sourceTypes, QuerySourceRequest request) {
@@ -143,5 +146,9 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
                 }
             });
         });
+    }
+
+    private Set<SourceType> getActivePlugins(String activePlugins) {
+        return SourceType.getFromStringWithDelim(activePlugins, ",");
     }
 }

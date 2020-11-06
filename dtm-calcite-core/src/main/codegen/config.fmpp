@@ -55,6 +55,7 @@ data: {
       "GET_DELTA_HOT"
       "GET_DELTA_BY_DATETIME"
       "GET_DELTA_BY_NUM"
+      "DATASOURCE_TYPE"
     ]
 
     # List of keywords from "keywords" section that are not reserved.

@@ -249,15 +249,17 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     SqlNodeList tableElementList = null;
     SqlNode query = null;
     SqlNodeList distributedBy = null;
+    SqlNodeList destination = null;
 }
 {
     <TABLE> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
     [ tableElementList = TableElementList() ]
     [ <DISTRIBUTED> <BY> distributedBy = ParenthesizedSimpleIdentifierList() ]
     [ <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) ]
+    [ <DATASOURCE_TYPE> destination = ParenthesizedSimpleIdentifierList() ]
     {
         return new SqlCreateTable(s.end(this), replace, ifNotExists, id,
-            tableElementList, query, distributedBy);
+            tableElementList, query, distributedBy, destination);
     }
 }
 SqlCreate SqlCreateDownloadExternalTable(Span s, boolean replace) :

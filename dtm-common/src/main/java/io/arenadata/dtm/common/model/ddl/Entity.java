@@ -1,10 +1,12 @@
 package io.arenadata.dtm.common.model.ddl;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.arenadata.dtm.common.reader.SourceType;
 import lombok.*;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Physical model of the service database table
@@ -27,7 +29,7 @@ public class Entity implements Serializable, Cloneable {
     private String externalTableLocationPath;
     private Integer externalTableDownloadChunkSize;
     private Integer externalTableUploadMessageLimit;
-    private List<String> destination;
+    private Set<SourceType> destination;
     private List<EntityField> fields;
 
     public Entity(String nameWithSchema, List<EntityField> fields) {

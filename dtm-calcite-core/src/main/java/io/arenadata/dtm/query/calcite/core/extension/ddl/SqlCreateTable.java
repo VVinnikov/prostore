@@ -1,27 +1,43 @@
 package io.arenadata.dtm.query.calcite.core.extension.ddl;
 
+import io.arenadata.dtm.common.reader.SourceType;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.ImmutableNullableList;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class SqlCreateTable extends SqlCreate {
 	private final SqlIdentifier name;
 	private final SqlNodeList columnList;
 	private final SqlNode query;
 	private final DistributedOperator distributedBy;
+	private final Set<SourceType> destination;
 
 	private static final SqlOperator OPERATOR =
 			new SqlSpecialOperator("CREATE TABLE", SqlKind.CREATE_TABLE);
 
-	public SqlCreateTable(SqlParserPos pos, boolean replace, boolean ifNotExists,
-						  SqlIdentifier name, SqlNodeList columnList, SqlNode query, SqlNodeList distributedBy) {
+	public SqlCreateTable(SqlParserPos pos,
+						  boolean replace,
+						  boolean ifNotExists,
+						  SqlIdentifier name,
+						  SqlNodeList columnList,
+						  SqlNode query,
+						  SqlNodeList distributedBy,
+						  SqlNodeList destination) {
 		super(OPERATOR, pos, false, ifNotExists);
 		this.name = name;
 		this.columnList = columnList;
 		this.query = query;
-		this.distributedBy = new DistributedOperator(pos, distributedBy);;
+		this.distributedBy = new DistributedOperator(pos, distributedBy);
+		this.destination = Optional.ofNullable(destination)
+				.map(nodeList -> nodeList.getList().stream()
+					.map(node -> SourceType.valueOfAvailable(node.toString()))
+					.collect(Collectors.toSet()))
+				.orElse(null);
 	}
 
 	public List<SqlNode> getOperandList() {
@@ -56,5 +72,9 @@ public class SqlCreateTable extends SqlCreate {
 			writer.newlineAndIndent();
 			query.unparse(writer, 0, 0);
 		}
+	}
+
+	public Set<SourceType> getDestination() {
+		return destination;
 	}
 }

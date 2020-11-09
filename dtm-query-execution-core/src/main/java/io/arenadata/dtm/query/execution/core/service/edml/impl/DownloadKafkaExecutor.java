@@ -38,10 +38,15 @@ public class DownloadKafkaExecutor implements EdmlDownloadExecutor {
     }
 
     private Future<QueryResult> execute(EdmlRequestContext context) {
-        return Future.future(p -> {
-            val mpprRequestContext = mpprKafkaRequestFactory.create(context);
-            pluginService.mppr(edmlProperties.getSourceType(), mpprRequestContext, p);
-        });
+        if (context.getSourceEntity().getDestination().contains(edmlProperties.getSourceType())) {
+            return Future.future(p -> {
+                val mpprRequestContext = mpprKafkaRequestFactory.create(context);
+                pluginService.mppr(edmlProperties.getSourceType(), mpprRequestContext, p);
+            });
+        } else {
+            return Future.failedFuture(new IllegalStateException(
+                    String.format("Source not exist in [%s]", edmlProperties.getSourceType())));
+        }
     }
 
     @Override

@@ -41,7 +41,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class DownloadExternalTableExecutorTest {
-        private final LogicalSchemaProvider logicalSchemaProvider = mock(LogicalSchemaProviderImpl.class);
+    private final LogicalSchemaProvider logicalSchemaProvider = mock(LogicalSchemaProviderImpl.class);
     private final DeltaQueryPreprocessor deltaQueryPreprocessor = mock(DeltaQueryPreprocessorImpl.class);
     private final List<EdmlDownloadExecutor> downloadExecutors = Arrays.asList(mock(DownloadKafkaExecutor.class));
     private DownloadExternalTableExecutor downloadExternalTableExecutor;
@@ -50,7 +50,8 @@ class DownloadExternalTableExecutorTest {
     private DefinitionService<SqlNode> definitionService =
             new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
     private QueryRequest queryRequest;
-    private Entity entity;
+    private Entity destEntity;
+    private Entity sourceEntity;
     private List<Datamart> schema = Collections.emptyList();
 
     @BeforeEach
@@ -59,7 +60,7 @@ class DownloadExternalTableExecutorTest {
         queryRequest.setDatamartMnemonic("test");
         queryRequest.setRequestId(UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"));
 
-        entity = Entity.builder()
+        destEntity = Entity.builder()
                 .entityType(EntityType.DOWNLOAD_EXTERNAL_TABLE)
                 .externalTableFormat("avro")
                 .externalTableLocationPath("kafka://kafka-1.dtm.local:9092/topic")
@@ -68,6 +69,12 @@ class DownloadExternalTableExecutorTest {
                 .name("download_table")
                 .schema("test")
                 .externalTableSchema("")
+                .build();
+
+        sourceEntity = Entity.builder()
+                .schema("test")
+                .name("pso")
+                .entityType(EntityType.TABLE)
                 .build();
     }
 
@@ -84,7 +91,8 @@ class DownloadExternalTableExecutorTest {
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
-        context.setDestinationEntity(entity);
+        context.setDestinationEntity(destEntity);
+        context.setSourceEntity(sourceEntity);
 
         QueryRequest copyRequest = context.getRequest().getQueryRequest();
         copyRequest.setDeltaInformations(Collections.emptyList());
@@ -128,7 +136,8 @@ class DownloadExternalTableExecutorTest {
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
-        context.setDestinationEntity(entity);
+        context.setDestinationEntity(destEntity);
+        context.setSourceEntity(sourceEntity);
 
         QueryRequest copyRequest = context.getRequest().getQueryRequest();
         copyRequest.setDeltaInformations(Collections.emptyList());
@@ -162,7 +171,8 @@ class DownloadExternalTableExecutorTest {
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
-        context.setDestinationEntity(entity);
+        context.setDestinationEntity(destEntity);
+        context.setSourceEntity(sourceEntity);
 
         QueryRequest copyRequest = context.getRequest().getQueryRequest();
         copyRequest.setDeltaInformations(Collections.emptyList());
@@ -199,7 +209,8 @@ class DownloadExternalTableExecutorTest {
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
-        context.setDestinationEntity(entity);
+        context.setDestinationEntity(destEntity);
+        context.setSourceEntity(sourceEntity);
 
         QueryRequest copyRequest = context.getRequest().getQueryRequest();
         copyRequest.setDeltaInformations(Collections.emptyList());

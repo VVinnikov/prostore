@@ -81,7 +81,7 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
         val sourceTable = tableInfos.get(1);
         return Future.future(p -> CompositeFuture.join(entityDao.getEntity(destinationTable.getSchemaName(), destinationTable.getTableName()), entityDao.getEntity(sourceTable.getSchemaName(), sourceTable.getTableName()))
                 .onSuccess(entities -> p.complete(entities.list()))
-                .onFailure(err -> p.fail(err))
+                .onFailure(p::fail)
         );
     }
 

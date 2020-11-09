@@ -2,7 +2,9 @@ package io.arenadata.dtm.query.execution.core.service.edml;
 
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.configuration.kafka.KafkaAdminProperty;
+import io.arenadata.dtm.common.dto.TableInfo;
 import io.arenadata.dtm.common.model.ddl.Entity;
+import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.plugin.exload.Format;
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.plugin.status.kafka.KafkaPartitionInfo;
@@ -90,19 +92,11 @@ class UploadKafkaExecutorTest {
         suite.test("executeMppwAllSuccess", context -> {
             Async async = context.async();
             Promise promise = Promise.promise();
+            queryResult = null;
             KafkaAdminProperty kafkaAdminProperty = new KafkaAdminProperty();
             kafkaAdminProperty.setInputStreamTimeoutMs(inpuStreamTimeoutMs);
 
-            DatamartRequest request = new DatamartRequest(queryRequest);
-            EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
-            edmlRequestContext.setDestinationEntity(Entity.builder()
-                    .schema("test")
-                    .name("pso")
-                    .build());
-            edmlRequestContext.setSourceEntity(Entity.builder()
-                    .schema("test")
-                    .name("upload_table")
-                    .build());
+            EdmlRequestContext edmlRequestContext = createEdmlRequestContext();
 
             final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
             final MppwRequest adgRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
@@ -184,21 +178,12 @@ class UploadKafkaExecutorTest {
         TestSuite suite = TestSuite.create("mppwLoadTest");
         suite.test("executeMppwWithStartFail", context -> {
             Async async = context.async();
-            JsonObject schema = new JsonObject();
+            resultException = null;
             Promise promise = Promise.promise();
             KafkaAdminProperty kafkaAdminProperty = new KafkaAdminProperty();
             kafkaAdminProperty.setInputStreamTimeoutMs(inpuStreamTimeoutMs);
 
-            DatamartRequest request = new DatamartRequest(queryRequest);
-            EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
-            edmlRequestContext.setDestinationEntity(Entity.builder()
-                    .schema("test")
-                    .name("pso")
-                    .build());
-            edmlRequestContext.setSourceEntity(Entity.builder()
-                    .schema("test")
-                    .name("upload_table")
-                    .build());
+            EdmlRequestContext edmlRequestContext = createEdmlRequestContext();
 
             final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
             final MppwRequest adgRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
@@ -272,21 +257,12 @@ class UploadKafkaExecutorTest {
         RuntimeException exception = new RuntimeException("Ошибка получения статуса");
         suite.test("executeMppwWithFailedRetrievePluginStatus", context -> {
             Async async = context.async();
-            JsonObject schema = new JsonObject();
+            resultException = null;
             Promise promise = Promise.promise();
             KafkaAdminProperty kafkaAdminProperty = new KafkaAdminProperty();
             kafkaAdminProperty.setInputStreamTimeoutMs(inpuStreamTimeoutMs);
 
-            DatamartRequest request = new DatamartRequest(queryRequest);
-            EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
-            edmlRequestContext.setDestinationEntity(Entity.builder()
-                    .schema("test")
-                    .name("pso")
-                    .build());
-            edmlRequestContext.setSourceEntity(Entity.builder()
-                    .schema("test")
-                    .name("upload_table")
-                    .build());
+            EdmlRequestContext edmlRequestContext = createEdmlRequestContext();
 
             final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
             final MppwRequest adgRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
@@ -360,21 +336,12 @@ class UploadKafkaExecutorTest {
         TestSuite suite = TestSuite.create("mppwLoadTest");
         suite.test("executeMppwWithLastOffsetNotIncrease", context -> {
             Async async = context.async();
-            JsonObject schema = new JsonObject();
+            resultException = null;
             Promise promise = Promise.promise();
             KafkaAdminProperty kafkaAdminProperty = new KafkaAdminProperty();
             kafkaAdminProperty.setInputStreamTimeoutMs(inpuStreamTimeoutMs);
 
-            DatamartRequest request = new DatamartRequest(queryRequest);
-            EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
-            edmlRequestContext.setDestinationEntity(Entity.builder()
-                    .schema("test")
-                    .name("pso")
-                    .build());
-            edmlRequestContext.setSourceEntity(Entity.builder()
-                    .schema("test")
-                    .name("upload_table")
-                    .build());
+            EdmlRequestContext edmlRequestContext = createEdmlRequestContext();
 
             final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
             final MppwRequest adgRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
@@ -448,21 +415,12 @@ class UploadKafkaExecutorTest {
         TestSuite suite = TestSuite.create("mppwLoadTest");
         suite.test("executeMppwLoadingInitFalure", context -> {
             Async async = context.async();
-            JsonObject schema = new JsonObject();
+            resultException = null;
             Promise promise = Promise.promise();
             KafkaAdminProperty kafkaAdminProperty = new KafkaAdminProperty();
             kafkaAdminProperty.setInputStreamTimeoutMs(inpuStreamTimeoutMs);
 
-            DatamartRequest request = new DatamartRequest(queryRequest);
-            EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
-            edmlRequestContext.setDestinationEntity(Entity.builder()
-                    .schema("test")
-                    .name("pso")
-                    .build());
-            edmlRequestContext.setSourceEntity(Entity.builder()
-                    .schema("test")
-                    .name("upload_table")
-                    .build());
+            EdmlRequestContext edmlRequestContext = createEdmlRequestContext();
 
             final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
             final MppwRequest adgRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
@@ -535,21 +493,12 @@ class UploadKafkaExecutorTest {
         TestSuite suite = TestSuite.create("mppwLoadTest");
         suite.test("executeMppwWithZeroOffsets", context -> {
             Async async = context.async();
-            JsonObject schema = new JsonObject();
+            resultException = null;
             Promise promise = Promise.promise();
             KafkaAdminProperty kafkaAdminProperty = new KafkaAdminProperty();
             kafkaAdminProperty.setInputStreamTimeoutMs(inpuStreamTimeoutMs);
 
-            DatamartRequest request = new DatamartRequest(queryRequest);
-            EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
-            edmlRequestContext.setDestinationEntity(Entity.builder()
-                    .schema("test")
-                    .name("pso")
-                    .build());
-            edmlRequestContext.setSourceEntity(Entity.builder()
-                    .schema("test")
-                    .name("upload_table")
-                    .build());
+            EdmlRequestContext edmlRequestContext = createEdmlRequestContext();
 
             final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
             final MppwRequest adgRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
@@ -614,7 +563,26 @@ class UploadKafkaExecutorTest {
             queryResult = (QueryResult) promise.future().result();
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
-        assertNull(resultException);
+        assertNotNull(resultException);
+    }
+
+    @NotNull
+    private EdmlRequestContext createEdmlRequestContext() {
+        DatamartRequest request = new DatamartRequest(queryRequest);
+        EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
+        edmlRequestContext.setDestinationEntity(Entity.builder()
+                .name("pso")
+                .schema("test")
+                .entityType(EntityType.TABLE)
+                .destination(sourceTypes)
+                .build());
+        edmlRequestContext.setSourceEntity(
+                Entity.builder()
+                        .name("upload_table")
+                        .schema("test")
+                        .entityType(EntityType.UPLOAD_EXTERNAL_TABLE)
+                        .build());
+        return edmlRequestContext;
     }
 
     private void initStatusResultQueue(Queue<StatusQueryResult> adbStatusResultQueue,

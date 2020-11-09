@@ -44,7 +44,8 @@ class EdmlUploadFailedExecutorImplTest {
     private EdmlUploadFailedExecutor uploadFailedExecutor;
     private QueryRequest queryRequest;
     private Set<SourceType> sourceTypes = new HashSet<>();
-    private Entity entity;
+    private Entity sourceEntity;
+    private Entity destEntity;
 
     @BeforeEach
     void setUp() {
@@ -52,7 +53,7 @@ class EdmlUploadFailedExecutorImplTest {
         queryRequest.setDatamartMnemonic("test");
         queryRequest.setRequestId(UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"));
         sourceTypes.addAll(Arrays.asList(SourceType.ADB, SourceType.ADG));
-        entity = Entity.builder()
+        sourceEntity = Entity.builder()
                 .entityType(EntityType.UPLOAD_EXTERNAL_TABLE)
                 .externalTableFormat("avro")
                 .externalTableLocationPath("kafka://kafka-1.dtm.local:9092/topic")
@@ -61,6 +62,11 @@ class EdmlUploadFailedExecutorImplTest {
                 .name("upload_table")
                 .schema("test")
                 .externalTableSchema("")
+                .build();
+        destEntity = Entity.builder()
+                .entityType(EntityType.TABLE)
+                .name("pso")
+                .schema("test")
                 .build();
     }
 
@@ -75,20 +81,13 @@ class EdmlUploadFailedExecutorImplTest {
         DatamartRequest request = new DatamartRequest(queryRequest);
 
         EdmlRequestContext context = new EdmlRequestContext(request, null);
-
-        context.setDestinationEntity(Entity.builder()
-                .schema("test")
-                .name("pso")
-                .build());
-        context.setSourceEntity(Entity.builder()
-                .schema("test")
-                .name("upload_table")
-                .build());
+        context.setDestinationEntity(destEntity);
+        context.setSourceEntity(sourceEntity);
         context.setSysCn(1L);
 
         final RollbackRequestContext rollbackRequestContext = new RollbackRequestContext(RollbackRequest.builder()
                 .queryRequest(context.getRequest().getQueryRequest())
-                .datamart(context.getSourceEntity().getSchema())
+                .datamart(context.getSourceEntity().getName())
                 .destinationTable(context.getDestinationEntity().getName())
                 .sysCn(context.getSysCn())
                 .entity(context.getSourceEntity())
@@ -105,7 +104,7 @@ class EdmlUploadFailedExecutorImplTest {
             return null;
         }).when(pluginService).rollback(any(), any(), any());
 
-        when(deltaServiceDao.deleteWriteOperation(eq(entity.getSchema()), eq(context.getSysCn())))
+        when(deltaServiceDao.deleteWriteOperation(eq(sourceEntity.getSchema()), eq(context.getSysCn())))
                 .thenReturn(Future.succeededFuture());
 
         uploadFailedExecutor.execute(context)
@@ -124,16 +123,8 @@ class EdmlUploadFailedExecutorImplTest {
         DatamartRequest request = new DatamartRequest(queryRequest);
 
         EdmlRequestContext context = new EdmlRequestContext(request, null);
-
-        context.setDestinationEntity(Entity.builder()
-                .schema("test")
-                .name("pso")
-                .build());
-        context.setSourceEntity(Entity.builder()
-                .schema("test")
-                .name("upload_table")
-                .build());
-        context.setSourceEntity(entity);
+        context.setDestinationEntity(destEntity);
+        context.setSourceEntity(sourceEntity);
         context.setSysCn(1L);
 
         when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
@@ -161,16 +152,8 @@ class EdmlUploadFailedExecutorImplTest {
         DatamartRequest request = new DatamartRequest(queryRequest);
 
         EdmlRequestContext context = new EdmlRequestContext(request, null);
-
-        context.setDestinationEntity(Entity.builder()
-                .schema("test")
-                .name("pso")
-                .build());
-        context.setSourceEntity(Entity.builder()
-                .schema("test")
-                .name("upload_table")
-                .build());
-        context.setSourceEntity(entity);
+        context.setDestinationEntity(destEntity);
+        context.setSourceEntity(sourceEntity);
         context.setSysCn(1L);
 
         when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
@@ -181,7 +164,7 @@ class EdmlUploadFailedExecutorImplTest {
             return null;
         }).when(pluginService).rollback(any(), any(), any());
 
-        when(deltaServiceDao.deleteWriteOperation(eq(entity.getSchema()), eq(context.getSysCn())))
+        when(deltaServiceDao.deleteWriteOperation(eq(sourceEntity.getSchema()), eq(context.getSysCn())))
                 .thenReturn(Future.failedFuture(new RuntimeException("")));
 
         uploadFailedExecutor.execute(context)

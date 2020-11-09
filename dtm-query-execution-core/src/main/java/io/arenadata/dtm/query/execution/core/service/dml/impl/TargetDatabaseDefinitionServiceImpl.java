@@ -1,0 +1,141 @@
+package io.arenadata.dtm.query.execution.core.service.dml.impl;
+
+import io.arenadata.dtm.common.model.ddl.Entity;
+import io.arenadata.dtm.common.reader.QuerySourceRequest;
+import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
+import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.service.dml.TargetDatabaseDefinitionService;
+import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.request.QueryCostRequest;
+import io.vertx.core.*;
+import lombok.val;
+import org.apache.commons.lang3.tuple.Pair;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Service
+public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefinitionService {
+
+    private final DataSourcePluginService pluginService;
+    private final EntityDao entityDao;
+
+    @Autowired
+    public TargetDatabaseDefinitionServiceImpl(DataSourcePluginService pluginService,
+                                               EntityDao entityDao) {
+        this.pluginService = pluginService;
+        this.entityDao = entityDao;
+    }
+
+    @Override
+    public void getTargetSource(QuerySourceRequest request, Handler<AsyncResult<QuerySourceRequest>> handler) {
+        getEntitiesSourceTypes(request)
+                .compose(entities -> defineTargetSourceType(entities, request))
+                .map(sourceType -> {
+                    val queryRequestWithSourceType = request.getQueryRequest().copy();
+                    queryRequestWithSourceType.setSourceType(sourceType);
+                    return QuerySourceRequest.builder()
+                            .queryRequest(queryRequestWithSourceType)
+                            .logicalSchema(request.getLogicalSchema())
+                            .metadata(request.getMetadata())
+                            .sourceType(sourceType)
+                            .build();
+                })
+                .onComplete(handler);
+    }
+
+    private Future<List<Entity>> getEntitiesSourceTypes(QuerySourceRequest request) {
+        return Future.future(promise -> {
+            List<Future> entityFutures = new ArrayList<>();
+            request.getLogicalSchema().forEach(datamart -> datamart.getEntities().forEach(entity ->
+                    entityFutures.add(entityDao.getEntity(datamart.getMnemonic(), entity.getName()))));
+
+            CompositeFuture.join(entityFutures)
+                    .onSuccess(entities -> promise.complete(entities.list()))
+                    .onFailure(promise::fail);
+        });
+    }
+
+    private Future<SourceType> defineTargetSourceType(List<Entity> entities, QuerySourceRequest request) {
+        return Future.future((Promise<SourceType> promise) -> {
+            Set<SourceType> sourceTypes = getSourceTypes(request, entities);
+            if (sourceTypes.size() == 1) {
+                final Optional<SourceType> st = sourceTypes.stream().findFirst();
+                promise.complete(st.get());
+            } else {
+                getTargetSourceByCalcQueryCost(sourceTypes, request)
+                        .onComplete(promise);
+            }
+        });
+    }
+
+    private Set<SourceType> getSourceTypes(QuerySourceRequest request, List<Entity> entities) {
+        final Set<SourceType> stResult = getUniqueSourceTypes(entities);
+        if (stResult.isEmpty()) {
+            throw new RuntimeException("Tables have no datasource in common");
+        } else if (request.getSourceType() != null) {
+            if (!stResult.contains(request.getSourceType())) {
+                throw new RuntimeException(String.format("Tables common datasources does not include %s",
+                        request.getSourceType()));
+            } else {
+                return new HashSet<>(Collections.singletonList(request.getSourceType()));
+            }
+        } else {
+            return stResult;
+        }
+    }
+
+    private Set<SourceType> getUniqueSourceTypes(List<Entity> entities) {
+        final Set<SourceType> stResult = new HashSet<>();
+        entities.forEach(e -> {
+            if (stResult.isEmpty()) {
+                stResult.addAll(e.getDestination());
+            } else {
+                final List<SourceType> newStResult = e.getDestination().stream()
+                        .filter(stResult::contains)
+                        .collect(Collectors.toList());
+                stResult.clear();
+                stResult.addAll(newStResult);
+            }
+        });
+        return stResult;
+    }
+
+    private Future<SourceType> getTargetSourceByCalcQueryCost(Set<SourceType> sourceTypes, QuerySourceRequest request) {
+        return Future.future(promise -> {
+            CompositeFuture.join(sourceTypes.stream()
+                    .map(sourceType -> calcQueryCostInPlugin(request, sourceType))
+                    .collect(Collectors.toList()))
+                    .onComplete(ar -> {
+                        if (ar.succeeded()) {
+                            SourceType sourceType = ar.result().list().stream()
+                                    .sorted(Comparator.comparing(st -> ((Pair<SourceType, Integer>) st).getKey().ordinal()))
+                                    .map(res -> (Pair<SourceType, Integer>) res)
+                                    .min(Comparator.comparingInt(Pair::getValue))
+                                    .map(Pair::getKey)
+                                    .orElse(null);
+                            promise.complete(sourceType);
+                        } else {
+                            promise.fail(ar.cause());
+                        }
+                    });
+        });
+    }
+
+    private Future<Object> calcQueryCostInPlugin(QuerySourceRequest request, SourceType sourceType) {
+        return Future.future(p -> {
+            val costRequest = new QueryCostRequest(request.getQueryRequest(), request.getLogicalSchema());
+            val costRequestContext = new QueryCostRequestContext(costRequest);
+            pluginService.calcQueryCost(sourceType, costRequestContext, costHandler -> {
+                if (costHandler.succeeded()) {
+                    p.complete(Pair.of(sourceType, costHandler.result()));
+                } else {
+                    p.fail(costHandler.cause());
+                }
+            });
+        });
+    }
+}

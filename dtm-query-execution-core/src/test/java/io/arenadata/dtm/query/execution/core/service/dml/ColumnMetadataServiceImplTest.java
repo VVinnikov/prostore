@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.service.dml.impl;
+package io.arenadata.dtm.query.execution.core.service.dml;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -12,7 +12,7 @@ import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDMLQueryParserSe
 import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteSchemaFactory;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import io.arenadata.dtm.query.execution.core.factory.impl.CoreSchemaFactory;
-import io.arenadata.dtm.query.execution.core.service.dml.ColumnMetadataService;
+import io.arenadata.dtm.query.execution.core.service.dml.impl.ColumnMetadataServiceImpl;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.vertx.core.Vertx;

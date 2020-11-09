@@ -1,11 +1,10 @@
-package io.arenadata.dtm.query.execution.core.service.impl;
+package io.arenadata.dtm.query.execution.core.service.dml;
 
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QuerySourceRequest;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
-import io.arenadata.dtm.query.execution.core.service.dml.InformationSchemaExecutor;
 import io.arenadata.dtm.query.execution.core.service.dml.impl.InformationSchemaExecutorImpl;
 import io.arenadata.dtm.query.execution.core.service.hsql.HSQLClient;
 import io.arenadata.dtm.query.execution.core.service.hsql.impl.HSQLClientImpl;

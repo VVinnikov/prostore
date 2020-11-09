@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.core.service.edml;
 
-import io.arenadata.dtm.common.dto.TableInfo;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
@@ -48,7 +47,8 @@ class EdmlServiceImplTest {
     private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
     private final ServiceDbDao serviceDbDao = mock(ServiceDbDaoImpl.class);
     private final EntityDao entityDao = mock(EntityDaoImpl.class);
-    private final List<EdmlExecutor> edmlExecutors = Arrays.asList(mock(DownloadExternalTableExecutor.class), mock(UploadExternalTableExecutor.class));
+    private final List<EdmlExecutor> edmlExecutors = Arrays.asList(mock(DownloadExternalTableExecutor.class),
+            mock(UploadExternalTableExecutor.class));
     private CalciteConfiguration config = new CalciteConfiguration();
     private CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private DefinitionService<SqlNode> definitionService =
@@ -76,9 +76,6 @@ class EdmlServiceImplTest {
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
         DatamartRequest request = new DatamartRequest(queryRequest);
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
-        TableInfo targetTable = new TableInfo("test", "download_table");
-        TableInfo sourceTable = new TableInfo("test", "pso");
-
         Entity downloadEntity = Entity.builder()
                 .entityType(EntityType.DOWNLOAD_EXTERNAL_TABLE)
                 .externalTableFormat("avro")
@@ -86,8 +83,13 @@ class EdmlServiceImplTest {
                 .externalTableLocationType(ExternalTableLocationType.KAFKA)
                 .externalTableUploadMessageLimit(1000)
                 .externalTableSchema("{\"schema\"}")
-                .name("download_table")
+                .name("pso")
                 .schema("test")
+                .build();
+        Entity sourceEntity = Entity.builder()
+                .schema("test")
+                .name("pso")
+                .entityType(EntityType.TABLE)
                 .build();
 
         Entity uploadEntity = Entity.builder()
@@ -105,6 +107,8 @@ class EdmlServiceImplTest {
 
         Mockito.when(entityDao.getEntity(eq("test"), eq("upload_table"))).thenReturn(Future.succeededFuture(uploadEntity));
 
+        Mockito.when(entityDao.getEntity(eq("test"), eq("pso"))).thenReturn(Future.succeededFuture(sourceEntity));
+
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
             handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
@@ -119,8 +123,8 @@ class EdmlServiceImplTest {
             }
         });
         assertTrue(promise.future().succeeded());
-        assertEquals(context.getSourceTable(), sourceTable);
-        assertEquals(context.getDestinationTable(), targetTable);
+        assertEquals(context.getSourceEntity(), sourceEntity);
+        assertEquals(context.getDestinationEntity(), downloadEntity);
     }
 
     @Test
@@ -133,7 +137,11 @@ class EdmlServiceImplTest {
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
         DatamartRequest request = new DatamartRequest(queryRequest);
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
-
+        Entity sourceEntity = Entity.builder()
+                .schema("test")
+                .name("pso")
+                .entityType(EntityType.TABLE)
+                .build();
         Entity downloadEntity = Entity.builder()
                 .entityType(EntityType.DOWNLOAD_EXTERNAL_TABLE)
                 .externalTableFormat("avro")
@@ -159,6 +167,8 @@ class EdmlServiceImplTest {
         Mockito.when(entityDao.getEntity(eq("test"), eq("pso"))).thenReturn(Future.succeededFuture(downloadEntity));
 
         Mockito.when(entityDao.getEntity(eq("test"), eq("upload_table"))).thenReturn(Future.succeededFuture(uploadEntity));
+
+        Mockito.when(entityDao.getEntity(eq("test"), eq("pso"))).thenReturn(Future.succeededFuture(sourceEntity));
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);

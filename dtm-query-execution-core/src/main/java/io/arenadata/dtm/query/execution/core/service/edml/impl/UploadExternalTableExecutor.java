@@ -48,7 +48,7 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
     public void execute(EdmlRequestContext context, Handler<AsyncResult<QueryResult>> resultHandler) {
         writeNewOperationIfNeeded(context, context.getSourceEntity())
                 .compose(v -> executeAndWriteOp(context))
-                .compose(queryResult -> writeOpSuccess(context.getSourceTable().getSchemaName(), context.getSysCn(), queryResult))
+                .compose(queryResult -> writeOpSuccess(context.getSourceEntity().getSchema(), context.getSysCn(), queryResult))
                 .onComplete(resultHandler);
     }
 
@@ -72,7 +72,7 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
     private DeltaWriteOpRequest createDeltaOp(EdmlRequestContext context, Entity entity) {
         return DeltaWriteOpRequest.builder()
                 .datamart(entity.getSchema())
-                .tableName(context.getDestinationTable().getTableName())
+                .tableName(context.getDestinationEntity().getName())
                 .tableNameExt(entity.getName())
                 .query(context.getSqlNode().toSqlString(SQL_DIALECT).toString())
                 .build();
@@ -84,7 +84,7 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
                         .onSuccess(promise::complete)
                         .onFailure(error -> {
                             log.error("Edml write operation error!", error);
-                            deltaServiceDao.writeOperationError(context.getSourceTable().getSchemaName(), context.getSysCn())
+                            deltaServiceDao.writeOperationError(context.getSourceEntity().getSchema(), context.getSysCn())
                                     .compose(v -> uploadFailedExecutor.execute(context))
                                     .onComplete(writeErrorOpAr -> {
                                         if (writeErrorOpAr.succeeded()) {

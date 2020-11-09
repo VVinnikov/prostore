@@ -34,6 +34,7 @@ public class TtClientImpl implements TtClient {
     config.password = tarantoolProperties.getPassword();
     config.operationExpiryTimeMillis = tarantoolProperties.getOperationTimeout();
     config.retryCount = tarantoolProperties.getRetryCount();
+    config.initTimeoutMillis = tarantoolProperties.getInitTimeoutMillis();
     SocketChannelProvider socketChannelProvider = (i, throwable) -> {
       SocketChannel channel;
       try {
@@ -54,7 +55,7 @@ public class TtClientImpl implements TtClient {
 
   @Override
   public void eval(Handler<AsyncResult<List<?>>> handler, String expression, Object... args) {
-    client.composableAsyncOps().eval(expression, args)
+    getClient().composableAsyncOps().eval(expression, args)
       .thenAccept(res -> {
         handler.handle(Future.succeededFuture(resultTranslator.translate(res)));
       })
@@ -66,7 +67,7 @@ public class TtClientImpl implements TtClient {
 
   @Override
   public void call(Handler<AsyncResult<List<?>>> handler, String function, Object... args) {
-    client.composableAsyncOps().call(function, args)
+    getClient().composableAsyncOps().call(function, args)
       .thenAccept(res -> {
         handler.handle(Future.succeededFuture(resultTranslator.translate(res)));
       })
@@ -90,5 +91,10 @@ public class TtClientImpl implements TtClient {
     call(handler, "load_lines", table, rows);
   }
 
-
+  private TarantoolClient getClient() {
+    if (client.isClosed()) {
+      init();
+    }
+    return client;
+  }
 }

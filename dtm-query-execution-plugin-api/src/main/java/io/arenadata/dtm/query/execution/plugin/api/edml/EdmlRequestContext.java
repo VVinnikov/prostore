@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.plugin.api.edml;
 
-import io.arenadata.dtm.common.dto.TableInfo;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
@@ -22,8 +21,6 @@ public class EdmlRequestContext extends RequestContext<DatamartRequest> {
     private Entity sourceEntity;
     private Entity destinationEntity;
     private Long sysCn;
-    private TableInfo sourceTable;
-    private TableInfo destinationTable;
     private final SqlInsert sqlNode;
     private String dmlSubquery;
     private List<Datamart> logicalSchema;

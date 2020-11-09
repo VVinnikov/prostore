@@ -110,8 +110,6 @@ public class RestoreStateServiceImpl implements RestoreStateService {
         val datamartRequest = new DatamartRequest(queryRequest);
         val sqlNode = definitionService.processingQuery(op.getQuery());
         val context = new EdmlRequestContext(datamartRequest, (SqlInsert) sqlNode);
-        context.setSourceTable(new TableInfo(source.getSchema(), source.getName()));
-        context.setDestinationTable(new TableInfo(dest.getSchema(), dest.getName()));
         context.setSysCn(op.getSysCn());
         context.setSourceEntity(source);
         context.setDestinationEntity(dest);

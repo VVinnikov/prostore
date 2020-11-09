@@ -28,10 +28,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -65,7 +62,12 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
     public void execute(EdmlRequestContext context, Handler<AsyncResult<QueryResult>> resultHandler) {
         try {
             final Map<SourceType, Future<MppwStopFuture>> startMppwFutureMap = new HashMap<>();
-            pluginService.getSourceTypes().forEach(ds -> {
+            final Set<SourceType> destination = context.getDestinationEntity().getDestination();
+            log.debug("Mppw loading into table [{}], datamart [{}], for plugins: {}",
+                    context.getDestinationEntity().getName(),
+                    context.getDestinationEntity().getSchema(),
+                    destination);
+            destination.forEach(ds -> {
                 final MppwRequestContext mppwRequestContext = mppwKafkaRequestFactory.create(context);
                 startMppwFutureMap.put(ds, startMppw(ds, mppwRequestContext, context));
             });

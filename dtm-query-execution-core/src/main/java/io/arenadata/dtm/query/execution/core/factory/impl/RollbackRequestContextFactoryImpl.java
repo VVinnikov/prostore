@@ -13,8 +13,8 @@ public class RollbackRequestContextFactoryImpl implements RollbackRequestContext
     public RollbackRequestContext create(EdmlRequestContext context) {
         return new RollbackRequestContext(RollbackRequest.builder()
                 .queryRequest(context.getRequest().getQueryRequest())
-                .datamart(context.getSourceTable().getSchemaName())
-                .destinationTable(context.getDestinationTable().getTableName())
+                .datamart(context.getSourceEntity().getSchema())
+                .destinationTable(context.getDestinationEntity().getName())
                 .sysCn(context.getSysCn())
                 .entity(context.getDestinationEntity())
                 .build());

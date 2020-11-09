@@ -2,10 +2,7 @@ package io.arenadata.dtm.query.execution.core.calcite.ddl;
 
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
-import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlAlterView;
-import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
-import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateView;
-import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlUseSchema;
+import io.arenadata.dtm.query.calcite.core.extension.ddl.*;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import io.arenadata.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
@@ -29,6 +26,7 @@ public class SqlDdlParserImplTest {
             "    account_type varchar(1), -- D/C (дебет/кредит)\n" +
             "    primary key (account_id)\n" +
             ") distributed by (account_id)";
+    private static final String DROP_TABLE_QUERY = "drop table test.table_name";
     private CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
     private CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private final DefinitionService<SqlNode> definitionService =
@@ -132,5 +130,46 @@ public class SqlDdlParserImplTest {
         assertEquals(Arrays.asList("test", "table_name"),
                 ((SqlIdentifier) sqlCreateTable.getOperandList().get(0)).names);
         consumer.accept(sqlCreateTable);
+    }
+
+    @Test
+    void dropTable() {
+        dropTable(DROP_TABLE_QUERY);
+    }
+
+    @Test
+    void dropTableWithDestination() {
+        Set<SourceType> selectedSourceTypes = new HashSet<>();
+        selectedSourceTypes.add(SourceType.ADB);
+        selectedSourceTypes.add(SourceType.ADG);
+        String query = String.format(DROP_TABLE_QUERY + " DATASOURCE_TYPE (%s)",
+                selectedSourceTypes.stream().map(SourceType::name).collect(Collectors.joining(", ")));
+        dropTable(query, sqlDropTable -> assertEquals(selectedSourceTypes, sqlDropTable.getDestination()));
+    }
+
+    @Test
+    void dropTableWithInformationSchema() {
+        String query = String.format(DROP_TABLE_QUERY + " DATASOURCE_TYPE (%s)",
+                SourceType.INFORMATION_SCHEMA.name());
+        assertThrows(SqlParseException.class, () -> dropTable(query));
+    }
+
+    @Test
+    void dropTableWithInvalidDestination() {
+        String query = String.format(DROP_TABLE_QUERY + " DATASOURCE_TYPE (%s)", "adcvcb");
+        assertThrows(SqlParseException.class, () -> dropTable(query));
+    }
+
+    void dropTable(String query) {
+        dropTable(query, sqlDropTable -> {});
+    }
+
+    void dropTable(String query, Consumer<SqlDropTable> consumer) {
+        SqlNode sqlNode = definitionService.processingQuery(query);
+        assertTrue(sqlNode instanceof SqlDropTable);
+        SqlDropTable sqlDropTable = (SqlDropTable) sqlNode;
+        assertEquals(Arrays.asList("test", "table_name"),
+                ((SqlIdentifier) sqlDropTable.getOperandList().get(0)).names);
+        consumer.accept(sqlDropTable);
     }
 }

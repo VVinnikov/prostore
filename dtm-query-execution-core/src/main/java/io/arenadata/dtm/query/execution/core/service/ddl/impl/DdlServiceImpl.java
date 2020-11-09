@@ -66,6 +66,7 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
 
     private void executePostActions(DdlRequestContext context) {
         CompositeFuture.join(context.getPostActions().stream()
+                .distinct()
                 .map(postType -> Optional.ofNullable(postExecutorMap.get(postType))
                         .map(postExecutor -> postExecutor.execute(context))
                         .orElse(Future.failedFuture(String.format("Not supported DDL post executor type [%s]",

@@ -2,7 +2,6 @@ package io.arenadata.dtm.query.execution.core.service.edml;
 
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.configuration.kafka.KafkaAdminProperty;
-import io.arenadata.dtm.common.dto.TableInfo;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.plugin.exload.Format;
@@ -26,7 +25,6 @@ import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEnti
 import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.MppwRequest;
 import io.vertx.core.*;
-import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestOptions;
 import io.vertx.ext.unit.TestSuite;
@@ -226,7 +224,7 @@ class UploadKafkaExecutorTest {
                 final SourceType ds = invocation.getArgument(0);
                 final MppwRequestContext requestContext = invocation.getArgument(1);
                 if (ds.equals(SourceType.ADB) && requestContext.getRequest().getIsLoadStart()) {
-                    handler.handle(Future.failedFuture(new RuntimeException("Ошибка старта mppw")));
+                    handler.handle(Future.failedFuture(new RuntimeException("Start mppw error")));
                 } else if (ds.equals(SourceType.ADB) && !requestContext.getRequest().getIsLoadStart()) {
                     handler.handle(Future.succeededFuture(new QueryResult()));
                 } else if (ds.equals(SourceType.ADG)) {
@@ -254,7 +252,7 @@ class UploadKafkaExecutorTest {
     @Test
     void executeMppwWithFailedRetrievePluginStatus() {
         TestSuite suite = TestSuite.create("mppwLoadTest");
-        RuntimeException exception = new RuntimeException("Ошибка получения статуса");
+        RuntimeException exception = new RuntimeException("Status receiving error");
         suite.test("executeMppwWithFailedRetrievePluginStatus", context -> {
             Async async = context.async();
             resultException = null;

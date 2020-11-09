@@ -93,21 +93,22 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
 
     private Future<QueryResult> execute(EdmlRequestContext context) {
         return Future.future((Promise<QueryResult> promise) -> {
-            if (ExternalTableLocationType.KAFKA == context.getDestinationEntity().getExternalTableLocationType()) {
-                executors.get(context.getDestinationEntity().getExternalTableLocationType()).execute(context, ar -> {
+            val destination = context.getDestinationEntity();
+            if (ExternalTableLocationType.KAFKA == destination.getExternalTableLocationType()) {
+                executors.get(destination.getExternalTableLocationType()).execute(context, ar -> {
                     if (ar.succeeded()) {
                         log.debug("Mppr into table [{}] for dml query [{}] finished successfully",
-                                context.getDestinationEntity().getName(), context.getDmlSubquery());
+                                destination.getName(), context.getDmlSubquery());
                         promise.complete(ar.result());
                     } else {
                         log.error("Error executing mppr into table [{}] for dml query [{}]",
-                                context.getDestinationEntity().getName(),
+                                destination.getName(),
                                 context.getDmlSubquery());
                         promise.fail(ar.cause());
                     }
                 });
             } else {
-                log.error("Unload type {} not implemented", context.getDestinationEntity().getExternalTableLocationType());
+                log.error("Unload type {} not implemented", destination.getExternalTableLocationType());
                 promise.fail(new RuntimeException("Other types of upload are not yet implemented!"));
             }
         });

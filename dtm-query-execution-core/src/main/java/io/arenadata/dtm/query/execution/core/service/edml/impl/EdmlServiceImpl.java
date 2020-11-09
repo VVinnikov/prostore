@@ -43,38 +43,43 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
 
     @Override
     public void execute(EdmlRequestContext context, Handler<AsyncResult<QueryResult>> resultHandler) {
-        defineExternalTableAndType(context)
+        defineTablesAndType(context)
                 .compose(edmlType -> execute(context, edmlType))
                 .setHandler(resultHandler);
     }
 
 
-    private Future<EdmlAction> defineExternalTableAndType(EdmlRequestContext context) {
+    private Future<EdmlAction> defineTablesAndType(EdmlRequestContext context) {
         return Future.future(edmlQueryPromise -> {
-            final List<TableInfo> tableInfoList = getSourceAndTargetTableInfo(context);
-            getEntities(tableInfoList)
+            getDestinationAndSourceEntities(context)
                     .onSuccess(entities -> {
-                        val source = entities.get(0);
-                        val destination = entities.get(1);
+                        val destination = entities.get(0);
+                        val source = entities.get(1);
                         context.setDestinationEntity(destination);
                         context.setSourceEntity(source);
-                        if (destination.getEntityType() == EntityType.DOWNLOAD_EXTERNAL_TABLE) {
+                        if (destination.getEntityType() == EntityType.DOWNLOAD_EXTERNAL_TABLE && source.getEntityType() == EntityType.TABLE) {
                             edmlQueryPromise.complete(EdmlAction.DOWNLOAD);
-                        } else if (source.getEntityType() == EntityType.UPLOAD_EXTERNAL_TABLE) {
+                        } else if (source.getEntityType() == EntityType.UPLOAD_EXTERNAL_TABLE && destination.getEntityType() == EntityType.TABLE) {
                             edmlQueryPromise.complete(EdmlAction.UPLOAD);
+                        } else {
+                            edmlQueryPromise.fail(String.format("Can't determine external table in query [%s]",
+                                    context.getSqlNode().toSqlString(SQL_DIALECT).toString()));
                         }
                     })
-                    .onFailure(fail -> edmlQueryPromise.fail(String.format("Can't determine external table in query [%s]",
-                            context.getSqlNode().toSqlString(SQL_DIALECT).toString())));
+                    .onFailure(edmlQueryPromise::fail);
         });
     }
 
-    private Future<List<Entity>> getEntities(List<TableInfo> tableInfoList) {
-        final TableInfo destinationTable = tableInfoList.get(0);
-        final TableInfo sourceTable = tableInfoList.get(1);
-        return Future.future(p -> CompositeFuture.join(
-                entityDao.getEntity(destinationTable.getSchemaName(), sourceTable.getTableName()),
-                entityDao.getEntity(destinationTable.getSchemaName(), destinationTable.getTableName()))
+    private Future<List<Entity>> getDestinationAndSourceEntities(EdmlRequestContext context) {
+        val tableAndSnapshots = new SqlSelectTree(context.getSqlNode()).findAllTableAndSnapshots();
+        val defaultDatamartMnemonic = context.getRequest().getQueryRequest().getDatamartMnemonic();
+        val tableInfos = tableAndSnapshots.stream()
+                .map(n -> new TableInfo(n.tryGetSchemaName().orElse(defaultDatamartMnemonic),
+                        n.tryGetTableName().orElseThrow(() -> getCantGetTableNameError(context))))
+                .collect(Collectors.toList());
+        val destinationTable = tableInfos.get(0);
+        val sourceTable = tableInfos.get(1);
+        return Future.future(p -> CompositeFuture.join(entityDao.getEntity(destinationTable.getSchemaName(), destinationTable.getTableName()), entityDao.getEntity(sourceTable.getSchemaName(), sourceTable.getTableName()))
                 .onSuccess(entities -> p.complete(entities.list()))
                 .onFailure(p::fail)
         );
@@ -89,15 +94,6 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
                         promise.fail(ar.cause());
                     }
                 }));
-    }
-
-    private List<TableInfo> getSourceAndTargetTableInfo(EdmlRequestContext context) {
-        val tableAndSnapshots = new SqlSelectTree(context.getSqlNode()).findAllTableAndSnapshots();
-        val defDatamartMnemonic = context.getRequest().getQueryRequest().getDatamartMnemonic();
-        return tableAndSnapshots.stream()
-                .map(n -> new TableInfo(n.tryGetSchemaName().orElse(defDatamartMnemonic),
-                        n.tryGetTableName().orElseThrow(() -> getCantGetTableNameError(context))))
-                .collect(Collectors.toList());
     }
 
     private RuntimeException getCantGetTableNameError(EdmlRequestContext context) {

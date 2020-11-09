@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.core.service.edml;
 
-import io.arenadata.dtm.common.dto.TableInfo;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
@@ -85,8 +84,14 @@ class UploadExternalTableExecutorTest {
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
 
-        context.setDestinationTable(new TableInfo("test", "pso"));
-        context.setSourceTable(new TableInfo("test", "upload_table"));
+        context.setDestinationEntity(Entity.builder()
+                .schema("test")
+                .name("pso")
+                .build());
+        context.setSourceEntity(Entity.builder()
+                .schema("test")
+                .name("upload_table")
+                .build());
         context.setSourceEntity(entity);
         context.setSysCn(sysCn);
 
@@ -130,8 +135,14 @@ class UploadExternalTableExecutorTest {
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
 
-        context.setDestinationTable(new TableInfo("test", "pso"));
-        context.setSourceTable(new TableInfo("test", "upload_table"));
+        context.setDestinationEntity(Entity.builder()
+                .schema("test")
+                .name("pso")
+                .build());
+        context.setSourceEntity(Entity.builder()
+                .schema("test")
+                .name("upload_table")
+                .build());
         context.setSourceEntity(entity);
 
         when(deltaServiceDao.writeNewOperation(any()))
@@ -172,8 +183,14 @@ class UploadExternalTableExecutorTest {
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
 
-        context.setDestinationTable(new TableInfo("test", "pso"));
-        context.setSourceTable(new TableInfo("test", "upload_table"));
+        context.setDestinationEntity(Entity.builder()
+                .schema("test")
+                .name("pso")
+                .build());
+        context.setSourceEntity(Entity.builder()
+                .schema("test")
+                .name("upload_table")
+                .build());
         context.setSourceEntity(entity);
 
         when(deltaServiceDao.writeNewOperation(any()))
@@ -206,8 +223,14 @@ class UploadExternalTableExecutorTest {
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
 
-        context.setDestinationTable(new TableInfo("test", "pso"));
-        context.setSourceTable(new TableInfo("test", "upload_table"));
+        context.setDestinationEntity(Entity.builder()
+                .schema("test")
+                .name("pso")
+                .build());
+        context.setSourceEntity(Entity.builder()
+                .schema("test")
+                .name("upload_table")
+                .build());
         context.setSourceEntity(entity);
 
         when(deltaServiceDao.writeNewOperation(any()))
@@ -248,8 +271,14 @@ class UploadExternalTableExecutorTest {
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
 
-        context.setDestinationTable(new TableInfo("test", "pso"));
-        context.setSourceTable(new TableInfo("test", "upload_table"));
+        context.setDestinationEntity(Entity.builder()
+                .schema("test")
+                .name("pso")
+                .build());
+        context.setSourceEntity(Entity.builder()
+                .schema("test")
+                .name("upload_table")
+                .build());
         context.setSourceEntity(entity);
 
         when(deltaServiceDao.writeNewOperation(any()))
@@ -294,8 +323,14 @@ class UploadExternalTableExecutorTest {
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
 
-        context.setDestinationTable(new TableInfo("test", "pso"));
-        context.setSourceTable(new TableInfo("test", "upload_table"));
+        context.setDestinationEntity(Entity.builder()
+                .schema("test")
+                .name("pso")
+                .build());
+        context.setSourceEntity(Entity.builder()
+                .schema("test")
+                .name("upload_table")
+                .build());
         context.setSourceEntity(entity);
 
         when(deltaServiceDao.writeNewOperation(any()))
@@ -335,8 +370,14 @@ class UploadExternalTableExecutorTest {
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
 
-        context.setDestinationTable(new TableInfo("test", "pso"));
-        context.setSourceTable(new TableInfo("test", "upload_table"));
+        context.setDestinationEntity(Entity.builder()
+                .schema("test")
+                .name("pso")
+                .build());
+        context.setSourceEntity(Entity.builder()
+                .schema("test")
+                .name("upload_table")
+                .build());
         context.setSourceEntity(entity);
 
         when(deltaServiceDao.writeNewOperation(any()))

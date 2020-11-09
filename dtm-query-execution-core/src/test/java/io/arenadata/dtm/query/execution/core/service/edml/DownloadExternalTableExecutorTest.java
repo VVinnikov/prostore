@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.core.service.edml;
 
-import io.arenadata.dtm.common.dto.TableInfo;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
@@ -85,9 +84,7 @@ class DownloadExternalTableExecutorTest {
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
-        context.setSourceEntity(entity);
-        context.setDestinationTable(new TableInfo("test", "download_table"));
-        context.setSourceTable(new TableInfo("test", "pso"));
+        context.setDestinationEntity(entity);
 
         QueryRequest copyRequest = context.getRequest().getQueryRequest();
         copyRequest.setDeltaInformations(Collections.emptyList());
@@ -131,9 +128,7 @@ class DownloadExternalTableExecutorTest {
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
-        context.setSourceEntity(entity);
-        context.setDestinationTable(new TableInfo("test", "download_table"));
-        context.setSourceTable(new TableInfo("test", "pso"));
+        context.setDestinationEntity(entity);
 
         QueryRequest copyRequest = context.getRequest().getQueryRequest();
         copyRequest.setDeltaInformations(Collections.emptyList());
@@ -167,9 +162,7 @@ class DownloadExternalTableExecutorTest {
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
-        context.setSourceEntity(entity);
-        context.setDestinationTable(new TableInfo("test", "download_table"));
-        context.setSourceTable(new TableInfo("test", "pso"));
+        context.setDestinationEntity(entity);
 
         QueryRequest copyRequest = context.getRequest().getQueryRequest();
         copyRequest.setDeltaInformations(Collections.emptyList());
@@ -206,9 +199,7 @@ class DownloadExternalTableExecutorTest {
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
 
         EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
-        context.setSourceEntity(entity);
-        context.setDestinationTable(new TableInfo("test", "download_table"));
-        context.setSourceTable(new TableInfo("test", "pso"));
+        context.setDestinationEntity(entity);
 
         QueryRequest copyRequest = context.getRequest().getQueryRequest();
         copyRequest.setDeltaInformations(Collections.emptyList());

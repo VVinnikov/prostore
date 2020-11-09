@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.core.service.edml;
 
-import io.arenadata.dtm.common.dto.TableInfo;
 import io.arenadata.dtm.common.exception.CrashException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
@@ -77,15 +76,20 @@ class EdmlUploadFailedExecutorImplTest {
 
         EdmlRequestContext context = new EdmlRequestContext(request, null);
 
-        context.setDestinationTable(new TableInfo("test", "pso"));
-        context.setSourceTable(new TableInfo("test", "upload_table"));
-        context.setSourceEntity(entity);
+        context.setDestinationEntity(Entity.builder()
+                .schema("test")
+                .name("pso")
+                .build());
+        context.setSourceEntity(Entity.builder()
+                .schema("test")
+                .name("upload_table")
+                .build());
         context.setSysCn(1L);
 
         final RollbackRequestContext rollbackRequestContext = new RollbackRequestContext(RollbackRequest.builder()
                 .queryRequest(context.getRequest().getQueryRequest())
-                .datamart(context.getSourceTable().getSchemaName())
-                .destinationTable(context.getDestinationTable().getTableName())
+                .datamart(context.getSourceEntity().getSchema())
+                .destinationTable(context.getDestinationEntity().getName())
                 .sysCn(context.getSysCn())
                 .entity(context.getSourceEntity())
                 .build());
@@ -121,8 +125,14 @@ class EdmlUploadFailedExecutorImplTest {
 
         EdmlRequestContext context = new EdmlRequestContext(request, null);
 
-        context.setDestinationTable(new TableInfo("test", "pso"));
-        context.setSourceTable(new TableInfo("test", "upload_table"));
+        context.setDestinationEntity(Entity.builder()
+                .schema("test")
+                .name("pso")
+                .build());
+        context.setSourceEntity(Entity.builder()
+                .schema("test")
+                .name("upload_table")
+                .build());
         context.setSourceEntity(entity);
         context.setSysCn(1L);
 
@@ -152,8 +162,14 @@ class EdmlUploadFailedExecutorImplTest {
 
         EdmlRequestContext context = new EdmlRequestContext(request, null);
 
-        context.setDestinationTable(new TableInfo("test", "pso"));
-        context.setSourceTable(new TableInfo("test", "upload_table"));
+        context.setDestinationEntity(Entity.builder()
+                .schema("test")
+                .name("pso")
+                .build());
+        context.setSourceEntity(Entity.builder()
+                .schema("test")
+                .name("upload_table")
+                .build());
         context.setSourceEntity(entity);
         context.setSysCn(1L);
 

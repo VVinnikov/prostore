@@ -2,7 +2,7 @@ package io.arenadata.dtm.query.execution.plugin.adb.factory.impl;
 
 import io.arenadata.dtm.query.execution.plugin.adb.configuration.properties.MppwProperties;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.MppwRestLoadRequestFactory;
-import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.RestLoadRequest;
+import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.RestMppwKafkaLoadRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
 import lombok.val;
@@ -21,17 +21,16 @@ public class MppwRestLoadRequestFactoryImpl implements MppwRestLoadRequestFactor
     }
 
     @Override
-    public RestLoadRequest create(MppwRequestContext context) {
+    public RestMppwKafkaLoadRequest create(MppwRequestContext context) {
         val uploadMeta = (UploadExternalEntityMetadata) context.getRequest()
                 .getKafkaParameter().getUploadMetadata();
         val kafkaParam = context.getRequest().getKafkaParameter();
-        return RestLoadRequest.builder()
+        return RestMppwKafkaLoadRequest.builder()
                 .requestId(context.getRequest().getQueryRequest().getRequestId().toString())
                 .hotDelta(kafkaParam.getSysCn())
                 .datamart(kafkaParam.getDatamart())
                 .tableName(kafkaParam.getTargetTableName())
-                .zookeeperHost(kafkaParam.getZookeeperHost())
-                .zookeeperPort(kafkaParam.getZookeeperPort())
+                .kafkaBrokers(kafkaParam.getBrokers())
                 .kafkaTopic(kafkaParam.getTopic())
                 .consumerGroup(mppwProperties.getConsumerGroup())
                 .format(uploadMeta.getFormat().getName())

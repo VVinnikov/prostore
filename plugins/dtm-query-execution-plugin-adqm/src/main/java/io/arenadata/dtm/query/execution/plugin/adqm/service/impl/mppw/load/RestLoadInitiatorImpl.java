@@ -23,7 +23,7 @@ public class RestLoadInitiatorImpl implements RestLoadInitiator {
     }
 
     @Override
-    public Future<Void> initiateLoading(RestLoadRequest request) {
+    public Future<Void> initiateLoading(RestMppwKafkaLoadRequest request) {
         try {
             JsonObject data = JsonObject.mapFrom(request);
             Promise<Void> promise = Promise.promise();

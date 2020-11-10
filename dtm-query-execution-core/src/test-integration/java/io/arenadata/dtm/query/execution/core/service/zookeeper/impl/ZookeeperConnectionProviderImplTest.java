@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.zookeeper.impl;
 
-import io.arenadata.dtm.query.execution.core.configuration.properties.ZookeeperProperties;
+import io.arenadata.dtm.query.execution.core.configuration.properties.ServiceDbZookeeperProperties;
 import lombok.val;
 import org.apache.zookeeper.ZooKeeper;
 import org.junit.jupiter.api.Test;

@@ -2,6 +2,7 @@ package io.arenadata.dtm.query.execution.core.service.edml;
 
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.configuration.kafka.KafkaAdminProperty;
+import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.plugin.exload.Format;
@@ -627,8 +628,7 @@ class UploadKafkaExecutorTest {
                         .locationPath("kafka://kafka-1.dtm.local:9092/topic")
                         .format(Format.AVRO)
                         .build())
-                .zookeeperHost("kafka-1.dtm.local")
-                .zookeeperPort(9092)
+                .brokers(Collections.singletonList(new KafkaBrokerInfo("kafka.host", 9092)))
                 .topic("topic")
                 .build();
     }

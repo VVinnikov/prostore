@@ -38,8 +38,7 @@ public class AdqmMppwKafkaService implements MppwKafkaService<QueryResult> {
     @Autowired
     public AdqmMppwKafkaService(
             @Qualifier("adqmMppwStartRequestHandler") MppwRequestHandler startRequestHandler,
-            @Qualifier("adqmMppwFinishRequestHandler") MppwRequestHandler finishRequestHandler
-    ) {
+            @Qualifier("adqmMppwFinishRequestHandler") MppwRequestHandler finishRequestHandler) {
         handlers.put(LoadType.START, startRequestHandler);
         handlers.put(LoadType.FINISH, finishRequestHandler);
     }

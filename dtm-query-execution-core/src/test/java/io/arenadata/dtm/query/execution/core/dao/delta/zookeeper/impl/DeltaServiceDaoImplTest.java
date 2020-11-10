@@ -3,7 +3,7 @@ package io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.impl;
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.query.execution.core.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.core.configuration.properties.CoreDtmSettings;
-import io.arenadata.dtm.query.execution.core.configuration.properties.ZookeeperProperties;
+import io.arenadata.dtm.query.execution.core.configuration.properties.ServiceDbZookeeperProperties;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.impl.*;
 import io.arenadata.dtm.query.execution.core.dao.exception.delta.DeltaAlreadyStartedException;
 import io.arenadata.dtm.query.execution.core.dao.exception.delta.DeltaNotFinishedException;
@@ -65,7 +65,7 @@ public class DeltaServiceDaoImplTest {
 
     private void initExecutors(DeltaServiceDaoImpl dao) throws Exception {
         dtmSettings = new CoreDtmSettings(ZoneId.of("UTC"));
-        ZookeeperProperties properties = new ZookeeperProperties();
+        ServiceDbZookeeperProperties properties = new ServiceDbZookeeperProperties();
         properties.setChroot("/arena");
         properties.setConnectionString("localhost:55431");
         properties.setConnectionTimeoutMs(10_000);

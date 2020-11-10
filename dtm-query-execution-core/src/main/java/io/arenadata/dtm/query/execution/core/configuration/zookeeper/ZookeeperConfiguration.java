@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.core.configuration.zookeeper;
 
-import io.arenadata.dtm.query.execution.core.configuration.properties.ZookeeperProperties;
+import io.arenadata.dtm.query.execution.core.configuration.properties.ServiceDbZookeeperProperties;
 import io.arenadata.dtm.query.execution.core.service.zookeeper.ZookeeperConnectionProvider;
 import io.arenadata.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
 import io.arenadata.dtm.query.execution.core.service.zookeeper.impl.ZookeeperConnectionProviderImpl;
@@ -15,8 +15,9 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class ZookeeperConfiguration {
 
-    @Bean
-    public ZookeeperConnectionProvider zkConnectionManager(ZookeeperProperties properties, @Value("${core.env.name}") String envName) {
+    @Bean("serviceDbZkConnectionProvider")
+    public ZookeeperConnectionProvider serviceDbZkConnectionManager(ServiceDbZookeeperProperties properties,
+                                                                    @Value("${core.env.name}") String envName) {
         return new ZookeeperConnectionProviderImpl(properties, envName);
     }
 
@@ -24,5 +25,6 @@ public class ZookeeperConfiguration {
     public ZookeeperExecutor zookeeperExecutor(ZookeeperConnectionProvider connectionManager, Vertx vertx) {
         return new ZookeeperExecutorImpl(connectionManager, vertx);
     }
+
 
 }

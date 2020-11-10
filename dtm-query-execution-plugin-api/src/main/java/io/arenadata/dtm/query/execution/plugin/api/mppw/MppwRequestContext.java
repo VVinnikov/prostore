@@ -10,12 +10,20 @@ import static io.arenadata.dtm.query.execution.plugin.api.service.SqlProcessingT
 @ToString
 public class MppwRequestContext extends RequestContext<MppwRequest> {
 
-	public MppwRequestContext(MppwRequest request) {
-		super(request);
-	}
+    public MppwRequestContext(MppwRequest request) {
+        super(request);
+    }
 
-	@Override
-	public SqlProcessingType getProcessingType() {
-		return MPPW;
-	}
+    @Override
+    public SqlProcessingType getProcessingType() {
+        return MPPW;
+    }
+
+    public MppwRequestContext copy() {
+        return new MppwRequestContext(
+                new MppwRequest(
+                        this.getRequest().getQueryRequest(),
+                        this.getRequest().getIsLoadStart(),
+                        this.getRequest().getKafkaParameter()));
+    }
 }

@@ -1,5 +1,3 @@
-.kafkaUrl: &kafkaUrl ${KAFKA_BOOTSTRAP_SERVERS:10.92.3.25:9092}
-
 logging:
   level:
     io.arenadata.dtm.query.execution: TRACE
@@ -34,20 +32,13 @@ core:
   kafka:
     producer:
       property:
-        bootstrap.servers: *kafkaUrl
         key.serializer: org.apache.kafka.common.serialization.StringSerializer
         value.serializer: org.apache.kafka.common.serialization.StringSerializer
-    consumer:
-      core:
-        bootstrap.servers: *kafkaUrl
-        group.id: core-query-execution
-        key.deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
-        value.deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
-        number: 8
     cluster:
-      zookeeperHosts: ${ZOOKEEPER_HOSTS:10.92.3.25}
-      zookeeperPort: ${ZOOKEEPER_PORT:2181}
-      rootPath: ${KAFKA_CLUSTER_ROOTPATH:arenadata/cluster/21}
+      zookeeper:
+        connection-string: ${ZOOKEEPER_KAFKA_ADDRESS:10.92.3.25}
+        connection-timeout-ms: ${ZOOKEEPER_KAFKA_CONNECTION_TIMEOUT_MS:30000}
+        session-timeout-ms: ${ZOOKEEPER_KAFKA_SESSION_TIMEOUT_MS:86400000}
     admin:
       inputStreamTimeoutMs: ${KAFKA_INPUT_STREAM_TIMEOUT_MS:2000}
     status.event.publish:

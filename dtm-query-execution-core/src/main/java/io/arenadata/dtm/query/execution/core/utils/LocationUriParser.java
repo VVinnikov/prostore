@@ -10,12 +10,13 @@ import java.net.URI;
 public class LocationUriParser {
 
     public static final int DEFAULT_ZOOKEEPER_PORT = 2181;
+    private static final String HOST_DELIMITER = ":";
 
     public static KafkaTopicUri parseKafkaLocationPath(String locationPath) {
         try {
             URI uri = URI.create(locationPath);
             String topic = uri.getPath().substring(1);
-            String[] authorityArray = uri.getAuthority().split(":");
+            String[] authorityArray = uri.getAuthority().split(HOST_DELIMITER);
             String host = authorityArray[0];
             int port = authorityArray.length > 1 ? Integer.parseInt(authorityArray[1]) : DEFAULT_ZOOKEEPER_PORT;
             return new KafkaTopicUri(host, topic, port);
@@ -32,5 +33,9 @@ public class LocationUriParser {
         private String host;
         private String topic;
         private int port;
+
+        public String getAddress() {
+            return this.host + HOST_DELIMITER + this.port;
+        }
     }
 }

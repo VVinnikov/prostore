@@ -183,10 +183,10 @@ public class KafkaMonitorImpl implements KafkaMonitor {
     private long getLastMessageTime(String topic) {
         long lastMessageTime = 0;
 
-        List<TopicPartition> partitionsForRequestTopic = lastMessageTimeProvider.partitionsFor(topic).stream()
-                .map(partitionInfo -> new TopicPartition(partitionInfo.topic(), partitionInfo.partition()))
-                .collect(Collectors.toList());
         synchronized (lastMessageTimeProvider) {
+            List<TopicPartition> partitionsForRequestTopic = lastMessageTimeProvider.partitionsFor(topic).stream()
+                    .map(partitionInfo -> new TopicPartition(partitionInfo.topic(), partitionInfo.partition()))
+                    .collect(Collectors.toList());
             lastMessageTimeProvider.assign(partitionsForRequestTopic);
             lastMessageTimeProvider.seekToEnd(partitionsForRequestTopic);
 

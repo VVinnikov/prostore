@@ -67,11 +67,13 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                     context.getDestinationEntity().getName(),
                     context.getDestinationEntity().getSchema(),
                     destination);
-            destination.forEach(ds -> {
-                final MppwRequestContext mppwRequestContext = mppwKafkaRequestFactory.create(context);
-                startMppwFutureMap.put(ds, startMppw(ds, mppwRequestContext, context));
-            });
-            checkPluginsMppwExecution(startMppwFutureMap, resultHandler);
+            mppwKafkaRequestFactory.create(context)
+                    .onSuccess(mppwRequestContext -> {
+                        destination.forEach(ds ->
+                                startMppwFutureMap.put(ds, startMppw(ds, mppwRequestContext.copy(), context)));
+                        checkPluginsMppwExecution(startMppwFutureMap, resultHandler);
+                    })
+                    .onFailure(fail -> resultHandler.handle(Future.failedFuture(fail)));
         } catch (Exception e) {
             log.error("Error starting mppw download!", e);
             resultHandler.handle(Future.failedFuture(e));

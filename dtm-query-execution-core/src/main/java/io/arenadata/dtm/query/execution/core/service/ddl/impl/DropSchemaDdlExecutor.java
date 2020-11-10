@@ -5,6 +5,9 @@ import io.arenadata.dtm.query.calcite.core.extension.eddl.DropDatabase;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
+import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
+import io.arenadata.dtm.query.execution.core.service.cache.impl.HotDeltaCacheService;
+import io.arenadata.dtm.query.execution.core.service.cache.impl.OkDeltaCacheService;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
@@ -22,12 +25,21 @@ import static io.arenadata.dtm.query.execution.plugin.api.ddl.DdlType.DROP_SCHEM
 @Slf4j
 @Component
 public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
+    private final HotDeltaCacheService hotDeltaCacheService;
+    private final OkDeltaCacheService okDeltaCacheService;
+    private final EntityCacheService entityCacheService;
     private final DatamartDao datamartDao;
 
     @Autowired
     public DropSchemaDdlExecutor(MetadataExecutor<DdlRequestContext> metadataExecutor,
+                                 HotDeltaCacheService hotDeltaCacheService,
+                                 OkDeltaCacheService okDeltaCacheService,
+                                 EntityCacheService entityCacheService,
                                  ServiceDbFacade serviceDbFacade) {
         super(metadataExecutor, serviceDbFacade);
+        this.hotDeltaCacheService = hotDeltaCacheService;
+        this.okDeltaCacheService = okDeltaCacheService;
+        this.entityCacheService = entityCacheService;
         datamartDao = serviceDbFacade.getServiceDbDao().getDatamartDao();
     }
 
@@ -35,6 +47,7 @@ public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
     public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<QueryResult>> handler) {
         try {
             String schemaName = ((DropDatabase) context.getQuery()).getName().names.get(0);
+            clearCacheByDatamartName(schemaName);
             context.getRequest().getQueryRequest().setDatamartMnemonic(schemaName);
             context.setDatamartName(schemaName);
             datamartDao.existsDatamart(schemaName)
@@ -46,6 +59,12 @@ public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
             log.error("Error deleting datamart!", e);
             handler.handle(Future.failedFuture(e));
         }
+    }
+
+    private void clearCacheByDatamartName(String schemaName) {
+        entityCacheService.removeIf(ek -> ek.getDatamartName().equals(schemaName));
+        hotDeltaCacheService.remove(schemaName);
+        okDeltaCacheService.remove(schemaName);
     }
 
     private Future<Void> getNotExistsDatamartFuture(String schemaName) {

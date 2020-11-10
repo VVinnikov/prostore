@@ -53,6 +53,10 @@ public class EntityDaoImpl implements EntityDao {
     }
 
     @Override
+    @CacheEvict(
+            value = CacheConfiguration.ENTITY_CACHE,
+            key = "new io.arenadata.dtm.query.execution.core.service.cache.key.EntityKey(#entity.getSchema(), #entity.getName())"
+    )
     public Future<Void> createEntity(Entity entity) {
         try {
             byte[] entityData = DatabindCodec.mapper().writeValueAsBytes(entity);

@@ -14,4 +14,5 @@ public interface TtClient {
   void call(Handler<AsyncResult<List<?>>> handler, String function, Object... args);
   void callQuery(Handler<AsyncResult<List<?>>> handler, String sql, Object... params);
   void callLoadLines(Handler<AsyncResult<List<?>>> handler, String table, Object... rows);
+  boolean isAlive();
 }

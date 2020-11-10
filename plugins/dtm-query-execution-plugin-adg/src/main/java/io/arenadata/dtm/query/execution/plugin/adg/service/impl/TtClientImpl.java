@@ -34,6 +34,7 @@ public class TtClientImpl implements TtClient {
     config.password = tarantoolProperties.getPassword();
     config.operationExpiryTimeMillis = tarantoolProperties.getOperationTimeout();
     config.retryCount = tarantoolProperties.getRetryCount();
+    config.initTimeoutMillis = tarantoolProperties.getInitTimeoutMillis();
     SocketChannelProvider socketChannelProvider = (i, throwable) -> {
       SocketChannel channel;
       try {
@@ -90,5 +91,8 @@ public class TtClientImpl implements TtClient {
     call(handler, "load_lines", table, rows);
   }
 
-
+  @Override
+  public boolean isAlive() {
+    return client.isAlive();
+  }
 }

@@ -55,7 +55,7 @@ public class EdmlUploadFailedExecutorImpl implements EdmlUploadFailedExecutor {
     public Future<Void> eraseWriteOp(RollbackRequestContext context) {
         return Future.future(rbPromise -> {
             List<Future> futures = new ArrayList<>();
-            dataSourcePluginService.getSourceTypes().forEach(sourceType ->
+            context.getRequest().getEntity().getDestination().forEach(sourceType ->
                 futures.add(Future.future(p -> dataSourcePluginService.rollback(
                     sourceType,
                     context,

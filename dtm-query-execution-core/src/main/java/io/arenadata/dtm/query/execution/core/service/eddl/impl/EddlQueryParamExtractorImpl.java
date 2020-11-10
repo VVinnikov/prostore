@@ -183,7 +183,7 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
 
     @NotNull
     private String getZookeeperHostPort() {
-        return kafkaProperties.getCluster().getZookeeperHosts() + ":" + kafkaProperties.getCluster().getZookeeperPort();
+        return kafkaProperties.getCluster().getZookeeperHost() + ":" + kafkaProperties.getCluster().getZookeeperPort();
     }
 
     private void extractDropUploadExternalTable(SqlDropUploadExternalTable sqlNode, String defaultSchema, Handler<AsyncResult<EddlQuery>> asyncResultHandler) {

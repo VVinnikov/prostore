@@ -4,7 +4,6 @@ import lombok.Data;
 
 @Data
 public class KafkaClusterProperty {
-  String zookeeperHosts = "";
+  String zookeeperHost = "";
   Integer zookeeperPort = 2181;
-  String rootPath = "";
 }

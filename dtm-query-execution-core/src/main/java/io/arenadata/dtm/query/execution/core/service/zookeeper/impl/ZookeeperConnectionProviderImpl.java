@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.zookeeper.impl;
 
-import io.arenadata.dtm.query.execution.core.configuration.properties.ZookeeperProperties;
+import io.arenadata.dtm.query.execution.core.configuration.properties.ServiceDbZookeeperProperties;
 import io.arenadata.dtm.query.execution.core.service.zookeeper.ZookeeperConnectionProvider;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -18,11 +18,11 @@ import static org.apache.zookeeper.Watcher.Event.KeeperState.SyncConnected;
 
 @Slf4j
 public class ZookeeperConnectionProviderImpl implements ZookeeperConnectionProvider {
-    private final ZookeeperProperties properties;
+    private final ServiceDbZookeeperProperties properties;
     private ZooKeeper connection;
     private boolean synConnected;
 
-    public ZookeeperConnectionProviderImpl(ZookeeperProperties properties, String envName) {
+    public ZookeeperConnectionProviderImpl(ServiceDbZookeeperProperties properties, String envName) {
         this.properties = properties;
         initializeChroot(envName);
     }

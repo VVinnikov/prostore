@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl.mppw;
 
+import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
 import io.arenadata.dtm.common.plugin.exload.Format;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.AdgConnectorApiProperties;
@@ -23,6 +24,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.mockito.Mockito;
 import org.mockito.internal.verification.VerificationModeFactory;
+
+import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -195,8 +198,7 @@ class AdgMppwKafkaServiceTest {
                         .locationPath("kafka://kafka-1.dtm.local:9092/topic")
                         .format(Format.AVRO)
                         .build())
-                .zookeeperHost("kafka-1.dtm.local")
-                .zookeeperPort(9092)
+                .brokers(Collections.singletonList(new KafkaBrokerInfo("kafka.host", 9092)))
                 .topic("topic1")
                 .build();
     }

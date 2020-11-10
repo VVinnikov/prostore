@@ -3,7 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adb.verticle.worker;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.MppwTopic;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwKafkaRequestContext;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwTransferDataRequest;
-import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.RestLoadRequest;
+import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.RestMppwKafkaLoadRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.handler.AdbMppwHandler;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
@@ -37,9 +37,9 @@ public class AdbMppwWorker extends AbstractVerticle {
     }
 
     private void handleStartMppwKafka(Message<String> requestMessage) {
-        final RestLoadRequest restLoadRequest =
+        final RestMppwKafkaLoadRequest restLoadRequest =
                 Json.decodeValue(((JsonObject) Json.decodeValue(requestMessage.body()))
-                        .getJsonObject("restLoadRequest").toString(), RestLoadRequest.class);
+                        .getJsonObject("restLoadRequest").toString(), RestMppwKafkaLoadRequest.class);
         final MppwTransferDataRequest transferDataRequest =
                 Json.decodeValue(((JsonObject) Json.decodeValue(requestMessage.body()))
                         .getJsonObject("mppwTransferDataRequest").toString(), MppwTransferDataRequest.class);

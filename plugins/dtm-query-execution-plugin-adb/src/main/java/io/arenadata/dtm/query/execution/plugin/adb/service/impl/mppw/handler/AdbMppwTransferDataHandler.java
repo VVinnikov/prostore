@@ -3,7 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.handler;
 import io.arenadata.dtm.query.execution.plugin.adb.configuration.properties.MppwProperties;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.AdbMppwDataTransferService;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwKafkaRequestContext;
-import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.RestLoadRequest;
+import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.RestMppwKafkaLoadRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.buffer.Buffer;
@@ -39,7 +39,7 @@ public class AdbMppwTransferDataHandler implements AdbMppwHandler {
                         mppwDataTransferService.execute(requestContext.getMppwTransferDataRequest(), p)));
     }
 
-    private Future<Void> sendLoadingRequest(RestLoadRequest request) {
+    private Future<Void> sendLoadingRequest(RestMppwKafkaLoadRequest request) {
         return Future.future((Promise<Void> promise) -> {
             JsonObject data = JsonObject.mapFrom(request);
             log.debug("Send request to emulator-writer: [{}]", request);

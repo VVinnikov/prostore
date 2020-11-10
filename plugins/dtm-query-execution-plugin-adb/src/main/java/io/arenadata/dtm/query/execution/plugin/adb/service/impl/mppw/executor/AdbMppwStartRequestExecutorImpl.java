@@ -9,7 +9,7 @@ import io.arenadata.dtm.query.execution.plugin.adb.factory.MppwTransferRequestFa
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.MppwTopic;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwKafkaRequestContext;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwTransferDataRequest;
-import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.RestLoadRequest;
+import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.RestMppwKafkaLoadRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import io.vertx.core.Future;
@@ -49,7 +49,7 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
     @Override
     public Future<QueryResult> execute(MppwRequestContext context) {
         return Future.future((Promise<QueryResult> promise) -> {
-            final RestLoadRequest restLoadRequest = mppwRestLoadRequestFactory.create(context);
+            final RestMppwKafkaLoadRequest restLoadRequest = mppwRestLoadRequestFactory.create(context);
             if (!restLoadRequest.getFormat().equals(Format.AVRO.getName())) {
                 promise.fail(new RuntimeException(String.format("Format %s not implemented", restLoadRequest.getFormat())));
             }
@@ -64,7 +64,7 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
     }
 
     private Future<MppwKafkaRequestContext> createMppwKafkaRequestContext(MppwRequestContext context,
-                                                                          RestLoadRequest restLoadRequest) {
+                                                                          RestMppwKafkaLoadRequest restLoadRequest) {
         return Future.future((Promise<MppwKafkaRequestContext> promise) -> {
             final String keyColumnsSqlQuery = metadataSqlFactory.createKeyColumnsSqlQuery(
                     context.getRequest().getKafkaParameter().getDatamart(),

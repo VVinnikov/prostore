@@ -2,6 +2,8 @@ package io.arenadata.dtm.kafka.core.service.kafka;
 
 import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
 import io.arenadata.dtm.kafka.core.configuration.kafka.KafkaZookeeperProperties;
+import io.vertx.core.Future;
+import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -23,9 +25,11 @@ public class KafkaZookeeperConnectionProviderImpl implements KafkaZookeeperConne
     private final KafkaZookeeperProperties properties;
     private ZooKeeper connection;
     private boolean synConnected;
+    private Vertx vertx;
 
-    public KafkaZookeeperConnectionProviderImpl(KafkaZookeeperProperties properties) {
+    public KafkaZookeeperConnectionProviderImpl(Vertx vertx, KafkaZookeeperProperties properties) {
         this.properties = properties;
+        this.vertx = vertx;
     }
 
     @Override

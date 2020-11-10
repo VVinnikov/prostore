@@ -1,23 +1,25 @@
-package io.arenadata.dtm.query.execution.core.dao.zookeeper;
+package io.arenadata.dtm.kafka.core.repository;
 
 import io.arenadata.dtm.kafka.core.configuration.kafka.KafkaZookeeperProperties;
 import io.arenadata.dtm.kafka.core.service.kafka.KafkaZookeeperConnectionProvider;
 import io.arenadata.dtm.kafka.core.service.kafka.KafkaZookeeperConnectionProviderImpl;
+import io.vertx.core.Vertx;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-@Component
+@Component("mapZkKafkaProviderRepository")
 public class ZookeeperKafkaProviderRepositoryImpl implements ZookeeperKafkaProviderRepository {
 
-    private final Map<String, KafkaZookeeperConnectionProvider> zkConnProviderMap;
+    private final Map<String, KafkaZookeeperConnectionProvider> zkConnProviderMap = new ConcurrentHashMap<>();
+    private final Vertx vertx;
 
     @Autowired
-    public ZookeeperKafkaProviderRepositoryImpl(@Qualifier("coreKafkaZkConnProviderMap")
-                                                        Map<String, KafkaZookeeperConnectionProvider> zkConnProviderMap) {
-        this.zkConnProviderMap = zkConnProviderMap;
+    public ZookeeperKafkaProviderRepositoryImpl(@Qualifier("coreVertx") Vertx vertx) {
+        this.vertx = vertx;
     }
 
     @Override
@@ -27,7 +29,7 @@ public class ZookeeperKafkaProviderRepositoryImpl implements ZookeeperKafkaProvi
         zookeeperProperties.setConnectionString(connectionString);
         if (zkConnProvider == null) {
             zkConnProviderMap.put(zookeeperProperties.getConnectionString(),
-                    new KafkaZookeeperConnectionProviderImpl(zookeeperProperties));
+                    new KafkaZookeeperConnectionProviderImpl(this.vertx, zookeeperProperties));
         }
         return zkConnProviderMap.get(zookeeperProperties.getConnectionString());
     }

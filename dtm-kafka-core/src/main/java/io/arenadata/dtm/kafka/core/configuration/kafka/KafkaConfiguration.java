@@ -5,8 +5,8 @@ import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
 import io.arenadata.dtm.kafka.core.configuration.properties.KafkaProperties;
 import io.arenadata.dtm.kafka.core.factory.KafkaProducerFactory;
 import io.arenadata.dtm.kafka.core.factory.impl.VertxKafkaProducerFactory;
+import io.arenadata.dtm.kafka.core.repository.ZookeeperKafkaProviderRepository;
 import io.arenadata.dtm.kafka.core.service.kafka.KafkaConsumerMonitor;
-import io.arenadata.dtm.kafka.core.service.kafka.KafkaZookeeperConnectionProvider;
 import io.arenadata.dtm.kafka.core.service.kafka.RestConsumerMonitorImpl;
 import io.vertx.core.Vertx;
 import io.vertx.kafka.client.producer.KafkaProducer;
@@ -21,20 +21,24 @@ import java.util.stream.Collectors;
 
 
 @Configuration
-@DependsOn({"coreKafkaProperties", "coreKafkaZkConnProviderMap"})
+@DependsOn({"coreKafkaProperties", "mapZkKafkaProviderRepository"})
 public class KafkaConfiguration {
 
     private static final String BOOTSTRAP_SERVERS = "bootstrap.servers";
+    private static final String BROKERS_DELIMITER = ",";
 
     @Bean("coreKafkaProducerFactory")
-    public KafkaProducerFactory<String, String> kafkaProviderFactory(@Qualifier("coreKafkaZkConnProviderMap")
-                                                                             Map<String, KafkaZookeeperConnectionProvider> zkConnProviderMap,
+    public KafkaProducerFactory<String, String> kafkaProviderFactory(@Qualifier("mapZkKafkaProviderRepository")
+                                                                             ZookeeperKafkaProviderRepository zkConnProviderRepo,
                                                                      KafkaZookeeperProperties kafkaZkProperties,
                                                                      KafkaProperties kafkaProperties,
                                                                      @Qualifier("coreVertx") Vertx vertx) {
         Map<String, String> kafkaPropertyMap = new HashMap<>(kafkaProperties.getProducer().getProperty());
-        final String kafkaBrokerList = getKafkaBrokersStr(zkConnProviderMap, kafkaZkProperties);
-        kafkaPropertyMap.put("bootstrap.servers", kafkaBrokerList);
+        String kafkaBrokers =
+                zkConnProviderRepo.getOrCreate(kafkaZkProperties.getConnectionString()).getKafkaBrokers().stream()
+                        .map(KafkaBrokerInfo::getAddress)
+                        .collect(Collectors.joining(BROKERS_DELIMITER));
+        kafkaPropertyMap.put(BOOTSTRAP_SERVERS, kafkaBrokers);
         return new VertxKafkaProducerFactory<>(vertx, kafkaPropertyMap);
     }
 
@@ -47,18 +51,15 @@ public class KafkaConfiguration {
     @Bean("jsonCoreKafkaProducer")
     public KafkaProducer<String, String> jsonCoreKafkaProducer(@Qualifier("coreKafkaProducerFactory") KafkaProducerFactory<String, String> producerFactory,
                                                                @Qualifier("coreKafkaProperties") KafkaProperties kafkaProperties,
-                                                               @Qualifier("coreKafkaZkConnProviderMap")
-                                                                       Map<String, KafkaZookeeperConnectionProvider> zkConnProviderMap,
+                                                               @Qualifier("mapZkKafkaProviderRepository")
+                                                                       ZookeeperKafkaProviderRepository zkConnProviderRepo,
                                                                KafkaZookeeperProperties kafkaZkProperties) {
         Map<String, String> kafkaPropertyMap = new HashMap<>(kafkaProperties.getProducer().getProperty());
-        final String kafkaBrokerList = getKafkaBrokersStr(zkConnProviderMap, kafkaZkProperties);
-        kafkaPropertyMap.put(BOOTSTRAP_SERVERS, kafkaBrokerList);
+        String kafkaBrokers =
+                zkConnProviderRepo.getOrCreate(kafkaZkProperties.getConnectionString()).getKafkaBrokers().stream()
+                        .map(KafkaBrokerInfo::getAddress)
+                        .collect(Collectors.joining(BROKERS_DELIMITER));
+        kafkaPropertyMap.put(BOOTSTRAP_SERVERS, kafkaBrokers);
         return producerFactory.create(kafkaPropertyMap);
-    }
-
-    private String getKafkaBrokersStr(Map<String, KafkaZookeeperConnectionProvider> zkConnProviderMap, KafkaZookeeperProperties kafkaZkProperties) {
-        return zkConnProviderMap.get(kafkaZkProperties.getConnectionString()).getKafkaBrokers().stream()
-                .map(KafkaBrokerInfo::getAddress)
-                .collect(Collectors.joining(","));
     }
 }

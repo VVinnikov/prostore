@@ -25,10 +25,10 @@ public class TtClientImpl implements TtClient {
   public TtClientImpl(TarantoolDatabaseProperties tarantoolProperties, TtResultTranslator resultTranslator) {
     this.tarantoolProperties = tarantoolProperties;
     this.resultTranslator = resultTranslator;
-    initClient();
+    init();
   }
 
-  private synchronized TarantoolClient initClient() {
+  private void init() {
     TarantoolClientConfig config = new TarantoolClientConfig();
     config.username = tarantoolProperties.getUser();
     config.password = tarantoolProperties.getPassword();
@@ -46,7 +46,6 @@ public class TtClientImpl implements TtClient {
       }
     };
     this.client = new TarantoolClientImpl(socketChannelProvider, config);
-    return client;
   }
 
   @Override
@@ -56,7 +55,7 @@ public class TtClientImpl implements TtClient {
 
   @Override
   public void eval(Handler<AsyncResult<List<?>>> handler, String expression, Object... args) {
-    getClient().composableAsyncOps().eval(expression, args)
+    client.composableAsyncOps().eval(expression, args)
       .thenAccept(res -> {
         handler.handle(Future.succeededFuture(resultTranslator.translate(res)));
       })
@@ -68,7 +67,7 @@ public class TtClientImpl implements TtClient {
 
   @Override
   public void call(Handler<AsyncResult<List<?>>> handler, String function, Object... args) {
-    getClient().composableAsyncOps().call(function, args)
+    client.composableAsyncOps().call(function, args)
       .thenAccept(res -> {
         handler.handle(Future.succeededFuture(resultTranslator.translate(res)));
       })
@@ -92,7 +91,8 @@ public class TtClientImpl implements TtClient {
     call(handler, "load_lines", table, rows);
   }
 
-  private TarantoolClient getClient() {
-      return client.isAlive() ? client : initClient();
+  @Override
+  public boolean isAlive() {
+    return client.isAlive();
   }
 }

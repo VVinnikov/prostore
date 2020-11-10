@@ -16,6 +16,7 @@ public class TtPool extends GenericObjectPool<TtClient> {
 
   public TtPool(PooledObjectFactory<TtClient> factory, GenericObjectPoolConfig<TtClient> config) {
     super(factory, config);
+    setTestOnBorrow(true);
   }
 
   public TtPool(PooledObjectFactory<TtClient> factory, GenericObjectPoolConfig<TtClient> config, AbandonedConfig abandonedConfig) {

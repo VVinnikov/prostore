@@ -37,4 +37,9 @@ public class TtClientFactory extends BasePooledObjectFactory<TtClient> {
   public void destroyObject(PooledObject<TtClient> p) {
     p.getObject().close();
   }
+
+  @Override
+  public boolean validateObject(PooledObject<TtClient> p) {
+    return p.getObject().isAlive();
+  }
 }

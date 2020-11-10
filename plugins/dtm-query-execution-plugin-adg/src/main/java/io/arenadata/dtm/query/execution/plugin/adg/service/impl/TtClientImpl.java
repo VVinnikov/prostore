@@ -25,10 +25,10 @@ public class TtClientImpl implements TtClient {
   public TtClientImpl(TarantoolDatabaseProperties tarantoolProperties, TtResultTranslator resultTranslator) {
     this.tarantoolProperties = tarantoolProperties;
     this.resultTranslator = resultTranslator;
-    init();
+    initClient();
   }
 
-  private void init() {
+  private synchronized TarantoolClient initClient() {
     TarantoolClientConfig config = new TarantoolClientConfig();
     config.username = tarantoolProperties.getUser();
     config.password = tarantoolProperties.getPassword();
@@ -46,6 +46,7 @@ public class TtClientImpl implements TtClient {
       }
     };
     this.client = new TarantoolClientImpl(socketChannelProvider, config);
+    return client;
   }
 
   @Override
@@ -92,9 +93,6 @@ public class TtClientImpl implements TtClient {
   }
 
   private TarantoolClient getClient() {
-    if (client.isClosed()) {
-      init();
-    }
-    return client;
+      return client.isAlive() ? client : initClient();
   }
 }

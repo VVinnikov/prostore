@@ -1,10 +1,11 @@
 package io.arenadata.dtm.query.execution.core.service.cache.key;
 
-import java.util.ArrayList;
-import java.util.Arrays;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 
-public class EntityKey extends ArrayList<String> {
-    public EntityKey(String datamartName, String entityName) {
-        super(Arrays.asList(datamartName, entityName));
-    }
+@Data
+@AllArgsConstructor
+public class EntityKey {
+    private final String datamartName;
+    private final String entityName;
 }

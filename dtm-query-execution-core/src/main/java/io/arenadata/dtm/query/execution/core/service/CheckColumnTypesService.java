@@ -7,5 +7,5 @@ import io.vertx.core.Future;
 import java.util.List;
 
 public interface CheckColumnTypesService {
-    Future<Boolean> check(List<ColumnType> checkColumns, QueryParserRequest queryParseRequest);
+    Future<Boolean> check(List<ColumnType> checkColumnTypes, QueryParserRequest queryParseRequest);
 }

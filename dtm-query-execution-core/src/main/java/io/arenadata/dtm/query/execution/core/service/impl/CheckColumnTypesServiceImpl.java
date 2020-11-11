@@ -24,7 +24,7 @@ public class CheckColumnTypesServiceImpl implements CheckColumnTypesService {
     }
 
     @Override
-    public Future<Boolean> check(List<ColumnType> checkColumns, QueryParserRequest queryParseRequest) {
+    public Future<Boolean> check(List<ColumnType> checkColumnTypes, QueryParserRequest queryParseRequest) {
         return Future.future(promise -> queryParserService.parse(queryParseRequest, ar -> {
             try {
                 if (ar.succeeded()) {
@@ -32,7 +32,7 @@ public class CheckColumnTypesServiceImpl implements CheckColumnTypesService {
                     List<ColumnType> columns = relNode.getRowType().getFieldList().stream()
                             .map(field -> ColumnType.valueOf(field.getType().getSqlTypeName().getName()))
                             .collect(Collectors.toList());
-                    promise.complete(columns.equals(checkColumns));
+                    promise.complete(columns.equals(checkColumnTypes));
                 } else {
                     promise.fail(ar.cause());
 

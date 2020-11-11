@@ -24,8 +24,8 @@ class DatamartDaoImplTest {
         dao = new DatamartDaoImpl(executor, "test1");
     }
 
-    private ZookeeperProperties getZookeeperProperties() {
-        ZookeeperProperties properties = new ZookeeperProperties();
+    private ServiceDbZookeeperProperties getZookeeperProperties() {
+        ServiceDbZookeeperProperties properties = new ServiceDbZookeeperProperties();
         properties.setSessionTimeoutMs(864_000);
         properties.setConnectionString("localhost");
         properties.setConnectionTimeoutMs(10_000);

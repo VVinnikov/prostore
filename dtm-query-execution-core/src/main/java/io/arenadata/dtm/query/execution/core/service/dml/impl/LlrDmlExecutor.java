@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.core.service.dml.impl;
 
-import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.reader.*;
 import io.arenadata.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
@@ -23,8 +22,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Component
 public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
@@ -35,6 +32,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
     private final LogicViewReplacer logicViewReplacer;
     private final ColumnMetadataService columnMetadataService;
     private final InformationSchemaExecutor informationSchemaExecutor;
+    private final InformationSchemaDefinitionService informationSchemaDefinitionService;
     private final LogicalSchemaProvider logicalSchemaProvider;
 
     @Autowired
@@ -44,6 +42,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                           LogicViewReplacer logicViewReplacer,
                           ColumnMetadataService columnMetadataService,
                           InformationSchemaExecutor informationSchemaExecutor,
+                          InformationSchemaDefinitionService informationSchemaDefinitionService,
                           LogicalSchemaProvider logicalSchemaProvider) {
         this.dataSourcePluginService = dataSourcePluginService;
         this.targetDatabaseDefinitionService = targetDatabaseDefinitionService;
@@ -51,6 +50,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
         this.logicViewReplacer = logicViewReplacer;
         this.informationSchemaExecutor = informationSchemaExecutor;
         this.columnMetadataService = columnMetadataService;
+        this.informationSchemaDefinitionService = informationSchemaDefinitionService;
         this.logicalSchemaProvider = logicalSchemaProvider;
     }
 
@@ -117,7 +117,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
 
     private Future<QueryResult> executeRequest(QuerySourceRequest sourceRequest) {
         return Future.future(promise -> {
-            if (isInformationSchemaRequest(sourceRequest)) {
+            if (informationSchemaDefinitionService.isInformationSchemaRequest(sourceRequest)) {
                 informationSchemaExecute(sourceRequest)
                         .onComplete(promise);
             } else {
@@ -154,18 +154,4 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
         return SqlKind.SELECT;
     }
 
-    private boolean isInformationSchemaRequest(QuerySourceRequest request) {
-        Set<String> unicSchemes = request.getQueryRequest().getDeltaInformations().stream()
-                .map(DeltaInformation::getSchemaName)
-                .map(String::toUpperCase)
-                .collect(Collectors.toSet());
-
-        boolean informationSchemaExists = unicSchemes.contains(InformationSchemaView.SCHEMA_NAME);
-
-        if (unicSchemes.size() > 1 && informationSchemaExists) {
-            throw new IllegalArgumentException("Simultaneous query to the information schema and user schema isn't supported");
-        } else {
-            return informationSchemaExists;
-        }
-    }
 }

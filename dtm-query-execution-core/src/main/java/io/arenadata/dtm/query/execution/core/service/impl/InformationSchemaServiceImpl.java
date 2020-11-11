@@ -5,8 +5,11 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.InformationSchemaView;
+import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateView;
+import io.arenadata.dtm.query.execution.core.dao.exception.datamart.DatamartAlreadyExistsException;
+import io.arenadata.dtm.query.execution.core.dao.exception.entity.EntityAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.service.DdlQueryGenerator;
@@ -49,7 +52,6 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     private final DatamartDao datamartDao;
     private final EntityDao entityDao;
     private final HSQLClient client;
-    private Map<String, Entity> entities;
 
     @Autowired
     public InformationSchemaServiceImpl(HSQLClient client,
@@ -165,11 +167,6 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     }
 
     @Override
-    public Map<String, Entity> getEntities() {
-        return entities;
-    }
-
-    @Override
     public Future<Void> createInformationSchemaViews() {
         log.info("Information schema initialized start");
         return client.executeBatch(informationSchemaViewsQueries())
@@ -187,7 +184,7 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
                         .collect(Collectors.groupingBy(col -> col.getString(TABLE_NAME_COLUMN_INDEX),
                             Collectors.mapping(this::createField, Collectors.toList())));
 
-                    entities = Arrays.stream(InformationSchemaView.values())
+                    val entities = Arrays.stream(InformationSchemaView.values())
                         .flatMap(view -> {
                             final String viewRealName = view.getRealName().toUpperCase();
                             return Optional.ofNullable(fieldsByView.get(viewRealName))
@@ -196,13 +193,50 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
                                     String.format("View [%s.%s] doesn't exist",
                                         InformationSchemaView.DTM_SCHEMA_NAME, viewRealName)));
                         })
-                        .collect(Collectors.toMap(Entity::getName, Function.identity()));
-                    promise.complete();
+                        .collect(Collectors.toList());
+
+                    createLogicSchemaDatamartInDatasource()
+                            .compose(r -> storeLogicSchemaInDatasource(entities))
+                            .onSuccess(success -> promise.complete())
+                            .onFailure(promise::fail);
+
                 } catch (Exception e) {
                     promise.fail(e);
                 }
             })
             .onFailure(promise::fail));
+    }
+
+    private Future<Void> createLogicSchemaDatamartInDatasource() {
+        return Future.future(promise -> {
+            datamartDao.createDatamart(InformationSchemaView.SCHEMA_NAME.toLowerCase())
+                    .onSuccess(r -> promise.complete())
+                    .onFailure(error -> {
+                        if (error instanceof DatamartAlreadyExistsException) {
+                            promise.complete();
+                        }
+                        else {
+                            promise.fail(error);
+                        }
+                    });
+        });
+    }
+
+    private Future<Void> storeLogicSchemaInDatasource(List<Entity> entities) {
+        return Future.future(p -> {
+            CompositeFuture.join(entities.stream()
+                    .map(entityDao::createEntity)
+                    .collect(Collectors.toList()))
+                    .onSuccess(success -> p.complete())
+                    .onFailure(error -> {
+                        if (error instanceof EntityAlreadyExistsException) {
+                            p.complete();
+                        }
+                        else {
+                            p.fail(error);
+                        }
+                    });
+        });
     }
 
     private String createInitEntitiesQuery() {
@@ -224,7 +258,7 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     private EntityField createField(final JsonArray jsonArray) {
         return EntityField.builder()
             .ordinalPosition(jsonArray.getInteger(ORDINAL_POSITION_COLUMN_INDEX))
-            .name(jsonArray.getString(COLUMN_NAME_COLUMN_INDEX))
+            .name(jsonArray.getString(COLUMN_NAME_COLUMN_INDEX).toLowerCase())
             .type(ColumnType.valueOf(jsonArray.getString(DATA_TYPE_COLUMN_INDEX)))
             .nullable(IS_NULLABLE_COLUMN_TRUE.equals(jsonArray.getString(IS_NULLABLE_COLUMN_INDEX)))
             .build();
@@ -233,17 +267,17 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     private List<Entity> createEntity(final InformationSchemaView view, final List<EntityField> fields) {
         return Arrays.asList(
             Entity.builder()
-                .schema(InformationSchemaView.SCHEMA_NAME)
+                .schema(InformationSchemaView.SCHEMA_NAME.toLowerCase())
                 .entityType(EntityType.VIEW)
-                .name(view.name())
-                .viewQuery(String.format("select * from %s.%s", InformationSchemaView.DTM_SCHEMA_NAME,
+                .name(view.name().toLowerCase())
+                .viewQuery(String.format("select * from %s.%s", InformationSchemaView.SCHEMA_NAME.toLowerCase(),
                     view.getRealName()))
                 .fields(fields)
                 .build(),
             Entity.builder()
-                .schema(InformationSchemaView.DTM_SCHEMA_NAME)
+                .schema(InformationSchemaView.SCHEMA_NAME.toLowerCase())
                 .entityType(EntityType.TABLE)
-                .name(view.getRealName().toUpperCase())
+                .name(view.getRealName().toLowerCase())
                 .fields(fields)
                 .build());
     }
@@ -265,6 +299,7 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
 
     private Future<Void> createSchemas(List<String> datamarts) {
         return Future.future(p -> CompositeFuture.join(datamarts.stream()
+            .filter(datamart -> !InformationSchemaView.SCHEMA_NAME.equals(datamart.toUpperCase()))
             .map(this::createSchemaForDatamart)
             .collect(Collectors.toList()))
             .onSuccess(success -> p.complete())

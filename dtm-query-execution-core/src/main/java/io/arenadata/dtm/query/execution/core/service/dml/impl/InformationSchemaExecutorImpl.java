@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.dml.impl;
 
 import io.arenadata.dtm.common.dto.QueryParserRequest;
+import io.arenadata.dtm.common.reader.InformationSchemaView;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.QuerySourceRequest;
 import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
@@ -61,7 +62,9 @@ public class InformationSchemaExecutorImpl implements InformationSchemaExecutor 
                 parserService.parse(parserRequest, ar -> {
                     if (ar.succeeded()) {
                         val enrichmentNode = ar.result().getSqlNode();
-                        p.complete(enrichmentNode.toSqlString(coreSqlDialect).getSql());
+                        val enrichmentSql = enrichmentNode.toSqlString(coreSqlDialect).getSql()
+                                .replace(InformationSchemaView.SCHEMA_NAME.toLowerCase(), InformationSchemaView.DTM_SCHEMA_NAME.toLowerCase());
+                        p.complete(enrichmentSql);
                     } else {
                         p.fail(ar.cause());
                     }

@@ -5,15 +5,15 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 
 /**
- * Сервис оперделения целевой субд
+ * Service for target database definition
  */
 public interface TargetDatabaseDefinitionService {
 
   /**
-   * Получить тип целевого ресурса
+   * Get target source type
    *
-   * @param request запрос
-   * @return запрос с определенным типом
+   * @param request request
+   * @return request with defined type
    */
   void getTargetSource(QuerySourceRequest request, Handler<AsyncResult<QuerySourceRequest>> handler);
 }

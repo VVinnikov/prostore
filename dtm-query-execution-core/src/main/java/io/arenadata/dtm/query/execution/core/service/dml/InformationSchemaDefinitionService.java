@@ -7,5 +7,5 @@ import java.util.Optional;
 
 public interface InformationSchemaDefinitionService {
 
-    Future<Optional<QuerySourceRequest>> tryGetInformationSchemaRequest(QuerySourceRequest request);
+    boolean isInformationSchemaRequest(QuerySourceRequest request);
 }

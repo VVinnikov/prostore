@@ -1,10 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.dml.impl;
 
 import io.arenadata.dtm.common.dto.QueryParserRequest;
-import io.arenadata.dtm.common.reader.QueryRequest;
-import io.arenadata.dtm.common.reader.QueryResult;
-import io.arenadata.dtm.common.reader.QuerySourceRequest;
-import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.common.reader.*;
 import io.arenadata.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.dml.*;
@@ -25,7 +22,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Optional;
 
 @Component
 public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
@@ -69,8 +65,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                         sourceRequest.setQueryRequest(request);
                         return request;
                     })
-                    .compose(v -> informationSchemaDefinitionService.tryGetInformationSchemaRequest(sourceRequest))
-                    .compose(request -> initLogicalSchema(request, sourceRequest))
+                    .compose(v -> initLogicalSchema(sourceRequest))
                     .compose(this::initColumnMetaData)
                     .compose(this::executeRequest)
                     .onComplete(asyncResultHandler);
@@ -91,17 +86,12 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
         }));
     }
 
-    private Future<QuerySourceRequest> initLogicalSchema(Optional<QuerySourceRequest> infoSchemaRequest,
-                                                         QuerySourceRequest sourceRequest) {
-        if (infoSchemaRequest.isPresent()) {
-            return Future.succeededFuture(infoSchemaRequest.get());
-        } else {
-            return getLogicalSchema(sourceRequest)
-                    .map(logicalSchema -> {
-                        sourceRequest.setLogicalSchema(logicalSchema);
-                        return sourceRequest;
-                    });
-        }
+    private Future<QuerySourceRequest> initLogicalSchema(QuerySourceRequest sourceRequest) {
+        return getLogicalSchema(sourceRequest)
+                .map(logicalSchema -> {
+                    sourceRequest.setLogicalSchema(logicalSchema);
+                    return sourceRequest;
+                });
     }
 
     private Future<List<Datamart>> getLogicalSchema(QuerySourceRequest sourceRequest) {
@@ -127,7 +117,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
 
     private Future<QueryResult> executeRequest(QuerySourceRequest sourceRequest) {
         return Future.future(promise -> {
-            if (sourceRequest.getSourceType() == SourceType.INFORMATION_SCHEMA) {
+            if (informationSchemaDefinitionService.isInformationSchemaRequest(sourceRequest)) {
                 informationSchemaExecute(sourceRequest)
                         .onComplete(promise);
             } else {
@@ -163,4 +153,5 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
     public SqlKind getSqlKind() {
         return SqlKind.SELECT;
     }
+
 }

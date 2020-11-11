@@ -24,12 +24,10 @@ import java.util.Map;
 public class LogicalSchemaProviderImpl implements LogicalSchemaProvider {
 
     private final LogicalSchemaService logicalSchemaService;
-    private final Map<DatamartSchemaKey, Entity> datamartSchemaMap;
 
     @Autowired
     public LogicalSchemaProviderImpl(LogicalSchemaService logicalSchemaService) {
         this.logicalSchemaService = logicalSchemaService;
-        this.datamartSchemaMap = new HashMap<>();
     }
 
     @Override
@@ -39,8 +37,7 @@ public class LogicalSchemaProviderImpl implements LogicalSchemaProvider {
                 if (ar.succeeded()) {
                     Map<DatamartSchemaKey, Entity> datamartTableMap = ar.result();
                     log.trace("Received data schema on request: {}; {}", request, datamartTableMap);
-                    datamartSchemaMap.putAll(datamartTableMap);
-                    resultHandler.handle(Future.succeededFuture(getDatamartsSchemas(request.getDatamartMnemonic(), datamartSchemaMap)));
+                    resultHandler.handle(Future.succeededFuture(getDatamartsSchemas(request.getDatamartMnemonic(), datamartTableMap)));
                 } else {
                     log.error("Error getting data schema for request: {}", request, ar.cause());
                     resultHandler.handle(Future.failedFuture(ar.cause()));

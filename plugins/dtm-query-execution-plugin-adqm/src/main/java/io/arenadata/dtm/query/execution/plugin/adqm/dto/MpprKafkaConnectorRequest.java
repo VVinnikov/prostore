@@ -1,9 +1,12 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.dto;
 
+import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 /**
  * Mppr request for kafka connector
@@ -24,8 +27,7 @@ public class MpprKafkaConnectorRequest {
     String table;
     String datamart;
     String sql;
-    String zookeeperHost;
-    String zookeeperPort;
+    List<KafkaBrokerInfo> kafkaBrokers;
     String kafkaTopic;
     Integer chunkSize;
 }

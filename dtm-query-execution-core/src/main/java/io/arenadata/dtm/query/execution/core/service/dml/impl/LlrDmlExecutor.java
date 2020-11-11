@@ -1,10 +1,8 @@
 package io.arenadata.dtm.query.execution.core.service.dml.impl;
 
+import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.dto.QueryParserRequest;
-import io.arenadata.dtm.common.reader.QueryRequest;
-import io.arenadata.dtm.common.reader.QueryResult;
-import io.arenadata.dtm.common.reader.QuerySourceRequest;
-import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.common.reader.*;
 import io.arenadata.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.dml.*;
@@ -25,7 +23,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
@@ -36,7 +35,6 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
     private final LogicViewReplacer logicViewReplacer;
     private final ColumnMetadataService columnMetadataService;
     private final InformationSchemaExecutor informationSchemaExecutor;
-    private final InformationSchemaDefinitionService informationSchemaDefinitionService;
     private final LogicalSchemaProvider logicalSchemaProvider;
 
     @Autowired
@@ -46,7 +44,6 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                           LogicViewReplacer logicViewReplacer,
                           ColumnMetadataService columnMetadataService,
                           InformationSchemaExecutor informationSchemaExecutor,
-                          InformationSchemaDefinitionService informationSchemaDefinitionService,
                           LogicalSchemaProvider logicalSchemaProvider) {
         this.dataSourcePluginService = dataSourcePluginService;
         this.targetDatabaseDefinitionService = targetDatabaseDefinitionService;
@@ -54,7 +51,6 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
         this.logicViewReplacer = logicViewReplacer;
         this.informationSchemaExecutor = informationSchemaExecutor;
         this.columnMetadataService = columnMetadataService;
-        this.informationSchemaDefinitionService = informationSchemaDefinitionService;
         this.logicalSchemaProvider = logicalSchemaProvider;
     }
 
@@ -69,8 +65,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                         sourceRequest.setQueryRequest(request);
                         return request;
                     })
-                    .compose(v -> informationSchemaDefinitionService.tryGetInformationSchemaRequest(sourceRequest))
-                    .compose(request -> initLogicalSchema(request, sourceRequest))
+                    .compose(v -> initLogicalSchema(sourceRequest))
                     .compose(this::initColumnMetaData)
                     .compose(this::executeRequest)
                     .onComplete(asyncResultHandler);
@@ -91,17 +86,12 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
         }));
     }
 
-    private Future<QuerySourceRequest> initLogicalSchema(Optional<QuerySourceRequest> infoSchemaRequest,
-                                                         QuerySourceRequest sourceRequest) {
-        if (infoSchemaRequest.isPresent()) {
-            return Future.succeededFuture(infoSchemaRequest.get());
-        } else {
-            return getLogicalSchema(sourceRequest)
-                    .map(logicalSchema -> {
-                        sourceRequest.setLogicalSchema(logicalSchema);
-                        return sourceRequest;
-                    });
-        }
+    private Future<QuerySourceRequest> initLogicalSchema(QuerySourceRequest sourceRequest) {
+        return getLogicalSchema(sourceRequest)
+                .map(logicalSchema -> {
+                    sourceRequest.setLogicalSchema(logicalSchema);
+                    return sourceRequest;
+                });
     }
 
     private Future<List<Datamart>> getLogicalSchema(QuerySourceRequest sourceRequest) {
@@ -127,7 +117,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
 
     private Future<QueryResult> executeRequest(QuerySourceRequest sourceRequest) {
         return Future.future(promise -> {
-            if (sourceRequest.getSourceType() == SourceType.INFORMATION_SCHEMA) {
+            if (isInformationSchemaRequest(sourceRequest)) {
                 informationSchemaExecute(sourceRequest)
                         .onComplete(promise);
             } else {
@@ -162,5 +152,20 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
     @Override
     public SqlKind getSqlKind() {
         return SqlKind.SELECT;
+    }
+
+    private boolean isInformationSchemaRequest(QuerySourceRequest request) {
+        Set<String> unicSchemes = request.getQueryRequest().getDeltaInformations().stream()
+                .map(DeltaInformation::getSchemaName)
+                .map(String::toUpperCase)
+                .collect(Collectors.toSet());
+
+        boolean informationSchemaExists = unicSchemes.contains(InformationSchemaView.SCHEMA_NAME);
+
+        if (unicSchemes.size() > 1 && informationSchemaExists) {
+            throw new IllegalArgumentException("Simultaneous query to the information schema and user schema isn't supported");
+        } else {
+            return informationSchemaExists;
+        }
     }
 }

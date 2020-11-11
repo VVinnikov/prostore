@@ -10,6 +10,9 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.DatamartDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
+import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
+import io.arenadata.dtm.query.execution.core.service.cache.impl.HotDeltaCacheService;
+import io.arenadata.dtm.query.execution.core.service.cache.impl.OkDeltaCacheService;
 import io.arenadata.dtm.query.execution.core.service.ddl.impl.DropSchemaDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.impl.MetadataExecutorImpl;
@@ -42,9 +45,12 @@ class DropSchemaDdlExecutorTest {
     private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private final SqlParser.Config parserConfig = calciteConfiguration.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory());
     private final MetadataExecutor<DdlRequestContext> metadataExecutor = mock(MetadataExecutorImpl.class);
+    private final HotDeltaCacheService hotDeltaCacheService = mock(HotDeltaCacheService.class);
+    private final OkDeltaCacheService okDeltaCacheService = mock(OkDeltaCacheService.class);
     private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
     private final ServiceDbDao serviceDbDao = mock(ServiceDbDaoImpl.class);
     private final DatamartDao datamartDao = mock(DatamartDaoImpl.class);
+    private final EntityCacheService entityCacheService = mock(EntityCacheService.class);
     private DropSchemaDdlExecutor dropSchemaDdlExecutor;
     private DdlRequestContext context;
     private String schema;
@@ -56,7 +62,7 @@ class DropSchemaDdlExecutorTest {
         Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
         when(serviceDbFacade.getServiceDbDao()).thenReturn(serviceDbDao);
         when(serviceDbDao.getDatamartDao()).thenReturn(datamartDao);
-        dropSchemaDdlExecutor = new DropSchemaDdlExecutor(metadataExecutor, serviceDbFacade);
+        dropSchemaDdlExecutor = new DropSchemaDdlExecutor(metadataExecutor, hotDeltaCacheService, okDeltaCacheService, entityCacheService, serviceDbFacade);
         schema = "shares";
         final QueryRequest queryRequest = new QueryRequest();
         queryRequest.setRequestId(UUID.randomUUID());

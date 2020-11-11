@@ -57,7 +57,7 @@ public class DownloadKafkaExecutor implements EdmlDownloadExecutor {
                     .map(EntityField::getType)
                     .collect(Collectors.toList());
             return checkColumnTypesService.check(checkColumns, queryParserRequest)
-                    .compose(ar -> ar ? mpprKafkaRequestFactory.create(context)
+                    .compose(areEqual -> areEqual ? mpprKafkaRequestFactory.create(context)
                             : Future.failedFuture(String.format(FAIL_CHECK_COLUMNS_PATTERN,
                             context.getDestinationEntity().getName())))
                     .compose(this::executeMppr);

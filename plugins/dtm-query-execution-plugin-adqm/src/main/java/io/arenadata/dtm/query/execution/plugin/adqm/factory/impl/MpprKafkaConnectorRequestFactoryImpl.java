@@ -22,8 +22,7 @@ public class MpprKafkaConnectorRequestFactoryImpl implements MpprKafkaConnectorR
                 .table(queryRequest.getSql())
                 .sql(enrichedQuery)
                 .datamart(queryRequest.getDatamartMnemonic())
-                .zookeeperHost(kafkaParam.getZookeeperHost())
-                .zookeeperPort(String.valueOf(kafkaParam.getZookeeperPort()))
+                .kafkaBrokers(mpprRequest.getKafkaParameter().getBrokers())
                 .kafkaTopic(kafkaParam.getTopic())
                 .chunkSize(downloadMetadata.getChunkSize())
                 .build();

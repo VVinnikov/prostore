@@ -36,7 +36,8 @@ public class DownloadKafkaExecutor implements EdmlDownloadExecutor {
     @Autowired
     public DownloadKafkaExecutor(DataSourcePluginService pluginService,
                                  MpprKafkaRequestFactory mpprKafkaRequestFactory,
-                                 EdmlProperties edmlProperties, CheckColumnTypesService checkColumnTypesService) {
+                                 EdmlProperties edmlProperties,
+                                 CheckColumnTypesService checkColumnTypesService) {
         this.pluginService = pluginService;
         this.mpprKafkaRequestFactory = mpprKafkaRequestFactory;
         this.edmlProperties = edmlProperties;
@@ -51,14 +52,14 @@ public class DownloadKafkaExecutor implements EdmlDownloadExecutor {
     private Future<QueryResult> execute(EdmlRequestContext context) {
         if (context.getSourceEntity().getDestination().contains(edmlProperties.getSourceType())) {
             QueryParserRequest queryParserRequest = new QueryParserRequest(context.getRequest().getQueryRequest(),
-                context.getLogicalSchema());
+                    context.getLogicalSchema());
             List<ColumnType> checkColumns = context.getDestinationEntity().getFields().stream()
                     .map(EntityField::getType)
                     .collect(Collectors.toList());
             return checkColumnTypesService.check(checkColumns, queryParserRequest)
                     .compose(ar -> ar ? mpprKafkaRequestFactory.create(context)
                             : Future.failedFuture(String.format(FAIL_CHECK_COLUMNS_PATTERN,
-                                    context.getDestinationEntity().getName())))
+                            context.getDestinationEntity().getName())))
                     .compose(this::executeMppr);
         } else {
             return Future.failedFuture(new IllegalStateException(

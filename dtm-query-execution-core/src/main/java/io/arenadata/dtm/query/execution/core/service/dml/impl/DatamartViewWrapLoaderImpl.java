@@ -64,7 +64,7 @@ public class DatamartViewWrapLoaderImpl implements DatamartViewWrapLoader {
                 val datamart = e.getKey();
                 CompositeFuture.join(
                     viewNames.stream()
-                        .map(viewName -> getEntity(datamart, viewName))
+                        .map(viewName -> entityDao.getEntity(datamart, viewName))
                         .collect(toList())
                 ).onSuccess(cf -> {
                     val datamartViews = toDatamartViewWraps(datamart, cf.list());
@@ -73,18 +73,6 @@ public class DatamartViewWrapLoaderImpl implements DatamartViewWrapLoader {
                     .onFailure(viewsByDatamartPromise::fail);
             }))
             .collect(toList());
-    }
-
-    private Future<Entity> getEntity(String datamart, String viewName) {
-        if (InformationSchemaView.SCHEMA_NAME.equals(datamart.toUpperCase())) {
-            return Optional.ofNullable(informationSchemaService.getEntities().get(viewName.toUpperCase()))
-                    .map(Future::succeededFuture)
-                    .orElse(Future.failedFuture(String.format("Entity [%s.%s] doesn't exist", datamart, viewName)));
-        } else if (InformationSchemaView.DTM_SCHEMA_NAME.equals(datamart.toUpperCase())) {
-            return Future.succeededFuture();
-        } else {
-            return entityDao.getEntity(datamart, viewName);
-        }
     }
 
     private List<DatamartViewWrap> toDatamartViewWraps(String datamart, List<Entity> entities) {

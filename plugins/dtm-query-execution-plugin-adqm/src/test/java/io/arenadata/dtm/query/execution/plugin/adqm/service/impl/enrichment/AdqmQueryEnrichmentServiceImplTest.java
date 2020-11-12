@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
 class AdqmQueryEnrichmentServiceImplTest {
-    public static final int TIMEOUT_SECONDS = 10;
+    public static final int TIMEOUT_SECONDS = 120;
     private final QueryEnrichmentService enrichService;
     private final String[] expectedSqls;
 

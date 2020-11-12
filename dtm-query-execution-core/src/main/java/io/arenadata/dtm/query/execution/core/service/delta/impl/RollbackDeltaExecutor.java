@@ -27,6 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaAction.ROLLBACK_DELTA;
@@ -96,37 +97,38 @@ public class RollbackDeltaExecutor implements DeltaExecutor, StatusEventPublishe
                                         QueryRequest queryRequest) {
         val operationsFinished = hotDelta.getWriteOperationsFinished();
         return operationsFinished != null ?
-                getRollbackTablesFuture(datamart, hotDelta, queryRequest) : Future.succeededFuture();
+                getRollbackTablesFuture(datamart, operationsFinished, queryRequest) : Future.succeededFuture();
     }
 
     private Future<Void> getRollbackTablesFuture(String datamart,
-                                                 HotDelta hotDelta,
+                                                 List<WriteOpFinish> operationsFinished,
                                                  QueryRequest queryRequest) {
-        return CompositeFuture.join(hotDelta.getWriteOperationsFinished().stream()
-                .map(writeOpFinish -> rollbackTable(datamart, writeOpFinish, queryRequest))
-                .collect(Collectors.toList()))
-                .compose(AsyncUtils::toEmptyVoidFuture);
+        Future<Void> executingFuture = Future.succeededFuture();
+        operationsFinished.stream()
+                .forEach(writeOpFinish -> executingFuture.compose(v -> rollbackTable(datamart, writeOpFinish, queryRequest)));
+        return executingFuture;
     }
 
     private Future<Void> rollbackTable(String datamart,
                                        WriteOpFinish writeOpFinish,
                                        QueryRequest queryRequest) {
         return entityDao.getEntity(datamart, writeOpFinish.getTableName())
-                .compose(entity ->
-                        CompositeFuture.join(
-                                writeOpFinish.getCnList().stream()
-                                        .map(sysCn -> RollbackRequest.builder()
-                                                .destinationTable(entity.getName())
-                                                .queryRequest(queryRequest)
-                                                .datamart(datamart)
-                                                .entity(entity)
-                                                .sysCn(sysCn)
-                                                .build())
-                                        .map(RollbackRequestContext::new)
-                                        .map(edmlUploadFailedExecutor::eraseWriteOp)
-                                        .collect(Collectors.toList()))
-                                .compose(AsyncUtils::toEmptyVoidFuture)
-                );
+                .compose(entity -> {
+                    Future<Void> executingFuture = Future.succeededFuture();
+                    writeOpFinish.getCnList().stream()
+                            .map(sysCn -> RollbackRequest.builder()
+                                    .destinationTable(entity.getName())
+                                    .queryRequest(queryRequest)
+                                    .datamart(datamart)
+                                    .entity(entity)
+                                    .sysCn(sysCn)
+                                    .build())
+                            .map(RollbackRequestContext::new)
+                            .forEach(rollbackRequestContext -> {
+                                executingFuture.compose(v -> edmlUploadFailedExecutor.eraseWriteOp(rollbackRequestContext));
+                            });
+                    return executingFuture;
+                });
     }
 
     private DeltaRecord getDeltaRecord(String datamart, long deltaNum) {

@@ -48,20 +48,20 @@ public class AdbQueryExecutor implements DatabaseExecutor {
                                         List<Map<String, Object>> result = createResult(metadata, res.result());
                                         resultHandler.handle(Future.succeededFuture(result));
                                     } catch (Exception e) {
-                                        conn.close();
+                                        tryCloseConnect(conn);
                                         log.error("Error converting ADB values to jdbc types!", e);
                                         resultHandler.handle(Future.failedFuture(e));
                                     }
                                 } else {
-                                    conn.close();
+                                    tryCloseConnect(conn);
                                     log.error("Error fetching cursor", res.cause());
                                     resultHandler.handle(Future.failedFuture(res.cause()));
                                 }
                             });
                         } while (cursor.hasMore());
-                        conn.close();
+                        tryCloseConnect(conn);
                     } else {
-                        conn.close();
+                        tryCloseConnect(conn);
                         log.error("Request preparation error!", ar2.cause());
                         resultHandler.handle(Future.failedFuture(ar2.cause()));
                     }
@@ -71,6 +71,14 @@ public class AdbQueryExecutor implements DatabaseExecutor {
                 resultHandler.handle(Future.failedFuture(ar1.cause()));
             }
         });
+    }
+
+    private void tryCloseConnect(PgConnection conn) {
+        try {
+            conn.close();
+        } catch (Exception e) {
+            log.warn("Error closing connection: {}", e.getMessage());
+        }
     }
 
     private List<Map<String, Object>> createResult(List<ColumnMetadata> metadata,
@@ -104,7 +112,7 @@ public class AdbQueryExecutor implements DatabaseExecutor {
                     } else {
                         completionHandler.handle(Future.failedFuture(ar2.cause()));
                     }
-                    conn.close();
+                    tryCloseConnect(conn);
                 });
             } else {
                 log.error("Connection error!", ar1.cause());
@@ -124,7 +132,7 @@ public class AdbQueryExecutor implements DatabaseExecutor {
                             List<Map<String, Object>> result = createResult(metadata, ar2.result());
                             resultHandler.handle(Future.succeededFuture(result));
                         } catch (Exception e) {
-                            conn.close();
+                            tryCloseConnect(conn);
                             log.error("Error converting ADB values to jdbc types!", e);
                             resultHandler.handle(Future.failedFuture(e));
                         }

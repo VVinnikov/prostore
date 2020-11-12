@@ -64,7 +64,7 @@ adb:
       port: ${ADB_PORT:15432}
       maxSize: 20
 
-  connector:
+  mppr:
     host: ${ADB_MPPR_CONNECTOR_HOST:10.92.3.14}
     port: ${ADB_MPPR_CONNECTOR_PORT:8086}
     url: ${ADB_MPPR_CONNECTOR_URL:/query}
@@ -107,6 +107,11 @@ adqm:
     cluster: ${ADQM_CLUSTER:default_cluster}
     ttlSec: ${ADQM_TTL_SEC:3600}
     archiveDisk: ${ADQM_ARCHIVE_DISK:default}
+
+  mppr:
+    host: ${ADQM_MPPR_CONNECTOR_HOST:10.92.3.14}
+    port: ${ADQM_MPPR_CONNECTOR_PORT:8086}
+    url: ${ADQM_MPPR_CONNECTOR_URL:/query}
 
   mppw:
     consumerGroup: ${ADQM_CONSUMER_GROUP:adqm}

@@ -5,19 +5,24 @@ import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
+import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmCreateTableQueriesFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockDatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockEnvironment;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
+import io.arenadata.dtm.query.execution.plugin.api.service.ddl.CreateTableQueriesFactory;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.util.Arrays;
 import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 
 class TableDdlTest {
     private static final DdlProperties ddlProperties = new DdlProperties();
@@ -42,19 +47,22 @@ class TableDdlTest {
                         s -> s.contains("CREATE TABLE dev__shares.test_actual ON CLUSTER test_arenadata") &&
                                 s.contains("Engine = Distributed(test_arenadata, dev__shares, test_actual_shard, test4)")
                 ));
-        DropTableExecutor dropTableExecutor = new DropTableExecutor(mockExecutor, ddlProperties, appConfiguration);
-        CreateTableExecutor executor = new CreateTableExecutor(mockExecutor, ddlProperties, appConfiguration, dropTableExecutor);
-
         Entity tbl = new Entity("shares.test",
                 Arrays.asList(
-                        new EntityField(0,"test1", "VARCHAR(255)", true, null, null, ""),
-                        new EntityField(1,"test2", "INT", false, 1, null, ""),
-                        new EntityField(2,"test3", "INT", false, 2, null, ""),
-                        new EntityField(3,"test4", "VARCHAR(255)", true, null, 1, ""),
-                        new EntityField(4,"test5", "VARCHAR(255)", true, null, 2, "")
+                        new EntityField(0, "test1", "VARCHAR(255)", true, null, null, ""),
+                        new EntityField(1, "test2", "INT", false, 1, null, ""),
+                        new EntityField(2, "test3", "INT", false, 2, null, ""),
+                        new EntityField(3, "test4", "VARCHAR(255)", true, null, 1, ""),
+                        new EntityField(4, "test5", "VARCHAR(255)", true, null, 2, "")
                 ));
 
         DdlRequestContext context = new DdlRequestContext(new DdlRequest(new QueryRequest(), tbl));
+        AdqmCreateTableQueries adqmCreateTableQueries = new AdqmCreateTableQueries(context, ddlProperties, appConfiguration);
+        CreateTableQueriesFactory<AdqmCreateTableQueries> createTableQueriesFactory = mock(AdqmCreateTableQueriesFactory.class);
+        Mockito.when(createTableQueriesFactory.create(any())).thenReturn(adqmCreateTableQueries);
+        DropTableExecutor dropTableExecutor = new DropTableExecutor(mockExecutor, ddlProperties, appConfiguration);
+
+        CreateTableExecutor executor = new CreateTableExecutor(mockExecutor, dropTableExecutor, createTableQueriesFactory);
 
         executor.execute(context, "CREATE", ar -> {
             assertTrue(ar.succeeded());

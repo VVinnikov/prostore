@@ -4,8 +4,10 @@ import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.reader.QueryRequest;
+import io.arenadata.dtm.query.execution.plugin.adb.factory.impl.AdbCreateTableQueriesFactory;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
+import io.arenadata.dtm.query.execution.plugin.api.service.ddl.CreateTableQueriesFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -38,7 +40,8 @@ public class AdbCreateTableQueriesTest {
                 new EntityField(1, "name", ColumnType.VARCHAR.name(), true, null, null, null),
                 new EntityField(2, "dt", ColumnType.TIMESTAMP.name(), true, null, 2, null)));
         DdlRequestContext context = new DdlRequestContext(new DdlRequest(new QueryRequest(), entity));
-        adbCreateTableQueries = new AdbCreateTableQueries(context);
+        CreateTableQueriesFactory<AdbCreateTableQueries> adbCreateTableQueriesFactory = new AdbCreateTableQueriesFactory();
+        adbCreateTableQueries = adbCreateTableQueriesFactory.create(context);
     }
 
     @Test

@@ -1,10 +1,10 @@
-package io.arenadata.dtm.query.execution.plugin.adb.service.impl.ddl;
+package io.arenadata.dtm.query.execution.plugin.adb.factory.impl;
 
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.reader.QueryRequest;
-import io.arenadata.dtm.query.execution.plugin.adb.factory.impl.AdbCreateTableQueriesFactory;
+import io.arenadata.dtm.query.execution.plugin.adb.service.impl.ddl.AdbCreateTableQueries;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.CreateTableQueriesFactory;
@@ -15,7 +15,7 @@ import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class AdbCreateTableQueriesTest {
+public class AdbCreateTableQueriesFactoryTest {
     private static final String EXPECTED_CREATE_ACTUAL_TABLE_QUERY = "CREATE TABLE test.test_ts3222_actual " +
             "(id int8 NOT NULL, name varchar , dt timestamp ," +
             " sys_from bigint, sys_to bigint, sys_op int, constraint" +
@@ -46,17 +46,17 @@ public class AdbCreateTableQueriesTest {
 
     @Test
     void createActualTableQueryTest() {
-        assertEquals(EXPECTED_CREATE_ACTUAL_TABLE_QUERY, adbCreateTableQueries.getCreateActualTableQuery());
+        assertEquals(EXPECTED_CREATE_ACTUAL_TABLE_QUERY, adbCreateTableQueries.getActual());
     }
 
     @Test
     void createHistoryTableQueryTest() {
-        assertEquals(EXPECTED_CREATE_HISTORY_TABLE_QUERY, adbCreateTableQueries.getCreateHistoryTableQuery());
+        assertEquals(EXPECTED_CREATE_HISTORY_TABLE_QUERY, adbCreateTableQueries.getHistory());
     }
 
     @Test
     void createStagingTableQueryTest() {
-        assertEquals(EXPECTED_CREATE_STAGING_TABLE_QUERY, adbCreateTableQueries.getCreateStagingTableQuery());
+        assertEquals(EXPECTED_CREATE_STAGING_TABLE_QUERY, adbCreateTableQueries.getStaging());
     }
 
 }

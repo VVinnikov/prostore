@@ -6,7 +6,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class AdbCreateTableQueries {
-    private final String createActualTableQuery;
-    private final String createHistoryTableQuery;
-    private final String createStagingTableQuery;
+    private final String actual;
+    private final String history;
+    private final String staging;
 }

@@ -19,9 +19,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 @Component
 @Slf4j
 public class CreateTableExecutor implements DdlExecutor<Void> {
@@ -68,8 +65,8 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
 
     private void createTable(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {
         AdbCreateTableQueries createTableQueries = createTableQueriesFactory.create(context);
-        String createTablesSql = String.join("; ", createTableQueries.getCreateActualTableQuery(),
-                createTableQueries.getCreateHistoryTableQuery(), createTableQueries.getCreateStagingTableQuery());
+        String createTablesSql = String.join("; ", createTableQueries.getActual(),
+                createTableQueries.getHistory(), createTableQueries.getStaging());
         String createIndexesSql = sqlFactory.createSecondaryIndexSqlQuery(context.getRequest().getEntity().getSchema(),
                 context.getRequest().getEntity().getName());
         executeQuery(createTablesSql)

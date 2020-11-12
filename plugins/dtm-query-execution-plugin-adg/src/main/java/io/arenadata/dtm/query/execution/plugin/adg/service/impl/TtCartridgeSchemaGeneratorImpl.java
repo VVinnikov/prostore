@@ -31,8 +31,8 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
         }
         val spaces = yaml.getSpaces();
         AdgCreateTableQueries adgCreateTableQueries = createTableQueriesFactory.create(context);
-        Stream.of(adgCreateTableQueries.getActualTableSpace(), adgCreateTableQueries.getHistoryTableSpace(),
-                adgCreateTableQueries.getStagingTableSpace())
+        Stream.of(adgCreateTableQueries.getActual(), adgCreateTableQueries.getHistory(),
+                adgCreateTableQueries.getStaging())
                 .forEach(space -> spaces.put(space.getName(), space.getSpace()));
         handler.handle(Future.succeededFuture(yaml));
     }

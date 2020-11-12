@@ -7,7 +7,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class AdgCreateTableQueries {
-    private final AdgSpace actualTableSpace;
-    private final AdgSpace historyTableSpace;
-    private final AdgSpace stagingTableSpace;
+    private final AdgSpace actual;
+    private final AdgSpace history;
+    private final AdgSpace staging;
 }

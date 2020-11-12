@@ -55,13 +55,15 @@ public class AdgCreateTableQueriesFactory implements CreateTableQueriesFactory<A
                          String tablePostfix) {
         List<SpaceIndexPart> primaryKeyParts = getPrimaryKeyParts(fields);
         primaryKeyParts.add(new SpaceIndexPart(SYS_FROM_FIELD, SpaceAttributeTypes.NUMBER.getName(), false));
-        return new Space(
-                getAttributes(fields),
-                false,
-                engine,
-                false,
-                getShardingKey(fields),
-                createSpaceIndexes(fields, tablePostfix));
+
+        return Space.builder()
+                .format(getAttributes(fields))
+                .temporary(false)
+                .engine(engine)
+                .isLocal(false)
+                .shardingKey(getShardingKey(fields))
+                .indexes(createSpaceIndexes(fields, tablePostfix))
+                .build();
     }
 
     private List<SpaceIndex> createSpaceIndexes(List<EntityField> fields,

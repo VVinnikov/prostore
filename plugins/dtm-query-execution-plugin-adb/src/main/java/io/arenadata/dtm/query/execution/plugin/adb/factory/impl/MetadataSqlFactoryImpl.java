@@ -70,21 +70,6 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
     }
 
     @Override
-    public String createTableScripts(Entity entity) {
-        return new StringBuilder()
-                .append(createTableScript(entity, entity.getNameWithSchema()
-                        + TABLE_POSTFIX_DELIMITER + ACTUAL_TABLE, false, false))
-                .append(QUERY_DELIMITER)
-                .append(createTableScript(entity, entity.getNameWithSchema()
-                        + TABLE_POSTFIX_DELIMITER + HISTORY_TABLE, false, true))
-                .append(QUERY_DELIMITER)
-                .append(createTableScript(entity, entity.getNameWithSchema()
-                        + TABLE_POSTFIX_DELIMITER + STAGING_TABLE, true, false))
-                .append(QUERY_DELIMITER)
-                .toString();
-    }
-
-    @Override
     public String createSchemaSqlQuery(String schemaName) {
         return String.format(CREATE_SCHEMA, schemaName);
     }
@@ -92,89 +77,6 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
     @Override
     public String dropSchemaSqlQuery(String schemaName) {
         return String.format(DROP_SCHEMA, schemaName);
-    }
-
-    private String createTableScript(Entity entity, String tableName, boolean addReqId, boolean pkWithSystemFields) {
-        val initDelimiter = entity.getFields().isEmpty() ? " " : DELIMITER;
-        val sb = new StringBuilder()
-                .append("CREATE TABLE ").append(tableName)
-                .append(" (");
-        appendClassTableFields(sb, entity.getFields());
-        appendSystemColumns(sb, initDelimiter);
-        if (addReqId) {
-            appendReqIdColumn(sb);
-        }
-        List<EntityField> pkList = EntityFieldUtils.getPrimaryKeyList(entity.getFields());
-        if (pkWithSystemFields || pkList.size() > 0) {
-            appendPrimaryKeys(sb, tableName, pkList, pkWithSystemFields);
-        }
-        sb.append(")");
-        val shardingKeyList = EntityFieldUtils.getShardingKeyList(entity.getFields());
-        if (shardingKeyList.size() > 0) {
-            appendShardingKeys(sb, shardingKeyList);
-        }
-        return sb.toString();
-    }
-
-    private void appendClassTableFields(StringBuilder builder, List<EntityField> fields) {
-        val columns = fields.stream()
-                .map(this::getColumnDDLByField)
-                .collect(Collectors.joining(DELIMITER));
-        builder.append(columns);
-    }
-
-    private String getColumnDDLByField(EntityField field) {
-        val sb = new StringBuilder();
-        sb.append(field.getName())
-                .append(" ")
-                .append(EntityTypeUtil.pgFromDtmType(field))
-                .append(" ");
-        if (!field.getNullable()) {
-            sb.append("NOT NULL");
-        }
-        return sb.toString();
-    }
-
-    private void appendPrimaryKeys(StringBuilder builder, String tableName, Collection<EntityField> pkList, boolean addSystemFields) {
-        List<String> pkFields = pkList.stream().map(EntityField::getName).collect(Collectors.toList());
-        if (addSystemFields) {
-            pkFields.add(SYS_FROM_ATTR);
-        }
-        builder.append(DELIMITER)
-                .append("constraint ")
-                .append("pk_")
-                .append(tableName.replace('.', '_'))
-                .append(" primary key (")
-                .append(pkFields.stream().collect(Collectors.joining(DELIMITER)))
-                .append(")");
-    }
-
-    private void appendShardingKeys(StringBuilder builder, Collection<EntityField> skList) {
-        builder.append(" DISTRIBUTED BY (")
-                .append(skList.stream().map(EntityField::getName).collect(Collectors.joining(DELIMITER)))
-                .append(")");
-    }
-
-    private void appendReqIdColumn(StringBuilder builder) {
-        builder.append(DELIMITER)
-                .append(REQ_ID_ATTR)
-                .append(" ")
-                .append("varchar(36)");
-    }
-
-    private void appendSystemColumns(StringBuilder builder, String delimiter) {
-        builder.append(delimiter)
-                .append(SYS_FROM_ATTR)
-                .append(" ")
-                .append("bigint")
-                .append(DELIMITER)
-                .append(SYS_TO_ATTR)
-                .append(" ")
-                .append("bigint")
-                .append(DELIMITER)
-                .append(SYS_OP_ATTR)
-                .append(" ")
-                .append("int");
     }
 
     @Override

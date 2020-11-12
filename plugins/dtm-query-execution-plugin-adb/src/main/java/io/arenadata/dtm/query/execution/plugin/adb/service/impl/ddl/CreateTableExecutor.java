@@ -6,6 +6,7 @@ import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
+import io.arenadata.dtm.query.execution.plugin.api.service.ddl.CreateTableQueriesFactory;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
 import io.vertx.core.AsyncResult;
@@ -18,6 +19,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 @Component
 @Slf4j
 public class CreateTableExecutor implements DdlExecutor<Void> {
@@ -25,12 +29,17 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
     private final AdbQueryExecutor adbQueryExecutor;
     private final MetadataSqlFactory sqlFactory;
     private final DropTableExecutor dropTableExecutor;
+    private final CreateTableQueriesFactory<AdbCreateTableQueries> createTableQueriesFactory;
 
     @Autowired
-    public CreateTableExecutor(AdbQueryExecutor adbQueryExecutor, MetadataSqlFactory sqlFactory, DropTableExecutor dropTableExecutor) {
+    public CreateTableExecutor(AdbQueryExecutor adbQueryExecutor,
+                               MetadataSqlFactory sqlFactory,
+                               DropTableExecutor dropTableExecutor,
+                               CreateTableQueriesFactory<AdbCreateTableQueries> createTableQueriesFactory) {
         this.adbQueryExecutor = adbQueryExecutor;
         this.sqlFactory = sqlFactory;
         this.dropTableExecutor = dropTableExecutor;
+        this.createTableQueriesFactory = createTableQueriesFactory;
     }
 
     @Override
@@ -58,7 +67,9 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
     }
 
     private void createTable(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {
-        String createTablesSql = sqlFactory.createTableScripts(context.getRequest().getEntity());
+        AdbCreateTableQueries createTableQueries = createTableQueriesFactory.create(context);
+        String createTablesSql = String.join("; ", createTableQueries.getCreateActualTableQuery(),
+                createTableQueries.getCreateHistoryTableQuery(), createTableQueries.getCreateStagingTableQuery());
         String createIndexesSql = sqlFactory.createSecondaryIndexSqlQuery(context.getRequest().getEntity().getSchema(),
                 context.getRequest().getEntity().getName());
         executeQuery(createTablesSql)

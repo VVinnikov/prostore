@@ -69,7 +69,7 @@ public class EntityDaoImpl implements EntityDao {
                         throw error(error, errMsg, DatamartNotExistsException::new);
                     } else if (error instanceof KeeperException.NodeExistsException) {
                         errMsg = String.format("Entity [%s] already exists", entity.getNameWithSchema());
-                        throw error(error, errMsg, EntityAlreadyExistsException::new);
+                        throw warn(error, errMsg, EntityAlreadyExistsException::new);
                     } else {
                         errMsg = String.format("Can't create entity [%s]", entity.getNameWithSchema());
                         throw error(error, errMsg, RuntimeException::new);
@@ -96,7 +96,7 @@ public class EntityDaoImpl implements EntityDao {
                     String errMsg;
                     if (error instanceof KeeperException.NoNodeException) {
                         errMsg = String.format("Entity [%s] not exists", entity.getNameWithSchema());
-                        throw error(error, errMsg, EntityNotExistsException::new);
+                        throw warn(error, errMsg, EntityNotExistsException::new);
                     } else {
                         errMsg = String.format("Can't update entity [%s]", entity.getNameWithSchema());
                         throw error(error, errMsg, RuntimeException::new);
@@ -127,7 +127,7 @@ public class EntityDaoImpl implements EntityDao {
                 String errMsg;
                 if (error instanceof KeeperException.NoNodeException) {
                     errMsg = String.format("Entity [%s] not exists", nameWithSchema);
-                    throw error(error, errMsg, EntityNotExistsException::new);
+                    throw warn(error, errMsg, EntityNotExistsException::new);
                 } else {
                     errMsg = String.format("Can't delete entity [%s]", nameWithSchema);
                     throw error(error, errMsg, RuntimeException::new);
@@ -156,7 +156,7 @@ public class EntityDaoImpl implements EntityDao {
                 String errMsg;
                 if (error instanceof KeeperException.NoNodeException) {
                     errMsg = String.format("Entity [%s] not exists", nameWithSchema);
-                    throw error(error, errMsg, EntityNotExistsException::new);
+                    throw warn(error, errMsg, EntityNotExistsException::new);
                 } else {
                     errMsg = String.format("Can't get entity [%s]", nameWithSchema);
                     throw error(error, errMsg, RuntimeException::new);
@@ -171,7 +171,7 @@ public class EntityDaoImpl implements EntityDao {
                 String errMsg;
                 if (error instanceof KeeperException.NoNodeException) {
                     errMsg = String.format("Datamart [%s] not exists", datamartMnemonic);
-                    throw error(error, errMsg, DatamartNotExistsException::new);
+                    throw warn(error, errMsg, DatamartNotExistsException::new);
                 } else {
                     errMsg = String.format("Can't get entity names by datamartMnemonic [%s]", datamartMnemonic);
                     throw error(error, errMsg, RuntimeException::new);
@@ -184,6 +184,13 @@ public class EntityDaoImpl implements EntityDao {
                                    String errMsg,
                                    BiFunction<String, Throwable, RuntimeException> errFunc) {
         log.error(errMsg, error);
+        return errFunc.apply(errMsg, error);
+    }
+
+    private RuntimeException warn(Throwable error,
+                                   String errMsg,
+                                   BiFunction<String, Throwable, RuntimeException> errFunc) {
+        log.warn(errMsg, error.getMessage());
         return errFunc.apply(errMsg, error);
     }
 

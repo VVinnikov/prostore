@@ -65,7 +65,7 @@ adb:
       maxSize: 20
 
   mppr:
-    host: ${ADB_MPPR_CONNECTOR_HOST:10.92.3.14}
+    host: ${ADB_MPPR_CONNECTOR_HOST:10.92.3.61}
     port: ${ADB_MPPR_CONNECTOR_PORT:8086}
     url: ${ADB_MPPR_CONNECTOR_URL:/query}
 

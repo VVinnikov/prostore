@@ -21,7 +21,7 @@ public interface SqlTypeConverter {
                     return transformerClassMap.get(Object.class).transform(value);
                 } catch (Exception e) {
                     throw new RuntimeException(String.format("Can't transform value for column type [%s] and class [%s]",
-                            type, value.getClass()), e);
+                        type, value.getClass()), e);
                 }
             }
         } else {

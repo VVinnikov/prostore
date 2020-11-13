@@ -22,6 +22,7 @@ public class AvroUtils {
     public static Schema metadataColumnTypeToAvroSchema(ColumnType columnType) {
         Schema schema;
         switch (columnType) {
+            case UUID:
             case VARCHAR:
             case CHAR:
                 schema = Schema.create(Schema.Type.STRING);

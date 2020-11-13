@@ -5,11 +5,9 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.InformationSchemaView;
-import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateView;
 import io.arenadata.dtm.query.execution.core.dao.exception.datamart.DatamartAlreadyExistsException;
-import io.arenadata.dtm.query.execution.core.dao.exception.entity.EntityAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.service.DdlQueryGenerator;
@@ -32,7 +30,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -80,7 +77,7 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
             case DROP_VIEW:
             case DROP_TABLE:
                 return client.executeQuery(sql.toString().replace("`", ""))
-                        .onFailure(this::shutdown);
+                    .onFailure(this::shutdown);
             default:
                 throw new IllegalArgumentException("Sql type not supported: " + sql.getKind());
         }
@@ -99,7 +96,7 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
                     sqlCreateView.getQuery().toString().replace("`", ""))));
         } else {
             return client.executeQuery(sqlCreateView.toString().replace("`", ""))
-                    .onFailure(this::shutdown);
+                .onFailure(this::shutdown);
         }
     }
 
@@ -109,7 +106,7 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
             .replace("`", "");
         schemaSql = SqlKind.DROP_SCHEMA == sql.getKind() ? schemaSql + " CASCADE" : schemaSql;
         return client.executeQuery(schemaSql)
-                .onFailure(this::shutdown);
+            .onFailure(this::shutdown);
     }
 
     private Future<Void> createTable(SqlCreateTable createTable) {
@@ -196,9 +193,9 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
                         .collect(Collectors.toList());
 
                     createLogicSchemaDatamartInDatasource()
-                            .compose(r -> storeLogicSchemaInDatasource(entities))
-                            .onSuccess(success -> promise.complete())
-                            .onFailure(promise::fail);
+                        .compose(r -> storeLogicSchemaInDatasource(entities))
+                        .onSuccess(success -> promise.complete())
+                        .onFailure(promise::fail);
 
                 } catch (Exception e) {
                     promise.fail(e);
@@ -208,35 +205,36 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     }
 
     private Future<Void> createLogicSchemaDatamartInDatasource() {
-        return Future.future(promise -> {
-            datamartDao.createDatamart(InformationSchemaView.SCHEMA_NAME.toLowerCase())
-                    .onSuccess(r -> promise.complete())
-                    .onFailure(error -> {
-                        if (error instanceof DatamartAlreadyExistsException) {
-                            promise.complete();
-                        }
-                        else {
-                            promise.fail(error);
-                        }
-                    });
-        });
+        return Future.future(promise ->
+            createSchemaIfNotExists()
+                .onSuccess(r -> promise.complete())
+                .onFailure(error -> {
+                    if (error instanceof DatamartAlreadyExistsException) {
+                        promise.complete();
+                    } else {
+                        promise.fail(error);
+                    }
+                }));
+    }
+
+    private Future<Void> createSchemaIfNotExists() {
+        String schemaName = InformationSchemaView.SCHEMA_NAME.toLowerCase();
+        return datamartDao.existsDatamart(schemaName)
+            .compose(isExists -> isExists ? Future.succeededFuture() : datamartDao.createDatamart(schemaName));
     }
 
     private Future<Void> storeLogicSchemaInDatasource(List<Entity> entities) {
-        return Future.future(p -> {
+        return Future.future(p ->
             CompositeFuture.join(entities.stream()
-                    .map(entityDao::createEntity)
-                    .collect(Collectors.toList()))
-                    .onSuccess(success -> p.complete())
-                    .onFailure(error -> {
-                        if (error instanceof EntityAlreadyExistsException) {
-                            p.complete();
-                        }
-                        else {
-                            p.fail(error);
-                        }
-                    });
-        });
+                .map(this::createEntityIfNotExists)
+                .collect(Collectors.toList()))
+                .onSuccess(success -> p.complete())
+                .onFailure(p::fail));
+    }
+
+    private Future<Void> createEntityIfNotExists(Entity entity) {
+        return entityDao.existsEntity(entity.getSchema(), entity.getName())
+            .compose(isExists -> isExists ? Future.succeededFuture() : entityDao.createEntity(entity));
     }
 
     private String createInitEntitiesQuery() {
@@ -335,7 +333,7 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
             }
             if (EntityType.TABLE.equals(entity.getEntityType())) {
                 tableEntities.add(ddlQueryGenerator.generateCreateTableQuery(entity));
-                entity.getFields().stream()
+                entity.getFields()
                     .forEach(field -> {
                         val type = field.getType();
                         if (needComment(type)) {
@@ -344,7 +342,7 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
                     });
                 val shardingKeyColumns = entity.getFields().stream()
                     .filter(field -> field.getShardingOrder() != null)
-                    .map(field -> field.getName())
+                    .map(EntityField::getName)
                     .collect(Collectors.toList());
                 createShardingKeys.add(createShardingKeyIndex(entity.getName(), entity.getNameWithSchema(), shardingKeyColumns));
             }

@@ -206,7 +206,7 @@ public class DtmResultSet implements ResultSet {
     @Override
     public float getFloat(int columnIndex) throws SQLException {
         final Object value = this.getValue(columnIndex);
-        return value == null ? 0 : (Float) value;
+        return value == null ? 0 : ((Double) value).floatValue();
     }
 
     @Override

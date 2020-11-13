@@ -60,7 +60,7 @@ public class GetDeltaByDateTimeExecutorImpl extends DeltaServiceDaoExecutorHelpe
                 val errMsg = String.format("can't get delta ok on datamart[%s], dateTime[%s]",
                     datamart,
                     dateTime);
-                log.error(errMsg, error);
+                log.error(errMsg, error.getMessage());
                 if (error instanceof KeeperException.NoNodeException) {
                     resultPromise.fail(new DatamartNotExistsException(datamart));
                 } else if (error instanceof DeltaException) {

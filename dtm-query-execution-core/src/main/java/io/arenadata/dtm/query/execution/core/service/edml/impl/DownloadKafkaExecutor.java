@@ -1,7 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.edml.impl;
 
 import io.arenadata.dtm.common.dto.QueryParserRequest;
-import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
@@ -43,8 +42,7 @@ public class DownloadKafkaExecutor implements EdmlDownloadExecutor {
                                  MpprKafkaRequestFactory mpprKafkaRequestFactory,
                                  EdmlProperties edmlProperties,
                                  CheckColumnTypesService checkColumnTypesService,
-                                 ColumnMetadataService columnMetadataService,
-                                 EdmlProperties edmlProperties) {
+                                 ColumnMetadataService columnMetadataService) {
         this.pluginService = pluginService;
         this.mpprKafkaRequestFactory = mpprKafkaRequestFactory;
         this.columnMetadataService = columnMetadataService;

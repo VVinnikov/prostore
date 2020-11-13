@@ -10,24 +10,30 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.SourceType;
-import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.TarantoolDatabaseProperties;
+import io.arenadata.dtm.query.execution.plugin.adg.factory.impl.AdgCreateTableQueriesFactory;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.OperationYaml;
+import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.AdgSpace;
+import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.Space;
 import io.arenadata.dtm.query.execution.plugin.adg.service.TtCartridgeSchemaGenerator;
+import io.arenadata.dtm.query.execution.plugin.adg.service.impl.ddl.AdgCreateTableQueries;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
+import io.arenadata.dtm.query.execution.plugin.api.service.ddl.CreateTableQueriesFactory;
 import io.vertx.core.Promise;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 
 class TtCartridgeSchemaGeneratorImplTest {
 
-    private TtCartridgeSchemaGenerator cartridgeSchemaGenerator;
     private ObjectMapper mapper;
     private DdlRequestContext ddlRequestContext;
 
@@ -43,7 +49,7 @@ class TtCartridgeSchemaGeneratorImplTest {
         queryRequest.setDatamartMnemonic("test");
         queryRequest.setEnvName("test");
         queryRequest.setSourceType(SourceType.ADG);
-        List<EntityField> fields = Collections.singletonList(new EntityField(0,"test_field", "varchar(1)", false, ""));
+        List<EntityField> fields = Collections.singletonList(new EntityField(0, "test_field", "varchar(1)", false, ""));
         Entity entity = new Entity("test_schema.test_table", fields);
 
         ddlRequestContext = new DdlRequestContext(new DdlRequest(queryRequest, entity));
@@ -52,9 +58,14 @@ class TtCartridgeSchemaGeneratorImplTest {
     @Test
     void generateWithEmptySpaces() throws JsonProcessingException {
         Promise promise = Promise.promise();
-        cartridgeSchemaGenerator = new TtCartridgeSchemaGeneratorImpl(new TarantoolDatabaseProperties());
+
+        AdgSpace adgSpace = new AdgSpace("test", new Space());
+        AdgCreateTableQueries adqmCreateTableQueries = new AdgCreateTableQueries(adgSpace, adgSpace, adgSpace);
+        CreateTableQueriesFactory<AdgCreateTableQueries> createTableQueriesFactory = mock(AdgCreateTableQueriesFactory.class);
+        Mockito.when(createTableQueriesFactory.create(any())).thenReturn(adqmCreateTableQueries);
+        TtCartridgeSchemaGenerator cartridgeSchemaGenerator = new TtCartridgeSchemaGeneratorImpl(createTableQueriesFactory);
         cartridgeSchemaGenerator.generate(ddlRequestContext, mapper.readValue("{}", OperationYaml.class), ar -> {
-            if (ar.succeeded()){
+            if (ar.succeeded()) {
                 promise.complete(ar.result());
 
             } else {

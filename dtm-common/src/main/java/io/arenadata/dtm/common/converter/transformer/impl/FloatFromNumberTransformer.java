@@ -7,11 +7,11 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collection;
 
-public class FloatFromFloatTransformer extends AbstractColumnTransformer<Float, Float> {
+public class FloatFromNumberTransformer extends AbstractColumnTransformer<Float, Number> {
 
     @Override
-    public Float transformValue(Float value) {
-        return value;
+    public Float transformValue(Number value) {
+        return value.floatValue();
     }
 
     @Override

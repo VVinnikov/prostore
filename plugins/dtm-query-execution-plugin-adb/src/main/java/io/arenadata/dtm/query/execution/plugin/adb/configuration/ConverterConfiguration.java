@@ -23,7 +23,7 @@ public class ConverterConfiguration {
         transformerMap.put(ColumnType.CHAR, transformerMap.get(ColumnType.VARCHAR));
         transformerMap.put(ColumnType.BIGINT, getTransformerMap(new BigintFromNumberTransformer()));
         transformerMap.put(ColumnType.DOUBLE, getTransformerMap(new DoubleFromNumberTransformer()));
-        transformerMap.put(ColumnType.FLOAT, getTransformerMap(new FloatFromFloatTransformer()));
+        transformerMap.put(ColumnType.FLOAT, getTransformerMap(new FloatFromNumberTransformer()));
         transformerMap.put(ColumnType.DATE, getTransformerMap(
             new DateFromNumericTransformer(),
             new DateFromLongTransformer(),

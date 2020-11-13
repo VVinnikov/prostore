@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.delta.impl;
 
 import io.arenadata.dtm.async.AsyncUtils;
+import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.status.StatusEventCode;
@@ -113,22 +114,24 @@ public class RollbackDeltaExecutor implements DeltaExecutor, StatusEventPublishe
                                        WriteOpFinish writeOpFinish,
                                        QueryRequest queryRequest) {
         return entityDao.getEntity(datamart, writeOpFinish.getTableName())
-                .compose(entity -> {
-                    Future<Void> executingFuture = Future.succeededFuture();
-                    writeOpFinish.getCnList().stream()
-                            .map(sysCn -> RollbackRequest.builder()
-                                    .destinationTable(entity.getName())
-                                    .queryRequest(queryRequest)
-                                    .datamart(datamart)
-                                    .entity(entity)
-                                    .sysCn(sysCn)
-                                    .build())
-                            .map(RollbackRequestContext::new)
-                            .forEach(rollbackRequestContext -> {
-                                executingFuture.compose(v -> edmlUploadFailedExecutor.eraseWriteOp(rollbackRequestContext));
-                            });
-                    return executingFuture;
+                .compose(entity -> rollbackTableWriteOperations(datamart, writeOpFinish, entity, queryRequest));
+    }
+
+    private Future<Void> rollbackTableWriteOperations(String datamart, WriteOpFinish writeOpFinish, Entity entity, QueryRequest queryRequest) {
+        Future<Void> executingFuture = Future.succeededFuture();
+        writeOpFinish.getCnList().stream()
+                .map(sysCn -> RollbackRequest.builder()
+                        .destinationTable(entity.getName())
+                        .queryRequest(queryRequest)
+                        .datamart(datamart)
+                        .entity(entity)
+                        .sysCn(sysCn)
+                        .build())
+                .map(RollbackRequestContext::new)
+                .forEach(rollbackRequestContext -> {
+                    executingFuture.compose(v -> edmlUploadFailedExecutor.eraseWriteOp(rollbackRequestContext));
                 });
+        return executingFuture;
     }
 
     private DeltaRecord getDeltaRecord(String datamart, long deltaNum) {

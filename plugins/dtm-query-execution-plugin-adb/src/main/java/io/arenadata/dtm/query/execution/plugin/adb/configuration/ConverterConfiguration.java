@@ -25,7 +25,7 @@ public class ConverterConfiguration {
         transformerMap.put(ColumnType.DOUBLE, getTransformerMap(new DoubleFromNumberTransformer()));
         transformerMap.put(ColumnType.FLOAT, getTransformerMap(new FloatFromFloatTransformer()));
         transformerMap.put(ColumnType.DATE, getTransformerMap(
-            new DateFromIntegerTransformer(),
+            new DateFromNumericTransformer(),
             new DateFromLongTransformer(),
             new DateFromLocalDateTransformer()
         ));

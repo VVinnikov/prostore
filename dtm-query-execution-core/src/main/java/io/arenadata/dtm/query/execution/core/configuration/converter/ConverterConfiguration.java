@@ -19,7 +19,7 @@ public class ConverterConfiguration {
     @Bean("coreTransformerMap")
     public Map<ColumnType, Map<Class<?>, ColumnTransformer>> transformerMap(DtmConfig dtmSettings) {
         Map<ColumnType, Map<Class<?>, ColumnTransformer>> transformerMap = new HashMap<>();
-        transformerMap.put(ColumnType.INT, new LongFromNumberTransformer().getTransformerMap());
+        transformerMap.put(ColumnType.INT, getTransformerMap(new VarcharFromStringTransformer()));
         transformerMap.put(ColumnType.VARCHAR, getTransformerMap(new VarcharFromStringTransformer()));
         transformerMap.put(ColumnType.CHAR, transformerMap.get(ColumnType.VARCHAR));
         transformerMap.put(ColumnType.BIGINT, getTransformerMap(new BigintFromNumberTransformer()));

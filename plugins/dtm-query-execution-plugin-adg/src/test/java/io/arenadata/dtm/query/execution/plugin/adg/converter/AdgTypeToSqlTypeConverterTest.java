@@ -21,7 +21,7 @@ class AdgTypeToSqlTypeConverterTest {
 
     private SqlTypeConverter typeConverter;
     private String charVal;
-    private Integer intVal;
+    private Long intVal;
     private Long bigintVal;
     private Double doubleVal;
     private Float floatVal;
@@ -36,7 +36,7 @@ class AdgTypeToSqlTypeConverterTest {
     void setUp() {
         typeConverter = new AdgTypeToSqlTypeConverter(new ConverterConfiguration().transformerMap());
         charVal = "111";
-        intVal = 1;
+        intVal = 1L;
         bigintVal = 100000000000L;
         doubleVal = 1.0d;
         floatVal = 1.0f;
@@ -75,7 +75,7 @@ class AdgTypeToSqlTypeConverterTest {
         );
         assertAll("Int converting",
                 () -> assertEquals(expectedValues.get(ColumnType.INT), typeConverter.convert(ColumnType.INT, intVal)),
-                () -> assertTrue(typeConverter.convert(ColumnType.INT, intVal) instanceof Integer)
+                () -> assertTrue(typeConverter.convert(ColumnType.INT, intVal) instanceof Long)
         );
         assertAll("Bigint converting",
                 () -> assertEquals(expectedValues.get(ColumnType.BIGINT), typeConverter.convert(ColumnType.BIGINT, bigintVal)),

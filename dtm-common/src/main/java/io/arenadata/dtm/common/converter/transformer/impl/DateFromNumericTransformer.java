@@ -5,19 +5,19 @@ import io.arenadata.dtm.common.model.ddl.ColumnType;
 
 import java.sql.Date;
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 
-public class DateFromIntegerTransformer extends AbstractColumnTransformer<Date, Integer> {
+public class DateFromNumericTransformer extends AbstractColumnTransformer<Date, Number> {
 
     @Override
-    public Date transformValue(Integer value) {
+    public Date transformValue(Number value) {
         return Date.valueOf(LocalDate.ofEpochDay(value.longValue()));
     }
 
     @Override
     public Collection<Class<?>> getTransformClasses() {
-        return Collections.singletonList(Integer.class);
+        return Arrays.asList(Long.class, Integer.class);
     }
 
     @Override

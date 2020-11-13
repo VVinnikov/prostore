@@ -23,9 +23,9 @@ public class ConverterConfiguration {
         transformerMap.put(ColumnType.BIGINT, getTransformerMap(new BigintFromNumberTransformer()));
         transformerMap.put(ColumnType.DOUBLE, getTransformerMap(new DoubleFromNumberTransformer()));
         transformerMap.put(ColumnType.FLOAT, getTransformerMap(new FloatFromFloatTransformer()));
-        transformerMap.put(ColumnType.DATE, getTransformerMap(new DateFromIntegerTransformer()));
+        transformerMap.put(ColumnType.DATE, getTransformerMap(new DateFromNumericTransformer()));
         transformerMap.put(ColumnType.TIME, getTransformerMap(new TimeFromLongTransformer()));
-        transformerMap.put(ColumnType.TIMESTAMP, getTransformerMap(new TimeFromLongTransformer()));
+        transformerMap.put(ColumnType.TIMESTAMP, getTransformerMap(new TimestampFromLongTransformer()));
         transformerMap.put(ColumnType.BOOLEAN, getTransformerMap(new BooleanFromBooleanTransformer()));
         transformerMap.put(ColumnType.UUID, getTransformerMap(new UuidFromStringTransformer()));
         transformerMap.put(ColumnType.BLOB, getTransformerMap(new BlobFromObjectTransformer()));

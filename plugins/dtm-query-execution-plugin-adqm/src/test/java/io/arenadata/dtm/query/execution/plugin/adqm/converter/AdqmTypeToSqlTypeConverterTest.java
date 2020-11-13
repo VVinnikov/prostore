@@ -26,7 +26,7 @@ class AdqmTypeToSqlTypeConverterTest {
     private static final ZoneId UTC_TIME_ZONE = ZoneId.of("UTC");
     private SqlTypeConverter typeConverter;
     private String charVal;
-    private Integer intVal;
+    private Long intVal;
     private Long bigintVal;
     private Double doubleVal;
     private Float floatVal;
@@ -48,7 +48,7 @@ class AdqmTypeToSqlTypeConverterTest {
             }
         }));
         charVal = "111";
-        intVal = 1;
+        intVal = 1L;
         bigintVal = 1L;
         doubleVal = 1.0d;
         floatVal = 1.0f;
@@ -90,7 +90,7 @@ class AdqmTypeToSqlTypeConverterTest {
         );
         assertAll("Int converting",
                 () -> assertEquals(expectedValues.get(ColumnType.INT), typeConverter.convert(ColumnType.INT, intVal)),
-                () -> assertTrue(typeConverter.convert(ColumnType.INT, intVal) instanceof Integer)
+                () -> assertTrue(typeConverter.convert(ColumnType.INT, intVal) instanceof Long)
         );
         assertAll("Bigint converting from long",
                 () -> assertEquals(((List)expectedValues.get(ColumnType.BIGINT)).get(0),

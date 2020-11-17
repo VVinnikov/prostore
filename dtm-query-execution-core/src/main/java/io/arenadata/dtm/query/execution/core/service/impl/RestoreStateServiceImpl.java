@@ -1,6 +1,8 @@
 package io.arenadata.dtm.query.execution.core.service.impl;
 
-import io.arenadata.dtm.common.dto.TableInfo;
+import io.arenadata.dtm.common.configuration.core.DtmConfig;
+import io.arenadata.dtm.common.metrics.RequestMetrics;
+import io.arenadata.dtm.common.model.RequestStatus;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
@@ -26,6 +28,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -41,13 +44,15 @@ public class RestoreStateServiceImpl implements RestoreStateService {
     private final UploadExternalTableExecutor uploadExternalTableExecutor;
     private final DefinitionService<SqlNode> definitionService;
     private final String envName;
+    private final DtmConfig dtmSettings;
 
     @Autowired
     public RestoreStateServiceImpl(ServiceDbFacade serviceDbFacade,
                                    EdmlUploadFailedExecutor edmlUploadFailedExecutor,
                                    UploadExternalTableExecutor uploadExternalTableExecutor,
                                    @Qualifier("coreCalciteDefinitionService") DefinitionService<SqlNode> definitionService,
-                                   @Value("${core.env.name}") String envName) {
+                                   @Value("${core.env.name}") String envName,
+                                   DtmConfig dtmSettings) {
         this.datamartDao = serviceDbFacade.getServiceDbDao().getDatamartDao();
         this.entityDao = serviceDbFacade.getServiceDbDao().getEntityDao();
         this.deltaServiceDao = serviceDbFacade.getDeltaServiceDao();
@@ -55,10 +60,11 @@ public class RestoreStateServiceImpl implements RestoreStateService {
         this.uploadExternalTableExecutor = uploadExternalTableExecutor;
         this.definitionService = definitionService;
         this.envName = envName;
+        this.dtmSettings = dtmSettings;
     }
 
     @Override
-    public Future<Void> restoreState(){
+    public Future<Void> restoreState() {
         return datamartDao.getDatamarts()
                 .compose(this::processDatamarts)
                 .onSuccess(success -> log.info("State sucessfully restored"))
@@ -109,7 +115,14 @@ public class RestoreStateServiceImpl implements RestoreStateService {
         queryRequest.setSql(op.getQuery());
         val datamartRequest = new DatamartRequest(queryRequest);
         val sqlNode = definitionService.processingQuery(op.getQuery());
-        val context = new EdmlRequestContext(datamartRequest, (SqlInsert) sqlNode);
+        val context = new EdmlRequestContext(
+                RequestMetrics.builder()
+                        .startTime(LocalDateTime.now(dtmSettings.getTimeZone()))
+                        .requestId(queryRequest.getRequestId())
+                        .status(RequestStatus.IN_PROCESS)
+                        .isActive(true)
+                        .build(),
+                datamartRequest, (SqlInsert) sqlNode);
         context.setSysCn(op.getSysCn());
         context.setSourceEntity(source);
         context.setDestinationEntity(dest);
@@ -117,10 +130,8 @@ public class RestoreStateServiceImpl implements RestoreStateService {
         if (op.getStatus() == 0) {
             uploadExternalTableExecutor.execute(context, promise);
             return promise.future();
-        }
-        else if (op.getStatus() == 2) {
+        } else if (op.getStatus() == 2) {
             return edmlUploadFailedExecutor.execute(context);
-        }
-        else return Future.succeededFuture();
+        } else return Future.succeededFuture();
     }
 }

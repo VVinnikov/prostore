@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.ddl;
 
+import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.SystemMetadata;
 import io.arenadata.dtm.common.reader.QueryRequest;
@@ -67,7 +68,7 @@ class UseSchemaDmlExecutorTest {
         queryRequest.setDatamartMnemonic(schema);
         queryRequest.setSql("USE shares");
         SqlNode query = planner.parse(queryRequest.getSql());
-        context = new DmlRequestContext(new DmlRequest(queryRequest), query);
+        context = new DmlRequestContext(new RequestMetrics(), new DmlRequest(queryRequest), query);
         context.getRequest().setQueryRequest(queryRequest);
     }
 

@@ -1,5 +1,8 @@
 package io.arenadata.dtm.query.execution.core.service.dml.impl;
 
+import io.arenadata.dtm.common.configuration.core.DtmConfig;
+import io.arenadata.dtm.common.metrics.RequestMetrics;
+import io.arenadata.dtm.common.model.RequestStatus;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QuerySourceRequest;
 import io.arenadata.dtm.common.reader.SourceType;
@@ -14,6 +17,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -22,12 +26,15 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
 
     private final DataSourcePluginService pluginService;
     private final EntityDao entityDao;
+    private final DtmConfig dtmSettings;
 
     @Autowired
     public TargetDatabaseDefinitionServiceImpl(DataSourcePluginService pluginService,
-                                               EntityDao entityDao) {
+                                               EntityDao entityDao,
+                                               DtmConfig dtmSettings) {
         this.pluginService = pluginService;
         this.entityDao = entityDao;
+        this.dtmSettings = dtmSettings;
     }
 
     @Override
@@ -128,7 +135,9 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
     private Future<Object> calcQueryCostInPlugin(QuerySourceRequest request, SourceType sourceType) {
         return Future.future(p -> {
             val costRequest = new QueryCostRequest(request.getQueryRequest(), request.getLogicalSchema());
-            val costRequestContext = new QueryCostRequestContext(costRequest);
+            val costRequestContext = new QueryCostRequestContext(
+                    createRequestMetrics(request),
+                    costRequest);
             pluginService.calcQueryCost(sourceType, costRequestContext, costHandler -> {
                 if (costHandler.succeeded()) {
                     p.complete(Pair.of(sourceType, costHandler.result()));
@@ -137,5 +146,15 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
                 }
             });
         });
+    }
+
+    private RequestMetrics createRequestMetrics(QuerySourceRequest request) {
+        return RequestMetrics.builder()
+                .startTime(LocalDateTime.now(dtmSettings.getTimeZone()))
+                .requestId(request.getQueryRequest().getRequestId())
+                .sourceType(SourceType.INFORMATION_SCHEMA)
+                .status(RequestStatus.IN_PROCESS)
+                .isActive(true)
+                .build();
     }
 }

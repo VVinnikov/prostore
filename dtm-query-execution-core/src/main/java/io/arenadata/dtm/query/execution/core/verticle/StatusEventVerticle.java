@@ -9,6 +9,7 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.eventbus.Message;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -18,25 +19,25 @@ public class StatusEventVerticle extends AbstractVerticle {
     private final KafkaStatusEventPublisher kafkaStatusEventPublisher;
     private final StatusEventFactoryRegistry statusEventFactoryRegistry;
 
-    public StatusEventVerticle(
-        KafkaStatusEventPublisher kafkaStatusEventPublisher,
-        StatusEventFactoryRegistry statusEventFactoryRegistry
-    ) {
+    @Autowired
+    public StatusEventVerticle(KafkaStatusEventPublisher kafkaStatusEventPublisher,
+                               StatusEventFactoryRegistry statusEventFactoryRegistry) {
         this.kafkaStatusEventPublisher = kafkaStatusEventPublisher;
         this.statusEventFactoryRegistry = statusEventFactoryRegistry;
     }
 
     @Override
     public void start() {
-        vertx.eventBus()
-            .consumer(DataTopic.STATUS_EVENT_PUBLISH.getValue(), this::onPublishStatusEvent);
+        vertx.eventBus().consumer(DataTopic.STATUS_EVENT_PUBLISH.getValue(), this::onPublishStatusEvent);
     }
 
     private void onPublishStatusEvent(Message<String> statusMessage) {
         try {
-            val eventCode = StatusEventCode.valueOf(statusMessage.headers().get(DataHeader.STATUS_EVENT_CODE.getValue()));
+            val eventCode = StatusEventCode.valueOf(statusMessage.headers()
+                    .get(DataHeader.STATUS_EVENT_CODE.getValue()));
             val datamart = statusMessage.headers().get(DataHeader.DATAMART.getValue());
-            val eventRequest = statusEventFactoryRegistry.get(eventCode).create(datamart, statusMessage.body());
+            val eventRequest = statusEventFactoryRegistry.get(eventCode)
+                    .create(datamart, statusMessage.body());
             kafkaStatusEventPublisher.publish(eventRequest, ar -> {
                 if (ar.failed()) {
                     log.error("StatusEvent publish error", ar.cause());

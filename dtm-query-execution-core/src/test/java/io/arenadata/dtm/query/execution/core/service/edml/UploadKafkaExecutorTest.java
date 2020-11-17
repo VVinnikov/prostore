@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.core.service.edml;
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.configuration.kafka.KafkaAdminProperty;
 import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
+import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.plugin.exload.Format;
@@ -101,8 +102,8 @@ class UploadKafkaExecutorTest {
             final MppwRequest adgRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
 
             final Queue<MppwRequestContext> mppwContextQueue = new BlockingArrayQueue<>();
-            final MppwRequestContext mppwAdbContext = new MppwRequestContext(adbRequest);
-            final MppwRequestContext mppwAdgContext = new MppwRequestContext(adgRequest);
+            final MppwRequestContext mppwAdbContext = new MppwRequestContext(new RequestMetrics(), adbRequest);
+            final MppwRequestContext mppwAdgContext = new MppwRequestContext(new RequestMetrics(), adgRequest);
             mppwContextQueue.add(mppwAdbContext);
             mppwContextQueue.add(mppwAdgContext);
 
@@ -188,8 +189,8 @@ class UploadKafkaExecutorTest {
             final MppwRequest adgRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
 
             final Queue<MppwRequestContext> mppwContextQueue = new BlockingArrayQueue<>();
-            final MppwRequestContext mppwAdbContext = new MppwRequestContext(adbRequest);
-            final MppwRequestContext mppwAdgContext = new MppwRequestContext(adgRequest);
+            final MppwRequestContext mppwAdbContext = new MppwRequestContext(new RequestMetrics(), adbRequest);
+            final MppwRequestContext mppwAdgContext = new MppwRequestContext(new RequestMetrics(), adgRequest);
             mppwContextQueue.add(mppwAdbContext);
             mppwContextQueue.add(mppwAdgContext);
 
@@ -267,8 +268,8 @@ class UploadKafkaExecutorTest {
             final MppwRequest adgRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
 
             final Queue<MppwRequestContext> mppwContextQueue = new BlockingArrayQueue<>();
-            final MppwRequestContext mppwAdbContext = new MppwRequestContext(adbRequest);
-            final MppwRequestContext mppwAdgContext = new MppwRequestContext(adgRequest);
+            final MppwRequestContext mppwAdbContext = new MppwRequestContext(new RequestMetrics(), adbRequest);
+            final MppwRequestContext mppwAdgContext = new MppwRequestContext(new RequestMetrics(), adgRequest);
             mppwContextQueue.add(mppwAdbContext);
             mppwContextQueue.add(mppwAdgContext);
 
@@ -346,8 +347,8 @@ class UploadKafkaExecutorTest {
             final MppwRequest adgRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
 
             final Queue<MppwRequestContext> mppwContextQueue = new BlockingArrayQueue<>();
-            final MppwRequestContext mppwAdbContext = new MppwRequestContext(adbRequest);
-            final MppwRequestContext mppwAdgContext = new MppwRequestContext(adgRequest);
+            final MppwRequestContext mppwAdbContext = new MppwRequestContext(new RequestMetrics(), adbRequest);
+            final MppwRequestContext mppwAdgContext = new MppwRequestContext(new RequestMetrics(), adgRequest);
             mppwContextQueue.add(mppwAdbContext);
             mppwContextQueue.add(mppwAdgContext);
 
@@ -425,8 +426,8 @@ class UploadKafkaExecutorTest {
             final MppwRequest adgRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
 
             final Queue<MppwRequestContext> mppwContextQueue = new BlockingArrayQueue<>();
-            final MppwRequestContext mppwAdbContext = new MppwRequestContext(adbRequest);
-            final MppwRequestContext mppwAdgContext = new MppwRequestContext(adgRequest);
+            final MppwRequestContext mppwAdbContext = new MppwRequestContext(new RequestMetrics(), adbRequest);
+            final MppwRequestContext mppwAdgContext = new MppwRequestContext(new RequestMetrics(), adgRequest);
             mppwContextQueue.add(mppwAdbContext);
             mppwContextQueue.add(mppwAdgContext);
 
@@ -503,8 +504,8 @@ class UploadKafkaExecutorTest {
             final MppwRequest adgRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
 
             final Queue<MppwRequestContext> mppwContextQueue = new BlockingArrayQueue<>();
-            final MppwRequestContext mppwAdbContext = new MppwRequestContext(adbRequest);
-            final MppwRequestContext mppwAdgContext = new MppwRequestContext(adgRequest);
+            final MppwRequestContext mppwAdbContext = new MppwRequestContext(new RequestMetrics(), adbRequest);
+            final MppwRequestContext mppwAdgContext = new MppwRequestContext(new RequestMetrics(), adgRequest);
             mppwContextQueue.add(mppwAdbContext);
             mppwContextQueue.add(mppwAdgContext);
 
@@ -568,7 +569,7 @@ class UploadKafkaExecutorTest {
     @NotNull
     private EdmlRequestContext createEdmlRequestContext() {
         DatamartRequest request = new DatamartRequest(queryRequest);
-        EdmlRequestContext edmlRequestContext = new EdmlRequestContext(request, null);
+        EdmlRequestContext edmlRequestContext = new EdmlRequestContext(new RequestMetrics(), request, null);
         edmlRequestContext.setDestinationEntity(Entity.builder()
                 .name("pso")
                 .schema("test")

@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.dml;
 
+import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
@@ -68,7 +69,7 @@ public class AdbLlrServiceTest {
 			queryRequest.setRequestId(UUID.randomUUID());
 			queryRequest.setDatamartMnemonic("TEST_DATAMART");
 			LlrRequest llrRequest = new LlrRequest(queryRequest, schema, Collections.emptyList());
-			adbLLRService.execute(new LlrRequestContext(llrRequest), ar -> {
+			adbLLRService.execute(new LlrRequestContext(new RequestMetrics(), llrRequest), ar -> {
 				log.debug(ar.toString());
 				result.add("OK");
 				async.complete();

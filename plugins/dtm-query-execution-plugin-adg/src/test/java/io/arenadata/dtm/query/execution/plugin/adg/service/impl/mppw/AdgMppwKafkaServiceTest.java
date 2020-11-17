@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl.mppw;
 
 import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
+import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.plugin.exload.Format;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.AdgConnectorApiProperties;
@@ -183,7 +184,7 @@ class AdgMppwKafkaServiceTest {
         queryRequest.setEnvName("env1");
         queryRequest.setDatamartMnemonic("test");
         val mppwRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
-        return new MppwRequestContext(mppwRequest);
+        return new MppwRequestContext(new RequestMetrics(), mppwRequest);
     }
 
     private MppwKafkaParameter createKafkaParameter() {

@@ -1,7 +1,9 @@
 package io.arenadata.dtm.query.execution.core.factory.impl;
 
+import io.arenadata.dtm.common.configuration.core.DtmConfig;
+import io.arenadata.dtm.common.metrics.RequestMetrics;
+import io.arenadata.dtm.common.model.RequestStatus;
 import io.arenadata.dtm.common.reader.QueryRequest;
-import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlUseSchema;
 import io.arenadata.dtm.query.calcite.core.extension.delta.SqlDeltaCall;
 import io.arenadata.dtm.query.execution.core.factory.RequestContextFactory;
 import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
@@ -15,15 +17,22 @@ import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.DmlRequest;
 import lombok.val;
 import org.apache.calcite.sql.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
 
 @Component
 public class RequestContextFactoryImpl implements RequestContextFactory<RequestContext<? extends DatamartRequest>, QueryRequest> {
     private final SqlDialect sqlDialect;
+    private final DtmConfig dtmSettings;
 
-    public RequestContextFactoryImpl(@Qualifier("coreSqlDialect") SqlDialect sqlDialect) {
+    @Autowired
+    public RequestContextFactoryImpl(@Qualifier("coreSqlDialect") SqlDialect sqlDialect,
+                                     DtmConfig dtmSettings) {
         this.sqlDialect = sqlDialect;
+        this.dtmSettings = dtmSettings;
     }
 
     @Override
@@ -32,20 +41,39 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
         if (isDdlRequest(node)) {
             switch (node.getKind()) {
                 case OTHER_DDL:
-                    return new EddlRequestContext(new DatamartRequest(changedQueryRequest));
+                    return new EddlRequestContext(
+                            createRequestMetrics(request),
+                            new DatamartRequest(changedQueryRequest));
                 default:
-                    return new DdlRequestContext(new DdlRequest(changedQueryRequest), node);
+                    return new DdlRequestContext(
+                            createRequestMetrics(request),
+                            new DdlRequest(changedQueryRequest), node);
             }
         } else if (node instanceof SqlDeltaCall) {
-            return new DeltaRequestContext(new DatamartRequest(changedQueryRequest));
+            return new DeltaRequestContext(
+                    createRequestMetrics(request),
+                    new DatamartRequest(changedQueryRequest));
         }
 
         switch (node.getKind()) {
             case INSERT:
-                return new EdmlRequestContext(new DatamartRequest(changedQueryRequest), (SqlInsert) node);
+                return new EdmlRequestContext(
+                        createRequestMetrics(request),
+                        new DatamartRequest(changedQueryRequest), (SqlInsert) node);
             default:
-                return new DmlRequestContext(new DmlRequest(changedQueryRequest), node);
+                return new DmlRequestContext(
+                        createRequestMetrics(request),
+                        new DmlRequest(changedQueryRequest), node);
         }
+    }
+
+    private RequestMetrics createRequestMetrics(QueryRequest request) {
+        return RequestMetrics.builder()
+                .startTime(LocalDateTime.now(dtmSettings.getTimeZone()))
+                .requestId(request.getRequestId())
+                .status(RequestStatus.IN_PROCESS)
+                .isActive(true)
+                .build();
     }
 
     private boolean isDdlRequest(SqlNode node) {

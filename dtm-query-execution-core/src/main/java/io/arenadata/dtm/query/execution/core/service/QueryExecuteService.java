@@ -2,7 +2,7 @@ package io.arenadata.dtm.query.execution.core.service;
 
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.core.dto.ParsedQueryRequest;
-import io.arenadata.dtm.query.execution.plugin.api.service.SqlProcessingType;
+import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 

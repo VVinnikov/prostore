@@ -19,7 +19,7 @@ import io.arenadata.dtm.query.execution.core.utils.DefaultDatamartSetter;
 import io.arenadata.dtm.query.execution.core.utils.HintExtractor;
 import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
-import io.arenadata.dtm.query.execution.plugin.api.service.SqlProcessingType;
+import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -31,6 +31,7 @@ import io.vertx.reactivex.ext.unit.TestSuite;
 import lombok.Data;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlNode;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.env.Environment;
 
@@ -49,16 +50,23 @@ class QueryAnalyzerImplTest {
     private DefinitionService<SqlNode> definitionService =
             new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
     private Vertx vertx = Vertx.vertx();
-    private RequestContextFactory<RequestContext<? extends DatamartRequest>, QueryRequest> requestContextFactory = new RequestContextFactoryImpl(new SqlDialect(SqlDialect.EMPTY_CONTEXT));
+    final CoreDtmSettings dtmSettings = new CoreDtmSettings(ZoneId.of("UTC"));
+    private RequestContextFactory<RequestContext<? extends DatamartRequest>, QueryRequest> requestContextFactory =
+            new RequestContextFactoryImpl(new SqlDialect(SqlDialect.EMPTY_CONTEXT), dtmSettings);
     private QueryDispatcher queryDispatcher = mock(QueryDispatcher.class);
-    private QueryAnalyzer queryAnalyzer = new QueryAnalyzerImpl(queryDispatcher,
-            definitionService,
-            requestContextFactory,
-            vertx,
-            new HintExtractor(),
-            new DatamartMnemonicExtractor(new DeltaInformationExtractorImpl(new CoreDtmSettings(ZoneId.of("UTC")))),
-            new DefaultDatamartSetter(),
-            new SemicolonRemoverImpl(), new QueryRequestFactoryImpl(new AppConfiguration(mock(Environment.class))));
+    private QueryAnalyzer queryAnalyzer;
+
+    @BeforeEach
+    void setUp() {
+        queryAnalyzer = new QueryAnalyzerImpl(queryDispatcher,
+                definitionService,
+                requestContextFactory,
+                vertx,
+                new HintExtractor(),
+                new DatamartMnemonicExtractor(new DeltaInformationExtractorImpl(dtmSettings)),
+                new DefaultDatamartSetter(),
+                new SemicolonRemoverImpl(), new QueryRequestFactoryImpl(new AppConfiguration(mock(Environment.class))));
+    }
 
     @Test
     void parsedSelect() {

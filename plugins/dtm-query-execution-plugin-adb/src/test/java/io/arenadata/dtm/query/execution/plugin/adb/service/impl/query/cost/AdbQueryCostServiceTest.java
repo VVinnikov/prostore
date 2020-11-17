@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.cost;
 
+import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.adb.service.QueryEnrichmentService;
@@ -78,7 +79,7 @@ class AdbQueryCostServiceTest {
         queryRequest.setRequestId(UUID.randomUUID());
         queryRequest.setDatamartMnemonic("TEST_DATAMART");
         QueryCostRequest costRequest = new QueryCostRequest(queryRequest, schema);
-        return new QueryCostRequestContext(costRequest);
+        return new QueryCostRequestContext(new RequestMetrics(), costRequest);
     }
 
     private void initEnrichmentMocks() {

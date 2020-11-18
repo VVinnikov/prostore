@@ -17,17 +17,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AdbCreateTableQueriesFactoryTest {
     private static final String EXPECTED_CREATE_ACTUAL_TABLE_QUERY = "CREATE TABLE test.test_ts3222_actual " +
-            "(id int8 NOT NULL, name varchar , dt timestamp ," +
+            "(id int8 NOT NULL, name varchar, dt timestamp," +
             " sys_from bigint, sys_to bigint, sys_op int, constraint" +
             " pk_test_test_ts3222_actual primary key (id)) DISTRIBUTED BY (id, dt)";
 
     private static final String EXPECTED_CREATE_HISTORY_TABLE_QUERY = "CREATE TABLE test.test_ts3222_history " +
-            "(id int8 NOT NULL, name varchar , dt timestamp , " +
+            "(id int8 NOT NULL, name varchar, dt timestamp, " +
             "sys_from bigint, sys_to bigint, sys_op int," +
             " constraint pk_test_test_ts3222_history primary key (id, sys_from)) DISTRIBUTED BY (id, dt)";
 
     private static final String EXPECTED_CREATE_STAGING_TABLE_QUERY = "CREATE TABLE test.test_ts3222_staging " +
-            "(id int8 NOT NULL, name varchar , dt timestamp , sys_from bigint," +
+            "(id int8 NOT NULL, name varchar, dt timestamp, sys_from bigint," +
             " sys_to bigint, sys_op int, req_id varchar(36)," +
             " constraint pk_test_test_ts3222_staging primary key (id)) DISTRIBUTED BY (id, dt)";
 

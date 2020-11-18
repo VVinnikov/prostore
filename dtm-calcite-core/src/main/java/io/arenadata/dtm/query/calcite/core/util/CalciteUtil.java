@@ -34,10 +34,14 @@ public class CalciteUtil {
                 return FLOAT;
             case DOUBLE:
                 return DOUBLE;
+            case TIME:
+                return TIME;
             case DATE:
                 return DATE;
             case TIMESTAMP:
                 return TIMESTAMP;
+            case CHAR:
+                return CHAR;
             case VARCHAR:
             case UUID:
                 return VARCHAR;
@@ -66,6 +70,8 @@ public class CalciteUtil {
                 return ColumnType.TIMESTAMP;
             case VARCHAR:
                 return ColumnType.VARCHAR;
+            case CHAR:
+                return ColumnType.CHAR;
             default:
                 return ColumnType.ANY;
         }

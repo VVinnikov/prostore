@@ -16,7 +16,7 @@ import static io.arenadata.dtm.common.converter.transformer.ColumnTransformer.ge
 @Configuration
 public class ConverterConfiguration {
 
-    private static final String DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss.SSSSSS";
+    private static final String DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss[.SSS[SSS]]";
 
     @Bean("adqmTransformerMap")
     public Map<ColumnType, Map<Class<?>, ColumnTransformer>> transformerMap(DtmConfig dtmSettings) {
@@ -31,7 +31,8 @@ public class ConverterConfiguration {
         transformerMap.put(ColumnType.TIME, getTransformerMap(new TimeFromLongTransformer()));
         transformerMap.put(ColumnType.TIMESTAMP, getTransformerMap(new TimestampFromStringTransformer(
             DateTimeFormatter.ofPattern(DATE_TIME_FORMAT),
-            dtmSettings.getTimeZone())));
+            dtmSettings.getTimeZone()),
+            new TimestampFromLongTransformer()));
         transformerMap.put(ColumnType.BOOLEAN, getTransformerMap(new BooleanFromBooleanTransformer(), new BooleanFromNumericTransformer()));
         transformerMap.put(ColumnType.UUID, getTransformerMap(new UuidFromStringTransformer()));
         transformerMap.put(ColumnType.BLOB, getTransformerMap(new BlobFromObjectTransformer()));

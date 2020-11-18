@@ -8,9 +8,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Date;
-import java.sql.Time;
 import java.sql.Timestamp;
-import java.time.*;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -41,7 +43,7 @@ class AdgTypeToSqlTypeConverterTest {
         doubleVal = 1.0d;
         floatVal = 1.0f;
         dateLongVal = 18540L;
-        timeLongVal = 58742894000000L;
+        timeLongVal = 58742894000L;
         timestampLongVal = 1601878742000L;
         booleanVal = true;
         uuidStrVal = "a7180dcb-b286-4168-a34a-eb378a69abd4";
@@ -59,7 +61,7 @@ class AdgTypeToSqlTypeConverterTest {
         expectedValues.put(ColumnType.DOUBLE, doubleVal);
         expectedValues.put(ColumnType.FLOAT, floatVal);
         expectedValues.put(ColumnType.DATE, Date.valueOf(LocalDate.ofEpochDay(dateLongVal)));
-        expectedValues.put(ColumnType.TIME, Time.valueOf(LocalTime.ofNanoOfDay(timeLongVal)));
+        expectedValues.put(ColumnType.TIME, timeLongVal);
         expectedValues.put(ColumnType.TIMESTAMP, Timestamp.valueOf(LocalDateTime.ofInstant(Instant.ofEpochMilli(timestampLongVal), ZoneId.systemDefault())));
         expectedValues.put(ColumnType.BOOLEAN, booleanVal);
         expectedValues.put(ColumnType.UUID, UUID.fromString(uuidStrVal));
@@ -98,13 +100,13 @@ class AdgTypeToSqlTypeConverterTest {
                 () -> assertTrue(typeConverter.convert(ColumnType.DATE, dateLongVal) instanceof Date)
         );
         assertAll("Time converting",
-                () -> assertEquals(expectedValues.get(ColumnType.TIME), typeConverter.convert(ColumnType.TIME, timeLongVal)),
-                () -> assertTrue(typeConverter.convert(ColumnType.TIME, timeLongVal) instanceof Time)
+                () -> assertEquals(expectedValues.get(ColumnType.TIME), timeLongVal),
+                () -> assertTrue(typeConverter.convert(ColumnType.TIME, timeLongVal) instanceof Number)
         );
         assertAll("Timestamp converting",
                 () -> assertEquals(expectedValues.get(ColumnType.TIMESTAMP), typeConverter.convert(ColumnType.TIMESTAMP,
-                        timestampLongVal)),
-                () -> assertTrue(typeConverter.convert(ColumnType.TIMESTAMP, timestampLongVal) instanceof Timestamp)
+                        timestampLongVal * 1000)),
+                () -> assertTrue(typeConverter.convert(ColumnType.TIMESTAMP, timestampLongVal * 1000) instanceof Timestamp)
         );
         assertAll("Boolean converting",
                 () -> assertEquals(expectedValues.get(ColumnType.BOOLEAN), typeConverter.convert(ColumnType.BOOLEAN, booleanVal)),

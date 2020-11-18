@@ -16,7 +16,7 @@ public class TimestampFromLongTransformer extends AbstractColumnTransformer<Time
 
     @Override
     public Timestamp transformValue(Long value) {
-        return value == null ? null : Timestamp.from(Instant.ofEpochMilli(value/1000));
+        return value == null ? null : Timestamp.from(Instant.ofEpochMilli(value / 1000));
     }
 
     @Override

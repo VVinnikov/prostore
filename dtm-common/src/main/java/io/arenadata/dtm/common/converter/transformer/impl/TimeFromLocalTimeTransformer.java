@@ -11,7 +11,7 @@ public class TimeFromLocalTimeTransformer extends AbstractColumnTransformer<Long
 
     @Override
     public Long transformValue(LocalTime value) {
-        return value == null ? null : value.toSecondOfDay() * 1000L;
+        return value == null ? null : value.toNanoOfDay() / 1000;
     }
 
     @Override

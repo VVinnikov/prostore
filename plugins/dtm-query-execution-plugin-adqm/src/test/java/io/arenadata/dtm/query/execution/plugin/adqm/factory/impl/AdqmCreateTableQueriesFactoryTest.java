@@ -24,7 +24,7 @@ public class AdqmCreateTableQueriesFactoryTest {
     private static final String EXPECTED_CREATE_SHARD_TABLE_QUERY = "CREATE TABLE dev__test.test_ts3222_actual_shard " +
             "ON CLUSTER test_arenadata\n" +
             "(\n" +
-            "  id Int64, name Nullable(String), dt Nullable(DateTime64(6)),\n" +
+            "  id Int64, name Nullable(String), dt Nullable(DateTime64),\n" +
             "  sys_from   Int64,\n" +
             "  sys_to     Int64,\n" +
             "  sys_op     Int8,\n" +
@@ -38,7 +38,7 @@ public class AdqmCreateTableQueriesFactoryTest {
     private static final String EXPECTED_CREATE_DISTRIBUTED_TABLE_QUERY = "CREATE TABLE dev__test.test_ts3222_actual " +
             "ON CLUSTER test_arenadata\n" +
             "(\n" +
-            "  id Int64, name Nullable(String), dt Nullable(DateTime64(6)),\n" +
+            "  id Int64, name Nullable(String), dt Nullable(DateTime64),\n" +
             "  sys_from   Int64,\n" +
             "  sys_to     Int64,\n" +
             "  sys_op     Int8,\n" +

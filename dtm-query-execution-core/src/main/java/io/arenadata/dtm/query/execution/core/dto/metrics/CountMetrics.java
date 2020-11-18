@@ -3,10 +3,8 @@ package io.arenadata.dtm.query.execution.core.dto.metrics;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-import java.util.List;
-
 @Data
 @AllArgsConstructor
-public class ResultMetrics {
-    private final List<RequestStats> statistics;
+public class CountMetrics {
+    private final Long count;
 }

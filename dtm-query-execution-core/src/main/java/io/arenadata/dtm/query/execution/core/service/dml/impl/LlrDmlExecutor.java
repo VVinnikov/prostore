@@ -127,8 +127,11 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                                                DmlRequestContext context) {
         return Future.future(promise -> {
             if (informationSchemaDefinitionService.isInformationSchemaRequest(sourceRequest)) {
-                informationSchemaExecute(sourceRequest)
-                        .onComplete(metricsService.updateMetrics(SourceType.INFORMATION_SCHEMA,
+                metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
+                        SqlProcessingType.LLR,
+                        context.getMetrics())
+                        .compose(v -> informationSchemaExecute(sourceRequest))
+                        .onComplete(metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
                                 SqlProcessingType.LLR,
                                 context.getMetrics(),
                                 promise));

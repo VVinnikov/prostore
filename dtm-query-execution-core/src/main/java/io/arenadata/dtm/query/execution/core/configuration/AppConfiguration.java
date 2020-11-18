@@ -11,8 +11,6 @@ import io.arenadata.dtm.query.execution.core.configuration.properties.CoreDtmSet
 import io.vertx.core.json.jackson.DatabindCodec;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.web.embedded.netty.NettyReactiveWebServerFactory;
-import org.springframework.boot.web.reactive.server.ReactiveWebServerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -61,11 +59,5 @@ public class AppConfiguration {
     public DtmConfig dtmSettings() {
         final String tz = environment.getProperty("core.settings.timezone", String.class);
         return new CoreDtmSettings(ZoneId.of(Objects.requireNonNull(tz)));
-    }
-
-    @Bean
-    public ReactiveWebServerFactory reactiveWebServerFactory() {
-        final Integer metricsServerPort = environment.getProperty("management.server.port", Integer.class);
-        return new NettyReactiveWebServerFactory(Objects.requireNonNull(metricsServerPort));
     }
 }

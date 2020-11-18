@@ -17,6 +17,7 @@ import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
@@ -62,75 +63,117 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     public void ddl(SourceType sourceType,
                     DdlRequestContext context,
                     Handler<AsyncResult<Void>> asyncResultHandler) {
-        taskVerticleExecutor.execute(((Promise<Void> p) -> getPlugin(sourceType).ddl(context, p)),
-                metricsService.updateMetrics(sourceType,
-                        SqlProcessingType.DDL,
-                        context.getMetrics(),
-                        asyncResultHandler));
+        metricsService.sendMetrics(sourceType,
+                SqlProcessingType.DDL,
+                context.getMetrics())
+                .onSuccess(ar -> {
+                    taskVerticleExecutor.execute(((Promise<Void> p) -> getPlugin(sourceType).ddl(context, p)),
+                            metricsService.sendMetrics(sourceType,
+                                    SqlProcessingType.DDL,
+                                    context.getMetrics(),
+                                    asyncResultHandler));
+                })
+                .onFailure(fail -> asyncResultHandler.handle(Future.failedFuture(fail)));
     }
 
     @Override
     public void llr(SourceType sourceType,
                     LlrRequestContext context,
                     Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-        taskVerticleExecutor.execute(p -> getPlugin(sourceType).llr(context, p),
-                metricsService.updateMetrics(sourceType,
-                        SqlProcessingType.LLR,
-                        context.getMetrics(),
-                        asyncResultHandler));
+        metricsService.sendMetrics(sourceType,
+                SqlProcessingType.LLR,
+                context.getMetrics())
+                .onSuccess(ar -> {
+                    taskVerticleExecutor.execute(p -> getPlugin(sourceType).llr(context, p),
+                            metricsService.sendMetrics(sourceType,
+                                    SqlProcessingType.LLR,
+                                    context.getMetrics(),
+                                    asyncResultHandler));
+                })
+                .onFailure(fail -> asyncResultHandler.handle(Future.failedFuture(fail)));
     }
 
     @Override
     public void mppr(SourceType sourceType,
                      MpprRequestContext context,
                      Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-        taskVerticleExecutor.execute(p -> getPlugin(sourceType).mppr(context, p),
-                metricsService.updateMetrics(sourceType,
-                        SqlProcessingType.MPPR,
-                        context.getMetrics(),
-                        asyncResultHandler));
+        metricsService.sendMetrics(sourceType,
+                SqlProcessingType.MPPR,
+                context.getMetrics())
+                .onSuccess(ar -> {
+                    taskVerticleExecutor.execute(p -> getPlugin(sourceType).mppr(context, p),
+                            metricsService.sendMetrics(sourceType,
+                                    SqlProcessingType.MPPR,
+                                    context.getMetrics(),
+                                    asyncResultHandler));
+                })
+                .onFailure(fail -> asyncResultHandler.handle(Future.failedFuture(fail)));
     }
 
     @Override
     public void mppw(SourceType sourceType,
                      MppwRequestContext context,
                      Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-        taskVerticleExecutor.execute(p -> getPlugin(sourceType).mppw(context, p),
-                metricsService.updateMetrics(sourceType,
-                        SqlProcessingType.MPPW,
-                        context.getMetrics(),
-                        asyncResultHandler));
+        metricsService.sendMetrics(sourceType,
+                SqlProcessingType.MPPW,
+                context.getMetrics())
+                .onSuccess(ar -> {
+                    taskVerticleExecutor.execute(p -> getPlugin(sourceType).mppw(context, p),
+                            metricsService.sendMetrics(sourceType,
+                                    SqlProcessingType.MPPW,
+                                    context.getMetrics(),
+                                    asyncResultHandler));
+                })
+                .onFailure(fail -> asyncResultHandler.handle(Future.failedFuture(fail)));
     }
 
     @Override
     public void calcQueryCost(SourceType sourceType,
                               QueryCostRequestContext context,
                               Handler<AsyncResult<Integer>> asyncResultHandler) {
-        taskVerticleExecutor.execute(p -> getPlugin(sourceType).calcQueryCost(context, p),
-                metricsService.updateMetrics(sourceType,
-                        SqlProcessingType.COST,
-                        context.getMetrics(),
-                        asyncResultHandler));
+        metricsService.sendMetrics(sourceType,
+                SqlProcessingType.MPPW,
+                context.getMetrics())
+                .onSuccess(ar -> {
+                    taskVerticleExecutor.execute(p -> getPlugin(sourceType).calcQueryCost(context, p),
+                            metricsService.sendMetrics(sourceType,
+                                    SqlProcessingType.COST,
+                                    context.getMetrics(),
+                                    asyncResultHandler));
+                })
+                .onFailure(fail -> asyncResultHandler.handle(Future.failedFuture(fail)));
     }
 
     @Override
     public void status(SourceType sourceType, StatusRequestContext context,
                        Handler<AsyncResult<StatusQueryResult>> asyncResultHandler) {
-        taskVerticleExecutor.execute(p -> getPlugin(sourceType).status(context, p),
-                metricsService.updateMetrics(sourceType,
-                        SqlProcessingType.STATUS,
-                        context.getMetrics(),
-                        asyncResultHandler));
+        metricsService.sendMetrics(sourceType,
+                SqlProcessingType.STATUS,
+                context.getMetrics())
+                .onSuccess(ar -> {
+                    taskVerticleExecutor.execute(p -> getPlugin(sourceType).status(context, p),
+                            metricsService.sendMetrics(sourceType,
+                                    SqlProcessingType.STATUS,
+                                    context.getMetrics(),
+                                    asyncResultHandler));
+                })
+                .onFailure(fail -> asyncResultHandler.handle(Future.failedFuture(fail)));
     }
 
     @Override
     public void rollback(SourceType sourceType, RollbackRequestContext context,
                          Handler<AsyncResult<Void>> asyncResultHandler) {
-        taskVerticleExecutor.execute(p -> getPlugin(sourceType).rollback(context, p),
-                metricsService.updateMetrics(sourceType,
-                        SqlProcessingType.ROLLBACK,
-                        context.getMetrics(),
-                        asyncResultHandler));
+        metricsService.sendMetrics(sourceType,
+                SqlProcessingType.ROLLBACK,
+                context.getMetrics())
+                .onSuccess(ar -> {
+                    taskVerticleExecutor.execute(p -> getPlugin(sourceType).rollback(context, p),
+                            metricsService.sendMetrics(sourceType,
+                                    SqlProcessingType.ROLLBACK,
+                                    context.getMetrics(),
+                                    asyncResultHandler));
+                })
+                .onFailure(fail -> asyncResultHandler.handle(Future.failedFuture(fail)));
     }
 
     @Override

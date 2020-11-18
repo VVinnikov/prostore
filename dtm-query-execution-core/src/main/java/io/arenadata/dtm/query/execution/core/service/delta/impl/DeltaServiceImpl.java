@@ -61,21 +61,27 @@ public class DeltaServiceImpl implements DeltaService<QueryResult> {
                 DeltaQuery deltaQuery = exParamHandler.result();
                 deltaQuery.setDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic());
                 deltaQuery.setRequest(context.getRequest().getQueryRequest());
-                executors.get(deltaQuery.getDeltaAction())
-                        .execute(deltaQuery, metricsService.updateMetrics(SourceType.INFORMATION_SCHEMA,
-                                getSqlType(deltaQuery.getDeltaAction()),
-                                context.getMetrics(),
-                                deltaExecHandler -> {
-                                    if (deltaExecHandler.succeeded()) {
-                                        QueryResult queryDeltaResult = deltaExecHandler.result();
-                                        log.debug("Query result: {}, queryResult : {}",
-                                                context.getRequest().getQueryRequest(), queryDeltaResult);
-                                        handler.handle(Future.succeededFuture(queryDeltaResult));
-                                    } else {
-                                        log.error(deltaExecHandler.cause().getMessage());
-                                        handler.handle(Future.failedFuture(deltaExecHandler.cause()));
-                                    }
-                                }));
+                metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
+                        getSqlType(deltaQuery.getDeltaAction()),
+                        context.getMetrics())
+                        .onSuccess(ar -> {
+                            executors.get(deltaQuery.getDeltaAction())
+                                    .execute(deltaQuery, metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
+                                            getSqlType(deltaQuery.getDeltaAction()),
+                                            context.getMetrics(),
+                                            deltaExecHandler -> {
+                                                if (deltaExecHandler.succeeded()) {
+                                                    QueryResult queryDeltaResult = deltaExecHandler.result();
+                                                    log.debug("Query result: {}, queryResult : {}",
+                                                            context.getRequest().getQueryRequest(), queryDeltaResult);
+                                                    handler.handle(Future.succeededFuture(queryDeltaResult));
+                                                } else {
+                                                    log.error(deltaExecHandler.cause().getMessage());
+                                                    handler.handle(Future.failedFuture(deltaExecHandler.cause()));
+                                                }
+                                            }));
+                        })
+                        .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
             } else {
                 handler.handle(Future.failedFuture(exParamHandler.cause()));
             }

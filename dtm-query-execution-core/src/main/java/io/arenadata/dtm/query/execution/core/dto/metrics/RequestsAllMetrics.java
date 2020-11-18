@@ -7,6 +7,7 @@ import java.util.List;
 
 @Data
 @AllArgsConstructor
-public class ResultMetrics {
-    private final List<RequestStats> statistics;
+public class RequestsAllMetrics {
+    private final Long total;
+    private final List<AllStats> perPlugin;
 }

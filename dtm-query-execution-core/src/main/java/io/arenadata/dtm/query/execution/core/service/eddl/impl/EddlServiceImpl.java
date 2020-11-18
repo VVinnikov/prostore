@@ -14,8 +14,7 @@ import io.arenadata.dtm.query.execution.plugin.api.service.EddlService;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -24,14 +23,12 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service("coreEddlService")
+@Slf4j
 public class EddlServiceImpl implements EddlService<QueryResult> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(EddlServiceImpl.class);
 
     private final EddlQueryParamExtractor paramExtractor;
     private final Map<EddlAction, EddlExecutor> executors;
     private final MetricsService<RequestMetrics> metricsService;
-
 
     @Autowired
     public EddlServiceImpl(EddlQueryParamExtractor paramExtractor,
@@ -48,19 +45,25 @@ public class EddlServiceImpl implements EddlService<QueryResult> {
         paramExtractor.extract(context.getRequest().getQueryRequest(), extractHandler -> {
             if (extractHandler.succeeded()) {
                 EddlQuery eddlQuery = extractHandler.result();
-                executors.get(eddlQuery.getAction()).execute(eddlQuery,
-                        metricsService.updateMetrics(SourceType.INFORMATION_SCHEMA,
-                                SqlProcessingType.EDDL,
-                                context.getMetrics(), execHandler -> {
-                                    if (execHandler.succeeded()) {
-                                        asyncResultHandler.handle(Future.succeededFuture(QueryResult.emptyResult()));
-                                    } else {
-                                        LOGGER.error(execHandler.cause().getMessage());
-                                        asyncResultHandler.handle(Future.failedFuture(execHandler.cause()));
-                                    }
-                                }));
+                metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
+                        SqlProcessingType.EDDL,
+                        context.getMetrics())
+                        .onSuccess(ar -> {
+                            executors.get(eddlQuery.getAction()).execute(eddlQuery,
+                                    metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
+                                            SqlProcessingType.EDDL,
+                                            context.getMetrics(), execHandler -> {
+                                                if (execHandler.succeeded()) {
+                                                    asyncResultHandler.handle(Future.succeededFuture(QueryResult.emptyResult()));
+                                                } else {
+                                                    log.error(execHandler.cause().getMessage());
+                                                    asyncResultHandler.handle(Future.failedFuture(execHandler.cause()));
+                                                }
+                                            }));
+                        })
+                        .onFailure(fail -> asyncResultHandler.handle(Future.failedFuture(fail)));
             } else {
-                LOGGER.error(extractHandler.cause().getMessage());
+                log.error(extractHandler.cause().getMessage());
                 asyncResultHandler.handle(Future.failedFuture(extractHandler.cause()));
             }
         });

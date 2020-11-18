@@ -1,11 +1,15 @@
 package io.arenadata.dtm.query.execution.core.service.dml.impl;
 
+import io.arenadata.dtm.common.metrics.RequestMetrics;
+import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.SystemMetadata;
 import io.arenadata.dtm.common.reader.QueryResult;
+import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlUseSchema;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
+import io.arenadata.dtm.query.execution.core.service.metrics.MetricsService;
 import io.arenadata.dtm.query.execution.core.utils.ParseQueryUtils;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.api.dml.DmlRequestContext;
@@ -15,11 +19,12 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 @Component
@@ -28,28 +33,44 @@ public class UseSchemaDmlExecutor implements DmlExecutor<QueryResult> {
     public static final String SCHEMA_COLUMN_NAME = "schema";
     private final DatamartDao datamartDao;
     private final ParseQueryUtils parseQueryUtils;
+    private final MetricsService<RequestMetrics> metricsService;
 
     @Autowired
-    public UseSchemaDmlExecutor(ServiceDbFacade serviceDbFacade, ParseQueryUtils parseQueryUtils) {
+    public UseSchemaDmlExecutor(ServiceDbFacade serviceDbFacade,
+                                ParseQueryUtils parseQueryUtils,
+                                MetricsService<RequestMetrics> metricsService) {
         this.datamartDao = serviceDbFacade.getServiceDbDao().getDatamartDao();
         this.parseQueryUtils = parseQueryUtils;
+        this.metricsService = metricsService;
     }
 
     @Override
     public void execute(DmlRequestContext context, Handler<AsyncResult<QueryResult>> handler) {
         String datamart = parseQueryUtils.getDatamartName(((SqlUseSchema) context.getQuery()).getOperandList());
         datamartDao.existsDatamart(datamart)
-                .onSuccess(isExists -> {
-                    if (isExists) {
-                        handler.handle(Future.succeededFuture(createQueryResult(context, datamart)));
-                    } else {
-                        handler.handle(Future.failedFuture(String.format("Datamart [%s] doesn't exist", datamart)));
-                    }
-                })
-                .onFailure(error -> handler.handle(Future.failedFuture(error)));
+                .onComplete(metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
+                        SqlProcessingType.DML,
+                        context.getMetrics(), isExists -> {
+                            if (isExists.succeeded()) {
+                                if (isExists.result()) {
+                                    handler.handle(Future.succeededFuture(createQueryResult(context, datamart)));
+                                } else {
+                                    handler.handle(Future.failedFuture(String.format("Datamart [%s] doesn't exist", datamart)));
+                                }
+                            } else {
+                                handler.handle(Future.failedFuture(isExists.cause()));
+                            }
+                        }));
     }
 
-    @NotNull
+    private Future<Void> isExists(boolean isExists) {
+        if (isExists) {
+            return Future.succeededFuture();
+        } else {
+            return Future.failedFuture("");
+        }
+    }
+
     private QueryResult createQueryResult(DmlRequestContext context, String datamart) {
         final QueryResult result = new QueryResult();
         result.setRequestId(context.getRequest().getQueryRequest().getRequestId());

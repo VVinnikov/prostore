@@ -26,10 +26,10 @@ public abstract class AbstractMetricsService<T extends RequestMetrics> implement
     }
 
     @Override
-    public <R> Handler<AsyncResult<R>> updateMetrics(SourceType type,
-                                                     SqlProcessingType actionType,
-                                                     T requestMetrics,
-                                                     Handler<AsyncResult<R>> handler) {
+    public <R> Handler<AsyncResult<R>> sendMetrics(SourceType type,
+                                                   SqlProcessingType actionType,
+                                                   T requestMetrics,
+                                                   Handler<AsyncResult<R>> handler) {
         return ar -> {
             updateMetrics(type, actionType, requestMetrics);
             if (ar.succeeded()) {
@@ -42,6 +42,17 @@ public abstract class AbstractMetricsService<T extends RequestMetrics> implement
                 handler.handle(Future.failedFuture(ar.cause()));
             }
         };
+    }
+
+    public Future<Void> sendMetrics(SourceType type,
+                                    SqlProcessingType actionType,
+                                    T requestMetrics) {
+        return Future.future(promise -> {
+            requestMetrics.setSourceType(type);
+            requestMetrics.setActionType(actionType);
+            metricsProducer.publish(MetricsTopic.ALL_EVENTS, requestMetrics);
+            promise.complete();
+        });
     }
 
     private void updateMetrics(SourceType type, SqlProcessingType actionType, RequestMetrics metrics) {

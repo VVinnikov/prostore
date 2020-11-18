@@ -6,6 +6,7 @@ import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.RequestStatus;
 import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.query.execution.core.configuration.metrics.MetricsSettings;
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsProducer;
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsService;
 import io.vertx.core.AsyncResult;
@@ -18,11 +19,14 @@ public abstract class AbstractMetricsService<T extends RequestMetrics> implement
 
     private final MetricsProducer metricsProducer;
     private final DtmConfig dtmSettings;
+    private final MetricsSettings metricsSettings;
 
     public AbstractMetricsService(MetricsProducer metricsProducer,
-                                  DtmConfig dtmSettings) {
+                                  DtmConfig dtmSettings,
+                                  MetricsSettings metricsSettings) {
         this.metricsProducer = metricsProducer;
         this.dtmSettings = dtmSettings;
+        this.metricsSettings = metricsSettings;
     }
 
     @Override
@@ -30,29 +34,45 @@ public abstract class AbstractMetricsService<T extends RequestMetrics> implement
                                                    SqlProcessingType actionType,
                                                    T requestMetrics,
                                                    Handler<AsyncResult<R>> handler) {
-        return ar -> {
-            updateMetrics(type, actionType, requestMetrics);
-            if (ar.succeeded()) {
-                requestMetrics.setStatus(RequestStatus.SUCCESS);
-                metricsProducer.publish(MetricsTopic.ALL_EVENTS, requestMetrics);
-                handler.handle(Future.succeededFuture(ar.result()));
-            } else {
-                requestMetrics.setStatus(RequestStatus.ERROR);
-                metricsProducer.publish(MetricsTopic.ALL_EVENTS, requestMetrics);
-                handler.handle(Future.failedFuture(ar.cause()));
-            }
-        };
+        if (!metricsSettings.isEnabled()) {
+            return ar -> {
+                if (ar.succeeded()) {
+                    handler.handle(Future.succeededFuture(ar.result()));
+                } else {
+                    handler.handle(Future.failedFuture(ar.cause()));
+                }
+            };
+        } else {
+            return ar -> {
+                updateMetrics(type, actionType, requestMetrics);
+                if (ar.succeeded()) {
+                    requestMetrics.setStatus(RequestStatus.SUCCESS);
+                    metricsProducer.publish(MetricsTopic.ALL_EVENTS, requestMetrics);
+                    handler.handle(Future.succeededFuture(ar.result()));
+                } else {
+                    requestMetrics.setStatus(RequestStatus.ERROR);
+                    metricsProducer.publish(MetricsTopic.ALL_EVENTS, requestMetrics);
+                    handler.handle(Future.failedFuture(ar.cause()));
+                }
+            };
+        }
+
     }
 
+    @Override
     public Future<Void> sendMetrics(SourceType type,
                                     SqlProcessingType actionType,
                                     T requestMetrics) {
-        return Future.future(promise -> {
-            requestMetrics.setSourceType(type);
-            requestMetrics.setActionType(actionType);
-            metricsProducer.publish(MetricsTopic.ALL_EVENTS, requestMetrics);
-            promise.complete();
-        });
+        if (!metricsSettings.isEnabled()) {
+            return Future.succeededFuture();
+        } else {
+            return Future.future(promise -> {
+                requestMetrics.setSourceType(type);
+                requestMetrics.setActionType(actionType);
+                metricsProducer.publish(MetricsTopic.ALL_EVENTS, requestMetrics);
+                promise.complete();
+            });
+        }
     }
 
     private void updateMetrics(SourceType type, SqlProcessingType actionType, RequestMetrics metrics) {

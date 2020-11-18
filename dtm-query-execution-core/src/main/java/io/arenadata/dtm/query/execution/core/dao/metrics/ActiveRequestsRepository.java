@@ -14,4 +14,6 @@ public interface ActiveRequestsRepository<T extends RequestMetrics> {
     T get(UUID requestId);
 
     List<T> getList();
+
+    void deleteAll();
 }

@@ -26,6 +26,9 @@ core:
   settings:
     timeZone: ${CORE_TIME_ZONE:UTC}
 
+  metrics:
+    isEnabled: ${DTM_CORE_METRICS_ENABLED:true}
+
   datasource:
     edml:
       sourceType: ${EDML_DATASOURCE:ADB}

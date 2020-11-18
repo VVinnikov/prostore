@@ -32,8 +32,6 @@ public class MetricsProcessingServiceImpl implements MetricsProcessingService<Re
                                                 ActiveRequestsRepository<RequestMetrics> activeRequestsRepository) {
         this.meterRegistry = meterRegistry;
         this.activeRequestsRepository = activeRequestsRepository;
-        initRequestsCounters(REQUESTS_AMOUNT);
-        initRequestsTimers(REQUESTS_TIME);
     }
 
     @Override
@@ -64,30 +62,5 @@ public class MetricsProcessingServiceImpl implements MetricsProcessingService<Re
                 .tags(ACTION_TYPE, metricsValue.getActionType().name(),
                         SOURCE_TYPE, metricsValue.getSourceType().name())
                 .counter());
-    }
-
-    private void initRequestsCounters(String counterName) {
-        Arrays.stream(SqlProcessingType.values()).forEach(actionType -> {
-            Arrays.stream(SourceType.values()).forEach(st ->
-                    this.meterRegistry.counter(
-                            counterName,
-                            ACTION_TYPE,
-                            actionType.name(),
-                            SOURCE_TYPE,
-                            st.name())
-            );
-        });
-    }
-
-    private void initRequestsTimers(String timerName) {
-        Arrays.stream(SqlProcessingType.values()).forEach(actionType -> {
-            Arrays.stream(SourceType.values()).forEach(st ->
-                    meterRegistry.timer(timerName,
-                            ACTION_TYPE,
-                            actionType.name(),
-                            SOURCE_TYPE,
-                            st.name())
-            );
-        });
     }
 }

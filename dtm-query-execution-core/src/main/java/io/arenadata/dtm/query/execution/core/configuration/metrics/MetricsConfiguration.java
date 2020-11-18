@@ -22,5 +22,8 @@ public class MetricsConfiguration {
         return new NettyReactiveWebServerFactory(this.metricsServerPort);
     }
 
-
+    @Bean
+    public MetricsSettings metricsSettings(@Value("${core.metrics.isEnabled}") Boolean isEnabled) {
+        return new MetricsSettings(isEnabled);
+    }
 }

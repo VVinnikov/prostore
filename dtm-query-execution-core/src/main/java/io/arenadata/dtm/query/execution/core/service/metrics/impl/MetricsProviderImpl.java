@@ -4,6 +4,7 @@ import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.query.execution.core.configuration.metrics.MetricsSettings;
 import io.arenadata.dtm.query.execution.core.dao.metrics.ActiveRequestsRepository;
 import io.arenadata.dtm.query.execution.core.dto.metrics.*;
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsProvider;
@@ -27,23 +28,28 @@ import static io.arenadata.dtm.query.execution.core.utils.MetricsUtil.*;
 @Slf4j
 public class MetricsProviderImpl implements MetricsProvider {
 
-    private final MeterRegistry registry;
+    private final MeterRegistry meterRegistry;
     private final ActiveRequestsRepository<RequestMetrics> activeRequestsRepository;
     private final DtmConfig dtmSettings;
+    private final MetricsSettings metricsSettings;
 
     @Autowired
-    public MetricsProviderImpl(MeterRegistry registry,
+    public MetricsProviderImpl(MeterRegistry meterRegistry,
                                @Qualifier("mapActiveRequestsRepository")
                                        ActiveRequestsRepository<RequestMetrics> activeRequestsRepository,
-                               DtmConfig dtmSettings) {
-        this.registry = registry;
+                               DtmConfig dtmSettings,
+                               MetricsSettings metricsSettings) {
+        this.meterRegistry = meterRegistry;
         this.activeRequestsRepository = activeRequestsRepository;
         this.dtmSettings = dtmSettings;
+        this.metricsSettings = metricsSettings;
+        initRequestsCounters(REQUESTS_AMOUNT);
+        initRequestsTimers(REQUESTS_TIME);
     }
 
     @Override
     public ResultMetrics get() {
-        return new ResultMetrics(getRequestsAmountStats());
+        return new ResultMetrics(metricsSettings.isEnabled(), getRequestsAmountStats());
     }
 
     private List<RequestStats> getRequestsAmountStats() {
@@ -58,18 +64,18 @@ public class MetricsProviderImpl implements MetricsProvider {
     }
 
     private RequestsAllMetrics createRequestAmountMetrics(SqlProcessingType st) {
-        return new RequestsAllMetrics(registry
+        return new RequestsAllMetrics(meterRegistry
                 .find(REQUESTS_AMOUNT)
                 .tag(ACTION_TYPE, st.name())
                 .counters().stream()
                 .mapToLong(c -> new Double(c.count()).longValue())
                 .reduce(0, Long::sum),
                 Arrays.stream(SourceType.values()).map(s -> {
-                    final Timer timer = registry
+                    final Timer timer = meterRegistry
                             .find(REQUESTS_TIME)
                             .tags(ACTION_TYPE, st.name(), SOURCE_TYPE, s.name())
                             .timer();
-                    final Counter counter = Objects.requireNonNull(registry
+                    final Counter counter = Objects.requireNonNull(meterRegistry
                             .find(REQUESTS_AMOUNT)
                             .tags(ACTION_TYPE, st.name(), SOURCE_TYPE, s.name())
                             .counter());
@@ -113,6 +119,39 @@ public class MetricsProviderImpl implements MetricsProvider {
     private List<RequestMetrics> getRequestMetricsList(Map<SqlProcessingType, List<RequestMetrics>> activeRequestMap, SqlProcessingType st) {
         final List<RequestMetrics> requestMetrics = activeRequestMap.get(st);
         return requestMetrics == null ? Collections.emptyList() : requestMetrics;
+    }
+
+    private void initRequestsCounters(String counterName) {
+        Arrays.stream(SqlProcessingType.values()).forEach(actionType -> {
+            Arrays.stream(SourceType.values()).forEach(st ->
+                    this.meterRegistry.counter(
+                            counterName,
+                            ACTION_TYPE,
+                            actionType.name(),
+                            SOURCE_TYPE,
+                            st.name())
+            );
+        });
+    }
+
+    private void initRequestsTimers(String timerName) {
+        Arrays.stream(SqlProcessingType.values()).forEach(actionType -> {
+            Arrays.stream(SourceType.values()).forEach(st ->
+                    meterRegistry.timer(timerName,
+                            ACTION_TYPE,
+                            actionType.name(),
+                            SOURCE_TYPE,
+                            st.name())
+            );
+        });
+    }
+
+    @Override
+    public void clear() {
+        activeRequestsRepository.deleteAll();
+        meterRegistry.clear();
+        initRequestsCounters(REQUESTS_AMOUNT);
+        initRequestsTimers(REQUESTS_TIME);
     }
 
 }

@@ -33,4 +33,9 @@ public class MapActiveRequestsRepository implements ActiveRequestsRepository<Req
     public List<RequestMetrics> getList() {
         return new ArrayList<>(requestsMap.values());
     }
+
+    @Override
+    public void deleteAll() {
+        requestsMap.clear();
+    }
 }

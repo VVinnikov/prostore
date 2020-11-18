@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.core.verticle;
 import com.google.common.net.HttpHeaders;
 import io.arenadata.dtm.query.execution.core.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.core.controller.DatamartMetaController;
+import io.arenadata.dtm.query.execution.core.controller.MetricsController;
 import io.arenadata.dtm.query.execution.core.controller.QueryController;
 import io.arenadata.dtm.query.execution.core.controller.RequestParam;
 import io.vertx.core.AbstractVerticle;
@@ -10,6 +11,7 @@ import io.vertx.core.http.HttpServer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,21 +21,23 @@ import org.springframework.util.MimeTypeUtils;
 import static org.springframework.util.MimeTypeUtils.APPLICATION_JSON_VALUE;
 
 @Component
+@Slf4j
 public class QueryVerticle extends AbstractVerticle {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(QueryVerticle.class);
 
     private final AppConfiguration configuration;
     private final DatamartMetaController datamartMetaController;
     private final QueryController queryController;
+    private final MetricsController metricsController;
 
     @Autowired
     public QueryVerticle(AppConfiguration configuration,
                          DatamartMetaController datamartMetaController,
-                         QueryController queryController) {
+                         QueryController queryController,
+                         MetricsController metricsController) {
         this.configuration = configuration;
         this.datamartMetaController = datamartMetaController;
         this.queryController = queryController;
+        this.metricsController = metricsController;
     }
 
     @Override
@@ -42,7 +46,7 @@ public class QueryVerticle extends AbstractVerticle {
         router.mountSubRouter("/", apiRouter());
         HttpServer httpServer = vertx.createHttpServer().requestHandler(router)
                 .listen(configuration.httpPort());
-        LOGGER.info("The server is running on the port: {}", httpServer.actualPort());
+        log.info("The server is running on the port: {}", httpServer.actualPort());
     }
 
     private Router apiRouter() {
@@ -64,6 +68,8 @@ public class QueryVerticle extends AbstractVerticle {
                 RequestParam.DATAMART_MNEMONIC, RequestParam.ENTITY_MNEMONIC))
                 .handler(datamartMetaController::getEntityAttributesMeta);
         router.post("/query/execute").handler(queryController::executeQueryWithoutParams);
+        router.put("/metrics/turn/on").handler(metricsController::turnOn);
+        router.put("/metrics/turn/off").handler(metricsController::turnOff);
         return router;
     }
 }

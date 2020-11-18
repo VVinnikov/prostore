@@ -256,7 +256,12 @@ public class DtmResultSet implements ResultSet {
     @Override
     public Timestamp getTimestamp(int columnIndex) throws SQLException {
         final Object value = this.getValue(columnIndex);
-        return value == null ? null : Timestamp.from(Instant.ofEpochMilli((Long) value));
+        if (value == null) {
+            return null;
+        } else {
+            Number numberValue = (Number) value;
+            return Timestamp.from(Instant.ofEpochMilli(numberValue.longValue()));
+        }
     }
 
     @Override

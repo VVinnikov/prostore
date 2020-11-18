@@ -46,12 +46,11 @@ public class AdgQueryExecutorServiceImpl implements QueryExecutorService {
                 if (ar.succeeded() && ar.result() != null && !ar.result().isEmpty()) {
                     log.debug("ADG. execute query {}", sql);
                     val map = (Map<?, ?>) ar.result().get(0);
-                    val metadata = getMetadata((List<Map<String, String>>) map.get("metadata"));
                     val dataSet = (List<List<?>>) map.get("rows");
                     final List<Map<String, Object>> result = new ArrayList<>();
                     try {
                         dataSet.forEach(row -> {
-                            val rowMap = createRowMap(metadata, row);
+                            val rowMap = createRowMap(queryMetadata, row);
                             result.add(rowMap);
                         });
                     } catch (Exception e) {

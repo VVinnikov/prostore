@@ -18,16 +18,16 @@ import java.util.List;
 
 @Slf4j
 @Service
-public class EdmlUploadFailedExecutorImpl implements EdmlUploadFailedExecutor {
+public class UploadFailedExecutorImpl implements EdmlUploadFailedExecutor {
 
     private final DeltaServiceDao deltaServiceDao;
     private final RollbackRequestContextFactory rollbackRequestContextFactory;
     private final DataSourcePluginService dataSourcePluginService;
 
     @Autowired
-    public EdmlUploadFailedExecutorImpl(DeltaServiceDao deltaServiceDao,
-                                        RollbackRequestContextFactory rollbackRequestContextFactory,
-                                        DataSourcePluginService dataSourcePluginService) {
+    public UploadFailedExecutorImpl(DeltaServiceDao deltaServiceDao,
+                                    RollbackRequestContextFactory rollbackRequestContextFactory,
+                                    DataSourcePluginService dataSourcePluginService) {
         this.deltaServiceDao = deltaServiceDao;
         this.rollbackRequestContextFactory = rollbackRequestContextFactory;
         this.dataSourcePluginService = dataSourcePluginService;

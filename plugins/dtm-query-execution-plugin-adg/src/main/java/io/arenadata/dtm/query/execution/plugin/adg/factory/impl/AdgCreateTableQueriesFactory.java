@@ -12,6 +12,7 @@ import io.arenadata.dtm.query.execution.plugin.api.service.ddl.CreateTableQuerie
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -46,32 +47,48 @@ public class AdgCreateTableQueriesFactory implements CreateTableQueriesFactory<A
                 new AdgSpace(prefix + table + HISTORY_POSTFIX,
                         create(entity.getFields(), engine, HISTORY_POSTFIX)),
                 new AdgSpace(prefix + table + STAGING_POSTFIX,
-                        createStagingSpace(entity.getFields(), engine))
+                        create(entity.getFields(), engine, STAGING_POSTFIX))
         );
     }
 
-    private Space create(List<EntityField> fields,
-                         SpaceEngines engine,
-                         String tablePostfix) {
-        List<SpaceIndexPart> primaryKeyParts = getPrimaryKeyParts(fields);
-        primaryKeyParts.add(new SpaceIndexPart(SYS_FROM_FIELD, SpaceAttributeTypes.NUMBER.getName(), false));
-
-        return Space.builder()
-                .format(getAttributes(fields))
-                .temporary(false)
-                .engine(engine)
-                .isLocal(false)
-                .shardingKey(getShardingKey(fields))
-                .indexes(createSpaceIndexes(fields, tablePostfix))
-                .build();
+    public Space create(List<EntityField> fields, SpaceEngines engine, String tablePostfix) {
+        return new Space(
+                createSpaceAttributes(fields, tablePostfix),
+                false,
+                engine,
+                false,
+                getShardingKey(fields),
+                createSpaceIndexes(fields, tablePostfix));
     }
 
-    private List<SpaceIndex> createSpaceIndexes(List<EntityField> fields,
-                                                String tablePosfix) {
+    private List<SpaceAttribute> createSpaceAttributes(List<EntityField> fields, String tablePosfix) {
+        /* fields order:
+         1. fields from a primary key
+         2. bucket_id field
+         3. all system fields that are part of some index
+         4. logical fields
+         */
+        final List<SpaceAttribute> pkAttrs = EntityFieldUtils.getPrimaryKeyList(fields).stream()
+                .map(this::createAttribute)
+                .collect(Collectors.toList());
+        final SpaceAttribute bucketIdAttr = new SpaceAttribute(false, BUCKET_ID, SpaceAttributeTypes.UNSIGNED);
+        final List<SpaceAttribute> indSysAttrs = createIndexedSysAttrs(tablePosfix);
+        final List<SpaceAttribute> logicalNonPkAttrs = fields.stream()
+                .filter(f -> f.getPrimaryOrder() == null)
+                .map(this::createAttribute)
+                .collect(Collectors.toList());
+        List<SpaceAttribute> attributes = new ArrayList<>(pkAttrs);
+        attributes.add(bucketIdAttr);
+        attributes.addAll(indSysAttrs);
+        attributes.addAll(logicalNonPkAttrs);
+        return attributes;
+    }
+
+    private List<SpaceIndex> createSpaceIndexes(List<EntityField> fields, String tablePosfix) {
         switch (tablePosfix) {
             case ACTUAL_POSTFIX:
                 return Arrays.asList(
-                        new SpaceIndex(true, getPrimaryKeyPartsWithSysFrom(fields), SpaceIndexTypes.TREE, ID),
+                        new SpaceIndex(true, createPrimaryKeyPartsWithSysFrom(fields), SpaceIndexTypes.TREE, ID),
                         new SpaceIndex(false, Collections.singletonList(
                                 new SpaceIndexPart(SYS_FROM_FIELD, SpaceAttributeTypes.NUMBER.getName(), false)
                         ), SpaceIndexTypes.TREE, SEC_INDEX_PREFIX + SYS_FROM_FIELD),
@@ -81,7 +98,7 @@ public class AdgCreateTableQueriesFactory implements CreateTableQueriesFactory<A
                 );
             case HISTORY_POSTFIX:
                 return Arrays.asList(
-                        new SpaceIndex(true, getPrimaryKeyPartsWithSysFrom(fields), SpaceIndexTypes.TREE, ID),
+                        new SpaceIndex(true, createPrimaryKeyPartsWithSysFrom(fields), SpaceIndexTypes.TREE, ID),
                         new SpaceIndex(false, Collections.singletonList(
                                 new SpaceIndexPart(SYS_FROM_FIELD, SpaceAttributeTypes.NUMBER.getName(), false)
                         ), SpaceIndexTypes.TREE, SEC_INDEX_PREFIX + SYS_FROM_FIELD),
@@ -95,7 +112,7 @@ public class AdgCreateTableQueriesFactory implements CreateTableQueriesFactory<A
                 );
             case STAGING_POSTFIX:
                 return Arrays.asList(
-                        new SpaceIndex(true, getPrimaryKeyParts(fields), SpaceIndexTypes.TREE, ID),
+                        new SpaceIndex(true, createPrimaryKeyParts(fields), SpaceIndexTypes.TREE, ID),
                         new SpaceIndex(false, Collections.singletonList(
                                 new SpaceIndexPart(BUCKET_ID, SpaceAttributeTypes.UNSIGNED.getName(), false)
                         ), SpaceIndexTypes.TREE, BUCKET_ID)
@@ -105,7 +122,26 @@ public class AdgCreateTableQueriesFactory implements CreateTableQueriesFactory<A
         }
     }
 
-    private List<SpaceIndexPart> getPrimaryKeyPartsWithSysFrom(List<EntityField> fields) {
+    private List<SpaceAttribute> createIndexedSysAttrs(String tablePostfix) {
+        switch (tablePostfix) {
+            case ACTUAL_POSTFIX:
+            case HISTORY_POSTFIX:
+                return createSysAttrs();
+            case STAGING_POSTFIX:
+                return Collections.singletonList(new SpaceAttribute(false, SYS_OP_FIELD, SpaceAttributeTypes.NUMBER));
+            default:
+                throw new RuntimeException(String.format("Unknown table prefix [%s]", tablePostfix));
+        }
+    }
+
+    private List<SpaceAttribute> createSysAttrs() {
+        return Arrays.asList(
+                new SpaceAttribute(false, SYS_FROM_FIELD, SpaceAttributeTypes.NUMBER),
+                new SpaceAttribute(true, SYS_TO_FIELD, SpaceAttributeTypes.NUMBER),
+                new SpaceAttribute(false, SYS_OP_FIELD, SpaceAttributeTypes.NUMBER));
+    }
+
+    private List<SpaceIndexPart> createPrimaryKeyPartsWithSysFrom(List<EntityField> fields) {
         final List<SpaceIndexPart> spaceIndexParts = EntityFieldUtils.getPrimaryKeyList(fields).stream()
                 .map(f -> new SpaceIndexPart(f.getName(),
                         SpaceAttributeTypeUtil.toAttributeType(f.getType()).getName(),
@@ -115,7 +151,7 @@ public class AdgCreateTableQueriesFactory implements CreateTableQueriesFactory<A
         return spaceIndexParts;
     }
 
-    private List<SpaceIndexPart> getPrimaryKeyParts(List<EntityField> fields) {
+    private List<SpaceIndexPart> createPrimaryKeyParts(List<EntityField> fields) {
         return EntityFieldUtils.getPrimaryKeyList(fields).stream()
                 .map(f -> new SpaceIndexPart(f.getName(),
                         SpaceAttributeTypeUtil.toAttributeType(f.getType()).getName(),
@@ -123,21 +159,8 @@ public class AdgCreateTableQueriesFactory implements CreateTableQueriesFactory<A
                 .collect(Collectors.toList());
     }
 
-    private Space createStagingSpace(List<EntityField> fields,
-                                     SpaceEngines engine) {
-        return new Space(
-                getStagingAttributes(fields),
-                false,
-                engine,
-                false,
-                getShardingKey(fields),
-                createSpaceIndexes(fields, STAGING_POSTFIX));
-    }
-
     private List<String> getShardingKey(List<EntityField> fields) {
-        List<String> sk = EntityFieldUtils.getShardingKeyList(fields).stream()
-                .map(EntityField::getName)
-                .collect(Collectors.toList());
+        List<String> sk = EntityFieldUtils.getShardingKeyList(fields).stream().map(EntityField::getName).collect(Collectors.toList());
         if (sk.size() == 0) {
             sk = getPrimaryKey(fields);
         }
@@ -145,44 +168,14 @@ public class AdgCreateTableQueriesFactory implements CreateTableQueriesFactory<A
     }
 
     private List<String> getPrimaryKey(List<EntityField> fields) {
-        List<String> sk = EntityFieldUtils.getPrimaryKeyList(fields).stream()
-                .map(EntityField::getName)
-                .collect(Collectors.toList());
+        List<String> sk = EntityFieldUtils.getPrimaryKeyList(fields).stream().map(EntityField::getName).collect(Collectors.toList());
         if (sk.size() == 0) {
             sk = Collections.singletonList(ID);
         }
         return sk;
     }
 
-    //The order is synchronized with the AVRO scheme
-    private List<SpaceAttribute> getAttributes(List<EntityField> fields) {
-        List<SpaceAttribute> attributes = fields.stream()
-                .map(this::toAttribute)
-                .collect(Collectors.toList());
-        attributes.addAll(
-                Arrays.asList(
-                        new SpaceAttribute(false, SYS_OP_FIELD, SpaceAttributeTypes.NUMBER),
-                        new SpaceAttribute(false, SYS_FROM_FIELD, SpaceAttributeTypes.NUMBER),
-                        new SpaceAttribute(true, SYS_TO_FIELD, SpaceAttributeTypes.NUMBER),
-                        new SpaceAttribute(false, BUCKET_ID, SpaceAttributeTypes.UNSIGNED))
-        );
-        return attributes;
-    }
-
-    private List<SpaceAttribute> getStagingAttributes(List<EntityField> fields) {
-        List<SpaceAttribute> attributes = fields.stream()
-                .map(this::toAttribute)
-                .collect(Collectors.toList());
-        attributes.addAll(
-                Arrays.asList(
-                        new SpaceAttribute(false, SYS_OP_FIELD, SpaceAttributeTypes.NUMBER),
-                        new SpaceAttribute(false, BUCKET_ID, SpaceAttributeTypes.UNSIGNED))
-        );
-        return attributes;
-    }
-
-    private SpaceAttribute toAttribute(EntityField field) {
-        return new SpaceAttribute(field.getNullable(), field.getName(),
-                SpaceAttributeTypeUtil.toAttributeType(field.getType()));
+    private SpaceAttribute createAttribute(EntityField field) {
+        return new SpaceAttribute(field.getNullable(), field.getName(), SpaceAttributeTypeUtil.toAttributeType(field.getType()));
     }
 }

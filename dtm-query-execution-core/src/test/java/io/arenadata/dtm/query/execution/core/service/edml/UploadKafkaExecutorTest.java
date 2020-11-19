@@ -116,14 +116,8 @@ class UploadKafkaExecutorTest {
             when(edmlProperties.getFirstOffsetTimeoutMs()).thenReturn(firstOffsetTimeoutMs);
             when(edmlProperties.getChangeOffsetTimeoutMs()).thenReturn(changeOffsetTimeoutMs);
             when(kafkaProperties.getAdmin()).thenReturn(kafkaAdminProperty);
-
-            when(mppwKafkaRequestFactory.create(edmlRequestContext)).thenAnswer(
-                    new Answer<MppwRequestContext>() {
-                        @Override
-                        public MppwRequestContext answer(InvocationOnMock invocation) {
-                            return mppwContextQueue.poll();
-                        }
-                    });
+            when(mppwKafkaRequestFactory.create(edmlRequestContext))
+                    .thenReturn(Future.succeededFuture(mppwContextQueue.poll()));
             Mockito.doAnswer(invocation -> {
                 final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(2);
                 handler.handle(Future.succeededFuture());
@@ -202,13 +196,8 @@ class UploadKafkaExecutorTest {
             when(edmlProperties.getChangeOffsetTimeoutMs()).thenReturn(changeOffsetTimeoutMs);
             when(kafkaProperties.getAdmin()).thenReturn(kafkaAdminProperty);
 
-            when(mppwKafkaRequestFactory.create(edmlRequestContext)).thenAnswer(
-                    new Answer<MppwRequestContext>() {
-                        @Override
-                        public MppwRequestContext answer(InvocationOnMock invocation) {
-                            return mppwContextQueue.poll();
-                        }
-                    });
+            when(mppwKafkaRequestFactory.create(edmlRequestContext))
+                    .thenReturn(Future.succeededFuture(mppwContextQueue.poll()));
             when(kafkaProperties.getAdmin()).thenReturn(kafkaAdminProperty);
 
             Mockito.doAnswer(invocation -> {
@@ -283,13 +272,8 @@ class UploadKafkaExecutorTest {
             when(edmlProperties.getChangeOffsetTimeoutMs()).thenReturn(changeOffsetTimeoutMs);
             when(kafkaProperties.getAdmin()).thenReturn(kafkaAdminProperty);
 
-            when(mppwKafkaRequestFactory.create(edmlRequestContext)).thenAnswer(
-                    new Answer<MppwRequestContext>() {
-                        @Override
-                        public MppwRequestContext answer(InvocationOnMock invocation) {
-                            return mppwContextQueue.poll();
-                        }
-                    });
+            when(mppwKafkaRequestFactory.create(edmlRequestContext))
+                    .thenReturn(Future.succeededFuture(mppwContextQueue.poll()));
 
             Mockito.doAnswer(invocation -> {
                 final Handler<AsyncResult<StatusQueryResult>> handler = invocation.getArgument(2);
@@ -362,13 +346,8 @@ class UploadKafkaExecutorTest {
             when(edmlProperties.getChangeOffsetTimeoutMs()).thenReturn(changeOffsetTimeoutMs);
             when(kafkaProperties.getAdmin()).thenReturn(kafkaAdminProperty);
 
-            when(mppwKafkaRequestFactory.create(edmlRequestContext)).thenAnswer(
-                    new Answer<MppwRequestContext>() {
-                        @Override
-                        public MppwRequestContext answer(InvocationOnMock invocation) {
-                            return mppwContextQueue.poll();
-                        }
-                    });
+            when(mppwKafkaRequestFactory.create(edmlRequestContext))
+                    .thenReturn(Future.succeededFuture(mppwContextQueue.poll()));
 
             Mockito.doAnswer(invocation -> {
                 final Handler<AsyncResult<StatusQueryResult>> handler = invocation.getArgument(2);
@@ -441,13 +420,8 @@ class UploadKafkaExecutorTest {
             when(edmlProperties.getChangeOffsetTimeoutMs()).thenReturn(changeOffsetTimeoutMs);
             when(kafkaProperties.getAdmin()).thenReturn(kafkaAdminProperty);
 
-            when(mppwKafkaRequestFactory.create(edmlRequestContext)).thenAnswer(
-                    new Answer<MppwRequestContext>() {
-                        @Override
-                        public MppwRequestContext answer(InvocationOnMock invocation) {
-                            return mppwContextQueue.poll();
-                        }
-                    });
+            when(mppwKafkaRequestFactory.create(edmlRequestContext))
+                    .thenReturn(Future.succeededFuture(mppwContextQueue.poll()));
 
             Mockito.doAnswer(invocation -> {
                 final Handler<AsyncResult<StatusQueryResult>> handler = invocation.getArgument(2);
@@ -519,13 +493,8 @@ class UploadKafkaExecutorTest {
             when(edmlProperties.getChangeOffsetTimeoutMs()).thenReturn(changeOffsetTimeoutMs);
             when(kafkaProperties.getAdmin()).thenReturn(kafkaAdminProperty);
 
-            when(mppwKafkaRequestFactory.create(edmlRequestContext)).thenAnswer(
-                    new Answer<MppwRequestContext>() {
-                        @Override
-                        public MppwRequestContext answer(InvocationOnMock invocation) {
-                            return mppwContextQueue.poll();
-                        }
-                    });
+            when(mppwKafkaRequestFactory.create(edmlRequestContext))
+                    .thenReturn(Future.succeededFuture(mppwContextQueue.poll()));
 
             Mockito.doAnswer(invocation -> {
                 final Handler<AsyncResult<StatusQueryResult>> handler = invocation.getArgument(2);

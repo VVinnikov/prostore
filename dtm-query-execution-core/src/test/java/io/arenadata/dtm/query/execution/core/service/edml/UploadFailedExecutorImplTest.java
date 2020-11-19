@@ -11,7 +11,7 @@ import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.impl.DeltaServi
 import io.arenadata.dtm.query.execution.core.factory.RollbackRequestContextFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.RollbackRequestContextFactoryImpl;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
-import io.arenadata.dtm.query.execution.core.service.edml.impl.EdmlUploadFailedExecutorImpl;
+import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadFailedExecutorImpl;
 import io.arenadata.dtm.query.execution.core.service.impl.DataSourcePluginServiceImpl;
 import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
@@ -36,7 +36,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class EdmlUploadFailedExecutorImplTest {
+class UploadFailedExecutorImplTest {
 
     private final DeltaServiceDao deltaServiceDao = mock(DeltaServiceDaoImpl.class);
     private final RollbackRequestContextFactory rollbackRequestContextFactory = mock(RollbackRequestContextFactoryImpl.class);
@@ -67,13 +67,14 @@ class EdmlUploadFailedExecutorImplTest {
                 .entityType(EntityType.TABLE)
                 .name("pso")
                 .schema("test")
+                .destination(sourceTypes)
                 .build();
     }
 
     @Test
     void executeSuccess() {
         Promise promise = Promise.promise();
-        uploadFailedExecutor = new EdmlUploadFailedExecutorImpl(deltaServiceDao,
+        uploadFailedExecutor = new UploadFailedExecutorImpl(deltaServiceDao,
                 rollbackRequestContextFactory, pluginService);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
@@ -90,7 +91,7 @@ class EdmlUploadFailedExecutorImplTest {
                 .datamart(context.getSourceEntity().getName())
                 .destinationTable(context.getDestinationEntity().getName())
                 .sysCn(context.getSysCn())
-                .entity(context.getSourceEntity())
+                .entity(context.getDestinationEntity())
                 .build());
 
         when(rollbackRequestContextFactory.create(any()))
@@ -115,7 +116,7 @@ class EdmlUploadFailedExecutorImplTest {
     @Test
     void executePluginRollbackError() {
         Promise promise = Promise.promise();
-        uploadFailedExecutor = new EdmlUploadFailedExecutorImpl(deltaServiceDao,
+        uploadFailedExecutor = new UploadFailedExecutorImpl(deltaServiceDao,
                 rollbackRequestContextFactory, pluginService);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
@@ -126,6 +127,17 @@ class EdmlUploadFailedExecutorImplTest {
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
         context.setSysCn(1L);
+
+        final RollbackRequestContext rollbackRequestContext = new RollbackRequestContext(RollbackRequest.builder()
+                .queryRequest(context.getRequest().getQueryRequest())
+                .datamart(context.getSourceEntity().getName())
+                .destinationTable(context.getDestinationEntity().getName())
+                .sysCn(context.getSysCn())
+                .entity(context.getDestinationEntity())
+                .build());
+
+        when(rollbackRequestContextFactory.create(any()))
+                .thenReturn(rollbackRequestContext);
 
         when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
 
@@ -144,7 +156,7 @@ class EdmlUploadFailedExecutorImplTest {
     @Test
     void executeDeleteOperationError() {
         Promise promise = Promise.promise();
-        uploadFailedExecutor = new EdmlUploadFailedExecutorImpl(deltaServiceDao,
+        uploadFailedExecutor = new UploadFailedExecutorImpl(deltaServiceDao,
                 rollbackRequestContextFactory, pluginService);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;

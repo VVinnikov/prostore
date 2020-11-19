@@ -18,8 +18,10 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDa
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.DatamartDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
+import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
 import io.arenadata.dtm.query.execution.core.service.ddl.impl.DropTableDdlExecutor;
+import io.arenadata.dtm.query.execution.core.service.impl.DataSourcePluginServiceImpl;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.impl.MetadataExecutorImpl;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
@@ -39,6 +41,7 @@ import org.mockito.Mockito;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -53,6 +56,7 @@ class DropTableDdlExecutorTest {
     private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private final SqlParser.Config parserConfig = calciteConfiguration.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory());
     private final MetadataExecutor<DdlRequestContext> metadataExecutor = mock(MetadataExecutorImpl.class);
+    private final DataSourcePluginService pluginService = mock(DataSourcePluginServiceImpl.class);
     private final EntityCacheService cacheService = mock(EntityCacheService.class);
     private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
     private final ServiceDbDao serviceDbDao = mock(ServiceDbDaoImpl.class);
@@ -70,7 +74,7 @@ class DropTableDdlExecutorTest {
         when(serviceDbFacade.getServiceDbDao()).thenReturn(serviceDbDao);
         when(serviceDbDao.getDatamartDao()).thenReturn(datamartDao);
         when(serviceDbDao.getEntityDao()).thenReturn(entityDao);
-        dropTableDdlExecutor = new DropTableDdlExecutor(cacheService, metadataExecutor, serviceDbFacade);
+        dropTableDdlExecutor = new DropTableDdlExecutor(cacheService, metadataExecutor, serviceDbFacade, pluginService);
 
         schema = "shares";
         final QueryRequest queryRequest = new QueryRequest();
@@ -97,6 +101,8 @@ class DropTableDdlExecutorTest {
     void executeSuccess() {
         Promise promise = Promise.promise();
 
+        when(pluginService.getSourceTypes()).thenReturn(new HashSet<>(Arrays.asList(SourceType.ADB)));
+
         Mockito.when(entityDao.getEntity(eq(schema), eq(context.getRequest().getEntity().getName())))
             .thenReturn(Future.succeededFuture(context.getRequest().getEntity()));
 
@@ -122,6 +128,7 @@ class DropTableDdlExecutorTest {
     @Test
     void executeWithFindView() {
         Promise promise = Promise.promise();
+        when(pluginService.getSourceTypes()).thenReturn(new HashSet<>(Arrays.asList(SourceType.ADB)));
 
         Mockito.when(entityDao.getEntity(eq(schema), eq(context.getRequest().getEntity().getName())))
             .thenReturn(Future.succeededFuture(Entity.builder()
@@ -143,6 +150,7 @@ class DropTableDdlExecutorTest {
     @Test
     void executeWithIfExistsStmtSuccess() {
         Promise promise = Promise.promise();
+        when(pluginService.getSourceTypes()).thenReturn(new HashSet<>(Arrays.asList(SourceType.ADB)));
         context.getRequest().getQueryRequest().setSql("DROP TABLE IF EXISTS accounts");
         String entityName = context.getRequest().getEntity().getName();
         Mockito.when(entityDao.getEntity(eq(schema), eq(entityName)))
@@ -161,6 +169,7 @@ class DropTableDdlExecutorTest {
     @Test
     void executeWithMetadataExecuteError() {
         Promise promise = Promise.promise();
+        when(pluginService.getSourceTypes()).thenReturn(new HashSet<>(Arrays.asList(SourceType.ADB)));
         Mockito.when(entityDao.getEntity(eq(schema), eq(context.getRequest().getEntity().getName())))
             .thenReturn(Future.succeededFuture(context.getRequest().getEntity()));
 
@@ -183,6 +192,7 @@ class DropTableDdlExecutorTest {
     @Test
     void executeWithDropEntityError() {
         Promise promise = Promise.promise();
+        when(pluginService.getSourceTypes()).thenReturn(new HashSet<>(Arrays.asList(SourceType.ADB)));
         Mockito.when(entityDao.getEntity(eq(schema), eq(context.getRequest().getEntity().getName())))
             .thenReturn(Future.succeededFuture(context.getRequest().getEntity()));
 

@@ -38,9 +38,9 @@ public class AdbTableEntitiesFactory implements TableEntitiesFactory<AdbTables<A
     public static final String TABLE_POSTFIX_DELIMITER = "_";
 
     private static final List<AdbTableColumn> SYSTEM_COLUMNS = Arrays.asList(
-            new AdbTableColumn(SYS_FROM_ATTR, "bigint", true),
-            new AdbTableColumn(SYS_TO_ATTR, "bigint", true),
-            new AdbTableColumn(SYS_OP_ATTR, "int", true)
+            new AdbTableColumn(SYS_FROM_ATTR, "int8", true),
+            new AdbTableColumn(SYS_TO_ATTR, "int8", true),
+            new AdbTableColumn(SYS_OP_ATTR, "int4", true)
     );
 
     @Override

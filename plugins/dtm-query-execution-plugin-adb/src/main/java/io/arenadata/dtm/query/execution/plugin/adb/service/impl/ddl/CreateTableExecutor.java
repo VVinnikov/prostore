@@ -2,6 +2,7 @@ package io.arenadata.dtm.query.execution.plugin.adb.service.impl.ddl;
 
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
+import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbTables;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
@@ -26,13 +27,13 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
     private final AdbQueryExecutor adbQueryExecutor;
     private final MetadataSqlFactory sqlFactory;
     private final DropTableExecutor dropTableExecutor;
-    private final CreateTableQueriesFactory<AdbCreateTableQueries> createTableQueriesFactory;
+    private final CreateTableQueriesFactory<AdbTables<String>> createTableQueriesFactory;
 
     @Autowired
     public CreateTableExecutor(AdbQueryExecutor adbQueryExecutor,
                                MetadataSqlFactory sqlFactory,
                                DropTableExecutor dropTableExecutor,
-                               CreateTableQueriesFactory<AdbCreateTableQueries> createTableQueriesFactory) {
+                               CreateTableQueriesFactory<AdbTables<String>> createTableQueriesFactory) {
         this.adbQueryExecutor = adbQueryExecutor;
         this.sqlFactory = sqlFactory;
         this.dropTableExecutor = dropTableExecutor;
@@ -64,7 +65,7 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
     }
 
     private void createTable(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {
-        AdbCreateTableQueries createTableQueries = createTableQueriesFactory.create(context);
+        AdbTables<String> createTableQueries = createTableQueriesFactory.create(context);
         String createTablesSql = String.join("; ", createTableQueries.getActual(),
                 createTableQueries.getHistory(), createTableQueries.getStaging());
         String createIndexesSql = sqlFactory.createSecondaryIndexSqlQuery(context.getRequest().getEntity().getSchema(),

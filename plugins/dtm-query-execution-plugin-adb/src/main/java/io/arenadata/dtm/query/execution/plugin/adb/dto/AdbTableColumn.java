@@ -8,5 +8,5 @@ import lombok.Getter;
 public class AdbTableColumn {
     private final String name;
     private final String type;
-    private final boolean isNullable;
+    private final Boolean nullable;
 }

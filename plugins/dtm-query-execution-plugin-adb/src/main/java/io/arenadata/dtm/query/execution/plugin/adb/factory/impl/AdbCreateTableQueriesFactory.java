@@ -46,7 +46,7 @@ public class AdbCreateTableQueriesFactory implements CreateTableQueriesFactory<A
     }
 
     private String getColumnQuery(AdbTableColumn column) {
-        return String.format("%s %s%s", column.getName(), column.getType(), column.isNullable() ? "" : " NOT NULL");
+        return String.format("%s %s%s", column.getName(), column.getType(), column.getNullable() ? "" : " NOT NULL");
     }
 
     private String getPrimaryKeyQuery(AdbTableEntity adbTableEntity) {

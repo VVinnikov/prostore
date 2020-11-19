@@ -5,7 +5,7 @@ import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbTableEntity;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbTables;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.CreateTableQueriesFactory;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TableEntityFactory;
+import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TableEntitiesFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -18,16 +18,16 @@ public class AdbCreateTableQueriesFactory implements CreateTableQueriesFactory<A
     public static final String PRIMARY_KEY_PATTERN = ", constraint pk_%s primary key (%s)";
     public static final String SHARDING_KEY_PATTERN = " DISTRIBUTED BY (%s)";
 
-    private final TableEntityFactory<AdbTables<AdbTableEntity>> tableEntityFactory;
+    private final TableEntitiesFactory<AdbTables<AdbTableEntity>> tableEntitiesFactory;
 
     @Autowired
-    public AdbCreateTableQueriesFactory(TableEntityFactory<AdbTables<AdbTableEntity>> tableEntityFactory) {
-        this.tableEntityFactory = tableEntityFactory;
+    public AdbCreateTableQueriesFactory(TableEntitiesFactory<AdbTables<AdbTableEntity>> tableEntitiesFactory) {
+        this.tableEntitiesFactory = tableEntitiesFactory;
     }
 
     @Override
     public AdbTables<String> create(DdlRequestContext context) {
-        AdbTables<AdbTableEntity> tableEntities = tableEntityFactory.create(context);
+        AdbTables<AdbTableEntity> tableEntities = tableEntitiesFactory.create(context);
         return new AdbTables<>(createTableQuery(tableEntities.getActual()),
                 createTableQuery(tableEntities.getHistory()),
                 createTableQuery(tableEntities.getStaging()));

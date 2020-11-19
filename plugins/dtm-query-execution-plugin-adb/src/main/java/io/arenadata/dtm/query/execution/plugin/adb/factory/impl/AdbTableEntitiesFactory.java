@@ -8,7 +8,7 @@ import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbTableColumn;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbTableEntity;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbTables;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TableEntityFactory;
+import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TableEntitiesFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service("adbTableEntitiesFactory")
-public class AdbTableEntitiesFactory implements TableEntityFactory<AdbTables<AdbTableEntity>> {
+public class AdbTableEntitiesFactory implements TableEntitiesFactory<AdbTables<AdbTableEntity>> {
 
     /**
      * Delta Number System Field

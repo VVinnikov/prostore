@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.google.common.collect.Sets.newHashSet;
+
 @Service
 public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefinitionService {
 
@@ -81,7 +83,7 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
                 throw new RuntimeException(String.format("Tables common datasources does not include %s",
                         request.getSourceType()));
             } else {
-                return new HashSet<>(Collections.singletonList(request.getSourceType()));
+                return newHashSet(request.getSourceType());
             }
         } else {
             return stResult;

@@ -29,6 +29,8 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.google.common.collect.Sets.*;
+
 @Slf4j
 @Component
 public class DropTableDdlExecutor extends QueryResultDdlExecutor {
@@ -119,7 +121,7 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
             context.getRequest().getEntity().setDestination(dataSourcePluginService.getSourceTypes());
             return dropEntityFromEverywhere(context, entity);
         } else {
-            final Set<SourceType> reqSourceTypes = new HashSet<>(Collections.singletonList(requestDestination.get()));
+            final Set<SourceType> reqSourceTypes = newHashSet(requestDestination.get());
             return dropFromDataSource(context, entity, reqSourceTypes);
         }
     }

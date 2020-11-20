@@ -6,6 +6,7 @@ import io.arenadata.dtm.common.reader.SourceType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -13,6 +14,7 @@ import java.util.UUID;
 @Data
 @Builder
 @AllArgsConstructor
+@NoArgsConstructor
 public class RequestMetrics {
     private UUID requestId;
     private LocalDateTime startTime;
@@ -21,7 +23,4 @@ public class RequestMetrics {
     private SourceType sourceType;
     private RequestStatus status;
     private boolean isActive;
-
-    public RequestMetrics() {
-    }
 }

@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl;
 
+import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
@@ -57,7 +58,7 @@ public class AdgLlrServiceTest {
 
         prepare(queryRequest, queryResultItem);
 
-        llrService.execute(new LlrRequestContext(new LlrRequest(queryRequest, new ArrayList<>(),
+        llrService.execute(new LlrRequestContext(new RequestMetrics(), new LlrRequest(queryRequest, new ArrayList<>(),
                 Collections.singletonList(new ColumnMetadata("name", ColumnType.VARCHAR)))), handler -> {
             assertTrue(handler.succeeded());
             assertEquals(expectedResult, handler.result());
@@ -79,7 +80,7 @@ public class AdgLlrServiceTest {
 
         prepare(queryRequest, queryResultItem);
 
-        llrService.execute(new LlrRequestContext(new LlrRequest(queryRequest, new ArrayList<>(),
+        llrService.execute(new LlrRequestContext(new RequestMetrics(), new LlrRequest(queryRequest, new ArrayList<>(),
                 Collections.singletonList(new ColumnMetadata("name", ColumnType.VARCHAR)))), handler -> {
             assertTrue(handler.succeeded());
             assertEquals(expectedResult, handler.result());

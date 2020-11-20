@@ -2,7 +2,7 @@ package io.arenadata.dtm.query.execution.plugin.api.service.dml;
 
 import io.arenadata.dtm.query.execution.plugin.api.dml.DmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.DatamartExecutionService;
-import io.arenadata.dtm.query.execution.plugin.api.service.SqlProcessingType;
+import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.vertx.core.AsyncResult;
 
 public interface DmlService<T> extends DatamartExecutionService<DmlRequestContext, AsyncResult<T>> {

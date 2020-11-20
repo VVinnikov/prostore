@@ -37,7 +37,9 @@ public class MppwKafkaRequestFactoryImpl implements MppwKafkaRequestFactory {
             LocationUriParser.KafkaTopicUri kafkaTopicUri =
                     LocationUriParser.parseKafkaLocationPath(context.getSourceEntity().getExternalTableLocationPath());
             getBrokers(kafkaTopicUri.getAddress())
-                    .map(brokers -> new MppwRequestContext(MppwRequest.builder()
+                    .map(brokers -> new MppwRequestContext(
+                            context.getMetrics(),
+                            MppwRequest.builder()
                             .queryRequest(context.getRequest().getQueryRequest())
                             .isLoadStart(true)
                             .kafkaParameter(MppwKafkaParameter.builder()

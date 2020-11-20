@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.ddl;
 
+import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.SystemMetadata;
 import io.arenadata.dtm.common.reader.QueryRequest;
@@ -14,6 +15,8 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDa
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.DatamartDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
 import io.arenadata.dtm.query.execution.core.service.dml.impl.UseSchemaDmlExecutor;
+import io.arenadata.dtm.query.execution.core.service.metrics.MetricsService;
+import io.arenadata.dtm.query.execution.core.service.metrics.impl.MetricsServiceImpl;
 import io.arenadata.dtm.query.execution.core.utils.ParseQueryUtils;
 import io.arenadata.dtm.query.execution.core.utils.QueryResultUtils;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
@@ -35,8 +38,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -49,6 +51,7 @@ class UseSchemaDmlExecutorTest {
     private final ServiceDbDao serviceDbDao = mock(ServiceDbDaoImpl.class);
     private final DatamartDao datamartDao = mock(DatamartDaoImpl.class);
     private final ParseQueryUtils parseQueryUtils = mock(ParseQueryUtils.class);
+    private final MetricsService<RequestMetrics> metricsService = mock(MetricsServiceImpl.class);
     private UseSchemaDmlExecutor useSchemaDdlExecutor;
     private DmlRequestContext context;
     private String schema = "shares";
@@ -61,13 +64,13 @@ class UseSchemaDmlExecutorTest {
         when(serviceDbFacade.getServiceDbDao()).thenReturn(serviceDbDao);
         when(serviceDbDao.getDatamartDao()).thenReturn(datamartDao);
         when(parseQueryUtils.getDatamartName(anyList())).thenReturn(schema);
-        useSchemaDdlExecutor = new UseSchemaDmlExecutor(serviceDbFacade, parseQueryUtils);
+        useSchemaDdlExecutor = new UseSchemaDmlExecutor(serviceDbFacade, parseQueryUtils, metricsService);
         final QueryRequest queryRequest = new QueryRequest();
         queryRequest.setRequestId(UUID.randomUUID());
         queryRequest.setDatamartMnemonic(schema);
         queryRequest.setSql("USE shares");
         SqlNode query = planner.parse(queryRequest.getSql());
-        context = new DmlRequestContext(new DmlRequest(queryRequest), query);
+        context = new DmlRequestContext(new RequestMetrics(), new DmlRequest(queryRequest), query);
         context.getRequest().setQueryRequest(queryRequest);
     }
 
@@ -88,6 +91,15 @@ class UseSchemaDmlExecutorTest {
         Mockito.when(datamartDao.existsDatamart(eq(schema)))
                 .thenReturn(Future.succeededFuture(true));
 
+        when(metricsService.sendMetrics(any(), any(), any(), any()))
+                .thenReturn(ar -> {
+                    if (ar.succeeded()) {
+                        promise.complete(result);
+                    } else {
+                        promise.fail(ar.cause());
+                    }
+                });
+
         useSchemaDdlExecutor.execute(context, ar -> {
             if (ar.succeeded()) {
                 promise.complete(ar.result());
@@ -106,6 +118,11 @@ class UseSchemaDmlExecutorTest {
         Mockito.when(datamartDao.existsDatamart(eq(schema)))
                 .thenReturn(Future.succeededFuture(false));
 
+        when(metricsService.sendMetrics(any(), any(), any(), any()))
+                .thenReturn(ar -> {
+                    promise.fail(ar.cause());
+                });
+
         useSchemaDdlExecutor.execute(context, ar -> {
             if (ar.succeeded()) {
                 promise.complete(ar.result());
@@ -122,6 +139,14 @@ class UseSchemaDmlExecutorTest {
 
         Mockito.when(datamartDao.existsDatamart(eq(schema)))
                 .thenReturn(Future.failedFuture(new RuntimeException("")));
+
+        when(metricsService.sendMetrics(any(), any(), any(), any())).thenReturn(ar -> {
+            if (ar.succeeded()) {
+                promise.complete(null);
+            } else {
+                promise.fail(ar.cause());
+            }
+        });
 
         useSchemaDdlExecutor.execute(context, ar -> {
             if (ar.succeeded()) {

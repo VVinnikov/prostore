@@ -40,7 +40,9 @@ public class MpprKafkaRequestFactoryImpl implements MpprKafkaRequestFactory {
                     LocationUriParser.parseKafkaLocationPath(context.getDestinationEntity().getExternalTableLocationPath());
             getBrokers(kafkaTopicUri.getAddress())
                     .map(brokers ->
-                            new MpprRequestContext(MpprRequest.builder()
+                            new MpprRequestContext(
+                                    context.getMetrics(),
+                                    MpprRequest.builder()
                                     .queryRequest(context.getRequest().getQueryRequest())
                                     .logicalSchema(context.getLogicalSchema())
                                     .kafkaParameter(MpprKafkaParameter.builder()

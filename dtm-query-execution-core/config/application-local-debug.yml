@@ -4,18 +4,30 @@ logging:
   level:
     io.arenadata.dtm.query.execution: ${WRITER_LOG_LEVEL:INFO}
 
+management:
+  server:
+    port: ${DTM_METRICS_PORT:8080}
+  endpoints:
+    enabled-by-default: true
+    web:
+      exposure:
+        include: info, health, requests
+
 core:
   plugins:
     active: ${CORE_PLUGINS_ACTIVE:ADG, ADB, ADQM}
 
   http:
-    port: ${SERVER_PORT:8088}
+    port: ${DTM_CORE_PORT:8088}
 
   env:
     name: ${DTM_NAME:local}
 
   settings:
     timeZone: ${CORE_TIME_ZONE:UTC}
+
+  metrics:
+    isEnabled: ${DTM_CORE_METRICS_ENABLED:true}
 
   datasource:
     edml:

@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.edml;
 
 import io.arenadata.dtm.common.exception.CrashException;
+import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
@@ -81,7 +82,7 @@ class UploadFailedExecutorImplTest {
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
 
-        EdmlRequestContext context = new EdmlRequestContext(request, null);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null);
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
         context.setSysCn(1L);
@@ -123,7 +124,7 @@ class UploadFailedExecutorImplTest {
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
 
-        EdmlRequestContext context = new EdmlRequestContext(request, null);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null);
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
         context.setSysCn(1L);
@@ -163,7 +164,7 @@ class UploadFailedExecutorImplTest {
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
 
-        EdmlRequestContext context = new EdmlRequestContext(request, null);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null);
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
         context.setSysCn(1L);

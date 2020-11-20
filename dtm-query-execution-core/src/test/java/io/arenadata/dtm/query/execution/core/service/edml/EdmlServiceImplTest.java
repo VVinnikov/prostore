@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.edml;
 
+import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
@@ -75,7 +76,7 @@ class EdmlServiceImplTest {
         queryRequest.setSql("INSERT INTO test.download_table SELECT id, lst_nam FROM test.pso");
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
         DatamartRequest request = new DatamartRequest(queryRequest);
-        EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
 
         Entity destinationEntity = Entity.builder()
                 .entityType(EntityType.DOWNLOAD_EXTERNAL_TABLE)
@@ -126,7 +127,7 @@ class EdmlServiceImplTest {
         queryRequest.setSql("INSERT INTO test.pso SELECT id, name FROM test.upload_table");
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
         DatamartRequest request = new DatamartRequest(queryRequest);
-        EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
 
         Entity destinationEntity = Entity.builder()
                 .entityType(EntityType.TABLE)
@@ -176,7 +177,7 @@ class EdmlServiceImplTest {
         queryRequest.setSql("INSERT INTO test.download_table SELECT id, lst_nam FROM test.pso");
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
         DatamartRequest request = new DatamartRequest(queryRequest);
-        EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
 
         Entity destinationEntity = Entity.builder()
                 .entityType(EntityType.DOWNLOAD_EXTERNAL_TABLE)
@@ -223,7 +224,7 @@ class EdmlServiceImplTest {
         queryRequest.setSql("INSERT INTO test.download_table SELECT id, lst_nam FROM test.pso");
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
         DatamartRequest request = new DatamartRequest(queryRequest);
-        EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
 
         Entity destinationEntity = Entity.builder()
                 .entityType(EntityType.UPLOAD_EXTERNAL_TABLE)

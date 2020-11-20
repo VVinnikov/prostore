@@ -25,11 +25,11 @@ public class MetricsManagementServiceImpl implements MetricsManagementService {
     @Override
     public MetricsSettingsUpdateResult turnOnMetrics() {
         try {
-            if (this.metricsSettings.isEnabled()) {
+            if (metricsSettings.isEnabled()) {
                 return new MetricsSettingsUpdateResult(true, "Metrics is already turned on");
             } else {
-                this.metricsProvider.clear();
-                this.metricsSettings.setEnabled(true);
+                metricsProvider.clear();
+                metricsSettings.setEnabled(true);
                 final String turnedOnMsg = "Metrics have been turned on";
                 log.info(turnedOnMsg);
                 return new MetricsSettingsUpdateResult(true, turnedOnMsg);
@@ -44,7 +44,7 @@ public class MetricsManagementServiceImpl implements MetricsManagementService {
     @Override
     public MetricsSettingsUpdateResult turnOffMetrics() {
         try {
-            if (!this.metricsSettings.isEnabled()) {
+            if (!metricsSettings.isEnabled()) {
                 return new MetricsSettingsUpdateResult(false, "Metrics is already turned off");
             } else {
                 metricsSettings.setEnabled(false);

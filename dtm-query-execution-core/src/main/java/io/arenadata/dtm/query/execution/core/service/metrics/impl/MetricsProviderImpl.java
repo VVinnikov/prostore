@@ -125,7 +125,7 @@ public class MetricsProviderImpl implements MetricsProvider {
     private void initRequestsCounters(String counterName) {
         Arrays.stream(SqlProcessingType.values()).forEach(actionType -> {
             Arrays.stream(SourceType.values()).forEach(st ->
-                    this.meterRegistry.counter(
+                    meterRegistry.counter(
                             counterName,
                             ACTION_TYPE,
                             actionType.name(),

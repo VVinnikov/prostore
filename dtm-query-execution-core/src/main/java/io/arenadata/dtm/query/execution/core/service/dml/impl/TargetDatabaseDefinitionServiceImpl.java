@@ -35,29 +35,29 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
     @Override
     public void getTargetSource(QuerySourceRequest request, Handler<AsyncResult<QuerySourceRequest>> handler) {
         getEntitiesSourceTypes(request)
-                .compose(entities -> defineTargetSourceType(entities, request))
-                .map(sourceType -> {
-                    val queryRequestWithSourceType = request.getQueryRequest().copy();
-                    queryRequestWithSourceType.setSourceType(sourceType);
-                    return QuerySourceRequest.builder()
-                            .queryRequest(queryRequestWithSourceType)
-                            .logicalSchema(request.getLogicalSchema())
-                            .metadata(request.getMetadata())
-                            .sourceType(sourceType)
-                            .build();
-                })
-                .onComplete(handler);
+            .compose(entities -> defineTargetSourceType(entities, request))
+            .map(sourceType -> {
+                val queryRequestWithSourceType = request.getQueryRequest().copy();
+                queryRequestWithSourceType.setSourceType(sourceType);
+                return QuerySourceRequest.builder()
+                    .queryRequest(queryRequestWithSourceType)
+                    .logicalSchema(request.getLogicalSchema())
+                    .metadata(request.getMetadata())
+                    .sourceType(sourceType)
+                    .build();
+            })
+            .onComplete(handler);
     }
 
     private Future<List<Entity>> getEntitiesSourceTypes(QuerySourceRequest request) {
         return Future.future(promise -> {
             List<Future> entityFutures = new ArrayList<>();
             request.getLogicalSchema().forEach(datamart -> datamart.getEntities().forEach(entity ->
-                    entityFutures.add(entityDao.getEntity(datamart.getMnemonic(), entity.getName()))));
+                entityFutures.add(entityDao.getEntity(datamart.getMnemonic(), entity.getName()))));
 
             CompositeFuture.join(entityFutures)
-                    .onSuccess(entities -> promise.complete(entities.list()))
-                    .onFailure(promise::fail);
+                .onSuccess(entities -> promise.complete(entities.list()))
+                .onFailure(promise::fail);
         });
     }
 
@@ -69,7 +69,7 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
                 promise.complete(st.get());
             } else {
                 getTargetSourceByCalcQueryCost(sourceTypes, request)
-                        .onComplete(promise);
+                    .onComplete(promise);
             }
         });
     }
@@ -81,12 +81,14 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
         } else if (request.getSourceType() != null) {
             if (!stResult.contains(request.getSourceType())) {
                 throw new RuntimeException(String.format("Tables common datasources does not include %s",
-                        request.getSourceType()));
+                    request.getSourceType()));
             } else {
                 return newHashSet(request.getSourceType());
             }
         } else {
-            return stResult;
+            return stResult.stream()
+                .filter(sourceType -> pluginService.getSourceTypes().contains(sourceType))
+                .collect(Collectors.toSet());
         }
     }
 
@@ -97,8 +99,8 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
                 stResult.addAll(e.getDestination());
             } else {
                 final List<SourceType> newStResult = e.getDestination().stream()
-                        .filter(stResult::contains)
-                        .collect(Collectors.toList());
+                    .filter(stResult::contains)
+                    .collect(Collectors.toList());
                 stResult.clear();
                 stResult.addAll(newStResult);
             }
@@ -107,24 +109,22 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
     }
 
     private Future<SourceType> getTargetSourceByCalcQueryCost(Set<SourceType> sourceTypes, QuerySourceRequest request) {
-        return Future.future(promise -> {
-            CompositeFuture.join(sourceTypes.stream()
-                    .map(sourceType -> calcQueryCostInPlugin(request, sourceType))
-                    .collect(Collectors.toList()))
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            SourceType sourceType = ar.result().list().stream()
-                                    .sorted(Comparator.comparing(st -> ((Pair<SourceType, Integer>) st).getKey().ordinal()))
-                                    .map(res -> (Pair<SourceType, Integer>) res)
-                                    .min(Comparator.comparingInt(Pair::getValue))
-                                    .map(Pair::getKey)
-                                    .orElse(null);
-                            promise.complete(sourceType);
-                        } else {
-                            promise.fail(ar.cause());
-                        }
-                    });
-        });
+        return Future.future(promise -> CompositeFuture.join(sourceTypes.stream()
+            .map(sourceType -> calcQueryCostInPlugin(request, sourceType))
+            .collect(Collectors.toList()))
+            .onComplete(ar -> {
+                if (ar.succeeded()) {
+                    SourceType sourceType = ar.result().list().stream()
+                        .sorted(Comparator.comparing(st -> ((Pair<SourceType, Integer>) st).getKey().ordinal()))
+                        .map(res -> (Pair<SourceType, Integer>) res)
+                        .min(Comparator.comparingInt(Pair::getValue))
+                        .map(Pair::getKey)
+                        .orElse(null);
+                    promise.complete(sourceType);
+                } else {
+                    promise.fail(ar.cause());
+                }
+            }));
     }
 
     private Future<Object> calcQueryCostInPlugin(QuerySourceRequest request, SourceType sourceType) {

@@ -15,6 +15,7 @@
 
     <properties>
         <dtm.common.version>${project.version}</dtm.common.version>
+        <dtm-calcite-core.version>${project.version}</dtm-calcite-core.version>
     </properties>
 
     <dependencies>
@@ -44,6 +45,12 @@
                     <artifactId>vertx-core</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.arenadata.dtm</groupId>
+            <artifactId>dtm-calcite-core</artifactId>
+            <version>${dtm-calcite-core.version}</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 

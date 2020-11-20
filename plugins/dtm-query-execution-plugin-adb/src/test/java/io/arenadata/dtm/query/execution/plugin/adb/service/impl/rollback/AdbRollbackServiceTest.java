@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.rollback;
 
+import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
@@ -62,7 +63,7 @@ class AdbRollbackServiceTest {
             .destinationTable("test_table")
             .entity(entity)
             .build();
-        RollbackRequestContext context = new RollbackRequestContext(rollbackRequest);
+        RollbackRequestContext context = new RollbackRequestContext(new RequestMetrics(), rollbackRequest);
         AdbRollbackRequest sqlList = new AdbRollbackRequest(
             PreparedStatementRequest.onlySql("deleteFromActualSql"),
             PreparedStatementRequest.onlySql("deleteFromHistory"),
@@ -114,7 +115,7 @@ class AdbRollbackServiceTest {
             .destinationTable("test_table")
             .entity(entity)
             .build();
-        RollbackRequestContext context = new RollbackRequestContext(rollbackRequest);
+        RollbackRequestContext context = new RollbackRequestContext(new RequestMetrics(), rollbackRequest);
 
         when(rollbackRequestFactory.create(any())).thenReturn(new AdbRollbackRequest(
             PreparedStatementRequest.onlySql("deleteFromActualSql"),

@@ -87,13 +87,15 @@ class UploadFailedExecutorImplTest {
         context.setSourceEntity(sourceEntity);
         context.setSysCn(1L);
 
-        final RollbackRequestContext rollbackRequestContext = new RollbackRequestContext(RollbackRequest.builder()
-                .queryRequest(context.getRequest().getQueryRequest())
-                .datamart(context.getSourceEntity().getName())
-                .destinationTable(context.getDestinationEntity().getName())
-                .sysCn(context.getSysCn())
-                .entity(context.getDestinationEntity())
-                .build());
+        final RollbackRequestContext rollbackRequestContext = new RollbackRequestContext(
+                new RequestMetrics(),
+                RollbackRequest.builder()
+                        .queryRequest(context.getRequest().getQueryRequest())
+                        .datamart(context.getSourceEntity().getName())
+                        .destinationTable(context.getDestinationEntity().getName())
+                        .sysCn(context.getSysCn())
+                        .entity(context.getDestinationEntity())
+                        .build());
 
         when(rollbackRequestContextFactory.create(any()))
                 .thenReturn(rollbackRequestContext);
@@ -129,13 +131,15 @@ class UploadFailedExecutorImplTest {
         context.setSourceEntity(sourceEntity);
         context.setSysCn(1L);
 
-        final RollbackRequestContext rollbackRequestContext = new RollbackRequestContext(RollbackRequest.builder()
-                .queryRequest(context.getRequest().getQueryRequest())
-                .datamart(context.getSourceEntity().getName())
-                .destinationTable(context.getDestinationEntity().getName())
-                .sysCn(context.getSysCn())
-                .entity(context.getDestinationEntity())
-                .build());
+        final RollbackRequestContext rollbackRequestContext = new RollbackRequestContext(
+                new RequestMetrics(),
+                RollbackRequest.builder()
+                        .queryRequest(context.getRequest().getQueryRequest())
+                        .datamart(context.getSourceEntity().getName())
+                        .destinationTable(context.getDestinationEntity().getName())
+                        .sysCn(context.getSysCn())
+                        .entity(context.getDestinationEntity())
+                        .build());
 
         when(rollbackRequestContextFactory.create(any()))
                 .thenReturn(rollbackRequestContext);

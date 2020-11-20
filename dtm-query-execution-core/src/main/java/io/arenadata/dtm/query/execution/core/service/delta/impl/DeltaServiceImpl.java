@@ -1,11 +1,13 @@
 package io.arenadata.dtm.query.execution.core.service.delta.impl;
 
 import io.arenadata.dtm.common.metrics.RequestMetrics;
+import io.arenadata.dtm.common.model.RequestStatus;
 import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaAction;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaQuery;
+import io.arenadata.dtm.query.execution.core.dto.delta.query.RollbackDeltaQuery;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaExecutor;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaQueryParamExtractor;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaService;
@@ -73,29 +75,34 @@ public class DeltaServiceImpl implements DeltaService<QueryResult> {
     }
 
     private Future<QueryResult> sendMetricsAndExecute(DeltaRequestContext context, DeltaQuery deltaQuery) {
-        return metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
-                getSqlType(deltaQuery.getDeltaAction()),
-                context.getMetrics())
-                .compose(v -> execute(context, deltaQuery));
+        deltaQuery.setDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic());
+        deltaQuery.setRequest(context.getRequest().getQueryRequest());
+        if (deltaQuery.getDeltaAction() != DeltaAction.ROLLBACK_DELTA) {
+            return metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
+                    SqlProcessingType.DELTA,
+                    context.getMetrics())
+                    .compose(v -> execute(context, deltaQuery));
+        } else {
+            final RollbackDeltaQuery rollbackDeltaQuery = (RollbackDeltaQuery) deltaQuery;
+            rollbackDeltaQuery.setRequestMetrics(RequestMetrics.builder()
+                    .requestId(context.getMetrics().getRequestId())
+                    .startTime(context.getMetrics().getStartTime())
+                    .status(RequestStatus.IN_PROCESS)
+                    .isActive(true)
+                    .build());
+            return Future.future(promise -> executors.get(deltaQuery.getDeltaAction())
+                    .execute(rollbackDeltaQuery, promise));
+        }
     }
 
     private Future<QueryResult> execute(DeltaRequestContext context, DeltaQuery deltaQuery) {
         return Future.future((Promise<QueryResult> promise) -> {
-            deltaQuery.setDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic());
-            deltaQuery.setRequest(context.getRequest().getQueryRequest());
             executors.get(deltaQuery.getDeltaAction())
                     .execute(deltaQuery,
                             metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
-                                    getSqlType(deltaQuery.getDeltaAction()),
+                                    SqlProcessingType.DELTA,
                                     context.getMetrics(),
                                     promise));
         });
-    }
-
-    private SqlProcessingType getSqlType(DeltaAction deltaAction) {
-        if (deltaAction != DeltaAction.ROLLBACK_DELTA) {
-            return SqlProcessingType.DELTA;
-        }
-        return SqlProcessingType.ROLLBACK;
     }
 }

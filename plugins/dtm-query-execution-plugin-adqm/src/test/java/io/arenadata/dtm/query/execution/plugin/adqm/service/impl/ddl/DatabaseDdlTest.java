@@ -44,7 +44,7 @@ class DatabaseDdlTest {
                                 t -> t.equalsIgnoreCase("drop database if exists dev__testdb on cluster test_cluster"))),
                 ddlProperties, appConfiguration);
 
-        DdlExecutor<Void> databaseDdlService = new CreateDatabaseExecutor(executor, ddlProperties, appConfiguration, dropDatabaseExecutor);
+        DdlExecutor<Void> databaseDdlService = new CreateDatabaseExecutor(executor, ddlProperties, appConfiguration);
 
         databaseDdlService.execute(context, "CREATE", ar -> assertTrue(ar.succeeded()));
     }

@@ -93,9 +93,7 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
                 return newHashSet(request.getSourceType());
             }
         } else {
-            return stResult.stream()
-                .filter(sourceType -> pluginService.getSourceTypes().contains(sourceType))
-                .collect(Collectors.toSet());
+            return stResult;
         }
     }
 

@@ -36,13 +36,7 @@ class DatabaseDdlTest {
         DdlRequestContext context = new DdlRequestContext(null, createDatabase);
 
         DatabaseExecutor executor = new MockDatabaseExecutor(
-                Collections.singletonList(t -> t.equalsIgnoreCase("create database dev__testdb on cluster test_cluster")));
-
-        DropDatabaseExecutor dropDatabaseExecutor = new DropDatabaseExecutor(
-                new MockDatabaseExecutor(
-                        Collections.singletonList(
-                                t -> t.equalsIgnoreCase("drop database if exists dev__testdb on cluster test_cluster"))),
-                ddlProperties, appConfiguration);
+                Collections.singletonList(t -> t.equalsIgnoreCase("CREATE DATABASE IF NOT EXISTS dev__testdb on cluster test_cluster")));
 
         DdlExecutor<Void> databaseDdlService = new CreateDatabaseExecutor(executor, ddlProperties, appConfiguration);
 

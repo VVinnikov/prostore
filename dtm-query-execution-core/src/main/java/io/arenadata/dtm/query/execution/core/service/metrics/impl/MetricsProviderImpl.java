@@ -56,8 +56,8 @@ public class MetricsProviderImpl implements MetricsProvider {
         final Map<SqlProcessingType, List<RequestMetrics>> activeRequestMap =
                 activeRequestsRepository.getList().stream()
                         .collect(Collectors.groupingBy(RequestMetrics::getActionType));
-        return Arrays.stream(SqlProcessingType.values()).map(st ->
-                new RequestStats(st,
+        return Arrays.stream(SqlProcessingType.values())
+                .map(st -> new RequestStats(st,
                         createRequestAmountMetrics(st),
                         createRequestsActiveMetrics(getRequestMetricsList(activeRequestMap, st))
                 )).collect(Collectors.toList());
@@ -100,8 +100,8 @@ public class MetricsProviderImpl implements MetricsProvider {
     private List<ActiveStats> getActiveStats(List<RequestMetrics> requestMetrics) {
         final Map<SourceType, List<RequestMetrics>> typeListMap =
                 requestMetrics.stream().collect(Collectors.groupingBy(RequestMetrics::getSourceType));
-        return typeListMap.entrySet().stream().map(k ->
-                new ActiveStats(k.getKey(),
+        return typeListMap.entrySet().stream()
+                .map(k -> new ActiveStats(k.getKey(),
                         TimeMetrics.builder()
                                 .count(Integer.valueOf(k.getValue().size()).longValue())
                                 .totalTimeMs(calcActiveTotalTime(k.getValue()))
@@ -116,7 +116,8 @@ public class MetricsProviderImpl implements MetricsProvider {
                         .toMillis()).reduce(0L, Long::sum);
     }
 
-    private List<RequestMetrics> getRequestMetricsList(Map<SqlProcessingType, List<RequestMetrics>> activeRequestMap, SqlProcessingType st) {
+    private List<RequestMetrics> getRequestMetricsList(Map<SqlProcessingType, List<RequestMetrics>> activeRequestMap,
+                                                       SqlProcessingType st) {
         final List<RequestMetrics> requestMetrics = activeRequestMap.get(st);
         return requestMetrics == null ? Collections.emptyList() : requestMetrics;
     }

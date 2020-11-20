@@ -14,6 +14,7 @@ import io.arenadata.dtm.query.execution.plugin.api.service.EddlService;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -42,30 +43,35 @@ public class EddlServiceImpl implements EddlService<QueryResult> {
 
     @Override
     public void execute(EddlRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-        paramExtractor.extract(context.getRequest().getQueryRequest(), extractHandler -> {
-            if (extractHandler.succeeded()) {
-                EddlQuery eddlQuery = extractHandler.result();
-                metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
-                        SqlProcessingType.EDDL,
-                        context.getMetrics())
-                        .onSuccess(ar -> {
-                            executors.get(eddlQuery.getAction()).execute(eddlQuery,
-                                    metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
-                                            SqlProcessingType.EDDL,
-                                            context.getMetrics(), execHandler -> {
-                                                if (execHandler.succeeded()) {
-                                                    asyncResultHandler.handle(Future.succeededFuture(QueryResult.emptyResult()));
-                                                } else {
-                                                    log.error(execHandler.cause().getMessage());
-                                                    asyncResultHandler.handle(Future.failedFuture(execHandler.cause()));
-                                                }
-                                            }));
-                        })
-                        .onFailure(fail -> asyncResultHandler.handle(Future.failedFuture(fail)));
-            } else {
-                log.error(extractHandler.cause().getMessage());
-                asyncResultHandler.handle(Future.failedFuture(extractHandler.cause()));
-            }
+        extractQuery(context)
+                .compose(eddlQuery -> sendMetricsAndExecute(context, eddlQuery))
+                .onComplete(execHandler -> {
+                    if (execHandler.succeeded()) {
+                        asyncResultHandler.handle(Future.succeededFuture(QueryResult.emptyResult()));
+                    } else {
+                        log.error(execHandler.cause().getMessage());
+                        asyncResultHandler.handle(Future.failedFuture(execHandler.cause()));
+                    }
+                });
+    }
+
+    private Future<EddlQuery> extractQuery(EddlRequestContext context) {
+        return Future.future(promise -> paramExtractor.extract(context.getRequest().getQueryRequest(), promise));
+    }
+
+    private Future<Void> sendMetricsAndExecute(EddlRequestContext context, EddlQuery eddlQuery) {
+        return metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA, SqlProcessingType.EDDL, context.getMetrics())
+                .compose(v -> execute(context, eddlQuery));
+    }
+
+    private Future<Void> execute(EddlRequestContext context, EddlQuery eddlQuery) {
+        return Future.future((Promise<Void> promise) -> {
+            executors.get(eddlQuery.getAction()).execute(eddlQuery,
+                    metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
+                            SqlProcessingType.EDDL,
+                            context.getMetrics(),
+                            promise));
         });
     }
+
 }

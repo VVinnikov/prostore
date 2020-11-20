@@ -46,29 +46,29 @@ public class UseSchemaDmlExecutor implements DmlExecutor<QueryResult> {
 
     @Override
     public void execute(DmlRequestContext context, Handler<AsyncResult<QueryResult>> handler) {
-        String datamart = parseQueryUtils.getDatamartName(((SqlUseSchema) context.getQuery()).getOperandList());
-        datamartDao.existsDatamart(datamart)
-                .onComplete(metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
-                        SqlProcessingType.DML,
-                        context.getMetrics(), isExists -> {
-                            if (isExists.succeeded()) {
-                                if (isExists.result()) {
-                                    handler.handle(Future.succeededFuture(createQueryResult(context, datamart)));
-                                } else {
-                                    handler.handle(Future.failedFuture(String.format("Datamart [%s] doesn't exist", datamart)));
-                                }
-                            } else {
-                                handler.handle(Future.failedFuture(isExists.cause()));
-                            }
-                        }));
+        sendMetricsAndExecute(context)
+                .onComplete(handler);
     }
 
-    private Future<Void> isExists(boolean isExists) {
-        if (isExists) {
-            return Future.succeededFuture();
-        } else {
-            return Future.failedFuture("");
-        }
+    private Future<QueryResult> sendMetricsAndExecute(DmlRequestContext context) {
+        return Future.future(promise -> {
+            String datamart = parseQueryUtils.getDatamartName(((SqlUseSchema) context.getQuery()).getOperandList());
+            datamartDao.existsDatamart(datamart)
+                    .onComplete(metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
+                            SqlProcessingType.DML,
+                            context.getMetrics(),
+                            ar -> {
+                                if (ar.succeeded()) {
+                                    if (ar.result()) {
+                                        promise.complete(createQueryResult(context, datamart));
+                                    } else {
+                                        promise.fail(String.format("Datamart [%s] doesn't exist", datamart));
+                                    }
+                                } else {
+                                    promise.fail(ar.cause());
+                                }
+                            }));
+        });
     }
 
     private QueryResult createQueryResult(DmlRequestContext context, String datamart) {

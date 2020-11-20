@@ -14,6 +14,7 @@ import io.arenadata.dtm.query.execution.plugin.api.delta.DeltaRequestContext;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,43 +52,45 @@ public class DeltaServiceImpl implements DeltaService<QueryResult> {
             log.error(errMsg);
             handler.handle(Future.failedFuture(errMsg));
         } else {
-            executeDeltaRequest(context, handler);
+            extractDeltaQuery(context)
+                    .compose(deltaQuery -> sendMetricsAndExecute(context, deltaQuery))
+                    .onComplete(deltaExecHandler -> {
+                        if (deltaExecHandler.succeeded()) {
+                            QueryResult queryDeltaResult = deltaExecHandler.result();
+                            log.debug("Query result: {}, queryResult : {}",
+                                    context.getRequest().getQueryRequest(), queryDeltaResult);
+                            handler.handle(Future.succeededFuture(queryDeltaResult));
+                        } else {
+                            log.error(deltaExecHandler.cause().getMessage());
+                            handler.handle(Future.failedFuture(deltaExecHandler.cause()));
+                        }
+                    });
         }
     }
 
-    private void executeDeltaRequest(DeltaRequestContext context, Handler<AsyncResult<QueryResult>> handler) {
-        deltaQueryParamExtractor.extract(context.getRequest().getQueryRequest(), exParamHandler -> {
-            if (exParamHandler.succeeded()) {
-                DeltaQuery deltaQuery = exParamHandler.result();
-                deltaQuery.setDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic());
-                deltaQuery.setRequest(context.getRequest().getQueryRequest());
-                metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
-                        getSqlType(deltaQuery.getDeltaAction()),
-                        context.getMetrics())
-                        .onSuccess(ar -> {
-                            executors.get(deltaQuery.getDeltaAction())
-                                    .execute(deltaQuery, metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
-                                            getSqlType(deltaQuery.getDeltaAction()),
-                                            context.getMetrics(),
-                                            deltaExecHandler -> {
-                                                if (deltaExecHandler.succeeded()) {
-                                                    QueryResult queryDeltaResult = deltaExecHandler.result();
-                                                    log.debug("Query result: {}, queryResult : {}",
-                                                            context.getRequest().getQueryRequest(), queryDeltaResult);
-                                                    handler.handle(Future.succeededFuture(queryDeltaResult));
-                                                } else {
-                                                    log.error(deltaExecHandler.cause().getMessage());
-                                                    handler.handle(Future.failedFuture(deltaExecHandler.cause()));
-                                                }
-                                            }));
-                        })
-                        .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
-            } else {
-                handler.handle(Future.failedFuture(exParamHandler.cause()));
-            }
-        });
+    private Future<DeltaQuery> extractDeltaQuery(DeltaRequestContext context) {
+        return Future.future(promise -> deltaQueryParamExtractor.extract(context.getRequest().getQueryRequest(), promise));
     }
 
+    private Future<QueryResult> sendMetricsAndExecute(DeltaRequestContext context, DeltaQuery deltaQuery) {
+        return metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
+                getSqlType(deltaQuery.getDeltaAction()),
+                context.getMetrics())
+                .compose(v -> execute(context, deltaQuery));
+    }
+
+    private Future<QueryResult> execute(DeltaRequestContext context, DeltaQuery deltaQuery) {
+        return Future.future((Promise<QueryResult> promise) -> {
+            deltaQuery.setDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic());
+            deltaQuery.setRequest(context.getRequest().getQueryRequest());
+            executors.get(deltaQuery.getDeltaAction())
+                    .execute(deltaQuery,
+                            metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
+                                    getSqlType(deltaQuery.getDeltaAction()),
+                                    context.getMetrics(),
+                                    promise));
+        });
+    }
 
     private SqlProcessingType getSqlType(DeltaAction deltaAction) {
         if (deltaAction != DeltaAction.ROLLBACK_DELTA) {

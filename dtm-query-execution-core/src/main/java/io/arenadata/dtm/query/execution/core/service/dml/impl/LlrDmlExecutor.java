@@ -50,7 +50,8 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                           ColumnMetadataService columnMetadataService,
                           InformationSchemaExecutor informationSchemaExecutor,
                           InformationSchemaDefinitionService informationSchemaDefinitionService,
-                          LogicalSchemaProvider logicalSchemaProvider, MetricsService<RequestMetrics> metricsService) {
+                          LogicalSchemaProvider logicalSchemaProvider,
+                          MetricsService<RequestMetrics> metricsService) {
         this.dataSourcePluginService = dataSourcePluginService;
         this.targetDatabaseDefinitionService = targetDatabaseDefinitionService;
         this.deltaQueryPreprocessor = deltaQueryPreprocessor;

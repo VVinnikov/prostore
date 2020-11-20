@@ -1,6 +1,9 @@
 package io.arenadata.dtm.query.execution.core.service.edml.impl;
 
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
+import io.arenadata.dtm.common.metrics.RequestMetrics;
+import io.arenadata.dtm.common.model.RequestStatus;
+import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
@@ -184,7 +187,15 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
 
     @NotNull
     private StatusRequestContext createStatusRequestContext(MppwRequestContext mppwRequestContext, EdmlRequestContext context) {
-        val statusRequestContext = new StatusRequestContext(new StatusRequest(context.getRequest().getQueryRequest()));
+        val statusRequestContext = new StatusRequestContext(RequestMetrics.builder()
+                .requestId(mppwRequestContext.getMetrics().getRequestId())
+                .startTime(LocalDateTime.now(dtmSettings.getTimeZone()))
+                .sourceType(mppwRequestContext.getMetrics().getSourceType())
+                .actionType(SqlProcessingType.STATUS)
+                .isActive(true)
+                .status(RequestStatus.IN_PROCESS)
+                .build(),
+                new StatusRequest(context.getRequest().getQueryRequest()));
         statusRequestContext.getRequest().setTopic(mppwRequestContext.getRequest().getKafkaParameter().getTopic());
         return statusRequestContext;
     }

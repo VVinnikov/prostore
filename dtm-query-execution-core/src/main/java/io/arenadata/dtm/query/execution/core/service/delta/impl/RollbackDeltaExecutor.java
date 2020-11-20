@@ -1,8 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.delta.impl;
 
-import io.arenadata.dtm.async.AsyncUtils;
 import io.arenadata.dtm.common.model.ddl.Entity;
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.status.StatusEventCode;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
@@ -14,13 +12,17 @@ import io.arenadata.dtm.query.execution.core.dto.delta.HotDelta;
 import io.arenadata.dtm.query.execution.core.dto.delta.operation.WriteOpFinish;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaAction;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaQuery;
+import io.arenadata.dtm.query.execution.core.dto.delta.query.RollbackDeltaQuery;
 import io.arenadata.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaExecutor;
 import io.arenadata.dtm.query.execution.core.service.delta.StatusEventPublisher;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadFailedExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.request.RollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
-import io.vertx.core.*;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -29,7 +31,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaAction.ROLLBACK_DELTA;
 
@@ -57,28 +58,28 @@ public class RollbackDeltaExecutor implements DeltaExecutor, StatusEventPublishe
 
     @Override
     public void execute(DeltaQuery deltaQuery, Handler<AsyncResult<QueryResult>> handler) {
-        val queryRequest = deltaQuery.getRequest();
-        val datamart = deltaQuery.getDatamart();
-        deltaServiceDao.writeDeltaError(datamart, null)
+        deltaServiceDao.writeDeltaError(deltaQuery.getDatamart(), null)
                 .otherwise(this::skipDeltaAlreadyIsRollingBackError)
-                .compose(v -> deltaServiceDao.getDeltaHot(datamart))
-                .compose(hotDelta -> rollbackTables(datamart, hotDelta, queryRequest)
+                .compose(v -> deltaServiceDao.getDeltaHot(deltaQuery.getDatamart()))
+                .compose(hotDelta -> rollbackTables((RollbackDeltaQuery) deltaQuery, hotDelta)
                         .map(v -> hotDelta))
-                .compose(hotDelta -> deltaServiceDao.deleteDeltaHot(datamart)
+                .compose(hotDelta -> deltaServiceDao.deleteDeltaHot(deltaQuery.getDatamart())
                         .map(hotDelta.getDeltaNum()))
                 .onSuccess(deltaNum -> {
                     try {
-                        publishStatus(StatusEventCode.DELTA_CANCEL, datamart, deltaNum);
-                        val res = deltaQueryResultFactory.create(getDeltaRecord(datamart, deltaNum));
+                        publishStatus(StatusEventCode.DELTA_CANCEL, deltaQuery.getDatamart(), deltaNum);
+                        val res = deltaQueryResultFactory.create(getDeltaRecord(deltaQuery.getDatamart(), deltaNum));
                         handler.handle(Future.succeededFuture(res));
                     } catch (Exception e) {
-                        val errMsg = String.format("Can't publish result of delta rollback by datamart [%s]: %s", datamart, e.getMessage());
+                        val errMsg = String.format("Can't publish result of delta rollback by datamart [%s]: %s",
+                                deltaQuery.getDatamart(), e.getMessage());
                         log.error(errMsg);
                         handler.handle(Future.failedFuture(new RuntimeException(errMsg)));
                     }
                 })
                 .onFailure(error -> {
-                    val errMsg = String.format("Can't rollback delta by datamart [%s]: %s", datamart, error.getMessage());
+                    val errMsg = String.format("Can't rollback delta by datamart [%s]: %s",
+                            deltaQuery.getDatamart(), error.getMessage());
                     log.error(errMsg);
                     handler.handle(Future.failedFuture(new RuntimeException(errMsg)));
                 });
@@ -93,41 +94,40 @@ public class RollbackDeltaExecutor implements DeltaExecutor, StatusEventPublishe
         }
     }
 
-    private Future<Void> rollbackTables(String datamart,
-                                        HotDelta hotDelta,
-                                        QueryRequest queryRequest) {
+    private Future<Void> rollbackTables(RollbackDeltaQuery deltaQuery,
+                                        HotDelta hotDelta) {
         val operationsFinished = hotDelta.getWriteOperationsFinished();
         return operationsFinished != null ?
-                getRollbackTablesFuture(datamart, operationsFinished, queryRequest) : Future.succeededFuture();
+                getRollbackTablesFuture(deltaQuery, operationsFinished) : Future.succeededFuture();
     }
 
-    private Future<Void> getRollbackTablesFuture(String datamart,
-                                                 List<WriteOpFinish> operationsFinished,
-                                                 QueryRequest queryRequest) {
+    private Future<Void> getRollbackTablesFuture(RollbackDeltaQuery deltaQuery,
+                                                 List<WriteOpFinish> operationsFinished) {
         Future<Void> executingFuture = Future.succeededFuture();
         operationsFinished.stream()
-                .forEach(writeOpFinish -> executingFuture.compose(v -> rollbackTable(datamart, writeOpFinish, queryRequest)));
+                .forEach(writeOpFinish -> executingFuture.compose(v -> rollbackTable(deltaQuery, writeOpFinish)));
         return executingFuture;
     }
 
-    private Future<Void> rollbackTable(String datamart,
-                                       WriteOpFinish writeOpFinish,
-                                       QueryRequest queryRequest) {
-        return entityDao.getEntity(datamart, writeOpFinish.getTableName())
-                .compose(entity -> rollbackTableWriteOperations(datamart, writeOpFinish, entity, queryRequest));
+    private Future<Void> rollbackTable(RollbackDeltaQuery deltaQuery, WriteOpFinish writeOpFinish) {
+        return entityDao.getEntity(deltaQuery.getDatamart(), writeOpFinish.getTableName())
+                .compose(entity -> rollbackTableWriteOperations(deltaQuery, writeOpFinish, entity));
     }
 
-    private Future<Void> rollbackTableWriteOperations(String datamart, WriteOpFinish writeOpFinish, Entity entity, QueryRequest queryRequest) {
+    private Future<Void> rollbackTableWriteOperations(RollbackDeltaQuery deltaQuery,
+                                                      WriteOpFinish writeOpFinish,
+                                                      Entity entity) {
         Future<Void> executingFuture = Future.succeededFuture();
         writeOpFinish.getCnList().stream()
                 .map(sysCn -> RollbackRequest.builder()
                         .destinationTable(entity.getName())
-                        .queryRequest(queryRequest)
-                        .datamart(datamart)
+                        .queryRequest(deltaQuery.getRequest())
+                        .datamart(deltaQuery.getDatamart())
                         .entity(entity)
                         .sysCn(sysCn)
                         .build())
-                .map(RollbackRequestContext::new)
+                .map(rollbackRequest -> new RollbackRequestContext(deltaQuery.getRequestMetrics(),
+                        rollbackRequest))
                 .forEach(rollbackRequestContext -> {
                     executingFuture.compose(v -> edmlUploadFailedExecutor.eraseWriteOp(rollbackRequestContext));
                 });

@@ -13,17 +13,17 @@ public class SqlSnapshot extends org.apache.calcite.sql.SqlSnapshot {
     private SqlNode tableRef;
     private SqlNode period;
     private String deltaDateTime;
-    private Boolean isLatestUncommitedDelta;
+    private Boolean isLatestUncommittedDelta;
     private SelectOnInterval startedInterval;
     private SelectOnInterval finishedInterval;
     private Long deltaNum;
     private SnapshotDeltaIntervalOperator startedOperator;
     private SnapshotDeltaIntervalOperator finishedOperator;
     private SnapshotDeltaNumOperator deltaNumOperator;
-    private SnapshotLatestUncommitedDeltaOperator latestUncommitedDeltaOperator;
+    private SnapshotLatestUncommittedDeltaOperator latestUncommittedDeltaOperator;
 
     public SqlSnapshot(SqlParserPos pos, SqlNode tableRef, SqlNode period, SqlOperator started,
-                       SqlOperator finished, SqlNode num, SqlLiteral isLatestUncommitedDelta) {
+                       SqlOperator finished, SqlNode num, SqlLiteral isLatestUncommittedDelta) {
         super(pos, tableRef, period);
         this.tableRef = (SqlNode) Objects.requireNonNull(tableRef);
         this.period = (SqlNode) period;
@@ -31,7 +31,7 @@ public class SqlSnapshot extends org.apache.calcite.sql.SqlSnapshot {
         this.startedOperator = new SnapshotStartedOperator(pos, this.period, started);
         this.finishedOperator = new SnapshotFinishedOperator(pos, this.period, finished);
         this.deltaNumOperator = new SnapshotDeltaNumOperator(pos, (SqlNumericLiteral) num);
-        this.latestUncommitedDeltaOperator = new SnapshotLatestUncommitedDeltaOperator(pos, isLatestUncommitedDelta);
+        this.latestUncommittedDeltaOperator = new SnapshotLatestUncommittedDeltaOperator(pos, isLatestUncommittedDelta);
         initSnapshotAttributes();
     }
 
@@ -58,13 +58,13 @@ public class SqlSnapshot extends org.apache.calcite.sql.SqlSnapshot {
         this.startedInterval = this.startedOperator.getDeltaInterval();
         this.finishedInterval = this.finishedOperator.getDeltaInterval();
         this.deltaNum = this.deltaNumOperator.getDeltaNum();
-        this.isLatestUncommitedDelta = this.latestUncommitedDeltaOperator.getIsLatestUncommitedDelta();
+        this.isLatestUncommittedDelta = this.latestUncommittedDeltaOperator.getIsLatestUncommittedDelta();
         this.deltaDateTime = createDeltaDateTime();
     }
 
     private String createDeltaDateTime() {
         if (this.deltaNum != null ||
-                this.startedInterval != null || this.finishedInterval != null || this.isLatestUncommitedDelta) {
+                this.startedInterval != null || this.finishedInterval != null || this.isLatestUncommittedDelta) {
             return null;
         } else {
             return this.period.toString();
@@ -79,7 +79,7 @@ public class SqlSnapshot extends org.apache.calcite.sql.SqlSnapshot {
         this.deltaNumOperator.unparse(writer, 0, 0);
         this.startedOperator.unparse(writer, 0, 0);
         this.finishedOperator.unparse(writer, 0, 0);
-        this.latestUncommitedDeltaOperator.unparse(writer, 0, 0);
+        this.latestUncommittedDeltaOperator.unparse(writer, 0, 0);
         if (this.getDeltaDateTime() != null) {
             this.period.unparse(writer, 0, 0);
         }
@@ -101,8 +101,8 @@ public class SqlSnapshot extends org.apache.calcite.sql.SqlSnapshot {
         return deltaDateTime;
     }
 
-    public Boolean getLatestUncommitedDelta() {
-        return isLatestUncommitedDelta;
+    public Boolean getLatestUncommittedDelta() {
+        return isLatestUncommittedDelta;
     }
 
     public Long getDeltaNum() {

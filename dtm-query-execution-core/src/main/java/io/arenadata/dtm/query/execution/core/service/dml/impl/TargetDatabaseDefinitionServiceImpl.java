@@ -86,7 +86,9 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
                 return newHashSet(request.getSourceType());
             }
         } else {
-            return stResult;
+            return stResult.stream()
+                .filter(sourceType -> pluginService.getSourceTypes().contains(sourceType))
+                .collect(Collectors.toSet());
         }
     }
 
@@ -108,7 +110,6 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
 
     private Future<SourceType> getTargetSourceByCalcQueryCost(Set<SourceType> sourceTypes, QuerySourceRequest request) {
         return Future.future(promise -> CompositeFuture.join(sourceTypes.stream()
-//            .filter(sourceType -> pluginService.getSourceTypes().contains(sourceType))
             .map(sourceType -> calcQueryCostInPlugin(request, sourceType))
             .collect(Collectors.toList()))
             .onComplete(ar -> {

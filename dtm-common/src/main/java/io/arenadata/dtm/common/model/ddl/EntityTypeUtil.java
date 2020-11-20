@@ -14,13 +14,13 @@ public class EntityTypeUtil {
             case TIME:
                 return "time" + getTimePrecision(accuracy);
             case TIMESTAMP:
-                return "timestamp" + getTimePrecision(accuracy);
+                return "timestamp" + getTimestamprecision(accuracy);
             case FLOAT:
-                return "real";
+                return "float4";
             case DOUBLE:
                 return "float8";
             case BOOLEAN:
-                return "boolean";
+                return "bool";
             case INT:
             case BIGINT:
                 return "int8";
@@ -32,6 +32,10 @@ public class EntityTypeUtil {
             default:
                 throw new UnsupportedOperationException(String.format("`%s` not supported", type));
         }
+    }
+
+    private static String getTimestamprecision(Integer accuracy) {
+        return getTimePrecision(Optional.ofNullable(accuracy).orElse(6));
     }
 
     private static String getTimePrecision(Integer accuracy) {

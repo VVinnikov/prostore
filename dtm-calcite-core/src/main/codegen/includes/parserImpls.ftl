@@ -625,7 +625,6 @@ SqlNode SqlGetDeltaByNum() :
         return new io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaByNum(s.end(this), deltaNum);
     }
 }
-
 SqlNode SqlConfigStorageAdd() :
 {
     Span s;

@@ -4,10 +4,7 @@ import io.arenadata.dtm.common.converter.SqlTypeConverter;
 import io.arenadata.dtm.common.plugin.sql.PreparedStatementRequest;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
-import io.reactiverse.pgclient.PgConnection;
-import io.reactiverse.pgclient.PgCursor;
-import io.reactiverse.pgclient.PgPool;
-import io.reactiverse.pgclient.PgTransaction;
+import io.reactiverse.pgclient.*;
 import io.reactiverse.pgclient.impl.ArrayTuple;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -19,6 +16,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 @Slf4j
 public class AdbQueryExecutor implements DatabaseExecutor {
@@ -84,8 +82,11 @@ public class AdbQueryExecutor implements DatabaseExecutor {
     private List<Map<String, Object>> createResult(List<ColumnMetadata> metadata,
                                                    io.reactiverse.pgclient.PgRowSet pgRowSet) {
         List<Map<String, Object>> result = new ArrayList<>();
+        Function<Row, Map<String, Object>> func = metadata.isEmpty()
+                ? row -> createRowMap(row, pgRowSet.columnsNames().size())
+                : row -> createRowMap(metadata, row);
         for (io.reactiverse.pgclient.Row row : pgRowSet) {
-            result.add(createRowMap(metadata, row));
+            result.add(func.apply(row));
         }
         return result;
     }
@@ -96,6 +97,14 @@ public class AdbQueryExecutor implements DatabaseExecutor {
             ColumnMetadata columnMetadata = metadata.get(i);
             rowMap.put(columnMetadata.getName(),
                     typeConverter.convert(columnMetadata.getType(), row.getValue(i)));
+        }
+        return rowMap;
+    }
+
+    private Map<String, Object> createRowMap(io.reactiverse.pgclient.Row row, int size) {
+        Map<String, Object> rowMap = new HashMap<>();
+        for (int i = 0; i < size; i++) {
+            rowMap.put(row.getColumnName(i), row.getValue(i));
         }
         return rowMap;
     }

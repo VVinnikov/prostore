@@ -1,11 +1,9 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.ddl;
 
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.SqlCreateDatabase;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
 import io.vertx.core.AsyncResult;
@@ -24,43 +22,31 @@ public class CreateSchemaExecutor implements DdlExecutor<Void> {
 
     private final AdbQueryExecutor adbQueryExecutor;
     private final MetadataSqlFactory sqlFactory;
-    private final DropSchemaExecutor dropSchemaExecutor;
 
     @Autowired
-    public CreateSchemaExecutor(AdbQueryExecutor adbQueryExecutor, MetadataSqlFactory sqlFactory, DropSchemaExecutor dropSchemaExecutor) {
+    public CreateSchemaExecutor(AdbQueryExecutor adbQueryExecutor,
+                                MetadataSqlFactory sqlFactory) {
         this.adbQueryExecutor = adbQueryExecutor;
         this.sqlFactory = sqlFactory;
-        this.dropSchemaExecutor = dropSchemaExecutor;
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<Void>> handler) {
+    public void execute(DdlRequestContext context,
+                        String sqlNodeName,
+                        Handler<AsyncResult<Void>> handler) {
         try {
             SqlNode query = context.getQuery();
             if (!(query instanceof SqlCreateDatabase)) {
                 handler.handle(Future.failedFuture(
-                        String.format("Expecting SqlCreateDatabase in context, receiving: %s", context.getQuery())));
+                    String.format("Expecting SqlCreateDatabase in context, receiving: %s", context.getQuery())));
                 return;
             }
             String schemaName = ((SqlCreateDatabase) query).getName().names.get(0);
-            DdlRequestContext dropCtx = createDropRequestContext(schemaName);
-            dropSchemaExecutor.execute(dropCtx, SqlKind.DROP_SCHEMA.lowerName, ar -> {
-                if (ar.succeeded()) {
-                    createSchema(schemaName, handler);
-                } else {
-                    handler.handle(Future.failedFuture(ar.cause()));
-                }
-            });
+            createSchema(schemaName, handler);
         } catch (Exception e) {
             log.error("Error executing create schema query!", e);
             handler.handle(Future.failedFuture(e));
         }
-    }
-
-    private DdlRequestContext createDropRequestContext(String schemaName) {
-        DdlRequestContext dropCtx = new DdlRequestContext(new DdlRequest(new QueryRequest()));
-        dropCtx.setDatamartName(schemaName);
-        return dropCtx;
     }
 
     private void createSchema(String schemaName, Handler<AsyncResult<Void>> handler) {

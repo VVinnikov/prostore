@@ -1,17 +1,18 @@
 package io.arenadata.dtm.query.execution.plugin.api.llr;
 
+import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
-import io.arenadata.dtm.query.execution.plugin.api.service.SqlProcessingType;
+import io.arenadata.dtm.common.model.SqlProcessingType;
 import lombok.ToString;
 
-import static io.arenadata.dtm.query.execution.plugin.api.service.SqlProcessingType.LLR;
+import static io.arenadata.dtm.common.model.SqlProcessingType.LLR;
 
 @ToString
 public class LlrRequestContext extends RequestContext<LlrRequest> {
 
-	public LlrRequestContext(LlrRequest request) {
-		super(request);
+	public LlrRequestContext(RequestMetrics metrics, LlrRequest request) {
+		super(metrics, request);
 	}
 
 	@Override

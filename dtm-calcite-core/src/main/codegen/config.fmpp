@@ -55,6 +55,7 @@ data: {
       "GET_DELTA_HOT"
       "GET_DELTA_BY_DATETIME"
       "GET_DELTA_BY_NUM"
+      "CONFIG_STORAGE_ADD"
       "DATASOURCE_TYPE"
     ]
 
@@ -409,6 +410,7 @@ data: {
         "SqlGetDeltaHot()"
         "SqlGetDeltaByDateTime()"
         "SqlGetDeltaByNum()"
+        "SqlConfigStorageAdd()"
     ]
 
     # List of methods for parsing custom literals.

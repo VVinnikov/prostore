@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.dto.delta.query;
 
+import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import lombok.Builder;
 import lombok.Data;
@@ -11,6 +12,8 @@ import java.util.UUID;
 @Data
 @EqualsAndHashCode(callSuper = false)
 public class RollbackDeltaQuery extends DeltaQuery {
+
+    private RequestMetrics requestMetrics;
 
     @Builder
     public RollbackDeltaQuery(QueryRequest request,

@@ -2,6 +2,7 @@ package io.arenadata.dtm.query.execution.core.filter;
 
 import io.arenadata.dtm.common.reader.SourceType;
 import lombok.val;
+import org.springframework.boot.web.reactive.context.AnnotationConfigReactiveWebServerApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.core.type.classreading.CachingMetadataReaderFactory;
 import org.springframework.core.type.classreading.MetadataReader;
@@ -44,23 +45,23 @@ public class ExcludePluginFilter implements TypeFilter {
 
     private List<String> getExcludedSources(List<String> activePlugins) {
         return Arrays.stream(SourceType.values())
-            .filter(sourceType -> sourceType != SourceType.INFORMATION_SCHEMA)
-            .map(Enum::name)
-            .filter(typeName -> activePlugins.stream()
-                .noneMatch(apName -> apName.equalsIgnoreCase(typeName)))
-            .map(typeName -> String.format("%s.*", typeName.toLowerCase()))
-            .collect(Collectors.toList());
+                .filter(sourceType -> sourceType != SourceType.INFORMATION_SCHEMA)
+                .map(Enum::name)
+                .filter(typeName -> activePlugins.stream()
+                        .noneMatch(apName -> apName.equalsIgnoreCase(typeName)))
+                .map(typeName -> String.format("%s.*", typeName.toLowerCase()))
+                .collect(Collectors.toList());
     }
 
     private List<String> getActivePlugins(MetadataReaderFactory metadataReaderFactory) {
         return Arrays.stream(getActivePluginsSettings(metadataReaderFactory).split(","))
-            .map(pluginName -> pluginName.toUpperCase().trim())
-            .collect(Collectors.toList());
+                .map(pluginName -> pluginName.toUpperCase().trim())
+                .collect(Collectors.toList());
     }
 
     private String getActivePluginsSettings(MetadataReaderFactory metadataReaderFactory) {
         val cachingMetadataReaderFactory = (CachingMetadataReaderFactory) metadataReaderFactory;
-        val applicationContext = (AnnotationConfigApplicationContext) cachingMetadataReaderFactory.getResourceLoader();
+        val applicationContext = (AnnotationConfigReactiveWebServerApplicationContext) cachingMetadataReaderFactory.getResourceLoader();
         val environment = applicationContext.getEnvironment();
         return environment.getProperty(CORE_PLUGINS_ACTIVE);
     }

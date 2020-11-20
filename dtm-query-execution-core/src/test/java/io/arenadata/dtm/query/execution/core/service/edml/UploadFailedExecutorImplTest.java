@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.edml;
 
 import io.arenadata.dtm.common.exception.CrashException;
+import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
@@ -81,18 +82,20 @@ class UploadFailedExecutorImplTest {
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
 
-        EdmlRequestContext context = new EdmlRequestContext(request, null);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null);
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
         context.setSysCn(1L);
 
-        final RollbackRequestContext rollbackRequestContext = new RollbackRequestContext(RollbackRequest.builder()
-                .queryRequest(context.getRequest().getQueryRequest())
-                .datamart(context.getSourceEntity().getName())
-                .destinationTable(context.getDestinationEntity().getName())
-                .sysCn(context.getSysCn())
-                .entity(context.getDestinationEntity())
-                .build());
+        final RollbackRequestContext rollbackRequestContext = new RollbackRequestContext(
+                new RequestMetrics(),
+                RollbackRequest.builder()
+                        .queryRequest(context.getRequest().getQueryRequest())
+                        .datamart(context.getSourceEntity().getName())
+                        .destinationTable(context.getDestinationEntity().getName())
+                        .sysCn(context.getSysCn())
+                        .entity(context.getDestinationEntity())
+                        .build());
 
         when(rollbackRequestContextFactory.create(any()))
                 .thenReturn(rollbackRequestContext);
@@ -123,18 +126,20 @@ class UploadFailedExecutorImplTest {
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
 
-        EdmlRequestContext context = new EdmlRequestContext(request, null);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null);
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
         context.setSysCn(1L);
 
-        final RollbackRequestContext rollbackRequestContext = new RollbackRequestContext(RollbackRequest.builder()
-                .queryRequest(context.getRequest().getQueryRequest())
-                .datamart(context.getSourceEntity().getName())
-                .destinationTable(context.getDestinationEntity().getName())
-                .sysCn(context.getSysCn())
-                .entity(context.getDestinationEntity())
-                .build());
+        final RollbackRequestContext rollbackRequestContext = new RollbackRequestContext(
+                new RequestMetrics(),
+                RollbackRequest.builder()
+                        .queryRequest(context.getRequest().getQueryRequest())
+                        .datamart(context.getSourceEntity().getName())
+                        .destinationTable(context.getDestinationEntity().getName())
+                        .sysCn(context.getSysCn())
+                        .entity(context.getDestinationEntity())
+                        .build());
 
         when(rollbackRequestContextFactory.create(any()))
                 .thenReturn(rollbackRequestContext);
@@ -163,7 +168,7 @@ class UploadFailedExecutorImplTest {
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
 
-        EdmlRequestContext context = new EdmlRequestContext(request, null);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null);
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
         context.setSysCn(1L);

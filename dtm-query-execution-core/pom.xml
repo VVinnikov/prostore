@@ -34,6 +34,10 @@
                     <groupId>io.arenadata</groupId>
                     <artifactId>dtm-common</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>io.arenadata.dtm</groupId>
+                    <artifactId>dtm-calcite-core</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 
@@ -112,6 +116,30 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-cache</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+            <exclusions>
+                <!-- Exclude the Tomcat dependency -->
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-tomcat</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jetty</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-core</artifactId>
+        </dependency>
+
 
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>

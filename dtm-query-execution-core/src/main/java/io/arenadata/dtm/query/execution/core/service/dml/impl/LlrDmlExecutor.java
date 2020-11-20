@@ -1,10 +1,16 @@
 package io.arenadata.dtm.query.execution.core.service.dml.impl;
 
 import io.arenadata.dtm.common.dto.QueryParserRequest;
-import io.arenadata.dtm.common.reader.*;
+import io.arenadata.dtm.common.metrics.RequestMetrics;
+import io.arenadata.dtm.common.model.SqlProcessingType;
+import io.arenadata.dtm.common.reader.QueryRequest;
+import io.arenadata.dtm.common.reader.QueryResult;
+import io.arenadata.dtm.common.reader.QuerySourceRequest;
+import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.dml.*;
+import io.arenadata.dtm.query.execution.core.service.metrics.MetricsService;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.api.dml.DmlRequestContext;
@@ -34,6 +40,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
     private final InformationSchemaExecutor informationSchemaExecutor;
     private final InformationSchemaDefinitionService informationSchemaDefinitionService;
     private final LogicalSchemaProvider logicalSchemaProvider;
+    private final MetricsService<RequestMetrics> metricsService;
 
     @Autowired
     public LlrDmlExecutor(DataSourcePluginService dataSourcePluginService,
@@ -43,7 +50,8 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                           ColumnMetadataService columnMetadataService,
                           InformationSchemaExecutor informationSchemaExecutor,
                           InformationSchemaDefinitionService informationSchemaDefinitionService,
-                          LogicalSchemaProvider logicalSchemaProvider) {
+                          LogicalSchemaProvider logicalSchemaProvider,
+                          MetricsService<RequestMetrics> metricsService) {
         this.dataSourcePluginService = dataSourcePluginService;
         this.targetDatabaseDefinitionService = targetDatabaseDefinitionService;
         this.deltaQueryPreprocessor = deltaQueryPreprocessor;
@@ -52,6 +60,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
         this.columnMetadataService = columnMetadataService;
         this.informationSchemaDefinitionService = informationSchemaDefinitionService;
         this.logicalSchemaProvider = logicalSchemaProvider;
+        this.metricsService = metricsService;
     }
 
     @Override
@@ -67,7 +76,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                     })
                     .compose(v -> initLogicalSchema(sourceRequest))
                     .compose(this::initColumnMetaData)
-                    .compose(this::executeRequest)
+                    .compose(request -> executeRequest(request, context))
                     .onComplete(asyncResultHandler);
         } catch (Exception e) {
             asyncResultHandler.handle(Future.failedFuture(e));
@@ -115,14 +124,21 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
         });
     }
 
-    private Future<QueryResult> executeRequest(QuerySourceRequest sourceRequest) {
+    private Future<QueryResult> executeRequest(QuerySourceRequest sourceRequest,
+                                               DmlRequestContext context) {
         return Future.future(promise -> {
             if (informationSchemaDefinitionService.isInformationSchemaRequest(sourceRequest)) {
-                informationSchemaExecute(sourceRequest)
-                        .onComplete(promise);
+                metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
+                        SqlProcessingType.LLR,
+                        context.getMetrics())
+                        .compose(v -> informationSchemaExecute(sourceRequest))
+                        .onComplete(metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
+                                SqlProcessingType.LLR,
+                                context.getMetrics(),
+                                promise));
             } else {
                 defineTargetSourceType(sourceRequest)
-                        .compose(this::pluginExecute)
+                        .compose(querySourceRequest -> pluginExecute(querySourceRequest, context.getMetrics()))
                         .onComplete(promise);
             }
         });
@@ -137,16 +153,19 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
     }
 
     @SneakyThrows
-    private Future<QueryResult> pluginExecute(QuerySourceRequest request) {
-        return Future.future(p -> dataSourcePluginService.llr(
-                request.getQueryRequest().getSourceType(),
-                new LlrRequestContext(
-                        new LlrRequest(
-                                request.getQueryRequest(),
-                                request.getLogicalSchema(),
-                                request.getMetadata())
-                ),
-                p));
+    private Future<QueryResult> pluginExecute(QuerySourceRequest request, RequestMetrics requestMetrics) {
+        return Future.future(p -> {
+            dataSourcePluginService.llr(
+                    request.getQueryRequest().getSourceType(),
+                    new LlrRequestContext(
+                            requestMetrics,
+                            new LlrRequest(
+                                    request.getQueryRequest(),
+                                    request.getLogicalSchema(),
+                                    request.getMetadata())
+                    ),
+                    p);
+        });
     }
 
     @Override

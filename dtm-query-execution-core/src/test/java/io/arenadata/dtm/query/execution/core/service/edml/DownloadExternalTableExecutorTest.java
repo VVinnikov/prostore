@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.edml;
 
+import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
@@ -90,7 +91,7 @@ class DownloadExternalTableExecutorTest {
         DatamartRequest request = new DatamartRequest(queryRequest);
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
 
-        EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
 
@@ -135,7 +136,7 @@ class DownloadExternalTableExecutorTest {
         DatamartRequest request = new DatamartRequest(queryRequest);
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
 
-        EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
 
@@ -170,7 +171,7 @@ class DownloadExternalTableExecutorTest {
         DatamartRequest request = new DatamartRequest(queryRequest);
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
 
-        EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
 
@@ -208,7 +209,7 @@ class DownloadExternalTableExecutorTest {
         DatamartRequest request = new DatamartRequest(queryRequest);
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
 
-        EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
 

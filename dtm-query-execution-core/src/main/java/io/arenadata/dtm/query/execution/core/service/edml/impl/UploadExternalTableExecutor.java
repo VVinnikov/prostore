@@ -3,9 +3,11 @@ package io.arenadata.dtm.query.execution.core.service.edml.impl;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.reader.QueryResult;
+import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dto.delta.DeltaWriteOpRequest;
 import io.arenadata.dtm.query.execution.core.dto.edml.EdmlAction;
+import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadFailedExecutor;
@@ -21,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.arenadata.dtm.query.execution.core.dto.edml.EdmlAction.UPLOAD;
@@ -33,23 +36,43 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
     private final DeltaServiceDao deltaServiceDao;
     private final Map<ExternalTableLocationType, EdmlUploadExecutor> executors;
     private final EdmlUploadFailedExecutor uploadFailedExecutor;
+    private final DataSourcePluginService pluginService;
 
     @Autowired
     public UploadExternalTableExecutor(DeltaServiceDao deltaServiceDao,
                                        EdmlUploadFailedExecutor uploadFailedExecutor,
-                                       List<EdmlUploadExecutor> uploadExecutors) {
+                                       List<EdmlUploadExecutor> uploadExecutors,
+                                       DataSourcePluginService pluginService) {
         this.deltaServiceDao = deltaServiceDao;
         this.uploadFailedExecutor = uploadFailedExecutor;
         this.executors = uploadExecutors.stream()
                 .collect(Collectors.toMap(EdmlUploadExecutor::getUploadType, it -> it));
+        this.pluginService = pluginService;
     }
 
     @Override
     public void execute(EdmlRequestContext context, Handler<AsyncResult<QueryResult>> resultHandler) {
-        writeNewOperationIfNeeded(context, context.getSourceEntity())
+        isEntitySourceTypesExistsInConfiguration(context)
+                .compose(v -> writeNewOperationIfNeeded(context, context.getSourceEntity()))
                 .compose(v -> executeAndWriteOp(context))
                 .compose(queryResult -> writeOpSuccess(context.getSourceEntity().getSchema(), context.getSysCn(), queryResult))
                 .onComplete(resultHandler);
+    }
+
+    private Future<Void> isEntitySourceTypesExistsInConfiguration(EdmlRequestContext context) {
+        final Set<SourceType> nonExistDestionationTypes = context.getDestinationEntity().getDestination().stream()
+                .filter(type -> !pluginService.getSourceTypes().contains(type))
+                .collect(Collectors.toSet());
+        if (!nonExistDestionationTypes.isEmpty()) {
+            final String failureMessage = String.format("Plugins: %s for the table [%s] datamart [%s] are not configured",
+                    nonExistDestionationTypes,
+                    context.getDestinationEntity().getName(),
+                    context.getDestinationEntity().getSchema());
+            log.error(failureMessage);
+            return Future.failedFuture(failureMessage);
+        } else {
+            return Future.succeededFuture();
+        }
     }
 
     private Future<Long> writeNewOperationIfNeeded(EdmlRequestContext context, Entity entity) {

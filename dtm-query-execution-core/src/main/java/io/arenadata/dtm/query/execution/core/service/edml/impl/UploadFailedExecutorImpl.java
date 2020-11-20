@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.edml.impl;
 
 import io.arenadata.dtm.common.exception.CrashException;
+import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.factory.RollbackRequestContextFactory;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
@@ -15,19 +16,21 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-public class EdmlUploadFailedExecutorImpl implements EdmlUploadFailedExecutor {
+public class UploadFailedExecutorImpl implements EdmlUploadFailedExecutor {
 
     private final DeltaServiceDao deltaServiceDao;
     private final RollbackRequestContextFactory rollbackRequestContextFactory;
     private final DataSourcePluginService dataSourcePluginService;
 
     @Autowired
-    public EdmlUploadFailedExecutorImpl(DeltaServiceDao deltaServiceDao,
-                                        RollbackRequestContextFactory rollbackRequestContextFactory,
-                                        DataSourcePluginService dataSourcePluginService) {
+    public UploadFailedExecutorImpl(DeltaServiceDao deltaServiceDao,
+                                    RollbackRequestContextFactory rollbackRequestContextFactory,
+                                    DataSourcePluginService dataSourcePluginService) {
         this.deltaServiceDao = deltaServiceDao;
         this.rollbackRequestContextFactory = rollbackRequestContextFactory;
         this.dataSourcePluginService = dataSourcePluginService;
@@ -55,7 +58,10 @@ public class EdmlUploadFailedExecutorImpl implements EdmlUploadFailedExecutor {
     public Future<Void> eraseWriteOp(RollbackRequestContext context) {
         return Future.future(rbPromise -> {
             List<Future> futures = new ArrayList<>();
-            context.getRequest().getEntity().getDestination().forEach(sourceType ->
+            final Set<SourceType> destination = context.getRequest().getEntity().getDestination().stream()
+                    .filter(type -> dataSourcePluginService.getSourceTypes().contains(type))
+                    .collect(Collectors.toSet());
+            destination.forEach(sourceType ->
                 futures.add(Future.future(p -> dataSourcePluginService.rollback(
                     sourceType,
                     context,

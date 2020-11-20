@@ -10,11 +10,9 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigInteger;
 import java.sql.Date;
-import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -73,7 +71,7 @@ class AdqmTypeToSqlTypeConverterTest {
         expectedValues.put(ColumnType.DOUBLE, doubleVal);
         expectedValues.put(ColumnType.FLOAT, floatVal);
         expectedValues.put(ColumnType.DATE, Date.valueOf(LocalDate.ofEpochDay(dateLongVal)));
-        expectedValues.put(ColumnType.TIME, Time.valueOf(LocalTime.ofNanoOfDay(timeLongVal)));
+        expectedValues.put(ColumnType.TIME, timeLongVal / 1000);
         expectedValues.put(ColumnType.TIMESTAMP, Timestamp.from(LocalDateTime.parse(timestampStrVal,
                 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS")).atZone(UTC_TIME_ZONE).toInstant()));
         expectedValues.put(ColumnType.BOOLEAN, booleanVal);
@@ -116,7 +114,7 @@ class AdqmTypeToSqlTypeConverterTest {
         );
         assertAll("Time converting",
                 () -> assertEquals(expectedValues.get(ColumnType.TIME), typeConverter.convert(ColumnType.TIME, timeLongVal)),
-                () -> assertTrue(typeConverter.convert(ColumnType.TIME, timeLongVal) instanceof Time)
+                () -> assertTrue(typeConverter.convert(ColumnType.TIME, timeLongVal) instanceof Number)
         );
         assertAll("Timestamp converting",
                 () -> assertEquals(expectedValues.get(ColumnType.TIMESTAMP), typeConverter.convert(ColumnType.TIMESTAMP,

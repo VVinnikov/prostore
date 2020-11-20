@@ -42,7 +42,7 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
     private static final String DELIMITER = ", ";
     private static final String DROP_TABLE = "DROP TABLE IF EXISTS ";
     private static final String DROP_SCHEMA = "DROP SCHEMA IF EXISTS %s CASCADE";
-    private static final String CREATE_SCHEMA = "CREATE SCHEMA %s";
+    private static final String CREATE_SCHEMA = "CREATE SCHEMA IF NOT EXISTS %s";
     private static final String KEY_COLUMNS_TEMPLATE_SQL = "SELECT c.column_name, c.data_type\n" +
             "FROM information_schema.table_constraints tc\n" +
             "         JOIN information_schema.KEY_COLUMN_USAGE AS ccu USING (constraint_schema, constraint_name)\n" +

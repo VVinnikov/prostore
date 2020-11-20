@@ -19,10 +19,10 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class DdlUtils {
-    private DdlUtils() {}
-
     public final static String NULLABLE_FIELD = "%s Nullable(%s)";
     public final static String NOT_NULLABLE_FIELD = "%s %s";
+    private DdlUtils() {
+    }
 
     public static Optional<String> validateRequest(MppwRequest request) {
         if (request == null) {
@@ -65,21 +65,28 @@ public class DdlUtils {
             case UUID:
             case ANY:
             case CHAR:
-            case VARCHAR: return "String";
+            case VARCHAR:
+                return "String";
 
             case INT:
             case BIGINT:
             case DATE:
-            case TIME: return "Int64";
+            case TIME:
+                return "Int64";
 
-            case BOOLEAN: return "UInt8";
+            case BOOLEAN:
+                return "UInt8";
 
-            case FLOAT: return "Float32";
-            case DOUBLE: return "Float64";
+            case FLOAT:
+                return "Float32";
+            case DOUBLE:
+                return "Float64";
 
-            case TIMESTAMP: return "DateTime64(6)";
+            case TIMESTAMP:
+                return "DateTime64";
 
-            default: return "";
+            default:
+                return "";
         }
     }
 
@@ -137,7 +144,7 @@ public class DdlUtils {
     public static <T, E> Future<T> sequenceAll(@NonNull final List<E> actions,
                                                @NonNull final Function<E, Future<T>> action) {
         Future<T> result = null;
-        for (E a: actions) {
+        for (E a : actions) {
             if (result == null) {
                 result = action.apply(a);
             } else {

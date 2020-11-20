@@ -625,3 +625,20 @@ SqlNode SqlGetDeltaByNum() :
         return new io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaByNum(s.end(this), deltaNum);
     }
 }
+SqlNode SqlConfigStorageAdd() :
+{
+    Span s;
+    SqlNode sourceType = null;
+}
+{
+    <CONFIG_STORAGE_ADD>
+    {
+        s = span();
+    }
+    <LPAREN>
+        sourceType = StringLiteral()
+    <RPAREN>
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.config.function.SqlConfigStorageAdd(s.end(this), sourceType);
+    }
+}

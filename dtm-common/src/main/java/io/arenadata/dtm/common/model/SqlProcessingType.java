@@ -11,5 +11,6 @@ public enum SqlProcessingType {
     COST,
     DELTA,
     STATUS,
+    CONFIG,
     ROLLBACK
 }

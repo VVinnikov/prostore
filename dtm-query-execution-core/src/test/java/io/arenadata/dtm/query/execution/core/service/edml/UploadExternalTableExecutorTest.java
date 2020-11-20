@@ -372,7 +372,7 @@ class UploadExternalTableExecutorTest {
         DatamartRequest request = new DatamartRequest(queryRequest);
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
 
-        EdmlRequestContext context = new EdmlRequestContext(request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
         context.getDestinationEntity().setDestination(new HashSet<>(Arrays.asList(SourceType.ADB,

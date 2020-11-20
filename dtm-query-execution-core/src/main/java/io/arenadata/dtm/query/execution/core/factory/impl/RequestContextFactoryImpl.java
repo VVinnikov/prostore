@@ -1,15 +1,17 @@
 package io.arenadata.dtm.query.execution.core.factory.impl;
 
 import io.arenadata.dtm.common.reader.QueryRequest;
-import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlUseSchema;
+import io.arenadata.dtm.query.calcite.core.extension.config.SqlConfigCall;
 import io.arenadata.dtm.query.calcite.core.extension.delta.SqlDeltaCall;
 import io.arenadata.dtm.query.execution.core.factory.RequestContextFactory;
 import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.config.ConfigRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.delta.DeltaRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.dml.DmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.eddl.EddlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.request.ConfigRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.DmlRequest;
@@ -29,7 +31,9 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
     @Override
     public RequestContext<? extends DatamartRequest> create(QueryRequest request, SqlNode node) {
         val changedQueryRequest = changeSql(request, node);
-        if (isDdlRequest(node)) {
+        if (isConfigRequest(node)) {
+            return new ConfigRequestContext(new ConfigRequest(request), (SqlConfigCall) node);
+        } else if (isDdlRequest(node)) {
             switch (node.getKind()) {
                 case OTHER_DDL:
                     return new EddlRequestContext(new DatamartRequest(changedQueryRequest));
@@ -46,6 +50,10 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
             default:
                 return new DmlRequestContext(new DmlRequest(changedQueryRequest), node);
         }
+    }
+
+    private boolean isConfigRequest(SqlNode node) {
+        return node instanceof SqlConfigCall;
     }
 
     private boolean isDdlRequest(SqlNode node) {

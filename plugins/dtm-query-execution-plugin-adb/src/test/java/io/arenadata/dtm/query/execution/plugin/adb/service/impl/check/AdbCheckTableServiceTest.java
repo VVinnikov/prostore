@@ -98,7 +98,7 @@ public class AdbCheckTableServiceTest {
         int fieldsCount = entity.getFields().size();
         entity.getFields().add(EntityField.builder()
                 .name(TEST_COLUMN_NAME)
-                .ordinalPosition(fieldsCount)
+                .ordinalPosition(fieldsCount + 1)
                 .type(ColumnType.BIGINT)
                 .nullable(true)
                 .build());

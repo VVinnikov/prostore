@@ -4,7 +4,6 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
-import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlDropTable;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.exception.entity.EntityNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
@@ -26,18 +25,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.google.common.collect.Sets.*;
+import static com.google.common.collect.Sets.newHashSet;
 
 @Slf4j
 @Component
 public class DropTableDdlExecutor extends QueryResultDdlExecutor {
 
+    private final DataSourcePluginService dataSourcePluginService;
     private final EntityCacheService entityCacheService;
     private final EntityDao entityDao;
-    private final DataSourcePluginService dataSourcePluginService;
 
     @Autowired
     public DropTableDdlExecutor(@Qualifier("entityCacheService") EntityCacheService entityCacheService,
@@ -119,7 +121,7 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
         Optional<SourceType> requestDestination = Optional.ofNullable(context.getRequest().getQueryRequest().getSourceType());
         if (!requestDestination.isPresent()) {
             context.getRequest().getEntity().setDestination(dataSourcePluginService.getSourceTypes());
-            return dropEntityFromEverywhere(context, entity);
+            return dropEntityFromEverywhere(context, entity.getName());
         } else {
             final Set<SourceType> reqSourceTypes = newHashSet(requestDestination.get());
             return dropFromDataSource(context, entity, reqSourceTypes);
@@ -151,9 +153,9 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
                 entity.setDestination(entity.getDestination().stream()
                         .filter(type -> !resultDropDestination.contains(type))
                         .collect(Collectors.toSet()));
-                context.getRequest().getEntity().setDestination(entity.getDestination());
+                context.getRequest().getEntity().setDestination(resultDropDestination);
                 if (entity.getDestination().isEmpty()) {
-                    return dropEntityFromEverywhere(context, entity);
+                    return dropEntityFromEverywhere(context, entity.getName());
                 } else {
                     return dropEntityFromPlugins(context)
                             .compose(v -> entityDao.updateEntity(entity));
@@ -162,11 +164,11 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
         }
     }
 
-    private Future<Void> dropEntityFromEverywhere(DdlRequestContext context, Entity entity) {
+    private Future<Void> dropEntityFromEverywhere(DdlRequestContext context, String entityName) {
         return dropEntityFromPlugins(context)
                 .compose(v -> {
                     context.getPostActions().add(PostSqlActionType.UPDATE_INFORMATION_SCHEMA);
-                    return entityDao.deleteEntity(context.getDatamartName(), entity.getName());
+                    return entityDao.deleteEntity(context.getDatamartName(), entityName);
                 });
     }
 

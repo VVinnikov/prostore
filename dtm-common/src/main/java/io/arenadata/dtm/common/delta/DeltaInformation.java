@@ -11,7 +11,7 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 public class DeltaInformation {
     private final String tableAlias;
     private final String deltaTimestamp;
-    private final boolean isLatestUncommitedDelta;
+    private final boolean isLatestUncommittedDelta;
     private final DeltaType type;
     private Long selectOnNum;
     private SelectOnInterval selectOnInterval;
@@ -23,7 +23,7 @@ public class DeltaInformation {
         return new DeltaInformation(
             s.tableAlias,
             s.deltaTimestamp,
-            s.isLatestUncommitedDelta,
+            s.isLatestUncommittedDelta,
             s.type,
             s.selectOnNum,
             s.selectOnInterval,

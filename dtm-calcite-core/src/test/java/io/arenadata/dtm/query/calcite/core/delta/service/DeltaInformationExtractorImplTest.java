@@ -104,11 +104,11 @@ class DeltaInformationExtractorImplTest {
     }
 
     @Test
-    void extractWithLatestUncommitedDeltaSnapshot() throws SqlParseException {
+    void extractWithLatestUncommittedDeltaSnapshot() throws SqlParseException {
         val sql = "SELECT v.col1 AS c, (SELECT col4 FROM tblc FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59' t3 WHERE tblx.col6 = 0 ) AS r\n" +
-                "FROM test.tbl FOR SYSTEM_TIME AS OF LATEST_UNCOMMITED_DELTA AS t\n" +
+                "FROM test.tbl FOR SYSTEM_TIME AS OF LATEST_UNCOMMITTED_DELTA AS t\n" +
                 "INNER JOIN (SELECT col4, col5\n" +
-                "FROM test2.tblx FOR SYSTEM_TIME AS OF LATEST_UNCOMMITED_DELTA\n" +
+                "FROM test2.tblx FOR SYSTEM_TIME AS OF LATEST_UNCOMMITTED_DELTA\n" +
                 "WHERE tblx.col6 = 0) AS v ON t.col3 = v.col4\n" +
                 "WHERE EXISTS (SELECT id\n" +
                 "FROM (SELECT col4, col5 FROM tblz FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59' WHERE tblz.col6 = 0) AS view) order by v.col1";
@@ -116,8 +116,8 @@ class DeltaInformationExtractorImplTest {
         log.info(sql);
         DeltaInformationResult deltaInformationResult = deltaInformationExtractor.extract(sqlNode);
         assertEquals(4, deltaInformationResult.getDeltaInformations().size());
-        assertTrue(deltaInformationResult.getDeltaInformations().get(1).isLatestUncommitedDelta());
-        assertTrue(deltaInformationResult.getDeltaInformations().get(2).isLatestUncommitedDelta());
+        assertTrue(deltaInformationResult.getDeltaInformations().get(1).isLatestUncommittedDelta());
+        assertTrue(deltaInformationResult.getDeltaInformations().get(2).isLatestUncommittedDelta());
         assertNull(deltaInformationResult.getDeltaInformations().get(1).getDeltaTimestamp());
         assertNull(deltaInformationResult.getDeltaInformations().get(2).getDeltaTimestamp());
 
@@ -129,7 +129,7 @@ class DeltaInformationExtractorImplTest {
     @Test
     void extractWithStartedDeltaInterval() throws SqlParseException {
         val sql = "SELECT v.col1 AS c, (SELECT col4 FROM tblc FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59' t3 WHERE tblx.col6 = 0 ) AS r\n" +
-                "FROM test.tbl FOR SYSTEM_TIME AS OF LATEST_UNCOMMITED_DELTA AS t\n" +
+                "FROM test.tbl FOR SYSTEM_TIME AS OF LATEST_UNCOMMITTED_DELTA AS t\n" +
                 "INNER JOIN (SELECT col4, col5\n" +
                 "FROM test2.tblx FOR SYSTEM_TIME STARTED IN (1, 2)\n" +
                 "WHERE tblx.col6 = 0) AS v ON t.col3 = v.col4\n" +
@@ -144,7 +144,7 @@ class DeltaInformationExtractorImplTest {
         assertEquals(5, deltaInformationResult.getDeltaInformations().size());
 
         assertNotNull(deltaInformationResult.getDeltaInformations().get(0).getDeltaTimestamp());
-        assertTrue(deltaInformationResult.getDeltaInformations().get(1).isLatestUncommitedDelta());
+        assertTrue(deltaInformationResult.getDeltaInformations().get(1).isLatestUncommittedDelta());
         assertEquals(new SelectOnInterval(1L,2L), deltaInformationResult.getDeltaInformations().get(2).getSelectOnInterval());
         assertEquals(DeltaType.STARTED_IN, deltaInformationResult.getDeltaInformations().get(2).getType());
         assertEquals(4444, deltaInformationResult.getDeltaInformations().get(3).getSelectOnNum());

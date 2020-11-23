@@ -42,7 +42,9 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
     public RequestContext<? extends DatamartRequest> create(QueryRequest request, SqlNode node) {
         val changedQueryRequest = changeSql(request, node);
         if (isConfigRequest(node)) {
-            return new ConfigRequestContext(new ConfigRequest(request), (SqlConfigCall) node);
+            return new ConfigRequestContext(createRequestMetrics(request),
+                new ConfigRequest(request),
+                (SqlConfigCall) node);
         } else if (isDdlRequest(node)) {
             switch (node.getKind()) {
                 case OTHER_DDL:

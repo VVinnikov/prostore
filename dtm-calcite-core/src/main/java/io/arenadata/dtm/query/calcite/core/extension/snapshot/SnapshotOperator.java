@@ -22,10 +22,10 @@ public class SnapshotOperator extends SqlOperator {
     }
 
     public SqlCall createCall(SqlLiteral functionQualifier, SqlParserPos pos, SqlNode tableRef, SqlNode period,
-                              SqlOperator started, SqlOperator finished, SqlNode num, SqlLiteral isLatestUncommitedDelta) {
+                              SqlOperator started, SqlOperator finished, SqlNode num, SqlLiteral isLatestUncommittedDelta) {
         assert functionQualifier == null;
         return new SqlSnapshot(pos,
-                tableRef, period, started, finished, num, isLatestUncommitedDelta);
+                tableRef, period, started, finished, num, isLatestUncommittedDelta);
     }
 
     public <R> void acceptCall(SqlVisitor<R> visitor, SqlCall call, boolean onlyExpressions, SqlBasicVisitor.ArgHandler<R> argHandler) {

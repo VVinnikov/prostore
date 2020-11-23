@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.api.config;
 
+import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.query.calcite.core.extension.config.SqlConfigCall;
 import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
@@ -17,8 +18,10 @@ public class ConfigRequestContext extends RequestContext<ConfigRequest> {
 
     private final SqlConfigCall sqlConfigCall;
 
-    public ConfigRequestContext(ConfigRequest request, SqlConfigCall sqlConfigCall) {
-        super(request);
+    public ConfigRequestContext(RequestMetrics metrics,
+                                ConfigRequest request,
+                                SqlConfigCall sqlConfigCall) {
+        super(metrics, request);
         this.sqlConfigCall = sqlConfigCall;
     }
 

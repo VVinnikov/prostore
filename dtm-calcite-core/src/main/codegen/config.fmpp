@@ -49,7 +49,7 @@ data: {
       "STARTED",
       "FINISHED",
       "DELTA_NUM",
-      "LATEST_UNCOMMITED_DELTA"
+      "LATEST_UNCOMMITTED_DELTA"
       "USE"
       "GET_DELTA_OK"
       "GET_DELTA_HOT"

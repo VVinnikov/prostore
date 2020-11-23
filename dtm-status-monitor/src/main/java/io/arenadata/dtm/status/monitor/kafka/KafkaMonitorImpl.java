@@ -39,7 +39,7 @@ public class KafkaMonitorImpl implements KafkaMonitor {
     private final ExecutorService consumerService;
     private final Properties consumerProperties;
 
-    private final ConcurrentHashMap<TopicPartition, Long> uncommitedOffsets = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<TopicPartition, Long> uncommittedOffsets = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<GroupTopicPartition, OffsetAndMetadata> commitedOffsets = new ConcurrentHashMap<>();
 
     public KafkaMonitorImpl(AppProperties appProperties) {
@@ -82,7 +82,7 @@ public class KafkaMonitorImpl implements KafkaMonitor {
 
         log.debug("Fetching end offsets");
         updateLatestOffsets(request.getTopic());
-        val endOffsets = uncommitedOffsets.entrySet().stream()
+        val endOffsets = uncommittedOffsets.entrySet().stream()
             .filter(e -> e.getKey().topic().equals(request.getTopic()))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
@@ -160,7 +160,7 @@ public class KafkaMonitorImpl implements KafkaMonitor {
                     .map(partitionInfo -> new TopicPartition(topicName, partitionInfo.partition()))
                     .collect(Collectors.toList());
                 Map<TopicPartition, Long> topicPartitionLongMap = offsetProvider.endOffsets(topicPartitions);
-                uncommitedOffsets.putAll(topicPartitionLongMap);
+                uncommittedOffsets.putAll(topicPartitionLongMap);
             }
         } catch (Exception e) {
             log.error("Error updating last offsets for subscribed topic of {} ", topicName, e);

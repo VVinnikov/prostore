@@ -17,7 +17,6 @@ import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -131,14 +130,14 @@ public class DeltaInformationExtractorImpl implements DeltaInformationExtractor 
 
     private DeltaInformation fromSnapshot(SqlSnapshot snapshot, SqlIdentifier alias) {
         return fromIdentifier((SqlIdentifier) snapshot.getTableRef(), alias, snapshot.getDeltaDateTime(),
-                snapshot.getLatestUncommitedDelta(), snapshot.getDeltaNum(), snapshot.getStartedInterval(),
+                snapshot.getLatestUncommittedDelta(), snapshot.getDeltaNum(), snapshot.getStartedInterval(),
                 snapshot.getFinishedInterval(), snapshot.getParserPosition());
     }
 
     private DeltaInformation fromIdentifier(SqlIdentifier id,
                                             SqlIdentifier alias,
                                             String snapshotTime,
-                                            boolean isLatestUncommitedDelta,
+                                            boolean isLatestUncommittedDelta,
                                             Long deltaNum,
                                             SelectOnInterval startedIn,
                                             SelectOnInterval finishedIn,
@@ -158,7 +157,7 @@ public class DeltaInformationExtractorImpl implements DeltaInformationExtractor 
         }
         String deltaTime = null;
         DeltaType deltaType = DeltaType.NUM;
-        if (!isLatestUncommitedDelta) {
+        if (!isLatestUncommittedDelta) {
             if (snapshotTime == null) {
                 deltaTime = CalciteUtil.LOCAL_DATE_TIME.format(LocalDateTime.now(this.dtmSettings.getTimeZone()));
                 if (deltaNum == null) {
@@ -182,7 +181,7 @@ public class DeltaInformationExtractorImpl implements DeltaInformationExtractor 
         return new DeltaInformation(
                 aliasVal,
                 deltaTime,
-                isLatestUncommitedDelta,
+                isLatestUncommittedDelta,
                 deltaType,
                 deltaNum,
                 selectOnInterval,

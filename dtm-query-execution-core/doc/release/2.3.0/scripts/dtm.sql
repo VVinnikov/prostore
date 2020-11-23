@@ -62,8 +62,8 @@ INSERT INTO demo_release2.transactions select * from demo_release2.transactions_
 COMMIT DELTA
 
 --------------------- step 6 ---------------------
-select * from demo_release2.accounts FOR SYSTEM_TIME AS OF LATEST_UNCOMMITED_DELTA  DATASOURCE_TYPE = 'ADG';
-select * from demo_release2.transactions FOR SYSTEM_TIME AS OF LATEST_UNCOMMITED_DELTA DATASOURCE_TYPE = 'ADG';
+select * from demo_release2.accounts FOR SYSTEM_TIME AS OF LATEST_UNCOMMITTED_DELTA  DATASOURCE_TYPE = 'ADG';
+select * from demo_release2.transactions FOR SYSTEM_TIME AS OF LATEST_UNCOMMITTED_DELTA DATASOURCE_TYPE = 'ADG';
 
 select *, CASE WHEN (account_type = 'D' AND  amount >= 0) OR (account_type = 'C' AND  amount <= 0) THEN 'OK' ELSE 'NOT OK' end
 FROM (
@@ -81,13 +81,13 @@ select * from transactions DATASOURCE_TYPE = 'ADQM';
 select * from demo_release2.transactions DATASOURCE_TYPE = 'ADB';
 
 --------------------- step 8 ---------------------
-select * from demo_release2.transactions FOR SYSTEM_TIME AS OF LATEST_UNCOMMITED_DELTA DATASOURCE_TYPE = 'ADG';
+select * from demo_release2.transactions FOR SYSTEM_TIME AS OF LATEST_UNCOMMITTED_DELTA DATASOURCE_TYPE = 'ADG';
 
 --------------------- step 9 ---------------------
 select *, CASE WHEN (account_type = 'D' AND  amount >= 0) OR (account_type = 'C' AND  amount <= 0) THEN 'OK' ELSE 'NOT OK' end
 FROM (
     select account_id, coalesce(sum(amount),0) amount, account_type
-    from demo_release2.accounts left join demo_release2.transactions FOR SYSTEM_TIME AS OF LATEST_UNCOMMITED_DELTA using(account_id)
+    from demo_release2.accounts left join demo_release2.transactions FOR SYSTEM_TIME AS OF LATEST_UNCOMMITTED_DELTA using(account_id)
     group by account_id, account_type
 )x DATASOURCE_TYPE = 'ADQM';
 
@@ -97,12 +97,12 @@ INSERT INTO demo_release2.transactions select * from demo_release2.transactions_
 select *, CASE WHEN (account_type = 'D' AND  amount >= 0) OR (account_type = 'C' AND  amount <= 0) THEN 'OK' ELSE 'NOT OK' end
 FROM (
     select account_id, coalesce(sum(amount),0) amount, account_type
-    from demo_release2.accounts left join demo_release2.transactions FOR SYSTEM_TIME AS OF LATEST_UNCOMMITED_DELTA using(account_id)
+    from demo_release2.accounts left join demo_release2.transactions FOR SYSTEM_TIME AS OF LATEST_UNCOMMITTED_DELTA using(account_id)
     group by account_id, account_type
 )x DATASOURCE_TYPE = 'ADQM';
 
 select *
-from demo_release2.transactions FOR SYSTEM_TIME AS OF LATEST_UNCOMMITED_DELTA
+from demo_release2.transactions FOR SYSTEM_TIME AS OF LATEST_UNCOMMITTED_DELTA
 DATASOURCE_TYPE = 'ADG';
 
 --------------------- step 10 ---------------------

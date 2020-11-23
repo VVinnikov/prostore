@@ -34,20 +34,20 @@ public class SqlSnapshotDeltaParserTest {
 
         SqlNode sqlNode = planner.parse("select * from test.pso FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14'");
         assertNotNull(sqlNode);
-        assertNull(((SqlSnapshot) ((SqlSelect) sqlNode).getFrom()).getLatestUncommitedDelta());
+        assertNull(((SqlSnapshot) ((SqlSelect) sqlNode).getFrom()).getLatestUncommittedDelta());
         assertEquals(((SqlSnapshot) ((SqlSelect) sqlNode).getFrom()).getPeriod().toSqlString(SQL_DIALECT).toString(), "'2019-12-23 15:15:14'");
         assertEquals(sqlNode.toSqlString(SQL_DIALECT).toString(), "SELECT *\nFROM test.pso FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14'");
     }
 
     @Test
-    void parseSnapshotWithLatestUncommitedDelta() throws SqlParseException {
+    void parseSnapshotWithLatestUncommittedDelta() throws SqlParseException {
         DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
         Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
 
-        SqlNode sqlNode = planner.parse("select * from test.pso FOR SYSTEM_TIME AS OF LATEST_UNCOMMITED_DELTA");
-        assertTrue(((SqlSnapshot) ((SqlSelect) sqlNode).getFrom()).getLatestUncommitedDelta());
-        assertEquals(sqlNode.toSqlString(SQL_DIALECT).toString(), "SELECT *\nFROM test.pso FOR SYSTEM_TIME AS OF LATEST_UNCOMMITED_DELTA");
+        SqlNode sqlNode = planner.parse("select * from test.pso FOR SYSTEM_TIME AS OF LATEST_UNCOMMITTED_DELTA");
+        assertTrue(((SqlSnapshot) ((SqlSelect) sqlNode).getFrom()).getLatestUncommittedDelta());
+        assertEquals(sqlNode.toSqlString(SQL_DIALECT).toString(), "SELECT *\nFROM test.pso FOR SYSTEM_TIME AS OF LATEST_UNCOMMITTED_DELTA");
     }
 
     @Test
@@ -59,7 +59,7 @@ public class SqlSnapshotDeltaParserTest {
         SqlNode sqlNode = planner.parse("select * from test.pso FOR SYSTEM_TIME STARTED IN (1,3)");
         assertNull(((SqlSnapshot) ((SqlSelect) sqlNode).getFrom()).getFinishedInterval());
         assertNull(((SqlSnapshot) ((SqlSelect) sqlNode).getFrom()).getDeltaDateTime());
-        assertNull(((SqlSnapshot) ((SqlSelect) sqlNode).getFrom()).getLatestUncommitedDelta());
+        assertNull(((SqlSnapshot) ((SqlSelect) sqlNode).getFrom()).getLatestUncommittedDelta());
         assertEquals(startedInterval, ((SqlSnapshot) ((SqlSelect) sqlNode).getFrom()).getStartedInterval());
         assertEquals(sqlNode.toSqlString(SQL_DIALECT).toString(), "SELECT *\nFROM test.pso FOR SYSTEM_TIME STARTED IN (1,3)");
     }
@@ -92,7 +92,7 @@ public class SqlSnapshotDeltaParserTest {
         SqlNode sqlNode = planner.parse("select * from test.pso FOR SYSTEM_TIME FINISHED IN (1,3)");
         assertNull(((SqlSnapshot) ((SqlSelect) sqlNode).getFrom()).getStartedInterval());
         assertNull(((SqlSnapshot) ((SqlSelect) sqlNode).getFrom()).getDeltaDateTime());
-        assertNull(((SqlSnapshot) ((SqlSelect) sqlNode).getFrom()).getLatestUncommitedDelta());
+        assertNull(((SqlSnapshot) ((SqlSelect) sqlNode).getFrom()).getLatestUncommittedDelta());
         assertEquals(finishedInterval, ((SqlSnapshot) ((SqlSelect) sqlNode).getFrom()).getFinishedInterval());
         assertEquals(sqlNode.toSqlString(SQL_DIALECT).toString(), "SELECT *\nFROM test.pso FOR SYSTEM_TIME FINISHED IN (1,3)");
     }
@@ -124,7 +124,7 @@ public class SqlSnapshotDeltaParserTest {
 
         SqlNode sqlNode = planner.parse("select * from test.pso FOR SYSTEM_TIME AS OF DELTA_NUM 1");
         assertNotNull(sqlNode);
-        assertNull(((SqlSnapshot) ((SqlSelect) sqlNode).getFrom()).getLatestUncommitedDelta());
+        assertNull(((SqlSnapshot) ((SqlSelect) sqlNode).getFrom()).getLatestUncommittedDelta());
         assertEquals(((SqlSnapshot) ((SqlSelect) sqlNode).getFrom()).getDeltaNum(), 1L);
         assertEquals(sqlNode.toSqlString(SQL_DIALECT).toString(), "SELECT *\nFROM test.pso FOR SYSTEM_TIME AS OF DELTA_NUM 1");
     }

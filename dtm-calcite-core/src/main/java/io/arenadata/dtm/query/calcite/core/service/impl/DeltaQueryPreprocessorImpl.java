@@ -86,7 +86,7 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
         return Future.future((Promise<DeltaInformation> deltaInfoPromise) -> {
             if (InformationSchemaView.SCHEMA_NAME.equalsIgnoreCase(deltaInformation.getSchemaName())) {
                 deltaInfoPromise.complete(deltaInformation);
-            } else if (deltaInformation.isLatestUncommitedDelta()) {
+            } else if (deltaInformation.isLatestUncommittedDelta()) {
                 deltaService.getCnToDeltaHot(deltaInformation.getSchemaName())
                         .onSuccess(deltaCnTo -> {
                             deltaInformation.setSelectOnNum(deltaCnTo);

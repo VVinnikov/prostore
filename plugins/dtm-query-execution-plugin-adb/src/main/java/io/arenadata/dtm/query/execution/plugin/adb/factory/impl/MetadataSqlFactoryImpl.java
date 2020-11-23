@@ -3,6 +3,8 @@ package io.arenadata.dtm.query.execution.plugin.adb.factory.impl;
 import io.arenadata.dtm.common.model.ddl.*;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
+import io.arenadata.dtm.query.execution.plugin.api.mppr.kafka.DownloadExternalEntityMetadata;
+import io.arenadata.dtm.query.execution.plugin.api.request.MpprRequest;
 import lombok.val;
 import org.springframework.stereotype.Component;
 
@@ -212,8 +214,16 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
     }
 
     @Override
-    public String createWritableExtTableSqlQuery(String schema, String table, List<String> columns, String topic, List<String> brokerList, Integer chunkSize) {
-        return String.format(CREAT_WRITABLE_EXT_TABLE_SQL, schema, table, String.join(DELIMITER, columns), topic, String.join(DELIMITER, brokerList), chunkSize);
+    public String createWritableExtTableSqlQuery(MpprRequest request) {
+        val schema = request.getQueryRequest().getDatamartMnemonic();
+        val table = MetadataSqlFactoryImpl.WRITABLE_EXTERNAL_TABLE_PREF + request.getQueryRequest().getRequestId().toString().replaceAll("-", "_");
+        val columns = request.getDestinationEntity().getFields().stream()
+                .map(field -> field.getName() + " " + EntityTypeUtil.pgFromDtmType(field)).collect(Collectors.toList());
+        val topic = request.getKafkaParameter().getTopic();
+        val brokers = request.getKafkaParameter().getBrokers().stream()
+                .map(kafkaBrokerInfo -> kafkaBrokerInfo.getAddress()).collect(Collectors.toList());
+        val chunkSize = ((DownloadExternalEntityMetadata) request.getKafkaParameter().getDownloadMetadata()).getChunkSize();
+        return String.format(CREAT_WRITABLE_EXT_TABLE_SQL, schema, table, String.join(DELIMITER, columns), topic, String.join(DELIMITER, brokers), chunkSize);
     }
 
     @Override

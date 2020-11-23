@@ -28,13 +28,8 @@ public class AdbCheckTableService implements CheckTableService {
     public static final String CHARACTER_MAXIMUM_LENGTH = "character_maximum_length";
     public static final String DATETIME_PRECISION = "datetime_precision";
     public static final String ORDINAL_POSITION = "ordinal_position";
-    public static final String COLUMN_NAME = "column_name";
     public static final String CONSTRAINT_TYPE = "constraint_type";
-    public static final String DATA_TYPE = "data_type";
     public static final String PRIMARY_KEY_CS_TYPE = "PRIMARY KEY";
-    public static final String FIELD_ERROR_TEMPLATE = "\t\t`%s` expected `%s` got `%s`.";
-    public static final String TABLE_NOT_EXIST_ERROR_TEMPLATE = "Table ‘%s’ does not exist.";
-    public static final String COLUMN_NOT_EXIST_ERROR_TEMPLATE = "\tColumn '%s' does not exist.";
     public static final String PRIMARY_KEY_ERROR_TEMPLATE = "\tPrimary keys are not equal expected [%s], got [%s].";
 
     private static final String QUERY_PATTERN = String.format("SELECT \n" +
@@ -63,7 +58,7 @@ public class AdbCheckTableService implements CheckTableService {
     private final TableEntitiesFactory<AdbTables<AdbTableEntity>> tableEntitiesFactory;
 
     @Autowired
-    public AdbCheckTableService(@Qualifier("adbQueryExecutor") DatabaseExecutor adbQueryExecutor,
+    public AdbCheckTableService(DatabaseExecutor adbQueryExecutor,
                                 TableEntitiesFactory<AdbTables<AdbTableEntity>> tableEntitiesFactory) {
         this.adbQueryExecutor = adbQueryExecutor;
         this.tableEntitiesFactory = tableEntitiesFactory;

@@ -1,101 +1,64 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.factory.impl;
 
-import io.arenadata.dtm.common.model.ddl.Entity;
-import io.arenadata.dtm.common.model.ddl.EntityField;
-import io.arenadata.dtm.query.execution.plugin.adqm.common.Constants;
-import io.arenadata.dtm.query.execution.plugin.adqm.common.DdlUtils;
-import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
-import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.ddl.AdqmCreateTableQueries;
+import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTableEntity;
+import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTables;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.CreateTableQueriesFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.stream.Collectors;
 
-import static io.arenadata.dtm.query.execution.plugin.adqm.common.Constants.ACTUAL_POSTFIX;
-import static io.arenadata.dtm.query.execution.plugin.adqm.common.Constants.ACTUAL_SHARD_POSTFIX;
+import static io.arenadata.dtm.query.execution.plugin.adqm.common.DdlUtils.NOT_NULLABLE_FIELD;
+import static io.arenadata.dtm.query.execution.plugin.adqm.common.DdlUtils.NULLABLE_FIELD;
 
-@Component
-public class AdqmCreateTableQueriesFactory implements CreateTableQueriesFactory<AdqmCreateTableQueries> {
+@Service("adqmCreateTableQueriesFactory")
+public class AdqmCreateTableQueriesFactory implements CreateTableQueriesFactory<AdqmTables<String>> {
 
-    private final static String CREATE_SHARD_TABLE_TEMPLATE =
+    public final static String CREATE_SHARD_TABLE_TEMPLATE =
             "CREATE TABLE %s__%s.%s ON CLUSTER %s\n" +
-                    "(\n" +
-                    "  %s,\n" +
-                    "  sys_from   Int64,\n" +
-                    "  sys_to     Int64,\n" +
-                    "  sys_op     Int8,\n" +
-                    "  close_date DateTime,\n" +
-                    "  sign       Int8\n" +
-                    ")\n" +
+                    "(%s)\n" +
                     "ENGINE = CollapsingMergeTree(sign)\n" +
                     "ORDER BY (%s)\n" +
                     "TTL close_date + INTERVAL %d SECOND TO DISK '%s'";
 
-    private final static String CREATE_DISTRIBUTED_TABLE_TEMPLATE =
+    public final static String CREATE_DISTRIBUTED_TABLE_TEMPLATE =
             "CREATE TABLE %s__%s.%s ON CLUSTER %s\n" +
-                    "(\n" +
-                    "  %s,\n" +
-                    "  sys_from   Int64,\n" +
-                    "  sys_to     Int64,\n" +
-                    "  sys_op     Int8,\n" +
-                    "  close_date DateTime,\n" +
-                    "  sign       Int8\n" +
-                    ")\n" +
+                    "(%s)\n" +
                     "Engine = Distributed(%s, %s__%s, %s, %s)";
 
     private final DdlProperties ddlProperties;
-    private final AppConfiguration appConfiguration;
+    private final AdqmTableEntitiesFactory adqmTableEntitiesFactory;
 
     @Autowired
     public AdqmCreateTableQueriesFactory(DdlProperties ddlProperties,
-                                         AppConfiguration appConfiguration) {
+                                         AdqmTableEntitiesFactory adqmTableEntitiesFactory) {
         this.ddlProperties = ddlProperties;
-        this.appConfiguration = appConfiguration;
+        this.adqmTableEntitiesFactory = adqmTableEntitiesFactory;
     }
 
     @Override
-    public AdqmCreateTableQueries create(DdlRequestContext context) {
-        Entity entity = context.getRequest().getEntity();
-        String env = appConfiguration.getSystemName();
+    public AdqmTables<String> create(DdlRequestContext context) {
         String cluster = ddlProperties.getCluster();
-        String schema = entity.getSchema();
-        String table = entity.getName();
-        String columnList = getColumns(entity.getFields());
-        String orderList = getOrderKeys(entity.getFields());
-        String shardingList = getShardingKeys(entity.getFields());
         Integer ttlSec = ddlProperties.getTtlSec();
         String archiveDisk = ddlProperties.getArchiveDisk();
 
-        return new AdqmCreateTableQueries(
+        AdqmTables<AdqmTableEntity> tables = adqmTableEntitiesFactory.create(context);
+        AdqmTableEntity shard = tables.getShard();
+        AdqmTableEntity distributed = tables.getDistributed();
+        String columns = distributed.getColumns().stream()
+                .map(col -> String.format(col.getNullable() ? NULLABLE_FIELD : NOT_NULLABLE_FIELD,
+                        col.getName(), col.getType()))
+                .collect(Collectors.joining(", "));
+        return new AdqmTables<>(
                 String.format(CREATE_SHARD_TABLE_TEMPLATE,
-                        env, schema, table + ACTUAL_SHARD_POSTFIX, cluster, columnList, orderList, ttlSec,
-                        archiveDisk),
+                        shard.getEnv(), shard.getSchema(), shard.getName(), cluster, columns,
+                        String.join(", ", shard.getSortedKeys()), ttlSec, archiveDisk),
                 String.format(CREATE_DISTRIBUTED_TABLE_TEMPLATE,
-                        env, schema, table + ACTUAL_POSTFIX, cluster, columnList, cluster, env, schema,
-                        table + ACTUAL_SHARD_POSTFIX, shardingList)
+                        distributed.getEnv(), distributed.getSchema(), distributed.getName(), cluster,
+                        columns, cluster, distributed.getEnv(), distributed.getSchema(),
+                        shard.getName(), String.join(", ", distributed.getShardingKeys()))
         );
-    }
-
-    private String getColumns(List<EntityField> fields) {
-        return fields.stream().map(DdlUtils::classFieldToString).collect(Collectors.joining(", "));
-    }
-
-    private String getOrderKeys(List<EntityField> fields) {
-        List<String> orderKeys = fields.stream().filter(f -> f.getPrimaryOrder() != null)
-                .map(EntityField::getName).collect(Collectors.toList());
-        orderKeys.add(Constants.SYS_FROM_FIELD);
-        return String.join(", ", orderKeys);
-    }
-
-    private String getShardingKeys(List<EntityField> fields) {
-        // TODO Check against CH, does it support several columns as distributed key?
-        // TODO Should we fail if sharding column in metatable of unsupported type?
-        // CH support only not null int types as sharding key
-        return fields.stream().filter(f -> f.getShardingOrder() != null)
-                .map(EntityField::getName).limit(1).collect(Collectors.joining(", "));
     }
 }

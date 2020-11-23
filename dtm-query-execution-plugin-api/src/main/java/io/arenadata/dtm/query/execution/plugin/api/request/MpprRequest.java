@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.api.request;
 
+import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
@@ -29,15 +30,21 @@ public class MpprRequest extends DatamartRequest {
      * Column metadata list
      */
     private List<ColumnMetadata> metadata;
+    /**
+     * Destination entity
+     */
+    private Entity destinationEntity;
 
     @Builder
     public MpprRequest(QueryRequest queryRequest,
                        MpprKafkaParameter kafkaParameter,
                        List<Datamart> logicalSchema,
-                       List<ColumnMetadata> metadata) {
+                       List<ColumnMetadata> metadata,
+                       Entity destinationEntity) {
         super(queryRequest);
         this.kafkaParameter = kafkaParameter;
         this.logicalSchema = logicalSchema;
         this.metadata = metadata;
+        this.destinationEntity = destinationEntity;
     }
 }

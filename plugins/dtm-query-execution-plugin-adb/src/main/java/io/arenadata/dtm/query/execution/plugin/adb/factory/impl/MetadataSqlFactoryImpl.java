@@ -39,6 +39,10 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
      * Request ID system field
      */
     public static final String REQ_ID_ATTR = "req_id";
+    public static final String QUERY_DELIMITER = "; ";
+    public static final String TABLE_POSTFIX_DELIMITER = "_";
+    public static final String WRITABLE_EXTERNAL_TABLE_PREF = "PXF_EXT_";
+
     private static final String DELIMITER = ", ";
     private static final String DROP_TABLE = "DROP TABLE IF EXISTS ";
     private static final String DROP_SCHEMA = "DROP SCHEMA IF EXISTS %s CASCADE";
@@ -51,8 +55,11 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
             "WHERE constraint_type = 'PRIMARY KEY'\n" +
             "  and c.table_schema = '%s' and tc.table_name = '%s'";
     private static final String CREATE_INDEX_SQL = "CREATE INDEX %s_%s_%s ON %s.%s_%s (%s)";
-    public static final String QUERY_DELIMITER = "; ";
-    public static final String TABLE_POSTFIX_DELIMITER = "_";
+    private static final String CREAT_WRITABLE_EXT_TABLE_SQL = "CREATE WRITABLE EXTERNAL TABLE %s.%s ( %s )\n" +
+            "    LOCATION ('pxf://%s?PROFILE=kafka&BOOTSTRAP_SERVERS=%s&BATCH_SIZE=%d')\n" +
+            "    FORMAT 'CUSTOM' (FORMATTER='pxfwritable_export')";
+    public static final String INSERT_INTO_WRITABLE_EXT_TABLE_SQL = "INSERT INTO %s.%s %s";
+    public static final String DROP_WRITABLE_EXT_TABLE_SQL = "DROP EXTERNAL TABLE IF EXISTS %s.%s";
 
     @Override
     public String createDropTableScript(Entity entity) {
@@ -202,5 +209,20 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
         metadata.add(new ColumnMetadata("column_name", ColumnType.VARCHAR));
         metadata.add(new ColumnMetadata("data_type", ColumnType.VARCHAR));
         return metadata;
+    }
+
+    @Override
+    public String createWritableExtTableSqlQuery(String schema, String table, List<String> columns, String topic, List<String> brokerList, Integer chunkSize) {
+        return String.format(CREAT_WRITABLE_EXT_TABLE_SQL, schema, table, String.join(DELIMITER, columns), topic, String.join(DELIMITER, brokerList), chunkSize);
+    }
+
+    @Override
+    public String insertIntoWritableExtTableSqlQuery(String schema, String table, String enrichedSql) {
+        return String.format(INSERT_INTO_WRITABLE_EXT_TABLE_SQL, schema, table, enrichedSql);
+    }
+
+    @Override
+    public String dropWritableExtTableSqlQuery(String schema, String table) {
+        return String.format(DROP_WRITABLE_EXT_TABLE_SQL, schema, table);
     }
 }

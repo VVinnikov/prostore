@@ -23,4 +23,10 @@ public interface MetadataSqlFactory {
     String createSecondaryIndexSqlQuery(String schema, String tableName);
 
     List<ColumnMetadata> createKeyColumnQueryMetadata();
+
+    String createWritableExtTableSqlQuery(String schema, String table, List<String> columns, String topic, List<String> brokerList, Integer chunkSize);
+
+    String insertIntoWritableExtTableSqlQuery(String schema, String table, String enrichedSql);
+
+    String dropWritableExtTableSqlQuery(String schema, String table);
 }

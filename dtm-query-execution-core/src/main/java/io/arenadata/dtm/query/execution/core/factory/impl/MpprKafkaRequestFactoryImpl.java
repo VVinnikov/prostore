@@ -45,6 +45,7 @@ public class MpprKafkaRequestFactoryImpl implements MpprKafkaRequestFactory {
                                     MpprRequest.builder()
                                     .queryRequest(context.getRequest().getQueryRequest())
                                     .logicalSchema(context.getLogicalSchema())
+                                    .destinationEntity(context.getDestinationEntity())
                                     .kafkaParameter(MpprKafkaParameter.builder()
                                             .datamart(context.getSourceEntity().getSchema())
                                             .dmlSubquery(context.getDmlSubquery())

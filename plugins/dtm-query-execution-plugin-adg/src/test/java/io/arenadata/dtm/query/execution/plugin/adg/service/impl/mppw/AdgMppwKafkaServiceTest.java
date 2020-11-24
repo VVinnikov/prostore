@@ -5,7 +5,7 @@ import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.plugin.exload.Format;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.AdgConnectorApiProperties;
-import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.AdgMppwKafkaProperties;
+import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.MppwProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.impl.AdgHelperTableNamesFactoryImpl;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.impl.AdgMppwKafkaContextFactoryImpl;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.AdgCartridgeError;
@@ -170,7 +170,7 @@ class AdgMppwKafkaServiceTest {
         connectorApiProperties.setKafkaLoadDataUrl("/dataload");
         connectorApiProperties.setKafkaSubscriptionUrl("/sbscription");
         connectorApiProperties.setTransferDataToScdTableUrl("/transferDataToScdTablePath");
-        val mppwKafkaProperties = new AdgMppwKafkaProperties();
+        val mppwKafkaProperties = new MppwProperties();
         mppwKafkaProperties.setMaxNumberOfMessagesPerPartition(200);
         return new AdgMppwKafkaService(
                 new AdgMppwKafkaContextFactoryImpl(tableNamesFactory),

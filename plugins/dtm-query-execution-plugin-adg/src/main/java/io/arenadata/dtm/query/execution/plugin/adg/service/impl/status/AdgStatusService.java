@@ -2,7 +2,7 @@ package io.arenadata.dtm.query.execution.plugin.adg.service.impl.status;
 
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.kafka.core.service.kafka.KafkaConsumerMonitor;
-import io.arenadata.dtm.query.execution.plugin.adg.configuration.MppwProperties;
+import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.MppwProperties;
 import io.arenadata.dtm.query.execution.plugin.api.request.StatusRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.StatusService;
 import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;

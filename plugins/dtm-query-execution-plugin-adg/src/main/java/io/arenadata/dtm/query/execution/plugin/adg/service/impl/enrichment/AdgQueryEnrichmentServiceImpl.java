@@ -1,7 +1,9 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl.enrichment;
 
 import io.arenadata.dtm.common.dto.QueryParserRequest;
+import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
+import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.adg.calcite.AdgCalciteContextProvider;
 import io.arenadata.dtm.query.execution.plugin.adg.dto.EnrichQueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.service.QueryEnrichmentService;
@@ -14,6 +16,9 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -39,7 +44,7 @@ public class AdgQueryEnrichmentServiceImpl implements QueryEnrichmentService {
             if (ar.succeeded()) {
                 val parserResponse = ar.result();
                 contextProvider.enrichContext(parserResponse.getCalciteContext(),
-                        schemaExtender.generatePhysicalSchema(request.getSchema(), request.getQueryRequest()));
+                        generatePhysicalSchema(request.getSchema(), request.getQueryRequest()));
                 // формируем новый sql-запрос
                 adgQueryGenerator.mutateQuery(parserResponse.getRelNode(),
                         parserResponse.getQueryRequest().getDeltaInformations(),
@@ -58,5 +63,10 @@ public class AdgQueryEnrichmentServiceImpl implements QueryEnrichmentService {
                 asyncHandler.handle(Future.failedFuture(ar.cause()));
             }
         });
+    }
+
+    private List<Datamart> generatePhysicalSchema(List<Datamart> logicalSchemas, QueryRequest request) {
+        return logicalSchemas.stream().map(ls -> schemaExtender.createPhysicalSchema(ls, request.getEnvName()))
+                .collect(Collectors.toList());
     }
 }

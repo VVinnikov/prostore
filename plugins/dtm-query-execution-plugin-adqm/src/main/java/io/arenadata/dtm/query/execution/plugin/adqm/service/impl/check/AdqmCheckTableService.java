@@ -58,25 +58,27 @@ public class AdqmCheckTableService implements CheckTableService {
                 .map(this::compare)
                 .collect(Collectors.toList()))
                 .onSuccess(result -> {
-                    List<String> list = result.list();
-                    if (list.stream().allMatch(String::isEmpty)) {
-                        handler.handle(Future.succeededFuture());
-                    } else {
-                        handler.handle(Future.failedFuture("\n" + String.join("\n", list)));
-                    }
+                    List<Optional<String>> list = result.list();
+                    String errors = list.stream()
+                            .filter(Optional::isPresent)
+                            .map(Optional::get)
+                            .collect(Collectors.joining("\n"));
+                    handler.handle(errors.isEmpty()
+                            ? Future.succeededFuture()
+                            : Future.failedFuture("\n" + errors));
                 })
                 .onFailure(error -> handler.handle(Future.failedFuture(error)));
     }
 
-    private Future<String> compare(AdqmTableEntity expTableEntity) {
+    private Future<Optional<String>> compare(AdqmTableEntity expTableEntity) {
         return getMetadata(expTableEntity)
                 .compose(optTableEntity -> Future.succeededFuture(optTableEntity
                         .map(tableEntity -> compare(tableEntity, expTableEntity))
-                        .orElse(String.format(TABLE_NOT_EXIST_ERROR_TEMPLATE, expTableEntity.getName()))));
+                        .orElse(Optional.of(String.format(TABLE_NOT_EXIST_ERROR_TEMPLATE, expTableEntity.getName())))));
     }
 
-    private String compare(AdqmTableEntity tableEntity,
-                           AdqmTableEntity expTableEntity) {
+    private Optional<String> compare(AdqmTableEntity tableEntity,
+                                     AdqmTableEntity expTableEntity) {
 
         List<String> errors = new ArrayList<>();
 
@@ -104,9 +106,11 @@ public class AdqmCheckTableService implements CheckTableService {
             }
         });
         return errors.isEmpty()
-                ? ""
-                : String.format("Table `%s.%s` : \n%s", expTableEntity.getSchema(), expTableEntity.getName(),
-                String.join("\n", errors));
+                ? Optional.empty()
+                : Optional.of(String.format("Table `%s.%s` : \n%s",
+                expTableEntity.getSchema(),
+                expTableEntity.getName(),
+                String.join("\n", errors)));
     }
 
 
@@ -143,7 +147,6 @@ public class AdqmCheckTableService implements CheckTableService {
         if (matcher.matches()) {
             type = matcher.group(1);
             nullable = true;
-
         } else {
             type = mapType;
             nullable = false;

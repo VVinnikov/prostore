@@ -67,7 +67,9 @@ public class AdqmQueryExecutor implements DatabaseExecutor {
         Function<JsonObject, Map<String, Object>> func = metadata.isEmpty()
                 ? JsonObject::getMap
                 : row -> createRowMap(metadata, columnIndexMap, row);
-        return rs.getRows().stream().map(func).collect(Collectors.toList());
+        return rs.getRows().stream()
+                .map(func)
+                .collect(Collectors.toList());
     }
 
     private void initColumnIndexMap(Map<String, Integer> columnIndexMap, JsonObject row) {

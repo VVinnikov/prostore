@@ -12,11 +12,11 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AdqmTableEntity {
-    public String env;
-    public String schema;
-    public String name;
-    public List<AdqmTableColumn> columns;
-    public List<String> sortedKeys;
-    public List<String> shardingKeys;
+    private String env;
+    private String schema;
+    private String name;
+    private List<AdqmTableColumn> columns;
+    private List<String> sortedKeys;
+    private List<String> shardingKeys;
 
 }

@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.factory.impl;
 
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
+import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTableColumn;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTableEntity;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTables;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
@@ -8,6 +9,7 @@ import io.arenadata.dtm.query.execution.plugin.api.service.ddl.CreateTableQuerie
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static io.arenadata.dtm.query.execution.plugin.adqm.common.DdlUtils.NOT_NULLABLE_FIELD;
@@ -16,14 +18,14 @@ import static io.arenadata.dtm.query.execution.plugin.adqm.common.DdlUtils.NULLA
 @Service("adqmCreateTableQueriesFactory")
 public class AdqmCreateTableQueriesFactory implements CreateTableQueriesFactory<AdqmTables<String>> {
 
-    public final static String CREATE_SHARD_TABLE_TEMPLATE =
+    private final static String CREATE_SHARD_TABLE_TEMPLATE =
             "CREATE TABLE %s__%s.%s ON CLUSTER %s\n" +
                     "(%s)\n" +
                     "ENGINE = CollapsingMergeTree(sign)\n" +
                     "ORDER BY (%s)\n" +
                     "TTL close_date + INTERVAL %d SECOND TO DISK '%s'";
 
-    public final static String CREATE_DISTRIBUTED_TABLE_TEMPLATE =
+    private final static String CREATE_DISTRIBUTED_TABLE_TEMPLATE =
             "CREATE TABLE %s__%s.%s ON CLUSTER %s\n" +
                     "(%s)\n" +
                     "Engine = Distributed(%s, %s__%s, %s, %s)";
@@ -47,18 +49,34 @@ public class AdqmCreateTableQueriesFactory implements CreateTableQueriesFactory<
         AdqmTables<AdqmTableEntity> tables = adqmTableEntitiesFactory.create(context);
         AdqmTableEntity shard = tables.getShard();
         AdqmTableEntity distributed = tables.getDistributed();
-        String columns = distributed.getColumns().stream()
+        return new AdqmTables<>(
+                String.format(CREATE_SHARD_TABLE_TEMPLATE,
+                        shard.getEnv(),
+                        shard.getSchema(),
+                        shard.getName(),
+                        cluster,
+                        getColumnsQuery(shard.getColumns()),
+                        String.join(", ", shard.getSortedKeys()),
+                        ttlSec,
+                        archiveDisk),
+                String.format(CREATE_DISTRIBUTED_TABLE_TEMPLATE,
+                        distributed.getEnv(),
+                        distributed.getSchema(),
+                        distributed.getName(),
+                        cluster,
+                        getColumnsQuery(distributed.getColumns()),
+                        cluster,
+                        distributed.getEnv(),
+                        distributed.getSchema(),
+                        shard.getName(),
+                        String.join(", ", distributed.getShardingKeys()))
+        );
+    }
+
+    private String getColumnsQuery(List<AdqmTableColumn> columns) {
+        return columns.stream()
                 .map(col -> String.format(col.getNullable() ? NULLABLE_FIELD : NOT_NULLABLE_FIELD,
                         col.getName(), col.getType()))
                 .collect(Collectors.joining(", "));
-        return new AdqmTables<>(
-                String.format(CREATE_SHARD_TABLE_TEMPLATE,
-                        shard.getEnv(), shard.getSchema(), shard.getName(), cluster, columns,
-                        String.join(", ", shard.getSortedKeys()), ttlSec, archiveDisk),
-                String.format(CREATE_DISTRIBUTED_TABLE_TEMPLATE,
-                        distributed.getEnv(), distributed.getSchema(), distributed.getName(), cluster,
-                        columns, cluster, distributed.getEnv(), distributed.getSchema(),
-                        shard.getName(), String.join(", ", distributed.getShardingKeys()))
-        );
     }
 }

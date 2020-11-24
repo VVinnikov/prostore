@@ -79,7 +79,10 @@ public class AdqmTableEntitiesFactory implements TableEntitiesFactory<AdqmTables
         // TODO Check against CH, does it support several columns as distributed key?
         // TODO Should we fail if sharding column in metatable of unsupported type?
         // CH support only not null int types as sharding key
-        return fields.stream().filter(f -> f.getShardingOrder() != null)
-                .map(EntityField::getName).limit(1).collect(Collectors.toList());
+        return fields.stream()
+                .filter(f -> f.getShardingOrder() != null)
+                .map(EntityField::getName)
+                .limit(1)
+                .collect(Collectors.toList());
     }
 }

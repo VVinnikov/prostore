@@ -2,8 +2,6 @@ package io.arenadata.dtm.kafka.core.service.kafka;
 
 import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
 import io.arenadata.dtm.kafka.core.configuration.kafka.KafkaZookeeperProperties;
-import io.vertx.core.Future;
-import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -25,11 +23,9 @@ public class KafkaZookeeperConnectionProviderImpl implements KafkaZookeeperConne
     private final KafkaZookeeperProperties properties;
     private ZooKeeper connection;
     private boolean synConnected;
-    private Vertx vertx;
 
-    public KafkaZookeeperConnectionProviderImpl(Vertx vertx, KafkaZookeeperProperties properties) {
+    public KafkaZookeeperConnectionProviderImpl(KafkaZookeeperProperties properties) {
         this.properties = properties;
-        this.vertx = vertx;
     }
 
     @Override
@@ -73,7 +69,7 @@ public class KafkaZookeeperConnectionProviderImpl implements KafkaZookeeperConne
             connection = this.getOrConnect();
         }
         try {
-            final List<String> brokersIds = connection.getChildren(BROKERS_IDS_PATH, false);
+            final List<String> brokersIds = connection.getChildren(getBrokersIdsPath(), false);
             return brokersIds.stream()
                     .map(id -> getKafkaBrokerInfo(connection, id))
                     .collect(Collectors.toList());
@@ -84,11 +80,15 @@ public class KafkaZookeeperConnectionProviderImpl implements KafkaZookeeperConne
 
     private KafkaBrokerInfo getKafkaBrokerInfo(ZooKeeper zk, String id) {
         try {
-            return Json.decodeValue(new String(zk.getData(BROKERS_IDS_PATH + "/" + id, false, null)),
+            return Json.decodeValue(new String(zk.getData(getBrokersIdsPath() + "/" + id, false, null)),
                     KafkaBrokerInfo.class);
         } catch (Exception e) {
             throw new RuntimeException("Error decode response from zk for getting kafka brokers", e);
         }
+    }
+
+    private String getBrokersIdsPath() {
+        return properties.getChroot() +  BROKERS_IDS_PATH;
     }
 
     @Override

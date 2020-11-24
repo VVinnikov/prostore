@@ -6,6 +6,7 @@ import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfigurati
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
+import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.RestLoadClient;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockDatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockEnvironment;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockStatusReporter;
@@ -20,6 +21,7 @@ import java.util.*;
 import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 class MppwFinishRequestHandlerTest {
     private static final DdlProperties ddlProperties = new DdlProperties();
@@ -74,7 +76,7 @@ class MppwFinishRequestHandlerTest {
         ), mockData);
 
         MockStatusReporter mockReporter = getMockReporter();
-        MppwRequestHandler handler = new MppwFinishRequestHandler(executor,
+        MppwRequestHandler handler = new MppwFinishRequestHandler(mock(RestLoadClient.class), executor,
                 ddlProperties,
                 appConfiguration,
                 mockReporter,

@@ -76,11 +76,6 @@ adb:
       port: ${ADB_PORT:15432}
       maxSize: 20
 
-  mppr:
-    host: ${ADB_MPPR_CONNECTOR_HOST:10.92.3.61}
-    port: ${ADB_MPPR_CONNECTOR_PORT:8086}
-    url: ${ADB_MPPR_CONNECTOR_URL:/query}
-
   mppw:
     startLoadUrl: ${ADB_START_LOAD_URL:http://adb-emulator:8090/newdata/adb/start}
     consumerGroup: ${ADB_LOAD_GROUP:adb-emulator-load-adb}

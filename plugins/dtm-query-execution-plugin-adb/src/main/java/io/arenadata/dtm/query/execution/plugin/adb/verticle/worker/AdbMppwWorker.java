@@ -52,11 +52,15 @@ public class AdbMppwWorker extends AbstractVerticle {
 
     private void handleStopMppwKafka(Message<String> requestMessage) {
         String requestId = requestMessage.body();
-        Future transferPromise = resultMap.remove(requestId);
-        transferPromise.onComplete(ar -> {
-            requestMap.remove(requestId);
+        Future<?> transferPromise = resultMap.remove(requestId);
+        if (transferPromise != null) {
+            transferPromise.onComplete(ar -> {
+                requestMap.remove(requestId);
+                requestMessage.reply(requestId);
+            });
+        } else {
             requestMessage.reply(requestId);
-        });
+        }
     }
 
     private void handleStartTransferData(Message<String> requestMessage) {
@@ -64,7 +68,7 @@ public class AdbMppwWorker extends AbstractVerticle {
         final MppwKafkaRequestContext requestContext = requestMap.get(requestId);
         if (requestContext != null) {
             log.debug("Received requestId: {}, found requestContext in map: {}", requestId, requestContext);
-            Promise promise = Promise.promise();
+            Promise<?> promise = Promise.promise();
             resultMap.put(requestId, promise.future());
             mppwTransferDataHandler.handle(requestContext)
                     .onSuccess(s -> {

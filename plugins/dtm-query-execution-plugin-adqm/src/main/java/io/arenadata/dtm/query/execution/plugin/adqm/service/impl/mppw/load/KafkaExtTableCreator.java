@@ -2,7 +2,7 @@ package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load;
 
 import io.arenadata.dtm.query.execution.plugin.adqm.common.DdlUtils;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
-import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.MppwProperties;
+import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.AdqmMppwProperties;
 import lombok.NonNull;
 import org.apache.avro.Schema;
 
@@ -25,11 +25,11 @@ public class KafkaExtTableCreator implements ExtTableCreator {
                     "%s\n";
 
     private final DdlProperties ddlProperties;
-    private final MppwProperties mppwProperties;
+    private final AdqmMppwProperties adqmMppwProperties;
 
-    public KafkaExtTableCreator(DdlProperties ddlProperties, MppwProperties mppwProperties) {
+    public KafkaExtTableCreator(DdlProperties ddlProperties, AdqmMppwProperties adqmMppwProperties) {
         this.ddlProperties = ddlProperties;
-        this.mppwProperties = mppwProperties;
+        this.adqmMppwProperties = adqmMppwProperties;
     }
 
     @Override
@@ -43,7 +43,7 @@ public class KafkaExtTableCreator implements ExtTableCreator {
     }
 
     private String genKafkaEngine(@NonNull String topic, @NonNull String tableName) {
-        String brokers = mppwProperties.getKafkaBrokers();
+        String brokers = adqmMppwProperties.getKafkaBrokers();
         String consumerGroup = getConsumerGroupName(tableName);
         // FIXME Support other formats (Text, CSV, Json?)
         String format = "Avro";
@@ -52,6 +52,6 @@ public class KafkaExtTableCreator implements ExtTableCreator {
 
     @NonNull
     private String getConsumerGroupName(@NonNull String tableName) {
-        return mppwProperties.getConsumerGroup() + tableName;
+        return adqmMppwProperties.getConsumerGroup() + tableName;
     }
 }

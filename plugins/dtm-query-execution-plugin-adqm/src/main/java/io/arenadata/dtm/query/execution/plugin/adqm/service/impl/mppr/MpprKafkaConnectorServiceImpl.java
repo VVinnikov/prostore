@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppr;
 
 import io.arenadata.dtm.common.reader.QueryResult;
-import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.ConnectorProperties;
+import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.AdqmMpprProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.MpprKafkaConnectorRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.MpprKafkaConnectorService;
 import io.vertx.core.AsyncResult;
@@ -20,23 +20,23 @@ import java.net.HttpURLConnection;
 public class MpprKafkaConnectorServiceImpl implements MpprKafkaConnectorService {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(MpprKafkaConnectorServiceImpl.class);
-    private final ConnectorProperties connectorProperties;
+    private final AdqmMpprProperties adqmMpprProperties;
     private final WebClient client;
 
     @Autowired
-    public MpprKafkaConnectorServiceImpl(ConnectorProperties connectorProperties,
+    public MpprKafkaConnectorServiceImpl(AdqmMpprProperties adqmMpprProperties,
                                          @Qualifier("adqmWebClient") WebClient webClient) {
-        this.connectorProperties = connectorProperties;
+        this.adqmMpprProperties = adqmMpprProperties;
         this.client = webClient;
     }
 
     @Override
     public void call(MpprKafkaConnectorRequest request, Handler<AsyncResult<QueryResult>> handler) {
         LOGGER.debug("Calling MpprKafkaConnector with parameters: host = {}, port = {}, url = {}, request = {}",
-                connectorProperties.getHost(), connectorProperties.getPort(), connectorProperties.getUrl(), request);
-        client.post(connectorProperties.getPort(),
-                connectorProperties.getHost(),
-                connectorProperties.getUrl())
+                adqmMpprProperties.getHost(), adqmMpprProperties.getPort(), adqmMpprProperties.getUrl(), request);
+        client.post(adqmMpprProperties.getPort(),
+                adqmMpprProperties.getHost(),
+                adqmMpprProperties.getUrl())
                 .sendJson(request, ar -> {
                     if (ar.succeeded()) {
                         if (ar.result().statusCode() == HttpURLConnection.HTTP_OK) {

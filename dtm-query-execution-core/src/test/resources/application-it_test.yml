@@ -14,13 +14,13 @@ management:
 
 core:
   plugins:
-    active: ${CORE_PLUGINS_ACTIVE:ADG, ADB, ADQM}
+    active: ${CORE_PLUGINS_ACTIVE:ADQM}
 
   http:
     port: ${DTM_CORE_PORT:9090}
 
   env:
-    name: ${DTM_NAME:local}
+    name: ${DTM_NAME:it_test}
 
   settings:
     timeZone: ${CORE_TIME_ZONE:UTC}
@@ -74,11 +74,6 @@ adb:
       port: ${ADB_PORT:5432}
       maxSize: 20
 
-  mppr:
-    host: ${ADB_MPPR_CONNECTOR_HOST:10.92.3.61}
-    port: ${ADB_MPPR_CONNECTOR_PORT:8086}
-    url: ${ADB_MPPR_CONNECTOR_URL:/query}
-
   mppw:
     startLoadUrl: ${ADB_START_LOAD_URL:http://adb-emulator:8090/newdata/adb/start}
     consumerGroup: ${ADB_LOAD_GROUP:adb-emulator-load-adb}
@@ -123,7 +118,7 @@ adqm:
     database: ${ADQM_DB_NAME:default}
     user: ${ADQM_USERNAME:}
     password: ${ADQM_PASS:}
-    hosts: ${ADQM_HOSTS:adqm:8123}
+    hosts: ${ADQM_HOSTS:localhost:8123}
 
   ddl:
     cluster: ${ADQM_CLUSTER:default_cluster}

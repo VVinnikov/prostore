@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load;
 
-import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.MppwProperties;
+import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.AdqmMppwProperties;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
@@ -14,12 +14,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class RestLoadInitiatorImpl implements RestLoadInitiator {
     private final WebClient webClient;
-    private final MppwProperties mppwProperties;
+    private final AdqmMppwProperties adqmMppwProperties;
 
     public RestLoadInitiatorImpl(@Qualifier("coreVertx") Vertx vertx,
-                                 MppwProperties mppwProperties) {
+                                 AdqmMppwProperties adqmMppwProperties) {
         webClient = WebClient.create(vertx);
-        this.mppwProperties = mppwProperties;
+        this.adqmMppwProperties = adqmMppwProperties;
     }
 
     @Override
@@ -27,7 +27,7 @@ public class RestLoadInitiatorImpl implements RestLoadInitiator {
         try {
             JsonObject data = JsonObject.mapFrom(request);
             Promise<Void> promise = Promise.promise();
-            webClient.postAbs(mppwProperties.getRestLoadUrl()).sendJsonObject(data, ar -> {
+            webClient.postAbs(adqmMppwProperties.getRestLoadUrl()).sendJsonObject(data, ar -> {
                 if (ar.succeeded()) {
                     HttpResponse<Buffer> response = ar.result();
                     if (response.statusCode() < 400 && response.statusCode() >= 200) {

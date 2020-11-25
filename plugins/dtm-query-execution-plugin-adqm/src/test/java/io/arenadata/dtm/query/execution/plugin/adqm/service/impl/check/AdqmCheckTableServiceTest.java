@@ -37,15 +37,6 @@ public class AdqmCheckTableServiceTest {
     private static final String TEST_COLUMN_NAME = "test_column";
     private static final String ENV = "env";
     private static Map<String, List<Map<String, Object>>> sysColumns;
-
-    private static Map<String, Object> getMapColumn(String name, String dataType, boolean isInSortingKeys) {
-        Map<String, Object> result = new HashMap<>();
-        result.put(AdqmCheckTableService.COLUMN_NAME, name);
-        result.put(AdqmCheckTableService.DATA_TYPE, dataType);
-        result.put(AdqmCheckTableService.IS_IN_SORTING_KEY, isInSortingKeys ? 1 : 0);
-        return result;
-    }
-
     private Entity entity;
     private CheckTableService adbCheckTableService;
     private DatamartRequest request;
@@ -94,14 +85,6 @@ public class AdqmCheckTableServiceTest {
         when(adqmQueryExecutor.execute(argThat(arg -> queries.stream().noneMatch(arg::equals))))
                 .thenReturn(Future.succeededFuture(Collections.emptyList()));
         adbCheckTableService = new AdqmCheckTableService(adqmQueryExecutor, new AdqmTableEntitiesFactory());
-    }
-
-    List<Map<String, Object>> getResultSet(String postfix, List<EntityField> fields) {
-        List<Map<String, Object>> result = fields.stream()
-                .map(field -> fieldToMapTransform(field, postfix))
-                .collect(Collectors.toList());
-        result.addAll(sysColumns.get(postfix));
-        return result;
     }
 
     @Test
@@ -174,6 +157,22 @@ public class AdqmCheckTableServiceTest {
                 .orElse(0));
         result.put(CheckTableService.COLUMN_NAME, field.getName());
         result.put(CheckTableService.DATA_TYPE, DdlUtils.classTypeToNative(field.getType()));
+        return result;
+    }
+
+    private static Map<String, Object> getMapColumn(String name, String dataType, boolean isInSortingKeys) {
+        Map<String, Object> result = new HashMap<>();
+        result.put(AdqmCheckTableService.COLUMN_NAME, name);
+        result.put(AdqmCheckTableService.DATA_TYPE, dataType);
+        result.put(AdqmCheckTableService.IS_IN_SORTING_KEY, isInSortingKeys ? 1 : 0);
+        return result;
+    }
+
+    private List<Map<String, Object>> getResultSet(String postfix, List<EntityField> fields) {
+        List<Map<String, Object>> result = fields.stream()
+                .map(field -> fieldToMapTransform(field, postfix))
+                .collect(Collectors.toList());
+        result.addAll(sysColumns.get(postfix));
         return result;
     }
 }

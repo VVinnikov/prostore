@@ -56,6 +56,7 @@ core:
         connection-string: ${ZOOKEEPER_KAFKA_ADDRESS:10.92.3.31}
         connection-timeout-ms: ${ZOOKEEPER_KAFKA_CONNECTION_TIMEOUT_MS:30000}
         session-timeout-ms: ${ZOOKEEPER_KAFKA_SESSION_TIMEOUT_MS:86400000}
+        chroot: ${ZOOKEEPER_KAFKA_CHROOT:}
     admin:
       inputStreamTimeoutMs: ${KAFKA_INPUT_STREAM_TIMEOUT_MS:2000}
     status.event.publish:

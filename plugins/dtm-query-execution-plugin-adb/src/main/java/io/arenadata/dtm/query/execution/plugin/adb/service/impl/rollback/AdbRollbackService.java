@@ -7,9 +7,9 @@ import io.arenadata.dtm.query.execution.plugin.api.factory.RollbackRequestFactor
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.RollbackService;
 import io.vertx.core.AsyncResult;
-import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+@Slf4j
 @Service("adbRollbackService")
 public class AdbRollbackService implements RollbackService<Void> {
 
@@ -32,13 +33,19 @@ public class AdbRollbackService implements RollbackService<Void> {
 
     @Override
     public void execute(RollbackRequestContext context, Handler<AsyncResult<Void>> handler) {
-        val rollbackRequest = rollbackRequestFactory.create(context.getRequest());
-        CompositeFuture.join(Arrays.asList(
-            executeSql(rollbackRequest.getTruncate().getSql()),
-            executeSql(rollbackRequest.getDeleteFromActual().getSql()),
-            executeSqlInTran(Arrays.asList(rollbackRequest.getInsert(), rollbackRequest.getDeleteFromHistory()))))
-            .onSuccess(success -> handler.handle(Future.succeededFuture()))
-            .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
+        try {
+            val rollbackRequest = rollbackRequestFactory.create(context.getRequest());
+            executeSql(rollbackRequest.getTruncate().getSql())
+                .compose(v -> executeSql(rollbackRequest.getDeleteFromActual().getSql()))
+                .compose(v -> executeSqlInTran(
+                    Arrays.asList(rollbackRequest.getInsert(), rollbackRequest.getDeleteFromHistory())
+                ))
+                .onSuccess(success -> handler.handle(Future.succeededFuture()))
+                .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
+        } catch (Exception e) {
+            log.error("Rollback error while executing context: [{}]: {}", context, e);
+            handler.handle(Future.failedFuture(e));
+        }
     }
 
     private Future<Void> executeSql(String sql) {

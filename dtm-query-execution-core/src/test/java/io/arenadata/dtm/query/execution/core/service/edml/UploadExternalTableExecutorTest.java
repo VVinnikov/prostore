@@ -18,6 +18,9 @@ import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadFailedExecu
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadKafkaExecutor;
 import io.arenadata.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
 import io.arenadata.dtm.query.execution.core.service.impl.DataSourcePluginServiceImpl;
+import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
+import io.arenadata.dtm.query.execution.core.service.schema.impl.LogicalSchemaProviderImpl;
+import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
 import io.vertx.core.AsyncResult;
@@ -45,6 +48,7 @@ class UploadExternalTableExecutorTest {
     private final List<EdmlUploadExecutor> uploadExecutors = Collections.singletonList(mock(UploadKafkaExecutor.class));
     private final EdmlUploadFailedExecutor uploadFailedExecutor = mock(UploadFailedExecutorImpl.class);
     private final DataSourcePluginService pluginService = mock(DataSourcePluginServiceImpl.class);
+    private final LogicalSchemaProvider logicalSchemaProvider = mock(LogicalSchemaProviderImpl.class);
     private UploadExternalTableExecutor uploadExternalTableExecutor;
     private CalciteConfiguration config = new CalciteConfiguration();
     private CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
@@ -78,6 +82,11 @@ class UploadExternalTableExecutorTest {
                 .destination(sourceTypes)
                 .build();
         when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
+        Mockito.doAnswer(invocation -> {
+            final Handler<AsyncResult<List<Datamart>>> handler = invocation.getArgument(1);
+            handler.handle(Future.succeededFuture(Collections.EMPTY_LIST));
+            return null;
+        }).when(logicalSchemaProvider).getSchema(any(), any());
     }
 
     @Test
@@ -85,7 +94,7 @@ class UploadExternalTableExecutorTest {
         Promise promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
         uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
-                uploadFailedExecutor, uploadExecutors, pluginService);
+                uploadFailedExecutor, uploadExecutors, pluginService, logicalSchemaProvider);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
@@ -128,7 +137,7 @@ class UploadExternalTableExecutorTest {
         Promise promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
         uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
-                uploadFailedExecutor, uploadExecutors, pluginService);
+                uploadFailedExecutor, uploadExecutors, pluginService, logicalSchemaProvider);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
@@ -170,7 +179,7 @@ class UploadExternalTableExecutorTest {
         Promise promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
         uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
-                uploadFailedExecutor, uploadExecutors, pluginService);
+                uploadFailedExecutor, uploadExecutors, pluginService, logicalSchemaProvider);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
@@ -199,7 +208,7 @@ class UploadExternalTableExecutorTest {
         Promise promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
         uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
-                uploadFailedExecutor, uploadExecutors, pluginService);
+                uploadFailedExecutor, uploadExecutors, pluginService, logicalSchemaProvider);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
@@ -240,7 +249,7 @@ class UploadExternalTableExecutorTest {
         Promise promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
         uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
-                uploadFailedExecutor, uploadExecutors, pluginService);
+                uploadFailedExecutor, uploadExecutors, pluginService, logicalSchemaProvider);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
@@ -284,7 +293,7 @@ class UploadExternalTableExecutorTest {
         Promise promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
         uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
-                uploadFailedExecutor, uploadExecutors, pluginService);
+                uploadFailedExecutor, uploadExecutors, pluginService, logicalSchemaProvider);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
@@ -324,7 +333,7 @@ class UploadExternalTableExecutorTest {
         Promise promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
         uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
-                uploadFailedExecutor, uploadExecutors, pluginService);
+                uploadFailedExecutor, uploadExecutors, pluginService, logicalSchemaProvider);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
@@ -365,7 +374,7 @@ class UploadExternalTableExecutorTest {
         Promise promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
         uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
-                uploadFailedExecutor, uploadExecutors, pluginService);
+                uploadFailedExecutor, uploadExecutors, pluginService, logicalSchemaProvider);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);

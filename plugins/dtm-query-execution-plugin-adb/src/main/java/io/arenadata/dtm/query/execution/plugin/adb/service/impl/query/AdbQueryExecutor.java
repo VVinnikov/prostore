@@ -35,6 +35,7 @@ public class AdbQueryExecutor implements DatabaseExecutor {
     public void execute(String sql, List<ColumnMetadata> metadata, Handler<AsyncResult<List<Map<String, Object>>>> resultHandler) {
         pool.getConnection(ar1 -> {
             if (ar1.succeeded()) {
+                log.debug("Execute query: [{}]", sql);
                 PgConnection conn = ar1.result();
                 conn.prepare(sql, ar2 -> {
                     if (ar2.succeeded()) {

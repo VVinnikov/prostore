@@ -27,13 +27,13 @@ class AdqmRollbackRequestFactoryTest {
         "DROP TABLE IF EXISTS env_1__dtm.tbl1_buffer_shard ON CLUSTER cluster_1",
         "SYSTEM FLUSH DISTRIBUTED env_1__dtm.tbl1_actual",
         "INSERT INTO env_1__dtm.tbl1_actual\n" +
-            "  SELECT f1,f2,f3, sys_from, sys_to, sys_op, close_date, -1 AS sign\n" +
-            "  FROM env_1__dtm.tbl1_actual\n" +
+            "  SELECT f1,f2,f3, sys_from, sys_to, sys_op, close_date, -1\n" +
+            "  FROM env_1__dtm.tbl1_actual FINAL\n" +
             "  WHERE sys_from = 11 AND sign = 1\n" +
             "  UNION ALL\n" +
-            "  SELECT f1,f2,f3, sys_from, toInt64(9223372036854775807) AS sys_to, 0 AS sys_op, toDateTime('9999-12-31 00:00:00') AS close_date, arrayJoin([-1, 1]) AS sign\n" +
-            "  FROM env_1__dtm.tbl1_actual\n" +
-            "  WHERE sys_to = 11 - 1 AND sign = 1",
+            "  SELECT f1,f2,f3, sys_from, toInt64(9223372036854775807) AS sys_to, 0 AS sys_op, toDateTime('9999-12-31 00:00:00') AS close_date, arrayJoin([-1, 1])\n" +
+            "  FROM env_1__dtm.tbl1_actual FINAL\n" +
+            "  WHERE sys_to = 10 AND sign = 1",
         "SYSTEM FLUSH DISTRIBUTED env_1__dtm.tbl1_actual",
         "OPTIMIZE TABLE env_1__dtm.tbl1_actual_shard ON CLUSTER cluster_1 FINAL"
     );

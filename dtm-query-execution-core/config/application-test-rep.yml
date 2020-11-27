@@ -51,6 +51,7 @@ core:
         connection-string: ${ZOOKEEPER_KAFKA_ADDRESS:10.92.3.25}
         connection-timeout-ms: ${ZOOKEEPER_KAFKA_CONNECTION_TIMEOUT_MS:30000}
         session-timeout-ms: ${ZOOKEEPER_KAFKA_SESSION_TIMEOUT_MS:86400000}
+        chroot: ${ZOOKEEPER_KAFKA_CHROOT:}
     admin:
       inputStreamTimeoutMs: ${KAFKA_INPUT_STREAM_TIMEOUT_MS:2000}
     status.event.publish:
@@ -72,11 +73,6 @@ adb:
       host: ${ADB_HOST:10.92.3.42}
       port: ${ADB_PORT:5432}
       maxSize: 20
-
-  mppr:
-    host: ${ADB_MPPR_CONNECTOR_HOST:10.92.3.42}
-    port: ${ADB_MPPR_CONNECTOR_PORT:8086}
-    url: ${ADB_MPPR_CONNECTOR_URL:/query}
 
   mppw:
     startLoadUrl: ${ADB_START_LOAD_URL:http://localhost:8990/newdata/adb/start}

@@ -47,7 +47,7 @@ public class AdbTableEntitiesFactory implements TableEntitiesFactory<AdbTables<A
     public AdbTables<AdbTableEntity> create(DdlRequestContext context) {
         Entity entity = context.getRequest().getEntity();
         return new AdbTables<>(
-                createTableEntity(entity, getTableName(entity, AdbTables.ACTUAL_TABLE_POSTFIX), false, false),
+                createTableEntity(entity, getTableName(entity, AdbTables.ACTUAL_TABLE_POSTFIX), false, true),
                 createTableEntity(entity, getTableName(entity, AdbTables.HISTORY_TABLE_POSTFIX), false, true),
                 createTableEntity(entity, getTableName(entity, AdbTables.STAGING_TABLE_POSTFIX), true, false)
         );

@@ -30,7 +30,7 @@ public class EntityTypeUtil {
             case UUID:
                 return "varchar(36)";
             default:
-                throw new UnsupportedOperationException(String.format("`%s` not supported", type));
+                throw new UnsupportedOperationException(String.format("Unsupported type: %s", type));
         }
     }
 

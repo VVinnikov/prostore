@@ -9,4 +9,6 @@ public interface QueryExecutor {
     Future<UpdateResult> executeUpdate(String datamartMnemonic, String sql);
 
     Future<ResultSet> executeQuery(String datamartMnemonic, String sql);
+
+    Future<ResultSet> executeQuery(String sql);
 }

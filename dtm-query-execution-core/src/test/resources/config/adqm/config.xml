@@ -220,7 +220,7 @@ cript src="http://loader.tabix.io/master.js"></script></body></html>]]></http_se
 
     <zookeeper>
         <node>
-            <host>zk.ds.test-it</host>
+            <host>dtm.zk.ds.it</host>
             <port>2181</port>
         </node>
         <session_timeout_ms>30000</session_timeout_ms>

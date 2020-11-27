@@ -9,7 +9,7 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
 
-public class MetricsIT extends AbstractCoreDtmIntegrationTest {
+public class MetricsIntegrationTest extends AbstractCoreDtmIntegrationTest {
 
     @Test
     void metricsTest() throws IOException {

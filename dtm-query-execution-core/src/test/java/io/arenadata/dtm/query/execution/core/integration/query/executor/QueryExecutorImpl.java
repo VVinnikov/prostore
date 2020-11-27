@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Slf4j
-@Service("testQueryExecutor")
+@Service("itTestQueryExecutor")
 public class QueryExecutorImpl implements QueryExecutor {
 
     private final SqlClientProvider sqlClientProvider;
@@ -52,6 +52,11 @@ public class QueryExecutorImpl implements QueryExecutor {
                 }
             });
         });
+    }
+
+    @Override
+    public Future<ResultSet> executeQuery(String sql) {
+        return executeQuery("", sql);
     }
 
 }

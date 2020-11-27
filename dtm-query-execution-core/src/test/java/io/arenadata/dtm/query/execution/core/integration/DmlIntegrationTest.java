@@ -18,54 +18,58 @@ import org.springframework.beans.factory.annotation.Qualifier;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 @ExtendWith(VertxExtension.class)
-public class DmlCoreIT extends AbstractCoreDtmIntegrationTest {
+public class DmlIntegrationTest extends AbstractCoreDtmIntegrationTest {
 
-    private static final String EMPTY = "";
     private ResultSet resultSet;
     @Autowired
-    @Qualifier("testQueryExecutor")
+    @Qualifier("itTestQueryExecutor")
     private QueryExecutor queryExecutor;
 
     @SneakyThrows
     @Test
     void InformationSchemaTest() throws IOException {
-        TestSuite suite = TestSuite.create("llrInfoSchemaIT");
-        suite.test("subscrExecuteSuccess", testContext1 -> {
-            Promise<?> promise = Promise.promise();
+        TestSuite suite = TestSuite.create("information schema tests");
+        Promise<?> promise = Promise.promise();
+        suite.test("select tables", testContext1 -> {
             Async async = testContext1.async();
-            queryExecutor.executeQuery(EMPTY, "select * from information_schema.tables")
-                    .onSuccess(result -> {
-                        resultSet = result;
+            queryExecutor.executeQuery("select * from information_schema.tables")
+                    .onComplete(ar -> {
+                        if (ar.succeeded()) {
+                            promise.complete();
+                        } else {
+                            promise.fail(ar.cause());
+                        }
                         async.complete();
-                    })
-                    .onFailure(promise::fail);
+                    });
             async.awaitSuccess();
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
-        assertNotNull(resultSet);
+        assertNull(promise.future().cause());
     }
 
     @Test
     @Disabled
     void llrAdqmTest() {
-        TestSuite suite = TestSuite.create("llrAdqmIT");
-        suite.test("subscrExecuteSuccess", testContext1 -> {
-            Promise<?> promise = Promise.promise();
+        TestSuite suite = TestSuite.create("select from adqm");
+        Promise<?> promise = Promise.promise();
+        suite.test("select with datasource type", testContext1 -> {
             Async async = testContext1.async();
-
-            queryExecutor.executeQuery(EMPTY, "select * from transactions DATASOURCE_TYPE='ADQM'")
-                    .onSuccess(result -> {
-                        resultSet = result;
+            queryExecutor.executeQuery("select * from transactions DATASOURCE_TYPE='ADQM'")
+                    .onComplete(ar -> {
+                        if (ar.succeeded()) {
+                            promise.complete();
+                        } else {
+                            promise.fail(ar.cause());
+                        }
                         async.complete();
-                    })
-                    .onFailure(promise::fail);
+                    });
             async.awaitSuccess();
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
-        assertNotNull(resultSet);
+        assertNull(promise.future().cause());
     }
 }

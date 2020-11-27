@@ -86,7 +86,7 @@ class MppwFinishRequestHandlerTest {
                 true, MppwKafkaParameter.builder()
                 .datamart("shares")
                 .sysCn(101L)
-                .targetTableName("accounts")
+                .destinationTableName("accounts")
                 .uploadMetadata(UploadExternalEntityMetadata.builder()
                         .externalSchema("")
                         .build())

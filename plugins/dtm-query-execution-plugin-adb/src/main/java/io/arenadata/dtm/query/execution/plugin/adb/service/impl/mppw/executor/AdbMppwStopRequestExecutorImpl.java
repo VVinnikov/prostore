@@ -2,13 +2,17 @@ package io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.executor;
 
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adb.configuration.properties.MppwProperties;
+import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
+import io.arenadata.dtm.query.execution.plugin.adb.factory.impl.MetadataSqlFactoryImpl;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.MppwTopic;
+import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.DeliveryOptions;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -18,11 +22,18 @@ import org.springframework.stereotype.Component;
 public class AdbMppwStopRequestExecutorImpl implements AdbMppwRequestExecutor {
 
     private final Vertx vertx;
+    private final AdbQueryExecutor adbQueryExecutor;
+    private final MetadataSqlFactory metadataSqlFactory;
     private final MppwProperties mppwProperties;
 
     @Autowired
-    public AdbMppwStopRequestExecutorImpl(@Qualifier("coreVertx") Vertx vertx, MppwProperties mppwProperties) {
+    public AdbMppwStopRequestExecutorImpl(@Qualifier("coreVertx") Vertx vertx,
+                                          AdbQueryExecutor adbQueryExecutor,
+                                          MetadataSqlFactory metadataSqlFactory,
+                                          MppwProperties mppwProperties) {
         this.vertx = vertx;
+        this.adbQueryExecutor = adbQueryExecutor;
+        this.metadataSqlFactory = metadataSqlFactory;
         this.mppwProperties = mppwProperties;
     }
 
@@ -43,5 +54,15 @@ public class AdbMppwStopRequestExecutorImpl implements AdbMppwRequestExecutor {
                         }
                     });
         });
+    }
+
+    private Future<Void> dropForeignTable(String datamart, String tableName) {
+        return Future.future(promise -> adbQueryExecutor.executeUpdate(metadataSqlFactory.dropExtTableSqlQuery(datamart, tableName), ar -> {
+            if (ar.succeeded()) {
+                promise.complete();
+            } else {
+                promise.fail(ar.cause());
+            }
+        }));
     }
 }

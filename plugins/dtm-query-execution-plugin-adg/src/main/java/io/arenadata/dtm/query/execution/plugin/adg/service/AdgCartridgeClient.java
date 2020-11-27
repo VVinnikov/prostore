@@ -8,10 +8,14 @@ import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.ResO
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.TtDeleteBatchResponse;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.TtDeleteQueueResponse;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.TtLoadDataKafkaResponse;
+import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.Space;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * REST-клиент общения с Tarantool Cartridge
@@ -52,4 +56,6 @@ public interface AdgCartridgeClient {
 
   void executeDeleteSpacesWithPrefixQueued(TtDeleteTablesWithPrefixRequest request,
                                            Handler<AsyncResult<Void>> handler);
+
+  Future<Map<String, Space>> getSpaceDescriptions(Set<String> spaceNames);
 }

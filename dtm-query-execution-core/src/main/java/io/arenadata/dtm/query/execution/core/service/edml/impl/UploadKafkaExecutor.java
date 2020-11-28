@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.edml.impl;
 
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
+import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.RequestStatus;
 import io.arenadata.dtm.common.model.SqlProcessingType;
@@ -11,8 +12,10 @@ import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.kafka.core.configuration.properties.KafkaProperties;
 import io.arenadata.dtm.query.execution.core.configuration.properties.EdmlProperties;
 import io.arenadata.dtm.query.execution.core.factory.MppwKafkaRequestFactory;
+import io.arenadata.dtm.query.execution.core.service.CheckColumnTypesService;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadExecutor;
+import io.arenadata.dtm.query.execution.core.service.impl.CheckColumnTypesServiceImpl;
 import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.StatusRequest;
@@ -45,6 +48,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
     private final KafkaProperties kafkaProperties;
     private final Vertx vertx;
     private final DtmConfig dtmSettings;
+    private final CheckColumnTypesService checkColumnTypesService;
 
     @Autowired
     public UploadKafkaExecutor(DataSourcePluginService pluginService,
@@ -52,13 +56,15 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                                EdmlProperties edmlProperties,
                                KafkaProperties kafkaProperties,
                                @Qualifier("coreVertx") Vertx vertx,
-                               DtmConfig dtmSettings) {
+                               DtmConfig dtmSettings,
+                               CheckColumnTypesService checkColumnTypesService) {
         this.pluginService = pluginService;
         this.mppwKafkaRequestFactory = mppwKafkaRequestFactory;
         this.edmlProperties = edmlProperties;
         this.kafkaProperties = kafkaProperties;
         this.vertx = vertx;
         this.dtmSettings = dtmSettings;
+        this.checkColumnTypesService = checkColumnTypesService;
     }
 
     @Override
@@ -70,7 +76,12 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                     context.getDestinationEntity().getName(),
                     context.getDestinationEntity().getSchema(),
                     destination);
-            mppwKafkaRequestFactory.create(context)
+            QueryParserRequest queryParserRequest = new QueryParserRequest(context.getRequest().getQueryRequest(),
+                    context.getLogicalSchema());
+            checkColumnTypesService.check(context.getDestinationEntity().getFields(), queryParserRequest)
+                    .compose(areEqual -> areEqual ? mppwKafkaRequestFactory.create(context)
+                            : Future.failedFuture(String.format(CheckColumnTypesServiceImpl.FAIL_CHECK_COLUMNS_PATTERN,
+                            context.getDestinationEntity().getName())))
                     .onSuccess(mppwRequestContext -> {
                         destination.forEach(ds ->
                                 startMppwFutureMap.put(ds, startMppw(ds, mppwRequestContext.copy(), context)));

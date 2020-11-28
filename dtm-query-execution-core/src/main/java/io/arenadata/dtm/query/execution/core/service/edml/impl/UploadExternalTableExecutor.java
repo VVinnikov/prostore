@@ -11,6 +11,8 @@ import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadFailedExecutor;
+import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
+import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -37,17 +39,20 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
     private final Map<ExternalTableLocationType, EdmlUploadExecutor> executors;
     private final EdmlUploadFailedExecutor uploadFailedExecutor;
     private final DataSourcePluginService pluginService;
+    private final LogicalSchemaProvider logicalSchemaProvider;
 
     @Autowired
     public UploadExternalTableExecutor(DeltaServiceDao deltaServiceDao,
                                        EdmlUploadFailedExecutor uploadFailedExecutor,
                                        List<EdmlUploadExecutor> uploadExecutors,
-                                       DataSourcePluginService pluginService) {
+                                       DataSourcePluginService pluginService,
+                                       LogicalSchemaProvider logicalSchemaProvider) {
         this.deltaServiceDao = deltaServiceDao;
         this.uploadFailedExecutor = uploadFailedExecutor;
         this.executors = uploadExecutors.stream()
                 .collect(Collectors.toMap(EdmlUploadExecutor::getUploadType, it -> it));
         this.pluginService = pluginService;
+        this.logicalSchemaProvider = logicalSchemaProvider;
     }
 
     @Override
@@ -103,7 +108,8 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
 
     private Future<QueryResult> executeAndWriteOp(EdmlRequestContext context) {
         return Future.future(promise ->
-                execute(context)
+                initLogicalSchema(context)
+                .compose(ctx -> execute(context))
                         .onSuccess(promise::complete)
                         .onFailure(error -> {
                             log.error("Edml write operation error!", error);
@@ -142,6 +148,20 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
                 deltaServiceDao.writeOperationSuccess(datamartName, sysCn)
                         .onSuccess(v -> promise.complete(result))
                         .onFailure(promise::fail));
+    }
+
+    private Future<Void> initLogicalSchema(EdmlRequestContext context) {
+        return Future.future(promise -> {
+            logicalSchemaProvider.getSchema(context.getRequest().getQueryRequest(), ar -> {
+                if (ar.succeeded()) {
+                    final List<Datamart> logicalSchema = ar.result();
+                    context.setLogicalSchema(logicalSchema);
+                    promise.complete();
+                } else {
+                    promise.fail(ar.cause());
+                }
+            });
+        });
     }
 
     @Override

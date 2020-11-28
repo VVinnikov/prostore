@@ -10,6 +10,8 @@ import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.Ddl
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.StatusReporter;
+import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.RestLoadClient;
+import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.RestMppwKafkaStopRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.MppwRequest;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
@@ -41,13 +43,14 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
     private static final String FLUSH_TEMPLATE = "SYSTEM FLUSH DISTRIBUTED %s";
     private static final String OPTIMIZE_TEMPLATE = "OPTIMIZE TABLE %s ON CLUSTER %s FINAL";
     private static final String INSERT_TEMPLATE = "INSERT INTO %s\n" +
-            "  SELECT %s, a.sys_from, %d - 1 AS sys_to, b.sys_op_buffer as sys_op, '%s' AS close_date, arrayJoin([-1, 1]) AS sign\n" +
-            "  FROM %s a\n" +
-            "  ANY INNER JOIN %s b USING(%s)\n" +
-            "  WHERE a.sys_from < %d\n" +
-            "    AND a.sys_to > %d";
+        "  SELECT %s, a.sys_from, %d - 1 AS sys_to, b.sys_op_buffer as sys_op, '%s' AS close_date, arrayJoin([-1, 1]) AS sign\n" +
+        "  FROM %s a\n" +
+        "  ANY INNER JOIN %s b USING(%s)\n" +
+        "  WHERE a.sys_from < %d\n" +
+        "    AND a.sys_to > %d";
     private static final String SELECT_COLUMNS_QUERY = "select name from system.columns where database = '%s' and table = '%s'";
 
+    private final RestLoadClient restLoadClient;
     private final DatabaseExecutor databaseExecutor;
     private final DdlProperties ddlProperties;
     private final AppConfiguration appConfiguration;
@@ -55,11 +58,13 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
     private final DtmConfig dtmConfig;
 
     @Autowired
-    public MppwFinishRequestHandler(final DatabaseExecutor databaseExecutor,
+    public MppwFinishRequestHandler(RestLoadClient restLoadClient,
+                                    final DatabaseExecutor databaseExecutor,
                                     final DdlProperties ddlProperties,
                                     final AppConfiguration appConfiguration,
                                     StatusReporter statusReporter,
                                     DtmConfig dtmConfig) {
+        this.restLoadClient = restLoadClient;
         this.databaseExecutor = databaseExecutor;
         this.ddlProperties = ddlProperties;
         this.appConfiguration = appConfiguration;
@@ -78,26 +83,31 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
         long sysCn = request.getKafkaParameter().getSysCn();
 
         return sequenceAll(Arrays.asList(  // 1. drop shard tables
-                fullName + EXT_SHARD_POSTFIX,
-                fullName + ACTUAL_LOADER_SHARD_POSTFIX,
-                fullName + BUFFER_LOADER_SHARD_POSTFIX
+            fullName + EXT_SHARD_POSTFIX,
+            fullName + ACTUAL_LOADER_SHARD_POSTFIX,
+            fullName + BUFFER_LOADER_SHARD_POSTFIX
         ), this::dropTable)
-                .compose(v -> sequenceAll(Arrays.asList( // 2. flush distributed tables
-                        fullName + BUFFER_POSTFIX,
-                        fullName + ACTUAL_POSTFIX), this::flushTable))
-                .compose(v -> closeActual(fullName, sysCn))  // 3. insert refreshed records
-                .compose(v -> flushTable(fullName + ACTUAL_POSTFIX))  // 4. flush actual table
-                .compose(v -> sequenceAll(Arrays.asList(  // 5. drop buffer tables
-                        fullName + BUFFER_POSTFIX,
-                        fullName + BUFFER_SHARD_POSTFIX), this::dropTable))
-                .compose(v -> optimizeTable(fullName + ACTUAL_SHARD_POSTFIX))  // 6. merge shards
-                .compose(v -> {
-                    reportFinish(request.getKafkaParameter().getTopic());
-                    return Future.succeededFuture(QueryResult.emptyResult());
-                }, f -> {
-                    reportError(request.getKafkaParameter().getTopic());
-                    return Future.failedFuture(f.getCause());
-                });
+            .compose(v -> sequenceAll(Arrays.asList( // 2. flush distributed tables
+                fullName + BUFFER_POSTFIX,
+                fullName + ACTUAL_POSTFIX), this::flushTable))
+            .compose(v -> closeActual(fullName, sysCn))  // 3. insert refreshed records
+            .compose(v -> flushTable(fullName + ACTUAL_POSTFIX))  // 4. flush actual table
+            .compose(v -> sequenceAll(Arrays.asList(  // 5. drop buffer tables
+                fullName + BUFFER_POSTFIX,
+                fullName + BUFFER_SHARD_POSTFIX), this::dropTable))
+            .compose(v -> optimizeTable(fullName + ACTUAL_SHARD_POSTFIX))// 6. merge shards
+            .compose(v -> restLoadClient.stopLoading(
+                new RestMppwKafkaStopRequest(
+                    request.getQueryRequest().getRequestId().toString(),
+                    request.getKafkaParameter().getTopic())
+            ))
+            .compose(v -> {
+                reportFinish(request.getKafkaParameter().getTopic());
+                return Future.succeededFuture(QueryResult.emptyResult());
+            }, f -> {
+                reportError(request.getKafkaParameter().getTopic());
+                return Future.failedFuture(f.getCause());
+            });
     }
 
     private Future<Void> dropTable(@NonNull String table) {
@@ -116,17 +126,17 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
         Future<String> sortingKey = fetchSortingKey(table + ACTUAL_SHARD_POSTFIX);
 
         return CompositeFuture.all(columnNames, sortingKey).compose(r ->
-                databaseExecutor.executeUpdate(
-                        format(INSERT_TEMPLATE,
-                                table + ACTUAL_POSTFIX,
-                                r.resultAt(0),
-                                deltaHot,
-                                now,
-                                table + ACTUAL_POSTFIX,
-                                table + BUFFER_SHARD_POSTFIX,
-                                r.resultAt(1),
-                                deltaHot,
-                                deltaHot)));
+            databaseExecutor.executeUpdate(
+                format(INSERT_TEMPLATE,
+                    table + ACTUAL_POSTFIX,
+                    r.resultAt(0),
+                    deltaHot,
+                    now,
+                    table + ACTUAL_POSTFIX,
+                    table + BUFFER_SHARD_POSTFIX,
+                    r.resultAt(1),
+                    deltaHot,
+                    deltaHot)));
     }
 
     private Future<Void> optimizeTable(@NonNull String table) {
@@ -175,8 +185,8 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
             }
             String sortingKey = ar.result().get(0).get(sortingKeyColumn).toString();
             String withoutSysFrom = Arrays.stream(sortingKey.split(",\\s*"))
-                    .filter(c -> !c.equalsIgnoreCase(SYS_FROM_FIELD))
-                    .collect(Collectors.joining(", "));
+                .filter(c -> !c.equalsIgnoreCase(SYS_FROM_FIELD))
+                .collect(Collectors.joining(", "));
 
             promise.complete(withoutSysFrom);
         });
@@ -185,11 +195,11 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
 
     private String getColumnNames(@NonNull List<Map<String, Object>> result) {
         return result
-                .stream()
-                .map(o -> o.get("name").toString())
-                .filter(f -> !SYSTEM_FIELDS.contains(f))
-                .map(n -> "a." + n)
-                .collect(Collectors.joining(", "));
+            .stream()
+            .map(o -> o.get("name").toString())
+            .filter(f -> !SYSTEM_FIELDS.contains(f))
+            .map(n -> "a." + n)
+            .collect(Collectors.joining(", "));
     }
 
     private void reportFinish(String topic) {

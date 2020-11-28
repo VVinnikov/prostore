@@ -12,7 +12,7 @@ import io.arenadata.dtm.query.execution.plugin.adqm.factory.AdqmRestMppwKafkaReq
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmRestMppwKafkaRequestFactoryImpl;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.LoadType;
-import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.RestLoadInitiator;
+import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.RestLoadClient;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.RestMppwKafkaLoadRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockDatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockEnvironment;
@@ -74,7 +74,7 @@ class MppwStartRequestHandlerTest {
         ), mockData, false);
 
         MockStatusReporter mockReporter = createMockReporter(TEST_CONSUMER_GROUP + "dev__shares.accounts");
-        RestLoadInitiator mockInitiator = Mockito.mock(RestLoadInitiator.class);
+        RestLoadClient mockInitiator = Mockito.mock(RestLoadClient.class);
         MppwRequestHandler handler = new MppwStartRequestHandler(executor, ddlProperties, appConfiguration,
                 createMppwProperties(KAFKA),
                 mockReporter, mockInitiator, mppwKafkaRequestFactory);
@@ -146,7 +146,7 @@ class MppwStartRequestHandlerTest {
         ), mockData, false);
 
         MockStatusReporter mockReporter = createMockReporter("restConsumerGroup");
-        RestLoadInitiator mockInitiator = Mockito.mock(RestLoadInitiator.class);
+        RestLoadClient mockInitiator = Mockito.mock(RestLoadClient.class);
         when(mockInitiator.initiateLoading(any())).thenReturn(Future.succeededFuture());
 
         MppwRequestHandler handler = new MppwStartRequestHandler(executor, ddlProperties, appConfiguration,

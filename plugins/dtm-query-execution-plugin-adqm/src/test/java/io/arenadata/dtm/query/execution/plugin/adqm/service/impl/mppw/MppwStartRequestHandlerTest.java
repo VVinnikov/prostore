@@ -63,7 +63,7 @@ class MppwStartRequestHandlerTest {
 
         DatabaseExecutor executor = new MockDatabaseExecutor(Arrays.asList(
                 t -> t.contains("CREATE TABLE IF NOT EXISTS dev__shares.accounts_ext_shard ON CLUSTER test_arenadata") &&
-                        t.contains("column1 Nullable(Int64), column2 Nullable(Int64), column3 Nullable(String), sys_op Nullable(Int32)") &&
+                        t.contains("column1 Nullable(Int64), column2 Nullable(Int64), column3 Nullable(String), sys_op Nullable(Int64)") &&
                         t.contains("ENGINE = Kafka()"),
                 t -> t.equalsIgnoreCase("CREATE TABLE IF NOT EXISTS dev__shares.accounts_buffer_shard ON CLUSTER test_arenadata (column1 Int64, column2 Int64, sys_op_buffer Nullable(Int8)) ENGINE = Join(ANY, INNER, column1, column2)"),
                 t -> t.equalsIgnoreCase("CREATE TABLE IF NOT EXISTS dev__shares.accounts_buffer ON CLUSTER test_arenadata AS dev__shares.accounts_buffer_shard ENGINE=Distributed('test_arenadata', 'shares', 'accounts_buffer_shard', column1)"),
@@ -134,7 +134,7 @@ class MppwStartRequestHandlerTest {
 
         DatabaseExecutor executor = new MockDatabaseExecutor(Arrays.asList(
                 t -> t.contains("CREATE TABLE IF NOT EXISTS dev__shares.accounts_ext_shard ON CLUSTER test_arenadata") &&
-                        t.contains("column1 Int64, column2 Int64, column3 Nullable(String), sys_op Nullable(Int32)") &&
+                        t.contains("column1 Int64, column2 Int64, column3 Nullable(String), sys_op Nullable(Int64)") &&
                         t.contains("ENGINE = MergeTree()") &&
                         t.contains("ORDER BY (column1, column2)"),
                 t -> t.equalsIgnoreCase("CREATE TABLE IF NOT EXISTS dev__shares.accounts_buffer_shard ON CLUSTER test_arenadata (column1 Int64, column2 Int64, sys_op_buffer Nullable(Int8)) ENGINE = Join(ANY, INNER, column1, column2)"),

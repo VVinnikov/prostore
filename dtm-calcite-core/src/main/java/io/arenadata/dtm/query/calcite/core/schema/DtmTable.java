@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.calcite.core.schema;
 
+import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.query.calcite.core.util.CalciteUtil;
 import org.apache.calcite.adapter.java.AbstractQueryableTable;
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 
 public abstract class DtmTable extends AbstractQueryableTable implements TranslatableTable {
 
+    private static final int UUID_SIZE = 36;
     protected final QueryableSchema dtmSchema;
     protected final Entity entity;
 
@@ -44,8 +46,13 @@ public abstract class DtmTable extends AbstractQueryableTable implements Transla
                         builder.add(it.getName(), CalciteUtil.valueOf(it.getType()), it.getSize())
                             .nullable(it.getNullable() != null && it.getNullable());
                     } else {
-                        builder.add(it.getName(), CalciteUtil.valueOf(it.getType()))
-                            .nullable(it.getNullable() != null && it.getNullable());
+                        if (it.getType() == ColumnType.UUID) {
+                            builder.add(it.getName(), CalciteUtil.valueOf(it.getType()), UUID_SIZE)
+                                    .nullable(it.getNullable() != null && it.getNullable());
+                        } else {
+                            builder.add(it.getName(), CalciteUtil.valueOf(it.getType()))
+                                    .nullable(it.getNullable() != null && it.getNullable());
+                        }
                     }
                 }
             );

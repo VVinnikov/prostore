@@ -37,8 +37,8 @@ public class AdbRollbackRequestFactory implements RollbackRequestFactory<AdbRoll
             rollbackRequest.getDestinationTable(), sysTo);
 
         return new AdbRollbackRequest(
-            PreparedStatementRequest.onlySql(deleteFromActualSql),
             PreparedStatementRequest.onlySql(deleteFromHistory),
+            PreparedStatementRequest.onlySql(deleteFromActualSql),
             PreparedStatementRequest.onlySql(truncateSql),
             PreparedStatementRequest.onlySql(insertSql)
         );

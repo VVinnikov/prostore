@@ -150,6 +150,7 @@ kafkaEmulatorWriter:
   host: dtm.kafka.writer.it
   port: 8090
   kafkaBrokers: dtm.kafka.it.broker:9092
+  consumerGroupId: adb-emulator-load-adqm
   dataWorkerPoolSize: 5
   taskWorkerPoolSize: 5
   adqm:

@@ -9,7 +9,6 @@ import io.arenadata.dtm.query.execution.core.service.zookeeper.ZookeeperConnecti
 import io.arenadata.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
 import io.arenadata.dtm.query.execution.core.service.zookeeper.impl.ZookeeperConnectionProviderImpl;
 import io.arenadata.dtm.query.execution.core.service.zookeeper.impl.ZookeeperExecutorImpl;
-import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.AdqmWebClientProperties;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
@@ -34,7 +33,7 @@ public class IntegrationTestConfiguration {
     @Bean("itTestZkProvider")
     public ZookeeperConnectionProvider zkConnectionProvider() {
         final ServiceDbZookeeperProperties zookeeperProperties = new ServiceDbZookeeperProperties();
-        zookeeperProperties.setConnectionString(AbstractCoreDtmIntegrationTest.getZkDsConnectionString());
+        zookeeperProperties.setConnectionString(AbstractCoreDtmIntegrationTest.getZkDsConnectionStringAsExternal());
         zookeeperProperties.setChroot(
                 Objects.requireNonNull(AbstractCoreDtmIntegrationTest.dtmProperties
                         .getProperty("core.datasource.zookeeper.chroot")).toString());

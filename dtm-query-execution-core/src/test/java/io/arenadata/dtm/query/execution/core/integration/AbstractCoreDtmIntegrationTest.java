@@ -55,7 +55,7 @@ public abstract class AbstractCoreDtmIntegrationTest {
     private static final Network network = Network.SHARED;
     private static final int KAFKA_PORT = 9092;
     private static final int CLICKHOUSE_PORT = 8123;
-    private static Map<GenericContainer<?>, ContainerInfo> containerMap = new HashMap<>();
+    private static final Map<GenericContainer<?>, ContainerInfo> containerMap = new HashMap<>();
 
     static {
         dtmProperties = PropertyFactory.createPropertySource("application-it_test.yml");
@@ -94,8 +94,7 @@ public abstract class AbstractCoreDtmIntegrationTest {
                 .withExposedPorts(ZK_PORT)
                 .withNetworkAliases(Objects.requireNonNull(
                         dtmProperties.getProperty("core.datasource.zookeeper.connection-string")).toString())
-                .withEnv("ZOOKEEPER_CLIENT_PORT", String.valueOf(ZK_PORT))
-                .withEnv("ZOOKEEPER_TICK_TIME", String.valueOf(30000));
+                .withEnv("ZOOKEEPER_CLIENT_PORT", String.valueOf(ZK_PORT));
     }
 
     private static GenericContainer<?> createZkKafkaContainer() {
@@ -104,8 +103,7 @@ public abstract class AbstractCoreDtmIntegrationTest {
                 .withExposedPorts(ZK_PORT)
                 .withNetworkAliases(Objects.requireNonNull(
                         dtmProperties.getProperty("core.kafka.cluster.zookeeper.connection-string")).toString())
-                .withEnv("ZOOKEEPER_CLIENT_PORT", String.valueOf(ZK_PORT))
-                .withEnv("ZOOKEEPER_TICK_TIME", String.valueOf(30000));
+                .withEnv("ZOOKEEPER_CLIENT_PORT", String.valueOf(ZK_PORT));
     }
 
     private static KafkaContainer createKafkaContainer() {
@@ -116,8 +114,7 @@ public abstract class AbstractCoreDtmIntegrationTest {
                 .withNetworkAliases(Objects.requireNonNull(
                         dtmProperties.getProperty("statusMonitor.brokersList")).toString().split(":")[0])
                 .withEnv("KAFKA_ZOOKEEPER_CONNECT", Objects.requireNonNull(
-                        dtmProperties.getProperty("core.kafka.cluster.zookeeper.connection-string")).toString()
-                        + ":" + ZK_PORT);
+                        dtmProperties.getProperty("core.kafka.cluster.zookeeper.connection-string")).toString());
     }
 
     private static GenericContainer<?> createAdqmContainer() {
@@ -225,6 +222,9 @@ public abstract class AbstractCoreDtmIntegrationTest {
                         .toString())
                 .withEnv("KAFKA_BOOTSTRAP_SERVERS", Objects.requireNonNull(
                         dtmProperties.getProperty("kafkaEmulatorWriter.kafkaBrokers"))
+                        .toString())
+                .withEnv("KAFKA_CONSUMER_GROUP_ID", Objects.requireNonNull(
+                        dtmProperties.getProperty("kafkaEmulatorWriter.consumerGroupId"))
                         .toString())
                 .withEnv("DATA_WORKER_POOL_SIZE", Objects.requireNonNull(
                         dtmProperties.getProperty("kafkaEmulatorWriter.dataWorkerPoolSize"))
@@ -364,12 +364,13 @@ public abstract class AbstractCoreDtmIntegrationTest {
                         .toString()))));
     }
 
-    public static String getZkDsConnectionString() {
+    public static String getZkDsConnectionStringAsExternal() {
         return zkDsContainer.getHost() + ":" + zkDsContainer.getMappedPort(ZK_PORT);
     }
 
     public static String getZkKafkaConnectionString() {
-        return zkKafkaContainer.getHost() + ":" + zkKafkaContainer.getMappedPort(ZK_PORT);
+        return Objects.requireNonNull(dtmProperties.getProperty("core.kafka.cluster.zookeeper.connection-string")).toString()
+                + ":" + ZK_PORT;
     }
 
     public static String getKafkaStatusMonitorHost() {

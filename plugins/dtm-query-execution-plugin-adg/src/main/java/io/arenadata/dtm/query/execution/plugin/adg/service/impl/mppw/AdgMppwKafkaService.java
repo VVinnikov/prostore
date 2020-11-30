@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl.mppw;
 
 import io.arenadata.dtm.common.reader.QueryResult;
-import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.MppwProperties;
+import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.AdgMppwKafkaProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.dto.mppw.AdgMppwKafkaContext;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.AdgMppwKafkaContextFactory;
 import io.arenadata.dtm.query.execution.plugin.adg.model.callback.function.TtTransferDataScdCallbackFunction;
@@ -28,12 +28,12 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
 
     private final AdgMppwKafkaContextFactory contextFactory;
     private final Map<String, String> initializedLoadingByTopic;
-    private final MppwProperties properties;
+    private final AdgMppwKafkaProperties properties;
     private final AdgCartridgeClient cartridgeClient;
 
     public AdgMppwKafkaService(AdgMppwKafkaContextFactory contextFactory,
                                AdgCartridgeClient cartridgeClient,
-                               MppwProperties properties) {
+                               AdgMppwKafkaProperties properties) {
         this.contextFactory = contextFactory;
         this.cartridgeClient = cartridgeClient;
         this.properties = properties;

@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl.ddl;
 
-import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.AdgCacheProperties;
+import io.arenadata.dtm.query.execution.plugin.adg.AdgDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
@@ -23,7 +23,7 @@ public class AdgDdlService implements DdlService<Void> {
     private final Map<SqlKind, DdlExecutor<Void>> ddlExecutors = new HashMap<>();
 
     @Override
-    @CacheEvict(value = AdgCacheProperties.DATAMART_CACHE_NAME, key = "#context.getDatamartName()")
+    @CacheEvict(value = AdgDataSourcePlugin.ADG_DATAMART_CACHE, key = "#context.getDatamartName()")
     public void execute(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {
         SqlNode query = context.getQuery();
         if (query == null) {

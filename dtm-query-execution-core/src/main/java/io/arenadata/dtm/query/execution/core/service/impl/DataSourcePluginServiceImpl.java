@@ -27,6 +27,8 @@ import org.springframework.plugin.core.PluginRegistry;
 import org.springframework.plugin.core.config.EnablePluginRegistries;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -34,6 +36,13 @@ import java.util.stream.Collectors;
 @Service
 @EnablePluginRegistries({DtmDataSourcePlugin.class})
 public class DataSourcePluginServiceImpl implements DataSourcePluginService {
+
+    public static final String ENTITY_CACHE = "entity";
+    public static final String HOT_DELTA_CACHE = "hotDelta";
+    public static final String OK_DELTA_CACHE = "okDelta";
+    public static final String ADB_DATAMART_CACHE = "adb_datamart";
+    public static final String ADG_DATAMART_CACHE = "adg_datamart";
+    public static final String ADQM_DATAMART_CACHE = "adqm_datamart";
 
     private final PluginRegistry<DtmDataSourcePlugin, SourceType> pluginRegistry;
     private final TaskVerticleExecutor taskVerticleExecutor;
@@ -179,5 +188,10 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     @Override
     public DtmDataSourcePlugin getPlugin(SourceType sourceType) {
         return pluginRegistry.getRequiredPluginFor(sourceType);
+    }
+
+    @Override
+    public Set<String> getActiveCaches() {
+        return new HashSet<>(Arrays.asList(ENTITY_CACHE, HOT_DELTA_CACHE, OK_DELTA_CACHE, ADB_DATAMART_CACHE, ADG_DATAMART_CACHE, ADQM_DATAMART_CACHE));
     }
 }

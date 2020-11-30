@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.impl;
 
-import io.arenadata.dtm.query.execution.core.configuration.cache.CacheConfiguration;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaDaoExecutorRepository;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.*;
@@ -8,6 +7,7 @@ import io.arenadata.dtm.query.execution.core.dto.delta.DeltaWriteOp;
 import io.arenadata.dtm.query.execution.core.dto.delta.DeltaWriteOpRequest;
 import io.arenadata.dtm.query.execution.core.dto.delta.HotDelta;
 import io.arenadata.dtm.query.execution.core.dto.delta.OkDelta;
+import io.arenadata.dtm.query.execution.core.service.impl.DataSourcePluginServiceImpl;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -29,37 +29,37 @@ public class DeltaServiceDaoImpl implements DeltaServiceDao, DeltaDaoExecutorRep
     }
 
     @Override
-    @CacheEvict(value = {CacheConfiguration.HOT_DELTA_CACHE, CacheConfiguration.OK_DELTA_CACHE}, key = "#datamart")
+    @CacheEvict(value = {DataSourcePluginServiceImpl.HOT_DELTA_CACHE, DataSourcePluginServiceImpl.OK_DELTA_CACHE}, key = "#datamart")
     public Future<Long> writeNewDeltaHot(String datamart) {
         return writeNewDeltaHot(datamart, null);
     }
 
     @Override
-    @CacheEvict(value = {CacheConfiguration.HOT_DELTA_CACHE, CacheConfiguration.OK_DELTA_CACHE}, key = "#datamart")
+    @CacheEvict(value = {DataSourcePluginServiceImpl.HOT_DELTA_CACHE, DataSourcePluginServiceImpl.OK_DELTA_CACHE}, key = "#datamart")
     public Future<Long> writeNewDeltaHot(String datamart, Long deltaHotNum) {
         return getExecutor(WriteNewDeltaHotExecutor.class).execute(datamart, deltaHotNum);
     }
 
     @Override
-    @CacheEvict(value = {CacheConfiguration.HOT_DELTA_CACHE, CacheConfiguration.OK_DELTA_CACHE}, key = "#datamart")
+    @CacheEvict(value = {DataSourcePluginServiceImpl.HOT_DELTA_CACHE, DataSourcePluginServiceImpl.OK_DELTA_CACHE}, key = "#datamart")
     public Future<LocalDateTime> writeDeltaHotSuccess(String datamart) {
         return writeDeltaHotSuccess(datamart, null);
     }
 
     @Override
-    @CacheEvict(value = {CacheConfiguration.HOT_DELTA_CACHE, CacheConfiguration.OK_DELTA_CACHE}, key = "#datamart")
+    @CacheEvict(value = {DataSourcePluginServiceImpl.HOT_DELTA_CACHE, DataSourcePluginServiceImpl.OK_DELTA_CACHE}, key = "#datamart")
     public Future<LocalDateTime> writeDeltaHotSuccess(String datamart, LocalDateTime deltaHotDate) {
         return getExecutor(WriteDeltaHotSuccessExecutor.class).execute(datamart, deltaHotDate);
     }
 
     @Override
-    @CacheEvict(value = {CacheConfiguration.HOT_DELTA_CACHE, CacheConfiguration.OK_DELTA_CACHE}, key = "#datamart")
+    @CacheEvict(value = {DataSourcePluginServiceImpl.HOT_DELTA_CACHE, DataSourcePluginServiceImpl.OK_DELTA_CACHE}, key = "#datamart")
     public Future<Void> writeDeltaError(String datamart, Long deltaHotNum) {
         return getExecutor(WriteDeltaErrorExecutor.class).execute(datamart, deltaHotNum);
     }
 
     @Override
-    @CacheEvict(value = {CacheConfiguration.HOT_DELTA_CACHE, CacheConfiguration.OK_DELTA_CACHE}, key = "#datamart")
+    @CacheEvict(value = {DataSourcePluginServiceImpl.HOT_DELTA_CACHE, DataSourcePluginServiceImpl.OK_DELTA_CACHE}, key = "#datamart")
     public Future<Void> deleteDeltaHot(String datamart) {
         return getExecutor(DeleteDeltaHotExecutor.class).execute(datamart);
     }
@@ -70,7 +70,7 @@ public class DeltaServiceDaoImpl implements DeltaServiceDao, DeltaDaoExecutorRep
     }
 
     @Override
-    @CacheEvict(value = {CacheConfiguration.HOT_DELTA_CACHE, CacheConfiguration.OK_DELTA_CACHE}, key = "#datamart")
+    @CacheEvict(value = {DataSourcePluginServiceImpl.HOT_DELTA_CACHE, DataSourcePluginServiceImpl.OK_DELTA_CACHE}, key = "#datamart")
     public Future<Void> writeOperationSuccess(String datamart, long synCn) {
         return getExecutor(WriteOperationSuccessExecutor.class).execute(datamart, synCn);
     }
@@ -96,13 +96,13 @@ public class DeltaServiceDaoImpl implements DeltaServiceDao, DeltaDaoExecutorRep
     }
 
     @Override
-    @Cacheable(value = CacheConfiguration.OK_DELTA_CACHE, key = "#datamart")
+    @Cacheable(value = DataSourcePluginServiceImpl.OK_DELTA_CACHE, key = "#datamart")
     public Future<OkDelta> getDeltaOk(String datamart) {
         return getExecutor(GetDeltaOkExecutor.class).execute(datamart);
     }
 
     @Override
-    @Cacheable(value = CacheConfiguration.HOT_DELTA_CACHE, key = "#datamart")
+    @Cacheable(value = DataSourcePluginServiceImpl.HOT_DELTA_CACHE, key = "#datamart")
     public Future<HotDelta> getDeltaHot(String datamart) {
         return getExecutor(GetDeltaHotExecutor.class).execute(datamart);
     }

@@ -27,6 +27,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @SpringBootTest(classes = DtmTestConfiguration.class)
@@ -81,6 +83,11 @@ class AdbDtmDataSourcePluginIT {
         @Override
         public void rollback(RollbackRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler) {
 
+        }
+
+        @Override
+        public Set<String> getActiveCaches() {
+            return Collections.singleton("adb_datamart");
         }
     };
 

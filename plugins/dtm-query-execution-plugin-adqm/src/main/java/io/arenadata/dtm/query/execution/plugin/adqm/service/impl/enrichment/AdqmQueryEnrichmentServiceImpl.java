@@ -66,7 +66,8 @@ public class AdqmQueryEnrichmentServiceImpl implements QueryEnrichmentService {
     }
 
     private List<Datamart> generatePhysicalSchema(List<Datamart> logicalSchemas, QueryRequest request) {
-        return logicalSchemas.stream().map(ls -> schemaExtender.createPhysicalSchema(ls, request.getEnvName()))
+        return logicalSchemas.stream()
+                .map(ls -> schemaExtender.createPhysicalSchema(ls, request.getEnvName()))
                 .collect(Collectors.toList());
     }
 }

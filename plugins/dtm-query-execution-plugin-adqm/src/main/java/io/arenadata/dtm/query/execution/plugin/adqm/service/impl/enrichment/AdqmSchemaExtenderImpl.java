@@ -4,7 +4,7 @@ import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
-import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.AdqmCacheProperties;
+import io.arenadata.dtm.query.execution.plugin.adqm.AdqmDtmDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.AdqmHelperTableNamesFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.SchemaExtender;
 import lombok.val;
@@ -48,7 +48,7 @@ public class AdqmSchemaExtenderImpl implements SchemaExtender {
     }
 
     @Override
-    @Cacheable(value = AdqmCacheProperties.DATAMART_CACHE_NAME, key = "#logicalSchema.getMnemonic()")
+    @Cacheable(value = AdqmDtmDataSourcePlugin.ADQM_DATAMART_CACHE, key = "#logicalSchema.getMnemonic()")
     public Datamart createPhysicalSchema(Datamart logicalSchema, String systemName) {
         Datamart extendedSchema = new Datamart();
         extendedSchema.setMnemonic(logicalSchema.getMnemonic());

@@ -45,7 +45,7 @@ public class AdgQueryEnrichmentServiceImpl implements QueryEnrichmentService {
                 val parserResponse = ar.result();
                 contextProvider.enrichContext(parserResponse.getCalciteContext(),
                         generatePhysicalSchema(request.getSchema(), request.getQueryRequest()));
-                // формируем новый sql-запрос
+                // form a new sql query
                 adgQueryGenerator.mutateQuery(parserResponse.getRelNode(),
                         parserResponse.getQueryRequest().getDeltaInformations(),
                         parserResponse.getCalciteContext(),
@@ -66,7 +66,8 @@ public class AdgQueryEnrichmentServiceImpl implements QueryEnrichmentService {
     }
 
     private List<Datamart> generatePhysicalSchema(List<Datamart> logicalSchemas, QueryRequest request) {
-        return logicalSchemas.stream().map(ls -> schemaExtender.createPhysicalSchema(ls, request.getEnvName()))
+        return logicalSchemas.stream()
+                .map(ls -> schemaExtender.createPhysicalSchema(ls, request.getEnvName()))
                 .collect(Collectors.toList());
     }
 }

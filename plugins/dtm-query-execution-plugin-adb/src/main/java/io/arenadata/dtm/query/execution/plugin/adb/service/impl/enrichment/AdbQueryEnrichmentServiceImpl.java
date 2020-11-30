@@ -46,7 +46,7 @@ public class AdbQueryEnrichmentServiceImpl implements QueryEnrichmentService {
                 val parserResponse = ar.result();
                 contextProvider.enrichContext(parserResponse.getCalciteContext(),
                         generatePhysicalSchemas(request.getSchema()));
-                // формируем новый sql-запрос
+                // form a new sql query
                 adbQueryGenerator.mutateQuery(parserResponse.getRelNode(),
                         parserResponse.getQueryRequest().getDeltaInformations(),
                         parserResponse.getCalciteContext(),

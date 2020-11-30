@@ -14,6 +14,8 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import org.springframework.plugin.core.Plugin;
 
+import java.util.Set;
+
 /**
  * Data source plugin interface
  */
@@ -89,4 +91,11 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
      * @param asyncResultHandler async handler
      */
     void rollback(RollbackRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler);
+
+    /**
+     * <p>Get name set of active caches</p>
+     *
+     * @return set of caches names
+     */
+    Set<String> getActiveCaches();
 }

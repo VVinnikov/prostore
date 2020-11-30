@@ -50,7 +50,7 @@ public class EdmlIntegrationTest extends AbstractCoreDtmIntegrationTest {
         suite.test("get offset status", context -> {
             Async async = context.async();
             StatusRequest statusRequest = new StatusRequest("test", "");
-            webClient.post(getKafkaStatusMonitorPort(), getKafkaStatusMonitorHost(), "/status")
+            webClient.post(getKafkaStatusMonitorPortExternal(), getKafkaStatusMonitorHostExternal(), "/status")
                     .sendJson(statusRequest, ar -> {
                         if (ar.succeeded()) {
                             promise.complete(ar.result().bodyAsJson(StatusResponse.class));
@@ -73,7 +73,7 @@ public class EdmlIntegrationTest extends AbstractCoreDtmIntegrationTest {
         suite.test("generate data and send into test_topic", context -> {
             Async async = context.async();
             final Object loadRequest = Json.decodeValue(FileUtil.getFileContent("it/requests/generated_data_check_request.json"));
-            vendorEmulator.generateData(getVendorEmulatorHost(), getVendorEmulatorPort(), loadRequest)
+            vendorEmulator.generateData(getVendorEmulatorHostExternal(), getVendorEmulatorPortExternal(), loadRequest)
                     .onComplete(ar -> {
                         if (ar.succeeded()) {
                             promise.complete();
@@ -119,8 +119,8 @@ public class EdmlIntegrationTest extends AbstractCoreDtmIntegrationTest {
                         Assertions.assertNotNull(resultSet, "source table created successfully");
                         return resultSet;
                     })
-                    .compose(resultSet -> vendorEmulator.generateData(getVendorEmulatorHost(),
-                            getVendorEmulatorPort(),
+                    .compose(resultSet -> vendorEmulator.generateData(getVendorEmulatorHostExternal(),
+                            getVendorEmulatorPortExternal(),
                             Json.decodeValue(String.format(FileUtil.getFileContent("it/requests/generated_data_request.json"),
                                     topic,
                                     rowCount + 1
@@ -176,7 +176,7 @@ public class EdmlIntegrationTest extends AbstractCoreDtmIntegrationTest {
                         }
                         async.complete();
                     });
-            async.awaitSuccess();
+            async.awaitSuccess(30000);
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
         assertNull(promise.future().cause());

@@ -83,7 +83,8 @@ public abstract class AbstractCoreDtmIntegrationTest {
                 dtmVendorEmulatorContainer,
                 dtmCoreContainer
         ).forEach(GenericContainer::start);
-        initConteinerMap();
+        kafkaContainer.addEnv("KAFKA_ADVERTISED_LISTENERS", "PLAINTEXT://localhost:" + kafkaContainer.getMappedPort(KAFKA_PORT));
+        initContainerMap();
         containerMap.forEach((key, value) -> log.info("Started container for integration tests: {}, host: {}, port: {}, image: {}",
                 value.getName(), key.getHost(), value.getPort(), key.getDockerImageName()));
     }
@@ -329,7 +330,7 @@ public abstract class AbstractCoreDtmIntegrationTest {
                 .withEnv("ADQM_REST_LOAD_GROUP", Objects.requireNonNull(dtmProperties.getProperty("adqm.mppw.restLoadConsumerGroup")).toString());
     }
 
-    private static void initConteinerMap() {
+    private static void initContainerMap() {
         containerMap.put(zkDsContainer, new ContainerInfo("Zookeeper service db",
                 zkDsContainer.getMappedPort(ZK_PORT)));
         containerMap.put(zkKafkaContainer, new ContainerInfo("Zookeeper kafka",
@@ -373,43 +374,43 @@ public abstract class AbstractCoreDtmIntegrationTest {
                 + ":" + ZK_PORT;
     }
 
-    public static String getKafkaStatusMonitorHost() {
+    public static String getKafkaStatusMonitorHostExternal() {
         return dtmKafkaStatusMonitorContainer.getHost();
     }
 
-    public static int getKafkaStatusMonitorPort() {
+    public static int getKafkaStatusMonitorPortExternal() {
         return dtmKafkaStatusMonitorContainer.getMappedPort((Integer) Objects.requireNonNull(
                 dtmProperties.getProperty("statusMonitor.port")));
     }
 
-    public static String getDtmCoreHost() {
+    public static String getDtmCoreHostExternal() {
         return dtmCoreContainer.getHost();
     }
 
-    public static int getDtmMetricsPort() {
-        return dtmCoreContainer.getMappedPort((Integer) Objects.requireNonNull(dtmProperties.getProperty("management.server.port")));
-    }
-
-    public static int getDtmCorePort() {
+    public static int getDtmCorePortExternal() {
         return dtmCoreContainer.getMappedPort(
                 Integer.parseInt(Objects.requireNonNull(dtmProperties.getProperty("core.http.port")).toString()));
     }
 
-    public static String getVendorEmulatorHost() {
+    public static int getDtmMetricsPortExternal() {
+        return dtmCoreContainer.getMappedPort((Integer) Objects.requireNonNull(dtmProperties.getProperty("management.server.port")));
+    }
+
+    public static String getVendorEmulatorHostExternal() {
         return dtmVendorEmulatorContainer.getHost();
     }
 
-    public static int getVendorEmulatorPort() {
+    public static int getVendorEmulatorPortExternal() {
         return dtmVendorEmulatorContainer.getMappedPort((Integer) Objects.requireNonNull(
                 dtmProperties.getProperty("vendorEmulator.port")));
     }
 
-    public static String getDtmCoreHostPort() {
-        return getDtmCoreHost() + ":" + getDtmCorePort();
+    public static String getDtmCoreHostPortExternal() {
+        return getDtmCoreHostExternal() + ":" + getDtmCorePortExternal();
     }
 
     public static String getJdbcDtmConnectionString() {
-        return "jdbc:adtm://" + getDtmCoreHostPort() + "/";
+        return "jdbc:adtm://" + getDtmCoreHostPortExternal() + "/";
     }
 
     public static String getEntitiesPath(String datamartMnemonic) {

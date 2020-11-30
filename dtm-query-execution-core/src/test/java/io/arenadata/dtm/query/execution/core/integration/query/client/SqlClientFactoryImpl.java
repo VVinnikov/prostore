@@ -25,7 +25,7 @@ public class SqlClientFactoryImpl implements SqlClientFactory {
     @Override
     public SQLClient create(String datamartMnemonic) {
         val jdbcUrl = String.format("jdbc:adtm://%s/%s",
-                AbstractCoreDtmIntegrationTest.getDtmCoreHostPort(),
+                AbstractCoreDtmIntegrationTest.getDtmCoreHostPortExternal(),
                 datamartMnemonic);
         val jsonConfig = new JsonObject()
                 .put("driver_class", "io.arenadata.dtm.jdbc.DtmDriver")

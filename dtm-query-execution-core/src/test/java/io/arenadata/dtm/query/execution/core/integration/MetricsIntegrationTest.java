@@ -31,7 +31,7 @@ public class MetricsIntegrationTest extends AbstractCoreDtmIntegrationTest {
         Promise<ResultMetrics> promise = Promise.promise();
         suite.test("get metrics", context -> {
             Async async = context.async();
-            webClient.get(getDtmMetricsPort(), getDtmCoreHost(), "/actuator/requests/")
+            webClient.get(getDtmMetricsPortExternal(), getDtmCoreHostExternal(), "/actuator/requests/")
                     .send(ar -> {
                         if (ar.succeeded()) {
                             promise.complete(ar.result().bodyAsJson(ResultMetrics.class));

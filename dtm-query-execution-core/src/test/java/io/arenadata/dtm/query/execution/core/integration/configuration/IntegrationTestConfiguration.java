@@ -46,7 +46,7 @@ public class IntegrationTestConfiguration {
     public KafkaZookeeperConnectionProvider zkKafkaConnectionProvider() {
         final KafkaZookeeperProperties zookeeperProperties = new KafkaZookeeperProperties();
         zookeeperProperties.setConnectionString(AbstractCoreDtmIntegrationTest.getZkKafkaConnectionString());
-        return new KafkaZookeeperConnectionProviderImpl(vertx(), zookeeperProperties);
+        return new KafkaZookeeperConnectionProviderImpl(zookeeperProperties);
     }
 
 

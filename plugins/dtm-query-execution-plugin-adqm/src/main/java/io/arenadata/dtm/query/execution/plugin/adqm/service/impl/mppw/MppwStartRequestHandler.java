@@ -253,7 +253,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         }
         try {
             final RestMppwKafkaLoadRequest mppwKafkaLoadRequest = restMppwKafkaRequestFactory.create(mppwRequest);
-            log.debug("ADQM: Send mppw kafka rest request {}", mppwKafkaLoadRequest);
+            log.debug("ADQM: Send mppw kafka rest request {} to {}", mppwKafkaLoadRequest, adqmMppwProperties.getRestLoadUrl());
             return restLoadInitiator.initiateLoading(mppwKafkaLoadRequest);
         } catch (Exception e) {
             return Future.failedFuture(e);

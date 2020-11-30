@@ -48,7 +48,7 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
      * Prefix of writable external table
      */
     public static final String WRITABLE_EXT_TABLE_PREF = "FDW_EXT_";
-    public static final String COMMIT_OFFSETS = "SELECT kadb.table_commit_offsets('%s'::regclass)";
+    public static final String COMMIT_OFFSETS = "SELECT kadb.commit_offsets('%s.%s'::regclass::oid)";
     public static final String SERVER_NAME_TEMPLATE = "FDW_KAFKA_%s";
     public static final String QUERY_DELIMITER = "; ";
     public static final String TABLE_POSTFIX_DELIMITER = "_";
@@ -312,5 +312,12 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
     @Override
     public String dropWritableExtTableSqlQuery(String schema, String table) {
         return String.format(DROP_WRITABLE_EXT_TABLE_SQL, schema, table);
+    }
+
+    @Override
+    public List<String> getColumnsFromEntity(Entity entity) {
+        return entity.getFields().stream()
+                .map(this::getColumnDDLByField)
+                .collect(Collectors.toList());
     }
 }

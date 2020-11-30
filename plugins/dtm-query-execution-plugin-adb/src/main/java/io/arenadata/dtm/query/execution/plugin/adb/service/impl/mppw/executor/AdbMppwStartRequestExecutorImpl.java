@@ -22,7 +22,6 @@ import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.avro.Schema;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -108,12 +107,9 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
 
     private Future<String> createWritableExternalTable(String server, MppwRequestContext context) {
         return Future.future(promise -> {
-            val columns = new Schema.Parser().parse(context.getRequest()
-                    .getKafkaParameter().getUploadMetadata().getExternalSchema())
-                    .getFields().stream()
-                    .map(this::avroFieldToString)
-                    .filter(column -> !column.contains("sys"))
-                    .collect(Collectors.toList());
+            val sourceEntity = context.getRequest().getKafkaParameter().getSourceEntity();
+            val columns = metadataSqlFactory.getColumnsFromEntity(sourceEntity);
+            columns.add("sys_op int");
             adbQueryExecutor.executeUpdate(metadataSqlFactory.createExtTableSqlQuery(server, columns, context, mppwProperties), ar -> {
                 if (ar.succeeded()) {
                     promise.complete(server);
@@ -122,44 +118,6 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
                 }
             });
         });
-    }
-
-    private String avroFieldToString(Schema.Field f) {
-        String name = f.name();
-        String type = avroTypeToNative(f.schema());
-        return String.format("%s %s", name, type);
-    }
-
-    private String avroTypeToNative(Schema f) {
-        switch (f.getType()) {
-            case UNION:
-                val fields = f.getTypes();
-                val types = fields.stream().map(this::avroTypeToNative).collect(Collectors.toList());
-                if (types.size() == 2) { // support only union (null, type)
-                    int realTypeIdx = types.get(0).equalsIgnoreCase("NULL") ? 1 : 0;
-                    return avroTypeToNative(fields.get(realTypeIdx));
-                } else {
-                    return "";
-                }
-            case STRING:
-                return "TEXT";
-            case INT:
-                return "INT";
-            case LONG:
-                return "BIGINT";
-            case FLOAT:
-                return "FLOAT";
-            case DOUBLE:
-                return "DOUBLE PRECISION";
-            case BOOLEAN:
-                return "BOOLEAN";
-            case BYTES:
-                return "BYTEA";
-            case NULL:
-                return "NULL";
-            default:
-                return "";
-        }
     }
 
     private Future<MppwKafkaRequestContext> createMppwKafkaRequestContext(MppwRequestContext context,

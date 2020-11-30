@@ -64,14 +64,4 @@ public class AdbMppwStopRequestExecutorImpl implements AdbMppwRequestExecutor {
             adbQueryExecutor.executeUpdate(metadataSqlFactory.dropExtTableSqlQuery(schema, table), promise);
         });
     }
-
-    private Future<Void> dropForeignTable(String datamart, String tableName) {
-        return Future.future(promise -> adbQueryExecutor.executeUpdate(metadataSqlFactory.dropExtTableSqlQuery(datamart, tableName), ar -> {
-            if (ar.succeeded()) {
-                promise.complete();
-            } else {
-                promise.fail(ar.cause());
-            }
-        }));
-    }
 }

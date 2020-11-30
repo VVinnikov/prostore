@@ -43,4 +43,6 @@ public interface MetadataSqlFactory {
     String createServerSqlQuery(String database, String brokerList);
 
     String insertIntoStagingTableSqlQuery(String schema, String columns, String table, String extTable);
+
+    List<String> getColumnsFromEntity(Entity entity);
 }

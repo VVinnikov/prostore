@@ -67,24 +67,19 @@ public class DdlUtils {
             case CHAR:
             case VARCHAR:
                 return "String";
-
             case INT:
             case BIGINT:
             case DATE:
             case TIME:
                 return "Int64";
-
             case BOOLEAN:
                 return "UInt8";
-
             case FLOAT:
                 return "Float32";
             case DOUBLE:
                 return "Float64";
-
             case TIMESTAMP:
                 return "DateTime64";
-
             default:
                 return "";
         }
@@ -105,7 +100,6 @@ public class DdlUtils {
             case STRING:
                 return "String";
             case INT:
-                return "Int32";
             case LONG:
                 return "Int64";
             case FLOAT:

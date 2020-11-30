@@ -10,6 +10,7 @@ import io.arenadata.dtm.query.execution.plugin.adg.factory.impl.AdgTableEntities
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.*;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.adg.service.impl.AdgCartridgeClientImpl;
+import io.arenadata.dtm.query.execution.plugin.adg.utils.TestUtils;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
@@ -36,42 +37,15 @@ public class AdgCheckTableServiceTest {
     private static final String TEST_COLUMN_NAME = "test_column";
     private static final String NOT_TABLE_EXIST = "not_exist_table";
     private static final String ENV = "env";
-    private static Set<String> spacePostfixes;
-    private static Map<String, List<SpaceIndex>> spaceIndexMap;
     private Entity entity;
     private CheckContext checkContext;
     private CheckTableService adgCheckTableService;
-
-    @BeforeAll
-    static void init() {
-        spaceIndexMap = new HashMap<>();
-        spaceIndexMap.put(ACTUAL_POSTFIX, Arrays.asList(
-                new SpaceIndex(true, Collections.emptyList(), SpaceIndexTypes.TREE, ID),
-                new SpaceIndex(false, Collections.emptyList(), SpaceIndexTypes.TREE, SEC_INDEX_PREFIX + SYS_FROM_FIELD),
-                new SpaceIndex(false, Collections.emptyList(), SpaceIndexTypes.TREE, BUCKET_ID)
-        ));
-        spaceIndexMap.put(HISTORY_POSTFIX, Arrays.asList(
-                new SpaceIndex(true, Collections.emptyList(), SpaceIndexTypes.TREE, ID),
-                new SpaceIndex(false, Collections.emptyList(), SpaceIndexTypes.TREE, SEC_INDEX_PREFIX + SYS_FROM_FIELD),
-                new SpaceIndex(false, Collections.emptyList(), SpaceIndexTypes.TREE, SEC_INDEX_PREFIX + SYS_TO_FIELD),
-                new SpaceIndex(false, Collections.emptyList(), SpaceIndexTypes.TREE, BUCKET_ID)
-        ));
-        spaceIndexMap.put(STAGING_POSTFIX, Arrays.asList(
-                new SpaceIndex(true, Collections.emptyList(), SpaceIndexTypes.TREE, ID),
-                new SpaceIndex(false, Collections.emptyList(), SpaceIndexTypes.TREE, BUCKET_ID)
-        ));
-
-        spacePostfixes = new HashSet<>();
-        spacePostfixes.add(ACTUAL_POSTFIX);
-        spacePostfixes.add(HISTORY_POSTFIX);
-        spacePostfixes.add(STAGING_POSTFIX);
-    }
 
     @BeforeEach
     void setUp() {
 
         AdgCartridgeClient adgClient = mock(AdgCartridgeClientImpl.class);
-        entity = getEntity();
+        entity = TestUtils.getEntity();
         int fieldsCount = entity.getFields().size();
         entity.getFields().add(EntityField.builder()
                 .name(TEST_COLUMN_NAME)
@@ -85,7 +59,7 @@ public class AdgCheckTableServiceTest {
         queryRequest.setDatamartMnemonic(entity.getSchema());
         checkContext = new CheckContext(null, new DatamartRequest(queryRequest), entity);
 
-        Map<String, Space> spaces = getSpaces(entity);
+        Map<String, Space> spaces = TestUtils.getSpaces(entity);
         when(adgClient.getSpaceDescriptions(eq(spaces.keySet())))
                 .thenReturn(Future.succeededFuture(spaces));
         when(adgClient.getSpaceDescriptions(AdditionalMatchers.not(eq(spaces.keySet()))))
@@ -139,66 +113,5 @@ public class AdgCheckTableServiceTest {
         consumer.accept(testColumn);
         assertThat(adgCheckTableService.check(checkContext).cause().getMessage(),
                 containsString(expectedError));
-    }
-
-    private Map<String, Space> getSpaces(Entity entity) {
-        List<SpaceAttribute> logAttrs = entity.getFields().stream()
-                .map(field -> new SpaceAttribute(field.getNullable(), field.getName(),
-                        SpaceAttributeTypeUtil.toAttributeType(field.getType())))
-                .collect(Collectors.toList());
-        return spacePostfixes.stream()
-                .collect(Collectors.toMap(
-                        postfix -> String.format("env__%s__%s%s", entity.getSchema(), entity.getName(), postfix),
-                        postfix -> Space.builder()
-                                .format(getAttrs(postfix, logAttrs))
-                                .indexes(spaceIndexMap.get(postfix))
-                                .build()));
-    }
-
-    private List<SpaceAttribute> getAttrs(String postfix, List<SpaceAttribute> logAttrs) {
-        List<SpaceAttribute> result = new ArrayList<>();
-        result.add(new SpaceAttribute(false, BUCKET_ID, SpaceAttributeTypes.UNSIGNED));
-        switch (postfix) {
-            case ACTUAL_POSTFIX:
-            case HISTORY_POSTFIX:
-                result.add(new SpaceAttribute(false, SYS_FROM_FIELD, SpaceAttributeTypes.NUMBER));
-                result.add(new SpaceAttribute(true, SYS_TO_FIELD, SpaceAttributeTypes.NUMBER));
-                result.add(new SpaceAttribute(false, SYS_OP_FIELD, SpaceAttributeTypes.NUMBER));
-            case STAGING_POSTFIX:
-                result.add(new SpaceAttribute(false, SYS_OP_FIELD, SpaceAttributeTypes.NUMBER));
-        }
-        result.addAll(logAttrs);
-        return result;
-    }
-
-    private static Entity getEntity() {
-        List<EntityField> keyFields = Arrays.asList(
-                new EntityField(0, "id", ColumnType.INT.name(), false, 1, 1, null),
-                new EntityField(1, "sk_key2", ColumnType.INT.name(), false, null, 2, null),
-                new EntityField(2, "pk2", ColumnType.INT.name(), false, 2, null, null),
-                new EntityField(3, "sk_key3", ColumnType.INT.name(), false, null, 3, null)
-        );
-        ColumnType[] types = ColumnType.values();
-        List<EntityField> fields = new ArrayList<>();
-        for (int i = 0; i < types.length; i++) {
-            ColumnType type = types[i];
-            if (Arrays.asList(ColumnType.BLOB, ColumnType.ANY).contains(type)) {
-                continue;
-            }
-
-            EntityField.EntityFieldBuilder builder = EntityField.builder()
-                    .ordinalPosition(i + keyFields.size())
-                    .type(type)
-                    .nullable(true)
-                    .name(type.name() + "_type");
-            if (Arrays.asList(ColumnType.CHAR, ColumnType.VARCHAR).contains(type)) {
-                builder.size(20);
-            } else if (Arrays.asList(ColumnType.TIME, ColumnType.TIMESTAMP).contains(type)) {
-                builder.accuracy(5);
-            }
-            fields.add(builder.build());
-        }
-        fields.addAll(keyFields);
-        return new Entity("test_schema.test_table", fields);
     }
 }

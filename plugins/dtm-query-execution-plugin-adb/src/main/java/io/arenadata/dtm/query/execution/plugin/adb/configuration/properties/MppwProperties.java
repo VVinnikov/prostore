@@ -11,5 +11,6 @@ public class MppwProperties {
     private String consumerGroup;
     private String startLoadUrl;
     private Integer poolSize;
-    private Long stopTimeoutMs = 864_00_000L;
+    private long stopTimeoutMs = 864_00_000L;
+    private long defaultMessageLimit = 200L;
 }

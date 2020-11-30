@@ -45,7 +45,7 @@ public class DdlUtils {
                                                @NonNull AppConfiguration appConfiguration) {
         final MppwKafkaParameter kafkaParameter = request.getKafkaParameter();
 
-        String tableName = kafkaParameter.getTargetTableName();
+        String tableName = kafkaParameter.getDestinationTableName();
         String schema = kafkaParameter.getDatamart();
         String env = appConfiguration.getSystemName();
         return env + "__" + schema + "." + tableName;

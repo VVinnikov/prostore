@@ -13,30 +13,30 @@ management:
 
 core:
   plugins:
-    active: ${CORE_PLUGINS_ACTIVE:ADB}
+    active: ${CORE_PLUGINS_ACTIVE:ADG, ADB, ADQM}
 
   http:
     port: ${DTM_CORE_PORT:9090}
 
   env:
-    name: ${DTM_NAME:bve_fdw_test}
+    name: ${DTM_NAME:test}
 
   settings:
     timeZone: ${CORE_TIME_ZONE:UTC}
 
   metrics:
-    isEnabled: ${DTM_CORE_METRICS_ENABLED:false}
+    isEnabled: ${DTM_CORE_METRICS_ENABLED:true}
 
   datasource:
     edml:
       sourceType: ${EDML_DATASOURCE:ADB}
       defaultChunkSize: ${EDML_DEFAULT_CHUNK_SIZE:1000}
       defaultMessageLimit: ${EDML_DEFAULT_MESSAGE_LIMIT:1000}
-      pluginStatusCheckPeriodMs: ${EDML_STATUS_CHECK_PERIOD_MS:3000}
+      pluginStatusCheckPeriodMs: ${EDML_STATUS_CHECK_PERIOD_MS:1000}
       firstOffsetTimeoutMs: ${EDML_FIRST_OFFSET_TIMEOUT_MS:15000}
       changeOffsetTimeoutMs: ${EDML_CHANGE_OFFSET_TIMEOUT_MS:10000}
     zookeeper:
-      connection-string: ${ZOOKEEPER_DS_ADDRESS:10.92.3.17}
+      connection-string: ${ZOOKEEPER_DS_ADDRESS:10.92.3.31}
       connection-timeout-ms: ${ZOOKEEPER_DS_CONNECTION_TIMEOUT_MS:30000}
       session-timeout-ms: ${ZOOKEEPER_DS_SESSION_TIMEOUT_MS:86400000}
       chroot: ${ZOOKEEPER_DS_CHROOT:/adtm}
@@ -48,16 +48,17 @@ core:
         value.serializer: org.apache.kafka.common.serialization.StringSerializer
     cluster:
       zookeeper:
-        connection-string: ${ZOOKEEPER_KAFKA_ADDRESS:10.92.3.25}
+        connection-string: ${ZOOKEEPER_KAFKA_ADDRESS:10.92.3.31}
         connection-timeout-ms: ${ZOOKEEPER_KAFKA_CONNECTION_TIMEOUT_MS:30000}
         session-timeout-ms: ${ZOOKEEPER_KAFKA_SESSION_TIMEOUT_MS:86400000}
         chroot: ${ZOOKEEPER_KAFKA_CHROOT:}
     admin:
-      inputStreamTimeoutMs: ${KAFKA_INPUT_STREAM_TIMEOUT_MS:10000}
+      inputStreamTimeoutMs: ${KAFKA_INPUT_STREAM_TIMEOUT_MS:2000}
     status.event.publish:
       enabled: false
       topic: status.event
-    statusMonitorUrl: ${STATUS_MONITOR_URL:http://10.92.3.3:9095/status}
+    statusMonitorUrl: ${STATUS_MONITOR_URL:http://127.0.0.1:9095/status}
+
   cache:
     initialCapacity: ${CACHE_INITIAL_CAPACITY:100000}
     maximumSize: ${CACHE_MAXIMUM_SIZE:100000}
@@ -67,16 +68,11 @@ adb:
   datasource:
     options:
       database: ${ADB_DB_NAME:adb}
-      user: ${ADB_USERNAME:dtm}
-      password: ${ADB_PASS:dtm}
+      user: ${ADB_USERNAME:gpadmin}
+      password: ${ADB_PASS:gpadmin}
       host: ${ADB_HOST:10.92.3.61}
       port: ${ADB_PORT:5432}
       maxSize: 20
-
-  mppr:
-    host: ${ADB_MPPR_CONNECTOR_HOST:10.92.3.61}
-    port: ${ADB_MPPR_CONNECTOR_PORT:8086}
-    url: ${ADB_MPPR_CONNECTOR_URL:/query}
 
   mppw:
     startLoadUrl: ${ADB_START_LOAD_URL:http://10.92.3.3:8090/newdata/adb/start}
@@ -90,14 +86,14 @@ adb:
 adg:
   tarantool:
     db:
-      host: ${TARANTOOL_DB_HOST:10.92.3.63}
+      host: ${TARANTOOL_DB_HOST:10.92.3.33}
       port: ${TARANTOOL_DB_PORT:3301}
       user: ${TARANTOOL_DB_USER:admin}
       password: ${TARANTOOL_DB_PASS:memstorage-cluster-cookie}
       operationTimeout: ${TARANTOOL_DB_OPER_TIMEOUT:60000}
       retryCount: ${TARANTOOL_DB_RETRY_COUNT:0}
     cartridge:
-      url: ${TARANTOOL_CATRIDGE_URL:http://10.92.3.63:8081}
+      url: ${TARANTOOL_CATRIDGE_URL:http://10.92.3.33:8081}
 
   mppw:
     consumerGroup: ${ADG_CONSUMER_GROUP:tarantool-group-csv}
@@ -119,13 +115,13 @@ adg:
 
 adqm:
   datasource:
-    database: ${ADQM_DB_NAME:test1}
-    user: ${ADQM_USERNAME:default}
+    database: ${ADQM_DB_NAME:upload}
+    user: ${ADQM_USERNAME:}
     password: ${ADQM_PASS:}
-    hosts: ${ADQM_HOSTS:10.92.3.19:8123}
+    hosts: ${ADQM_HOSTS:10.92.3.24:8123}
 
   ddl:
-    cluster: ${ADQM_CLUSTER:cluster}
+    cluster: ${ADQM_CLUSTER:test_arenadata}
     ttlSec: ${ADQM_TTL_SEC:3600}
     archiveDisk: ${ADQM_ARCHIVE_DISK:default}
 
@@ -136,7 +132,7 @@ adqm:
 
   mppw:
     consumerGroup: ${ADQM_CONSUMER_GROUP:adqm}
-    kafkaBrokers: ${ADQM_BROKERS:10.92.3.25:9092}
+    kafkaBrokers: ${ADQM_BROKERS:10.92.3.31:9092}
     loadType: ${ADQM_MPPW_LOAD_TYPE:REST}
     restLoadUrl: ${ADQM_REST_LOAD_URL:http://10.92.3.3:8090/newdata/adqm/start}
     restLoadConsumerGroup: ${ADQM_REST_LOAD_GROUP:adb-emulator-load-adqm}

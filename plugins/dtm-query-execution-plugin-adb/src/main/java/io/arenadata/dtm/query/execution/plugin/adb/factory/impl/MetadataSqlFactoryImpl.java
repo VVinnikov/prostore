@@ -82,7 +82,7 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
     public String createTableScripts(Entity entity) {
         return new StringBuilder()
                 .append(createTableScript(entity, entity.getNameWithSchema()
-                        + TABLE_POSTFIX_DELIMITER + ACTUAL_TABLE, false, false))
+                        + TABLE_POSTFIX_DELIMITER + ACTUAL_TABLE, false, true))
                 .append(QUERY_DELIMITER)
                 .append(createTableScript(entity, entity.getNameWithSchema()
                         + TABLE_POSTFIX_DELIMITER + HISTORY_TABLE, false, true))

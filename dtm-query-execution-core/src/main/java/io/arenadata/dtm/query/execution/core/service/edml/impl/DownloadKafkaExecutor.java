@@ -1,8 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.edml.impl;
 
 import io.arenadata.dtm.common.dto.QueryParserRequest;
-import io.arenadata.dtm.common.model.ddl.ColumnType;
-import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.core.configuration.properties.EdmlProperties;
@@ -11,6 +9,7 @@ import io.arenadata.dtm.query.execution.core.service.CheckColumnTypesService;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.dml.ColumnMetadataService;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlDownloadExecutor;
+import io.arenadata.dtm.query.execution.core.service.impl.CheckColumnTypesServiceImpl;
 import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import io.vertx.core.AsyncResult;
@@ -22,15 +21,10 @@ import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 @Service
 @Slf4j
 public class DownloadKafkaExecutor implements EdmlDownloadExecutor {
 
-    private static final String FAIL_CHECK_COLUMNS_PATTERN = "The types of columns of the external table [%s] " +
-            "and the types of the selection columns do not match!";
     private final MpprKafkaRequestFactory mpprKafkaRequestFactory;
     private final ColumnMetadataService columnMetadataService;
     private final DataSourcePluginService pluginService;
@@ -59,12 +53,9 @@ public class DownloadKafkaExecutor implements EdmlDownloadExecutor {
         if (context.getSourceEntity().getDestination().contains(edmlProperties.getSourceType())) {
             QueryParserRequest queryParserRequest = new QueryParserRequest(context.getRequest().getQueryRequest(),
                     context.getLogicalSchema());
-            List<ColumnType> checkColumnTypes = context.getDestinationEntity().getFields().stream()
-                    .map(EntityField::getType)
-                    .collect(Collectors.toList());
-            return checkColumnTypesService.check(checkColumnTypes, queryParserRequest)
+            return checkColumnTypesService.check(context.getDestinationEntity().getFields(), queryParserRequest)
                     .compose(areEqual -> areEqual ? mpprKafkaRequestFactory.create(context)
-                            : Future.failedFuture(String.format(FAIL_CHECK_COLUMNS_PATTERN,
+                            : Future.failedFuture(String.format(CheckColumnTypesServiceImpl.FAIL_CHECK_COLUMNS_PATTERN,
                             context.getDestinationEntity().getName())))
                     .compose(mpprRequestContext -> initColumnMetadata(context, mpprRequestContext))
                     .compose(this::executeMppr);

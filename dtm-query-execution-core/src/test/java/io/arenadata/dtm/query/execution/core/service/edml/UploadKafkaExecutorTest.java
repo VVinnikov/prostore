@@ -17,8 +17,10 @@ import io.arenadata.dtm.query.execution.core.configuration.properties.CoreDtmSet
 import io.arenadata.dtm.query.execution.core.configuration.properties.EdmlProperties;
 import io.arenadata.dtm.query.execution.core.factory.MppwKafkaRequestFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.MppwKafkaRequestFactoryImpl;
+import io.arenadata.dtm.query.execution.core.service.CheckColumnTypesService;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadKafkaExecutor;
+import io.arenadata.dtm.query.execution.core.service.impl.CheckColumnTypesServiceImpl;
 import io.arenadata.dtm.query.execution.core.service.impl.DataSourcePluginServiceImpl;
 import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
@@ -36,8 +38,6 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -45,7 +45,8 @@ import java.time.temporal.ChronoField;
 import java.util.*;
 import java.util.stream.LongStream;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -57,6 +58,7 @@ class UploadKafkaExecutorTest {
     private final MppwKafkaRequestFactory mppwKafkaRequestFactory = mock(MppwKafkaRequestFactoryImpl.class);
     private final EdmlProperties edmlProperties = mock(EdmlProperties.class);
     private final KafkaProperties kafkaProperties = mock(KafkaProperties.class);
+    private final CheckColumnTypesService checkColumnTypesService = mock(CheckColumnTypesServiceImpl.class);
     private EdmlUploadExecutor uploadKafkaExecutor;
     private DtmConfig dtmSettings = mock(CoreDtmSettings.class);
     private Vertx vertx = Vertx.vertx();
@@ -75,7 +77,7 @@ class UploadKafkaExecutorTest {
     @BeforeEach
     void setUp() {
         uploadKafkaExecutor = new UploadKafkaExecutor(pluginService, mppwKafkaRequestFactory,
-                edmlProperties, kafkaProperties, vertx, dtmSettings);
+                edmlProperties, kafkaProperties, vertx, dtmSettings, checkColumnTypesService);
         sourceTypes = new HashSet<>();
         sourceTypes.addAll(Arrays.asList(SourceType.ADB, SourceType.ADG));
         queryRequest = new QueryRequest();
@@ -84,6 +86,7 @@ class UploadKafkaExecutorTest {
         queryRequest.setSql("INSERT INTO test.pso SELECT id, name FROM test.upload_table");
         when(dtmSettings.getTimeZone()).thenReturn(ZoneId.of("UTC"));
         timeZone = dtmSettings.getTimeZone();
+        when(checkColumnTypesService.check(any(), any())).thenReturn(Future.succeededFuture(true));
     }
 
     @Test

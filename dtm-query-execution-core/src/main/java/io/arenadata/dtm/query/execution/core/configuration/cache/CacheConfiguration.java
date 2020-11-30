@@ -8,15 +8,23 @@ import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Configuration
 @EnableCaching
 public class CacheConfiguration {
 
+    public static final String ENTITY_CACHE = "entity";
+    public static final String HOT_DELTA_CACHE = "hotDelta";
+    public static final String OK_DELTA_CACHE = "okDelta";
+
     @Bean("caffeineCacheManager")
-    public CacheManager cacheManager(CacheProperties cacheProperties, DataSourcePluginService dataSourcePluginService) {
-        CaffeineCacheManager cacheManager = new CaffeineCacheManager(dataSourcePluginService.getActiveCaches().toArray(new String[0]));
+    public CacheManager cacheManager(CacheProperties cacheProperties, DataSourcePluginService dataSourcePluginService)  {
+        List<String> caches = Arrays.asList(ENTITY_CACHE, HOT_DELTA_CACHE, OK_DELTA_CACHE);
+        caches.addAll(dataSourcePluginService.getActiveCaches());
+        CaffeineCacheManager cacheManager = new CaffeineCacheManager(caches.toArray(new String[0]));
         cacheManager.setCaffeine(caffeineCacheBuilder(cacheProperties));
         return cacheManager;
     }

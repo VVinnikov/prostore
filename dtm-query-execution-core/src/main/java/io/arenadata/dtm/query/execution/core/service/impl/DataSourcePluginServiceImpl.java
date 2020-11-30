@@ -37,16 +37,10 @@ import java.util.stream.Collectors;
 @EnablePluginRegistries({DtmDataSourcePlugin.class})
 public class DataSourcePluginServiceImpl implements DataSourcePluginService {
 
-    public static final String ENTITY_CACHE = "entity";
-    public static final String HOT_DELTA_CACHE = "hotDelta";
-    public static final String OK_DELTA_CACHE = "okDelta";
-    public static final String ADB_DATAMART_CACHE = "adb_datamart";
-    public static final String ADG_DATAMART_CACHE = "adg_datamart";
-    public static final String ADQM_DATAMART_CACHE = "adqm_datamart";
-
     private final PluginRegistry<DtmDataSourcePlugin, SourceType> pluginRegistry;
     private final TaskVerticleExecutor taskVerticleExecutor;
     private final Set<SourceType> sourceTypes;
+    private final Set<String> activeCaches;
     private final MetricsService<RequestMetrics> metricsService;
 
     @Autowired
@@ -58,6 +52,9 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
         this.pluginRegistry = pluginRegistry;
         this.sourceTypes = pluginRegistry.getPlugins().stream()
                 .map(DtmDataSourcePlugin::getSourceType)
+                .collect(Collectors.toSet());
+        this.activeCaches = pluginRegistry.getPlugins().stream()
+                .flatMap(plugin -> plugin.getActiveCaches().stream())
                 .collect(Collectors.toSet());
         this.metricsService = metricsService;
         log.info("Active Plugins: {}", sourceTypes.toString());
@@ -192,6 +189,6 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
 
     @Override
     public Set<String> getActiveCaches() {
-        return new HashSet<>(Arrays.asList(ENTITY_CACHE, HOT_DELTA_CACHE, OK_DELTA_CACHE, ADB_DATAMART_CACHE, ADG_DATAMART_CACHE, ADQM_DATAMART_CACHE));
+        return activeCaches;
     }
 }

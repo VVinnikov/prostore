@@ -1,8 +1,8 @@
 package io.arenadata.dtm.query.execution.core.service.cache.impl;
 
+import io.arenadata.dtm.query.execution.core.configuration.cache.CacheConfiguration;
 import io.arenadata.dtm.query.execution.core.dto.delta.OkDelta;
 import io.arenadata.dtm.query.execution.core.service.cache.AbstractCaffeineCacheService;
-import io.arenadata.dtm.query.execution.core.service.impl.DataSourcePluginServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.CacheManager;
@@ -13,7 +13,7 @@ public class OkDeltaCacheService extends AbstractCaffeineCacheService<String, Ok
 
     @Autowired
     public OkDeltaCacheService(@Qualifier("caffeineCacheManager") CacheManager cacheManager) {
-        super(DataSourcePluginServiceImpl.OK_DELTA_CACHE, cacheManager);
+        super(CacheConfiguration.OK_DELTA_CACHE, cacheManager);
     }
 
 }

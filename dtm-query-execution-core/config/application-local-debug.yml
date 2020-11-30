@@ -100,8 +100,9 @@ adg:
 
   mppw:
     consumerGroup: ${ADG_CONSUMER_GROUP:tarantool-group-csv}
-    maxNumberOfMessagesPerPartition: 200
-    callbackFunctionSecIdle: 100
+    kafka:
+      maxNumberOfMessagesPerPartition: 200
+      callbackFunctionSecIdle: 100
 
   rollback:
     eraseOperationBatchSize: 300

@@ -6,6 +6,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -29,5 +30,9 @@ public interface DatabaseExecutor {
         Promise<Void> p = Promise.promise();
         executeUpdate(sql, p);
         return p.future();
+    }
+
+    default Future<List<Map<String, Object>>> execute(String sql) {
+        return Future.future(promise -> execute(sql, Collections.emptyList(), promise));
     }
 }

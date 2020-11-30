@@ -2,6 +2,7 @@ package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.ddl;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QueryRequest;
+import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTables;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
@@ -22,11 +23,11 @@ import org.springframework.stereotype.Component;
 public class CreateTableExecutor implements DdlExecutor<Void> {
     private final DatabaseExecutor databaseExecutor;
     private final DropTableExecutor dropTableExecutor;
-    private final CreateTableQueriesFactory<AdqmCreateTableQueries> createTableQueriesFactory;
+    private final CreateTableQueriesFactory<AdqmTables<String>> createTableQueriesFactory;
 
     public CreateTableExecutor(DatabaseExecutor databaseExecutor,
                                DropTableExecutor dropTableExecutor,
-                               CreateTableQueriesFactory<AdqmCreateTableQueries> createTableQueriesFactory) {
+                               CreateTableQueriesFactory<AdqmTables<String>> createTableQueriesFactory) {
         this.databaseExecutor = databaseExecutor;
         this.dropTableExecutor = dropTableExecutor;
         this.createTableQueriesFactory = createTableQueriesFactory;
@@ -52,7 +53,7 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
     }
 
     private Future<Void> createTable(DdlRequestContext context) {
-        AdqmCreateTableQueries createTableQueries = createTableQueriesFactory.create(context);
+        AdqmTables<String> createTableQueries = createTableQueriesFactory.create(context);
         return databaseExecutor.executeUpdate(createTableQueries.getShard())
                 .compose(v -> databaseExecutor.executeUpdate(createTableQueries.getDistributed()));
     }

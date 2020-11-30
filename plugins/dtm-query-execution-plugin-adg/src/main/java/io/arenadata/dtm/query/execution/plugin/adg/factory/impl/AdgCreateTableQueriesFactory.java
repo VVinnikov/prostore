@@ -10,7 +10,7 @@ import io.arenadata.dtm.query.execution.plugin.adg.service.impl.ddl.AdgCreateTab
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.CreateTableQueriesFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 
 import static io.arenadata.dtm.query.execution.plugin.adg.constants.ColumnFields.*;
 
-@Component
+@Service("adgCreateTableQueriesFactory")
 public class AdgCreateTableQueriesFactory implements CreateTableQueriesFactory<AdgCreateTableQueries> {
 
     public static final String SEC_INDEX_PREFIX = "x_";
@@ -51,7 +51,7 @@ public class AdgCreateTableQueriesFactory implements CreateTableQueriesFactory<A
         );
     }
 
-    public Space create(List<EntityField> fields, SpaceEngines engine, String tablePostfix) {
+    private Space create(List<EntityField> fields, SpaceEngines engine, String tablePostfix) {
         return new Space(
                 createSpaceAttributes(fields, tablePostfix),
                 false,

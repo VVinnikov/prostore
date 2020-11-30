@@ -1,11 +1,15 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.TarantoolCartridgeProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.dto.rollback.ReverseHistoryTransferRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.OperationFile;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.OperationYaml;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.*;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.*;
+import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.Space;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.vertx.circuitbreaker.CircuitBreaker;
 import io.vertx.core.AsyncResult;
@@ -23,7 +27,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -36,14 +42,17 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
     private final WebClient webClient;
     private final TarantoolCartridgeProperties cartridgeProperties;
     private final CircuitBreaker circuitBreaker;
+    private final ObjectMapper objectMapper;
 
     @Autowired
     public AdgCartridgeClientImpl(TarantoolCartridgeProperties cartridgeProperties,
                                   @Qualifier("adgWebClient") WebClient webClient,
-                                  @Qualifier("adgCircuitBreaker") CircuitBreaker circuitBreaker) {
+                                  @Qualifier("adgCircuitBreaker") CircuitBreaker circuitBreaker,
+                                  @Qualifier("yamlMapper") ObjectMapper objectMapper) {
         this.cartridgeProperties = cartridgeProperties;
         this.webClient = webClient;
         this.circuitBreaker = circuitBreaker;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -273,6 +282,33 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
                     future.fail(ar.cause());
                 }
             })).setHandler(handler);
+    }
+
+    public Future<Map<String, Space>> getSpaceDescriptions(Set<String> spaceNames) {
+        Map<String, Set<String>> body = new HashMap<>();
+        body.put("spaces", spaceNames);
+        String url = cartridgeProperties.getUrl() + cartridgeProperties.getTableSchemaUrl();
+        return Future.future(promise -> webClient.postAbs(url)
+                .sendJson(body, ar -> {
+                    if (ar.succeeded()) {
+                        try {
+                            promise.complete(parseSpaces(ar.result().bodyAsString(), spaceNames));
+                        } catch (Exception e) {
+                            promise.fail(e);
+                        }
+                    } else {
+                        promise.fail(ar.cause());
+                    }
+                }));
+    }
+
+    private Map<String, Space> parseSpaces(String yaml, Set<String> spaceNames) throws JsonProcessingException { ;
+        JsonNode jsonNode = objectMapper.readTree(yaml).get("spaces");
+        return spaceNames.stream()
+                .collect(Collectors.toMap(Function.identity(),
+                    name -> Optional.ofNullable(jsonNode.get(name))
+                        .map(space -> objectMapper.convertValue(space, Space.class))
+                        .orElseThrow(() -> new RuntimeException(String.format("`%s` space doesn't exist.", name)))));
     }
 
     @Override

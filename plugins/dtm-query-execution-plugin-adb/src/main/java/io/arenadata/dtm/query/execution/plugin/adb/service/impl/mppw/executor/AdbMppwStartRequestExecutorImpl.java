@@ -28,7 +28,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Component("adbMppwStartRequestExecutor")
@@ -69,7 +70,7 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
             }
             List<KafkaBrokerInfo> brokers = context.getRequest().getKafkaParameter().getBrokers();
             getOrCreateServer(brokers, dbName)
-//                    .compose(server -> createWritableExternalTable(server, context))
+                    .compose(server -> createWritableExternalTable(server, context))
                     .compose(server -> createMppwKafkaRequestContext(context, server))
                     .onSuccess(kafkaContext -> {
                         vertx.eventBus().send(MppwTopic.KAFKA_START.getValue(), Json.encode(kafkaContext));
@@ -105,7 +106,7 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
         });
     }
 
-    private Future<Void> createWritableExternalTable(String server, MppwRequestContext context) {
+    private Future<String> createWritableExternalTable(String server, MppwRequestContext context) {
         return Future.future(promise -> {
             val columns = new Schema.Parser().parse(context.getRequest()
                     .getKafkaParameter().getUploadMetadata().getExternalSchema())
@@ -115,7 +116,7 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
                     .collect(Collectors.toList());
             adbQueryExecutor.executeUpdate(metadataSqlFactory.createExtTableSqlQuery(server, columns, context, mppwProperties), ar -> {
                 if (ar.succeeded()) {
-                    promise.complete();
+                    promise.complete(server);
                 } else {
                     promise.fail(ar.cause());
                 }
@@ -145,7 +146,7 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
             case INT:
                 return "INT";
             case LONG:
-                return "INT";
+                return "BIGINT";
             case FLOAT:
                 return "FLOAT";
             case DOUBLE:

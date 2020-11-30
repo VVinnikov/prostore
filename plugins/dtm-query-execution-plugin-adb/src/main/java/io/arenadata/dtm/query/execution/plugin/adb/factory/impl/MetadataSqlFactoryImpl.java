@@ -4,12 +4,11 @@ import io.arenadata.dtm.common.model.ddl.*;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adb.configuration.properties.MppwProperties;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
+import io.arenadata.dtm.query.execution.plugin.api.mppr.kafka.DownloadExternalEntityMetadata;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
-import io.arenadata.dtm.query.execution.plugin.api.mppr.kafka.DownloadExternalEntityMetadata;
 import io.arenadata.dtm.query.execution.plugin.api.request.MpprRequest;
 import lombok.val;
-import org.apache.avro.Schema;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -49,12 +48,11 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
      * Prefix of writable external table
      */
     public static final String WRITABLE_EXT_TABLE_PREF = "FDW_EXT_";
+    public static final String COMMIT_OFFSETS = "SELECT kadb.table_commit_offsets('%s'::regclass)";
     public static final String SERVER_NAME_TEMPLATE = "FDW_KAFKA_%s";
     public static final String QUERY_DELIMITER = "; ";
     public static final String TABLE_POSTFIX_DELIMITER = "_";
 
-    public static final String QUERY_DELIMITER = "; ";
-    public static final String TABLE_POSTFIX_DELIMITER = "_";
     public static final String WRITABLE_EXTERNAL_TABLE_PREF = "PXF_EXT_";
 
     private static final String DELIMITER = ", ";
@@ -291,33 +289,6 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
                 .append(SYS_OP_ATTR)
                 .append(" ")
                 .append("int");
-    }
-
-    @Override
-    public String createKeyColumnsSqlQuery(String schema, String tableName) {
-        return String.format(KEY_COLUMNS_TEMPLATE_SQL, schema, tableName + TABLE_POSTFIX_DELIMITER + ACTUAL_TABLE);
-    }
-
-    @Override
-    public String createSecondaryIndexSqlQuery(String schema, String tableName) {
-        StringBuilder sb = new StringBuilder();
-        final String idxPostfix = "_idx";
-        sb.append(String.format(CREATE_INDEX_SQL, tableName, ACTUAL_TABLE,
-                SYS_FROM_ATTR + idxPostfix, schema, tableName, ACTUAL_TABLE,
-                String.join(DELIMITER, Collections.singletonList(SYS_FROM_ATTR))));
-        sb.append(QUERY_DELIMITER);
-        sb.append(String.format(CREATE_INDEX_SQL, tableName, HISTORY_TABLE,
-                SYS_TO_ATTR + idxPostfix, schema, tableName, HISTORY_TABLE,
-                String.join(DELIMITER, Arrays.asList(SYS_TO_ATTR, SYS_OP_ATTR))));
-        return sb.toString();
-    }
-
-    @Override
-    public List<ColumnMetadata> createKeyColumnQueryMetadata() {
-        List<ColumnMetadata> metadata = new ArrayList<>();
-        metadata.add(new ColumnMetadata("column_name", ColumnType.VARCHAR));
-        metadata.add(new ColumnMetadata("data_type", ColumnType.VARCHAR));
-        return metadata;
     }
 
     @Override

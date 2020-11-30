@@ -1,14 +1,11 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.handler;
 
-import io.arenadata.dtm.query.execution.plugin.adb.configuration.properties.MppwProperties;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.impl.MetadataSqlFactoryImpl;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.AdbMppwDataTransferService;
-import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwKafkaRequestContext;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwKafkaLoadRequest;
+import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwKafkaRequestContext;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +14,6 @@ import org.apache.avro.Schema;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,6 +21,17 @@ import java.util.stream.Collectors;
 @Slf4j
 public class AdbMppwTransferDataHandler implements AdbMppwHandler {
 
+    private static final String CREATE_FOREIGN_TABLE_SQL =
+        "CREATE FOREIGN TABLE %s.%s (%s)\n" +
+            "SERVER %s\n" +
+            "OPTIONS (\n" +
+            "    format '%s',\n" +
+            "    k_topic '%s',\n" +
+            "    k_consumer_group '%s',\n" +
+            "    k_seg_batch '%s',\n" +
+            "    k_timeout_ms '%s',\n" +
+            "    k_initial_offset '0'\n" +
+            ")";
     private final AdbQueryExecutor adbQueryExecutor;
     private final MetadataSqlFactory metadataSqlFactory;
     private final AdbMppwDataTransferService mppwDataTransferService;
@@ -40,28 +47,29 @@ public class AdbMppwTransferDataHandler implements AdbMppwHandler {
 
     @Override
     public Future<Void> handle(MppwKafkaRequestContext requestContext) {
-        return createExtTable(requestContext)
-                .compose(v -> insertIntoStagingTable(requestContext.getMppwKafkaLoadRequest()))
-                .compose(v -> dropExtTable(requestContext))
-                .compose(s -> Future.future((Promise<Void> p) ->
-                        mppwDataTransferService.execute(requestContext.getMppwTransferDataRequest(), p)));
+        return insertIntoStagingTable(requestContext.getMppwKafkaLoadRequest())
+            .compose(v -> commitKafkaMessages(requestContext))
+            .compose(s -> Future.future((Promise<Void> p) ->
+                mppwDataTransferService.execute(requestContext.getMppwTransferDataRequest(), p)));
     }
 
     private Future<Void> createExtTable(MppwKafkaRequestContext requestContext) {
         return Future.future(promise -> {
             val columns = requestContext.getMppwKafkaLoadRequest().getSchema()
-                    .getFields().stream()
-                    .map(this::avroFieldToString)
-                    .filter(column -> !column.contains("sys"))
-                    .collect(Collectors.toList());
+                .getFields().stream()
+                .map(this::avroFieldToString)
+                .filter(column -> !column.contains("sys"))
+                .collect(Collectors.toList());
             val server = requestContext.getMppwKafkaLoadRequest().getServer();
-            adbQueryExecutor.executeUpdate(createExtTableSqlQuery(server, columns, requestContext.getMppwKafkaLoadRequest().getDatamart(),
-                    requestContext.getMppwKafkaLoadRequest().getRequestId(),
-                    "avro", requestContext.getMppwKafkaLoadRequest().getTopic(),
-                    requestContext.getMppwKafkaLoadRequest().getConsumerGroup(),
-                    requestContext.getMppwKafkaLoadRequest().getUploadMessageLimit(),
-                    requestContext.getMppwKafkaLoadRequest().getTimeout()
-                    ), ar -> {
+            adbQueryExecutor.executeUpdate(createExtTableSqlQuery(server,
+                columns,
+                requestContext.getMppwKafkaLoadRequest().getDatamart(),
+                requestContext.getMppwKafkaLoadRequest().getRequestId(),
+                "avro",
+                requestContext.getMppwKafkaLoadRequest().getTopic(),
+                requestContext.getMppwKafkaLoadRequest().getConsumerGroup(),
+                requestContext.getMppwKafkaLoadRequest().getUploadMessageLimit(),
+                requestContext.getMppwKafkaLoadRequest().getTimeout()), ar -> {
                 if (ar.succeeded()) {
                     promise.complete();
                 } else {
@@ -71,7 +79,9 @@ public class AdbMppwTransferDataHandler implements AdbMppwHandler {
         });
     }
 
-    public String createExtTableSqlQuery(String server, List<String> columnNameTypeList, String schema, String reqId,
+    public String createExtTableSqlQuery(String server, List<String> columnNameTypeList,
+                                         String schema,
+                                         String reqId,
                                          String format,
                                          String topic,
                                          String consumerGroup,
@@ -80,20 +90,17 @@ public class AdbMppwTransferDataHandler implements AdbMppwHandler {
         val table = MetadataSqlFactoryImpl.WRITABLE_EXT_TABLE_PREF + reqId.replaceAll("-", "_");
         val columns = String.join(", ", columnNameTypeList);
         val chunkSize = uploadMessageLimit != null ? uploadMessageLimit : 25;
-        return String.format(CREATE_FOREIGN_TABLE_SQL, schema, table, columns, server, format, topic, consumerGroup, chunkSize, "1000");
+        return String.format(CREATE_FOREIGN_TABLE_SQL,
+            schema,
+            table,
+            columns,
+            server,
+            format,
+            topic,
+            consumerGroup,
+            chunkSize,
+            "1000");
     }
-
-    private static final String CREATE_FOREIGN_TABLE_SQL =
-            "CREATE FOREIGN TABLE %s.%s (%s)\n" +
-                    "SERVER %s\n" +
-                    "OPTIONS (\n" +
-                    "    format '%s',\n" +
-                    "    k_topic '%s',\n" +
-                    "    k_consumer_group '%s',\n" +
-                    "    k_seg_batch '%s',\n" +
-                    "    k_timeout_ms '%s',\n" +
-                    "    k_initial_offset '0'\n" +
-                    ")";
 
     private String avroFieldToString(Schema.Field f) {
         String name = f.name();
@@ -117,7 +124,7 @@ public class AdbMppwTransferDataHandler implements AdbMppwHandler {
             case INT:
                 return "INT";
             case LONG:
-                return "INT";
+                return "BIGINT";
             case FLOAT:
                 return "FLOAT";
             case DOUBLE:
@@ -132,6 +139,7 @@ public class AdbMppwTransferDataHandler implements AdbMppwHandler {
                 return "";
         }
     }
+
     private Future<Void> dropExtTable(MppwKafkaRequestContext requestContext) {
         return Future.future(promise -> {
             val schema = requestContext.getMppwKafkaLoadRequest().getDatamart();
@@ -140,6 +148,14 @@ public class AdbMppwTransferDataHandler implements AdbMppwHandler {
         });
     }
 
+    private Future<Void> commitKafkaMessages(MppwKafkaRequestContext requestContext) {
+        return Future.future(promise -> {
+            val schema = requestContext.getMppwKafkaLoadRequest().getDatamart();
+            val table = MetadataSqlFactoryImpl.WRITABLE_EXT_TABLE_PREF + requestContext.getMppwKafkaLoadRequest().getRequestId().replaceAll("-", "_");
+            val commitOffsetsSql = String.format(MetadataSqlFactoryImpl.COMMIT_OFFSETS, table);
+            adbQueryExecutor.executeUpdate(commitOffsetsSql, promise);
+        });
+    }
 
     private Future<Void> insertIntoStagingTable(MppwKafkaLoadRequest request) {
         return Future.future(promise -> {

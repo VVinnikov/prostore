@@ -71,7 +71,7 @@ public class DdlIntegrationTest extends AbstractCoreDtmIntegrationTest {
             Async async = context.async();
             queryExecutor.executeQuery(String.format(CREATE_DB, datamart))
                     .compose(v -> queryExecutor.executeQuery(
-                            String.format(FileUtil.getFileContent("it/queries/create_table.sql"), datamart, table)))
+                            String.format(FileUtil.getFileContent("it/queries/ddl/create_table.sql"), datamart, table)))
                     .compose(v -> queryExecutor.executeQuery(String.format(SELECT_TABLE_INFO,
                             datamart.toUpperCase(),
                             table.toUpperCase())))
@@ -79,6 +79,7 @@ public class DdlIntegrationTest extends AbstractCoreDtmIntegrationTest {
                         assertFalse(resultSet.getResults().isEmpty(), "table created successfully");
                         return resultSet;
                     })
+                    //TODO add checking in datasources through sending queries with jdbc
                     .compose(resultSet -> queryExecutor.executeQuery(String.format(DROP_TABLE, datamart, table)))
                     .map(resultSet -> {
                         assertNotNull(resultSet, "table dropped successfully");

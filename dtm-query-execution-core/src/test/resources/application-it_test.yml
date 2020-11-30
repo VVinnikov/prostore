@@ -57,7 +57,7 @@ core:
     status.event.publish:
       enabled: false
       topic: status.event
-    statusMonitorUrl: http://127.0.0.1:9095/status
+    statusMonitorUrl: http://dtm.kafka.monitor.it:9095/status
 
   cache:
     initialCapacity: 100000
@@ -118,7 +118,7 @@ adqm:
     database: default
     user:
     password:
-    hosts: dtm.adqm.it-test:8123
+    hosts: dtm.adqm.it:8123
 
   ddl:
     cluster: default_cluster
@@ -126,16 +126,65 @@ adqm:
     archiveDisk: default
 
   mppr:
-    host: 10.92.3.14
+    host: dtm.kafka.reader.it
     port: 8086
     url: /query
 
   mppw:
     consumerGroup: adqm
-    kafkaBrokers: kafka-1.dtm.local:9092
+    kafkaBrokers: dtm.kafka.it.broker:9092
     loadType: REST
-    restLoadUrl: http://adb-emulator:8090/newdata/adqm/start
+    restLoadUrl: http://dtm.kafka.writer.it:8090/newdata/adqm/start
     restLoadConsumerGroup: adb-emulator-load-adqm
 
   web-client:
     max-pool-size: 100
+
+statusMonitor:
+  host: dtm.kafka.monitor.it
+  port: 9095
+  brokersList: dtm.kafka.it.broker:9092
+  consumersCount: 8
+
+kafkaEmulatorWriter:
+  host: dtm.kafka.writer.it
+  port: 8090
+  kafkaBrokers: dtm.kafka.it.broker:9092
+  dataWorkerPoolSize: 5
+  taskWorkerPoolSize: 5
+  adqm:
+    hosts: dtm.adqm.it:8123
+    dbName: it_test
+    user: default
+    pass:
+  adb:
+    host: dtm.adb.it
+    port: 5432
+    dbName: it_test
+    user: gpadmin
+    pass:
+
+kafkaEmulatorReader:
+  host: dtm.kafka.reader.it
+  port: 8086
+  adb:
+    host: dtm.adb.it
+    user: gpadmin
+  adqm:
+    hosts: dtm.adqm.it:8123
+    dbName: it_test
+    user: default
+
+vendorEmulator:
+  host: dtm.vendor.emulator.it
+  port: 8082
+  kafkaBrokers: dtm.kafka.it.broker:9092
+  kafkaPartitionSize: 1
+  mariadb:
+    host: vendor.mariadb.it
+    port: 3306
+    name: vendordb
+    user: admin
+    password: admin
+    rootPass: root
+    timeZone: UTC

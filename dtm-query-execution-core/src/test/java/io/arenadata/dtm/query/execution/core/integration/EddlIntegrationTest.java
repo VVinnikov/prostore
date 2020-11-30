@@ -46,10 +46,10 @@ public class EddlIntegrationTest extends AbstractCoreDtmIntegrationTest {
             Async async = context.async();
             queryExecutor.executeQuery(String.format(CREATE_DB, datamart))
                     .compose(v -> queryExecutor.executeQuery(
-                            String.format(FileUtil.getFileContent("it/queries/create_upload_ext_table.sql"),
+                            String.format(FileUtil.getFileContent("it/queries/ddl/create_upload_ext_table.sql"),
                                     datamart,
                                     table,
-                                    getZkDsConnectionString(),
+                                    getZkKafkaConnectionString(),
                                     topic)))
                     .compose(v -> zookeeperExecutor.getData(
                             getEntityPath(datamart, table)))
@@ -98,10 +98,10 @@ public class EddlIntegrationTest extends AbstractCoreDtmIntegrationTest {
             Async async = context.async();
             queryExecutor.executeQuery(String.format(CREATE_DB, datamart))
                     .compose(v -> queryExecutor.executeQuery(
-                            String.format(FileUtil.getFileContent("it/queries/create_download_ext_table.sql"),
+                            String.format(FileUtil.getFileContent("it/queries/ddl/create_download_ext_table.sql"),
                                     datamart,
                                     table,
-                                    getZkDsConnectionString(),
+                                    getZkKafkaConnectionString(),
                                     topic)))
                     .compose(v -> zookeeperExecutor.getData(
                             getEntityPath(datamart, table)))

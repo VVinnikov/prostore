@@ -3,14 +3,15 @@ package io.arenadata.dtm.query.execution.core.integration;
 import com.github.dockerjava.api.model.Bind;
 import io.arenadata.dtm.query.execution.core.integration.configuration.IntegrationTestConfiguration;
 import io.arenadata.dtm.query.execution.core.integration.factory.PropertyFactory;
+import io.arenadata.dtm.query.execution.core.integration.generator.VendorEmulatorServiceImpl;
 import io.arenadata.dtm.query.execution.core.integration.query.client.SqlClientFactoryImpl;
 import io.arenadata.dtm.query.execution.core.integration.query.client.SqlClientProviderImpl;
 import io.arenadata.dtm.query.execution.core.integration.query.executor.QueryExecutorImpl;
 import io.arenadata.dtm.query.execution.core.integration.util.DockerImagesUtil;
 import io.arenadata.dtm.query.execution.core.service.zookeeper.ZookeeperConnectionProvider;
 import io.arenadata.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
-import io.arenadata.dtm.query.execution.core.service.zookeeper.impl.ZookeeperConnectionProviderImpl;
-import io.arenadata.dtm.query.execution.core.service.zookeeper.impl.ZookeeperExecutorImpl;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.env.PropertySource;
@@ -22,6 +23,8 @@ import org.testcontainers.containers.output.ToStringConsumer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -32,18 +35,27 @@ import java.util.stream.Stream;
         ZookeeperConnectionProvider.class,
         QueryExecutorImpl.class,
         SqlClientProviderImpl.class,
-        SqlClientFactoryImpl.class})
+        SqlClientFactoryImpl.class,
+        VendorEmulatorServiceImpl.class})
 @Slf4j
 public abstract class AbstractCoreDtmIntegrationTest {
 
-    private static final Network network = Network.SHARED;
+    public static final int ZK_PORT = 2181;
+    public static final PropertySource<?> dtmProperties;
     public static final GenericContainer<?> zkDsContainer;
     public static final GenericContainer<?> zkKafkaContainer;
     public static final KafkaContainer kafkaContainer;
+    public static final GenericContainer<?> mariaDBContainer;
     public static final GenericContainer<?> adqmContainer;
     public static final GenericContainer<?> dtmCoreContainer;
-    public static final int ZK_PORT = 2181;
-    public static final PropertySource<?> dtmProperties;
+    public static final GenericContainer<?> dtmKafkaReaderContainer;
+    public static final GenericContainer<?> dtmKafkaWriterContainer;
+    public static final GenericContainer<?> dtmVendorEmulatorContainer;
+    public static final GenericContainer<?> dtmKafkaStatusMonitorContainer;
+    private static final Network network = Network.SHARED;
+    private static final int KAFKA_PORT = 9092;
+    private static final int CLICKHOUSE_PORT = 8123;
+    private static Map<GenericContainer<?>, ContainerInfo> containerMap = new HashMap<>();
 
     static {
         dtmProperties = PropertyFactory.createPropertySource("application-it_test.yml");
@@ -51,14 +63,29 @@ public abstract class AbstractCoreDtmIntegrationTest {
         zkKafkaContainer = createZkKafkaContainer();
         kafkaContainer = createKafkaContainer();
         adqmContainer = createAdqmContainer();
+        dtmKafkaReaderContainer = createKafkaReaderContainer();
+        dtmKafkaWriterContainer = createKafkaWriterContainer();
+        mariaDBContainer = createMariaDbContainer();
+        dtmVendorEmulatorContainer = createVendorEmulatorContainer();
+        dtmKafkaStatusMonitorContainer = createKafkaStatusMonitorContainer();
         dtmCoreContainer = createDtmCoreContainer();
         Stream.of(
+                dtmKafkaReaderContainer,
                 zkDsContainer,
                 zkKafkaContainer,
                 kafkaContainer,
                 adqmContainer,
+                mariaDBContainer,
+                dtmKafkaWriterContainer
+        ).parallel().forEach(GenericContainer::start);
+        Stream.of(
+                dtmKafkaStatusMonitorContainer,
+                dtmVendorEmulatorContainer,
                 dtmCoreContainer
         ).forEach(GenericContainer::start);
+        initConteinerMap();
+        containerMap.forEach((key, value) -> log.info("Started container for integration tests: {}, host: {}, port: {}, image: {}",
+                value.getName(), key.getHost(), value.getPort(), key.getDockerImageName()));
     }
 
     private static GenericContainer<?> createZkDsContainer() {
@@ -67,7 +94,8 @@ public abstract class AbstractCoreDtmIntegrationTest {
                 .withExposedPorts(ZK_PORT)
                 .withNetworkAliases(Objects.requireNonNull(
                         dtmProperties.getProperty("core.datasource.zookeeper.connection-string")).toString())
-                .withEnv("ZOOKEEPER_CLIENT_PORT", String.valueOf(ZK_PORT));
+                .withEnv("ZOOKEEPER_CLIENT_PORT", String.valueOf(ZK_PORT))
+                .withEnv("ZOOKEEPER_TICK_TIME", String.valueOf(30000));
     }
 
     private static GenericContainer<?> createZkKafkaContainer() {
@@ -76,14 +104,20 @@ public abstract class AbstractCoreDtmIntegrationTest {
                 .withExposedPorts(ZK_PORT)
                 .withNetworkAliases(Objects.requireNonNull(
                         dtmProperties.getProperty("core.kafka.cluster.zookeeper.connection-string")).toString())
-                .withEnv("ZOOKEEPER_CLIENT_PORT", String.valueOf(ZK_PORT));
+                .withEnv("ZOOKEEPER_CLIENT_PORT", String.valueOf(ZK_PORT))
+                .withEnv("ZOOKEEPER_TICK_TIME", String.valueOf(30000));
     }
 
     private static KafkaContainer createKafkaContainer() {
         return new KafkaContainer(DockerImageName.parse(DockerImagesUtil.KAFKA))
                 .withNetwork(network)
                 .withExternalZookeeper(Objects.requireNonNull(
-                        dtmProperties.getProperty("core.kafka.cluster.zookeeper.connection-string")).toString());
+                        dtmProperties.getProperty("core.kafka.cluster.zookeeper.connection-string")).toString())
+                .withNetworkAliases(Objects.requireNonNull(
+                        dtmProperties.getProperty("statusMonitor.brokersList")).toString().split(":")[0])
+                .withEnv("KAFKA_ZOOKEEPER_CONNECT", Objects.requireNonNull(
+                        dtmProperties.getProperty("core.kafka.cluster.zookeeper.connection-string")).toString()
+                        + ":" + ZK_PORT);
     }
 
     private static GenericContainer<?> createAdqmContainer() {
@@ -95,6 +129,147 @@ public abstract class AbstractCoreDtmIntegrationTest {
                         .withBinds(Bind.parse("/home/viktor/arenadata/projects/dtm/dtm-query-execution-core/src/test/resources/config/adqm/config.xml:/etc/clickhouse-server/config.xml")))
                 .withNetworkAliases(Objects.requireNonNull(
                         dtmProperties.getProperty("adqm.datasource.hosts")).toString().split(":")[0]);
+    }
+
+    private static GenericContainer<?> createKafkaStatusMonitorContainer() {
+        return new GenericContainer<>(DockerImageName.parse(DockerImagesUtil.DTM_KAFKA_STATUS_MONITOR))
+                .withNetwork(network)
+                .withExposedPorts((Integer) Objects.requireNonNull(
+                        dtmProperties.getProperty("statusMonitor.port")))
+                .withEnv("STATUS_MONITOR_CONSUMERS", Objects.requireNonNull(
+                        dtmProperties.getProperty("statusMonitor.consumersCount")).toString())
+                .withEnv("STATUS_MONITOR_BROKERS", Objects.requireNonNull(
+                        dtmProperties.getProperty("statusMonitor.brokersList")).toString())
+                .withNetworkAliases(Objects.requireNonNull(
+                        dtmProperties.getProperty("statusMonitor.host")).toString());
+    }
+
+    private static GenericContainer<?> createMariaDbContainer() {
+        return new GenericContainer<>(DockerImageName.parse(DockerImagesUtil.MARIA_DB))
+                .withNetwork(network)
+                .withNetworkAliases(Objects.requireNonNull(
+                        dtmProperties.getProperty("vendorEmulator.mariadb.host"))
+                        .toString())
+                .withExposedPorts(Integer.valueOf(Objects.requireNonNull(
+                        dtmProperties.getProperty("vendorEmulator.mariadb.port"))
+                        .toString()))
+                .withEnv("MYSQL_DATABASE", Objects.requireNonNull(
+                        dtmProperties.getProperty("vendorEmulator.mariadb.name"))
+                        .toString())
+                .withEnv("MYSQL_USER", Objects.requireNonNull(
+                        dtmProperties.getProperty("vendorEmulator.mariadb.user"))
+                        .toString())
+                .withEnv("MYSQL_PASSWORD", Objects.requireNonNull(
+                        dtmProperties.getProperty("vendorEmulator.mariadb.password"))
+                        .toString())
+                .withEnv("MYSQL_ROOT_PASSWORD", Objects.requireNonNull(
+                        dtmProperties.getProperty("vendorEmulator.mariadb.rootPass"))
+                        .toString())
+                .withEnv("TZ", Objects.requireNonNull(
+                        dtmProperties.getProperty("vendorEmulator.mariadb.timeZone"))
+                        .toString());
+    }
+
+    private static GenericContainer<?> createVendorEmulatorContainer() {
+        ToStringConsumer toStringConsumer = new ToStringConsumer();
+        return new GenericContainer<>(DockerImageName.parse(DockerImagesUtil.DTM_VENDOR_EMULATOR))
+                .withLogConsumer(toStringConsumer)
+                .withNetwork(network)
+                .withExposedPorts((Integer) Objects.requireNonNull(
+                        dtmProperties.getProperty("vendorEmulator.port")))
+                .withNetworkAliases(Objects.requireNonNull(
+                        dtmProperties.getProperty("vendorEmulator.host"))
+                        .toString())
+                .withEnv("KAFKA_BROKERS", Objects.requireNonNull(
+                        dtmProperties.getProperty("vendorEmulator.kafkaBrokers"))
+                        .toString())
+                .withEnv("KAFKA_PARTITION_SIZE", Objects.requireNonNull(
+                        dtmProperties.getProperty("vendorEmulator.kafkaPartitionSize"))
+                        .toString())
+                .withEnv("MARIA_DB_HOST", Objects.requireNonNull(
+                        dtmProperties.getProperty("vendorEmulator.mariadb.host"))
+                        .toString())
+                .withEnv("MARIA_DB_PORT", Objects.requireNonNull(
+                        dtmProperties.getProperty("vendorEmulator.mariadb.port"))
+                        .toString())
+                .withEnv("MARIA_DB_NAME", Objects.requireNonNull(
+                        dtmProperties.getProperty("vendorEmulator.mariadb.name"))
+                        .toString())
+                .withEnv("MARIA_DB_USERNAME", Objects.requireNonNull(
+                        dtmProperties.getProperty("vendorEmulator.mariadb.user"))
+                        .toString())
+                .withEnv("MARIA_DB_PASS", Objects.requireNonNull(
+                        dtmProperties.getProperty("vendorEmulator.mariadb.password"))
+                        .toString());
+    }
+
+    private static GenericContainer<?> createKafkaWriterContainer() {
+        ToStringConsumer toStringConsumer = new ToStringConsumer();
+        return new GenericContainer<>(DockerImageName.parse(DockerImagesUtil.DTM_KAFKA_EMULATOR_WRITER))
+                .withLogConsumer(toStringConsumer)
+                .withNetwork(network)
+                .withExposedPorts((Integer) Objects.requireNonNull(
+                        dtmProperties.getProperty("kafkaEmulatorWriter.port")))
+                .withNetworkAliases(Objects.requireNonNull(
+                        dtmProperties.getProperty("kafkaEmulatorWriter.host")).toString())
+                .withEnv("ADQM_DB_NAME", Objects.requireNonNull(
+                        dtmProperties.getProperty("kafkaEmulatorWriter.adqm.dbName"))
+                        .toString())
+                .withEnv("ADQM_USERNAME", Objects.requireNonNull(
+                        dtmProperties.getProperty("kafkaEmulatorWriter.adqm.user"))
+                        .toString())
+                .withEnv("ADQM_HOSTS", Objects.requireNonNull(
+                        dtmProperties.getProperty("kafkaEmulatorWriter.adqm.hosts"))
+                        .toString())
+                .withEnv("ENV", Objects.requireNonNull(dtmProperties.getProperty("core.env.name"))
+                        .toString())
+                .withEnv("KAFKA_BOOTSTRAP_SERVERS", Objects.requireNonNull(
+                        dtmProperties.getProperty("kafkaEmulatorWriter.kafkaBrokers"))
+                        .toString())
+                .withEnv("DATA_WORKER_POOL_SIZE", Objects.requireNonNull(
+                        dtmProperties.getProperty("kafkaEmulatorWriter.dataWorkerPoolSize"))
+                        .toString())
+                .withEnv("TASK_WORKER_POOL_SIZE", Objects.requireNonNull(
+                        dtmProperties.getProperty("kafkaEmulatorWriter.taskWorkerPoolSize"))
+                        .toString())
+                .withEnv("ADB_DB_NAME", Objects.requireNonNull(
+                        dtmProperties.getProperty("kafkaEmulatorWriter.adb.dbName"))
+                        .toString())
+                .withEnv("ADB_USERNAME", Objects.requireNonNull(
+                        dtmProperties.getProperty("kafkaEmulatorWriter.adb.user"))
+                        .toString())
+                .withEnv("ADB_HOST", Objects.requireNonNull(
+                        dtmProperties.getProperty("kafkaEmulatorWriter.adb.host"))
+                        .toString())
+                .withEnv("ADB_PORT", Objects.requireNonNull(
+                        dtmProperties.getProperty("kafkaEmulatorWriter.adb.port"))
+                        .toString());
+    }
+
+    private static GenericContainer<?> createKafkaReaderContainer() {
+        ToStringConsumer toStringConsumer = new ToStringConsumer();
+        return new GenericContainer<>(DockerImageName.parse(DockerImagesUtil.DTM_KAFKA_EMULATOR_READER))
+                .withLogConsumer(toStringConsumer)
+                .withNetwork(network)
+                .withExposedPorts((Integer) Objects.requireNonNull(
+                        dtmProperties.getProperty("kafkaEmulatorReader.port")))
+                .withNetworkAliases(Objects.requireNonNull(
+                        dtmProperties.getProperty("kafkaEmulatorReader.host")).toString())
+                .withEnv("ADQM_DB_NAME", Objects.requireNonNull(
+                        dtmProperties.getProperty("kafkaEmulatorReader.adqm.dbName"))
+                        .toString())
+                .withEnv("ADQM_USERNAME", Objects.requireNonNull(
+                        dtmProperties.getProperty("kafkaEmulatorReader.adqm.user"))
+                        .toString())
+                .withEnv("ADQM_HOSTS", Objects.requireNonNull(
+                        dtmProperties.getProperty("kafkaEmulatorReader.adqm.hosts"))
+                        .toString())
+                .withEnv("ADB_USERNAME", Objects.requireNonNull(
+                        dtmProperties.getProperty("kafkaEmulatorReader.adb.user"))
+                        .toString())
+                .withEnv("ADB_HOST", Objects.requireNonNull(
+                        dtmProperties.getProperty("kafkaEmulatorReader.adb.host"))
+                        .toString());
     }
 
     private static GenericContainer<?> createDtmCoreContainer() {
@@ -115,9 +290,11 @@ public abstract class AbstractCoreDtmIntegrationTest {
                 .withEnv("EDML_STATUS_CHECK_PERIOD_MS", Objects.requireNonNull(dtmProperties.getProperty("core.datasource.edml.pluginStatusCheckPeriodMs")).toString())
                 .withEnv("EDML_FIRST_OFFSET_TIMEOUT_MS", Objects.requireNonNull(dtmProperties.getProperty("core.datasource.edml.firstOffsetTimeoutMs")).toString())
                 .withEnv("EDML_CHANGE_OFFSET_TIMEOUT_MS", Objects.requireNonNull(dtmProperties.getProperty("core.datasource.edml.changeOffsetTimeoutMs")).toString())
-                .withEnv("ZOOKEEPER_DS_CONNECTION_TIMEOUT_MS", Objects.requireNonNull(dtmProperties.getProperty("core.datasource.zookeeper.connection-timeout-ms")).toString())
                 .withEnv("ZOOKEEPER_DS_ADDRESS", Objects.requireNonNull(dtmProperties.getProperty("core.datasource.zookeeper.connection-string")).toString())
+                .withEnv("ZOOKEEPER_DS_CONNECTION_TIMEOUT_MS", Objects.requireNonNull(dtmProperties.getProperty("core.datasource.zookeeper.connection-timeout-ms")).toString())
                 .withEnv("ZOOKEEPER_KAFKA_ADDRESS", Objects.requireNonNull(dtmProperties.getProperty("core.kafka.cluster.zookeeper.connection-string")).toString())
+                .withEnv("ZOOKEEPER_KAFKA_CONNECTION_TIMEOUT_MS", Objects.requireNonNull(dtmProperties.getProperty("core.kafka.cluster.zookeeper.connection-timeout-ms")).toString())
+                .withEnv("ZOOKEEPER_KAFKA_SESSION_TIMEOUT_MS", Objects.requireNonNull(dtmProperties.getProperty("core.kafka.cluster.zookeeper.session-timeout-ms")).toString())
                 .withEnv("KAFKA_INPUT_STREAM_TIMEOUT_MS", Objects.requireNonNull(dtmProperties.getProperty("core.kafka.admin.inputStreamTimeoutMs")).toString())
                 .withEnv("STATUS_MONITOR_URL", Objects.requireNonNull(dtmProperties.getProperty("core.kafka.statusMonitorUrl")).toString())
                 .withEnv("ADB_DB_NAME", Objects.requireNonNull(dtmProperties.getProperty("adb.datasource.options.database")).toString())
@@ -152,6 +329,41 @@ public abstract class AbstractCoreDtmIntegrationTest {
                 .withEnv("ADQM_REST_LOAD_GROUP", Objects.requireNonNull(dtmProperties.getProperty("adqm.mppw.restLoadConsumerGroup")).toString());
     }
 
+    private static void initConteinerMap() {
+        containerMap.put(zkDsContainer, new ContainerInfo("Zookeeper service db",
+                zkDsContainer.getMappedPort(ZK_PORT)));
+        containerMap.put(zkKafkaContainer, new ContainerInfo("Zookeeper kafka",
+                zkKafkaContainer.getMappedPort(ZK_PORT)));
+        containerMap.put(kafkaContainer, new ContainerInfo("Kafka",
+                kafkaContainer.getMappedPort(KAFKA_PORT)));
+        containerMap.put(adqmContainer, new ContainerInfo("Adqm",
+                adqmContainer.getMappedPort(CLICKHOUSE_PORT)));
+        containerMap.put(dtmKafkaReaderContainer, new ContainerInfo("Dtm kafka emulator reader",
+                dtmKafkaReaderContainer.getMappedPort(Integer.parseInt(Objects.requireNonNull(
+                        dtmProperties.getProperty("kafkaEmulatorReader.port"))
+                        .toString()))));
+        containerMap.put(dtmKafkaWriterContainer, new ContainerInfo("Dtm kafka emulator writer",
+                dtmKafkaWriterContainer.getMappedPort(Integer.parseInt(Objects.requireNonNull(
+                        dtmProperties.getProperty("kafkaEmulatorWriter.port"))
+                        .toString()))));
+        containerMap.put(mariaDBContainer, new ContainerInfo("Vendor emulator mariaDb",
+                mariaDBContainer.getMappedPort(Integer.parseInt(Objects.requireNonNull(
+                        dtmProperties.getProperty("vendorEmulator.mariadb.port"))
+                        .toString()))));
+        containerMap.put(dtmVendorEmulatorContainer, new ContainerInfo("Dtm vendor emulator",
+                dtmVendorEmulatorContainer.getMappedPort(Integer.parseInt(Objects.requireNonNull(
+                        dtmProperties.getProperty("vendorEmulator.port"))
+                        .toString()))));
+        containerMap.put(dtmKafkaStatusMonitorContainer, new ContainerInfo("Dtm kafka status monitor",
+                dtmKafkaStatusMonitorContainer.getMappedPort(Integer.parseInt(Objects.requireNonNull(
+                        dtmProperties.getProperty("statusMonitor.port"))
+                        .toString()))));
+        containerMap.put(dtmCoreContainer, new ContainerInfo("Dtm core",
+                dtmCoreContainer.getMappedPort(Integer.parseInt(Objects.requireNonNull(
+                        dtmProperties.getProperty("core.http.port"))
+                        .toString()))));
+    }
+
     public static String getZkDsConnectionString() {
         return zkDsContainer.getHost() + ":" + zkDsContainer.getMappedPort(ZK_PORT);
     }
@@ -160,14 +372,39 @@ public abstract class AbstractCoreDtmIntegrationTest {
         return zkKafkaContainer.getHost() + ":" + zkKafkaContainer.getMappedPort(ZK_PORT);
     }
 
-    public static String getDtmCoreHostPort() {
-        return dtmCoreContainer.getHost() + ":" + dtmCoreContainer.getMappedPort(
+    public static String getKafkaStatusMonitorHost() {
+        return dtmKafkaStatusMonitorContainer.getHost();
+    }
+
+    public static int getKafkaStatusMonitorPort() {
+        return dtmKafkaStatusMonitorContainer.getMappedPort((Integer) Objects.requireNonNull(
+                dtmProperties.getProperty("statusMonitor.port")));
+    }
+
+    public static String getDtmCoreHost() {
+        return dtmCoreContainer.getHost();
+    }
+
+    public static int getDtmMetricsPort() {
+        return dtmCoreContainer.getMappedPort((Integer) Objects.requireNonNull(dtmProperties.getProperty("management.server.port")));
+    }
+
+    public static int getDtmCorePort() {
+        return dtmCoreContainer.getMappedPort(
                 Integer.parseInt(Objects.requireNonNull(dtmProperties.getProperty("core.http.port")).toString()));
     }
 
-    public static String getDtmCoreMetricsHostPort() {
-        return dtmCoreContainer.getHost() + ":" + dtmCoreContainer.getMappedPort(
-                Integer.parseInt(Objects.requireNonNull(dtmProperties.getProperty("management.server.port")).toString()));
+    public static String getVendorEmulatorHost() {
+        return dtmVendorEmulatorContainer.getHost();
+    }
+
+    public static int getVendorEmulatorPort() {
+        return dtmVendorEmulatorContainer.getMappedPort((Integer) Objects.requireNonNull(
+                dtmProperties.getProperty("vendorEmulator.port")));
+    }
+
+    public static String getDtmCoreHostPort() {
+        return getDtmCoreHost() + ":" + getDtmCorePort();
     }
 
     public static String getJdbcDtmConnectionString() {
@@ -175,7 +412,7 @@ public abstract class AbstractCoreDtmIntegrationTest {
     }
 
     public static String getEntitiesPath(String datamartMnemonic) {
-        return String.format("%s/%s/entity",
+        return String.format("/%s/%s/entity",
                 Objects.requireNonNull(dtmProperties.getProperty("core.env.name")).toString(),
                 datamartMnemonic);
     }
@@ -187,6 +424,15 @@ public abstract class AbstractCoreDtmIntegrationTest {
                 entityName);
     }
 
+    @Data
+    @AllArgsConstructor
+    private static class ContainerInfo {
+        private int port;
+        private String name;
 
-
+        public ContainerInfo(String name, Integer mappedPort) {
+            this.name = name;
+            this.port = mappedPort;
+        }
+    }
 }

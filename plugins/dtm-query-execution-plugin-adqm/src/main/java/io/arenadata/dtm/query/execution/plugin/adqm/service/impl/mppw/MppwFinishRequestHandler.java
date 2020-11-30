@@ -43,7 +43,7 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
     private static final String FLUSH_TEMPLATE = "SYSTEM FLUSH DISTRIBUTED %s";
     private static final String OPTIMIZE_TEMPLATE = "OPTIMIZE TABLE %s ON CLUSTER %s FINAL";
     private static final String INSERT_TEMPLATE = "INSERT INTO %s\n" +
-        "  SELECT %s, a.sys_from, %d - 1 AS sys_to, b.sys_op_buffer as sys_op, '%s' AS close_date, arrayJoin([-1, 1]) AS sign\n" +
+        "  SELECT %s, a.sys_from, %d AS sys_to, b.sys_op_buffer as sys_op, '%s' AS close_date, arrayJoin([-1, 1]) AS sign\n" +
         "  FROM %s a\n" +
         "  ANY INNER JOIN %s b USING(%s)\n" +
         "  WHERE a.sys_from < %d\n" +
@@ -130,7 +130,7 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
                 format(INSERT_TEMPLATE,
                     table + ACTUAL_POSTFIX,
                     r.resultAt(0),
-                    deltaHot,
+                    deltaHot - 1,
                     now,
                     table + ACTUAL_POSTFIX,
                     table + BUFFER_SHARD_POSTFIX,

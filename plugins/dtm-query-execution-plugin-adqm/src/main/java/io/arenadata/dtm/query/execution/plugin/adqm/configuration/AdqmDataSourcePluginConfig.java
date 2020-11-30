@@ -4,6 +4,7 @@ import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adqm.AdqmDtmDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.api.service.*;
+import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -20,7 +21,8 @@ public class AdqmDataSourcePluginConfig {
             @Qualifier("adqmMppwKafkaService") MppwKafkaService<QueryResult> mppwKafkaService,
             @Qualifier("adqmQueryCostService") QueryCostService<Integer> queryCostService,
             @Qualifier("adqmStatusService") StatusService<StatusQueryResult> statusService,
-            @Qualifier("adqmRollbackService") RollbackService<Void> rollbackService) {
+            @Qualifier("adqmRollbackService") RollbackService<Void> rollbackService,
+            @Qualifier("adqmCheckTableService") CheckTableService checkTableService) {
         return new AdqmDtmDataSourcePlugin(
                 ddlService,
                 llrService,
@@ -28,6 +30,7 @@ public class AdqmDataSourcePluginConfig {
                 mppwKafkaService,
                 queryCostService,
                 statusService,
-                rollbackService);
+                rollbackService,
+                checkTableService);
     }
 }

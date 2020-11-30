@@ -642,3 +642,33 @@ SqlNode SqlConfigStorageAdd() :
         return new io.arenadata.dtm.query.calcite.core.extension.config.function.SqlConfigStorageAdd(s.end(this), sourceType);
     }
 }
+SqlNode SqlCheckDatabase() :
+{
+        Span s;
+        SqlNode name = null;
+}
+{
+    <CHECK_DATABASE>
+    {
+        s = span();
+    }
+    [ <LPAREN> name = StringLiteral() <RPAREN> ]
+    {
+            return new io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckDatabase(s.end(this), name);
+    }
+}
+SqlNode SqlCheckTable() :
+{
+    Span s;
+    SqlNode name = null;
+}
+{
+    <CHECK_TABLE>
+    {
+        s = span();
+    }
+    <LPAREN> name = StringLiteral() <RPAREN>
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckTable(s.end(this), name);
+    }
+}

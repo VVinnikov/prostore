@@ -6,12 +6,13 @@ import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.TarantoolDatabaseProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.impl.AdgCreateTableQueriesFactory;
+import io.arenadata.dtm.query.execution.plugin.adg.factory.impl.AdgTableEntitiesFactory;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.*;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.adg.service.impl.AdgCartridgeClientImpl;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
-import io.arenadata.dtm.query.execution.plugin.api.service.CheckTableService;
+import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
 import io.vertx.core.Future;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,8 +24,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static io.arenadata.dtm.query.execution.plugin.adg.constants.ColumnFields.*;
-import static io.arenadata.dtm.query.execution.plugin.adg.constants.ColumnFields.BUCKET_ID;
-import static io.arenadata.dtm.query.execution.plugin.adg.factory.impl.AdgCreateTableQueriesFactory.SEC_INDEX_PREFIX;
+import static io.arenadata.dtm.query.execution.plugin.adg.factory.impl.AdgTableEntitiesFactory.SEC_INDEX_PREFIX;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -39,8 +39,8 @@ public class AdgCheckTableServiceTest {
     private static Set<String> spacePostfixes;
     private static Map<String, List<SpaceIndex>> spaceIndexMap;
     private Entity entity;
+    private CheckContext checkContext;
     private CheckTableService adgCheckTableService;
-    private DatamartRequest request;
 
     @BeforeAll
     static void init() {
@@ -83,7 +83,7 @@ public class AdgCheckTableServiceTest {
         QueryRequest queryRequest = new QueryRequest();
         queryRequest.setEnvName(ENV);
         queryRequest.setDatamartMnemonic(entity.getSchema());
-        request = new DatamartRequest(queryRequest);
+        checkContext = new CheckContext(null, new DatamartRequest(queryRequest), entity);
 
         Map<String, Space> spaces = getSpaces(entity);
         when(adgClient.getSpaceDescriptions(eq(spaces.keySet())))
@@ -93,22 +93,20 @@ public class AdgCheckTableServiceTest {
                         NOT_TABLE_EXIST + ACTUAL_POSTFIX)));
 
         adgCheckTableService = new AdgCheckTableService(adgClient,
-                new AdgCreateTableQueriesFactory(new TarantoolDatabaseProperties()));
+                new AdgCreateTableQueriesFactory(new AdgTableEntitiesFactory(new TarantoolDatabaseProperties())));
     }
 
     @Test
     void testSuccess() {
-        adgCheckTableService.check(new CheckContext(request, entity),
-                ar -> assertTrue(ar.succeeded()));
+        assertTrue(adgCheckTableService.check(checkContext).succeeded());
     }
 
     @Test
     void testTableNotExist() {
         entity.setName("not_exist_table");
-        adgCheckTableService.check(new CheckContext(request, entity),
-                ar -> assertThat(ar.cause().getMessage(),
-                        containsString(String.format(CheckTableService.TABLE_NOT_EXIST_ERROR_TEMPLATE,
-                                NOT_TABLE_EXIST + ACTUAL_POSTFIX))));
+        assertThat(adgCheckTableService.check(checkContext).cause().getMessage(),
+                containsString(String.format(CheckTableService.TABLE_NOT_EXIST_ERROR_TEMPLATE,
+                        NOT_TABLE_EXIST + ACTUAL_POSTFIX)));
     }
 
     @Test
@@ -120,8 +118,8 @@ public class AdgCheckTableServiceTest {
                 .build());
         String expectedError = String.format(AdgCheckTableService.COLUMN_NOT_EXIST_ERROR_TEMPLATE,
                 "not_exist_column");
-        adgCheckTableService.check(new CheckContext(request, entity),
-                ar -> assertThat(ar.cause().getMessage(), containsString(expectedError)));
+        assertThat(adgCheckTableService.check(checkContext).cause().getMessage(),
+                containsString(expectedError));
     }
 
     @Test
@@ -139,8 +137,8 @@ public class AdgCheckTableServiceTest {
                 .findAny()
                 .orElseThrow(RuntimeException::new);
         consumer.accept(testColumn);
-        adgCheckTableService.check(new CheckContext(request, entity),
-                ar -> assertThat(ar.cause().getMessage(), containsString(expectedError)));
+        assertThat(adgCheckTableService.check(checkContext).cause().getMessage(),
+                containsString(expectedError));
     }
 
     private Map<String, Space> getSpaces(Entity entity) {

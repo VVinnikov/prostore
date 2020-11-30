@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.api;
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
@@ -11,6 +12,7 @@ import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import org.springframework.plugin.core.Plugin;
 
@@ -89,4 +91,6 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
      * @param asyncResultHandler async handler
      */
     void rollback(RollbackRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler);
+
+    Future<Void> checkTable(CheckContext context);
 }

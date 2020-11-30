@@ -5,7 +5,7 @@ import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbTables;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.CreateTableQueriesFactory;
+import io.arenadata.dtm.query.execution.plugin.api.factory.CreateTableQueriesFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import utils.CreateEntityUtils;

@@ -4,8 +4,8 @@ import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbTableColumn;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbTableEntity;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbTables;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.CreateTableQueriesFactory;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TableEntitiesFactory;
+import io.arenadata.dtm.query.execution.plugin.api.factory.CreateTableQueriesFactory;
+import io.arenadata.dtm.query.execution.plugin.api.factory.TableEntitiesFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -27,7 +27,8 @@ public class AdbCreateTableQueriesFactory implements CreateTableQueriesFactory<A
 
     @Override
     public AdbTables<String> create(DdlRequestContext context) {
-        AdbTables<AdbTableEntity> tableEntities = tableEntitiesFactory.create(context);
+        AdbTables<AdbTableEntity> tableEntities = tableEntitiesFactory.create(context.getRequest().getEntity(),
+                context.getRequest().getQueryRequest().getEnvName());
         return new AdbTables<>(createTableQuery(tableEntities.getActual()),
                 createTableQuery(tableEntities.getHistory()),
                 createTableQuery(tableEntities.getStaging()));

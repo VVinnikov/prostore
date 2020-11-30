@@ -7,8 +7,7 @@ import io.arenadata.dtm.common.model.ddl.EntityTypeUtil;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbTableColumn;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbTableEntity;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbTables;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TableEntitiesFactory;
+import io.arenadata.dtm.query.execution.plugin.api.factory.TableEntitiesFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -44,8 +43,7 @@ public class AdbTableEntitiesFactory implements TableEntitiesFactory<AdbTables<A
     );
 
     @Override
-    public AdbTables<AdbTableEntity> create(DdlRequestContext context) {
-        Entity entity = context.getRequest().getEntity();
+    public AdbTables<AdbTableEntity> create(Entity entity, String envName) {
         return new AdbTables<>(
                 createTableEntity(entity, getTableName(entity, AdbTables.ACTUAL_TABLE_POSTFIX), false, true),
                 createTableEntity(entity, getTableName(entity, AdbTables.HISTORY_TABLE_POSTFIX), false, true),

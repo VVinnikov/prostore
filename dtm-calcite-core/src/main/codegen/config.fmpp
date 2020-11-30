@@ -57,6 +57,8 @@ data: {
       "GET_DELTA_BY_NUM"
       "CONFIG_STORAGE_ADD"
       "DATASOURCE_TYPE"
+      "CHECK_DATABASE"
+      "CHECK_TABLE"
     ]
 
     # List of keywords from "keywords" section that are not reserved.
@@ -411,6 +413,8 @@ data: {
         "SqlGetDeltaByDateTime()"
         "SqlGetDeltaByNum()"
         "SqlConfigStorageAdd()"
+        "SqlCheckDatabase()"
+        "SqlCheckTable()"
     ]
 
     # List of methods for parsing custom literals.

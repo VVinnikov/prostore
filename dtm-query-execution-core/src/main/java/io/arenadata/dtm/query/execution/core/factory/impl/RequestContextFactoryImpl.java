@@ -4,10 +4,12 @@ import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.RequestStatus;
 import io.arenadata.dtm.common.reader.QueryRequest;
+import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckCall;
 import io.arenadata.dtm.query.calcite.core.extension.config.SqlConfigCall;
 import io.arenadata.dtm.query.calcite.core.extension.delta.SqlDeltaCall;
 import io.arenadata.dtm.query.execution.core.factory.RequestContextFactory;
 import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.config.ConfigRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.delta.DeltaRequestContext;
@@ -25,6 +27,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Component
 public class RequestContextFactoryImpl implements RequestContextFactory<RequestContext<? extends DatamartRequest>, QueryRequest> {
@@ -60,6 +63,12 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
             return new DeltaRequestContext(
                     createRequestMetrics(request),
                     new DatamartRequest(changedQueryRequest));
+        } else if (SqlKind.CHECK.equals(node.getKind())) {
+            SqlCheckCall sqlCheckCall = (SqlCheckCall) node;
+            Optional.ofNullable(sqlCheckCall.getSchema()).ifPresent(changedQueryRequest::setDatamartMnemonic);
+            return new CheckContext(createRequestMetrics(request),
+                    new DatamartRequest(changedQueryRequest),
+                    sqlCheckCall.getType(), sqlCheckCall.getTable());
         }
 
         switch (node.getKind()) {

@@ -7,6 +7,7 @@ import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlType;
@@ -18,6 +19,7 @@ import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestConte
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
 import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
@@ -80,6 +82,11 @@ public class DtmDataSourcePluginIT {
         @Override
         public void rollback(RollbackRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler) {
 
+        }
+
+        @Override
+        public Future<Void> checkTable(CheckContext context) {
+            return null;
         }
     };
 

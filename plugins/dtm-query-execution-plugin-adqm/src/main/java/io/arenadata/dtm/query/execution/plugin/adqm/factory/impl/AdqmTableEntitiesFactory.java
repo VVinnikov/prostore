@@ -7,8 +7,7 @@ import io.arenadata.dtm.query.execution.plugin.adqm.common.DdlUtils;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTableColumn;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTableEntity;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTables;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TableEntitiesFactory;
+import io.arenadata.dtm.query.execution.plugin.api.factory.TableEntitiesFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -31,9 +30,7 @@ public class AdqmTableEntitiesFactory implements TableEntitiesFactory<AdqmTables
     );
 
     @Override
-    public AdqmTables<AdqmTableEntity> create(DdlRequestContext context) {
-        Entity entity = context.getRequest().getEntity();
-        String env = context.getRequest().getQueryRequest().getEnvName();
+    public AdqmTables<AdqmTableEntity> create(Entity entity, String env) {
         String tableName = entity.getName();
         String schema = entity.getSchema();
         List<EntityField> fields = entity.getFields();

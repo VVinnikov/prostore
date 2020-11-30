@@ -5,16 +5,12 @@ import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbTableEntity;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbTables;
 import io.arenadata.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
-import io.arenadata.dtm.query.execution.plugin.api.service.CheckTableService;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TableEntitiesFactory;
-import io.vertx.core.AsyncResult;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckException;
+import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
+import io.arenadata.dtm.query.execution.plugin.api.factory.TableEntitiesFactory;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -65,35 +61,39 @@ public class AdbCheckTableService implements CheckTableService {
     }
 
     @Override
-    public void check(CheckContext context,
-                      Handler<AsyncResult<Void>> handler) {
+    public Future<Void> check(CheckContext context) {
         AdbTables<AdbTableEntity> adbCreateTableQueries = tableEntitiesFactory
-                .create(new DdlRequestContext(new DdlRequest(context.getRequest().getQueryRequest(),
-                        context.getEntity())));
-        CompositeFuture.join(Stream.of(adbCreateTableQueries.getActual(), adbCreateTableQueries.getHistory(),
+                .create(context.getEntity(), context.getRequest().getQueryRequest().getEnvName());
+        return Future.future(promise -> CompositeFuture.join(Stream.of(
+                adbCreateTableQueries.getActual(),
+                adbCreateTableQueries.getHistory(),
                 adbCreateTableQueries.getStaging())
                 .map(this::compare)
                 .collect(Collectors.toList()))
                 .onSuccess(result -> {
-                    List<String> list = result.list();
-                    if (list.stream().allMatch(String::isEmpty)) {
-                        handler.handle(Future.succeededFuture());
+                    List<Optional<String>> list = result.list();
+                    String errors = list.stream().filter(Optional::isPresent)
+                            .map(Optional::get)
+                            .collect(Collectors.joining("\n"));
+                    if (errors.isEmpty()) {
+                        promise.complete();
                     } else {
-                        handler.handle(Future.failedFuture("\n" + String.join("\n", list)));
+                        promise.fail(new CheckException("\n" + errors));
                     }
                 })
-                .onFailure(error -> handler.handle(Future.failedFuture(error)));
+                .onFailure(promise::fail)
+        );
     }
 
-    private Future<String> compare(AdbTableEntity expTableEntity) {
+    private Future<Optional<String>> compare(AdbTableEntity expTableEntity) {
         return getMetadata(expTableEntity)
                 .compose(optTableEntity -> Future.succeededFuture(optTableEntity
                         .map(tableEntity -> compare(tableEntity, expTableEntity))
-                        .orElse(String.format(TABLE_NOT_EXIST_ERROR_TEMPLATE, expTableEntity.getName()))));
+                        .orElse(Optional.of(String.format(TABLE_NOT_EXIST_ERROR_TEMPLATE, expTableEntity.getName())))));
     }
 
-    private String compare(AdbTableEntity tableEntity,
-                           AdbTableEntity expTableEntity) {
+    private Optional<String> compare(AdbTableEntity tableEntity,
+                                     AdbTableEntity expTableEntity) {
 
         List<String> errors = new ArrayList<>();
         if (!Objects.equals(expTableEntity.getPrimaryKeys(), tableEntity.getPrimaryKeys())) {
@@ -111,15 +111,15 @@ public class AdbCheckTableService implements CheckTableService {
                 String realType = realColumn.getType();
                 String type = column.getType();
                 if (!Objects.equals(type, realType)) {
-                    errors.add(String.format("\tColumn `%s` : \n", column.getName()));
+                    errors.add(String.format("\tColumn `%s`:", column.getName()));
                     errors.add(String.format(FIELD_ERROR_TEMPLATE, DATA_TYPE, column.getType(), realColumn.getType()));
                 }
             }
         });
         return errors.isEmpty()
-                ? ""
-                : String.format("Table `%s.%s` : \n%s", expTableEntity.getSchema(), expTableEntity.getName(),
-                String.join("\n", errors));
+                ? Optional.empty()
+                : Optional.of(String.format("Table `%s.%s`:\n%s", expTableEntity.getSchema(),
+                expTableEntity.getName(), String.join("\n", errors)));
     }
 
     private Future<Optional<AdbTableEntity>> getMetadata(AdbTableEntity expTableEntity) {

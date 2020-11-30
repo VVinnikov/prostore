@@ -1,10 +1,11 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl;
 
+import io.arenadata.dtm.query.execution.plugin.adg.dto.AdgTables;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.OperationYaml;
+import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.AdgSpace;
 import io.arenadata.dtm.query.execution.plugin.adg.service.TtCartridgeSchemaGenerator;
-import io.arenadata.dtm.query.execution.plugin.adg.service.impl.ddl.AdgCreateTableQueries;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.CreateTableQueriesFactory;
+import io.arenadata.dtm.query.execution.plugin.api.factory.CreateTableQueriesFactory;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -17,10 +18,10 @@ import java.util.stream.Stream;
 
 @Service
 public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerator {
-    private final CreateTableQueriesFactory<AdgCreateTableQueries> createTableQueriesFactory;
+    private final CreateTableQueriesFactory<AdgTables<AdgSpace>> createTableQueriesFactory;
 
     @Autowired
-    public TtCartridgeSchemaGeneratorImpl(CreateTableQueriesFactory<AdgCreateTableQueries> createTableQueriesFactory) {
+    public TtCartridgeSchemaGeneratorImpl(CreateTableQueriesFactory<AdgTables<AdgSpace>> createTableQueriesFactory) {
         this.createTableQueriesFactory = createTableQueriesFactory;
     }
 
@@ -30,7 +31,7 @@ public class TtCartridgeSchemaGeneratorImpl implements TtCartridgeSchemaGenerato
             yaml.setSpaces(new LinkedHashMap<>());
         }
         val spaces = yaml.getSpaces();
-        AdgCreateTableQueries adgCreateTableQueries = createTableQueriesFactory.create(context);
+        AdgTables<AdgSpace> adgCreateTableQueries = createTableQueriesFactory.create(context);
         Stream.of(adgCreateTableQueries.getActual(), adgCreateTableQueries.getHistory(),
                 adgCreateTableQueries.getStaging())
                 .forEach(space -> spaces.put(space.getName(), space.getSpace()));

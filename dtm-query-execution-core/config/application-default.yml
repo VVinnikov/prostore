@@ -139,7 +139,8 @@ adqm:
     consumerGroup: ${ADQM_CONSUMER_GROUP:adqm}
     kafkaBrokers: ${ADQM_BROKERS:10.92.3.31:9092}
     loadType: ${ADQM_MPPW_LOAD_TYPE:REST}
-    restLoadUrl: ${ADQM_REST_LOAD_URL:http://10.92.3.3:8090/newdata/adqm}
+    restStartLoadUrl: ${ADQM_REST_START_LOAD_URL:http://10.92.3.3:8090/newdata/adqm/start}
+    restStopLoadUrl: ${ADQM_REST_STOP_LOAD_URL:http://10.92.3.3:8090/newdata/adqm/stop}
     restLoadConsumerGroup: ${ADQM_REST_LOAD_GROUP:adb-emulator-load-adqm}
 
   web-client:

@@ -5,6 +5,7 @@ import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountParams;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsService;
 import io.arenadata.dtm.query.execution.core.verticle.TaskVerticleExecutor;
@@ -12,6 +13,8 @@ import io.arenadata.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Params;
+import io.arenadata.dtm.query.execution.plugin.api.dto.PluginParams;
 import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
@@ -30,7 +33,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -186,26 +188,33 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
 
     @Override
     public Future<Void> checkTable(SourceType sourceType, CheckContext context) {
-        return check(sourceType, context.getMetrics(), () -> getPlugin(sourceType).checkTable(context));
+        return check(new PluginParams(sourceType, context.getMetrics()), plugin -> plugin.checkTable(context));
     }
 
     @Override
-    public Future<Long> checkDataByCount(SourceType sourceType, CheckContext context) {
-        return check(sourceType, context.getMetrics(), () -> getPlugin(sourceType).checkDataByCount(context));
+    public Future<Long> checkDataByCount(CheckDataByCountParams params) {
+        return check(params, plugin -> plugin.checkDataByCount(params));
     }
 
     @Override
-    public Future<Long> checkDataByHashInt32(SourceType sourceType, CheckContext context) {
-        return check(sourceType, context.getMetrics(), () -> getPlugin(sourceType).checkDataByHashInt32(context));
+    public Future<Long> checkDataByHashInt32(CheckDataByHashInt32Params params) {
+        return check(params, plugin -> plugin.checkDataByHashInt32(params));
     }
 
-    private <T> Future<T> check(SourceType sourceType, RequestMetrics metrics, Supplier<Future<T>> supplier) {
-
-        Function<Void, Future<T>> exec = (val) -> Future.future(
-                promise -> taskVerticleExecutor.execute(p -> supplier.get().onComplete(p), promise));
-        return metricsService.sendMetrics(sourceType, SqlProcessingType.CHECK, metrics)
-                .compose(exec)
-                .compose(result -> metricsService.sendMetrics(sourceType, SqlProcessingType.CHECK, metrics)
+    private <T> Future<T> check(PluginParams pluginParams,
+                                Function<DtmDataSourcePlugin, Future<T>> func) {
+        SourceType sourceType = pluginParams.getSourceType();
+        RequestMetrics requestMetrics = pluginParams.getRequestMetrics();
+        return metricsService.sendMetrics(sourceType, SqlProcessingType.CHECK, requestMetrics)
+                .compose(result -> executorWrapper(func.apply(getPlugin(sourceType))))
+                .compose(result -> metricsService.sendMetrics(sourceType, SqlProcessingType.CHECK, requestMetrics)
                         .map(val -> result));
+    }
+
+    private <T> Future<T> executorWrapper(Future<T> future) {
+        return Future.future(promise -> taskVerticleExecutor.execute(p -> future
+                        .onSuccess(p::complete)
+                        .onFailure(p::fail),
+                promise));
     }
 }

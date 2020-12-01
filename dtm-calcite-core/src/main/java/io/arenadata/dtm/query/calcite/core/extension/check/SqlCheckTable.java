@@ -23,6 +23,7 @@ public class SqlCheckTable extends SqlCheckCall {
         return table;
     }
 
+    @Override
     public String getSchema() {
         return schema;
     }

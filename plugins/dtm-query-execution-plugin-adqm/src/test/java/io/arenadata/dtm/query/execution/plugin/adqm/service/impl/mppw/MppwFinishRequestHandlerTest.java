@@ -6,12 +6,14 @@ import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfigurati
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
+import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.RestLoadClient;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockDatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockEnvironment;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockStatusReporter;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaParameter;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
 import io.arenadata.dtm.query.execution.plugin.api.request.MppwRequest;
+import io.vertx.core.Future;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -20,6 +22,9 @@ import java.util.*;
 import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class MppwFinishRequestHandlerTest {
     private static final DdlProperties ddlProperties = new DdlProperties();
@@ -74,7 +79,9 @@ class MppwFinishRequestHandlerTest {
         ), mockData);
 
         MockStatusReporter mockReporter = getMockReporter();
-        MppwRequestHandler handler = new MppwFinishRequestHandler(executor,
+        RestLoadClient restLoadClient = mock(RestLoadClient.class);
+        when(restLoadClient.stopLoading(any())).thenReturn(Future.succeededFuture());
+        MppwRequestHandler handler = new MppwFinishRequestHandler(restLoadClient, executor,
                 ddlProperties,
                 appConfiguration,
                 mockReporter,

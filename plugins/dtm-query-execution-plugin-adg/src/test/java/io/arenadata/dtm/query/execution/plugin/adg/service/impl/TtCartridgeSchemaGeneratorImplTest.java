@@ -10,15 +10,15 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.query.execution.plugin.adg.dto.AdgTables;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.impl.AdgCreateTableQueriesFactory;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.OperationYaml;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.AdgSpace;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.Space;
 import io.arenadata.dtm.query.execution.plugin.adg.service.TtCartridgeSchemaGenerator;
-import io.arenadata.dtm.query.execution.plugin.adg.service.impl.ddl.AdgCreateTableQueries;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.CreateTableQueriesFactory;
+import io.arenadata.dtm.query.execution.plugin.api.factory.CreateTableQueriesFactory;
 import io.vertx.core.Promise;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -60,8 +60,8 @@ class TtCartridgeSchemaGeneratorImplTest {
         Promise promise = Promise.promise();
 
         AdgSpace adgSpace = new AdgSpace("test", new Space());
-        AdgCreateTableQueries adqmCreateTableQueries = new AdgCreateTableQueries(adgSpace, adgSpace, adgSpace);
-        CreateTableQueriesFactory<AdgCreateTableQueries> createTableQueriesFactory = mock(AdgCreateTableQueriesFactory.class);
+        AdgTables<AdgSpace> adqmCreateTableQueries = new AdgTables<>(adgSpace, adgSpace, adgSpace);
+        CreateTableQueriesFactory<AdgTables<AdgSpace>> createTableQueriesFactory = mock(AdgCreateTableQueriesFactory.class);
         Mockito.when(createTableQueriesFactory.create(any())).thenReturn(adqmCreateTableQueries);
         TtCartridgeSchemaGenerator cartridgeSchemaGenerator = new TtCartridgeSchemaGeneratorImpl(createTableQueriesFactory);
         cartridgeSchemaGenerator.generate(ddlRequestContext, mapper.readValue("{}", OperationYaml.class), ar -> {

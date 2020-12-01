@@ -11,7 +11,7 @@ import io.arenadata.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
-import io.arenadata.dtm.query.execution.plugin.api.service.CheckTableService;
+import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
 import io.vertx.core.Future;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,6 +39,7 @@ public class AdbCheckTableServiceTest {
             AdbTables.HISTORY_TABLE_POSTFIX,
             AdbTables.STAGING_TABLE_POSTFIX);
     private Entity entity;
+    private CheckContext checkContext;
     private static final String TEST_COLUMN_NAME = "test_column";
 
     @BeforeAll
@@ -75,17 +76,17 @@ public class AdbCheckTableServiceTest {
         req_id.put(AdbCheckTableService.DATA_TYPE, "varchar(36)");
         req_id.put(AdbCheckTableService.CHARACTER_MAXIMUM_LENGTH, null);
 
-        Map<String, Object> historySysFromAttr = new HashMap<>();
-        historySysFromAttr.put(AdbCheckTableService.CONSTRAINT_TYPE, null);
-        historySysFromAttr.put(AdbCheckTableService.DATETIME_PRECISION, null);
-        historySysFromAttr.put(AdbCheckTableService.ORDINAL_POSITION, 3);
-        historySysFromAttr.put(AdbCheckTableService.COLUMN_NAME, AdbTableEntitiesFactory.SYS_FROM_ATTR);
-        historySysFromAttr.put(AdbCheckTableService.DATA_TYPE, "int8");
-        historySysFromAttr.put(AdbCheckTableService.CHARACTER_MAXIMUM_LENGTH, null);
+        Map<String, Object> PKSysFromAttr = new HashMap<>();
+        PKSysFromAttr.put(AdbCheckTableService.CONSTRAINT_TYPE, null);
+        PKSysFromAttr.put(AdbCheckTableService.DATETIME_PRECISION, null);
+        PKSysFromAttr.put(AdbCheckTableService.ORDINAL_POSITION, 3);
+        PKSysFromAttr.put(AdbCheckTableService.COLUMN_NAME, AdbTableEntitiesFactory.SYS_FROM_ATTR);
+        PKSysFromAttr.put(AdbCheckTableService.DATA_TYPE, "int8");
+        PKSysFromAttr.put(AdbCheckTableService.CHARACTER_MAXIMUM_LENGTH, null);
 
         sysColumns = new HashMap<>();
-        sysColumns.put(AdbTables.ACTUAL_TABLE_POSTFIX, Arrays.asList(sysFromAttr, sysToAttr, sysOpAttr));
-        sysColumns.put(AdbTables.HISTORY_TABLE_POSTFIX, Arrays.asList(historySysFromAttr, sysToAttr, sysOpAttr));
+        sysColumns.put(AdbTables.ACTUAL_TABLE_POSTFIX, Arrays.asList(PKSysFromAttr, sysToAttr, sysOpAttr));
+        sysColumns.put(AdbTables.HISTORY_TABLE_POSTFIX, Arrays.asList(PKSysFromAttr, sysToAttr, sysOpAttr));
         sysColumns.put(AdbTables.STAGING_TABLE_POSTFIX, Arrays.asList(sysFromAttr, sysToAttr, sysOpAttr, req_id));
 
     }
@@ -107,6 +108,8 @@ public class AdbCheckTableServiceTest {
                 .map(this::fieldToMapTransform)
                 .collect(Collectors.toList());
 
+        checkContext = new CheckContext(null, new DatamartRequest(new QueryRequest()), entity);
+
         tablePostFixes.forEach(postFix -> when(adbQueryExecutor.execute(argThat(getPredicate(postFix)::test)))
                 .thenReturn(Future.succeededFuture(getResultSet(resultSet, postFix))));
 
@@ -121,18 +124,17 @@ public class AdbCheckTableServiceTest {
 
     @Test
     void testSuccess() {
-        adbCheckTableService.check(new CheckContext(new DatamartRequest(new QueryRequest()), entity),
-                ar -> assertTrue(ar.succeeded()));
+        assertTrue(adbCheckTableService.check(checkContext).succeeded());
     }
 
     @Test
     void testTableNotExist() {
         entity.setName("not_exist_table");
-        adbCheckTableService.check(new CheckContext(new DatamartRequest(new QueryRequest()), entity),
-                ar -> tablePostFixes.forEach(postFix ->
-                        assertThat(ar.cause().getMessage(),
-                                containsString(String.format(AdbCheckTableService.TABLE_NOT_EXIST_ERROR_TEMPLATE,
-                                        String.format("not_exist_table_%s", postFix))))));
+        Future<Void> result = adbCheckTableService.check(checkContext);
+        tablePostFixes.forEach(postFix ->
+                assertThat(result.cause().getMessage(),
+                        containsString(String.format(AdbCheckTableService.TABLE_NOT_EXIST_ERROR_TEMPLATE,
+                                String.format("not_exist_table_%s", postFix)))));
     }
 
     @Test
@@ -144,8 +146,8 @@ public class AdbCheckTableServiceTest {
                 .build());
         String expectedError = String.format(AdbCheckTableService.COLUMN_NOT_EXIST_ERROR_TEMPLATE,
                 "not_exist_column");
-        adbCheckTableService.check(new CheckContext(new DatamartRequest(new QueryRequest()), entity),
-                ar -> assertThat(ar.cause().getMessage(), containsString(expectedError)));
+        assertThat(adbCheckTableService.check(checkContext).cause().getMessage(),
+                containsString(expectedError));
     }
 
     @Test
@@ -171,8 +173,8 @@ public class AdbCheckTableServiceTest {
                 .findAny()
                 .orElseThrow(RuntimeException::new);
         consumer.accept(testColumn);
-        adbCheckTableService.check(new CheckContext(new DatamartRequest(new QueryRequest()), entity),
-                ar -> assertThat(ar.cause().getMessage(), containsString(expectedError)));
+        assertThat(adbCheckTableService.check(checkContext).cause().getMessage(),
+                containsString(expectedError));
     }
 
     private Predicate<String> getPredicate(String postFix) {

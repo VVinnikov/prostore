@@ -11,7 +11,7 @@ import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.query.AdqmQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
-import io.arenadata.dtm.query.execution.plugin.api.service.CheckTableService;
+import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
 import io.vertx.core.Future;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,8 +38,8 @@ public class AdqmCheckTableServiceTest {
     private static final String ENV = "env";
     private static Map<String, List<Map<String, Object>>> sysColumns;
     private Entity entity;
-    private CheckTableService adbCheckTableService;
-    private DatamartRequest request;
+    private CheckTableService adqmCheckTableService;
+    private CheckContext checkContext;
 
     @BeforeAll
     static void init() {
@@ -62,9 +62,6 @@ public class AdqmCheckTableServiceTest {
 
     @BeforeEach
     void setUp() {
-        QueryRequest queryRequest = new QueryRequest();
-        queryRequest.setEnvName(ENV);
-        request = new DatamartRequest(queryRequest);
         DatabaseExecutor adqmQueryExecutor = mock(AdqmQueryExecutor.class);
         entity = AdqmCreateTableQueriesFactoryTest.getEntity();
         int fieldsCount = entity.getFields().size();
@@ -75,6 +72,10 @@ public class AdqmCheckTableServiceTest {
                 .nullable(true)
                 .build());
 
+        QueryRequest queryRequest = new QueryRequest();
+        queryRequest.setEnvName(ENV);
+        checkContext = new CheckContext(null, new DatamartRequest(queryRequest), entity);
+
         tablePostFixes.forEach(postFix -> when(adqmQueryExecutor.execute(argThat(getPredicate(postFix)::test)))
                 .thenReturn(Future.succeededFuture(getResultSet(postFix, entity.getFields()))));
 
@@ -84,23 +85,21 @@ public class AdqmCheckTableServiceTest {
                 .collect(Collectors.toList());
         when(adqmQueryExecutor.execute(argThat(arg -> queries.stream().noneMatch(arg::equals))))
                 .thenReturn(Future.succeededFuture(Collections.emptyList()));
-        adbCheckTableService = new AdqmCheckTableService(adqmQueryExecutor, new AdqmTableEntitiesFactory());
+        adqmCheckTableService = new AdqmCheckTableService(adqmQueryExecutor, new AdqmTableEntitiesFactory());
     }
 
     @Test
     void testSuccess() {
-        adbCheckTableService.check(new CheckContext(request, entity),
-                ar -> assertTrue(ar.succeeded()));
+        assertTrue(adqmCheckTableService.check(checkContext).succeeded());
     }
 
     @Test
     void testTableNotExist() {
         entity.setName("not_exist_table");
-        adbCheckTableService.check(new CheckContext(request, entity),
-                ar -> tablePostFixes.forEach(postFix ->
-                        assertThat(ar.cause().getMessage(),
-                                containsString(String.format(CheckTableService.TABLE_NOT_EXIST_ERROR_TEMPLATE,
-                                        String.format("not_exist_table%s", postFix))))));
+        String errors = adqmCheckTableService.check(checkContext).cause().getMessage();
+        tablePostFixes.forEach(postFix ->
+                assertThat(errors, containsString(String.format(CheckTableService.TABLE_NOT_EXIST_ERROR_TEMPLATE,
+                        String.format("not_exist_table%s", postFix)))));
     }
 
     @Test
@@ -112,8 +111,9 @@ public class AdqmCheckTableServiceTest {
                 .build());
         String expectedError = String.format(CheckTableService.COLUMN_NOT_EXIST_ERROR_TEMPLATE,
                 "not_exist_column");
-        adbCheckTableService.check(new CheckContext(request, entity),
-                ar -> assertThat(ar.cause().getMessage(), containsString(expectedError)));
+
+        assertThat(adqmCheckTableService.check(checkContext).cause().getMessage(),
+                containsString(expectedError));
     }
 
     @Test
@@ -139,8 +139,8 @@ public class AdqmCheckTableServiceTest {
                 .findAny()
                 .orElseThrow(RuntimeException::new);
         consumer.accept(testColumn);
-        adbCheckTableService.check(new CheckContext(request, entity),
-                ar -> assertThat(ar.cause().getMessage(), containsString(expectedError)));
+        assertThat(adqmCheckTableService.check(checkContext).cause().getMessage(),
+                containsString(expectedError));
     }
 
     private Predicate<String> getPredicate(String postFix) {

@@ -5,7 +5,8 @@ import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTableColumn;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTableEntity;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTables;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.CreateTableQueriesFactory;
+import io.arenadata.dtm.query.execution.plugin.api.factory.CreateTableQueriesFactory;
+import io.arenadata.dtm.query.execution.plugin.api.factory.TableEntitiesFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -31,13 +32,13 @@ public class AdqmCreateTableQueriesFactory implements CreateTableQueriesFactory<
                     "Engine = Distributed(%s, %s__%s, %s, %s)";
 
     private final DdlProperties ddlProperties;
-    private final AdqmTableEntitiesFactory adqmTableEntitiesFactory;
+    private final TableEntitiesFactory<AdqmTables<AdqmTableEntity>> tableEntitiesFactory;
 
     @Autowired
     public AdqmCreateTableQueriesFactory(DdlProperties ddlProperties,
-                                         AdqmTableEntitiesFactory adqmTableEntitiesFactory) {
+                                         TableEntitiesFactory<AdqmTables<AdqmTableEntity>> tableEntitiesFactory) {
         this.ddlProperties = ddlProperties;
-        this.adqmTableEntitiesFactory = adqmTableEntitiesFactory;
+        this.tableEntitiesFactory = tableEntitiesFactory;
     }
 
     @Override
@@ -46,7 +47,8 @@ public class AdqmCreateTableQueriesFactory implements CreateTableQueriesFactory<
         Integer ttlSec = ddlProperties.getTtlSec();
         String archiveDisk = ddlProperties.getArchiveDisk();
 
-        AdqmTables<AdqmTableEntity> tables = adqmTableEntitiesFactory.create(context);
+        AdqmTables<AdqmTableEntity> tables = tableEntitiesFactory.create(context.getRequest().getEntity(),
+                context.getRequest().getQueryRequest().getEnvName());
         AdqmTableEntity shard = tables.getShard();
         AdqmTableEntity distributed = tables.getDistributed();
         return new AdqmTables<>(

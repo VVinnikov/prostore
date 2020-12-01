@@ -9,6 +9,7 @@ import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsService;
 import io.arenadata.dtm.query.execution.core.verticle.TaskVerticleExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
@@ -179,5 +180,20 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     @Override
     public DtmDataSourcePlugin getPlugin(SourceType sourceType) {
         return pluginRegistry.getRequiredPluginFor(sourceType);
+    }
+
+    @Override
+    public Future<Void> checkTable(SourceType sourceType, CheckContext context) {
+        return metricsService.sendMetrics(sourceType,
+                SqlProcessingType.CHECK,
+                context.getMetrics())
+                .compose(result -> Future.future(
+                        promise -> taskVerticleExecutor.execute(p -> getPlugin(sourceType).checkTable(context)
+                                .onSuccess(p::complete)
+                                .onFailure(p::fail),
+                                promise)))
+                .compose(result -> metricsService.sendMetrics(sourceType,
+                        SqlProcessingType.CHECK,
+                        context.getMetrics()));
     }
 }

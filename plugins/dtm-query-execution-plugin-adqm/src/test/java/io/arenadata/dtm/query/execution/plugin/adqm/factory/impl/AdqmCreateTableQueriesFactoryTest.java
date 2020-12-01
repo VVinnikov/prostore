@@ -8,7 +8,7 @@ import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.Ddl
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTables;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.CreateTableQueriesFactory;
+import io.arenadata.dtm.query.execution.plugin.api.factory.CreateTableQueriesFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -41,7 +41,7 @@ public class AdqmCreateTableQueriesFactoryTest {
             "UUID_type Nullable(String), sys_from Int64, sys_to Int64, sys_op Int8, close_date DateTime, sign Int8)\n" +
             "Engine = Distributed(test_arenadata, env__test_schema, test_table_actual_shard, id)";
 
-    private AdqmTables<String> adqmCreateTableQueries;
+    private AdqmTables<String> adqmTables;
 
     @BeforeEach
     void setUp() {
@@ -52,19 +52,19 @@ public class AdqmCreateTableQueriesFactoryTest {
         ddlProperties.setTtlSec(3600);
         ddlProperties.setCluster("test_arenadata");
         ddlProperties.setArchiveDisk("default");
-        CreateTableQueriesFactory<AdqmTables<String>> adbCreateTableQueriesFactory =
+        CreateTableQueriesFactory<AdqmTables<String>> adqmCreateTableQueriesFactory =
                 new AdqmCreateTableQueriesFactory(ddlProperties, new AdqmTableEntitiesFactory());
-        adqmCreateTableQueries = adbCreateTableQueriesFactory.create(context);
+        adqmTables = adqmCreateTableQueriesFactory.create(context);
     }
 
     @Test
     void createShardTableQueryTest() {
-        assertEquals(EXPECTED_CREATE_SHARD_TABLE_QUERY, adqmCreateTableQueries.getShard());
+        assertEquals(EXPECTED_CREATE_SHARD_TABLE_QUERY, adqmTables.getShard());
     }
 
     @Test
     void createDistributedTableQueryTest() {
-        assertEquals(EXPECTED_CREATE_DISTRIBUTED_TABLE_QUERY, adqmCreateTableQueries.getDistributed());
+        assertEquals(EXPECTED_CREATE_DISTRIBUTED_TABLE_QUERY, adqmTables.getDistributed());
     }
 
     public static Entity getEntity() {

@@ -6,13 +6,10 @@ import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTables;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmTableEntitiesFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
-import io.arenadata.dtm.query.execution.plugin.api.service.CheckTableService;
-import io.vertx.core.AsyncResult;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckException;
+import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -49,12 +46,11 @@ public class AdqmCheckTableService implements CheckTableService {
     }
 
     @Override
-    public void check(CheckContext context,
-                      Handler<AsyncResult<Void>> handler) {
-        AdqmTables<AdqmTableEntity> adbCreateTableQueries = adqmTableEntitiesFactory
-                .create(new DdlRequestContext(new DdlRequest(context.getRequest().getQueryRequest(),
-                        context.getEntity())));
-        CompositeFuture.join(Stream.of(adbCreateTableQueries.getShard(), adbCreateTableQueries.getDistributed())
+    public Future<Void> check(CheckContext context) {
+        AdqmTables<AdqmTableEntity> tableEntities = adqmTableEntitiesFactory
+                .create(context.getEntity(), context.getRequest().getQueryRequest().getEnvName());
+        return Future.future(promise -> CompositeFuture.join(Stream.of(
+                tableEntities.getShard(), tableEntities.getDistributed())
                 .map(this::compare)
                 .collect(Collectors.toList()))
                 .onSuccess(result -> {
@@ -63,11 +59,13 @@ public class AdqmCheckTableService implements CheckTableService {
                             .filter(Optional::isPresent)
                             .map(Optional::get)
                             .collect(Collectors.joining("\n"));
-                    handler.handle(errors.isEmpty()
-                            ? Future.succeededFuture()
-                            : Future.failedFuture("\n" + errors));
+                    if (errors.isEmpty()) {
+                        promise.complete();
+                    } else {
+                        promise.fail(new CheckException("\n" + errors));
+                    }
                 })
-                .onFailure(error -> handler.handle(Future.failedFuture(error)));
+                .onFailure(promise::fail));
     }
 
     private Future<Optional<String>> compare(AdqmTableEntity expTableEntity) {
@@ -100,14 +98,14 @@ public class AdqmCheckTableService implements CheckTableService {
                 String realType = realColumn.getType();
                 String type = column.getType();
                 if (!Objects.equals(type, realType)) {
-                    errors.add(String.format("\tColumn `%s` : \n", column.getName()));
+                    errors.add(String.format("\tColumn `%s`:", column.getName()));
                     errors.add(String.format(FIELD_ERROR_TEMPLATE, DATA_TYPE, column.getType(), realColumn.getType()));
                 }
             }
         });
         return errors.isEmpty()
                 ? Optional.empty()
-                : Optional.of(String.format("Table `%s.%s` : \n%s",
+                : Optional.of(String.format("Table `%s.%s`:\n%s",
                 expTableEntity.getSchema(),
                 expTableEntity.getName(),
                 String.join("\n", errors)));

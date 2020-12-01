@@ -1,7 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.check;
 
 import io.arenadata.dtm.common.model.ddl.ColumnType;
-import io.arenadata.dtm.common.model.ddl.SystemMetadata;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.extension.check.CheckType;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
@@ -12,6 +11,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import org.springframework.stereotype.Service;
+import org.tarantool.util.StringUtils;
 
 import java.util.*;
 
@@ -27,7 +27,7 @@ public class CheckServiceImpl implements CheckService {
     @Override
     public void execute(CheckContext context, Handler<AsyncResult<QueryResult>> handler) {
         String datamart = context.getRequest().getQueryRequest().getDatamartMnemonic();
-        if (datamart == null || datamart.isEmpty()) {
+        if (StringUtils.isEmpty(datamart)) {
             handler.handle(Future.failedFuture(
                     new IllegalArgumentException("Datamart must be specified for all tables and views")));
         } else {
@@ -46,10 +46,9 @@ public class CheckServiceImpl implements CheckService {
 
     private QueryResult createQueryResult(UUID requestId, String result) {
         QueryResult queryResult = new QueryResult();
-      //  queryResult.setRequestId(requestId);
+        queryResult.setRequestId(requestId);
         queryResult.setMetadata(Collections.singletonList(ColumnMetadata.builder()
                 .name(CHECK_RESULT_COLUMN_NAME)
-            //    .systemMetadata(SystemMetadata.SCHEMA)
                 .type(ColumnType.VARCHAR)
                 .build()));
         Map<String, Object> resultMap = new HashMap<>();

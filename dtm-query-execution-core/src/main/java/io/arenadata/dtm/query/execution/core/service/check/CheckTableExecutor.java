@@ -52,18 +52,18 @@ public class CheckTableExecutor implements CheckExecutor {
                 .collect(Collectors.toList()))
                 .onSuccess(result -> {
                     List<Pair<SourceType, Optional<String>>> list = result.list();
-                    if (list.stream().anyMatch(pair -> pair.getValue().isPresent())) {
-                        String errors = list.stream()
-                                .map(pair -> String.format("%s : %s", pair.getKey(), pair.getValue().orElse("ok")))
-                                .collect(Collectors.joining("\n"));
-                        promise.complete(String.format("Table '%s.%s' check failed!\n%s", entity.getSchema(),
-                                entity.getName(), errors));
-                    } else {
+                    if (list.stream().map(Pair::getValue).noneMatch(Optional::isPresent)) {
                         promise.complete(String.format("Table %s.%s (%s) is ok.",
                                 entity.getName(), entity.getSchema(),
                                 list.stream()
                                         .map(pair -> pair.getKey().name())
                                         .collect(Collectors.joining(", "))));
+                    } else {
+                        String errors = list.stream()
+                                .map(pair -> String.format("%s : %s", pair.getKey(), pair.getValue().orElse("ok")))
+                                .collect(Collectors.joining("\n"));
+                        promise.complete(String.format("Table '%s.%s' check failed!\n%s", entity.getSchema(),
+                                entity.getName(), errors));
                     }
                 })
                 .onFailure(promise::fail));

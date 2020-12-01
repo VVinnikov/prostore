@@ -40,6 +40,10 @@ public class AdgCheckTableService implements CheckTableService {
                 tableEntities.getHistory(),
                 tableEntities.getStaging())
                 .collect(Collectors.toMap(AdgSpace::getName, AdgSpace::getSpace));
+        return getFuture(expSpaces);
+    }
+
+    private Future<Void> getFuture(Map<String, Space> expSpaces) {
         return Future.future(promise -> adgCartridgeClient.getSpaceDescriptions(expSpaces.keySet())
                 .onSuccess(spaces -> {
                     String errors = expSpaces.entrySet().stream()

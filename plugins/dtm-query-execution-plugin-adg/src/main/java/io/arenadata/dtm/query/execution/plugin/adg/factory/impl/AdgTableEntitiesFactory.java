@@ -20,8 +20,6 @@ import static io.arenadata.dtm.query.execution.plugin.adg.constants.ColumnFields
 
 @Service("adgTableEntitiesFactory")
 public class AdgTableEntitiesFactory implements TableEntitiesFactory<AdgTables<Space>> {
-
-
     public static final String SEC_INDEX_PREFIX = "x_";
     private final SpaceEngines engine;
 

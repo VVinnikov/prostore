@@ -672,3 +672,27 @@ SqlNode SqlCheckTable() :
         return new io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckTable(s.end(this), name);
     }
 }
+SqlNode SqlCheckData() :
+{
+    Span s;
+    SqlNode name = null;
+    SqlLiteral deltaNum = null;
+    SqlNode columns_list = null;
+
+}
+{
+    <CHECK_DATA>
+    {
+        s = span();
+    }
+    <LPAREN>
+        name = StringLiteral()
+        <COMMA>
+        deltaNum = NumericLiteral()
+        <COMMA>
+        columns_list = StringLiteral()
+    <RPAREN>
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckData(s.end(this), name, deltaNum, columns_list);
+    }
+}

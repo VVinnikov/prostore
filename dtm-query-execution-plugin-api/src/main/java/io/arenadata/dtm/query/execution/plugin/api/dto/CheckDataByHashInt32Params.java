@@ -5,19 +5,19 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.SourceType;
 import lombok.Getter;
 
-import java.util.List;
+import java.util.Set;
 
 @Getter
-public class CheckDataByHashInt32Params extends PluginParams{
+public class CheckDataByHashInt32Params extends PluginParams {
     private final Entity entity;
     private final Long sysCn;
-    private final List<String> columns;
+    private final Set<String> columns;
 
     public CheckDataByHashInt32Params(SourceType sourceType,
                                       RequestMetrics requestMetrics,
                                       Entity entity,
                                       Long sysCn,
-                                      List<String> columns) {
+                                      Set<String> columns) {
         super(sourceType, requestMetrics);
         this.entity = entity;
         this.sysCn = sysCn;

@@ -92,5 +92,24 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
      */
     void rollback(RollbackRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler);
 
+    /**
+     *
+     * @param context CheckContext
+     * @return error if check failed
+     */
     Future<Void> checkTable(CheckContext context);
+
+    /**
+     *
+     * @param context CheckContext
+     * @return count of records
+     */
+    Future<Long> checkDataByCount(CheckContext context);
+
+    /**
+     *
+     * @param context CheckContext
+     * @return checksum
+     */
+    Future<Long> checkDataByHashInt32(CheckContext context);
 }

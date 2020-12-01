@@ -108,5 +108,25 @@ public interface DataSourcePluginService {
      */
     DtmDataSourcePlugin getPlugin(SourceType sourceType);
 
+    /**
+     *
+     * @param sourceType SourceType
+     * @param context CheckContext
+     * @return error if check failed
+     */
     Future<Void> checkTable(SourceType sourceType, CheckContext context);
+
+    /**
+     *
+     * @param context CheckContext
+     * @return count of records
+     */
+    Future<Long> checkDataByCount(SourceType sourceType, CheckContext context);
+
+    /**
+     *
+     * @param context CheckContext
+     * @return checksum
+     */
+    Future<Long> checkDataByHashInt32(SourceType sourceType, CheckContext context);
 }

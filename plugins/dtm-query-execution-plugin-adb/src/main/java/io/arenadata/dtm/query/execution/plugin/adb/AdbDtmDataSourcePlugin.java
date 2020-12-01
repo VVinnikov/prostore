@@ -5,6 +5,7 @@ import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.plugin.api.AbstractDtmDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.api.service.*;
+import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckDataService;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
 
@@ -18,7 +19,8 @@ public class AdbDtmDataSourcePlugin extends AbstractDtmDataSourcePlugin {
             QueryCostService<Integer> adbQueryCostService,
             StatusService<StatusQueryResult> statusService,
             RollbackService<Void> rollbackService,
-            CheckTableService checkTableService) {
+            CheckTableService checkTableService,
+            CheckDataService checkDataService) {
         super(ddlService,
                 adbLlrService,
                 adbMpprKafkaService,
@@ -26,7 +28,7 @@ public class AdbDtmDataSourcePlugin extends AbstractDtmDataSourcePlugin {
                 adbQueryCostService,
                 statusService,
                 rollbackService,
-                checkTableService);
+                checkTableService, checkDataService);
     }
 
     @Override

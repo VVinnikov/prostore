@@ -88,6 +88,16 @@ public class DtmDataSourcePluginIT {
         public Future<Void> checkTable(CheckContext context) {
             return null;
         }
+
+        @Override
+        public Future<Long> checkDataByCount(CheckContext context) {
+            return null;
+        }
+
+        @Override
+        public Future<Long> checkDataByHashInt32(CheckContext context) {
+            return null;
+        }
     };
 
     @Test

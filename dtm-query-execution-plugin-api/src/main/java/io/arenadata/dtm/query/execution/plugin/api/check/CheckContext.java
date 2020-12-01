@@ -7,10 +7,13 @@ import io.arenadata.dtm.query.calcite.core.extension.check.CheckType;
 import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
 
+import java.util.List;
+
 public class CheckContext extends RequestContext<DatamartRequest> {
     private Entity entity;
     private CheckType checkType;
     private String tableName;
+    private List<String> targetFields;
 
     public CheckContext(RequestMetrics metrics, DatamartRequest request, CheckType checkType, String tableName) {
         super(metrics, request);
@@ -38,5 +41,13 @@ public class CheckContext extends RequestContext<DatamartRequest> {
 
     public String getTableName() {
         return tableName;
+    }
+
+    public List<String> getTargetFields() {
+        return targetFields;
+    }
+
+    public void setTargetFields(List<String> targetFields) {
+        this.targetFields = targetFields;
     }
 }

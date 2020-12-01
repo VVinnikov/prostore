@@ -29,6 +29,8 @@ import org.springframework.plugin.core.config.EnablePluginRegistries;
 import org.springframework.stereotype.Service;
 
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -184,16 +186,26 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
 
     @Override
     public Future<Void> checkTable(SourceType sourceType, CheckContext context) {
-        return metricsService.sendMetrics(sourceType,
-                SqlProcessingType.CHECK,
-                context.getMetrics())
-                .compose(result -> Future.future(
-                        promise -> taskVerticleExecutor.execute(p -> getPlugin(sourceType).checkTable(context)
-                                .onSuccess(p::complete)
-                                .onFailure(p::fail),
-                                promise)))
-                .compose(result -> metricsService.sendMetrics(sourceType,
-                        SqlProcessingType.CHECK,
-                        context.getMetrics()));
+        return check(sourceType, context.getMetrics(), () -> getPlugin(sourceType).checkTable(context));
+    }
+
+    @Override
+    public Future<Long> checkDataByCount(SourceType sourceType, CheckContext context) {
+        return check(sourceType, context.getMetrics(), () -> getPlugin(sourceType).checkDataByCount(context));
+    }
+
+    @Override
+    public Future<Long> checkDataByHashInt32(SourceType sourceType, CheckContext context) {
+        return check(sourceType, context.getMetrics(), () -> getPlugin(sourceType).checkDataByHashInt32(context));
+    }
+
+    private <T> Future<T> check(SourceType sourceType, RequestMetrics metrics, Supplier<Future<T>> supplier) {
+
+        Function<Void, Future<T>> exec = (val) -> Future.future(
+                promise -> taskVerticleExecutor.execute(p -> supplier.get().onComplete(p), promise));
+        return metricsService.sendMetrics(sourceType, SqlProcessingType.CHECK, metrics)
+                .compose(exec)
+                .compose(result -> metricsService.sendMetrics(sourceType, SqlProcessingType.CHECK, metrics)
+                        .map(val -> result));
     }
 }

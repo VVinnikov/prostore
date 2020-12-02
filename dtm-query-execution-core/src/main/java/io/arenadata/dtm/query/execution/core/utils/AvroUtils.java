@@ -32,11 +32,9 @@ public class AvroUtils {
                 schema = Schema.create(Schema.Type.STRING);
                 GenericData.setStringType(schema, GenericData.StringType.String);
                 break;
+            case INT:
             case BIGINT:
                 schema = Schema.create(Schema.Type.LONG);
-                break;
-            case INT:
-                schema = Schema.create(Schema.Type.INT);
                 break;
             case DOUBLE:
                 schema = Schema.create(Schema.Type.DOUBLE);

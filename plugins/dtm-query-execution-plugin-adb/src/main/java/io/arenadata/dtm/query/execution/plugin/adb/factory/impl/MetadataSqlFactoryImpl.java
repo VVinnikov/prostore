@@ -184,8 +184,8 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
         val consumerGroup = mppwProperties.getConsumerGroup();
         val uploadMessageLimit = ((UploadExternalEntityMetadata) context.getRequest().getKafkaParameter().getUploadMetadata()).getUploadMessageLimit();
         val chunkSize = uploadMessageLimit != null ? uploadMessageLimit : mppwProperties.getDefaultMessageLimit();
-        val timeout = mppwProperties.getStopTimeoutMs();
-        return String.format(CREATE_FOREIGN_TABLE_SQL, schema, table, columns, server, format, topic, consumerGroup, chunkSize, "1000");
+        val timeout = mppwProperties.getFdwTimeoutMs();
+        return String.format(CREATE_FOREIGN_TABLE_SQL, schema, table, columns, server, format, topic, consumerGroup, chunkSize, timeout);
     }
 
     @Override

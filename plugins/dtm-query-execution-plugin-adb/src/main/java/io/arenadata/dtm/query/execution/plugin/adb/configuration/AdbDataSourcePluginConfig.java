@@ -4,6 +4,7 @@ import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adb.AdbDtmDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.api.service.*;
+import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckDataService;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -22,7 +23,8 @@ public class AdbDataSourcePluginConfig {
             @Qualifier("adbQueryCostService") QueryCostService<Integer> queryCostService,
             @Qualifier("adbStatusService") StatusService<StatusQueryResult> statusService,
             @Qualifier("adbRollbackService") RollbackService<Void> rollbackService,
-            @Qualifier("adbCheckTableService") CheckTableService checkTableService) {
+            @Qualifier("adbCheckTableService") CheckTableService checkTableService,
+            @Qualifier("adbCheckDataService") CheckDataService checkDataService) {
         return new AdbDtmDataSourcePlugin(
                 ddlService,
                 llrService,
@@ -31,6 +33,7 @@ public class AdbDataSourcePluginConfig {
                 queryCostService,
                 statusService,
                 rollbackService,
-                checkTableService);
+                checkTableService,
+                checkDataService);
     }
 }

@@ -36,6 +36,4 @@ public abstract class SqlCheckCall extends SqlCall {
     public abstract CheckType getType();
 
     public abstract String getSchema();
-
-    public abstract String getTable();
 }

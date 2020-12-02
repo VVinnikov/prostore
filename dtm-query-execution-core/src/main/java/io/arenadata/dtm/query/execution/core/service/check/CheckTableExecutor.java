@@ -4,6 +4,7 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.extension.check.CheckType;
+import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckTable;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
@@ -32,7 +33,7 @@ public class CheckTableExecutor implements CheckExecutor {
 
     @Override
     public Future<String> execute(CheckContext context) {
-        String tableName = context.getTableName();
+        String tableName = ((SqlCheckTable) context.getSqlCheckCall()).getTable();
         String datamartMnemonic = context.getRequest().getQueryRequest().getDatamartMnemonic();
         return entityDao.getEntity(datamartMnemonic, tableName)
                 .compose(entity -> {

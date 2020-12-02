@@ -6,6 +6,8 @@ import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountParams;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Params;
 import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
@@ -92,5 +94,24 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
      */
     void rollback(RollbackRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler);
 
+    /**
+     *
+     * @param context CheckContext
+     * @return error if check failed
+     */
     Future<Void> checkTable(CheckContext context);
+
+    /**
+     *
+     * @param params CheckDataByCountParams
+     * @return count of records
+     */
+    Future<Long> checkDataByCount(CheckDataByCountParams params);
+
+    /**
+     *
+     * @param params CheckDataByHashInt32Params
+     * @return checksum
+     */
+    Future<Long> checkDataByHashInt32(CheckDataByHashInt32Params params);
 }

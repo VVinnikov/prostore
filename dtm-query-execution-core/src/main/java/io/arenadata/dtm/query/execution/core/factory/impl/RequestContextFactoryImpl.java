@@ -68,7 +68,7 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
             Optional.ofNullable(sqlCheckCall.getSchema()).ifPresent(changedQueryRequest::setDatamartMnemonic);
             return new CheckContext(createRequestMetrics(request),
                     new DatamartRequest(changedQueryRequest),
-                    sqlCheckCall.getType(), sqlCheckCall.getTable());
+                    sqlCheckCall.getType(), sqlCheckCall);
         }
 
         switch (node.getKind()) {

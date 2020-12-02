@@ -22,6 +22,16 @@ public class CalciteUtil {
         }
     }
 
+    public static String parseSchemaName(String nameWithSchema) {
+        int indexComma = nameWithSchema.indexOf(".");
+        return indexComma != -1 ? nameWithSchema.substring(0, indexComma) : null;
+    }
+
+    public static String parseTableName(String nameWithSchema) {
+        int indexComma = nameWithSchema.indexOf(".");
+        return nameWithSchema.substring(indexComma + 1);
+    }
+
     public static SqlTypeName valueOf(ColumnType type) {
         switch (type) {
             case BOOLEAN:

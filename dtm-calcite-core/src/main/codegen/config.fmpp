@@ -59,6 +59,7 @@ data: {
       "DATASOURCE_TYPE"
       "CHECK_DATABASE"
       "CHECK_TABLE"
+      "CHECK_DATA"
     ]
 
     # List of keywords from "keywords" section that are not reserved.
@@ -415,6 +416,7 @@ data: {
         "SqlConfigStorageAdd()"
         "SqlCheckDatabase()"
         "SqlCheckTable()"
+        "SqlCheckData()"
     ]
 
     # List of methods for parsing custom literals.

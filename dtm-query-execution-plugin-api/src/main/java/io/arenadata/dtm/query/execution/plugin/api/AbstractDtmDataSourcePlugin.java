@@ -5,11 +5,14 @@ import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountParams;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Params;
 import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.*;
+import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckDataService;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
 import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
@@ -27,6 +30,7 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
     protected final StatusService<StatusQueryResult> statusService;
     protected final RollbackService<Void> rollbackService;
     protected final CheckTableService checkTableService;
+    protected final CheckDataService checkDataService;
 
     public AbstractDtmDataSourcePlugin(DdlService<Void> ddlService,
                                        LlrService<QueryResult> llrService,
@@ -35,7 +39,8 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
                                        QueryCostService<Integer> queryCostService,
                                        StatusService<StatusQueryResult> statusService,
                                        RollbackService<Void> rollbackService,
-                                       CheckTableService checkTableService) {
+                                       CheckTableService checkTableService,
+                                       CheckDataService checkDataService) {
         this.ddlService = ddlService;
         this.llrService = llrService;
         this.mpprKafkaService = mpprKafkaService;
@@ -44,6 +49,7 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
         this.statusService = statusService;
         this.rollbackService = rollbackService;
         this.checkTableService = checkTableService;
+        this.checkDataService = checkDataService;
     }
 
     @Override
@@ -85,5 +91,15 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
     @Override
     public Future<Void> checkTable(CheckContext context) {
         return checkTableService.check(context);
+    }
+
+    @Override
+    public Future<Long> checkDataByCount(CheckDataByCountParams params) {
+        return checkDataService.checkDataByCount(params);
+    }
+
+    @Override
+    public Future<Long> checkDataByHashInt32(CheckDataByHashInt32Params params) {
+        return checkDataService.checkDataByHashInt32(params);
     }
 }

@@ -21,11 +21,6 @@ public class SqlCheckDatabase extends SqlCheckCall {
         return schema;
     }
 
-    @Override
-    public String getTable() {
-        return null;
-    }
-
     @Nonnull
     @Override
     public SqlOperator getOperator() {

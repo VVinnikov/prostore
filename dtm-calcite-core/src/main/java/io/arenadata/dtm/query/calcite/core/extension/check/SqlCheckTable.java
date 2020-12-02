@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.calcite.core.extension.check;
 
+import io.arenadata.dtm.query.calcite.core.util.CalciteUtil;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
@@ -14,9 +15,8 @@ public class SqlCheckTable extends SqlCheckCall {
     public SqlCheckTable(SqlParserPos pos, SqlNode name) {
         super(pos, name);
         String nameWithSchema = Objects.requireNonNull(((SqlCharStringLiteral) name).getNlsString().getValue());
-        int indexComma = nameWithSchema.indexOf(".");
-        this.schema = indexComma != -1 ? nameWithSchema.substring(0, indexComma) : null;
-        this.table = nameWithSchema.substring(indexComma + 1);
+        this.schema = CalciteUtil.parseSchemaName(nameWithSchema);
+        this.table = CalciteUtil.parseTableName(nameWithSchema);
     }
 
     public String getTable() {

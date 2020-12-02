@@ -2,5 +2,6 @@ package io.arenadata.dtm.query.calcite.core.extension.check;
 
 public enum CheckType {
     DATABASE,
-    TABLE
+    TABLE,
+    DATA
 }

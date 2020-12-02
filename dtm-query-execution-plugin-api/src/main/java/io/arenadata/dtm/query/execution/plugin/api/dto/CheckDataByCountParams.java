@@ -9,13 +9,16 @@ import lombok.Getter;
 public class CheckDataByCountParams extends PluginParams{
     private final Entity entity;
     private final Long sysCn;
+    private final String env;
 
     public CheckDataByCountParams(SourceType sourceType,
                                   RequestMetrics requestMetrics,
                                   Entity entity,
-                                  Long sysCn) {
+                                  Long sysCn,
+                                  String env) {
         super(sourceType, requestMetrics);
         this.entity = entity;
         this.sysCn = sysCn;
+        this.env = env;
     }
 }

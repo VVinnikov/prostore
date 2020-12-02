@@ -6,6 +6,7 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 
 import javax.annotation.Nonnull;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -23,10 +24,12 @@ public class SqlCheckData extends SqlCheckCall {
         this.schema = CalciteUtil.parseSchemaName(nameWithSchema);
         this.table = CalciteUtil.parseTableName(nameWithSchema);
         this.deltaNum = deltaNum.longValue(true);
-        this.columns = Stream.of(Objects.requireNonNull(((SqlCharStringLiteral) columns).getNlsString().getValue())
-                .split(","))
-                .map(String::trim)
-                .collect(Collectors.toSet());
+        this.columns = Optional.ofNullable(columns)
+                .map(val -> Stream.of(Objects.requireNonNull(((SqlCharStringLiteral) columns).getNlsString().getValue())
+                        .split(","))
+                        .map(String::trim)
+                        .collect(Collectors.toSet()))
+                .orElse(null);
     }
 
     @Nonnull

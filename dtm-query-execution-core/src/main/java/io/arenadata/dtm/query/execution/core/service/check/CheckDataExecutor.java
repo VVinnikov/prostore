@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.check;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
+import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.extension.check.CheckType;
 import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckData;
@@ -15,8 +16,7 @@ import io.vertx.core.Future;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service("checkDataExecutor")
@@ -59,16 +59,30 @@ public class CheckDataExecutor implements CheckExecutor {
                                        Entity entity,
                                        Long sysCn,
                                        Set<String> columns) {
+        String env = context.getRequest().getQueryRequest().getEnvName();
         CheckDataByCountParams checkDataByCountParams = new CheckDataByCountParams(sourceType,
-                context.getMetrics(), entity, sysCn);
-        CheckDataByHashInt32Params checkDataByHashInt32Params = new CheckDataByHashInt32Params(sourceType,
-                context.getMetrics(), entity, sysCn, columns);
-        return Future.future(promise -> CompositeFuture.join(
-                Arrays.asList(dataSourcePluginService.checkDataByCount(checkDataByCountParams),
-                        dataSourcePluginService.checkDataByHashInt32(checkDataByHashInt32Params)))
+                context.getMetrics(), entity, sysCn, env);
+        List<Future> futures = new ArrayList<>();
+        futures.add(dataSourcePluginService.checkDataByCount(checkDataByCountParams));
+        if (columns != null) {
+            Set<String> entityFieldNames = entity.getFields().stream()
+                    .map(EntityField::getName)
+                    .collect(Collectors.toSet());
+            Set<String> notExistColumns = columns.stream()
+                    .filter(column -> !entityFieldNames.contains(column))
+                    .collect(Collectors.toSet());
+            if (!notExistColumns.isEmpty()) {
+                return Future.failedFuture(new IllegalArgumentException(String.format("Columns `%s` don't exist.",
+                        String.join(", ", notExistColumns))));
+            } else {
+                CheckDataByHashInt32Params checkDataByHashInt32Params = new CheckDataByHashInt32Params(sourceType,
+                        context.getMetrics(), entity, sysCn, columns, env);
+                futures.add(dataSourcePluginService.checkDataByHashInt32(checkDataByHashInt32Params));
+            }
+        }
+        return Future.future(promise -> CompositeFuture.join(futures)
                 .onSuccess(result -> promise.complete(String.format("%s:\n%s",
                         sourceType, String.join("\n", result.list()))))
-                .onFailure(promise::fail)
-        );
+                .onFailure(promise::fail));
     }
 }

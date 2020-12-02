@@ -12,15 +12,18 @@ public class CheckDataByHashInt32Params extends PluginParams {
     private final Entity entity;
     private final Long sysCn;
     private final Set<String> columns;
+    private final String env;
 
     public CheckDataByHashInt32Params(SourceType sourceType,
                                       RequestMetrics requestMetrics,
                                       Entity entity,
                                       Long sysCn,
-                                      Set<String> columns) {
+                                      Set<String> columns,
+                                      String env) {
         super(sourceType, requestMetrics);
         this.entity = entity;
         this.sysCn = sysCn;
         this.columns = columns;
+        this.env = env;
     }
 }

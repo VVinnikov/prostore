@@ -689,8 +689,7 @@ SqlNode SqlCheckData() :
         name = StringLiteral()
         <COMMA>
         deltaNum = NumericLiteral()
-        <COMMA>
-        columns_list = StringLiteral()
+    [ <COMMA> columns_list = StringLiteral() ]
     <RPAREN>
     {
         return new io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckData(s.end(this), name, deltaNum, columns_list);

@@ -82,7 +82,11 @@ public class CheckDataExecutor implements CheckExecutor {
         }
         return Future.future(promise -> CompositeFuture.join(futures)
                 .onSuccess(result -> promise.complete(String.format("%s:\n%s",
-                        sourceType, String.join("\n", result.list()))))
+                        sourceType, getResult(result.list()))))
                 .onFailure(promise::fail));
+    }
+
+    private String getResult(List<Long> resultList) {
+        return resultList.stream().map(Objects::toString).collect(Collectors.joining("\n"));
     }
 }

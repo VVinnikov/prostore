@@ -10,9 +10,14 @@ import io.vertx.core.eventbus.Message;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Slf4j
+@ConditionalOnProperty(
+        value = "core.kafka.status.event.publish.enabled",
+        havingValue = "true"
+)
 @Component
 public class StatusEventVerticle extends AbstractVerticle {
 

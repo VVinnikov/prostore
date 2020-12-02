@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 public class DdlUtils {
     public final static String NULLABLE_FIELD = "%s Nullable(%s)";
     public final static String NOT_NULLABLE_FIELD = "%s %s";
+
     private DdlUtils() {
     }
 
@@ -137,15 +138,19 @@ public class DdlUtils {
 
     public static <T, E> Future<T> sequenceAll(@NonNull final List<E> actions,
                                                @NonNull final Function<E, Future<T>> action) {
-        Future<T> result = null;
-        for (E a : actions) {
-            if (result == null) {
-                result = action.apply(a);
-            } else {
-                result = result.compose(v -> action.apply(a));
+        try {
+            Future<T> result = null;
+            for (E a : actions) {
+                if (result == null) {
+                    result = action.apply(a);
+                } else {
+                    result = result.compose(v -> action.apply(a));
+                }
             }
+            return result == null ? Future.succeededFuture() : result;
+        } catch (Exception e) {
+            log.error("Error sequence executing for actions: {}", actions);
+            return Future.failedFuture(e);
         }
-
-        return result == null ? Future.succeededFuture() : result;
     }
 }

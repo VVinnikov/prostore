@@ -13,5 +13,6 @@ public enum SqlProcessingType {
     STATUS,
     CONFIG,
     ROLLBACK,
-    CHECK
+    CHECK,
+    TRUNCATE
 }

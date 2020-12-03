@@ -15,6 +15,7 @@ import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Params;
 import io.arenadata.dtm.query.execution.plugin.api.dto.PluginParams;
+import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
 import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
@@ -199,6 +200,10 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     @Override
     public Future<Long> checkDataByHashInt32(CheckDataByHashInt32Params params) {
         return check(params, plugin -> plugin.checkDataByHashInt32(params));
+    }
+
+    public Future<Void> truncateHistory(TruncateHistoryParams params) {
+        return metricsWrapper(SqlProcessingType.TRUNCATE, params, plugin -> plugin.truncateHistory(params));
     }
 
     private <T> Future<T> check(PluginParams pluginParams,

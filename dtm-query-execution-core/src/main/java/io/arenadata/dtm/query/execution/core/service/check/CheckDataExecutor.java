@@ -9,6 +9,7 @@ import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckData;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.verticle.TaskVerticleExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckException;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountParams;
@@ -29,13 +30,16 @@ public class CheckDataExecutor implements CheckExecutor {
     private final DataSourcePluginService dataSourcePluginService;
     private final DeltaServiceDao deltaServiceDao;
     private final EntityDao entityDao;
+    private final TaskVerticleExecutor taskVerticleExecutor;
 
     @Autowired
     public CheckDataExecutor(DataSourcePluginService dataSourcePluginService,
-                             DeltaServiceDao deltaServiceDao, EntityDao entityDao) {
+                             DeltaServiceDao deltaServiceDao, EntityDao entityDao,
+                             TaskVerticleExecutor taskVerticleExecutor) {
         this.dataSourcePluginService = dataSourcePluginService;
         this.deltaServiceDao = deltaServiceDao;
         this.entityDao = entityDao;
+        this.taskVerticleExecutor = taskVerticleExecutor;
     }
 
     @Override
@@ -79,22 +83,35 @@ public class CheckDataExecutor implements CheckExecutor {
                                BiFunction<SourceType, Long, Future<Long>> checkFunc) {
         return deltaServiceDao.getDeltaOk(datamart)
                 .compose(deltaOk -> deltaServiceDao.getDeltaByNum(datamart, deltaNum)
-                        .compose(delta -> Future.succeededFuture(getCheckRange(delta.getCnFrom(), deltaOk.getCnTo()))))
+                        .compose(delta -> Future.succeededFuture(new Pair<>(delta.getCnFrom(), deltaOk.getCnTo()))))
                 .compose(checkRange -> checkByRange(checkRange, checkFunc));
     }
 
-    private Future<Void> checkByRange(List<Long> checkRange,
+    private Future<Void> checkByRange(Pair<Long, Long> checkRange,
                                       BiFunction<SourceType, Long, Future<Long>> checkFunc) {
+        return verticalCheck(checkRange.left, checkRange.right, checkFunc);
+    }
 
-        return Future.future(promise -> CompositeFuture.join(checkRange.stream()
-                .map(sysCn -> checkBySysCn(sysCn, checkFunc))
-                .collect(Collectors.toList()))
-                .onSuccess(result -> promise.complete())
-                .onFailure(promise::fail));
+    private Future<Void> verticalCheck(Long to, Long sysCn, BiFunction<SourceType, Long, Future<Long>> checkFunc) {
+        if (sysCn < to) {
+            return Future.succeededFuture();
+        } else {
+            return Future.future(promise -> taskVerticleExecutor.execute(p -> checkBySysCn(sysCn, checkFunc)
+                    .onSuccess(p::complete)
+                    .onFailure(p::fail), ar -> {
+                if (ar.succeeded()) {
+                    verticalCheck(to, sysCn - 1, checkFunc)
+                            .onSuccess(promise::complete)
+                            .onFailure(promise::fail);
+                } else {
+                    promise.fail(ar.cause());
+                }
+            }));
+        }
     }
 
     private Future<Void> checkBySysCn(Long sysCn, BiFunction<SourceType, Long, Future<Long>> checkFunc) {
-        return Future.future(promise -> CompositeFuture.all(
+        return Future.future(promise -> CompositeFuture.join(
                 dataSourcePluginService.getSourceTypes().stream()
                         .map(sourceType -> checkFunc.apply(sourceType, sysCn)
                                 .compose(val -> Future.succeededFuture(new Pair<>(sourceType, val))))

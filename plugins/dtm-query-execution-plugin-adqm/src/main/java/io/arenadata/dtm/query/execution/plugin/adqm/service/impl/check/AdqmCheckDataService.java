@@ -17,7 +17,7 @@ public class AdqmCheckDataService implements CheckDataService {
     private static final String COUNT = "count";
     private static final String COUNT_QUERY_PATTERN = "  SELECT count(1) as %s\n" +
             "  FROM %s__%s.%s_actual FINAL\n" +
-            "  WHERE (sys_to = %s - 1 AND sys_op = 1) OR sys_from = %s";
+            "  WHERE (sys_to = %s AND sys_op = 1) OR sys_from = %s";
 
     private static final String SUM = "sum";
     private static final String HASH_QUERY_PATTERN = "SELECT \n" +
@@ -33,7 +33,7 @@ public class AdqmCheckDataService implements CheckDataService {
             "    )\n" +
             "  ) as %s\n" +
             "FROM %s__%s.%s_actual FINAL\n" +
-            "WHERE (sys_to = %s - 1 AND sys_op = 1) OR sys_from = %s";
+            "WHERE (sys_to = %s AND sys_op = 1) OR sys_from = %s";
 
     private final DatabaseExecutor adqmQueryExecutor;
 
@@ -45,8 +45,8 @@ public class AdqmCheckDataService implements CheckDataService {
     @Override
     public Future<Long> checkDataByCount(CheckDataByCountParams params) {
         Entity entity = params.getEntity();
-        String query = String.format(COUNT_QUERY_PATTERN, COUNT, params.getEnv(), entity.getSchema(), entity.getName(),
-                params.getSysCn(), params.getSysCn());
+        String query = String.format(COUNT_QUERY_PATTERN, COUNT, params.getEnv(), entity.getSchema(),
+                entity.getName(), params.getSysCn() - 1, params.getSysCn());
         return adqmQueryExecutor.execute(query)
                 .map(result -> Long.parseLong(result.get(0).get(COUNT).toString()));
     }
@@ -62,7 +62,7 @@ public class AdqmCheckDataService implements CheckDataService {
                 : columns.stream().findFirst().get();
 
         String query = String.format(HASH_QUERY_PATTERN, colQuery, SUM, params.getEnv(), entity.getSchema(),
-                entity.getName(), params.getSysCn(), params.getSysCn());
+                entity.getName(), params.getSysCn() - 1, params.getSysCn());
         return adqmQueryExecutor.execute(query)
                 .map(result -> Long.parseLong(result.get(0).get(SUM).toString()));
     }

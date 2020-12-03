@@ -147,12 +147,4 @@ public class CheckDataExecutor implements CheckExecutor {
                             context.getRequest().getQueryRequest().getEnvName()));
         }
     }
-
-    private List<Long> getCheckRange(Long cnFrom, Long cnTo) {
-        List<Long> result = new ArrayList<>();
-        for (Long i = cnTo; i >= cnFrom; i--) {
-            result.add(i);
-        }
-        return result;
-    }
 }

@@ -121,6 +121,8 @@ adqm:
     user: ${ADQM_USERNAME:default}
     password: ${ADQM_PASS:}
     hosts: ${ADQM_HOSTS:10.92.3.19:8123}
+    socketTimeout: ${ADQM_SOCKET_TIMEOUT:30000}
+    dataTransferTimeout: ${ADQM_DATA_TRANSFER_TIMEOUT:10000}
 
   ddl:
     cluster: ${ADQM_CLUSTER:cluster}

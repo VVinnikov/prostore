@@ -203,14 +203,20 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
 
     private <T> Future<T> check(PluginParams pluginParams,
                                 Function<DtmDataSourcePlugin, Future<T>> func) {
-        SourceType sourceType = pluginParams.getSourceType();
-        RequestMetrics requestMetrics = pluginParams.getRequestMetrics();
-        return metricsService.sendMetrics(sourceType, SqlProcessingType.CHECK, requestMetrics)
-                .compose(result -> executorWrapper(func.apply(getPlugin(sourceType))))
-                .compose(result -> metricsService.sendMetrics(sourceType, SqlProcessingType.CHECK, requestMetrics)
-                        .map(val -> result));
+        return metricsWrapper(SqlProcessingType.CHECK, pluginParams, func);
     }
 
+    private <T> Future<T> metricsWrapper(SqlProcessingType sqlProcessingType,
+                                      PluginParams pluginParams,
+                                      Function<DtmDataSourcePlugin, Future<T>> func) {
+        SourceType sourceType = pluginParams.getSourceType();
+        RequestMetrics requestMetrics = pluginParams.getRequestMetrics();
+        return metricsService.sendMetrics(sourceType, sqlProcessingType, requestMetrics)
+                .compose(result -> executorWrapper(func.apply(getPlugin(sourceType))))
+                .compose(result -> metricsService.sendMetrics(sourceType, sqlProcessingType, requestMetrics)
+                        .map(val -> result));
+
+    }
     private <T> Future<T> executorWrapper(Future<T> future) {
         return Future.future(promise -> taskVerticleExecutor.execute(p -> future
                         .onSuccess(p::complete)

@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service("checkDataExecutor")
@@ -61,12 +62,9 @@ public class CheckDataExecutor implements CheckExecutor {
     private Future<String> check(CheckContext context,
                                  Entity entity,
                                  SqlCheckData sqlCheckData) {
-        BiFunction<SourceType, Long, Future<Long>> checkFunc = Optional.ofNullable(sqlCheckData.getColumns())
-                .map(columns -> getCheckHashFunc(context, entity, columns))
-                .orElse((type, sysCn) -> dataSourcePluginService.checkDataByCount(
-                        new CheckDataByCountParams(type, context.getMetrics(), entity, sysCn,
-                                context.getRequest().getQueryRequest().getEnvName())));
-        return Future.future(promise -> check(sqlCheckData.getDeltaNum(), entity.getSchema(), checkFunc)
+
+        return Future.future(promise -> check(sqlCheckData.getDeltaNum(), entity.getSchema(),
+                getCheckFunc(context, entity, sqlCheckData.getColumns()))
                 .onSuccess(result -> promise.complete(""))
                 .onFailure(exception -> {
                     if (exception instanceof CheckException) {
@@ -80,7 +78,7 @@ public class CheckDataExecutor implements CheckExecutor {
 
     private Future<Void> check(Long deltaNum,
                                String datamart,
-                               BiFunction<SourceType, Long, Future<Long>> checkFunc) {
+                               Function<Long, Future<Void>> checkFunc) {
         return deltaServiceDao.getDeltaOk(datamart)
                 .compose(deltaOk -> deltaServiceDao.getDeltaByNum(datamart, deltaNum)
                         .compose(delta -> Future.succeededFuture(new Pair<>(delta.getCnFrom(), deltaOk.getCnTo()))))
@@ -88,15 +86,17 @@ public class CheckDataExecutor implements CheckExecutor {
     }
 
     private Future<Void> checkByRange(Pair<Long, Long> checkRange,
-                                      BiFunction<SourceType, Long, Future<Long>> checkFunc) {
+                                      Function<Long, Future<Void>> checkFunc) {
         return verticalCheck(checkRange.left, checkRange.right, checkFunc);
     }
 
-    private Future<Void> verticalCheck(Long to, Long sysCn, BiFunction<SourceType, Long, Future<Long>> checkFunc) {
+    private Future<Void> verticalCheck(Long to,
+                                       Long sysCn,
+                                       Function<Long, Future<Void>> checkFunc) {
         if (sysCn < to) {
             return Future.succeededFuture();
         } else {
-            return Future.future(promise -> taskVerticleExecutor.execute(p -> checkBySysCn(sysCn, checkFunc)
+            return Future.future(promise -> taskVerticleExecutor.execute(p -> checkFunc.apply(sysCn)
                     .onSuccess(p::complete)
                     .onFailure(p::fail), ar -> {
                 if (ar.succeeded()) {
@@ -110,9 +110,16 @@ public class CheckDataExecutor implements CheckExecutor {
         }
     }
 
-    private Future<Void> checkBySysCn(Long sysCn, BiFunction<SourceType, Long, Future<Long>> checkFunc) {
-        return Future.future(promise -> CompositeFuture.join(
-                dataSourcePluginService.getSourceTypes().stream()
+    private Function<Long, Future<Void>> getCheckFunc(CheckContext context,
+                                                      Entity entity,
+                                                      Set<String> columns) {
+        BiFunction<SourceType, Long, Future<Long>> checkFunc = Optional.ofNullable(columns)
+                .map(value -> getCheckHashFunc(context, entity, value))
+                .orElse((type, sysCn) -> dataSourcePluginService.checkDataByCount(
+                        new CheckDataByCountParams(type, context.getMetrics(), entity, sysCn,
+                                context.getRequest().getQueryRequest().getEnvName())));
+        return sysCn -> Future.future(promise -> CompositeFuture.join(
+                entity.getDestination().stream()
                         .map(sourceType -> checkFunc.apply(sourceType, sysCn)
                                 .compose(val -> Future.succeededFuture(new Pair<>(sourceType, val))))
                         .collect(Collectors.toList()))

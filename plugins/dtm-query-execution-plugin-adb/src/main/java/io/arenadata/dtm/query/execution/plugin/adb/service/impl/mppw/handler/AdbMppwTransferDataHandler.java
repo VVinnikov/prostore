@@ -1,57 +1,61 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.handler;
 
-import io.arenadata.dtm.query.execution.plugin.adb.configuration.properties.MppwProperties;
+import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
+import io.arenadata.dtm.query.execution.plugin.adb.factory.impl.MetadataSqlFactoryImpl;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.AdbMppwDataTransferService;
+import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwKafkaLoadRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwKafkaRequestContext;
-import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.RestMppwKafkaLoadRequest;
+import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.core.buffer.Buffer;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.client.HttpResponse;
-import io.vertx.ext.web.client.WebClient;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component("adbMppwTransferDataHandler")
 @Slf4j
 public class AdbMppwTransferDataHandler implements AdbMppwHandler {
 
-    private final WebClient webClient;
+    private final AdbQueryExecutor adbQueryExecutor;
+    private final MetadataSqlFactory metadataSqlFactory;
     private final AdbMppwDataTransferService mppwDataTransferService;
-    private final MppwProperties mppwProperties;
 
     @Autowired
-    public AdbMppwTransferDataHandler(@Qualifier("adbWebClient") WebClient webClient,
-                                      AdbMppwDataTransferService mppwDataTransferService,
-                                      MppwProperties mppwProperties) {
-        this.webClient = webClient;
+    public AdbMppwTransferDataHandler(AdbQueryExecutor adbQueryExecutor,
+                                      MetadataSqlFactory metadataSqlFactory,
+                                      AdbMppwDataTransferService mppwDataTransferService) {
+        this.adbQueryExecutor = adbQueryExecutor;
+        this.metadataSqlFactory = metadataSqlFactory;
         this.mppwDataTransferService = mppwDataTransferService;
-        this.mppwProperties = mppwProperties;
     }
 
     @Override
     public Future<Void> handle(MppwKafkaRequestContext requestContext) {
-        return sendLoadingRequest(requestContext.getRestLoadRequest())
-                .compose(s -> Future.future((Promise<Void> p) ->
-                        mppwDataTransferService.execute(requestContext.getMppwTransferDataRequest(), p)));
+        return insertIntoStagingTable(requestContext.getMppwKafkaLoadRequest())
+            .compose(v -> commitKafkaMessages(requestContext))
+            .compose(s -> Future.future((Promise<Void> p) ->
+                mppwDataTransferService.execute(requestContext.getMppwTransferDataRequest(), p)));
     }
 
-    private Future<Void> sendLoadingRequest(RestMppwKafkaLoadRequest request) {
-        return Future.future((Promise<Void> promise) -> {
-            JsonObject data = JsonObject.mapFrom(request);
-            log.debug("Send request to emulator-writer: [{}]", request);
-            webClient.postAbs(mppwProperties.getStartLoadUrl()).sendJsonObject(data, ar -> {
+    private Future<Void> commitKafkaMessages(MppwKafkaRequestContext requestContext) {
+        return Future.future(promise -> {
+            val schema = requestContext.getMppwKafkaLoadRequest().getDatamart();
+            val table = MetadataSqlFactoryImpl.WRITABLE_EXT_TABLE_PREF + requestContext.getMppwKafkaLoadRequest().getRequestId().replaceAll("-", "_");
+            val commitOffsetsSql = String.format(MetadataSqlFactoryImpl.COMMIT_OFFSETS, schema, table);
+            adbQueryExecutor.executeUpdate(commitOffsetsSql, promise);
+        });
+    }
+
+    private Future<Void> insertIntoStagingTable(MppwKafkaLoadRequest request) {
+        return Future.future(promise -> {
+            val schema = request.getDatamart();
+            val columns = String.join(", ", request.getColumns());
+            val extTable = request.getWritableExtTableName().replaceAll("-", "_");
+            val stagingTable = request.getTableName();
+            adbQueryExecutor.executeUpdate(metadataSqlFactory.insertIntoStagingTableSqlQuery(schema, columns, stagingTable, extTable), ar -> {
                 if (ar.succeeded()) {
-                    HttpResponse<Buffer> response = ar.result();
-                    if (response.statusCode() < 400 && response.statusCode() >= 200) {
-                        promise.complete();
-                    } else {
-                        promise.fail(new RuntimeException(String.format("Received HTTP status %s, msg %s",
-                                response.statusCode(), response.bodyAsString())));
-                    }
+                    promise.complete();
                 } else {
                     promise.fail(ar.cause());
                 }

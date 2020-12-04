@@ -45,7 +45,6 @@ public class AdqmMppwKafkaService implements MppwKafkaService<QueryResult> {
 
     @Override
     public void execute(MppwRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-        log.debug("mppw start");
         MppwRequest request = context.getRequest();
         if (request == null) {
             asyncResultHandler.handle(Future.failedFuture("MppwRequest should not be null"));
@@ -53,6 +52,7 @@ public class AdqmMppwKafkaService implements MppwKafkaService<QueryResult> {
         }
 
         LoadType loadType = LoadType.valueOf(request.getIsLoadStart());
+        log.debug("Mppw {}", loadType);
         handlers.get(loadType).execute(request).onComplete(asyncResultHandler);
     }
 

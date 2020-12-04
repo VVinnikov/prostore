@@ -593,7 +593,7 @@ class UploadKafkaExecutorTest {
         return MppwKafkaParameter.builder()
                 .sysCn(1L)
                 .datamart("test")
-                .targetTableName("test_tab")
+                .destinationTableName("test_tab")
                 .uploadMetadata(UploadExternalEntityMetadata.builder()
                         .name("ext_tab")
                         .externalSchema("")

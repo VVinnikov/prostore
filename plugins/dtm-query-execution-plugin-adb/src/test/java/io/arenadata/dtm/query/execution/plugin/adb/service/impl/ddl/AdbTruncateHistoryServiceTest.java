@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.ddl;
 
+import io.arenadata.dtm.common.plugin.sql.PreparedStatementRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
@@ -7,10 +8,12 @@ import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TruncateHistorySe
 import io.vertx.core.Future;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
@@ -25,6 +28,7 @@ public class AdbTruncateHistoryServiceTest {
     @BeforeEach
     void setUp() {
         when(adbQueryExecutor.execute(anyString())).thenReturn(Future.succeededFuture());
+        doNothing().when(adbQueryExecutor).executeInTransaction(any(), any());
     }
 
     @Test
@@ -49,7 +53,7 @@ public class AdbTruncateHistoryServiceTest {
     void testWithSysCn() {
         Long sysCn = 1L;
         String expected = String.format("DELETE FROM schema.table_history WHERE sys_to < %s", sysCn);
-        test(sysCn, null, Collections.singletonList(expected));
+        test(sysCn, null, expected);
     }
 
 
@@ -58,13 +62,27 @@ public class AdbTruncateHistoryServiceTest {
         String conditions = "id > 2";
         Long sysCn = 1L;
         String expected = String.format("DELETE FROM schema.table_history WHERE %s AND sys_to < %s", conditions, sysCn);
-        test(sysCn, conditions, Collections.singletonList(expected));
+        test(sysCn, conditions, expected);
     }
 
-    private void test(Long sysCn, String conditions, List<String> expectedList) {
-        TruncateHistoryParams params = new TruncateHistoryParams(null, null, sysCn, SCHEMA, TABLE, null, conditions);
-        adbTruncateHistoryService.truncateHistory(params);
-        expectedList.forEach(expected -> verify(adbQueryExecutor, times(1)).execute(expected));
-        verify(adbQueryExecutor, times(expectedList.size())).execute(anyString());
+    private void test(Long sysCn, String conditions, List<String> list) {
+        adbTruncateHistoryService.truncateHistory(getParams(sysCn, conditions));
+        Class<ArrayList<PreparedStatementRequest>> listClass =
+                (Class<ArrayList<PreparedStatementRequest>>) (Class) ArrayList.class;
+        ArgumentCaptor<ArrayList<PreparedStatementRequest>> argument = ArgumentCaptor.forClass(listClass);
+        verify(adbQueryExecutor).executeInTransaction(argThat(input -> input.stream()
+                        .map(PreparedStatementRequest::getSql)
+                        .collect(Collectors.toList())
+                        .equals(list)),
+                any());
+    }
+
+    private void test(Long sysCn, String conditions, String expected) {
+        adbTruncateHistoryService.truncateHistory(getParams(sysCn, conditions));
+        verify(adbQueryExecutor, times(1)).execute(expected);
+    }
+
+    private TruncateHistoryParams getParams(Long sysCn, String conditions) {
+        return new TruncateHistoryParams(null, null, sysCn, SCHEMA, TABLE, null, conditions);
     }
 }

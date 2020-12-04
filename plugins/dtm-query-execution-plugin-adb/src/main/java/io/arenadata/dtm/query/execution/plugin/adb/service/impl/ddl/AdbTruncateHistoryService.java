@@ -1,13 +1,17 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.ddl;
 
+import io.arenadata.dtm.common.plugin.sql.PreparedStatementRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbTables;
 import io.arenadata.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TruncateHistoryService;
-import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service("adbTruncateHistoryService")
 public class AdbTruncateHistoryService implements TruncateHistoryService {
@@ -29,13 +33,14 @@ public class AdbTruncateHistoryService implements TruncateHistoryService {
         String whereExpression = params.getConditions()
                 .map(conditions -> String.format(" WHERE %s", conditions))
                 .orElse("");
-        return Future.future(promise -> CompositeFuture.join(
-                adbQueryExecutor.execute(String.format(DELETE_RECORDS_PATTERN, params.getSchema(), params.getTable(),
-                        AdbTables.ACTUAL_TABLE_POSTFIX, whereExpression)),
-                adbQueryExecutor.execute(String.format(DELETE_RECORDS_PATTERN, params.getSchema(), params.getTable(),
-                        AdbTables.HISTORY_TABLE_POSTFIX, whereExpression)))
-                .onSuccess(result -> promise.complete())
-                .onFailure(promise::fail));
+        List<String> queries = Arrays.asList(String.format(DELETE_RECORDS_PATTERN, params.getSchema(), params.getTable(),
+                AdbTables.ACTUAL_TABLE_POSTFIX, whereExpression),
+                String.format(DELETE_RECORDS_PATTERN, params.getSchema(), params.getTable(),
+                        AdbTables.HISTORY_TABLE_POSTFIX, whereExpression));
+        return Future.future(promise -> adbQueryExecutor.executeInTransaction(queries.stream()
+                        .map(PreparedStatementRequest::onlySql)
+                        .collect(Collectors.toList()),
+                promise));
     }
 
     private Future<Void> executeWithSysCn(TruncateHistoryParams params) {

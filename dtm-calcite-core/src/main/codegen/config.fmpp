@@ -60,6 +60,7 @@ data: {
       "CHECK_DATABASE"
       "CHECK_TABLE"
       "CHECK_DATA"
+      "HISTORY"
     ]
 
     # List of keywords from "keywords" section that are not reserved.
@@ -417,6 +418,7 @@ data: {
         "SqlCheckDatabase()"
         "SqlCheckTable()"
         "SqlCheckData()"
+        "SqlTruncateHistory()"
     ]
 
     # List of methods for parsing custom literals.

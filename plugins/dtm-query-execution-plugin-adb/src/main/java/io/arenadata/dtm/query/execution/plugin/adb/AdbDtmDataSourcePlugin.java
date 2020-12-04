@@ -8,6 +8,7 @@ import io.arenadata.dtm.query.execution.plugin.api.service.*;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckDataService;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
+import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TruncateHistoryService;
 
 public class AdbDtmDataSourcePlugin extends AbstractDtmDataSourcePlugin {
 
@@ -20,7 +21,8 @@ public class AdbDtmDataSourcePlugin extends AbstractDtmDataSourcePlugin {
             StatusService<StatusQueryResult> statusService,
             RollbackService<Void> rollbackService,
             CheckTableService checkTableService,
-            CheckDataService checkDataService) {
+            CheckDataService checkDataService,
+            TruncateHistoryService truncateService) {
         super(ddlService,
                 adbLlrService,
                 adbMpprKafkaService,
@@ -28,7 +30,9 @@ public class AdbDtmDataSourcePlugin extends AbstractDtmDataSourcePlugin {
                 adbQueryCostService,
                 statusService,
                 rollbackService,
-                checkTableService, checkDataService);
+                checkTableService,
+                checkDataService,
+                truncateService);
     }
 
     @Override

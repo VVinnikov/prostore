@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.Collections;
@@ -17,16 +18,18 @@ import java.util.Collections;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class LocalDateTimeFromStringTransformer extends AbstractColumnTransformer<LocalDateTime, String> {
+public class LongFromLocalDateTimeStringTransformer extends AbstractColumnTransformer<Long, String> {
 
     private DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
     private ZoneId zoneId = ZoneId.of("UTC");
 
     @Override
-    public LocalDateTime transformValue(String value) {
+    public Long transformValue(String value) {
         return value == null ? null : LocalDateTime
                 .parse(value, dateTimeFormatter)
-                .atZone(zoneId).toLocalDateTime();
+                .atZone(zoneId).toLocalDateTime()
+                .toInstant(ZoneOffset.UTC)
+                .toEpochMilli();
     }
 
     @Override

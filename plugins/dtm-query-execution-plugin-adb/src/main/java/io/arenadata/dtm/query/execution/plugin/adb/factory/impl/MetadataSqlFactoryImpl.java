@@ -2,8 +2,11 @@ package io.arenadata.dtm.query.execution.plugin.adb.factory.impl;
 
 import io.arenadata.dtm.common.model.ddl.*;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
+import io.arenadata.dtm.query.execution.plugin.adb.configuration.properties.MppwProperties;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.kafka.DownloadExternalEntityMetadata;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
 import io.arenadata.dtm.query.execution.plugin.api.request.MpprRequest;
 import lombok.val;
 import org.springframework.stereotype.Component;
@@ -38,8 +41,11 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
      */
     public static final String SYS_OP_ATTR = "sys_op";
     /**
-     * Request ID system field
+     * Prefix of writable external table
      */
+    public static final String WRITABLE_EXT_TABLE_PREF = "FDW_EXT_";
+    public static final String COMMIT_OFFSETS = "SELECT kadb.commit_offsets('%s.%s'::regclass::oid)";
+    public static final String SERVER_NAME_TEMPLATE = "FDW_KAFKA_%s";
     public static final String QUERY_DELIMITER = "; ";
     public static final String TABLE_POSTFIX_DELIMITER = "_";
     public static final String WRITABLE_EXTERNAL_TABLE_PREF = "PXF_EXT_";
@@ -61,6 +67,35 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
             "    FORMAT 'CUSTOM' (FORMATTER='pxfwritable_export')";
     public static final String INSERT_INTO_WRITABLE_EXT_TABLE_SQL = "INSERT INTO %s.%s %s";
     public static final String DROP_WRITABLE_EXT_TABLE_SQL = "DROP EXTERNAL TABLE IF EXISTS %s.%s";
+    private static final String DROP_FOREIGN_TABLE_SQL = "DROP FOREIGN TABLE IF EXISTS %s.%s";
+    private static final String CREATE_FOREIGN_TABLE_SQL =
+            "CREATE FOREIGN TABLE %s.%s (%s)\n" +
+                    "SERVER %s\n" +
+                    "OPTIONS (\n" +
+                    "    format '%s',\n" +
+                    "    k_topic '%s',\n" +
+                    "    k_consumer_group '%s',\n" +
+                    "    k_seg_batch '%s',\n" +
+                    "    k_timeout_ms '%s',\n" +
+                    "    k_initial_offset '0'\n" +
+                    ")";
+    private static final String CHECK_SERVER_SQL = "select fs.foreign_server_name from information_schema.foreign_servers fs\n" +
+                    "join information_schema.foreign_server_options fso\n" +
+                    "on fs.foreign_server_catalog = fso.foreign_server_catalog\n" +
+                    "and fs.foreign_server_name = fso.foreign_server_name\n" +
+                    "where fs.foreign_server_catalog = '%s'\n" +
+                    "and fs.foreign_data_wrapper_catalog = '%s'\n" +
+                    "and fs.foreign_data_wrapper_name = 'kadb_fdw'\n" +
+                    "and fso.option_name = 'k_brokers'\n" +
+                    "and fso.option_value = '%s'\n" +
+                    "LIMIT 1";
+    private static final String CREATE_SERVER_SQL =
+            "CREATE SERVER FDW_KAFKA_%s\n" +
+                    "FOREIGN DATA WRAPPER kadb_fdw\n" +
+                    "OPTIONS (\n" +
+                    "  k_brokers '%s'\n" +
+                    ")";
+    private final static String INSERT_INTO_STAGING_TABLE_SQL = "INSERT INTO %s.%s (%s) SELECT %s FROM %s.%s";
 
     @Override
     public String createDropTableScript(Entity entity) {
@@ -78,30 +113,30 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
     }
 
     @Override
-    public String createSchemaSqlQuery(String schemaName) {
-        return String.format(CREATE_SCHEMA, schemaName);
+    public String createSchemaSqlQuery(String schema) {
+        return String.format(CREATE_SCHEMA, schema);
     }
 
     @Override
-    public String dropSchemaSqlQuery(String schemaName) {
-        return String.format(DROP_SCHEMA, schemaName);
+    public String dropSchemaSqlQuery(String schema) {
+        return String.format(DROP_SCHEMA, schema);
     }
 
     @Override
-    public String createKeyColumnsSqlQuery(String schema, String tableName) {
-        return String.format(KEY_COLUMNS_TEMPLATE_SQL, schema, tableName + TABLE_POSTFIX_DELIMITER + ACTUAL_TABLE);
+    public String createKeyColumnsSqlQuery(String schema, String table) {
+        return String.format(KEY_COLUMNS_TEMPLATE_SQL, schema, table + TABLE_POSTFIX_DELIMITER + ACTUAL_TABLE);
     }
 
     @Override
-    public String createSecondaryIndexSqlQuery(String schema, String tableName) {
+    public String createSecondaryIndexSqlQuery(String schema, String table) {
         StringBuilder sb = new StringBuilder();
         final String idxPostfix = "_idx";
-        sb.append(String.format(CREATE_INDEX_SQL, tableName, ACTUAL_TABLE,
-                SYS_FROM_ATTR + idxPostfix, schema, tableName, ACTUAL_TABLE,
+        sb.append(String.format(CREATE_INDEX_SQL, table, ACTUAL_TABLE,
+                SYS_FROM_ATTR + idxPostfix, schema, table, ACTUAL_TABLE,
                 String.join(DELIMITER, Collections.singletonList(SYS_FROM_ATTR))));
         sb.append(QUERY_DELIMITER);
-        sb.append(String.format(CREATE_INDEX_SQL, tableName, HISTORY_TABLE,
-                SYS_TO_ATTR + idxPostfix, schema, tableName, HISTORY_TABLE,
+        sb.append(String.format(CREATE_INDEX_SQL, table, HISTORY_TABLE,
+                SYS_TO_ATTR + idxPostfix, schema, table, HISTORY_TABLE,
                 String.join(DELIMITER, Arrays.asList(SYS_TO_ATTR, SYS_OP_ATTR))));
         return sb.toString();
     }
@@ -112,6 +147,56 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
         metadata.add(new ColumnMetadata("column_name", ColumnType.VARCHAR));
         metadata.add(new ColumnMetadata("data_type", ColumnType.VARCHAR));
         return metadata;
+    }
+
+    @Override
+    public String dropExtTableSqlQuery(String schema, String table) {
+        return String.format(DROP_FOREIGN_TABLE_SQL, schema, table);
+    }
+
+    @Override
+    public String createExtTableSqlQuery(String server, List<String> columnNameTypeList, MppwRequestContext context, MppwProperties mppwProperties) {
+        val schema = context.getRequest().getKafkaParameter().getDatamart();
+        val table = MetadataSqlFactoryImpl.WRITABLE_EXT_TABLE_PREF + context.getRequest().getQueryRequest().getRequestId().toString().replaceAll("-", "_");
+        val columns = String.join(DELIMITER, columnNameTypeList);
+        val format = context.getRequest().getKafkaParameter().getUploadMetadata().getFormat().getName();
+        val topic = context.getRequest().getKafkaParameter().getTopic();
+        val consumerGroup = mppwProperties.getConsumerGroup();
+        val uploadMessageLimit = ((UploadExternalEntityMetadata) context.getRequest().getKafkaParameter().getUploadMetadata()).getUploadMessageLimit();
+        val chunkSize = uploadMessageLimit != null ? uploadMessageLimit : mppwProperties.getDefaultMessageLimit();
+        val timeout = mppwProperties.getFdwTimeoutMs();
+        return String.format(CREATE_FOREIGN_TABLE_SQL, schema, table, columns, server, format, topic, consumerGroup, chunkSize, timeout);
+    }
+
+    @Override
+    public String checkServerSqlQuery(String database, String brokerList) {
+        return String.format(CHECK_SERVER_SQL, database, database, brokerList);
+    }
+
+    @Override
+    public String createServerSqlQuery(String database, String brokerList) {
+        return String.format(CREATE_SERVER_SQL, database, brokerList);
+    }
+
+    @Override
+    public String insertIntoStagingTableSqlQuery(String schema, String columns, String table, String extTable) {
+        val stagingTable = new StringBuilder()
+                .append(table)
+                .append(TABLE_POSTFIX_DELIMITER)
+                .append(STAGING_TABLE)
+                .toString();
+        return String.format(INSERT_INTO_STAGING_TABLE_SQL, schema, stagingTable, columns, columns, schema, extTable);
+    }
+    private String getColumnDDLByField(EntityField field) {
+        val sb = new StringBuilder();
+        sb.append(field.getName())
+                .append(" ")
+                .append(EntityTypeUtil.pgFromDtmType(field))
+                .append(" ");
+        if (!field.getNullable()) {
+            sb.append("NOT NULL");
+        }
+        return sb.toString();
     }
 
     @Override
@@ -135,5 +220,12 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
     @Override
     public String dropWritableExtTableSqlQuery(String schema, String table) {
         return String.format(DROP_WRITABLE_EXT_TABLE_SQL, schema, table);
+    }
+
+    @Override
+    public List<String> getColumnsFromEntity(Entity entity) {
+        return entity.getFields().stream()
+                .map(this::getColumnDDLByField)
+                .collect(Collectors.toList());
     }
 }

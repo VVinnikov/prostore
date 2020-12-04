@@ -79,6 +79,8 @@ adb:
     consumerGroup: ${ADB_LOAD_GROUP:adb-emulator-load-adb}
     poolSize: ${ADB_MPPW_POOL_SIZE:2}
     stopTimeoutMs: ${ADB_MPPW_STOP_TIMEOUT_MS:86400000}
+    defaultMessageLimit: ${ADB_MPPW_DEFAULT_MESSAGE_LIMIT:100}
+    fdwTimeoutMs: ${ADB_MPPW_FDW_TIMEOUT_MS:1000}
 
   web-client:
     max-pool-size: ${ADB_WEB_CLIENT_MAX_POOL_SIZE:100}
@@ -119,6 +121,8 @@ adqm:
     user: ${ADQM_USERNAME:default}
     password: ${ADQM_PASS:}
     hosts: ${ADQM_HOSTS:10.92.3.19:8123}
+    socketTimeout: ${ADQM_SOCKET_TIMEOUT:30000}
+    dataTransferTimeout: ${ADQM_DATA_TRANSFER_TIMEOUT:10000}
 
   ddl:
     cluster: ${ADQM_CLUSTER:cluster}

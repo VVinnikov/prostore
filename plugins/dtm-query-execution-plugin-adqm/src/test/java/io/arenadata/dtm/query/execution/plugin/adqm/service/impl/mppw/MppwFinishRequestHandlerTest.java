@@ -69,7 +69,7 @@ class MppwFinishRequestHandlerTest {
                 t -> t.equalsIgnoreCase("DROP TABLE IF EXISTS dev__shares.accounts_buffer_loader_shard ON CLUSTER test_arenadata"),
                 t -> t.equalsIgnoreCase("SYSTEM FLUSH DISTRIBUTED dev__shares.accounts_buffer"),
                 t -> t.equalsIgnoreCase("SYSTEM FLUSH DISTRIBUTED dev__shares.accounts_actual"),
-                t -> t.contains("a.column1, a.column2, a.column3, a.sys_from, 101") && t.contains("dev__shares.accounts_actual") &&
+                t -> t.contains("a.column1, a.column2, a.column3, a.sys_from, 100") && t.contains("dev__shares.accounts_actual") &&
                         t.contains("ANY INNER JOIN dev__shares.accounts_buffer_shard b USING(column1, column2)") &&
                         t.contains("sys_from < 101"),
                 t -> t.contains("SYSTEM FLUSH DISTRIBUTED dev__shares.accounts_actual"),
@@ -93,7 +93,7 @@ class MppwFinishRequestHandlerTest {
                 true, MppwKafkaParameter.builder()
                 .datamart("shares")
                 .sysCn(101L)
-                .targetTableName("accounts")
+                .destinationTableName("accounts")
                 .uploadMetadata(UploadExternalEntityMetadata.builder()
                         .externalSchema("")
                         .build())

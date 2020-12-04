@@ -47,7 +47,7 @@ public class CheckTableExecutor implements CheckExecutor {
     }
 
     private Future<String> checkEntity(Entity entity, CheckContext context) {
-        return Future.future(promise -> CompositeFuture.join(dataSourcePluginService.getSourceTypes()
+        return Future.future(promise -> CompositeFuture.join(entity.getDestination()
                 .stream()
                 .map(type -> checkEntityByType(new CheckContext(context.getMetrics(), context.getRequest(), entity), type))
                 .collect(Collectors.toList()))

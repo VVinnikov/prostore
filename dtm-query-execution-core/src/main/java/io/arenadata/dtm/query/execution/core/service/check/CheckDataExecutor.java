@@ -97,16 +97,17 @@ public class CheckDataExecutor implements CheckExecutor {
             return Future.succeededFuture();
         } else {
             return Future.future(promise -> taskVerticleExecutor.execute(p -> checkFunc.apply(sysCn)
-                    .onSuccess(p::complete)
-                    .onFailure(p::fail), ar -> {
-                if (ar.succeeded()) {
-                    verticalCheck(to, sysCn - 1, checkFunc)
-                            .onSuccess(promise::complete)
-                            .onFailure(promise::fail);
-                } else {
-                    promise.fail(ar.cause());
-                }
-            }));
+                            .onSuccess(p::complete)
+                            .onFailure(p::fail),
+                    ar -> {
+                        if (ar.succeeded()) {
+                            verticalCheck(to, sysCn - 1, checkFunc)
+                                    .onSuccess(promise::complete)
+                                    .onFailure(promise::fail);
+                        } else {
+                            promise.fail(ar.cause());
+                        }
+                    }));
         }
     }
 

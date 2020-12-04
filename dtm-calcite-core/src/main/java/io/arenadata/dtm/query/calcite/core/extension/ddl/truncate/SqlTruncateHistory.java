@@ -7,15 +7,18 @@ import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
 import javax.annotation.Nonnull;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 public class SqlTruncateHistory extends SqlCall implements SqlBaseTruncate {
     private static final SqlOperator OPERATOR = new SqlSpecialOperator("TRUNCATE_HISTORY", SqlKind.OTHER_DDL);
+    private static final String INFINITE = "infinite";
     private final SqlIdentifier name;
     private final String table;
-    private final String datetime;
+    private final LocalDateTime datetime;
+    private final boolean isInfinite;
     private final String conditions;
 
     public SqlTruncateHistory(SqlParserPos pos, SqlIdentifier name, SqlNode datetime, SqlNode conditions) {
@@ -23,7 +26,14 @@ public class SqlTruncateHistory extends SqlCall implements SqlBaseTruncate {
         this.name = name;
         String nameWithSchema = Objects.requireNonNull(name.toString());
         this.table = CalciteUtil.parseTableName(nameWithSchema);
-        this.datetime = ((SqlCharStringLiteral) datetime).getNlsString().getValue();
+        String datetimeStr = ((SqlCharStringLiteral) datetime).getNlsString().getValue();
+        if (INFINITE.equalsIgnoreCase(datetimeStr)) {
+            this.datetime = null;
+            this.isInfinite = true;
+        } else {
+            this.datetime = CalciteUtil.parseLocalDateTime(datetimeStr);
+            this.isInfinite = false;
+        }
         this.conditions = Optional.ofNullable(conditions).map(SqlNode::toString).orElse(null);
     }
 
@@ -53,8 +63,12 @@ public class SqlTruncateHistory extends SqlCall implements SqlBaseTruncate {
         return table;
     }
 
-    public String getDateTime() {
+    public LocalDateTime getDateTime() {
         return datetime;
+    }
+
+    public boolean isInfinite() {
+        return isInfinite;
     }
 
     public String getConditions() {

@@ -12,17 +12,20 @@ public class TruncateHistoryParams extends PluginParams {
     private final String schema;
     private final String table;
     private final String env;
+    private final Optional<String> conditions;
 
     public TruncateHistoryParams(SourceType type,
                                  RequestMetrics requestMetrics,
                                  Long sysCn,
                                  String schema,
                                  String table,
-                                 String env) {
+                                 String env,
+                                 String conditions) {
         super(type, requestMetrics);
         this.sysCn = Optional.ofNullable(sysCn);
         this.schema = schema;
         this.table = table;
         this.env = env;
+        this.conditions = Optional.ofNullable(conditions);
     }
 }

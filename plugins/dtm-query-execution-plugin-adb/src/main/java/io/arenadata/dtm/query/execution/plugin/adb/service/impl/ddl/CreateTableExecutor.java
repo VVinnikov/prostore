@@ -2,10 +2,12 @@ package io.arenadata.dtm.query.execution.plugin.adb.service.impl.ddl;
 
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
+import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbTables;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
+import io.arenadata.dtm.query.execution.plugin.api.factory.CreateTableQueriesFactory;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
 import io.vertx.core.AsyncResult;
@@ -25,12 +27,17 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
     private final AdbQueryExecutor adbQueryExecutor;
     private final MetadataSqlFactory sqlFactory;
     private final DropTableExecutor dropTableExecutor;
+    private final CreateTableQueriesFactory<AdbTables<String>> createTableQueriesFactory;
 
     @Autowired
-    public CreateTableExecutor(AdbQueryExecutor adbQueryExecutor, MetadataSqlFactory sqlFactory, DropTableExecutor dropTableExecutor) {
+    public CreateTableExecutor(AdbQueryExecutor adbQueryExecutor,
+                               MetadataSqlFactory sqlFactory,
+                               DropTableExecutor dropTableExecutor,
+                               CreateTableQueriesFactory<AdbTables<String>> createTableQueriesFactory) {
         this.adbQueryExecutor = adbQueryExecutor;
         this.sqlFactory = sqlFactory;
         this.dropTableExecutor = dropTableExecutor;
+        this.createTableQueriesFactory = createTableQueriesFactory;
     }
 
     @Override
@@ -58,7 +65,9 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
     }
 
     private void createTable(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {
-        String createTablesSql = sqlFactory.createTableScripts(context.getRequest().getEntity());
+        AdbTables<String> createTableQueries = createTableQueriesFactory.create(context);
+        String createTablesSql = String.join("; ", createTableQueries.getActual(),
+                createTableQueries.getHistory(), createTableQueries.getStaging());
         String createIndexesSql = sqlFactory.createSecondaryIndexSqlQuery(context.getRequest().getEntity().getSchema(),
                 context.getRequest().getEntity().getName());
         executeQuery(createTablesSql)

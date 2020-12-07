@@ -21,20 +21,6 @@ public class MetadataFactoryImpl implements MetadataFactory {
     private final MetadataSqlFactory sqlFactory;
 
     @Override
-    public void apply(Entity entity, Handler<AsyncResult<Void>> handler) {
-        String dropSql = sqlFactory.createDropTableScript(entity);
-        adbQueryExecutor.executeUpdate(dropSql, ar -> {
-            if (ar.succeeded()) {
-                String createSql = sqlFactory.createTableScripts(entity);
-                adbQueryExecutor.executeUpdate(createSql, handler);
-            } else {
-                log.error("Error executing the apply method of the ADB plugin", ar.cause());
-                handler.handle(Future.failedFuture(ar.cause()));
-            }
-        });
-    }
-
-    @Override
     public void purge(Entity entity, Handler<AsyncResult<Void>> handler) {
         String dropSql = sqlFactory.createDropTableScript(entity);
         adbQueryExecutor.executeUpdate(dropSql, handler);

@@ -12,5 +12,7 @@ public enum SqlProcessingType {
     DELTA,
     STATUS,
     CONFIG,
-    ROLLBACK
+    ROLLBACK,
+    CHECK,
+    TRUNCATE
 }

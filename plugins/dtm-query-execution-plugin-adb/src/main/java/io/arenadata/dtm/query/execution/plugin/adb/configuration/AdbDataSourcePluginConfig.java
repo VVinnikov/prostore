@@ -4,7 +4,10 @@ import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adb.AdbDtmDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.api.service.*;
+import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckDataService;
+import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
+import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TruncateHistoryService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,7 +23,10 @@ public class AdbDataSourcePluginConfig {
             @Qualifier("adbMppwKafkaService") MppwKafkaService<QueryResult> mppwKafkaService,
             @Qualifier("adbQueryCostService") QueryCostService<Integer> queryCostService,
             @Qualifier("adbStatusService") StatusService<StatusQueryResult> statusService,
-            @Qualifier("adbRollbackService") RollbackService<Void> rollbackService) {
+            @Qualifier("adbRollbackService") RollbackService<Void> rollbackService,
+            @Qualifier("adbCheckTableService") CheckTableService checkTableService,
+            @Qualifier("adbCheckDataService") CheckDataService checkDataService,
+            @Qualifier("adbTruncateHistoryService") TruncateHistoryService truncateHistoryService) {
         return new AdbDtmDataSourcePlugin(
                 ddlService,
                 llrService,
@@ -28,6 +34,9 @@ public class AdbDataSourcePluginConfig {
                 mppwKafkaService,
                 queryCostService,
                 statusService,
-                rollbackService);
+                rollbackService,
+                checkTableService,
+                checkDataService,
+                truncateHistoryService);
     }
 }

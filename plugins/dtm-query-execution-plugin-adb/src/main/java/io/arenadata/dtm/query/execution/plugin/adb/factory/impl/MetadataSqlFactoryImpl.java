@@ -41,10 +41,6 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
      */
     public static final String SYS_OP_ATTR = "sys_op";
     /**
-     * Request ID system field
-     */
-    public static final String REQ_ID_ATTR = "req_id";
-    /**
      * Prefix of writable external table
      */
     public static final String WRITABLE_EXT_TABLE_PREF = "FDW_EXT_";
@@ -52,7 +48,6 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
     public static final String SERVER_NAME_TEMPLATE = "FDW_KAFKA_%s";
     public static final String QUERY_DELIMITER = "; ";
     public static final String TABLE_POSTFIX_DELIMITER = "_";
-
     public static final String WRITABLE_EXTERNAL_TABLE_PREF = "PXF_EXT_";
 
     private static final String DELIMITER = ", ";
@@ -113,21 +108,6 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
                 .append(QUERY_DELIMITER)
                 .append(DROP_TABLE).append(entity.getNameWithSchema())
                 .append(TABLE_POSTFIX_DELIMITER).append(STAGING_TABLE)
-                .append(QUERY_DELIMITER)
-                .toString();
-    }
-
-    @Override
-    public String createTableScripts(Entity entity) {
-        return new StringBuilder()
-                .append(createTableScript(entity, entity.getNameWithSchema()
-                        + TABLE_POSTFIX_DELIMITER + ACTUAL_TABLE, false, true))
-                .append(QUERY_DELIMITER)
-                .append(createTableScript(entity, entity.getNameWithSchema()
-                        + TABLE_POSTFIX_DELIMITER + HISTORY_TABLE, false, true))
-                .append(QUERY_DELIMITER)
-                .append(createTableScript(entity, entity.getNameWithSchema()
-                        + TABLE_POSTFIX_DELIMITER + STAGING_TABLE, true, false))
                 .append(QUERY_DELIMITER)
                 .toString();
     }
@@ -207,36 +187,6 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
                 .toString();
         return String.format(INSERT_INTO_STAGING_TABLE_SQL, schema, stagingTable, columns, columns, schema, extTable);
     }
-
-    private String createTableScript(Entity entity, String tableName, boolean addReqId, boolean pkWithSystemFields) {
-        val initDelimiter = entity.getFields().isEmpty() ? " " : DELIMITER;
-        val sb = new StringBuilder()
-                .append("CREATE TABLE ").append(tableName)
-                .append(" (");
-        appendClassTableFields(sb, entity.getFields());
-        appendSystemColumns(sb, initDelimiter);
-        if (addReqId) {
-            appendReqIdColumn(sb);
-        }
-        List<EntityField> pkList = EntityFieldUtils.getPrimaryKeyList(entity.getFields());
-        if (pkWithSystemFields || pkList.size() > 0) {
-            appendPrimaryKeys(sb, tableName, pkList, pkWithSystemFields);
-        }
-        sb.append(")");
-        val shardingKeyList = EntityFieldUtils.getShardingKeyList(entity.getFields());
-        if (shardingKeyList.size() > 0) {
-            appendShardingKeys(sb, shardingKeyList);
-        }
-        return sb.toString();
-    }
-
-    private void appendClassTableFields(StringBuilder builder, List<EntityField> fields) {
-        val columns = fields.stream()
-                .map(this::getColumnDDLByField)
-                .collect(Collectors.joining(DELIMITER));
-        builder.append(columns);
-    }
-
     private String getColumnDDLByField(EntityField field) {
         val sb = new StringBuilder();
         sb.append(field.getName())
@@ -247,48 +197,6 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
             sb.append("NOT NULL");
         }
         return sb.toString();
-    }
-
-    private void appendPrimaryKeys(StringBuilder builder, String tableName, Collection<EntityField> pkList, boolean addSystemFields) {
-        List<String> pkFields = pkList.stream().map(EntityField::getName).collect(Collectors.toList());
-        if (addSystemFields) {
-            pkFields.add(SYS_FROM_ATTR);
-        }
-        builder.append(DELIMITER)
-                .append("constraint ")
-                .append("pk_")
-                .append(tableName.replace('.', '_'))
-                .append(" primary key (")
-                .append(pkFields.stream().collect(Collectors.joining(DELIMITER)))
-                .append(")");
-    }
-
-    private void appendShardingKeys(StringBuilder builder, Collection<EntityField> skList) {
-        builder.append(" DISTRIBUTED BY (")
-                .append(skList.stream().map(EntityField::getName).collect(Collectors.joining(DELIMITER)))
-                .append(")");
-    }
-
-    private void appendReqIdColumn(StringBuilder builder) {
-        builder.append(DELIMITER)
-                .append(REQ_ID_ATTR)
-                .append(" ")
-                .append("varchar(36)");
-    }
-
-    private void appendSystemColumns(StringBuilder builder, String delimiter) {
-        builder.append(delimiter)
-                .append(SYS_FROM_ATTR)
-                .append(" ")
-                .append("bigint")
-                .append(DELIMITER)
-                .append(SYS_TO_ATTR)
-                .append(" ")
-                .append("bigint")
-                .append(DELIMITER)
-                .append(SYS_OP_ATTR)
-                .append(" ")
-                .append("int");
     }
 
     @Override

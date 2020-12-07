@@ -132,7 +132,7 @@ adqm:
 
   mppw:
     consumerGroup: adqm
-    kafkaBrokers: dtm.kafka.it.broker:9092
+    kafkaBrokers: dtm.kafka.it.broker:9093
     loadType: REST
     restLoadUrl: http://dtm.kafka.writer.it:8090/newdata/adqm/start
     restLoadConsumerGroup: adb-emulator-load-adqm
@@ -143,19 +143,19 @@ adqm:
 statusMonitor:
   host: dtm.kafka.monitor.it
   port: 9095
-  brokersList: dtm.kafka.it.broker:9092
+  brokersList: dtm.kafka.it.broker:9093
   consumersCount: 8
 
 kafkaEmulatorWriter:
   host: dtm.kafka.writer.it
   port: 8090
-  kafkaBrokers: dtm.kafka.it.broker:9092
+  kafkaBrokers: dtm.kafka.it.broker:9093
   consumerGroupId: adb-emulator-load-adqm
   dataWorkerPoolSize: 5
   taskWorkerPoolSize: 5
   adqm:
     hosts: dtm.adqm.it:8123
-    dbName: it_test
+    dbName: it_test__mppw
     user: default
     pass:
   adb:

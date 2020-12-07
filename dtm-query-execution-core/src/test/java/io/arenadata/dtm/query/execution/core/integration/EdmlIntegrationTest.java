@@ -85,14 +85,14 @@ public class EdmlIntegrationTest extends AbstractCoreDtmIntegrationTest {
             async.awaitSuccess(5000);
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
-        assertNull(promise.future().cause());
+        assertTrue(promise.future().succeeded());
     }
 
     @Test
     void mppwTest() {
         TestSuite suite = TestSuite.create("mppw tests");
         Promise<?> promise = Promise.promise();
-        final String datamart = "mppw_test";
+        final String datamart = "mppw";
         final String destinationTable = "test_table";
         final String sourceTable = "test_table_ext";
         final int rowCount = 1000;
@@ -179,8 +179,11 @@ public class EdmlIntegrationTest extends AbstractCoreDtmIntegrationTest {
             async.awaitSuccess(30000);
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
-        assertNull(promise.future().cause());
+        assertTrue(promise.future().succeeded());
     }
 
-
+    @Test
+    void mpprTest() {
+        //TODO with checking existing messages in topic
+    }
 }

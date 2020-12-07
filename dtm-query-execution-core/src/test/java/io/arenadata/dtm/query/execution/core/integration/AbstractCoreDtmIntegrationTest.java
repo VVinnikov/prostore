@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.core.integration;
 
 import com.github.dockerjava.api.model.Bind;
+import io.arenadata.dtm.query.execution.core.integration.configuration.DtmKafkaContainer;
 import io.arenadata.dtm.query.execution.core.integration.configuration.IntegrationTestConfiguration;
 import io.arenadata.dtm.query.execution.core.integration.factory.PropertyFactory;
 import io.arenadata.dtm.query.execution.core.integration.generator.VendorEmulatorServiceImpl;
@@ -44,7 +45,7 @@ public abstract class AbstractCoreDtmIntegrationTest {
     public static final PropertySource<?> dtmProperties;
     public static final GenericContainer<?> zkDsContainer;
     public static final GenericContainer<?> zkKafkaContainer;
-    public static final KafkaContainer kafkaContainer;
+    public static final DtmKafkaContainer kafkaContainer;
     public static final GenericContainer<?> mariaDBContainer;
     public static final GenericContainer<?> adqmContainer;
     public static final GenericContainer<?> dtmCoreContainer;
@@ -53,7 +54,6 @@ public abstract class AbstractCoreDtmIntegrationTest {
     public static final GenericContainer<?> dtmVendorEmulatorContainer;
     public static final GenericContainer<?> dtmKafkaStatusMonitorContainer;
     private static final Network network = Network.SHARED;
-    private static final int KAFKA_PORT = 9092;
     private static final int CLICKHOUSE_PORT = 8123;
     private static final Map<GenericContainer<?>, ContainerInfo> containerMap = new HashMap<>();
 
@@ -69,21 +69,21 @@ public abstract class AbstractCoreDtmIntegrationTest {
         dtmVendorEmulatorContainer = createVendorEmulatorContainer();
         dtmKafkaStatusMonitorContainer = createKafkaStatusMonitorContainer();
         dtmCoreContainer = createDtmCoreContainer();
+
         Stream.of(
-                dtmKafkaReaderContainer,
                 zkDsContainer,
                 zkKafkaContainer,
                 kafkaContainer,
-                adqmContainer,
-                mariaDBContainer,
-                dtmKafkaWriterContainer
+                mariaDBContainer
         ).parallel().forEach(GenericContainer::start);
         Stream.of(
+                adqmContainer,
+                dtmKafkaReaderContainer,
+                dtmKafkaWriterContainer,
                 dtmKafkaStatusMonitorContainer,
                 dtmVendorEmulatorContainer,
                 dtmCoreContainer
         ).forEach(GenericContainer::start);
-        kafkaContainer.addEnv("KAFKA_ADVERTISED_LISTENERS", "PLAINTEXT://localhost:" + kafkaContainer.getMappedPort(KAFKA_PORT));
         initContainerMap();
         containerMap.forEach((key, value) -> log.info("Started container for integration tests: {}, host: {}, port: {}, image: {}",
                 value.getName(), key.getHost(), value.getPort(), key.getDockerImageName()));
@@ -107,15 +107,17 @@ public abstract class AbstractCoreDtmIntegrationTest {
                 .withEnv("ZOOKEEPER_CLIENT_PORT", String.valueOf(ZK_PORT));
     }
 
-    private static KafkaContainer createKafkaContainer() {
-        return new KafkaContainer(DockerImageName.parse(DockerImagesUtil.KAFKA))
+    private static DtmKafkaContainer createKafkaContainer() {
+        final String kafkaHost = Objects.requireNonNull(
+                dtmProperties.getProperty("statusMonitor.brokersList")).toString().split(":")[0];
+        return new DtmKafkaContainer(DockerImageName.parse(DockerImagesUtil.KAFKA),
+                kafkaHost)
                 .withNetwork(network)
+                .withNetworkAliases(kafkaHost)
                 .withExternalZookeeper(Objects.requireNonNull(
-                        dtmProperties.getProperty("core.kafka.cluster.zookeeper.connection-string")).toString())
-                .withNetworkAliases(Objects.requireNonNull(
-                        dtmProperties.getProperty("statusMonitor.brokersList")).toString().split(":")[0])
-                .withEnv("KAFKA_ZOOKEEPER_CONNECT", Objects.requireNonNull(
-                        dtmProperties.getProperty("core.kafka.cluster.zookeeper.connection-string")).toString());
+                        dtmProperties.getProperty("core.kafka.cluster.zookeeper.connection-string")).toString()
+                        + ":" + ZK_PORT);
+
     }
 
     private static GenericContainer<?> createAdqmContainer() {
@@ -336,7 +338,8 @@ public abstract class AbstractCoreDtmIntegrationTest {
         containerMap.put(zkKafkaContainer, new ContainerInfo("Zookeeper kafka",
                 zkKafkaContainer.getMappedPort(ZK_PORT)));
         containerMap.put(kafkaContainer, new ContainerInfo("Kafka",
-                kafkaContainer.getMappedPort(KAFKA_PORT)));
+                kafkaContainer.getMappedPort(Integer.parseInt(Objects.requireNonNull(
+                        dtmProperties.getProperty("statusMonitor.brokersList")).toString().split(":")[1]))));
         containerMap.put(adqmContainer, new ContainerInfo("Adqm",
                 adqmContainer.getMappedPort(CLICKHOUSE_PORT)));
         containerMap.put(dtmKafkaReaderContainer, new ContainerInfo("Dtm kafka emulator reader",

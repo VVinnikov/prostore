@@ -43,12 +43,15 @@ public class VertxConfiguration implements ApplicationListener<ApplicationReadyE
         val verticles = event.getApplicationContext().getBeansOfType(Verticle.class);
         val queryVerticle = verticles.remove(QueryVerticle.class.getName());
 
-        Future.future(p -> informationSchemaService.createInformationSchemaViews()
+        informationSchemaService.createInformationSchemaViews()
                 .compose(v -> deployVerticle(vertx, verticles.values()))
-                .onSuccess(v -> CompositeFuture.join(restoreStateService.restoreState(),
-                        deployVerticle(vertx, Collections.singletonList(queryVerticle)))
-                        .onComplete(p::complete))
-                .onFailure(p::fail))
+                .compose(v -> {
+                    restoreStateService.restoreState()
+                            .onFailure(fail -> {
+                                log.error("Error in restoring state", fail);
+                            });
+                    return deployVerticle(vertx, Collections.singletonList(queryVerticle));
+                })
                 .onSuccess(success -> {
                     log.debug("Dtm started successfully");
                 })

@@ -16,10 +16,7 @@ import io.vertx.ext.sql.SQLConnection;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.sql.DataSource;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -68,9 +65,11 @@ public class AdqmQueryExecutor implements DatabaseExecutor {
         Function<JsonObject, Map<String, Object>> func = metadata.isEmpty()
                 ? JsonObject::getMap
                 : row -> createRowMap(metadata, columnIndexMap, row);
-        return rs.getRows().stream()
-                .map(func)
-                .collect(Collectors.toList());
+        return Optional.ofNullable(rs)
+                .map(resultSet -> resultSet.getRows().stream()
+                        .map(func)
+                        .collect(Collectors.toList()))
+                .orElse(Collections.emptyList());
     }
 
     private void initColumnIndexMap(Map<String, Integer> columnIndexMap, JsonObject row) {

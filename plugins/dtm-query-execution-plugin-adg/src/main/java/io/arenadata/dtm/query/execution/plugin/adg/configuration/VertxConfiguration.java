@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adg.configuration;
 
+import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.AdgWebClientProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.CircuitBreakerProperties;
 import io.vertx.circuitbreaker.CircuitBreaker;
 import io.vertx.circuitbreaker.CircuitBreakerOptions;

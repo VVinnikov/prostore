@@ -48,7 +48,7 @@ public class MppwKafkaRequestFactoryImpl implements MppwKafkaRequestFactory {
                             .kafkaParameter(MppwKafkaParameter.builder()
                                     .datamart(context.getSourceEntity().getSchema())
                                     .sysCn(context.getSysCn())
-                                    .targetTableName(context.getDestinationEntity().getName())
+                                    .destinationTableName(context.getDestinationEntity().getName())
                                     .uploadMetadata(UploadExternalEntityMetadata.builder()
                                             .name(context.getSourceEntity().getName())
                                             .format(Format.findByName(context.getSourceEntity().getExternalTableFormat()))
@@ -58,6 +58,7 @@ public class MppwKafkaRequestFactoryImpl implements MppwKafkaRequestFactory {
                                             .build())
                                     .brokers(brokers)
                                     .topic(kafkaTopicUri.getTopic())
+                                    .sourceEntity(context.getSourceEntity())
                                     .build())
                             .build()))
                     .onComplete(promise);

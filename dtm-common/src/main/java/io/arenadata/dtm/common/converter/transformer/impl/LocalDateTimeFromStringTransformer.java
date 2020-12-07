@@ -24,9 +24,9 @@ public class LocalDateTimeFromStringTransformer extends AbstractColumnTransforme
 
     @Override
     public LocalDateTime transformValue(String value) {
-        return value == null ? null : LocalDateTime.from(LocalDateTime
+        return value == null ? null : LocalDateTime
                 .parse(value, dateTimeFormatter)
-                .atZone(zoneId).toInstant());
+                .atZone(zoneId).toLocalDateTime();
     }
 
     @Override

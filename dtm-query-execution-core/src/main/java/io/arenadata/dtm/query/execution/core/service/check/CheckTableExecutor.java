@@ -47,7 +47,7 @@ public class CheckTableExecutor implements CheckExecutor {
     }
 
     private Future<String> checkEntity(Entity entity, CheckContext context) {
-        return Future.future(promise -> CompositeFuture.join(dataSourcePluginService.getSourceTypes()
+        return Future.future(promise -> CompositeFuture.join(entity.getDestination()
                 .stream()
                 .map(type -> checkEntityByType(new CheckContext(context.getMetrics(), context.getRequest(), entity), type))
                 .collect(Collectors.toList()))
@@ -55,7 +55,7 @@ public class CheckTableExecutor implements CheckExecutor {
                     List<Pair<SourceType, Optional<String>>> list = result.list();
                     if (list.stream().map(Pair::getValue).noneMatch(Optional::isPresent)) {
                         promise.complete(String.format("Table %s.%s (%s) is ok.",
-                                entity.getName(), entity.getSchema(),
+                                entity.getSchema(), entity.getName(),
                                 list.stream()
                                         .map(pair -> pair.getKey().name())
                                         .collect(Collectors.joining(", "))));

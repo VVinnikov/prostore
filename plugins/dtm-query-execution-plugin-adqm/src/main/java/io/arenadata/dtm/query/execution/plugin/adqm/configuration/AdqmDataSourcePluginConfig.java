@@ -7,6 +7,7 @@ import io.arenadata.dtm.query.execution.plugin.api.service.*;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckDataService;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
+import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TruncateHistoryService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,7 +25,8 @@ public class AdqmDataSourcePluginConfig {
             @Qualifier("adqmStatusService") StatusService<StatusQueryResult> statusService,
             @Qualifier("adqmRollbackService") RollbackService<Void> rollbackService,
             @Qualifier("adqmCheckTableService") CheckTableService checkTableService,
-            @Qualifier("adqmCheckDataService") CheckDataService checkDataService) {
+            @Qualifier("adqmCheckDataService") CheckDataService checkDataService,
+            @Qualifier("adqmTruncateHistoryService") TruncateHistoryService truncateHistoryService) {
         return new AdqmDtmDataSourcePlugin(
                 ddlService,
                 llrService,
@@ -34,6 +36,7 @@ public class AdqmDataSourcePluginConfig {
                 statusService,
                 rollbackService,
                 checkTableService,
-                checkDataService);
+                checkDataService,
+                truncateHistoryService);
     }
 }

@@ -9,6 +9,7 @@ import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckData;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.verticle.TaskVerticleExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckException;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountParams;
@@ -20,8 +21,11 @@ import org.apache.calcite.util.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service("checkDataExecutor")
@@ -29,13 +33,16 @@ public class CheckDataExecutor implements CheckExecutor {
     private final DataSourcePluginService dataSourcePluginService;
     private final DeltaServiceDao deltaServiceDao;
     private final EntityDao entityDao;
+    private final TaskVerticleExecutor taskVerticleExecutor;
 
     @Autowired
     public CheckDataExecutor(DataSourcePluginService dataSourcePluginService,
-                             DeltaServiceDao deltaServiceDao, EntityDao entityDao) {
+                             DeltaServiceDao deltaServiceDao, EntityDao entityDao,
+                             TaskVerticleExecutor taskVerticleExecutor) {
         this.dataSourcePluginService = dataSourcePluginService;
         this.deltaServiceDao = deltaServiceDao;
         this.entityDao = entityDao;
+        this.taskVerticleExecutor = taskVerticleExecutor;
     }
 
     @Override
@@ -57,12 +64,9 @@ public class CheckDataExecutor implements CheckExecutor {
     private Future<String> check(CheckContext context,
                                  Entity entity,
                                  SqlCheckData sqlCheckData) {
-        BiFunction<SourceType, Long, Future<Long>> checkFunc = Optional.ofNullable(sqlCheckData.getColumns())
-                .map(columns -> getCheckHashFunc(context, entity, columns))
-                .orElse((type, sysCn) -> dataSourcePluginService.checkDataByCount(
-                        new CheckDataByCountParams(type, context.getMetrics(), entity, sysCn,
-                                context.getRequest().getQueryRequest().getEnvName())));
-        return Future.future(promise -> check(sqlCheckData.getDeltaNum(), entity.getSchema(), checkFunc)
+
+        return Future.future(promise -> check(sqlCheckData.getDeltaNum(), entity.getSchema(),
+                getCheckFunc(context, entity, sqlCheckData.getColumns()))
                 .onSuccess(result -> promise.complete(""))
                 .onFailure(exception -> {
                     if (exception instanceof CheckException) {
@@ -76,26 +80,49 @@ public class CheckDataExecutor implements CheckExecutor {
 
     private Future<Void> check(Long deltaNum,
                                String datamart,
-                               BiFunction<SourceType, Long, Future<Long>> checkFunc) {
+                               Function<Long, Future<Void>> checkFunc) {
         return deltaServiceDao.getDeltaOk(datamart)
                 .compose(deltaOk -> deltaServiceDao.getDeltaByNum(datamart, deltaNum)
-                        .compose(delta -> Future.succeededFuture(getCheckRange(delta.getCnFrom(), deltaOk.getCnTo()))))
+                        .compose(delta -> Future.succeededFuture(new Pair<>(delta.getCnFrom(), deltaOk.getCnTo()))))
                 .compose(checkRange -> checkByRange(checkRange, checkFunc));
     }
 
-    private Future<Void> checkByRange(List<Long> checkRange,
-                                      BiFunction<SourceType, Long, Future<Long>> checkFunc) {
-
-        return Future.future(promise -> CompositeFuture.join(checkRange.stream()
-                .map(sysCn -> checkBySysCn(sysCn, checkFunc))
-                .collect(Collectors.toList()))
-                .onSuccess(result -> promise.complete())
-                .onFailure(promise::fail));
+    private Future<Void> checkByRange(Pair<Long, Long> checkRange,
+                                      Function<Long, Future<Void>> checkFunc) {
+        return verticalCheck(checkRange.left, checkRange.right, checkFunc);
     }
 
-    private Future<Void> checkBySysCn(Long sysCn, BiFunction<SourceType, Long, Future<Long>> checkFunc) {
-        return Future.future(promise -> CompositeFuture.all(
-                dataSourcePluginService.getSourceTypes().stream()
+    private Future<Void> verticalCheck(Long to,
+                                       Long sysCn,
+                                       Function<Long, Future<Void>> checkFunc) {
+        if (sysCn < to) {
+            return Future.succeededFuture();
+        } else {
+            return Future.future(promise -> taskVerticleExecutor.execute(p -> checkFunc.apply(sysCn)
+                            .onSuccess(p::complete)
+                            .onFailure(p::fail),
+                    ar -> {
+                        if (ar.succeeded()) {
+                            verticalCheck(to, sysCn - 1, checkFunc)
+                                    .onSuccess(promise::complete)
+                                    .onFailure(promise::fail);
+                        } else {
+                            promise.fail(ar.cause());
+                        }
+                    }));
+        }
+    }
+
+    private Function<Long, Future<Void>> getCheckFunc(CheckContext context,
+                                                      Entity entity,
+                                                      Set<String> columns) {
+        BiFunction<SourceType, Long, Future<Long>> checkFunc = Optional.ofNullable(columns)
+                .map(value -> getCheckHashFunc(context, entity, value))
+                .orElse((type, sysCn) -> dataSourcePluginService.checkDataByCount(
+                        new CheckDataByCountParams(type, context.getMetrics(), entity, sysCn,
+                                context.getRequest().getQueryRequest().getEnvName())));
+        return sysCn -> Future.future(promise -> CompositeFuture.join(
+                entity.getDestination().stream()
                         .map(sourceType -> checkFunc.apply(sourceType, sysCn)
                                 .compose(val -> Future.succeededFuture(new Pair<>(sourceType, val))))
                         .collect(Collectors.toList()))
@@ -118,9 +145,11 @@ public class CheckDataExecutor implements CheckExecutor {
         Set<String> entityFieldNames = entity.getFields().stream()
                 .map(EntityField::getName)
                 .collect(Collectors.toSet());
+
         Set<String> notExistColumns = columns.stream()
                 .filter(column -> !entityFieldNames.contains(column))
                 .collect(Collectors.toSet());
+
         if (!notExistColumns.isEmpty()) {
             throw new IllegalArgumentException(String.format("Columns: `%s` don't exist.",
                     String.join(", ", notExistColumns)));
@@ -129,13 +158,5 @@ public class CheckDataExecutor implements CheckExecutor {
                     new CheckDataByHashInt32Params(type, context.getMetrics(), entity, sysCn, columns,
                             context.getRequest().getQueryRequest().getEnvName()));
         }
-    }
-
-    private List<Long> getCheckRange(Long cnFrom, Long cnTo) {
-        List<Long> result = new ArrayList<>();
-        for (Long i = cnTo; i >= cnFrom; i--) {
-            result.add(i);
-        }
-        return result;
     }
 }

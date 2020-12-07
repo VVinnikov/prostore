@@ -15,6 +15,7 @@ import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Params;
 import io.arenadata.dtm.query.execution.plugin.api.dto.PluginParams;
+import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
 import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
@@ -43,6 +44,7 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     private final PluginRegistry<DtmDataSourcePlugin, SourceType> pluginRegistry;
     private final TaskVerticleExecutor taskVerticleExecutor;
     private final Set<SourceType> sourceTypes;
+    private final Set<String> activeCaches;
     private final MetricsService<RequestMetrics> metricsService;
 
     @Autowired
@@ -54,6 +56,9 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
         this.pluginRegistry = pluginRegistry;
         this.sourceTypes = pluginRegistry.getPlugins().stream()
                 .map(DtmDataSourcePlugin::getSourceType)
+                .collect(Collectors.toSet());
+        this.activeCaches = pluginRegistry.getPlugins().stream()
+                .flatMap(plugin -> plugin.getActiveCaches().stream())
                 .collect(Collectors.toSet());
         this.metricsService = metricsService;
         log.info("Active Plugins: {}", sourceTypes.toString());
@@ -187,6 +192,11 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     }
 
     @Override
+    public Set<String> getActiveCaches() {
+        return activeCaches;
+    }
+
+    @Override
     public Future<Void> checkTable(SourceType sourceType, CheckContext context) {
         return check(new PluginParams(sourceType, context.getMetrics()), plugin -> plugin.checkTable(context));
     }
@@ -201,16 +211,26 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
         return check(params, plugin -> plugin.checkDataByHashInt32(params));
     }
 
-    private <T> Future<T> check(PluginParams pluginParams,
-                                Function<DtmDataSourcePlugin, Future<T>> func) {
-        SourceType sourceType = pluginParams.getSourceType();
-        RequestMetrics requestMetrics = pluginParams.getRequestMetrics();
-        return metricsService.sendMetrics(sourceType, SqlProcessingType.CHECK, requestMetrics)
-                .compose(result -> executorWrapper(func.apply(getPlugin(sourceType))))
-                .compose(result -> metricsService.sendMetrics(sourceType, SqlProcessingType.CHECK, requestMetrics)
-                        .map(val -> result));
+    public Future<Void> truncateHistory(TruncateHistoryParams params) {
+        return metricsWrapper(SqlProcessingType.TRUNCATE, params, plugin -> plugin.truncateHistory(params));
     }
 
+    private <T> Future<T> check(PluginParams pluginParams,
+                                Function<DtmDataSourcePlugin, Future<T>> func) {
+        return metricsWrapper(SqlProcessingType.CHECK, pluginParams, func);
+    }
+
+    private <T> Future<T> metricsWrapper(SqlProcessingType sqlProcessingType,
+                                      PluginParams pluginParams,
+                                      Function<DtmDataSourcePlugin, Future<T>> func) {
+        SourceType sourceType = pluginParams.getSourceType();
+        RequestMetrics requestMetrics = pluginParams.getRequestMetrics();
+        return metricsService.sendMetrics(sourceType, sqlProcessingType, requestMetrics)
+                .compose(result -> executorWrapper(func.apply(getPlugin(sourceType))))
+                .compose(result -> metricsService.sendMetrics(sourceType, sqlProcessingType, requestMetrics)
+                        .map(val -> result));
+
+    }
     private <T> Future<T> executorWrapper(Future<T> future) {
         return Future.future(promise -> taskVerticleExecutor.execute(p -> future
                         .onSuccess(p::complete)

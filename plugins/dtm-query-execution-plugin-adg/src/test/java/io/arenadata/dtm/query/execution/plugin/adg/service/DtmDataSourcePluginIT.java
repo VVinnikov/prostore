@@ -13,6 +13,7 @@ import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlType;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountParams;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Params;
+import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
 import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
@@ -31,6 +32,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @SpringBootTest(classes = DtmTestConfiguration.class)
@@ -87,6 +90,11 @@ public class DtmDataSourcePluginIT {
         }
 
         @Override
+        public Set<String> getActiveCaches() {
+            return Collections.singleton("adg_datamart");
+        }
+
+        @Override
         public Future<Void> checkTable(CheckContext context) {
             return null;
         }
@@ -98,6 +106,11 @@ public class DtmDataSourcePluginIT {
 
         @Override
         public Future<Long> checkDataByHashInt32(CheckDataByHashInt32Params params) {
+            return null;
+        }
+
+        @Override
+        public Future<Void> truncateHistory(TruncateHistoryParams params) {
             return null;
         }
     };

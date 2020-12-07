@@ -9,6 +9,7 @@ import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Params;
+import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
 import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
@@ -111,6 +112,13 @@ public interface DataSourcePluginService {
     DtmDataSourcePlugin getPlugin(SourceType sourceType);
 
     /**
+     * <p>Get name set of active caches</p>
+     *
+     * @return set of caches names
+     */
+    Set<String> getActiveCaches();
+
+    /**
      *
      * @param sourceType SourceType
      * @param context CheckContext
@@ -132,4 +140,6 @@ public interface DataSourcePluginService {
      * @return checksum
      */
     Future<Long> checkDataByHashInt32(CheckDataByHashInt32Params params);
+
+    Future<Void> truncateHistory(TruncateHistoryParams params);
 }

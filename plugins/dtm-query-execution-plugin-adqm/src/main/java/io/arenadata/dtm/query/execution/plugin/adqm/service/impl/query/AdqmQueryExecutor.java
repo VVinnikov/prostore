@@ -44,6 +44,7 @@ public class AdqmQueryExecutor implements DatabaseExecutor {
                     if (ar2.succeeded()) {
                         ResultSet rs = ar2.result();
                         try {
+                            log.debug("ADQM query result");
                             List<Map<String, Object>> result = createResult(metadata, rs);
                             resultHandler.handle(Future.succeededFuture(result));
                         } catch (Exception e) {

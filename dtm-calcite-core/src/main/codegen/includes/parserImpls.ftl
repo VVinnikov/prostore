@@ -695,3 +695,22 @@ SqlNode SqlCheckData() :
         return new io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckData(s.end(this), name, deltaNum, columns_list);
     }
 }
+SqlNode SqlTruncateHistory() :
+{
+    final Span s;
+    final SqlIdentifier id;
+    final SqlNode datetime;
+    SqlNode conditions = null;
+}
+{
+    <TRUNCATE> <HISTORY>
+    {
+            s = span();
+    }
+    id = CompoundIdentifier()
+    <FOR> <SYSTEM_TIME> <AS> <OF> datetime = StringLiteral()
+    [<WHERE> conditions = SqlExpressionEof()]
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.ddl.truncate.SqlTruncateHistory(s.end(this), id, datetime, conditions);
+    }
+}

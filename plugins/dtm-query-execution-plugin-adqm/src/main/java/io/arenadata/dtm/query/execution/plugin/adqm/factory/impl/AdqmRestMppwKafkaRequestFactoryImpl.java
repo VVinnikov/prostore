@@ -27,7 +27,7 @@ public class AdqmRestMppwKafkaRequestFactoryImpl implements AdqmRestMppwKafkaReq
         return RestMppwKafkaLoadRequest.builder()
                 .requestId(mppwRequest.getQueryRequest().getRequestId().toString())
                 .datamart(mppwRequest.getKafkaParameter().getDatamart())
-                .tableName(mppwRequest.getKafkaParameter().getTargetTableName())
+                .tableName(mppwRequest.getKafkaParameter().getDestinationTableName())
                 .kafkaTopic(mppwRequest.getKafkaParameter().getTopic())
                 .kafkaBrokers(mppwRequest.getKafkaParameter().getBrokers())
                 .hotDelta(mppwRequest.getKafkaParameter().getSysCn())

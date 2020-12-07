@@ -15,6 +15,7 @@ import java.util.Optional;
 public class SqlTruncateHistory extends SqlCall implements SqlBaseTruncate {
     private static final SqlOperator OPERATOR = new SqlSpecialOperator("TRUNCATE_HISTORY", SqlKind.OTHER_DDL);
     private static final String INFINITE = "infinite";
+    private static final int NAME_OPERAND_IDX = 0;
     private final List<SqlNode> operandList;
     private final String table;
     private final LocalDateTime datetime;
@@ -44,7 +45,7 @@ public class SqlTruncateHistory extends SqlCall implements SqlBaseTruncate {
     }
 
     private SqlIdentifier getName() {
-        return (SqlIdentifier) operandList.get(0);
+        return (SqlIdentifier) operandList.get(NAME_OPERAND_IDX);
     }
 
     @Nonnull

@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.ddl;
 
+import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.plugin.sql.PreparedStatementRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
@@ -83,6 +84,9 @@ public class AdbTruncateHistoryServiceTest {
     }
 
     private TruncateHistoryParams getParams(Long sysCn, String conditions) {
-        return new TruncateHistoryParams(null, null, sysCn, SCHEMA, TABLE, null, conditions);
+        Entity entity = new Entity();
+        entity.setSchema(SCHEMA);
+        entity.setName(TABLE);
+        return new TruncateHistoryParams(null, null, sysCn, entity, null, conditions);
     }
 }

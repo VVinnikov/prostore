@@ -44,30 +44,38 @@ public class VertxConfiguration implements ApplicationListener<ApplicationReadyE
         val queryVerticle = verticles.remove(QueryVerticle.class.getName());
 
         informationSchemaService.createInformationSchemaViews()
-            .compose(v -> deployVerticle(vertx, verticles.values()))
-            .compose(v -> restoreStateService.restoreState())
-            .compose(v -> deployVerticle(vertx, Collections.singletonList(queryVerticle)))
-            .onFailure(err -> {
-                val exitCode = SpringApplication.exit(event.getApplicationContext(), () -> 1);
-                System.exit(exitCode);
-            });
+                .compose(v -> deployVerticle(vertx, verticles.values()))
+                .compose(v -> {
+                    restoreStateService.restoreState()
+                            .onFailure(fail -> {
+                                log.error("Error in restoring state", fail);
+                            });
+                    return deployVerticle(vertx, Collections.singletonList(queryVerticle));
+                })
+                .onSuccess(success -> {
+                    log.debug("Dtm started successfully");
+                })
+                .onFailure(err -> {
+                    val exitCode = SpringApplication.exit(event.getApplicationContext(), () -> 1);
+                    System.exit(exitCode);
+                });
     }
 
     private Future<Object> deployVerticle(Vertx vertx, Collection<Verticle> verticles) {
         log.info("Verticals found: {}", verticles.size());
         return CompositeFuture.join(verticles.stream()
-            .map(verticle -> Future.future(p -> {
-                vertx.deployVerticle(verticle, ar -> {
-                    if (ar.succeeded()) {
-                        log.debug("Vertical '{}' deployed successfully", verticle.getClass().getName());
-                        p.complete();
-                    } else {
-                        log.error("Vertical deploy error", ar.cause());
-                        p.fail(ar.cause());
-                    }
-                });
-            }))
-            .collect(Collectors.toList()))
-            .mapEmpty();
+                .map(verticle -> Future.future(p -> {
+                    vertx.deployVerticle(verticle, ar -> {
+                        if (ar.succeeded()) {
+                            log.debug("Vertical '{}' deployed successfully", verticle.getClass().getName());
+                            p.complete();
+                        } else {
+                            log.error("Vertical deploy error", ar.cause());
+                            p.fail(ar.cause());
+                        }
+                    });
+                }))
+                .collect(Collectors.toList()))
+                .mapEmpty();
     }
 }

@@ -54,7 +54,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     private final MppwProperties mppwProperties;
     private final StatusReporter statusReporter;
     private final Map<LoadType, ExtTableCreator> extTableCreators = new HashMap<>();
-    private final RestLoadInitiator restLoadInitiator;
+    private final RestLoadClient restLoadClient;
     private final AdqmRestMppwKafkaRequestFactory restMppwKafkaRequestFactory;
 
     @Autowired
@@ -63,14 +63,14 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
                                    AppConfiguration appConfiguration,
                                    MppwProperties mppwProperties,
                                    StatusReporter statusReporter,
-                                   RestLoadInitiator restLoadInitiator,
+                                   RestLoadClient restLoadClient,
                                    AdqmRestMppwKafkaRequestFactory restMppwKafkaRequestFactory) {
         this.databaseExecutor = databaseExecutor;
         this.ddlProperties = ddlProperties;
         this.appConfiguration = appConfiguration;
         this.mppwProperties = mppwProperties;
         this.statusReporter = statusReporter;
-        this.restLoadInitiator = restLoadInitiator;
+        this.restLoadClient = restLoadClient;
         this.restMppwKafkaRequestFactory = restMppwKafkaRequestFactory;
 
         extTableCreators.put(KAFKA, new KafkaExtTableCreator(ddlProperties, mppwProperties));
@@ -253,8 +253,8 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         }
         try {
             final RestMppwKafkaLoadRequest mppwKafkaLoadRequest = restMppwKafkaRequestFactory.create(mppwRequest);
-            log.debug("ADQM: Send mppw kafka rest request {}", mppwKafkaLoadRequest);
-            return restLoadInitiator.initiateLoading(mppwKafkaLoadRequest);
+            log.debug("ADQM: Send mppw kafka starting rest request {}", mppwKafkaLoadRequest);
+            return restLoadClient.initiateLoading(mppwKafkaLoadRequest);
         } catch (Exception e) {
             return Future.failedFuture(e);
         }

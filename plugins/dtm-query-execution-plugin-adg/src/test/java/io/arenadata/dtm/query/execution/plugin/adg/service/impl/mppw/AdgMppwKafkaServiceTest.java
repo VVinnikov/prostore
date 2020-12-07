@@ -191,7 +191,7 @@ class AdgMppwKafkaServiceTest {
         return MppwKafkaParameter.builder()
                 .sysCn(1L)
                 .datamart("test")
-                .targetTableName("tbl1")
+                .destinationTableName("tbl1")
                 .uploadMetadata(UploadExternalEntityMetadata.builder()
                         .name("ext_tab")
                         .externalSchema(getExternalTableSchema())

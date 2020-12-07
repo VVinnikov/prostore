@@ -18,18 +18,19 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class RestMppwKafkaLoadRequest implements Serializable {
+public class MppwKafkaLoadRequest implements Serializable {
     private String requestId;
-    private long hotDelta;
     private String datamart;
     private String tableName;
-    private List<KafkaBrokerInfo> kafkaBrokers;
-    private String kafkaTopic;
-    private String consumerGroup;
-    private String format;
+    private List<String> columns;
+    private String writableExtTableName;
     @JsonDeserialize(using = SchemaDeserializer.class)
     @JsonSerialize(using = SchemaSerializer.class)
     private Schema schema;
-    private int messageProcessingLimit;
-
+    private String brokers;
+    private String server;
+    private String topic;
+    private String consumerGroup;
+    Long uploadMessageLimit;
+    Long timeout;
 }

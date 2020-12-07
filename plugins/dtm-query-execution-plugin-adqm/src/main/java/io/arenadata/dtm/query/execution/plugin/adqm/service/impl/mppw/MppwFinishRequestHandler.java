@@ -10,6 +10,8 @@ import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.Ddl
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.StatusReporter;
+import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.RestLoadClient;
+import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.RestMppwKafkaStopRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.MppwRequest;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
@@ -41,13 +43,14 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
     private static final String FLUSH_TEMPLATE = "SYSTEM FLUSH DISTRIBUTED %s";
     private static final String OPTIMIZE_TEMPLATE = "OPTIMIZE TABLE %s ON CLUSTER %s FINAL";
     private static final String INSERT_TEMPLATE = "INSERT INTO %s\n" +
-            "  SELECT %s, a.sys_from, %d - 1 AS sys_to, b.sys_op_buffer as sys_op, '%s' AS close_date, arrayJoin([-1, 1]) AS sign\n" +
+            "  SELECT %s, a.sys_from, %d, b.sys_op_buffer, '%s', arrayJoin([-1, 1]) \n" +
             "  FROM %s a\n" +
             "  ANY INNER JOIN %s b USING(%s)\n" +
             "  WHERE a.sys_from < %d\n" +
             "    AND a.sys_to > %d";
     private static final String SELECT_COLUMNS_QUERY = "select name from system.columns where database = '%s' and table = '%s'";
 
+    private final RestLoadClient restLoadClient;
     private final DatabaseExecutor databaseExecutor;
     private final DdlProperties ddlProperties;
     private final AppConfiguration appConfiguration;
@@ -55,11 +58,13 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
     private final DtmConfig dtmConfig;
 
     @Autowired
-    public MppwFinishRequestHandler(final DatabaseExecutor databaseExecutor,
+    public MppwFinishRequestHandler(RestLoadClient restLoadClient,
+                                    final DatabaseExecutor databaseExecutor,
                                     final DdlProperties ddlProperties,
                                     final AppConfiguration appConfiguration,
                                     StatusReporter statusReporter,
                                     DtmConfig dtmConfig) {
+        this.restLoadClient = restLoadClient;
         this.databaseExecutor = databaseExecutor;
         this.ddlProperties = ddlProperties;
         this.appConfiguration = appConfiguration;
@@ -90,7 +95,14 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
                 .compose(v -> sequenceAll(Arrays.asList(  // 5. drop buffer tables
                         fullName + BUFFER_POSTFIX,
                         fullName + BUFFER_SHARD_POSTFIX), this::dropTable))
-                .compose(v -> optimizeTable(fullName + ACTUAL_SHARD_POSTFIX))  // 6. merge shards
+                .compose(v -> optimizeTable(fullName + ACTUAL_SHARD_POSTFIX))// 6. merge shards
+                .compose(v -> {
+                    final RestMppwKafkaStopRequest mppwKafkaStopRequest = new RestMppwKafkaStopRequest(
+                            request.getQueryRequest().getRequestId().toString(),
+                            request.getKafkaParameter().getTopic());
+                    log.debug("ADQM: Send mppw kafka stopping rest request {}", mppwKafkaStopRequest);
+                    return restLoadClient.stopLoading(mppwKafkaStopRequest);
+                })
                 .compose(v -> {
                     reportFinish(request.getKafkaParameter().getTopic());
                     return Future.succeededFuture(QueryResult.emptyResult());
@@ -115,12 +127,12 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
         Future<String> columnNames = fetchColumnNames(table + ACTUAL_POSTFIX);
         Future<String> sortingKey = fetchSortingKey(table + ACTUAL_SHARD_POSTFIX);
 
-        return CompositeFuture.all(columnNames, sortingKey).compose(r ->
-                databaseExecutor.executeUpdate(
+        return CompositeFuture.join(columnNames, sortingKey)
+                .compose(r -> databaseExecutor.executeUpdate(
                         format(INSERT_TEMPLATE,
                                 table + ACTUAL_POSTFIX,
                                 r.resultAt(0),
-                                deltaHot,
+                                deltaHot - 1,
                                 now,
                                 table + ACTUAL_POSTFIX,
                                 table + BUFFER_SHARD_POSTFIX,

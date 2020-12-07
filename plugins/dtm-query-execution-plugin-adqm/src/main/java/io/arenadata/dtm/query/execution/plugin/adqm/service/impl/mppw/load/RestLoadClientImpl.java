@@ -12,12 +12,12 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
-public class RestLoadInitiatorImpl implements RestLoadInitiator {
+public class RestLoadClientImpl implements RestLoadClient {
     private final WebClient webClient;
     private final MppwProperties mppwProperties;
 
-    public RestLoadInitiatorImpl(@Qualifier("coreVertx") Vertx vertx,
-                                 MppwProperties mppwProperties) {
+    public RestLoadClientImpl(@Qualifier("coreVertx") Vertx vertx,
+                              MppwProperties mppwProperties) {
         webClient = WebClient.create(vertx);
         this.mppwProperties = mppwProperties;
     }
@@ -27,7 +27,30 @@ public class RestLoadInitiatorImpl implements RestLoadInitiator {
         try {
             JsonObject data = JsonObject.mapFrom(request);
             Promise<Void> promise = Promise.promise();
-            webClient.postAbs(mppwProperties.getRestLoadUrl()).sendJsonObject(data, ar -> {
+            webClient.postAbs(mppwProperties.getRestStartLoadUrl()).sendJsonObject(data, ar -> {
+                if (ar.succeeded()) {
+                    HttpResponse<Buffer> response = ar.result();
+                    if (response.statusCode() < 400 && response.statusCode() >= 200) {
+                        promise.complete();
+                    } else {
+                        promise.fail(new RuntimeException(String.format("Received HTTP status %s, msg %s", response.statusCode(), response.bodyAsString())));
+                    }
+                } else {
+                    promise.fail(ar.cause());
+                }
+            });
+            return promise.future();
+        } catch (Exception e) {
+            return Future.failedFuture(e);
+        }
+    }
+
+    @Override
+    public Future<Void> stopLoading(RestMppwKafkaStopRequest request) {
+        try {
+            JsonObject data = JsonObject.mapFrom(request);
+            Promise<Void> promise = Promise.promise();
+            webClient.postAbs(mppwProperties.getRestStopLoadUrl()).sendJsonObject(data, ar -> {
                 if (ar.succeeded()) {
                     HttpResponse<Buffer> response = ar.result();
                     if (response.statusCode() < 400 && response.statusCode() >= 200) {

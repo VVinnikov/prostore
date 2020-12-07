@@ -80,6 +80,8 @@ adb:
     consumerGroup: ${ADB_LOAD_GROUP:adb-emulator-load-adb}
     poolSize: ${ADB_MPPW_POOL_SIZE:2}
     stopTimeoutMs: ${ADB_MPPW_STOP_TIMEOUT_MS:86400000}
+    defaultMessageLimit: ${ADB_MPPW_DEFAULT_MESSAGE_LIMIT:100}
+    fdwTimeoutMs: ${ADB_MPPW_FDW_TIMEOUT_MS:1000}
 
   web-client:
     max-pool-size: ${ADB_WEB_CLIENT_MAX_POOL_SIZE:100}
@@ -120,6 +122,8 @@ adqm:
     user: ${ADQM_USERNAME:}
     password: ${ADQM_PASS:}
     hosts: ${ADQM_HOSTS:adqm:8123}
+    socketTimeout: ${ADQM_SOCKET_TIMEOUT:30000}
+    dataTransferTimeout: ${ADQM_DATA_TRANSFER_TIMEOUT:10000}
 
   ddl:
     cluster: ${ADQM_CLUSTER:default_cluster}
@@ -135,7 +139,8 @@ adqm:
     consumerGroup: ${ADQM_CONSUMER_GROUP:adqm}
     kafkaBrokers: ${ADQM_BROKERS:kafka-1.dtm.local:9092}
     loadType: ${ADQM_MPPW_LOAD_TYPE:REST}
-    restLoadUrl: ${ADQM_REST_LOAD_URL:http://adb-emulator:8090/newdata/adqm/start}
+    restStartLoadUrl: ${ADQM_REST_START_LOAD_URL:http://adb-emulator:8090/newdata/adqm/start}
+    restStopLoadUrl: ${ADQM_REST_STOP_LOAD_URL:http://adb-emulator:8090/newdata/adqm/stop}
     restLoadConsumerGroup: ${ADQM_REST_LOAD_GROUP:adb-emulator-load-adqm}
 
   web-client:

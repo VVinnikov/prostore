@@ -230,15 +230,20 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
         // This extra copy of futures to satisfy CompositeFuture.join signature, which require untyped Future
         CompositeFuture.join(new ArrayList<>(stopMppwFutures))
                 .onComplete(stopComplete -> {
-                    if (isAllMppwPluginsHasEqualOffsets(mppwStopFutureMap)) {
-                        resultHandler.handle(Future.succeededFuture(QueryResult.emptyResult()));
+                    if (stopComplete.succeeded()){
+                        if (isAllMppwPluginsHasEqualOffsets(mppwStopFutureMap)) {
+                            resultHandler.handle(Future.succeededFuture(QueryResult.emptyResult()));
+                        } else {
+                            String stopStatus = collectStatus(mppwStopFutureMap);
+                            RuntimeException e = new RuntimeException(
+                                    String.format("The offset of one of the plugins has changed: \n %s", stopStatus),
+                                    stopComplete.cause());
+                            log.error(MPPW_LOAD_ERROR_MESSAGE, e);
+                            resultHandler.handle(Future.failedFuture(e));
+                        }
                     } else {
-                        String stopStatus = collectStatus(mppwStopFutureMap);
-                        RuntimeException e = new RuntimeException(
-                                String.format("The offset of one of the plugins has changed: \n %s", stopStatus),
-                                stopComplete.cause());
-                        log.error(MPPW_LOAD_ERROR_MESSAGE, e);
-                        resultHandler.handle(Future.failedFuture(e));
+                        log.error("Error mppw stopping", stopComplete.cause());
+                        resultHandler.handle(Future.failedFuture(stopComplete.cause()));
                     }
                 });
     }

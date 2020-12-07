@@ -12,9 +12,14 @@ import io.vertx.kafka.client.producer.KafkaProducerRecord;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 @Slf4j
+@ConditionalOnProperty(
+        value = "core.kafka.status.event.publish.enabled",
+        havingValue = "true"
+)
 @Service
 public class KafkaStatusEventPublisherImpl implements KafkaStatusEventPublisher {
     private final KafkaProducer<String, String> producer;
@@ -30,20 +35,15 @@ public class KafkaStatusEventPublisherImpl implements KafkaStatusEventPublisher 
 
     @Override
     public void publish(PublishStatusEventRequest<?> request, Handler<AsyncResult<Void>> handler) {
-        if (properties.isEnabled()) {
-            try {
-                log.debug("Key [{}] and message [{}] sent to topic [{}]", request.getEventKey(), request.getEventMessage(), properties.getTopic());
-                val key = DatabindCodec.mapper().writeValueAsString(request.getEventKey());
-                val message = DatabindCodec.mapper().writeValueAsString(request.getEventMessage());
-                val record = KafkaProducerRecord.create(properties.getTopic(), key, message);
-                producer.send(record, AsyncUtils.succeed(handler, rm -> handler.handle(Future.succeededFuture())));
-            } catch (Exception ex) {
-                log.error("Error serialize message", ex);
-                handler.handle(Future.failedFuture(ex));
-            }
-        } else {
-            log.trace("Publishing status events is disabled");
-            handler.handle(Future.succeededFuture());
+        try {
+            log.debug("Key [{}] and message [{}] sent to topic [{}]", request.getEventKey(), request.getEventMessage(), properties.getTopic());
+            val key = DatabindCodec.mapper().writeValueAsString(request.getEventKey());
+            val message = DatabindCodec.mapper().writeValueAsString(request.getEventMessage());
+            val record = KafkaProducerRecord.create(properties.getTopic(), key, message);
+            producer.send(record, AsyncUtils.succeed(handler, rm -> handler.handle(Future.succeededFuture())));
+        } catch (Exception ex) {
+            log.error("Error serialize message", ex);
+            handler.handle(Future.failedFuture(ex));
         }
     }
 }

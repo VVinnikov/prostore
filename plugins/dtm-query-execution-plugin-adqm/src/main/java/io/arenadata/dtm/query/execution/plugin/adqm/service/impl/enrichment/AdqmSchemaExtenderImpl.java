@@ -3,11 +3,12 @@ package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.enrichment;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
+import io.arenadata.dtm.query.execution.plugin.adqm.AdqmDtmDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.AdqmHelperTableNamesFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.SchemaExtender;
 import lombok.val;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -47,12 +48,8 @@ public class AdqmSchemaExtenderImpl implements SchemaExtender {
     }
 
     @Override
-    public List<Datamart> generatePhysicalSchema(List<Datamart> logicalSchemas, QueryRequest request) {
-        return logicalSchemas.stream().map(ls -> createPhysicalSchema(ls, request.getEnvName()))
-            .collect(Collectors.toList());
-    }
-
-    private Datamart createPhysicalSchema(Datamart logicalSchema, String systemName) {
+    @Cacheable(value = AdqmDtmDataSourcePlugin.ADQM_DATAMART_CACHE, key = "#logicalSchema.getMnemonic()")
+    public Datamart createPhysicalSchema(Datamart logicalSchema, String systemName) {
         Datamart extendedSchema = new Datamart();
         extendedSchema.setMnemonic(logicalSchema.getMnemonic());
         List<Entity> extendedEntities = new ArrayList<>();

@@ -112,6 +112,13 @@ public interface DataSourcePluginService {
     DtmDataSourcePlugin getPlugin(SourceType sourceType);
 
     /**
+     * <p>Get name set of active caches</p>
+     *
+     * @return set of caches names
+     */
+    Set<String> getActiveCaches();
+
+    /**
      *
      * @param sourceType SourceType
      * @param context CheckContext

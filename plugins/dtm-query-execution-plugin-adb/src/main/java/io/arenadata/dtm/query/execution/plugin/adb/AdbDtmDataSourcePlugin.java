@@ -10,7 +10,12 @@ import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableServi
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TruncateHistoryService;
 
+import java.util.Collections;
+import java.util.Set;
+
 public class AdbDtmDataSourcePlugin extends AbstractDtmDataSourcePlugin {
+
+    public static final String ADB_DATAMART_CACHE = "adb_datamart";
 
     public AdbDtmDataSourcePlugin(
             DdlService<Void> ddlService,
@@ -40,4 +45,8 @@ public class AdbDtmDataSourcePlugin extends AbstractDtmDataSourcePlugin {
         return SourceType.ADB;
     }
 
+    @Override
+    public Set<String> getActiveCaches() {
+        return Collections.singleton(ADB_DATAMART_CACHE);
+    }
 }

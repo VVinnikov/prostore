@@ -27,6 +27,8 @@ import org.springframework.plugin.core.PluginRegistry;
 import org.springframework.plugin.core.config.EnablePluginRegistries;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -38,6 +40,7 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     private final PluginRegistry<DtmDataSourcePlugin, SourceType> pluginRegistry;
     private final TaskVerticleExecutor taskVerticleExecutor;
     private final Set<SourceType> sourceTypes;
+    private final Set<String> activeCaches;
     private final MetricsService<RequestMetrics> metricsService;
 
     @Autowired
@@ -49,6 +52,9 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
         this.pluginRegistry = pluginRegistry;
         this.sourceTypes = pluginRegistry.getPlugins().stream()
                 .map(DtmDataSourcePlugin::getSourceType)
+                .collect(Collectors.toSet());
+        this.activeCaches = pluginRegistry.getPlugins().stream()
+                .flatMap(plugin -> plugin.getActiveCaches().stream())
                 .collect(Collectors.toSet());
         this.metricsService = metricsService;
         log.info("Active Plugins: {}", sourceTypes.toString());
@@ -179,5 +185,10 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     @Override
     public DtmDataSourcePlugin getPlugin(SourceType sourceType) {
         return pluginRegistry.getRequiredPluginFor(sourceType);
+    }
+
+    @Override
+    public Set<String> getActiveCaches() {
+        return activeCaches;
     }
 }

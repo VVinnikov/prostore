@@ -7,7 +7,12 @@ import io.arenadata.dtm.query.execution.plugin.api.AbstractDtmDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.api.service.*;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
 
+import java.util.Collections;
+import java.util.Set;
+
 public class AdqmDtmDataSourcePlugin extends AbstractDtmDataSourcePlugin {
+
+    public static final String ADQM_DATAMART_CACHE = "adqm_datamart";
 
     public AdqmDtmDataSourcePlugin(
             DdlService<Void> ddlService,
@@ -25,4 +30,8 @@ public class AdqmDtmDataSourcePlugin extends AbstractDtmDataSourcePlugin {
         return SourceType.ADQM;
     }
 
+    @Override
+    public Set<String> getActiveCaches() {
+        return Collections.singleton(ADQM_DATAMART_CACHE);
+    }
 }

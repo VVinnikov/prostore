@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.plugin.adg.configuration;
+package io.arenadata.dtm.query.execution.plugin.adg.configuration.properties;
 
 import io.vertx.ext.web.client.WebClientOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;

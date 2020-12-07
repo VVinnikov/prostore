@@ -59,8 +59,10 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
     private Future<List<Entity>> getEntitiesSourceTypes(QuerySourceRequest request) {
         return Future.future(promise -> {
             List<Future> entityFutures = new ArrayList<>();
-            request.getLogicalSchema().forEach(datamart -> datamart.getEntities().forEach(entity ->
-                entityFutures.add(entityDao.getEntity(datamart.getMnemonic(), entity.getName()))));
+            request.getLogicalSchema().forEach(datamart ->
+                    datamart.getEntities().forEach(entity ->
+                            entityFutures.add(entityDao.getEntity(datamart.getMnemonic(), entity.getName()))
+                    ));
 
             CompositeFuture.join(entityFutures)
                 .onSuccess(entities -> promise.complete(entities.list()))
@@ -72,8 +74,7 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
         return Future.future((Promise<SourceType> promise) -> {
             Set<SourceType> sourceTypes = getSourceTypes(request, entities);
             if (sourceTypes.size() == 1) {
-                final Optional<SourceType> st = sourceTypes.stream().findFirst();
-                promise.complete(st.get());
+                promise.complete(sourceTypes.iterator().next());
             } else {
                 getTargetSourceByCalcQueryCost(sourceTypes, request)
                     .onComplete(promise);
@@ -82,7 +83,7 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
     }
 
     private Set<SourceType> getSourceTypes(QuerySourceRequest request, List<Entity> entities) {
-        final Set<SourceType> stResult = getUniqueSourceTypes(entities);
+        final Set<SourceType> stResult = getCommonSourceTypes(entities);
         if (stResult.isEmpty()) {
             throw new RuntimeException("Tables have no datasource in common");
         } else if (request.getSourceType() != null) {
@@ -97,17 +98,13 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
         }
     }
 
-    private Set<SourceType> getUniqueSourceTypes(List<Entity> entities) {
+    private Set<SourceType> getCommonSourceTypes(List<Entity> entities) {
         final Set<SourceType> stResult = new HashSet<>();
         entities.forEach(e -> {
             if (stResult.isEmpty()) {
                 stResult.addAll(e.getDestination());
             } else {
-                final List<SourceType> newStResult = e.getDestination().stream()
-                    .filter(stResult::contains)
-                    .collect(Collectors.toList());
-                stResult.clear();
-                stResult.addAll(newStResult);
+                stResult.retainAll(e.getDestination());
             }
         });
         return stResult;
@@ -120,7 +117,6 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
             .onComplete(ar -> {
                 if (ar.succeeded()) {
                     SourceType sourceType = ar.result().list().stream()
-                        .sorted(Comparator.comparing(st -> ((Pair<SourceType, Integer>) st).getKey().ordinal()))
                         .map(res -> (Pair<SourceType, Integer>) res)
                         .min(Comparator.comparingInt(Pair::getValue))
                         .map(Pair::getKey)

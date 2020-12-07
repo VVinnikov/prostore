@@ -100,6 +100,12 @@ adg:
     cartridge:
       url: ${TARANTOOL_CATRIDGE_URL:http://127.0.0.1:8081}
 
+  mppw:
+    consumerGroup: ${ADG_CONSUMER_GROUP:tarantool-group-csv}
+    kafka:
+      maxNumberOfMessagesPerPartition: 200
+      callbackFunctionSecIdle: 100
+
   rollback:
     eraseOperationBatchSize: 300
 

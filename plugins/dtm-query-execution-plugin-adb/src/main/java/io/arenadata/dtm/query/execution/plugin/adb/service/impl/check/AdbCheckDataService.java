@@ -54,7 +54,7 @@ public class AdbCheckDataService implements CheckDataService {
         return Future.future(p -> {
             val sql = String.format(CHECK_DATA_BY_COUNT_TEMPLATE,
                     params.getEntity().getSchema(), params.getEntity().getName(),
-                    params.getSysCn() -1, params.getSysCn(),
+                    params.getSysCn() - 1, params.getSysCn(),
                     params.getEntity().getSchema(), params.getEntity().getName(),
                     params.getSysCn());
             ColumnMetadata metadata = new ColumnMetadata(COLUMN_NAME, ColumnType.BIGINT);
@@ -74,13 +74,13 @@ public class AdbCheckDataService implements CheckDataService {
                 .compose(v -> checkDataByHash(params));
     }
 
-    private Future<Void> createOrReplaceFunction(){
+    private Future<Void> createOrReplaceFunction() {
         return Future.future(p -> {
             queryExecutor.executeUpdate(CREATE_OR_REPLACE_FUNC, p);
         });
     }
 
-    private Future<Long> checkDataByHash(CheckDataByHashInt32Params params){
+    private Future<Long> checkDataByHash(CheckDataByHashInt32Params params) {
         return Future.future(p -> {
             val columnsList = String.join(",", params.getColumns());
             val datamart = params.getEntity().getSchema();

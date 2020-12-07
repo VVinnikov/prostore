@@ -55,7 +55,7 @@ public class CheckTableExecutor implements CheckExecutor {
                     List<Pair<SourceType, Optional<String>>> list = result.list();
                     if (list.stream().map(Pair::getValue).noneMatch(Optional::isPresent)) {
                         promise.complete(String.format("Table %s.%s (%s) is ok.",
-                                entity.getName(), entity.getSchema(),
+                                entity.getSchema(), entity.getName(),
                                 list.stream()
                                         .map(pair -> pair.getKey().name())
                                         .collect(Collectors.joining(", "))));

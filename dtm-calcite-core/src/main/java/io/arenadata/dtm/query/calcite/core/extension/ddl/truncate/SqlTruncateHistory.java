@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.calcite.core.extension.ddl.truncate;
 
-import com.google.common.collect.ImmutableList;
 import io.arenadata.dtm.common.ddl.TruncateType;
 import io.arenadata.dtm.query.calcite.core.util.CalciteUtil;
 import org.apache.calcite.sql.*;
@@ -8,6 +7,7 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 
 import javax.annotation.Nonnull;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -15,7 +15,7 @@ import java.util.Optional;
 public class SqlTruncateHistory extends SqlCall implements SqlBaseTruncate {
     private static final SqlOperator OPERATOR = new SqlSpecialOperator("TRUNCATE_HISTORY", SqlKind.OTHER_DDL);
     private static final String INFINITE = "infinite";
-    private final SqlIdentifier name;
+    private final List<SqlNode> operandList;
     private final String table;
     private final LocalDateTime datetime;
     private final boolean isInfinite;
@@ -23,8 +23,9 @@ public class SqlTruncateHistory extends SqlCall implements SqlBaseTruncate {
 
     public SqlTruncateHistory(SqlParserPos pos, SqlIdentifier name, SqlNode datetime, SqlNode conditions) {
         super(pos);
-        this.name = name;
         String nameWithSchema = Objects.requireNonNull(name.toString());
+        this.operandList = new ArrayList<>();
+        operandList.add(name);
         this.table = CalciteUtil.parseTableName(nameWithSchema);
         String datetimeStr = ((SqlCharStringLiteral) datetime).getNlsString().getValue();
         if (INFINITE.equalsIgnoreCase(datetimeStr)) {
@@ -42,6 +43,10 @@ public class SqlTruncateHistory extends SqlCall implements SqlBaseTruncate {
         return TruncateType.HISTORY;
     }
 
+    private SqlIdentifier getName() {
+        return (SqlIdentifier) operandList.get(0);
+    }
+
     @Nonnull
     @Override
     public SqlOperator getOperator() {
@@ -51,12 +56,17 @@ public class SqlTruncateHistory extends SqlCall implements SqlBaseTruncate {
     @Nonnull
     @Override
     public List<SqlNode> getOperandList() {
-        return ImmutableList.of(name);
+        return operandList;
+    }
+
+    @Override
+    public void setOperand(int i, SqlNode operand) {
+        operandList.set(i, operand);
     }
 
     @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
-        writer.literal(String.format("%s %s", this.getOperator(), this.name));
+        writer.literal(String.format("%s %s", this.getOperator(), this.getName()));
     }
 
     public String getTable() {

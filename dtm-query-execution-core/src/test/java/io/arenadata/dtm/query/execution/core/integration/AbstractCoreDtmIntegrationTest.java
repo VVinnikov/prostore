@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.core.integration;
 
-import com.github.dockerjava.api.model.Bind;
 import io.arenadata.dtm.query.execution.core.integration.configuration.DtmKafkaContainer;
 import io.arenadata.dtm.query.execution.core.integration.configuration.IntegrationTestConfiguration;
 import io.arenadata.dtm.query.execution.core.integration.factory.PropertyFactory;
@@ -18,11 +17,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.env.PropertySource;
 import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.ToStringConsumer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.utility.MountableFile;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -117,16 +116,16 @@ public abstract class AbstractCoreDtmIntegrationTest {
                 .withExternalZookeeper(Objects.requireNonNull(
                         dtmProperties.getProperty("core.kafka.cluster.zookeeper.connection-string")).toString()
                         + ":" + ZK_PORT);
-
     }
 
-    private static GenericContainer<?> createAdqmContainer() {
+    private static GenericContainer createAdqmContainer() {
         return new GenericContainer<>(DockerImageName.parse(DockerImagesUtil.ADQM))
                 .withNetwork(network)
                 .withExposedPorts(Integer.valueOf(Objects.requireNonNull(
                         dtmProperties.getProperty("adqm.datasource.hosts")).toString().split(":")[1]))
-                .withCreateContainerCmdModifier(cmd -> cmd.getHostConfig()
-                        .withBinds(Bind.parse("/home/viktor/arenadata/projects/dtm/dtm-query-execution-core/src/test/resources/config/adqm/config.xml:/etc/clickhouse-server/config.xml")))
+                .withReuse(false)
+                .withCopyFileToContainer(MountableFile.forClasspathResource("config/adqm/config.xml"),
+                        "/etc/clickhouse-server/config.xml")
                 .withNetworkAliases(Objects.requireNonNull(
                         dtmProperties.getProperty("adqm.datasource.hosts")).toString().split(":")[0]);
     }

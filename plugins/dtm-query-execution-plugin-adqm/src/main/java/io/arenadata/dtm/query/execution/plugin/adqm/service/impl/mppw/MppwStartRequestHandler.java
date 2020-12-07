@@ -5,8 +5,8 @@ import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adqm.common.DdlUtils;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
+import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.AdqmMppwProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
-import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.MppwProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.AdqmRestMppwKafkaRequestFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
@@ -51,7 +51,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     private final DatabaseExecutor databaseExecutor;
     private final DdlProperties ddlProperties;
     private final AppConfiguration appConfiguration;
-    private final MppwProperties mppwProperties;
+    private final AdqmMppwProperties mppwProperties;
     private final StatusReporter statusReporter;
     private final Map<LoadType, ExtTableCreator> extTableCreators = new HashMap<>();
     private final RestLoadClient restLoadClient;
@@ -61,7 +61,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     public MppwStartRequestHandler(DatabaseExecutor databaseExecutor,
                                    DdlProperties ddlProperties,
                                    AppConfiguration appConfiguration,
-                                   MppwProperties mppwProperties,
+                                   AdqmMppwProperties mppwProperties,
                                    StatusReporter statusReporter,
                                    RestLoadClient restLoadClient,
                                    AdqmRestMppwKafkaRequestFactory restMppwKafkaRequestFactory) {

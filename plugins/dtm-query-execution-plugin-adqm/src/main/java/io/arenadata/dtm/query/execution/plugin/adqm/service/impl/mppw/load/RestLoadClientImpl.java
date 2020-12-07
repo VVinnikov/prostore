@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load;
 
-import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.MppwProperties;
+import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.AdqmMppwProperties;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
@@ -14,10 +14,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class RestLoadClientImpl implements RestLoadClient {
     private final WebClient webClient;
-    private final MppwProperties mppwProperties;
+    private final AdqmMppwProperties mppwProperties;
 
     public RestLoadClientImpl(@Qualifier("coreVertx") Vertx vertx,
-                              MppwProperties mppwProperties) {
+                              AdqmMppwProperties mppwProperties) {
         webClient = WebClient.create(vertx);
         this.mppwProperties = mppwProperties;
     }

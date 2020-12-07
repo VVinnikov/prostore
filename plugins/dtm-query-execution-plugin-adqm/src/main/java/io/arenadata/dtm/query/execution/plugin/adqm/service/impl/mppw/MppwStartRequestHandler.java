@@ -6,7 +6,7 @@ import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adqm.common.DdlUtils;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
-import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.AdqmMppwProperties;
+import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.MppwProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.AdqmRestMppwKafkaRequestFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
@@ -51,29 +51,29 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     private final DatabaseExecutor databaseExecutor;
     private final DdlProperties ddlProperties;
     private final AppConfiguration appConfiguration;
-    private final AdqmMppwProperties adqmMppwProperties;
+    private final MppwProperties mppwProperties;
     private final StatusReporter statusReporter;
     private final Map<LoadType, ExtTableCreator> extTableCreators = new HashMap<>();
-    private final RestLoadInitiator restLoadInitiator;
+    private final RestLoadClient restLoadClient;
     private final AdqmRestMppwKafkaRequestFactory restMppwKafkaRequestFactory;
 
     @Autowired
     public MppwStartRequestHandler(DatabaseExecutor databaseExecutor,
                                    DdlProperties ddlProperties,
                                    AppConfiguration appConfiguration,
-                                   AdqmMppwProperties adqmMppwProperties,
+                                   MppwProperties mppwProperties,
                                    StatusReporter statusReporter,
-                                   RestLoadInitiator restLoadInitiator,
+                                   RestLoadClient restLoadClient,
                                    AdqmRestMppwKafkaRequestFactory restMppwKafkaRequestFactory) {
         this.databaseExecutor = databaseExecutor;
         this.ddlProperties = ddlProperties;
         this.appConfiguration = appConfiguration;
-        this.adqmMppwProperties = adqmMppwProperties;
+        this.mppwProperties = mppwProperties;
         this.statusReporter = statusReporter;
-        this.restLoadInitiator = restLoadInitiator;
+        this.restLoadClient = restLoadClient;
         this.restMppwKafkaRequestFactory = restMppwKafkaRequestFactory;
 
-        extTableCreators.put(KAFKA, new KafkaExtTableCreator(ddlProperties, adqmMppwProperties));
+        extTableCreators.put(KAFKA, new KafkaExtTableCreator(ddlProperties, mppwProperties));
         extTableCreators.put(REST, new RestExtTableCreator(ddlProperties));
     }
 
@@ -182,16 +182,16 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
 
     @NonNull
     private String getConsumerGroupName(@NonNull String tableName) {
-        return adqmMppwProperties.getLoadType() == KAFKA ?
-                adqmMppwProperties.getConsumerGroup() + tableName :
-                adqmMppwProperties.getRestLoadConsumerGroup();
+        return mppwProperties.getLoadType() == KAFKA ?
+                mppwProperties.getConsumerGroup() + tableName :
+                mppwProperties.getRestLoadConsumerGroup();
     }
 
     private Future<Void> createExternalTable(@NonNull String topic,
                                              @NonNull String table,
                                              @NonNull Schema schema,
                                              @NonNull String sortingKey) {
-        LoadType loadType = adqmMppwProperties.getLoadType();
+        LoadType loadType = mppwProperties.getLoadType();
         ExtTableCreator creator = extTableCreators.get(loadType);
         String query = creator.generate(topic, table, schema, sortingKey);
         return databaseExecutor.executeUpdate(query);
@@ -246,15 +246,15 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     }
 
     private Future<Void> createRestInitiator(MppwRequest mppwRequest) {
-        LoadType loadType = adqmMppwProperties.getLoadType();
+        LoadType loadType = mppwProperties.getLoadType();
         //it means that if we use KAFKA instead of REST load type of mppw, we shouldn't send rest request
         if (loadType == KAFKA) {
             return Future.succeededFuture();
         }
         try {
             final RestMppwKafkaLoadRequest mppwKafkaLoadRequest = restMppwKafkaRequestFactory.create(mppwRequest);
-            log.debug("ADQM: Send mppw kafka rest request {} to {}", mppwKafkaLoadRequest, adqmMppwProperties.getRestLoadUrl());
-            return restLoadInitiator.initiateLoading(mppwKafkaLoadRequest);
+            log.debug("ADQM: Send mppw kafka starting rest request {}", mppwKafkaLoadRequest);
+            return restLoadClient.initiateLoading(mppwKafkaLoadRequest);
         } catch (Exception e) {
             return Future.failedFuture(e);
         }

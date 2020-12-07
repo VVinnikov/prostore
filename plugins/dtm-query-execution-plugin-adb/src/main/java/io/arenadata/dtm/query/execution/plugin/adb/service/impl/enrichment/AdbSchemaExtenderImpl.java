@@ -4,8 +4,10 @@ import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
+import io.arenadata.dtm.query.execution.plugin.adb.AdbDtmDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.adb.service.SchemaExtender;
 import lombok.val;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -14,7 +16,6 @@ import java.util.stream.Collectors;
 
 import static io.arenadata.dtm.query.execution.plugin.adb.factory.impl.MetadataSqlFactoryImpl.*;
 
-
 /**
  * Implementing a Logic to Physical Conversion
  */
@@ -22,11 +23,8 @@ import static io.arenadata.dtm.query.execution.plugin.adb.factory.impl.MetadataS
 public class AdbSchemaExtenderImpl implements SchemaExtender {
 
     @Override
-    public List<Datamart> generatePhysicalSchemas(List<Datamart> logicalSchemas) {
-        return logicalSchemas.stream().map(this::createPhysicalSchema).collect(Collectors.toList());
-    }
-
-    private Datamart createPhysicalSchema(Datamart schema) {
+    @Cacheable(value = AdbDtmDataSourcePlugin.ADB_DATAMART_CACHE, key = "#schema.getMnemonic()")
+    public Datamart createPhysicalSchema(Datamart schema) {
         Datamart extendedSchema = new Datamart();
         extendedSchema.setMnemonic(schema.getMnemonic());
         List<Entity> extendedEntities = new ArrayList<>();

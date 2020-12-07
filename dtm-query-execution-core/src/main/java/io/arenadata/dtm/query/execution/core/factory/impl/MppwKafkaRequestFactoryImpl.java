@@ -23,19 +23,22 @@ public class MppwKafkaRequestFactoryImpl implements MppwKafkaRequestFactory {
 
     private final ZookeeperKafkaProviderRepository zkConnProviderRepository;
     private final Vertx vertx;
+    private final LocationUriParser locationUriParser;
 
     @Autowired
     public MppwKafkaRequestFactoryImpl(@Qualifier("coreVertx") Vertx vertx,
-                                       @Qualifier("mapZkKafkaProviderRepository") ZookeeperKafkaProviderRepository zkConnProviderRepository) {
+                                       @Qualifier("mapZkKafkaProviderRepository") ZookeeperKafkaProviderRepository zkConnProviderRepository,
+                                       LocationUriParser locationUriParser) {
         this.zkConnProviderRepository = zkConnProviderRepository;
         this.vertx = vertx;
+        this.locationUriParser = locationUriParser;
     }
 
     @Override
     public Future<MppwRequestContext> create(EdmlRequestContext context) {
         return Future.future(promise -> {
             LocationUriParser.KafkaTopicUri kafkaTopicUri =
-                    LocationUriParser.parseKafkaLocationPath(context.getSourceEntity().getExternalTableLocationPath());
+                    locationUriParser.parseKafkaLocationPath(context.getSourceEntity().getExternalTableLocationPath());
             getBrokers(kafkaTopicUri.getAddress())
                     .map(brokers -> new MppwRequestContext(
                             context.getMetrics(),
@@ -45,7 +48,7 @@ public class MppwKafkaRequestFactoryImpl implements MppwKafkaRequestFactory {
                             .kafkaParameter(MppwKafkaParameter.builder()
                                     .datamart(context.getSourceEntity().getSchema())
                                     .sysCn(context.getSysCn())
-                                    .targetTableName(context.getDestinationEntity().getName())
+                                    .destinationTableName(context.getDestinationEntity().getName())
                                     .uploadMetadata(UploadExternalEntityMetadata.builder()
                                             .name(context.getSourceEntity().getName())
                                             .format(Format.findByName(context.getSourceEntity().getExternalTableFormat()))
@@ -55,6 +58,7 @@ public class MppwKafkaRequestFactoryImpl implements MppwKafkaRequestFactory {
                                             .build())
                                     .brokers(brokers)
                                     .topic(kafkaTopicUri.getTopic())
+                                    .sourceEntity(context.getSourceEntity())
                                     .build())
                             .build()))
                     .onComplete(promise);

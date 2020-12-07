@@ -81,7 +81,6 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
         tree.findAllTableAndSnapshots().stream()
                 .map(node -> deltaInformationExtractor.getDeltaInformation(tree, node))
                 .filter(Objects::nonNull)
-                .collect(Collectors.toList())
                 .forEach(node -> {
                     //it is assumed that at this stage, the request will already contain defaultDatamart where required
                     String schemaName = node.getSchemaName();

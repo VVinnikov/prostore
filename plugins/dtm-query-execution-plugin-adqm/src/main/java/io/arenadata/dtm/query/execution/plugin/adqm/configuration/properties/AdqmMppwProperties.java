@@ -12,6 +12,7 @@ public class AdqmMppwProperties {
     private String consumerGroup;
     private String kafkaBrokers;
     private LoadType loadType;
-    private String restLoadUrl;
+    private String restStartLoadUrl;
+    private String restStopLoadUrl;
     private String restLoadConsumerGroup;
 }

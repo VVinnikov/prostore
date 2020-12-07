@@ -1,38 +1,52 @@
 package io.arenadata.dtm.common.model.ddl;
 
+import java.util.Optional;
+
 public class EntityTypeUtil {
     public static String pgFromDtmType(EntityField field) {
-        switch (field.getType()) {
+        return pgFromDtmType(field.getType(), field.getSize(), field.getAccuracy());
+    }
+
+    public static String pgFromDtmType(ColumnType type, Integer size, Integer accuracy) {
+        switch (type) {
             case DATE:
                 return "date";
             case TIME:
-                return "time" + getTimePrecision(field);
+                return "time" + getTimePrecision(accuracy);
             case TIMESTAMP:
-                return "timestamp" + getTimePrecision(field);
+                return "timestamp" + getTimestamprecision(accuracy);
             case FLOAT:
-                return "real";
+                return "float4";
             case DOUBLE:
                 return "float8";
             case BOOLEAN:
-                return "boolean";
+                return "bool";
             case INT:
             case BIGINT:
                 return "int8";
             case CHAR:
             case VARCHAR:
-                return "varchar" + getVarcharSize(field);
+                return "varchar" + getVarcharSize(size);
             case UUID:
                 return "varchar(36)";
             default:
-                throw new UnsupportedOperationException(String.format("Unsupported type: %s", field.getType()));
+                throw new UnsupportedOperationException(String.format("Unsupported type: %s", type));
         }
     }
 
-    private static String getTimePrecision(EntityField field) {
-        return field.getAccuracy() == null ? "" : "(" + field.getAccuracy() + ")";
+    private static String getTimestamprecision(Integer accuracy) {
+        return getTimePrecision(Optional.ofNullable(accuracy).orElse(6));
     }
 
-    private static String getVarcharSize(EntityField field) {
-        return field.getSize() == null ? "" : "(" + field.getSize() + ")";
+    private static String getTimePrecision(Integer accuracy) {
+        return Optional.ofNullable(accuracy)
+                .map(accuracyVal -> String.format("(%s)", accuracyVal))
+                .orElse("");
+    }
+
+    private static String getVarcharSize(Integer size) {
+        return Optional.ofNullable(size)
+                .map(sizeVal -> String.format("(%s)", sizeVal))
+                .orElse("");
     }
 }

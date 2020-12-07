@@ -4,10 +4,7 @@ import io.arenadata.dtm.common.converter.SqlTypeConverter;
 import io.arenadata.dtm.common.plugin.sql.PreparedStatementRequest;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
-import io.reactiverse.pgclient.PgConnection;
-import io.reactiverse.pgclient.PgCursor;
-import io.reactiverse.pgclient.PgPool;
-import io.reactiverse.pgclient.PgTransaction;
+import io.reactiverse.pgclient.*;
 import io.reactiverse.pgclient.impl.ArrayTuple;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -19,6 +16,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 @Slf4j
 public class AdbQueryExecutor implements DatabaseExecutor {
@@ -85,8 +83,11 @@ public class AdbQueryExecutor implements DatabaseExecutor {
     private List<Map<String, Object>> createResult(List<ColumnMetadata> metadata,
                                                    io.reactiverse.pgclient.PgRowSet pgRowSet) {
         List<Map<String, Object>> result = new ArrayList<>();
+        Function<Row, Map<String, Object>> func = metadata.isEmpty()
+                ? row -> createRowMap(row, pgRowSet.columnsNames().size())
+                : row -> createRowMap(metadata, row);
         for (io.reactiverse.pgclient.Row row : pgRowSet) {
-            result.add(createRowMap(metadata, row));
+            result.add(func.apply(row));
         }
         return result;
     }
@@ -96,21 +97,31 @@ public class AdbQueryExecutor implements DatabaseExecutor {
         for (int i = 0; i < metadata.size(); i++) {
             ColumnMetadata columnMetadata = metadata.get(i);
             rowMap.put(columnMetadata.getName(),
-                    typeConverter.convert(columnMetadata.getType(), row.getValue(i)));
+                typeConverter.convert(columnMetadata.getType(), row.getValue(i)));
+        }
+        return rowMap;
+    }
+
+    private Map<String, Object> createRowMap(io.reactiverse.pgclient.Row row, int size) {
+        Map<String, Object> rowMap = new HashMap<>();
+        for (int i = 0; i < size; i++) {
+            rowMap.put(row.getColumnName(i), row.getValue(i));
         }
         return rowMap;
     }
 
     @Override
     public void executeUpdate(String sql, Handler<AsyncResult<Void>> completionHandler) {
+        log.debug("ADB. execute update: [{}]", sql);
         pool.getConnection(ar1 -> {
             if (ar1.succeeded()) {
                 PgConnection conn = ar1.result();
                 conn.query(sql, ar2 -> {
                     if (ar2.succeeded()) {
-                        log.debug("ADB. execute update {}", sql);
+                        log.debug("ADB. update completed: [{}]", sql);
                         completionHandler.handle(Future.succeededFuture());
                     } else {
+                        log.error("ADB. update error: [{}]: {}", sql, ar2.cause().getMessage());
                         completionHandler.handle(Future.failedFuture(ar2.cause()));
                     }
                     tryCloseConnect(conn);
@@ -151,27 +162,27 @@ public class AdbQueryExecutor implements DatabaseExecutor {
     @Override
     public void executeInTransaction(List<PreparedStatementRequest> requests, Handler<AsyncResult<Void>> handler) {
         beginTransaction(pool)
-                .compose(tx -> Future.future((Promise<PgTransaction> promise) -> {
-                    Future<PgTransaction> lastFuture = null;
-                    for (PreparedStatementRequest st : requests) {
-                        log.debug("Execute query: {} with params: {}", st.getSql(), st.getParams());
-                        if (lastFuture == null) {
-                            lastFuture = executeTx(st, tx);
-                        } else {
-                            lastFuture = lastFuture.compose(s -> executeTx(st, tx));
-                        }
-                    }
+            .compose(tx -> Future.future((Promise<PgTransaction> promise) -> {
+                Future<PgTransaction> lastFuture = null;
+                for (PreparedStatementRequest st : requests) {
+                    log.debug("Execute query: {} with params: {}", st.getSql(), st.getParams());
                     if (lastFuture == null) {
-                        handler.handle(Future.succeededFuture());
-                        return;
+                        lastFuture = executeTx(st, tx);
+                    } else {
+                        lastFuture = lastFuture.compose(s -> executeTx(st, tx));
                     }
-                    lastFuture.onSuccess(s -> promise.complete(tx))
-                            .onFailure(fail -> promise.fail(fail.toString()));
-                }))
-                .compose(this::commitTransaction)
-                .onSuccess(s -> handler.handle(Future.succeededFuture()))
-                .onFailure(f -> handler.handle(Future.failedFuture(
-                        String.format("Error executing queries: %s", f.getMessage()))));
+                }
+                if (lastFuture == null) {
+                    handler.handle(Future.succeededFuture());
+                    return;
+                }
+                lastFuture.onSuccess(s -> promise.complete(tx))
+                    .onFailure(fail -> promise.fail(fail.toString()));
+            }))
+            .compose(this::commitTransaction)
+            .onSuccess(s -> handler.handle(Future.succeededFuture()))
+            .onFailure(f -> handler.handle(Future.failedFuture(
+                String.format("Error executing queries: %s", f.getMessage()))));
     }
 
     private Future<PgTransaction> beginTransaction(PgPool pgPool) {
@@ -199,15 +210,15 @@ public class AdbQueryExecutor implements DatabaseExecutor {
 
     private Future<Void> commitTransaction(PgTransaction trx) {
         return Future.future((Promise<Void> promise) ->
-                trx.commit(txCommit -> {
-                    if (txCommit.succeeded()) {
-                        log.debug("Transaction succeeded");
-                        promise.complete();
-                    } else {
-                        log.error("Transaction failed [{}]", txCommit.cause().getMessage());
-                        promise.fail(txCommit.cause());
-                    }
-                }));
+            trx.commit(txCommit -> {
+                if (txCommit.succeeded()) {
+                    log.debug("Transaction succeeded");
+                    promise.complete();
+                } else {
+                    log.error("Transaction failed [{}]", txCommit.cause().getMessage());
+                    promise.fail(txCommit.cause());
+                }
+            }));
     }
 
 }

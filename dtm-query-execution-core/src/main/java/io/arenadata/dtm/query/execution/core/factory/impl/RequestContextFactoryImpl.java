@@ -4,14 +4,18 @@ import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.RequestStatus;
 import io.arenadata.dtm.common.reader.QueryRequest;
+import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckCall;
 import io.arenadata.dtm.query.calcite.core.extension.config.SqlConfigCall;
 import io.arenadata.dtm.query.calcite.core.extension.delta.SqlDeltaCall;
+import io.arenadata.dtm.query.calcite.core.extension.ddl.truncate.SqlBaseTruncate;
 import io.arenadata.dtm.query.execution.core.factory.RequestContextFactory;
 import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.config.ConfigRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.delta.DeltaRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.dml.DmlRequestContext;
+import io.arenadata.dtm.query.execution.core.service.ddl.TruncateContext;
 import io.arenadata.dtm.query.execution.plugin.api.eddl.EddlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.ConfigRequest;
@@ -25,6 +29,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Component
 public class RequestContextFactoryImpl implements RequestContextFactory<RequestContext<? extends DatamartRequest>, QueryRequest> {
@@ -48,9 +53,17 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
         } else if (isDdlRequest(node)) {
             switch (node.getKind()) {
                 case OTHER_DDL:
-                    return new EddlRequestContext(
-                            createRequestMetrics(request),
-                            new DatamartRequest(changedQueryRequest));
+                    if (node instanceof SqlBaseTruncate) {
+                        SqlBaseTruncate sqlBaseTruncate = (SqlBaseTruncate) node;
+                        return new TruncateContext(createRequestMetrics(changedQueryRequest),
+                                new DatamartRequest(changedQueryRequest),
+                                sqlBaseTruncate.getTruncateType(),
+                                sqlBaseTruncate);
+                    } else {
+                        return new EddlRequestContext(
+                                createRequestMetrics(request),
+                                new DatamartRequest(changedQueryRequest));
+                    }
                 default:
                     return new DdlRequestContext(
                             createRequestMetrics(request),
@@ -60,6 +73,12 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
             return new DeltaRequestContext(
                     createRequestMetrics(request),
                     new DatamartRequest(changedQueryRequest));
+        } else if (SqlKind.CHECK.equals(node.getKind())) {
+            SqlCheckCall sqlCheckCall = (SqlCheckCall) node;
+            Optional.ofNullable(sqlCheckCall.getSchema()).ifPresent(changedQueryRequest::setDatamartMnemonic);
+            return new CheckContext(createRequestMetrics(request),
+                    new DatamartRequest(changedQueryRequest),
+                    sqlCheckCall.getType(), sqlCheckCall);
         }
 
         switch (node.getKind()) {
@@ -88,7 +107,7 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
     }
 
     private boolean isDdlRequest(SqlNode node) {
-        return node instanceof SqlDdl || node instanceof SqlAlter;
+        return node instanceof SqlDdl || node instanceof SqlAlter || node instanceof SqlBaseTruncate;
     }
 
     private QueryRequest changeSql(QueryRequest request, SqlNode node) {

@@ -8,6 +8,6 @@ import java.io.Serializable;
 @Data
 @AllArgsConstructor
 public class MppwKafkaRequestContext implements Serializable {
-    private RestMppwKafkaLoadRequest restLoadRequest;
+    private MppwKafkaLoadRequest mppwKafkaLoadRequest;
     private MppwTransferDataRequest mppwTransferDataRequest;
 }

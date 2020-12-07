@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -43,6 +44,7 @@ public class AdqmQueryExecutor implements DatabaseExecutor {
                     if (ar2.succeeded()) {
                         ResultSet rs = ar2.result();
                         try {
+                            log.debug("ADQM query result");
                             List<Map<String, Object>> result = createResult(metadata, rs);
                             resultHandler.handle(Future.succeededFuture(result));
                         } catch (Exception e) {
@@ -62,15 +64,13 @@ public class AdqmQueryExecutor implements DatabaseExecutor {
     }
 
     private List<Map<String, Object>> createResult(List<ColumnMetadata> metadata, ResultSet rs) {
-        List<Map<String, Object>> result = new ArrayList<>();
         Map<String, Integer> columnIndexMap = new HashMap<>();
-        rs.getRows().forEach(row -> {
-            if (columnIndexMap.isEmpty()) {
-                initColumnIndexMap(columnIndexMap, row);
-            }
-            result.add(createRowMap(metadata, columnIndexMap, row));
-        });
-        return result;
+        Function<JsonObject, Map<String, Object>> func = metadata.isEmpty()
+                ? JsonObject::getMap
+                : row -> createRowMap(metadata, columnIndexMap, row);
+        return rs.getRows().stream()
+                .map(func)
+                .collect(Collectors.toList());
     }
 
     private void initColumnIndexMap(Map<String, Integer> columnIndexMap, JsonObject row) {
@@ -82,6 +82,9 @@ public class AdqmQueryExecutor implements DatabaseExecutor {
 
     private Map<String, Object> createRowMap(List<ColumnMetadata> metadata, Map<String, Integer> columnIndexMap,
                                              JsonObject row) {
+        if (columnIndexMap.isEmpty()) {
+            initColumnIndexMap(columnIndexMap, row);
+        }
         Map<String, Object> rowMap = new HashMap<>();
         row.stream().forEach(column -> {
             final ColumnMetadata columnMetadata = metadata.get(columnIndexMap.get(column.getKey()));

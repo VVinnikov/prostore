@@ -28,4 +28,6 @@ public class TarantoolCartridgeProperties {
   private String tableQueuedDelete = "/api/v1/ddl/table/queuedDelete";
 
   private String reverseHistoryTransferUrl = "/api/v1/ddl/table/reverseHistoryTransfer";
+
+  private String tableSchemaUrl = "/api/v1/ddl/table/schema";
 }

@@ -25,19 +25,22 @@ public class MpprKafkaRequestFactoryImpl implements MpprKafkaRequestFactory {
 
     private final ZookeeperKafkaProviderRepository zkConnProviderRepository;
     private final Vertx vertx;
+    private final LocationUriParser locationUriParser;
 
     @Autowired
     public MpprKafkaRequestFactoryImpl(@Qualifier("coreVertx") Vertx vertx,
-                                       @Qualifier("mapZkKafkaProviderRepository") ZookeeperKafkaProviderRepository zkConnProviderRepository) {
+                                       @Qualifier("mapZkKafkaProviderRepository") ZookeeperKafkaProviderRepository zkConnProviderRepository,
+                                       LocationUriParser locationUriParser) {
         this.zkConnProviderRepository = zkConnProviderRepository;
         this.vertx = vertx;
+        this.locationUriParser = locationUriParser;
     }
 
     @Override
     public Future<MpprRequestContext> create(EdmlRequestContext context) {
         return Future.future(promise -> {
             LocationUriParser.KafkaTopicUri kafkaTopicUri =
-                    LocationUriParser.parseKafkaLocationPath(context.getDestinationEntity().getExternalTableLocationPath());
+                    locationUriParser.parseKafkaLocationPath(context.getDestinationEntity().getExternalTableLocationPath());
             getBrokers(kafkaTopicUri.getAddress())
                     .map(brokers ->
                             new MpprRequestContext(

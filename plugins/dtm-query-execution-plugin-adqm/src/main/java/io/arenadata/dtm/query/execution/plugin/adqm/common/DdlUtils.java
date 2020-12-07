@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 public class DdlUtils {
     public final static String NULLABLE_FIELD = "%s Nullable(%s)";
     public final static String NOT_NULLABLE_FIELD = "%s %s";
+
     private DdlUtils() {
     }
 
@@ -45,7 +46,7 @@ public class DdlUtils {
                                                @NonNull AppConfiguration appConfiguration) {
         final MppwKafkaParameter kafkaParameter = request.getKafkaParameter();
 
-        String tableName = kafkaParameter.getTargetTableName();
+        String tableName = kafkaParameter.getDestinationTableName();
         String schema = kafkaParameter.getDatamart();
         String env = appConfiguration.getSystemName();
         return env + "__" + schema + "." + tableName;
@@ -67,24 +68,19 @@ public class DdlUtils {
             case CHAR:
             case VARCHAR:
                 return "String";
-
             case INT:
             case BIGINT:
             case DATE:
             case TIME:
                 return "Int64";
-
             case BOOLEAN:
                 return "UInt8";
-
             case FLOAT:
                 return "Float32";
             case DOUBLE:
                 return "Float64";
-
             case TIMESTAMP:
-                return "DateTime64";
-
+                return "DateTime64(3)";
             default:
                 return "";
         }
@@ -105,7 +101,6 @@ public class DdlUtils {
             case STRING:
                 return "String";
             case INT:
-                return "Int32";
             case LONG:
                 return "Int64";
             case FLOAT:
@@ -143,15 +138,19 @@ public class DdlUtils {
 
     public static <T, E> Future<T> sequenceAll(@NonNull final List<E> actions,
                                                @NonNull final Function<E, Future<T>> action) {
-        Future<T> result = null;
-        for (E a : actions) {
-            if (result == null) {
-                result = action.apply(a);
-            } else {
-                result = result.compose(v -> action.apply(a));
+        try {
+            Future<T> result = null;
+            for (E a : actions) {
+                if (result == null) {
+                    result = action.apply(a);
+                } else {
+                    result = result.compose(v -> action.apply(a));
+                }
             }
+            return result == null ? Future.succeededFuture() : result;
+        } catch (Exception e) {
+            log.error("Error sequence executing for actions: {}", actions);
+            return Future.failedFuture(e);
         }
-
-        return result == null ? Future.succeededFuture() : result;
     }
 }

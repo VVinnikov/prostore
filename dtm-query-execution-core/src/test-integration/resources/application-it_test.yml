@@ -136,7 +136,7 @@ adqm:
     loadType: REST
     restStartLoadUrl: http://dtm.kafka.writer.it:8090/newdata/adqm/start
     restStopLoadUrl: http://dtm.kafka.writer.it:8090/newdata/adqm/stop
-    restLoadConsumerGroup: adb-emulator-load-adqm
+    restLoadConsumerGroup: emulator-load-adqm
 
   web-client:
     max-pool-size: 100
@@ -151,7 +151,7 @@ kafkaEmulatorWriter:
   host: dtm.kafka.writer.it
   port: 8090
   kafkaBrokers: dtm.kafka.it.broker:9093
-  consumerGroupId: adb-emulator-load-adqm
+  consumerGroupId: emulator-load-adqm
   dataWorkerPoolSize: 5
   taskWorkerPoolSize: 5
   adqm:

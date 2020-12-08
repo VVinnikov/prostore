@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.core;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.common.status.kafka.StatusRequest;
 import io.arenadata.dtm.kafka.core.service.kafka.KafkaZookeeperConnectionProvider;
+import io.arenadata.dtm.query.execution.core.dto.UnloadSpecDataRequest;
 import io.arenadata.dtm.query.execution.core.generator.VendorEmulatorService;
 import io.arenadata.dtm.query.execution.core.kafka.StatusMonitorService;
 import io.arenadata.dtm.query.execution.core.query.executor.QueryExecutor;
@@ -52,7 +53,9 @@ public class EdmlIT extends AbstractCoreDtmIT {
         Promise<?> promise = Promise.promise();
         suite.test("generate data and send into test_topic", context -> {
             Async async = context.async();
-            final Object loadRequest = Json.decodeValue(FileUtil.getFileContent("it/requests/generated_data_check_request.json"));
+            final UnloadSpecDataRequest loadRequest =
+                    Json.decodeValue(FileUtil.getFileContent("it/requests/generated_data_check_request.json"),
+                            UnloadSpecDataRequest.class);
             vendorEmulator.generateData(getVendorEmulatorHostExternal(), getVendorEmulatorPortExternal(), loadRequest)
                     .onComplete(ar -> {
                         if (ar.succeeded()) {
@@ -62,7 +65,7 @@ public class EdmlIT extends AbstractCoreDtmIT {
                         }
                         async.complete();
                     });
-            async.awaitSuccess(5000);
+            async.awaitSuccess(10000);
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
         assertTrue(promise.future().succeeded());
@@ -104,7 +107,7 @@ public class EdmlIT extends AbstractCoreDtmIT {
                             Json.decodeValue(String.format(FileUtil.getFileContent("it/requests/generated_data_request.json"),
                                     topic,
                                     rowCount + 1
-                            ))))
+                            ), UnloadSpecDataRequest.class)))
                     .map(v -> {
                         assertTrue(true, "messages sent to topic successfully");
                         return v;
@@ -156,7 +159,7 @@ public class EdmlIT extends AbstractCoreDtmIT {
                         }
                         async.complete();
                     });
-            async.awaitSuccess(30000);
+            async.awaitSuccess(60000);
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
         assertTrue(promise.future().succeeded());
@@ -212,7 +215,7 @@ public class EdmlIT extends AbstractCoreDtmIT {
                             Json.decodeValue(String.format(FileUtil.getFileContent("it/requests/generated_data_request.json"),
                                     uploadTopic,
                                     rowCount + 1
-                            ))))
+                            ), UnloadSpecDataRequest.class)))
                     .map(v -> {
                         assertTrue(true, "messages sent to topic successfully");
                         return v;

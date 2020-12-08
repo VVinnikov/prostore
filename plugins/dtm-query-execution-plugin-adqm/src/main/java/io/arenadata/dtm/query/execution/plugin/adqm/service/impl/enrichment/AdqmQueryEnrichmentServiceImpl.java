@@ -50,6 +50,7 @@ public class AdqmQueryEnrichmentServiceImpl implements QueryEnrichmentService {
                     parserResponse.getQueryRequest().getDeltaInformations(),
                     parserResponse.getCalciteContext(),
                     request.getQueryRequest(),
+                    request.isLocal(),
                     enrichedQueryResult -> {
                         if (enrichedQueryResult.succeeded()) {
                             log.debug("Request generated: {}", enrichedQueryResult.result());

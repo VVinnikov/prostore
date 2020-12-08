@@ -30,4 +30,6 @@ public class TarantoolCartridgeProperties {
   private String reverseHistoryTransferUrl = "/api/v1/ddl/table/reverseHistoryTransfer";
 
   private String tableSchemaUrl = "/api/v1/ddl/table/schema";
+
+  private String checkSumUrl = "/api/etl/get_scd_table_checksum";
 }

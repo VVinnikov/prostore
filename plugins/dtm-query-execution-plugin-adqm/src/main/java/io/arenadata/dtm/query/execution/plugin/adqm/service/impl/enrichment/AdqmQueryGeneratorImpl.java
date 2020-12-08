@@ -42,17 +42,22 @@ public class AdqmQueryGeneratorImpl implements QueryGenerator {
                             List<DeltaInformation> deltaInformations,
                             CalciteContext calciteContext,
                             QueryRequest queryRequest,
+                            boolean isLocal,
                             Handler<AsyncResult<String>> handler) {
         try {
-            val generatorContext = getContext(relNode, deltaInformations, calciteContext, queryRequest);
+            val generatorContext = getContext(relNode,
+                    deltaInformations,
+                    calciteContext,
+                    queryRequest,
+                    isLocal);
             val extendedQuery = queryExtendService.extendQuery(generatorContext);
             val planAfter = calciteContext.getPlanner()
-                .transform(0,
-                    extendedQuery.getTraitSet().replace(EnumerableConvention.INSTANCE),
-                    extendedQuery);
+                    .transform(0,
+                            extendedQuery.getTraitSet().replace(EnumerableConvention.INSTANCE),
+                            extendedQuery);
             val sqlNodeResult = new NullNotCastableRelToSqlConverter(sqlDialect)
-                .visitChild(0, planAfter)
-                .asStatement();
+                    .visitChild(0, planAfter)
+                    .asStatement();
             val sqlTree = new SqlSelectTree(sqlNodeResult);
             addFinalOperatorTopUnionTables(sqlTree);
             replaceDollarSuffixInAlias(sqlTree);
@@ -67,41 +72,43 @@ public class AdqmQueryGeneratorImpl implements QueryGenerator {
 
     private void addFinalOperatorTopUnionTables(SqlSelectTree tree) {
         tree.findAllTableAndSnapshots()
-            .stream()
-            .filter(n -> !n.getKindPath().contains("UNION[1]"))
-            .filter(n -> !n.getKindPath().contains("SCALAR_QUERY"))
-            .forEach(node -> {
-                SqlIdentifier identifier = node.getNode();
-                val names = Arrays.asList(
-                    identifier.names.get(0),
-                    identifier.names.get(1) + " FINAL"
-                );
-                node.getSqlNodeSetter().accept(new SqlIdentifier(names, identifier.getParserPosition()));
-            });
+                .stream()
+                .filter(n -> !n.getKindPath().contains("UNION[1]"))
+                .filter(n -> !n.getKindPath().contains("SCALAR_QUERY"))
+                .forEach(node -> {
+                    SqlIdentifier identifier = node.getNode();
+                    val names = Arrays.asList(
+                            identifier.names.get(0),
+                            identifier.names.get(1) + " FINAL"
+                    );
+                    node.getSqlNodeSetter().accept(new SqlIdentifier(names, identifier.getParserPosition()));
+                });
     }
 
     private void replaceDollarSuffixInAlias(SqlSelectTree tree) {
         tree.findNodesByPathRegex(ALIAS_PATTERN).stream()
-            .filter(n -> {
-                val alias = n.tryGetTableName();
-                return alias.isPresent() && alias.get().contains("$");
-            })
-            .forEach(sqlTreeNode -> {
-                SqlIdentifier identifier = sqlTreeNode.getNode();
-                val preparedAlias = identifier.getSimple().replaceAll("\\$", "__");
-                sqlTreeNode.getSqlNodeSetter().accept(new SqlIdentifier(preparedAlias, identifier.getParserPosition()));
-            });
+                .filter(n -> {
+                    val alias = n.tryGetTableName();
+                    return alias.isPresent() && alias.get().contains("$");
+                })
+                .forEach(sqlTreeNode -> {
+                    SqlIdentifier identifier = sqlTreeNode.getNode();
+                    val preparedAlias = identifier.getSimple().replaceAll("\\$", "__");
+                    sqlTreeNode.getSqlNodeSetter().accept(new SqlIdentifier(preparedAlias, identifier.getParserPosition()));
+                });
     }
 
     private QueryGeneratorContext getContext(RelRoot relNode,
                                              List<DeltaInformation> deltaInformations,
                                              CalciteContext calciteContext,
-                                             QueryRequest queryRequest) {
+                                             QueryRequest queryRequest,
+                                             boolean isLocal) {
         return QueryGeneratorContext.builder()
-            .deltaIterator(deltaInformations.iterator())
-            .relBuilder(calciteContext.getRelBuilder())
-            .queryRequest(queryRequest)
-            .relNode(relNode)
-            .build();
+                .deltaIterator(deltaInformations.iterator())
+                .relBuilder(calciteContext.getRelBuilder())
+                .queryRequest(queryRequest)
+                .relNode(relNode)
+                .isLocal(isLocal)
+                .build();
     }
 }

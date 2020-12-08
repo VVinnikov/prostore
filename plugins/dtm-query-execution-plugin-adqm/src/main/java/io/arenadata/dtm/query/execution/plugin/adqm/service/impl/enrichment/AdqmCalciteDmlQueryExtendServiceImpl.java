@@ -49,10 +49,10 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
         this.helperTableNamesFactory = helperTableNamesFactory;
     }
 
+    @Override
     public RelNode extendQuery(QueryGeneratorContext ctx) {
-
         val rawRelationNode = ctx.getRelNode().rel;
-        val physicalTableNames = iterateReplacingTableName(ctx, rawRelationNode, false);
+        val physicalTableNames = iterateReplacingTableName(ctx, rawRelationNode, ctx.isLocal());
         val withoutSystemFields = filterSystemFields(ctx, physicalTableNames);
         val allRelNodeCtxs = getRelNodeContexts(ctx, withoutSystemFields);
         val groupByDepth = allRelNodeCtxs.stream()
@@ -232,17 +232,17 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
 
     }
 
-    private RelNode iterateReplacingTableName(QueryGeneratorContext context, RelNode node, boolean isShard) {
+    private RelNode iterateReplacingTableName(QueryGeneratorContext context, RelNode node, boolean isLocal) {
         List<RelNode> newInput = new ArrayList<>();
         if (node.getInputs() == null || node.getInputs().isEmpty()) {
             if (node instanceof TableScan) {
-                context.getRelBuilder().push(insertRenameTableScan(context, node, isShard));
+                context.getRelBuilder().push(insertRenameTableScan(context, node, isLocal));
             }
             return context.getRelBuilder().build();
         }
         for (int i = 0; i < node.getInputs().size(); i++) {
             RelNode input = node.getInput(i);
-            newInput.add(iterateReplacingTableName(context, input, isShard(node, input, i)));
+            newInput.add(iterateReplacingTableName(context, input, isLocal || isShard(node, input, i)));
         }
         context.getRelBuilder().push(node.copy(node.getTraitSet(), newInput));
         return context.getRelBuilder().build();
@@ -251,7 +251,6 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
     private boolean isShard(RelNode parentNode, RelNode node, int i) {
         return node instanceof TableScan && parentNode instanceof Join && i > 0;
     }
-
 
     RelNode insertRenameTableScan(QueryGeneratorContext ctx,
                                   RelNode tableScan,

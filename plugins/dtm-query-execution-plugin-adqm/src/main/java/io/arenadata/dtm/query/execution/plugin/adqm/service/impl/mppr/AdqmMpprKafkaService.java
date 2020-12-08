@@ -36,7 +36,7 @@ public class AdqmMpprKafkaService implements MpprKafkaService<QueryResult> {
     public void execute(MpprRequestContext context, Handler<AsyncResult<QueryResult>> asyncHandler) {
         MpprRequest request = context.getRequest();
         adqmQueryEnrichmentService.enrich(
-                EnrichQueryRequest.generate(request.getQueryRequest(), request.getLogicalSchema()),
+                EnrichQueryRequest.generate(request.getQueryRequest(), request.getLogicalSchema(), true),
                 sqlResult -> {
                     if (sqlResult.succeeded()) {
                         mpprKafkaConnectorService.call(

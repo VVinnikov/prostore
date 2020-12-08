@@ -14,8 +14,13 @@ import java.util.List;
 public class EnrichQueryRequest {
     private QueryRequest queryRequest;
     private List<Datamart> schema;
+    private boolean isLocal;
+
+    public static EnrichQueryRequest generate(QueryRequest queryRequest, List<Datamart> schema, boolean isLocal) {
+        return new EnrichQueryRequest(queryRequest, schema, isLocal);
+    }
 
     public static EnrichQueryRequest generate(QueryRequest queryRequest, List<Datamart> schema) {
-        return new EnrichQueryRequest(queryRequest, schema);
+        return new EnrichQueryRequest(queryRequest, schema, false);
     }
 }

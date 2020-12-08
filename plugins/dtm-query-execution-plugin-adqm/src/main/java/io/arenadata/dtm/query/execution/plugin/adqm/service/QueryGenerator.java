@@ -20,5 +20,6 @@ public interface QueryGenerator {
                      List<DeltaInformation> deltaInformations,
                      CalciteContext calciteContext,
                      QueryRequest queryRequest,
+                     boolean isLocal,
                      Handler<AsyncResult<String>> handler);
 }

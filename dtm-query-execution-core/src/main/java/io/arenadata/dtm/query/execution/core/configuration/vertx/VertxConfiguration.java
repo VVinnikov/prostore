@@ -64,18 +64,18 @@ public class VertxConfiguration implements ApplicationListener<ApplicationReadyE
     private Future<Object> deployVerticle(Vertx vertx, Collection<Verticle> verticles) {
         log.info("Verticals found: {}", verticles.size());
         return CompositeFuture.join(verticles.stream()
-            .map(verticle -> Future.future(p -> {
-                vertx.deployVerticle(verticle, ar -> {
-                    if (ar.succeeded()) {
-                        log.debug("Vertical '{}' deployed successfully", verticle.getClass().getName());
-                        p.complete();
-                    } else {
-                        log.error("Vertical deploy error", ar.cause());
-                        p.fail(ar.cause());
-                    }
-                });
-            }))
-            .collect(Collectors.toList()))
-            .mapEmpty();
+                .map(verticle -> Future.future(p -> {
+                    vertx.deployVerticle(verticle, ar -> {
+                        if (ar.succeeded()) {
+                            log.debug("Vertical '{}' deployed successfully", verticle.getClass().getName());
+                            p.complete();
+                        } else {
+                            log.error("Vertical deploy error", ar.cause());
+                            p.fail(ar.cause());
+                        }
+                    });
+                }))
+                .collect(Collectors.toList()))
+                .mapEmpty();
     }
 }

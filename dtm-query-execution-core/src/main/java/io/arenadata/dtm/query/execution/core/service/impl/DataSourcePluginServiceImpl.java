@@ -225,10 +225,9 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
                                       Function<DtmDataSourcePlugin, Future<T>> func) {
         SourceType sourceType = pluginParams.getSourceType();
         RequestMetrics requestMetrics = pluginParams.getRequestMetrics();
-        return metricsService.sendMetrics(sourceType, sqlProcessingType, requestMetrics)
+        return Future.future(promise -> metricsService.sendMetrics(sourceType, sqlProcessingType, requestMetrics)
                 .compose(result -> executorWrapper(func.apply(getPlugin(sourceType))))
-                .compose(result -> metricsService.sendMetrics(sourceType, sqlProcessingType, requestMetrics)
-                        .map(val -> result));
+                .onComplete(metricsService.sendMetrics(sourceType, sqlProcessingType, requestMetrics, promise)));
 
     }
     private <T> Future<T> executorWrapper(Future<T> future) {

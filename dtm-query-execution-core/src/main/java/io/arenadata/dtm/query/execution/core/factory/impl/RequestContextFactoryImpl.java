@@ -15,7 +15,6 @@ import io.arenadata.dtm.query.execution.plugin.api.config.ConfigRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.delta.DeltaRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.dml.DmlRequestContext;
-import io.arenadata.dtm.query.execution.core.service.ddl.TruncateContext;
 import io.arenadata.dtm.query.execution.plugin.api.eddl.EddlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.ConfigRequest;
@@ -54,11 +53,9 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
             switch (node.getKind()) {
                 case OTHER_DDL:
                     if (node instanceof SqlBaseTruncate) {
-                        SqlBaseTruncate sqlBaseTruncate = (SqlBaseTruncate) node;
-                        return new TruncateContext(createRequestMetrics(changedQueryRequest),
-                                new DatamartRequest(changedQueryRequest),
-                                sqlBaseTruncate.getTruncateType(),
-                                sqlBaseTruncate);
+                        return new DdlRequestContext(
+                                createRequestMetrics(request),
+                                new DdlRequest(changedQueryRequest), node);
                     } else {
                         return new EddlRequestContext(
                                 createRequestMetrics(request),

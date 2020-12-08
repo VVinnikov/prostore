@@ -42,18 +42,18 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
     @Override
     public void getTargetSource(QuerySourceRequest request, Handler<AsyncResult<QuerySourceRequest>> handler) {
         getEntitiesSourceTypes(request)
-            .compose(entities -> defineTargetSourceType(entities, request))
-            .map(sourceType -> {
-                val queryRequestWithSourceType = request.getQueryRequest().copy();
-                queryRequestWithSourceType.setSourceType(sourceType);
-                return QuerySourceRequest.builder()
-                    .queryRequest(queryRequestWithSourceType)
-                    .logicalSchema(request.getLogicalSchema())
-                    .metadata(request.getMetadata())
-                    .sourceType(sourceType)
-                    .build();
-            })
-            .onComplete(handler);
+                .compose(entities -> defineTargetSourceType(entities, request))
+                .map(sourceType -> {
+                    val queryRequestWithSourceType = request.getQueryRequest().copy();
+                    queryRequestWithSourceType.setSourceType(sourceType);
+                    return QuerySourceRequest.builder()
+                            .queryRequest(queryRequestWithSourceType)
+                            .logicalSchema(request.getLogicalSchema())
+                            .metadata(request.getMetadata())
+                            .sourceType(sourceType)
+                            .build();
+                })
+                .onComplete(handler);
     }
 
     private Future<List<Entity>> getEntitiesSourceTypes(QuerySourceRequest request) {
@@ -65,8 +65,8 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
                     ));
 
             CompositeFuture.join(entityFutures)
-                .onSuccess(entities -> promise.complete(entities.list()))
-                .onFailure(promise::fail);
+                    .onSuccess(entities -> promise.complete(entities.list()))
+                    .onFailure(promise::fail);
         });
     }
 
@@ -77,7 +77,7 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
                 promise.complete(sourceTypes.iterator().next());
             } else {
                 getTargetSourceByCalcQueryCost(sourceTypes, request)
-                    .onComplete(promise);
+                        .onComplete(promise);
             }
         });
     }
@@ -89,7 +89,7 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
         } else if (request.getSourceType() != null) {
             if (!stResult.contains(request.getSourceType())) {
                 throw new RuntimeException(String.format("Tables common datasources does not include %s",
-                    request.getSourceType()));
+                        request.getSourceType()));
             } else {
                 return newHashSet(request.getSourceType());
             }
@@ -112,20 +112,22 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
 
     private Future<SourceType> getTargetSourceByCalcQueryCost(Set<SourceType> sourceTypes, QuerySourceRequest request) {
         return Future.future(promise -> CompositeFuture.join(sourceTypes.stream()
-            .map(sourceType -> calcQueryCostInPlugin(request, sourceType))
-            .collect(Collectors.toList()))
-            .onComplete(ar -> {
-                if (ar.succeeded()) {
-                    SourceType sourceType = ar.result().list().stream()
-                        .map(res -> (Pair<SourceType, Integer>) res)
-                        .min(Comparator.comparingInt(Pair::getValue))
-                        .map(Pair::getKey)
-                        .orElse(null);
-                    promise.complete(sourceType);
-                } else {
-                    promise.fail(ar.cause());
-                }
-            }));
+                .map(sourceType -> calcQueryCostInPlugin(request, sourceType))
+                .collect(Collectors.toList()))
+                .onComplete(ar -> {
+                    if (ar.succeeded()) {
+                        SourceType sourceType = ar.result().list().stream()
+                                //this sort is needed to get the first source type - ADB if all costs will be equal
+                                .sorted(Comparator.comparing(st -> ((Pair<SourceType, Integer>) st).getKey().ordinal()))
+                                .map(res -> (Pair<SourceType, Integer>) res)
+                                .min(Comparator.comparingInt(Pair::getValue))
+                                .map(Pair::getKey)
+                                .orElse(null);
+                        promise.complete(sourceType);
+                    } else {
+                        promise.fail(ar.cause());
+                    }
+                }));
     }
 
     private Future<Object> calcQueryCostInPlugin(QuerySourceRequest request, SourceType sourceType) {

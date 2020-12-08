@@ -101,7 +101,6 @@ class LogicViewReplacerImplTest {
     @Test
     void withoutJoin() throws InterruptedException {
         val testContext = new VertxTestContext();
-        val serviceDao = mock(ServiceDbFacade.class);
         Mockito.when(entityDao.getEntity(any(), any()))
             .thenReturn(Future.succeededFuture(Entity.builder()
                 .entityType(EntityType.VIEW)
@@ -111,7 +110,7 @@ class LogicViewReplacerImplTest {
                     "WHERE tblX.Col6 = 0")
                 .build()));
 
-        val loader = new DatamartViewWrapLoaderImpl(serviceDao, informationSchemaService);
+        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade, informationSchemaService);
         val replacer = new LogicViewReplacerImpl(definitionService, new SqlSnapshotReplacerImpl(), loader);
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
             "FROM view FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' v";

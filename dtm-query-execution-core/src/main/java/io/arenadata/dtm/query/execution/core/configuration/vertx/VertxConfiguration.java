@@ -44,13 +44,21 @@ public class VertxConfiguration implements ApplicationListener<ApplicationReadyE
         val queryVerticle = verticles.remove(QueryVerticle.class.getName());
 
         informationSchemaService.createInformationSchemaViews()
-            .compose(v -> deployVerticle(vertx, verticles.values()))
-            .compose(v -> restoreStateService.restoreState())
-            .compose(v -> deployVerticle(vertx, Collections.singletonList(queryVerticle)))
-            .onFailure(err -> {
-                val exitCode = SpringApplication.exit(event.getApplicationContext(), () -> 1);
-                System.exit(exitCode);
-            });
+                .compose(v -> deployVerticle(vertx, verticles.values()))
+                .compose(v -> {
+                    restoreStateService.restoreState()
+                            .onFailure(fail -> {
+                                log.error("Error in restoring state", fail);
+                            });
+                    return deployVerticle(vertx, Collections.singletonList(queryVerticle));
+                })
+                .onSuccess(success -> {
+                    log.debug("Dtm started successfully");
+                })
+                .onFailure(err -> {
+                    val exitCode = SpringApplication.exit(event.getApplicationContext(), () -> 1);
+                    System.exit(exitCode);
+                });
     }
 
     private Future<Object> deployVerticle(Vertx vertx, Collection<Verticle> verticles) {

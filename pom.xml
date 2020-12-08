@@ -80,6 +80,9 @@
         <profile>
             <id>master</id>
         </profile>
+        <profile>
+            <id>it_test</id>
+        </profile>
     </profiles>
 
     <build>

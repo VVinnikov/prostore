@@ -39,7 +39,7 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
                                     @Qualifier("coreCalciteDefinitionService") DefinitionService<SqlNode> definitionService,
                                     DeltaInformationExtractor deltaInformationExtractor) {
         this.definitionService = definitionService;
-        entityDao = serviceDbFacade.getServiceDbDao().getEntityDao();
+        this.entityDao = serviceDbFacade.getServiceDbDao().getEntityDao();
         this.deltaInformationExtractor = deltaInformationExtractor;
     }
 

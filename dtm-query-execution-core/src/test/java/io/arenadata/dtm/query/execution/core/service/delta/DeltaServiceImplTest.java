@@ -44,7 +44,7 @@ class DeltaServiceImplTest {
 
     @Test
     void getCnToDeltaHotgetDeltaHotSuccess(){
-        Promise promise = Promise.promise();
+        Promise<Long> promise = Promise.promise();
         String datamart = "datamart";
         Long cnTo = 1L;
         HotDelta hotDelta = HotDelta.builder().cnTo(cnTo).build();
@@ -52,67 +52,64 @@ class DeltaServiceImplTest {
         when(deltaServiceDao.getDeltaHot(eq(datamart))).thenReturn(Future.succeededFuture(hotDelta));
 
         deltaService.getCnToDeltaHot(datamart)
-                .onSuccess(success -> promise.complete(success))
-                .onFailure(fail -> promise.fail(fail));
+                .onSuccess(promise::complete)
+                .onFailure(promise::fail);
 
         assertEquals(cnTo, promise.future().result());
     }
 
     @Test
     void getCnToDeltaHotgetDeltaOkSuccess(){
-        Promise promise = Promise.promise();
+        Promise<Long> promise = Promise.promise();
         String datamart = "datamart";
-        Long cnTo = 1L;
+        long cnTo = 1L;
         OkDelta okDelta = OkDelta.builder().cnTo(cnTo).build();
 
-        RuntimeException ex = new RuntimeException("empty delta hot");
-        when(deltaServiceDao.getDeltaHot(eq(datamart))).thenReturn(Future.failedFuture(ex));
+        when(deltaServiceDao.getDeltaHot(eq(datamart))).thenReturn(Future.succeededFuture(null));
         when(deltaServiceDao.getDeltaOk(eq(datamart))).thenReturn(Future.succeededFuture(okDelta));
 
         deltaService.getCnToDeltaHot(datamart)
-                .onSuccess(success -> promise.complete(success))
-                .onFailure(fail -> promise.fail(fail));
+                .onSuccess(promise::complete)
+                .onFailure(promise::fail);
 
         assertEquals(cnTo, promise.future().result());
     }
 
     @Test
-    void getCnToDeltaHotError(){
-        Promise promise = Promise.promise();
+    void getCnToDeltaHotAndDeltaOkNull(){
+        Promise<Long> promise = Promise.promise();
         String datamart = "datamart";
 
-        RuntimeException exHot = new RuntimeException("empty delta hot");
-        RuntimeException exOk = new RuntimeException("empty delta ok");
-        when(deltaServiceDao.getDeltaHot(eq(datamart))).thenReturn(Future.failedFuture(exHot));
-        when(deltaServiceDao.getDeltaOk(eq(datamart))).thenReturn(Future.failedFuture(exOk));
+        when(deltaServiceDao.getDeltaHot(eq(datamart))).thenReturn(Future.succeededFuture(null));
+        when(deltaServiceDao.getDeltaOk(eq(datamart))).thenReturn(Future.succeededFuture(null));
 
         deltaService.getCnToDeltaHot(datamart)
-                .onSuccess(success -> promise.complete(success))
-                .onFailure(fail -> promise.fail(fail));
+                .onSuccess(promise::complete)
+                .onFailure(promise::fail);
 
         assertEquals(-1L, promise.future().result());
     }
 
     @Test
     void getCnToByDeltaNumSuccess(){
-        Promise promise = Promise.promise();
+        Promise<Long> promise = Promise.promise();
         String datamart = "datamart";
         long deltaNum = 1;
-        Long cnTo = 1L;
+        long cnTo = 1L;
         OkDelta okDelta = OkDelta.builder().cnTo(cnTo).build();
 
         when(deltaServiceDao.getDeltaByNum(eq(datamart), eq(deltaNum))).thenReturn(Future.succeededFuture(okDelta));
 
         deltaService.getCnToByDeltaNum(datamart, deltaNum)
-                .onSuccess(success -> promise.complete(success))
-                .onFailure(fail -> promise.fail(fail));
+                .onSuccess(promise::complete)
+                .onFailure(promise::fail);
 
         assertEquals(cnTo, promise.future().result());
     }
 
     @Test
     void getCnToByDeltaNumError(){
-        Promise promise = Promise.promise();
+        Promise<Long> promise = Promise.promise();
         String datamart = "datamart";
         long deltaNum = 1;
 
@@ -120,32 +117,32 @@ class DeltaServiceImplTest {
         when(deltaServiceDao.getDeltaByNum(eq(datamart), eq(deltaNum))).thenReturn(Future.failedFuture(exOk));
 
         deltaService.getCnToByDeltaNum(datamart, deltaNum)
-                .onSuccess(success -> promise.complete(success))
-                .onFailure(fail -> promise.fail(fail));
+                .onSuccess(promise::complete)
+                .onFailure(promise::fail);
 
         assertEquals(-1L, promise.future().result());
     }
 
     @Test
     void getCnToByDeltaDatetimeSuccess(){
-        Promise promise = Promise.promise();
+        Promise<Long> promise = Promise.promise();
         String datamart = "datamart";
         LocalDateTime deltaDatetime = LocalDateTime.now(timeZone);
-        Long cnTo = 1L;
+        long cnTo = 1L;
         OkDelta okDelta = OkDelta.builder().cnTo(cnTo).build();
 
         when(deltaServiceDao.getDeltaByDateTime(eq(datamart), eq(deltaDatetime))).thenReturn(Future.succeededFuture(okDelta));
 
         deltaService.getCnToByDeltaDatetime(datamart, deltaDatetime)
-                .onSuccess(success -> promise.complete(success))
-                .onFailure(fail -> promise.fail(fail));
+                .onSuccess(promise::complete)
+                .onFailure(promise::fail);
 
         assertEquals(cnTo, promise.future().result());
     }
 
     @Test
     void getCnToByDeltaDatetimeError(){
-        Promise promise = Promise.promise();
+        Promise<Long> promise = Promise.promise();
         String datamart = "datamart";
         LocalDateTime deltaDatetime = LocalDateTime.now(timeZone);
 
@@ -153,19 +150,19 @@ class DeltaServiceImplTest {
         when(deltaServiceDao.getDeltaByDateTime(eq(datamart), eq(deltaDatetime))).thenReturn(Future.failedFuture(exOk));
 
         deltaService.getCnToByDeltaDatetime(datamart, deltaDatetime)
-                .onSuccess(success -> promise.complete(success))
-                .onFailure(fail -> promise.fail(fail));
+                .onSuccess(promise::complete)
+                .onFailure(promise::fail);
 
         assertEquals(-1L, promise.future().result());
     }
 
     @Test
     void getIntervalSuccess(){
-        Promise promise = Promise.promise();
+        Promise<SelectOnInterval> promise = Promise.promise();
         String datamart = "datamart";
-        Long cnFrom = 1L;
+        long cnFrom = 1L;
         OkDelta okDelta1 = OkDelta.builder().cnFrom(cnFrom).build();
-        Long cnTo = 2L;
+        long cnTo = 2L;
         OkDelta okDelta2 = OkDelta.builder().cnTo(cnTo).build();
 
         when(deltaServiceDao.getDeltaByNum(eq(datamart), anyLong()))
@@ -173,17 +170,17 @@ class DeltaServiceImplTest {
                 .thenReturn(Future.succeededFuture(okDelta2));
 
         deltaService.getCnFromCnToByDeltaNums(datamart, 1, 2)
-                .onSuccess(success -> promise.complete(success))
-                .onFailure(fail -> promise.fail(fail));
+                .onSuccess(promise::complete)
+                .onFailure(promise::fail);
 
         assertEquals(new SelectOnInterval(cnFrom, cnTo), promise.future().result());
     }
 
     @Test
     void getIntervalgetFirstDeltaError(){
-        Promise promise = Promise.promise();
+        Promise<SelectOnInterval> promise = Promise.promise();
         String datamart = "datamart";
-        Long cnTo = 2L;
+        long cnTo = 2L;
         OkDelta okDelta2 = OkDelta.builder().cnFrom(cnTo).build();
 
         RuntimeException exOk = new RuntimeException("empty first delta ok");
@@ -193,8 +190,8 @@ class DeltaServiceImplTest {
                 .thenReturn(Future.succeededFuture(okDelta2));
 
         deltaService.getCnFromCnToByDeltaNums(datamart, 1, 2)
-                .onSuccess(success -> promise.complete(success))
-                .onFailure(fail -> promise.fail(fail));
+                .onSuccess(promise::complete)
+                .onFailure(promise::fail);
 
         assertNotNull(promise.future().cause());
         assertEquals("Invalid delta range [1, 2]", promise.future().cause().getMessage());
@@ -202,9 +199,9 @@ class DeltaServiceImplTest {
 
     @Test
     void getIntervalgetSecondDeltaError(){
-        Promise promise = Promise.promise();
+        Promise<SelectOnInterval> promise = Promise.promise();
         String datamart = "datamart";
-        Long cnFrom = 1L;
+        long cnFrom = 1L;
         OkDelta okDelta1 = OkDelta.builder().cnFrom(cnFrom).build();
 
         RuntimeException exOk = new RuntimeException("empty second delta ok");
@@ -214,8 +211,8 @@ class DeltaServiceImplTest {
                 .thenReturn(Future.failedFuture(exOk));
 
         deltaService.getCnFromCnToByDeltaNums(datamart, 1, 2)
-                .onSuccess(success -> promise.complete(success))
-                .onFailure(fail -> promise.fail(fail));
+                .onSuccess(promise::complete)
+                .onFailure(promise::fail);
 
         assertNotNull(promise.future().cause());
         assertEquals("Invalid delta range [1, 2]", promise.future().cause().getMessage());

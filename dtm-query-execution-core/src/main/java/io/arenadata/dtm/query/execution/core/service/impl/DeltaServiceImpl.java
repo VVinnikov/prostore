@@ -25,14 +25,14 @@ public class DeltaServiceImpl implements DeltaService {
     }
 
     @Override
-    public Future<Long> getCnToByDeltaDatetime(String datamart, LocalDateTime dateTime){
+    public Future<Long> getCnToByDeltaDatetime(String datamart, LocalDateTime dateTime) {
         return Future.future(handler -> deltaServiceDao.getDeltaByDateTime(datamart, dateTime)
                 .onSuccess(delta -> handler.handle(Future.succeededFuture(delta.getCnTo())))
                 .onFailure(err -> handler.handle(Future.succeededFuture(-1L))));
     }
 
     @Override
-    public Future<Long> getCnToByDeltaNum(String datamart, long num){
+    public Future<Long> getCnToByDeltaNum(String datamart, long num) {
         return Future.future(handler -> deltaServiceDao.getDeltaByNum(datamart, num)
                 .onSuccess(delta -> handler.handle(Future.succeededFuture(delta.getCnTo())))
                 .onFailure(err -> handler.handle(Future.succeededFuture(-1L))));
@@ -46,16 +46,17 @@ public class DeltaServiceImpl implements DeltaService {
                         handler.handle(Future.succeededFuture(deltaHot.getCnTo()));
                     } else {
                         deltaServiceDao.getDeltaOk(datamart)
-                            .onSuccess(okDelta -> {
-                                if (okDelta != null) {
-                                    handler.handle(Future.succeededFuture(okDelta.getCnTo()));
-                                } else {
-                                    handler.handle(Future.succeededFuture(-1L));
-                                }
-                            })
-                            .onFailure(handler::fail);
+                                .onSuccess(okDelta -> {
+                                    if (okDelta != null) {
+                                        handler.handle(Future.succeededFuture(okDelta.getCnTo()));
+                                    } else {
+                                        handler.handle(Future.succeededFuture(-1L));
+                                    }
+                                })
+                                .onFailure(handler::fail);
                     }
-                }));
+                })
+                .onFailure(handler::fail));
     }
 
     @Override

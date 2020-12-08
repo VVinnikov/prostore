@@ -1,0 +1,2 @@
+USE %s;
+COMMIT DELTA;

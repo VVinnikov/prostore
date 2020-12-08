@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.ddl;
 
+import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.plugin.sql.PreparedStatementRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbTables;
 import io.arenadata.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
@@ -33,9 +34,10 @@ public class AdbTruncateHistoryService implements TruncateHistoryService {
         String whereExpression = params.getConditions()
                 .map(conditions -> String.format(" WHERE %s", conditions))
                 .orElse("");
-        List<String> queries = Arrays.asList(String.format(DELETE_RECORDS_PATTERN, params.getSchema(), params.getTable(),
+        Entity entity = params.getEntity();
+        List<String> queries = Arrays.asList(String.format(DELETE_RECORDS_PATTERN, entity.getSchema(), entity.getName(),
                 AdbTables.ACTUAL_TABLE_POSTFIX, whereExpression),
-                String.format(DELETE_RECORDS_PATTERN, params.getSchema(), params.getTable(),
+                String.format(DELETE_RECORDS_PATTERN, entity.getSchema(), entity.getName(),
                         AdbTables.HISTORY_TABLE_POSTFIX, whereExpression));
         return Future.future(promise -> adbQueryExecutor.executeInTransaction(queries.stream()
                         .map(PreparedStatementRequest::onlySql)
@@ -44,7 +46,8 @@ public class AdbTruncateHistoryService implements TruncateHistoryService {
     }
 
     private Future<Void> executeWithSysCn(TruncateHistoryParams params) {
-        String query = String.format(DELETE_RECORDS_PATTERN, params.getSchema(), params.getTable(),
+        Entity entity = params.getEntity();
+        String query = String.format(DELETE_RECORDS_PATTERN, entity.getSchema(), entity.getName(),
                 AdbTables.HISTORY_TABLE_POSTFIX, String.format(" WHERE %s%s", params.getConditions()
                                 .map(conditions -> String.format("%s AND ", conditions))
                                 .orElse(""),

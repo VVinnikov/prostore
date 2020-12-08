@@ -55,7 +55,7 @@ public class AdqmCheckDataService implements CheckDataService {
     public Future<Long> checkDataByHashInt32(CheckDataByHashInt32Params params) {
         Entity entity = params.getEntity();
         List<String> columns = params.getColumns().stream()
-                .map(column -> String.format("toString(ifNull(%s,''))", column))
+                .map(column -> String.format("ifNull(toString(%s),'')", column))
                 .collect(Collectors.toList());
         String colQuery = columns.size() > 1
                 ? String.format("concat(%s)", String.join(",';',", columns))

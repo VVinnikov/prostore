@@ -82,7 +82,7 @@ public class AdbCheckDataService implements CheckDataService {
 
     private Future<Long> checkDataByHash(CheckDataByHashInt32Params params) {
         return Future.future(p -> {
-            val columnsList = String.join(",", params.getColumns());
+            val columnsList = String.join(",';',", params.getColumns());
             val datamart = params.getEntity().getSchema();
             val table = params.getEntity().getName();
             val sysCn = params.getSysCn();

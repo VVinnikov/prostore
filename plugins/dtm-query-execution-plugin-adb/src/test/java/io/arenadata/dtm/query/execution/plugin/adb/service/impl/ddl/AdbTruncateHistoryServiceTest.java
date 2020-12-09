@@ -2,18 +2,28 @@ package io.arenadata.dtm.query.execution.plugin.adb.service.impl.ddl;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.plugin.sql.PreparedStatementRequest;
+import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
+import io.arenadata.dtm.query.calcite.core.framework.DtmCalciteFramework;
+import io.arenadata.dtm.query.execution.plugin.adb.configuration.CalciteConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TruncateHistoryService;
 import io.vertx.core.Future;
+import org.apache.calcite.sql.*;
+import org.apache.calcite.sql.parser.SqlParseException;
+import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.tools.FrameworkConfig;
+import org.apache.calcite.tools.Planner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import javax.swing.text.html.Option;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.mockito.ArgumentMatchers.anyString;
@@ -23,8 +33,16 @@ public class AdbTruncateHistoryServiceTest {
     private static final String SCHEMA = "schema";
     private static final String TABLE = "table";
 
+    private final CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
+    private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
+    private final SqlParser.Config parserConfig = calciteConfiguration
+            .configDdlParser(calciteCoreConfiguration.eddlParserImplFactory());
+    private final DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
+    private final FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
+    private final Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
     private final DatabaseExecutor adbQueryExecutor = mock(AdbQueryExecutor.class);
-    private final TruncateHistoryService adbTruncateHistoryService = new AdbTruncateHistoryService(adbQueryExecutor);
+    private final TruncateHistoryService adbTruncateHistoryService = new AdbTruncateHistoryService(adbQueryExecutor,
+            calciteConfiguration.adbSqlDialect());
 
     @BeforeEach
     void setUp() {
@@ -38,7 +56,7 @@ public class AdbTruncateHistoryServiceTest {
                 "DELETE FROM schema.table_actual",
                 "DELETE FROM schema.table_history"
         );
-        test(null, null, expectedList);
+        test(null, expectedList);
     }
 
     @Test
@@ -47,7 +65,7 @@ public class AdbTruncateHistoryServiceTest {
         List<String> expectedList = Arrays.asList(
                 String.format("DELETE FROM schema.table_actual WHERE %s", conditions),
                 String.format("DELETE FROM schema.table_history WHERE %s", conditions));
-        test(null, conditions, expectedList);
+        test(conditions, expectedList);
     }
 
     @Test
@@ -66,11 +84,8 @@ public class AdbTruncateHistoryServiceTest {
         test(sysCn, conditions, expected);
     }
 
-    private void test(Long sysCn, String conditions, List<String> list) {
-        adbTruncateHistoryService.truncateHistory(getParams(sysCn, conditions));
-        Class<ArrayList<PreparedStatementRequest>> listClass =
-                (Class<ArrayList<PreparedStatementRequest>>) (Class) ArrayList.class;
-        ArgumentCaptor<ArrayList<PreparedStatementRequest>> argument = ArgumentCaptor.forClass(listClass);
+    private void test(String conditions, List<String> list) {
+        adbTruncateHistoryService.truncateHistory(getParams(null, conditions));
         verify(adbQueryExecutor).executeInTransaction(argThat(input -> input.stream()
                         .map(PreparedStatementRequest::getSql)
                         .collect(Collectors.toList())
@@ -87,6 +102,16 @@ public class AdbTruncateHistoryServiceTest {
         Entity entity = new Entity();
         entity.setSchema(SCHEMA);
         entity.setName(TABLE);
-        return new TruncateHistoryParams(null, null, sysCn, entity, null, conditions);
+        SqlNode sqlNode = Optional.ofNullable(conditions)
+                .map(val -> {
+                    try {
+                        return ((SqlSelect) planner.parse(String.format("SELECT * from t WHERE %s", conditions)))
+                                .getWhere();
+                    } catch (SqlParseException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .orElse(null);
+        return new TruncateHistoryParams(null, null, sysCn, entity, null, sqlNode);
     }
 }

@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adg.service.impl.check;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.query.execution.plugin.adg.constants.ColumnFields;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
+import io.arenadata.dtm.query.execution.plugin.adg.utils.AdgUtils;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountParams;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Params;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckDataService;
@@ -41,14 +42,10 @@ public class AdgCheckDataService implements CheckDataService {
                                      Long sysCn,
                                      Set<String> columns) {
         return adgCartridgeClient.getCheckSumByInt32Hash(
-                getTableName(env, schema, table, ColumnFields.ACTUAL_POSTFIX),
-                getTableName(env, schema, table, ColumnFields.HISTORY_POSTFIX),
+                AdgUtils.getSpaceName(env, schema, table, ColumnFields.ACTUAL_POSTFIX),
+                AdgUtils.getSpaceName(env, schema, table, ColumnFields.HISTORY_POSTFIX),
                 sysCn,
                 columns
         );
-    }
-
-    private String getTableName(String env, String schema, String table, String postfix) {
-        return String.format("%s__%s__%s%s", env, schema, table, postfix);
     }
 }

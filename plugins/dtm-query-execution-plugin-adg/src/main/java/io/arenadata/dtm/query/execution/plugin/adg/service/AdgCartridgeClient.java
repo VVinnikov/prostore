@@ -63,4 +63,6 @@ public interface AdgCartridgeClient {
                                         String historicalDataTableName,
                                         Long sysCn,
                                         Set<String> columnList);
+
+  Future<Void> deleteSpaceTuples(String spaceName, String whereCondition);
 }

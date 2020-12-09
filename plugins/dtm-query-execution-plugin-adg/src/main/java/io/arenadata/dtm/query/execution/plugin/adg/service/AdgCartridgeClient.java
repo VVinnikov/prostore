@@ -58,4 +58,9 @@ public interface AdgCartridgeClient {
                                            Handler<AsyncResult<Void>> handler);
 
   Future<Map<String, Space>> getSpaceDescriptions(Set<String> spaceNames);
+
+  Future<Long> getCheckSumByInt32Hash(String actualDataTableName,
+                                        String historicalDataTableName,
+                                        Long sysCn,
+                                        Set<String> columnList);
 }

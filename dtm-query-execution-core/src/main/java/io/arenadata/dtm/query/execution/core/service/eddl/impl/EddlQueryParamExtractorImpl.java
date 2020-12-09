@@ -4,7 +4,7 @@ import io.arenadata.dtm.common.dto.TableInfo;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.plugin.exload.Type;
 import io.arenadata.dtm.common.reader.QueryRequest;
-import io.arenadata.dtm.kafka.core.configuration.properties.KafkaProperties;
+import io.arenadata.dtm.kafka.core.configuration.kafka.KafkaZookeeperProperties;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.*;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.execution.core.dto.eddl.*;
@@ -27,10 +27,11 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
 
     public static final String ERROR_PARSING_EDDL_QUERY = "Request parsing error";
     public static final String START_LOCATION_TOKEN = "$";
+    private static final int ZOOKEEPER_DEFAULT_PORT = 2181;
     private final DefinitionService<SqlNode> definitionService;
     private final MetadataCalciteGenerator metadataCalciteGenerator;
     private final AvroSchemaGenerator avroSchemaGenerator;
-    private final KafkaProperties kafkaProperties;
+    private final KafkaZookeeperProperties kafkaZookeeperProperties;
     private final Vertx vertx;
 
     @Autowired
@@ -38,13 +39,13 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
             @Qualifier("coreCalciteDefinitionService") DefinitionService<SqlNode> definitionService,
             MetadataCalciteGenerator metadataCalciteGenerator,
             AvroSchemaGenerator avroSchemaGenerator,
-            @Qualifier("coreKafkaProperties") KafkaProperties kafkaProperties,
+            KafkaZookeeperProperties kafkaZookeeperProperties,
             @Qualifier("coreVertx") Vertx vertx
     ) {
         this.definitionService = definitionService;
         this.metadataCalciteGenerator = metadataCalciteGenerator;
         this.avroSchemaGenerator = avroSchemaGenerator;
-        this.kafkaProperties = kafkaProperties;
+        this.kafkaZookeeperProperties = kafkaZookeeperProperties;
         this.vertx = vertx;
     }
 
@@ -183,7 +184,7 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
 
     @NotNull
     private String getZookeeperHostPort() {
-        return kafkaProperties.getCluster().getZookeeperHost() + ":" + kafkaProperties.getCluster().getZookeeperPort();
+        return kafkaZookeeperProperties.getConnectionString() + ":" + ZOOKEEPER_DEFAULT_PORT;
     }
 
     private void extractDropUploadExternalTable(SqlDropUploadExternalTable sqlNode, String defaultSchema, Handler<AsyncResult<EddlQuery>> asyncResultHandler) {

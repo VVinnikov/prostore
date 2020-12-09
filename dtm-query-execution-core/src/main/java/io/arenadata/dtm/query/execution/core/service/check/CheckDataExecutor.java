@@ -21,6 +21,7 @@ import org.apache.calcite.util.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -67,7 +68,13 @@ public class CheckDataExecutor implements CheckExecutor {
 
         return Future.future(promise -> check(sqlCheckData.getDeltaNum(), entity.getSchema(),
                 getCheckFunc(context, entity, sqlCheckData.getColumns()))
-                .onSuccess(result -> promise.complete(""))
+                .onSuccess(result -> promise.complete(
+                        String.format("Table '%s.%s' (%s) checksum for delta %s is Ok.",
+                                entity.getSchema(), entity.getName(),
+                                entity.getDestination().stream()
+                                        .map(SourceType::name)
+                                        .collect(Collectors.joining(", ")),
+                                sqlCheckData.getDeltaNum())))
                 .onFailure(exception -> {
                     if (exception instanceof CheckException) {
                         promise.complete(String.format("Table '%s.%s' checksum mismatch!\n%s",

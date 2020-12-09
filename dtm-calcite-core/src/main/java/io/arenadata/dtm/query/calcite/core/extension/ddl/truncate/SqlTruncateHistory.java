@@ -20,7 +20,7 @@ public class SqlTruncateHistory extends SqlCall implements SqlBaseTruncate {
     private final String table;
     private final LocalDateTime datetime;
     private final boolean isInfinite;
-    private final String conditions;
+    private final SqlNode conditions;
 
     public SqlTruncateHistory(SqlParserPos pos, SqlIdentifier name, SqlNode datetime, SqlNode conditions) {
         super(pos);
@@ -36,7 +36,7 @@ public class SqlTruncateHistory extends SqlCall implements SqlBaseTruncate {
             this.datetime = CalciteUtil.parseLocalDateTime(datetimeStr);
             this.isInfinite = false;
         }
-        this.conditions = Optional.ofNullable(conditions).map(SqlNode::toString).orElse(null);
+        this.conditions = conditions;
     }
 
     @Override
@@ -82,7 +82,7 @@ public class SqlTruncateHistory extends SqlCall implements SqlBaseTruncate {
         return isInfinite;
     }
 
-    public String getConditions() {
+    public SqlNode getConditions() {
         return conditions;
     }
 }

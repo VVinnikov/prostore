@@ -2,7 +2,10 @@ package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.ddl;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
+import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
+import io.arenadata.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import io.arenadata.dtm.query.execution.plugin.adqm.common.Constants;
+import io.arenadata.dtm.query.execution.plugin.adqm.configuration.CalciteConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmCreateTableQueriesFactoryTest;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
@@ -10,9 +13,16 @@ import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.query.AdqmQuery
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TruncateHistoryService;
 import io.vertx.core.Future;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.parser.SqlParseException;
+import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.tools.FrameworkConfig;
+import org.apache.calcite.tools.Planner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.mockito.ArgumentMatchers.anyString;
@@ -25,6 +35,13 @@ public class AdqmTruncateHistoryServiceTest {
             "SELECT %s, -1\n" +
             "FROM %s__%s.%s_actual t FINAL\n" +
             "WHERE sign = 1%s%s";
+    private final CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
+    private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
+    private final SqlParser.Config parserConfig = calciteConfiguration
+            .configDdlParser(calciteCoreConfiguration.eddlParserImplFactory());
+    private final DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
+    private final FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
+    private final Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
     private final DatabaseExecutor adqmQueryExecutor = mock(AdqmQueryExecutor.class);
     private TruncateHistoryService adqmTruncateHistoryService;
     private Entity entity;
@@ -40,7 +57,8 @@ public class AdqmTruncateHistoryServiceTest {
         orderByColumns += String.format(", %s", Constants.SYS_FROM_FIELD);
         DdlProperties ddlProperties = new DdlProperties();
         ddlProperties.setCluster(CLUSTER);
-        adqmTruncateHistoryService = new AdqmTruncateHistoryService(adqmQueryExecutor, ddlProperties);
+        adqmTruncateHistoryService = new AdqmTruncateHistoryService(adqmQueryExecutor,
+                calciteConfiguration.adgSqlDialect(), ddlProperties);
         when(adqmQueryExecutor.execute(anyString())).thenReturn(Future.succeededFuture());
     }
 
@@ -81,7 +99,17 @@ public class AdqmTruncateHistoryServiceTest {
     }
 
     private void test(Long sysCn, String conditions, String expected) {
-        TruncateHistoryParams params = new TruncateHistoryParams(null, null, sysCn, entity, ENV, conditions);
+        SqlNode sqlNode = Optional.ofNullable(conditions)
+                .map(val -> {
+                    try {
+                        return ((SqlSelect) planner.parse(String.format("SELECT * from t WHERE %s", conditions)))
+                                .getWhere();
+                    } catch (SqlParseException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .orElse(null);
+        TruncateHistoryParams params = new TruncateHistoryParams(null, null, sysCn, entity, ENV, sqlNode);
         adqmTruncateHistoryService.truncateHistory(params);
         verify(adqmQueryExecutor, times(1)).execute(expected);
         verify(adqmQueryExecutor, times(1)).execute(

@@ -547,4 +547,24 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
                     }
                 }));
     }
+
+    public Future<Void> deleteSpaceTuples(String spaceName, String whereCondition) {
+        String url = cartridgeProperties.getUrl() + cartridgeProperties.getDeleteSpaceTuples();
+        Map<String, String> body = new HashMap<>();
+        body.put("spaceName", spaceName);
+        body.put("whereCondition", whereCondition);
+        return Future.future(promise -> webClient.postAbs(url)
+                .sendJson(body, ar -> {
+                    if(ar.succeeded()) {
+                        JsonObject jsonObject = ar.result().bodyAsJsonObject();
+                        if (jsonObject == null) {
+                            promise.complete();
+                        } else {
+                            promise.fail(jsonObject.getString("error"));
+                        }
+                    } else {
+                        promise.fail(ar.cause());
+                    }
+                }));
+    }
 }

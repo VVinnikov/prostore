@@ -520,4 +520,31 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
             handler.handle(Future.failedFuture(ex));
         }
     }
+
+    @Override
+    public Future<Long> getCheckSumByInt32Hash(String actualDataTableName,
+                                                 String historicalDataTableName,
+                                                 Long sysCn,
+                                                 Set<String> columnList) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("actualDataTableName", actualDataTableName);
+        body.put("historicalDataTableName", historicalDataTableName);
+        body.put("sysCn", sysCn);
+        body.put("columnList", columnList);
+        String url = cartridgeProperties.getUrl() + cartridgeProperties.getCheckSumUrl();
+        return Future.future(promise -> webClient.postAbs(url)
+                .sendJson(body, ar -> {
+                    if (ar.succeeded()) {
+                        JsonObject jsonObject = ar.result().bodyAsJsonObject();
+                        Optional<Long> checkSum = Optional.ofNullable(jsonObject.getLong("checksum"));
+                        if (checkSum.isPresent()) {
+                            promise.complete(checkSum.get());
+                        } else {
+                            promise.fail(jsonObject.getString("error"));
+                        }
+                    } else {
+                        promise.fail(ar.cause());
+                    }
+                }));
+    }
 }

@@ -50,8 +50,8 @@ public class AdgTruncateHistoryServiceTest {
     @Test
     void test() {
         List<Pair<String, String>> expectedList = Arrays.asList(
-                new Pair<>(AdgUtils.getSpaceName(ENV, SCHEMA, TABLE, ACTUAL_POSTFIX), ""),
-                new Pair<>(AdgUtils.getSpaceName(ENV, SCHEMA, TABLE, HISTORY_POSTFIX), "")
+                new Pair<>(AdgUtils.getSpaceName(ENV, SCHEMA, TABLE, ACTUAL_POSTFIX), null),
+                new Pair<>(AdgUtils.getSpaceName(ENV, SCHEMA, TABLE, HISTORY_POSTFIX), null)
         );
         test(null, null, expectedList);
     }
@@ -91,7 +91,7 @@ public class AdgTruncateHistoryServiceTest {
         expectedList.forEach(pair -> verify(adgCartridgeClient, times(1))
                 .deleteSpaceTuples(eq(pair.getKey()), eq(pair.getValue())));
         verify(adgCartridgeClient, times(expectedList.size()))
-                .deleteSpaceTuples(anyString(), anyString());
+                .deleteSpaceTuples(anyString(), any());
     }
 
     private TruncateHistoryParams getParams(Long sysCn, String conditions) {

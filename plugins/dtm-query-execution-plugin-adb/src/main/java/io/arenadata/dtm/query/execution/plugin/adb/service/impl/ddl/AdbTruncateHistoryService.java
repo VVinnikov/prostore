@@ -7,7 +7,9 @@ import io.arenadata.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TruncateHistoryService;
 import io.vertx.core.Future;
+import org.apache.calcite.sql.SqlDialect;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -19,10 +21,13 @@ public class AdbTruncateHistoryService implements TruncateHistoryService {
     private static final String DELETE_RECORDS_PATTERN = "DELETE FROM %s.%s_%s%s";
     private static final String SYS_CN_CONDITION = "sys_to < %s";
     private final DatabaseExecutor adbQueryExecutor;
+    private final SqlDialect sqlDialect;
 
     @Autowired
-    public AdbTruncateHistoryService(DatabaseExecutor adbQueryExecutor) {
+    public AdbTruncateHistoryService(DatabaseExecutor adbQueryExecutor,
+                                     @Qualifier("adbSqlDialect") SqlDialect sqlDialect) {
         this.adbQueryExecutor = adbQueryExecutor;
+        this.sqlDialect = sqlDialect;
     }
 
     @Override
@@ -32,7 +37,7 @@ public class AdbTruncateHistoryService implements TruncateHistoryService {
 
     private Future<Void> execute(TruncateHistoryParams params) {
         String whereExpression = params.getConditions()
-                .map(conditions -> String.format(" WHERE %s", conditions))
+                .map(conditions -> String.format(" WHERE %s", conditions.toSqlString(sqlDialect)))
                 .orElse("");
         Entity entity = params.getEntity();
         List<String> queries = Arrays.asList(String.format(DELETE_RECORDS_PATTERN, entity.getSchema(), entity.getName(),
@@ -49,7 +54,7 @@ public class AdbTruncateHistoryService implements TruncateHistoryService {
         Entity entity = params.getEntity();
         String query = String.format(DELETE_RECORDS_PATTERN, entity.getSchema(), entity.getName(),
                 AdbTables.HISTORY_TABLE_POSTFIX, String.format(" WHERE %s%s", params.getConditions()
-                                .map(conditions -> String.format("%s AND ", conditions))
+                                .map(conditions -> String.format("%s AND ", conditions.toSqlString(sqlDialect)))
                                 .orElse(""),
                         String.format(SYS_CN_CONDITION, params.getSysCn().get())));
         return adbQueryExecutor.execute(query)

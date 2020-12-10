@@ -675,24 +675,22 @@ SqlNode SqlCheckTable() :
 SqlNode SqlCheckData() :
 {
     Span s;
-    SqlNode name = null;
+    final SqlIdentifier id;
     SqlLiteral deltaNum = null;
-    SqlNode columns_list = null;
-
+    List<SqlNode> tableElementList = null;
 }
 {
     <CHECK_DATA>
     {
         s = span();
     }
-    <LPAREN>
-        name = StringLiteral()
-        <COMMA>
+    <LPAREN> id = CompoundIdentifier()
+    <COMMA>
         deltaNum = NumericLiteral()
-    [ <COMMA> columns_list = StringLiteral() ]
+    [ <COMMA> <LBRACKET> tableElementList = SelectList() <RBRACKET> ]
     <RPAREN>
     {
-        return new io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckData(s.end(this), name, deltaNum, columns_list);
+        return new io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckData(s.end(this), id, deltaNum, tableElementList);
     }
 }
 SqlNode SqlTruncateHistory() :

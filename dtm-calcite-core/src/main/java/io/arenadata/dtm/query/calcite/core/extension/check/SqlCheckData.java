@@ -5,11 +5,10 @@ import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
 import javax.annotation.Nonnull;
-import java.util.Objects;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class SqlCheckData extends SqlCheckCall {
     private static final SqlOperator OPERATOR = new SqlSpecialOperator("CHECK_DATA", SqlKind.CHECK);
@@ -18,17 +17,14 @@ public class SqlCheckData extends SqlCheckCall {
     private final Long deltaNum;
     private final Set<String> columns;
 
-    public SqlCheckData(SqlParserPos pos, SqlNode name, SqlLiteral deltaNum, SqlNode columns) {
+    public SqlCheckData(SqlParserPos pos, SqlIdentifier name, SqlLiteral deltaNum, List<SqlNode> columns) {
         super(pos, name);
-        String nameWithSchema = Objects.requireNonNull(((SqlCharStringLiteral) name).getNlsString().getValue());
-        this.schema = CalciteUtil.parseSchemaName(nameWithSchema);
-        this.table = CalciteUtil.parseTableName(nameWithSchema);
+        this.schema = CalciteUtil.parseSchemaName(name.toString());
+        this.table = CalciteUtil.parseTableName(name.toString());
         this.deltaNum = deltaNum.longValue(true);
         this.columns = Optional.ofNullable(columns)
-                .map(val -> Stream.of(Objects.requireNonNull(((SqlCharStringLiteral) columns).getNlsString().getValue())
-                        .split(","))
-                        .map(String::trim)
-                        .collect(Collectors.toSet()))
+                .map(val -> (columns.stream().map(c -> ((SqlIdentifier) c).toString())
+                        .collect(Collectors.toSet())))
                 .orElse(null);
     }
 

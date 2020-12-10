@@ -24,7 +24,9 @@ public class SqlCheckData extends SqlCheckCall {
         this.table = CalciteUtil.parseTableName(nameWithSchema);
         this.deltaNum = deltaNum.longValue(true);
         this.columns = Optional.ofNullable(columns)
-                .map(val -> (columns.stream().map(c -> ((SqlIdentifier) c).toString())
+                .map(val -> (columns.stream()
+                        .map(c -> ((SqlIdentifier) c))
+                        .map(SqlIdentifier::getSimple)
                         .collect(Collectors.toSet())))
                 .orElse(null);
     }

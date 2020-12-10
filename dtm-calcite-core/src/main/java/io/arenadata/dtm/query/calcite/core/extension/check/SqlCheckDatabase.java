@@ -10,10 +10,11 @@ public class SqlCheckDatabase extends SqlCheckCall {
     private static final SqlOperator OPERATOR = new SqlSpecialOperator("CHECK_DATABASE", SqlKind.CHECK);
     private final String schema;
 
-    public SqlCheckDatabase(SqlParserPos pos, SqlNode datamart) {
-        super(pos, datamart);
-        this.schema = Optional.ofNullable(name)
-                .map(val -> ((SqlCharStringLiteral) val).getNlsString().getValue())
+    public SqlCheckDatabase(SqlParserPos pos, SqlIdentifier id) {
+        super(pos, id);
+        this.schema = Optional.ofNullable(id)
+                .map(val -> ((SqlIdentifier) id))
+                .map(SqlIdentifier::getSimple)
                 .orElse(null);
     }
 

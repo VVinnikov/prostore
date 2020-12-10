@@ -32,4 +32,6 @@ public class TarantoolCartridgeProperties {
   private String tableSchemaUrl = "/api/v1/ddl/table/schema";
 
   private String checkSumUrl = "/api/etl/get_scd_table_checksum";
+
+  private String deleteSpaceTuples = "/api/etl/delete_data_from_scd_table";
 }

@@ -3,6 +3,8 @@ package io.arenadata.dtm.query.execution.core.calcite.ddl;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckData;
+import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckDatabase;
+import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckTable;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.*;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
@@ -163,7 +165,42 @@ public class SqlDdlParserImplTest {
     }
 
     @Test
-    void chekData() {
+    void checkDatabase() {
+        String schema = "test";
+        String correctSchema = "CHECK_DATABASE(test)";
+        String withoutSchema = "CHECK_DATABASE()";
+        String withoutSchema2 = "CHECK_DATABASE";
+        String incorrectSchema = "CHECK_DATABASE('77')";
+        String incorrectSchema2 = "CHECK_DATABASE(test.ttt)";
+
+        SqlNode sqlNode1 = definitionService.processingQuery(correctSchema);
+        SqlNode sqlNode2 = definitionService.processingQuery(withoutSchema);
+        SqlNode sqlNode3 = definitionService.processingQuery(withoutSchema2);
+        assertEquals(schema, ((SqlCheckDatabase) sqlNode1).getSchema());
+        assertNull(((SqlCheckDatabase) sqlNode2).getSchema());
+        assertNull(((SqlCheckDatabase) sqlNode3).getSchema());
+        assertThrows(SqlParseException.class, () -> definitionService.processingQuery(incorrectSchema));
+        assertThrows(SqlParseException.class, () -> definitionService.processingQuery(incorrectSchema2));
+    }
+
+    @Test
+    void checkTable() {
+        String schema = "test";
+        String table = "test_table";
+        String withSchema = "CHECK_TABLE(test.test_table)";
+        String withoutSchema = "CHECK_TABLE(test_table)";
+        String incorrectTable = "CHECK_TABLE()";
+        SqlNode sqlNode1 = definitionService.processingQuery(withSchema);
+        SqlNode sqlNode2 = definitionService.processingQuery(withoutSchema);
+
+        assertEquals(schema, ((SqlCheckTable) sqlNode1).getSchema());
+        assertEquals(table, ((SqlCheckTable) sqlNode1).getTable());
+        assertNull(((SqlCheckTable) sqlNode2).getSchema());
+        assertThrows(SqlParseException.class, () -> definitionService.processingQuery(incorrectTable));
+    }
+
+    @Test
+    void checkData() {
         String schema = "test";
         String table = "testtable";
         Long deltaNum = 1L;

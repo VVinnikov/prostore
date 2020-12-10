@@ -644,32 +644,36 @@ SqlNode SqlConfigStorageAdd() :
 }
 SqlNode SqlCheckDatabase() :
 {
-        Span s;
-        SqlNode name = null;
+    Span s;
+    SqlIdentifier id = null;
 }
 {
     <CHECK_DATABASE>
     {
         s = span();
     }
-    [ <LPAREN> name = StringLiteral() <RPAREN> ]
+    (
+        <LPAREN> [id = CompoundIdentifier()] <RPAREN>
+        |
+        {id = null;}
+    )
     {
-            return new io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckDatabase(s.end(this), name);
+        return new io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckDatabase(s.end(this), id);
     }
 }
 SqlNode SqlCheckTable() :
 {
     Span s;
-    SqlNode name = null;
+    final SqlIdentifier id;
 }
 {
     <CHECK_TABLE>
     {
         s = span();
     }
-    <LPAREN> name = StringLiteral() <RPAREN>
+    <LPAREN> id = CompoundIdentifier() <RPAREN>
     {
-        return new io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckTable(s.end(this), name);
+        return new io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckTable(s.end(this), id);
     }
 }
 SqlNode SqlCheckData() :

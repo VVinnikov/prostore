@@ -2,6 +2,7 @@ package io.arenadata.dtm.query.execution.core.calcite.ddl;
 
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
+import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckData;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.*;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
@@ -120,7 +121,8 @@ public class SqlDdlParserImplTest {
     }
 
     void createTable(String query) {
-        createTable(query, sqlCreateTable -> {});
+        createTable(query, sqlCreateTable -> {
+        });
     }
 
     void createTable(String query, Consumer<SqlCreateTable> consumer) {
@@ -160,8 +162,43 @@ public class SqlDdlParserImplTest {
         assertThrows(SqlParseException.class, () -> dropTable(query));
     }
 
+    @Test
+    void chekData() {
+        String schema = "test";
+        String table = "testtable";
+        Long deltaNum = 1L;
+        Set<String> columns = new HashSet<>(Arrays.asList("id", "name"));
+        String withSchema = "CHECK_DATA(test.testTable, 1, [id, name])";
+        String withoutSchema = "CHECK_DATA(testTable, 1, [id, name])";
+        String withoutColumns = "CHECK_DATA(test.testTable, 1)";
+        String withIncorrectColumns = "CHECK_DATA(test.testTable, 1, [id,, name])";
+        String withIncorrectDelta = "CHECK_DATA(test.testTable, a, [id, name])";
+        SqlNode sqlNode1 = definitionService.processingQuery(withSchema);
+        assertEquals(schema, ((SqlCheckData) sqlNode1).getSchema());
+        assertEquals(table, ((SqlCheckData) sqlNode1).getTable());
+        assertEquals(columns, ((SqlCheckData) sqlNode1).getColumns());
+        assertEquals(deltaNum, ((SqlCheckData) sqlNode1).getDeltaNum());
+
+        SqlNode sqlNode2 = definitionService.processingQuery(withoutSchema);
+        assertNull(((SqlCheckData) sqlNode2).getSchema());
+        assertEquals(table, ((SqlCheckData) sqlNode2).getTable());
+        assertEquals(columns, ((SqlCheckData) sqlNode2).getColumns());
+        assertEquals(deltaNum, ((SqlCheckData) sqlNode2).getDeltaNum());
+
+        SqlNode sqlNode3 = definitionService.processingQuery(withoutColumns);
+        assertEquals(schema, ((SqlCheckData) sqlNode3).getSchema());
+        assertEquals(table, ((SqlCheckData) sqlNode3).getTable());
+        assertNull(((SqlCheckData) sqlNode3).getColumns());
+        assertEquals(deltaNum, ((SqlCheckData) sqlNode3).getDeltaNum());
+
+        assertThrows(SqlParseException.class, () -> definitionService.processingQuery(withIncorrectColumns));
+        assertThrows(SqlParseException.class, () -> definitionService.processingQuery(withIncorrectDelta));
+
+    }
+
     void dropTable(String query) {
-        dropTable(query, sqlDropTable -> {});
+        dropTable(query, sqlDropTable -> {
+        });
     }
 
     void dropTable(String query, Consumer<SqlDropTable> consumer) {

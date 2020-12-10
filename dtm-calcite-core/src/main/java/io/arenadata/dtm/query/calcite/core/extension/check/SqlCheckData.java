@@ -19,8 +19,9 @@ public class SqlCheckData extends SqlCheckCall {
 
     public SqlCheckData(SqlParserPos pos, SqlIdentifier name, SqlLiteral deltaNum, List<SqlNode> columns) {
         super(pos, name);
-        this.schema = CalciteUtil.parseSchemaName(name.toString());
-        this.table = CalciteUtil.parseTableName(name.toString());
+        final String nameWithSchema = name.toString();
+        this.schema = CalciteUtil.parseSchemaName(nameWithSchema);
+        this.table = CalciteUtil.parseTableName(nameWithSchema);
         this.deltaNum = deltaNum.longValue(true);
         this.columns = Optional.ofNullable(columns)
                 .map(val -> (columns.stream().map(c -> ((SqlIdentifier) c).toString())

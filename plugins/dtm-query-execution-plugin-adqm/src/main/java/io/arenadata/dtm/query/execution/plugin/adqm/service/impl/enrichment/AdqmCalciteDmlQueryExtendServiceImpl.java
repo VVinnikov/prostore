@@ -81,8 +81,13 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
                     if (nodeContext.child instanceof Join) {
                         processJoin(builderCtx, nodeContext);
                     } else if (nodeContext.child instanceof Filter) {
-                        processFilter(builderCtx, nodeContext);
-                        builderCtx.getDeltaInformations().clear();
+                            processFilter(builderCtx, nodeContext);
+//                        if (depth == 0) {
+//                        } else {
+//                            val byLastUnion = new ArrayList<>(builderCtx.getDeltaInformations());
+//                            processFilter(builderCtx, nodeContext);
+//                            builderCtx.getDeltaInformations().addAll(byLastUnion);
+//                        }
                     } else if (nodeContext.child instanceof Project) {
                         processProject(builderCtx, nodeContext);
                     } else if (nodeContext.child instanceof Aggregate) {
@@ -175,7 +180,6 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
             val allDeltaConditions = deltaConditions.size() == 1 ?
                 deltaConditions.get(0) : builderCtx.getBuilder().call(SqlStdOperatorTable.AND, deltaConditions);
             builderCtx.getBuilder().filter(allDeltaConditions);
-            builderCtx.getDeltaInformations().clear();
         }
         builderCtx.getBuilder()
             .project(project.getChildExps());
@@ -191,7 +195,6 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
         val deltaConditions = getDeltaConditions(ctx.getDeltaInformations(), ctx.getBuilder());
         deltaConditions.add(condition);
         ctx.getBuilder().filter(ctx.getBuilder().call(SqlStdOperatorTable.AND, deltaConditions));
-        ctx.getDeltaInformations().clear();
     }
 
     private void addSignConditions(BuilderCondext ctx, RelNode relNode) {
@@ -332,7 +335,7 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
             val queryNode = buildCtx.getBuilder()
                 .build();
             addSignConditions(buildCtx, queryNode);
-        } else if (buildCtx.getTableScans().size() > 1) {
+        } else if (buildCtx.getTableScans().size() > 0) {
             addSignConditions(buildCtx, buildCtx.getBuilder().project(lastParent.getChildExps()).build());
         }
 
@@ -400,7 +403,7 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
 
     private List<RexNode> getDeltaConditions(List<DeltaInformation> deltaInformations,
                                              RelBuilder builder) {
-        return deltaInformations.stream()
+        List<RexNode> conditions = deltaInformations.stream()
             .flatMap(deltaInfo -> {
                 val conditionContext = DeltaConditionContext.builder()
                     .tableCount(deltaInformations.size())
@@ -422,6 +425,8 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
                             deltaInfo.getType(), Arrays.toString(DeltaType.values())));
                 }
             }).collect(Collectors.toList());
+        deltaInformations.clear();
+        return conditions;
     }
 
     private List<RexNode> createRelNodeDeltaStartedIn(DeltaConditionContext ctx) {

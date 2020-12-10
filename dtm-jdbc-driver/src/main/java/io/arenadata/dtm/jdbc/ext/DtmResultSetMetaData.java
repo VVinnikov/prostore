@@ -2,9 +2,7 @@ package io.arenadata.dtm.jdbc.ext;
 
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.jdbc.core.BaseConnection;
-import io.arenadata.dtm.jdbc.core.Field;
 import io.arenadata.dtm.jdbc.model.ColumnInfo;
-import io.arenadata.dtm.jdbc.util.DtmException;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import lombok.SneakyThrows;
 

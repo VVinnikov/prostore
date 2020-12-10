@@ -1,6 +1,8 @@
-package io.arenadata.dtm.query.execution.core.dao.exception.entity;
+package io.arenadata.dtm.query.execution.core.exception.entity;
 
-public class TableNotExistsException extends RuntimeException {
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
+
+public class TableNotExistsException extends DtmException {
 
     public TableNotExistsException(String table) {
         super(String.format("Table [%s] not exists!", table));

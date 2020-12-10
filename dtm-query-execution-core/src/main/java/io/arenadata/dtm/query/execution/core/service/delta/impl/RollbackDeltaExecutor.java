@@ -5,7 +5,7 @@ import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.status.StatusEventCode;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
-import io.arenadata.dtm.query.execution.core.dao.exception.delta.DeltaAlreadyIsRollingBackException;
+import io.arenadata.dtm.query.execution.core.exception.delta.DeltaAlreadyIsRollingBackException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.delta.DeltaRecord;
 import io.arenadata.dtm.query.execution.core.dto.delta.HotDelta;

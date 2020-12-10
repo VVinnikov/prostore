@@ -1,8 +1,8 @@
 package io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl;
 
 import io.arenadata.dtm.async.AsyncUtils;
-import io.arenadata.dtm.query.execution.core.dao.exception.datamart.DatamartAlreadyExistsException;
-import io.arenadata.dtm.query.execution.core.dao.exception.datamart.DatamartNotExistsException;
+import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartAlreadyExistsException;
+import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.dto.delta.Delta;
 import io.arenadata.dtm.query.execution.core.dto.metadata.DatamartInfo;

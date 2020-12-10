@@ -1,6 +1,8 @@
-package io.arenadata.dtm.query.execution.core.dao.exception.delta;
+package io.arenadata.dtm.query.execution.core.exception.delta;
 
-public class DeltaException extends RuntimeException {
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
+
+public class DeltaException extends DtmException {
 
     public DeltaException(String message) {
         super(message);

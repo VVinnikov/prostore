@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.dao.exception.delta;
+package io.arenadata.dtm.query.execution.core.exception.delta;
 
 public class DeltaNotFoundException extends DeltaException {
     private static final String MESSAGE = "Delta not found";

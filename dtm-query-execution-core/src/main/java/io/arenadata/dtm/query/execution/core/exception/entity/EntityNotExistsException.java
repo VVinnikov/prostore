@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.dao.exception.entity;
+package io.arenadata.dtm.query.execution.core.exception.entity;
 
 public class EntityNotExistsException extends RuntimeException {
 

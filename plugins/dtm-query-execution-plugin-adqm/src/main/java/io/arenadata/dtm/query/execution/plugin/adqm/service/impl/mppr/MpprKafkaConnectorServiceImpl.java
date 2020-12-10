@@ -8,6 +8,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.client.WebClient;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,9 +18,9 @@ import org.springframework.stereotype.Service;
 import java.net.HttpURLConnection;
 
 @Service
+@Slf4j
 public class MpprKafkaConnectorServiceImpl implements MpprKafkaConnectorService {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(MpprKafkaConnectorServiceImpl.class);
     private final ConnectorProperties connectorProperties;
     private final WebClient client;
 
@@ -32,7 +33,7 @@ public class MpprKafkaConnectorServiceImpl implements MpprKafkaConnectorService 
 
     @Override
     public void call(MpprKafkaConnectorRequest request, Handler<AsyncResult<QueryResult>> handler) {
-        LOGGER.debug("Calling MpprKafkaConnector with parameters: host = {}, port = {}, url = {}, request = {}",
+        log.debug("Calling MpprKafkaConnector with parameters: host = {}, port = {}, url = {}, request = {}",
                 connectorProperties.getHost(), connectorProperties.getPort(), connectorProperties.getUrl(), request);
         client.post(connectorProperties.getPort(),
                 connectorProperties.getHost(),
@@ -42,11 +43,11 @@ public class MpprKafkaConnectorServiceImpl implements MpprKafkaConnectorService 
                         if (ar.result().statusCode() == HttpURLConnection.HTTP_OK) {
                             handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
                         } else {
-                            LOGGER.error("Request execution error [{}]", request);
-                            handler.handle(Future.failedFuture(ar.result().bodyAsString()));
+                            log.error("Request execution error [{}]", request);
+                            handler.handle(Future.failedFuture(ar.cause()));
                         }
                     } else {
-                        LOGGER.error("Query execution error [{}]", request);
+                        log.error("Query execution error [{}]", request);
                         handler.handle(Future.failedFuture(ar.cause()));
                     }
                 });

@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.dao.exception.delta;
+package io.arenadata.dtm.query.execution.core.exception.delta;
 
 public class InvalidDeltaDateException extends DeltaException {
     public InvalidDeltaDateException() {

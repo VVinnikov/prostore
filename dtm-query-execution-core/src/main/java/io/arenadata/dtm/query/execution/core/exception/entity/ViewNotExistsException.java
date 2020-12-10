@@ -1,6 +1,8 @@
-package io.arenadata.dtm.query.execution.core.dao.exception.entity;
+package io.arenadata.dtm.query.execution.core.exception.entity;
 
-public class ViewNotExistsException extends RuntimeException {
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
+
+public class ViewNotExistsException extends DtmException {
 
     public ViewNotExistsException(String view) {
         super(String.format("View [%s] not exists!", view));

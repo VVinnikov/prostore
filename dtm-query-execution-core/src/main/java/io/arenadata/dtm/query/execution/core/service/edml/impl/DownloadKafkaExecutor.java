@@ -50,7 +50,7 @@ public class DownloadKafkaExecutor implements EdmlDownloadExecutor {
     }
 
     private Future<QueryResult> execute(EdmlRequestContext context) {
-        if (context.getSourceEntity().getDestination().contains(edmlProperties.getSourceType())) {
+        if (checkDestinationType(context)) {
             QueryParserRequest queryParserRequest = new QueryParserRequest(context.getRequest().getQueryRequest(),
                     context.getLogicalSchema());
             return checkColumnTypesService.check(context.getDestinationEntity().getFields(), queryParserRequest)
@@ -63,6 +63,12 @@ public class DownloadKafkaExecutor implements EdmlDownloadExecutor {
             return Future.failedFuture(new IllegalStateException(
                     String.format("Source not exist in [%s]", edmlProperties.getSourceType())));
         }
+    }
+
+    private boolean checkDestinationType(EdmlRequestContext context) {
+        return context.getLogicalSchema().stream()
+            .flatMap(datamart -> datamart.getEntities().stream())
+            .allMatch(entity -> entity.getDestination().contains(edmlProperties.getSourceType()));
     }
 
     private Future<MpprRequestContext> initColumnMetadata(EdmlRequestContext context,

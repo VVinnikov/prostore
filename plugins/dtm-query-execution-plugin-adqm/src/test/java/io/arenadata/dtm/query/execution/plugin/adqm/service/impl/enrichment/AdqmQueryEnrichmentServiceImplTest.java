@@ -145,6 +145,12 @@ class AdqmQueryEnrichmentServiceImplTest {
             expectedSqls[8], enrichService);
     }
 
+    @Test
+    void enrichWithDeltaNum9() {
+        enrich(prepareRequestDeltaNum("SELECT * FROM shares.transactions where account_id = 1"),
+            expectedSqls[9], enrichService);
+    }
+
     @SneakyThrows
     private void enrich(EnrichQueryRequest enrichRequest,
                         String expectedSql,

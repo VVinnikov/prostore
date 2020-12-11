@@ -5,6 +5,7 @@ import io.arenadata.dtm.query.execution.plugin.adg.dto.EnrichQueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.TtUploadDataKafkaRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.adg.service.QueryEnrichmentService;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.kafka.DownloadExternalEntityMetadata;
 import io.arenadata.dtm.query.execution.plugin.api.request.MpprRequest;
@@ -62,7 +63,7 @@ public class AdgMpprKafkaService implements MpprKafkaService<QueryResult> {
                                 ar.cause().getMessage(),
                                 requestId);
                         log.error(errMsg);
-                        asyncResultHandler.handle(Future.failedFuture(new RuntimeException(errMsg, ar.cause())));
+                        asyncResultHandler.handle(Future.failedFuture(new DataSourceException(errMsg, ar.cause())));
                     }
                 }
         );

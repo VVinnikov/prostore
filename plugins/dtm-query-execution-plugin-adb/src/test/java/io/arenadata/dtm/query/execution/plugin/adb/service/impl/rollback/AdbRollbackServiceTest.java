@@ -9,6 +9,7 @@ import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbRollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.impl.AdbRollbackRequestFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.arenadata.dtm.query.execution.plugin.api.factory.RollbackRequestFactory;
 import io.arenadata.dtm.query.execution.plugin.api.request.RollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
@@ -126,13 +127,13 @@ class AdbRollbackServiceTest {
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<List<Map<String, Object>>>> handler = invocation.getArgument(2);
-            handler.handle(Future.failedFuture(new RuntimeException("")));
+            handler.handle(Future.failedFuture(new DataSourceException("")));
             return null;
         }).when(adbQueryExecutor).execute(any(), any(), any());
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<List<Map<String, Object>>>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new RuntimeException("")));
+            handler.handle(Future.failedFuture(new DataSourceException("")));
             return null;
         }).when(adbQueryExecutor).executeInTransaction(any(), any());
 

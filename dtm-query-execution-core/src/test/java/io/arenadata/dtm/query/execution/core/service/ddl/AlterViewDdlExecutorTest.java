@@ -10,7 +10,8 @@ import io.arenadata.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacadeImpl;
-import io.arenadata.dtm.query.execution.core.exception.entity.ViewNotExistsException;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
+import io.arenadata.dtm.query.execution.core.exception.view.ViewNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDao;
@@ -284,7 +285,7 @@ class AlterViewDdlExecutorTest {
             .thenReturn(Future.succeededFuture(entityList.get(0)));
 
         Mockito.when(entityDao.updateEntity(any()))
-            .thenReturn(Future.failedFuture("Update error"));
+            .thenReturn(Future.failedFuture(new DtmException("Update error")));
 
         alterViewDdlExecutor.execute(context, sqlNodeName, ar -> {
                 if (ar.succeeded()) {

@@ -10,6 +10,8 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.eddl.CreateDownloadExternalTableQuery;
 import io.arenadata.dtm.query.execution.core.dto.eddl.EddlAction;
 import io.arenadata.dtm.query.execution.core.dto.eddl.EddlQuery;
+import io.arenadata.dtm.query.execution.core.exception.table.ExternalTableAlreadyExistsException;
+import io.arenadata.dtm.query.execution.core.exception.table.TableAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.service.eddl.EddlExecutor;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -69,15 +71,7 @@ public class CreateDownloadExternalTableExecutor implements EddlExecutor {
 
     private Future<Void> createTableIfNotExists(Entity entity, Boolean isTableExists) {
         if (isTableExists) {
-            final RuntimeException existsException =
-                    new RuntimeException(String.format("Table [%s] is already exists in datamart [%s]!",
-                            entity.getName(),
-                            entity.getSchema()));
-            log.error("Error creating table [{}] in datamart [{}]!",
-                    entity.getName(),
-                    entity.getSchema(),
-                    existsException);
-            return Future.failedFuture(existsException);
+            return Future.failedFuture(new ExternalTableAlreadyExistsException(entity.getNameWithSchema()));
         } else {
             return createTable(entity);
         }

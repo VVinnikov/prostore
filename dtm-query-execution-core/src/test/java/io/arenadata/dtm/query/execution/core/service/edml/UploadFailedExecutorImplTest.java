@@ -9,6 +9,7 @@ import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.impl.DeltaServiceDaoImpl;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.factory.RollbackRequestContextFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.RollbackRequestContextFactoryImpl;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
@@ -148,7 +149,7 @@ class UploadFailedExecutorImplTest {
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<Void>> handler = invocation.getArgument(2);
-            handler.handle(Future.failedFuture(new RuntimeException("")));
+            handler.handle(Future.failedFuture(new DtmException("")));
             return null;
         }).when(pluginService).rollback(any(), any(), any());
 
@@ -182,7 +183,7 @@ class UploadFailedExecutorImplTest {
         }).when(pluginService).rollback(any(), any(), any());
 
         when(deltaServiceDao.deleteWriteOperation(eq(sourceEntity.getSchema()), eq(context.getSysCn())))
-                .thenReturn(Future.failedFuture(new RuntimeException("")));
+                .thenReturn(Future.failedFuture(new DtmException("")));
 
         uploadFailedExecutor.execute(context)
                 .onComplete(promise);

@@ -10,6 +10,7 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.DatamartDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
 import io.arenadata.dtm.query.execution.core.service.cache.impl.HotDeltaCacheService;
 import io.arenadata.dtm.query.execution.core.service.cache.impl.OkDeltaCacheService;
@@ -109,7 +110,7 @@ class DropSchemaDdlExecutorTest {
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new RuntimeException("")));
+            handler.handle(Future.failedFuture(new DtmException("")));
             return null;
         }).when(metadataExecutor).execute(any(), any());
 

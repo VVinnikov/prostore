@@ -10,6 +10,7 @@ import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.impl.DeltaServiceDaoImpl;
 import io.arenadata.dtm.query.execution.core.dto.delta.HotDelta;
 import io.arenadata.dtm.query.execution.core.dto.delta.OkDelta;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.impl.DeltaServiceImpl;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -65,7 +66,7 @@ class DeltaServiceImplTest {
         Long cnTo = 1L;
         OkDelta okDelta = OkDelta.builder().cnTo(cnTo).build();
 
-        RuntimeException ex = new RuntimeException("empty delta hot");
+        RuntimeException ex = new DtmException("empty delta hot");
         when(deltaServiceDao.getDeltaHot(eq(datamart))).thenReturn(Future.failedFuture(ex));
         when(deltaServiceDao.getDeltaOk(eq(datamart))).thenReturn(Future.succeededFuture(okDelta));
 
@@ -81,8 +82,8 @@ class DeltaServiceImplTest {
         Promise promise = Promise.promise();
         String datamart = "datamart";
 
-        RuntimeException exHot = new RuntimeException("empty delta hot");
-        RuntimeException exOk = new RuntimeException("empty delta ok");
+        RuntimeException exHot = new DtmException("empty delta hot");
+        RuntimeException exOk = new DtmException("empty delta ok");
         when(deltaServiceDao.getDeltaHot(eq(datamart))).thenReturn(Future.failedFuture(exHot));
         when(deltaServiceDao.getDeltaOk(eq(datamart))).thenReturn(Future.failedFuture(exOk));
 
@@ -116,7 +117,7 @@ class DeltaServiceImplTest {
         String datamart = "datamart";
         long deltaNum = 1;
 
-        RuntimeException exOk = new RuntimeException("empty delta ok");
+        RuntimeException exOk = new DtmException("empty delta ok");
         when(deltaServiceDao.getDeltaByNum(eq(datamart), eq(deltaNum))).thenReturn(Future.failedFuture(exOk));
 
         deltaService.getCnToByDeltaNum(datamart, deltaNum)
@@ -149,7 +150,7 @@ class DeltaServiceImplTest {
         String datamart = "datamart";
         LocalDateTime deltaDatetime = LocalDateTime.now(timeZone);
 
-        RuntimeException exOk = new RuntimeException("empty delta ok");
+        RuntimeException exOk = new DtmException("empty delta ok");
         when(deltaServiceDao.getDeltaByDateTime(eq(datamart), eq(deltaDatetime))).thenReturn(Future.failedFuture(exOk));
 
         deltaService.getCnToByDeltaDatetime(datamart, deltaDatetime)
@@ -186,7 +187,7 @@ class DeltaServiceImplTest {
         Long cnTo = 2L;
         OkDelta okDelta2 = OkDelta.builder().cnFrom(cnTo).build();
 
-        RuntimeException exOk = new RuntimeException("empty first delta ok");
+        RuntimeException exOk = new DtmException("empty first delta ok");
 
         when(deltaServiceDao.getDeltaByNum(eq(datamart), anyLong()))
                 .thenReturn(Future.failedFuture(exOk))
@@ -207,7 +208,7 @@ class DeltaServiceImplTest {
         Long cnFrom = 1L;
         OkDelta okDelta1 = OkDelta.builder().cnFrom(cnFrom).build();
 
-        RuntimeException exOk = new RuntimeException("empty second delta ok");
+        RuntimeException exOk = new DtmException("empty second delta ok");
 
         when(deltaServiceDao.getDeltaByNum(eq(datamart), anyLong()))
                 .thenReturn(Future.succeededFuture(okDelta1))

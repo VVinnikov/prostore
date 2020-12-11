@@ -9,6 +9,7 @@ import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlUseSchema;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
+import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsService;
 import io.arenadata.dtm.query.execution.core.utils.ParseQueryUtils;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
@@ -62,7 +63,7 @@ public class UseSchemaDmlExecutor implements DmlExecutor<QueryResult> {
                                     if (ar.result()) {
                                         promise.complete(createQueryResult(context, datamart));
                                     } else {
-                                        promise.fail(String.format("Datamart [%s] doesn't exist", datamart));
+                                        promise.fail(new DatamartNotExistsException(datamart));
                                     }
                                 } else {
                                     promise.fail(ar.cause());

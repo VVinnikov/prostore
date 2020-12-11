@@ -13,6 +13,7 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.Datama
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
 import io.arenadata.dtm.query.execution.core.dto.eddl.DropUploadExternalTableQuery;
+import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.cache.CacheService;
 import io.arenadata.dtm.query.execution.core.service.cache.key.EntityKey;
 import io.arenadata.dtm.query.execution.core.service.eddl.impl.DropUploadExternalTableExecutor;
@@ -101,7 +102,7 @@ public class DropUploadExternalTableExecutorTest {
         });
 
         assertTrue(promise.future().failed());
-        assertEquals(String.format("Table [%s] in datamart [%s] doesn't exist!", table, schema), promise.future().cause().getMessage());
+        assertTrue(promise.future().cause() instanceof TableNotExistsException);
     }
 
     @Test
@@ -109,7 +110,7 @@ public class DropUploadExternalTableExecutorTest {
         Promise promise = Promise.promise();
 
         Mockito.when(entityDao.getEntity(eq(schema), eq(table)))
-            .thenReturn(Future.failedFuture("entity not exists"));
+            .thenReturn(Future.failedFuture(new TableNotExistsException("")));
 
         dropUploadExternalTableExecutor.execute(query, ar -> {
             if (ar.succeeded()) {
@@ -120,7 +121,7 @@ public class DropUploadExternalTableExecutorTest {
         });
 
         assertTrue(promise.future().failed());
-        assertEquals("entity not exists", promise.future().cause().getMessage());
+        assertTrue(promise.future().cause() instanceof TableNotExistsException);
     }
 
     @Test

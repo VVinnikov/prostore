@@ -8,6 +8,7 @@ import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.edml.EdmlAction;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.EdmlService;
@@ -57,13 +58,16 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
                         val source = entities.get(1);
                         context.setDestinationEntity(destination);
                         context.setSourceEntity(source);
-                        if (destination.getEntityType() == EntityType.DOWNLOAD_EXTERNAL_TABLE && source.getEntityType() == EntityType.TABLE) {
+                        if (destination.getEntityType() == EntityType.DOWNLOAD_EXTERNAL_TABLE
+                                && source.getEntityType() == EntityType.TABLE) {
                             edmlQueryPromise.complete(EdmlAction.DOWNLOAD);
-                        } else if (source.getEntityType() == EntityType.UPLOAD_EXTERNAL_TABLE && destination.getEntityType() == EntityType.TABLE) {
+                        } else if (source.getEntityType() == EntityType.UPLOAD_EXTERNAL_TABLE
+                                && destination.getEntityType() == EntityType.TABLE) {
                             edmlQueryPromise.complete(EdmlAction.UPLOAD);
                         } else {
-                            edmlQueryPromise.fail(String.format("Can't determine external table in query [%s]",
-                                    context.getSqlNode().toSqlString(SQL_DIALECT).toString()));
+                            edmlQueryPromise.fail(new DtmException(
+                                    String.format("Can't determine external table from query [%s]",
+                                    context.getSqlNode().toSqlString(SQL_DIALECT).toString())));
                         }
                     })
                     .onFailure(edmlQueryPromise::fail);
@@ -79,7 +83,11 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
                 .collect(Collectors.toList());
         val destinationTable = tableInfos.get(0);
         val sourceTable = tableInfos.get(1);
-        return Future.future(p -> CompositeFuture.join(entityDao.getEntity(destinationTable.getSchemaName(), destinationTable.getTableName()), entityDao.getEntity(sourceTable.getSchemaName(), sourceTable.getTableName()))
+        return Future.future(p -> CompositeFuture.join(
+                entityDao.getEntity(destinationTable.getSchemaName(),
+                destinationTable.getTableName()),
+                entityDao.getEntity(sourceTable.getSchemaName(),
+                        sourceTable.getTableName()))
                 .onSuccess(entities -> p.complete(entities.list()))
                 .onFailure(p::fail)
         );
@@ -98,7 +106,7 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
 
     private RuntimeException getCantGetTableNameError(EdmlRequestContext context) {
         val sql = context.getRequest().getQueryRequest().getSql();
-        return new RuntimeException("Can't get table name from sql: " + sql);
+        return new DtmException(String.format("Can't determine table from query [%s]", sql));
     }
 
 }

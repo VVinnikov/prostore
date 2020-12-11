@@ -10,6 +10,7 @@ import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.configuration.properties.CoreDtmSettings;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.dml.impl.TargetDatabaseDefinitionServiceImpl;
 import io.arenadata.dtm.query.execution.core.service.impl.DataSourcePluginServiceImpl;
@@ -350,7 +351,7 @@ class TargetDatabaseDefinitionServiceImplTest {
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<Integer>> handler = invocation.getArgument(2);
-            handler.handle(Future.failedFuture(new RuntimeException("")));
+            handler.handle(Future.failedFuture(new DtmException("")));
             return null;
         }).when(dataSourcePluginService).calcQueryCost(eq(SourceType.ADB), any(), any());
 

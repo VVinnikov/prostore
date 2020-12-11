@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
 import io.arenadata.dtm.query.execution.core.service.dml.ColumnMetadataService;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
@@ -58,7 +59,7 @@ public class AlterViewDdlExecutor extends CreateViewDdlExecutor {
     protected String getViewQuery(SqlSelectTree tree) {
         val queryByView = tree.findNodesByPath(ALTER_VIEW_QUERY_PATH);
         if (queryByView.isEmpty()) {
-            throw new IllegalArgumentException("Unable to get view query");
+            throw new DtmException("Unable to get view query");
         } else {
             return queryByView.get(0).getNode().toSqlString(sqlDialect).toString();
         }

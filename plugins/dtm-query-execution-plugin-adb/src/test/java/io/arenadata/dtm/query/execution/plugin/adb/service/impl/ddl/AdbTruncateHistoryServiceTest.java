@@ -8,6 +8,7 @@ import io.arenadata.dtm.query.execution.plugin.adb.configuration.CalciteConfigur
 import io.arenadata.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TruncateHistoryService;
 import io.vertx.core.Future;
 import org.apache.calcite.sql.*;
@@ -108,7 +109,7 @@ public class AdbTruncateHistoryServiceTest {
                         return ((SqlSelect) planner.parse(String.format("SELECT * from t WHERE %s", conditions)))
                                 .getWhere();
                     } catch (SqlParseException e) {
-                        throw new RuntimeException(e);
+                        throw new DataSourceException("Error", e);
                     }
                 })
                 .orElse(null);

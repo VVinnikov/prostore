@@ -11,6 +11,7 @@ import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.*;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.*;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.Space;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.vertx.circuitbreaker.CircuitBreaker;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -273,7 +274,7 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
                         if (CollectionUtils.isEmpty(res.getErrors())) {
                             future.complete(res);
                         } else {
-                            future.fail(new RuntimeException(res.getErrors().get(0).getMessage()));
+                            future.fail(new DataSourceException(res.getErrors().get(0).getMessage()));
                         }
                     } catch (Exception e) {
                         future.fail(e);

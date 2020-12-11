@@ -8,6 +8,7 @@ import io.arenadata.dtm.kafka.core.configuration.kafka.KafkaZookeeperProperties;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.*;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.execution.core.dto.eddl.*;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.avro.AvroSchemaGenerator;
 import io.arenadata.dtm.query.execution.core.service.eddl.EddlQueryParamExtractor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
@@ -86,14 +87,22 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
                         defaultSchema,
                         asyncResultHandler);
             } else if (sqlNode instanceof SqlCreateUploadExternalTable) {
-                extractCreateUploadExternalTable((SqlCreateUploadExternalTable) sqlNode, defaultSchema, asyncResultHandler);
+                extractCreateUploadExternalTable((SqlCreateUploadExternalTable) sqlNode,
+                        defaultSchema,
+                        asyncResultHandler);
             } else if (sqlNode instanceof SqlDropUploadExternalTable) {
-                extractDropUploadExternalTable((SqlDropUploadExternalTable) sqlNode, defaultSchema, asyncResultHandler);
+                extractDropUploadExternalTable((SqlDropUploadExternalTable) sqlNode,
+                        defaultSchema,
+                        asyncResultHandler);
             } else {
-                asyncResultHandler.handle(Future.failedFuture("Query [" + sqlNode + "] is not an EDDL statement."));
+                asyncResultHandler.handle(Future.failedFuture(
+                        new DtmException(String.format("Query [%s] is not an EDDL statement",
+                                sqlNode))));
             }
         } else {
-            asyncResultHandler.handle(Future.failedFuture("Query [" + sqlNode + "] is not an EDDL statement."));
+            asyncResultHandler.handle(Future.failedFuture(
+                    new DtmException(String.format("Query [%s] is not an EDDL statement",
+                            sqlNode))));
         }
     }
 
@@ -176,9 +185,9 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
                 return getZookeeperHostPort();
             case CSV_FILE:
             case HDFS_LOCATION:
-                throw new IllegalArgumentException("The given location type: " + type + " is not supported!");
+                throw new DtmException("The given location type: " + type + " is not supported!");
             default:
-                throw new RuntimeException("This type is not supported!");
+                throw new DtmException("This type is not supported!");
         }
     }
 

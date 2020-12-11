@@ -5,7 +5,7 @@ import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
-import io.arenadata.dtm.query.execution.core.exception.entity.EntityNotExistsException;
+import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
@@ -88,27 +88,22 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
 
     private Future<Entity> getEntity(DdlRequestContext context, boolean ifExists) {
         return Future.future(entityPromise -> {
-            val entityName = context.getRequest().getEntity().getName();
             val datamartName = context.getDatamartName();
+            val entityName = context.getRequest().getEntity().getName();
+            val tableWithSchema = datamartName + "." + entityName;
             entityDao.getEntity(datamartName, entityName)
                     .onSuccess(entity -> {
                         if (EntityType.TABLE == entity.getEntityType()) {
                             entityPromise.complete(entity);
                         } else {
-                            val errMsg = String.format("Table [%s] in datamart [%s] doesn't exist!",
-                                    entityName, datamartName);
-                            log.error(errMsg);
-                            entityPromise.fail(errMsg);
+                            entityPromise.fail(new TableNotExistsException(tableWithSchema));
                         }
                     })
                     .onFailure(error -> {
-                        if (error instanceof EntityNotExistsException && ifExists) {
+                        if (error instanceof TableNotExistsException && ifExists) {
                             entityPromise.complete(null);
                         } else {
-                            log.error("Table [{}] in datamart [{}] doesn't exist!",
-                                    entityName,
-                                    datamartName, error);
-                            entityPromise.fail(error);
+                            entityPromise.fail(new TableNotExistsException(tableWithSchema));
                         }
                     });
         });

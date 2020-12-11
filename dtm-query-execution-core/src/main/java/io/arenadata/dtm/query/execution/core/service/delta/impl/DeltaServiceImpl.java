@@ -8,6 +8,7 @@ import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaAction;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaQuery;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.RollbackDeltaQuery;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaExecutor;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaQueryParamExtractor;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaService;
@@ -52,7 +53,7 @@ public class DeltaServiceImpl implements DeltaService<QueryResult> {
             String errMsg = "Datamart must be not empty!\n" +
                     "For setting datamart you can use the following command: \"USE datamartName\"";
             log.error(errMsg);
-            handler.handle(Future.failedFuture(errMsg));
+            handler.handle(Future.failedFuture(new DtmException(errMsg)));
         } else {
             extractDeltaQuery(context)
                     .compose(deltaQuery -> sendMetricsAndExecute(context, deltaQuery))

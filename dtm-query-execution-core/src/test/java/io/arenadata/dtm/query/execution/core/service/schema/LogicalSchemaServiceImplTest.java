@@ -18,6 +18,7 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
 import io.arenadata.dtm.query.execution.core.service.schema.impl.LogicalSchemaServiceImpl;
 import io.vertx.core.Future;
@@ -150,7 +151,7 @@ class LogicalSchemaServiceImplTest {
             " join test_datamart.doc t2 on t1.id = t2.id");
 
         Mockito.when(entityDao.getEntity(any(), any()))
-            .thenReturn(Future.failedFuture(new RuntimeException("Error getting entities!")));
+            .thenReturn(Future.failedFuture(new DtmException("Error getting entities!")));
 
         logicalSchemaService.createSchema(queryRequest, ar -> {
             if (ar.succeeded()) {

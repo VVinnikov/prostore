@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.core.service.config.impl;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.extension.config.SqlConfigCall;
 import io.arenadata.dtm.query.calcite.core.extension.config.SqlConfigType;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.plugin.api.config.ConfigRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.config.ConfigExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.config.ConfigService;
@@ -39,11 +40,11 @@ public class ConfigServiceImpl implements ConfigService<QueryResult> {
                     .onComplete(handler);
             } else {
                 log.error(NOT_SUPPORTED_CONFIG_QUERY_TYPE);
-                handler.handle(Future.failedFuture(NOT_SUPPORTED_CONFIG_QUERY_TYPE));
+                handler.handle(Future.failedFuture(new DtmException(NOT_SUPPORTED_CONFIG_QUERY_TYPE)));
             }
         } catch (Exception e) {
             log.error(NOT_SUPPORTED_CONFIG_QUERY_TYPE, e);
-            handler.handle(Future.failedFuture(NOT_SUPPORTED_CONFIG_QUERY_TYPE));
+            handler.handle(Future.failedFuture(new DtmException(NOT_SUPPORTED_CONFIG_QUERY_TYPE)));
         }
     }
 

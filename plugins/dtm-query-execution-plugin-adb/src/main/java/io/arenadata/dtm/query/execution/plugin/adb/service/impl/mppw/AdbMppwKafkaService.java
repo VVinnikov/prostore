@@ -2,6 +2,7 @@ package io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw;
 
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.executor.AdbMppwRequestExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.MppwRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.MppwKafkaService;
@@ -32,7 +33,7 @@ public class AdbMppwKafkaService implements MppwKafkaService<QueryResult> {
         try {
             MppwRequest request = context.getRequest();
             if (request == null) {
-                asyncHandler.handle(Future.failedFuture("MppwRequest should not be null"));
+                asyncHandler.handle(Future.failedFuture(new MppwDatasourceException("MppwRequest should not be null")));
                 return;
             }
             final LoadType loadType = LoadType.valueOf(context.getRequest().getIsLoadStart());

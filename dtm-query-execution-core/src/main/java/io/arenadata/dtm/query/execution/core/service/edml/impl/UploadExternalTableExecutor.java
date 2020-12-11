@@ -7,6 +7,7 @@ import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dto.delta.DeltaWriteOpRequest;
 import io.arenadata.dtm.query.execution.core.dto.edml.EdmlAction;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadExecutor;
@@ -74,7 +75,7 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
                     context.getDestinationEntity().getName(),
                     context.getDestinationEntity().getSchema());
             log.error(failureMessage);
-            return Future.failedFuture(failureMessage);
+            return Future.failedFuture(new DtmException(failureMessage));
         } else {
             return Future.succeededFuture();
         }
@@ -138,7 +139,7 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
                 });
             } else {
                 log.error("Loading type {} not implemented", context.getSourceEntity().getExternalTableLocationType());
-                promise.fail(new RuntimeException("Other download types are not yet implemented!"));
+                promise.fail(new DtmException("Other download types are not yet implemented!"));
             }
         });
     }

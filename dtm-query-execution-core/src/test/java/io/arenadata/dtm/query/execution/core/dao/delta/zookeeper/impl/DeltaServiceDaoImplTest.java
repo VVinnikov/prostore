@@ -5,7 +5,7 @@ import io.arenadata.dtm.query.execution.core.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.core.configuration.properties.CoreDtmSettings;
 import io.arenadata.dtm.query.execution.core.configuration.properties.ServiceDbZookeeperProperties;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.impl.*;
-import io.arenadata.dtm.query.execution.core.exception.delta.DeltaAlreadyStartedException;
+import io.arenadata.dtm.query.execution.core.exception.delta.DeltaIsNotCommittedException;
 import io.arenadata.dtm.query.execution.core.exception.delta.DeltaNotFinishedException;
 import io.arenadata.dtm.query.execution.core.exception.delta.TableBlockedException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
@@ -235,7 +235,7 @@ public class DeltaServiceDaoImplTest {
             });
         assertThat(testContext.awaitCompletion(120, TimeUnit.SECONDS)).isTrue();
         assertTrue(testContext.failed());
-        assertTrue(testContext.causeOfFailure() instanceof DeltaAlreadyStartedException);
+        assertTrue(testContext.causeOfFailure() instanceof DeltaIsNotCommittedException);
     }
 
     @Test

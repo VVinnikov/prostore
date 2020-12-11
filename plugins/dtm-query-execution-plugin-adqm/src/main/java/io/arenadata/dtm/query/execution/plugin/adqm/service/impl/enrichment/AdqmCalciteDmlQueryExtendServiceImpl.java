@@ -5,6 +5,7 @@ import io.arenadata.dtm.common.delta.DeltaType;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.QueryGeneratorContext;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.AdqmHelperTableNamesFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.QueryExtendService;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -418,7 +419,7 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
                     case NUM:
                         return createRelNodeDeltaNum(conditionContext).stream();
                     default:
-                        throw new RuntimeException(String.format("Incorrect delta type %s, expected values: %s!",
+                        throw new DataSourceException(String.format("Incorrect delta type %s, expected values: %s!",
                             deltaInfo.getType(), Arrays.toString(DeltaType.values())));
                 }
             }).collect(Collectors.toList());

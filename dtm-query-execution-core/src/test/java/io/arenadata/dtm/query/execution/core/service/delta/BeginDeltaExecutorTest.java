@@ -8,6 +8,7 @@ import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.impl.DeltaServiceDaoImpl;
 import io.arenadata.dtm.query.execution.core.dto.delta.DeltaRecord;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.BeginDeltaQuery;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.delta.BeginDeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.service.delta.impl.BeginDeltaExecutor;
@@ -130,7 +131,7 @@ class BeginDeltaExecutorTest {
         queryResult.setRequestId(req.getRequestId());
         queryResult.setResult(createResult(deltaNum));
 
-        RuntimeException exception = new RuntimeException("write new delta hot error");
+        RuntimeException exception = new DtmException("write new delta hot error");
 
         when(deltaServiceDao.writeNewDeltaHot(eq(datamart)))
                 .thenReturn(Future.failedFuture(exception));
@@ -157,7 +158,7 @@ class BeginDeltaExecutorTest {
                 .build();
 
         when(deltaServiceDao.writeNewDeltaHot(eq(datamart)))
-                .thenReturn(Future.failedFuture(new RuntimeException("")));
+                .thenReturn(Future.failedFuture(new DtmException("")));
 
         beginDeltaExecutor.execute(deltaQuery, handler -> {
             if (handler.succeeded()) {
@@ -189,7 +190,7 @@ class BeginDeltaExecutorTest {
                 .thenReturn(Future.succeededFuture(deltaNum));
 
         when(deltaQueryResultFactory.create(any()))
-                .thenThrow(new RuntimeException(""));
+                .thenThrow(new DtmException(""));
 
         beginDeltaExecutor.execute(deltaQuery, handler -> {
             if (handler.succeeded()) {

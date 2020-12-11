@@ -22,6 +22,8 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 
+import static io.arenadata.dtm.query.execution.core.utils.DeltaQueryUtil.DELTA_DATE_TIME_FORMATTER;
+
 @Slf4j
 @Component
 public class WriteDeltaHotSuccessExecutorImpl extends DeltaServiceDaoExecutorHelper implements WriteDeltaHotSuccessExecutor {
@@ -45,7 +47,7 @@ public class WriteDeltaHotSuccessExecutorImpl extends DeltaServiceDaoExecutorHel
             .map(bytes -> bytes == null ? new Delta() : deserializedDelta(bytes))
             .map(delta -> {
                 if (delta.getHot() == null) {
-                    throw new DeltaNotStartedException();
+                    throw new DeltaIsAlreadyCommittedException();
                 }
                 ctx.setDelta(delta);
                 return delta;
@@ -93,7 +95,8 @@ public class WriteDeltaHotSuccessExecutorImpl extends DeltaServiceDaoExecutorHel
 
     private Future<Delta> createDeltaPaths(String datamart, LocalDateTime deltaHotDate, Delta delta) {
         if (deltaHotDate != null && deltaHotDate.isBefore(delta.getOk().getDeltaDate())) {
-            return Future.failedFuture(new InvalidDeltaDateException());
+            return Future.failedFuture(
+                    new DeltaUnableSetDateTimeException(DELTA_DATE_TIME_FORMATTER.format(delta.getOk().getDeltaDate())));
         } else {
             return createDeltaDatePath(datamart, delta)
                 .map(delta)

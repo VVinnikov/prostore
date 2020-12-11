@@ -1,11 +1,11 @@
 package io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl;
 
 import io.arenadata.dtm.async.AsyncUtils;
-import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartAlreadyExistsException;
-import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.dto.delta.Delta;
 import io.arenadata.dtm.query.execution.core.dto.metadata.DatamartInfo;
+import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartAlreadyExistsException;
+import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -38,30 +38,28 @@ public class DatamartDaoImpl implements DatamartDao {
     @Override
     public Future<Void> createDatamart(String name) {
         return executor.createEmptyPersistentPath(envPath)
-            .otherwise(error -> {
-                if (error instanceof KeeperException.NodeExistsException) {
-                    return envPath;
-                } else {
-                    throw error(error,
-                        String.format("Can't create datamart [%s]", name),
-                        RuntimeException::new);
-                }
-            })
-            .compose(r -> executor.multi(getCreateDatamartOps(getTargetPath(name))))
-            .otherwise(error -> {
-                if (error instanceof KeeperException.NodeExistsException) {
-                    if (isDatamartExists((KeeperException) error)) {
+                .otherwise(error -> {
+                    if (error instanceof KeeperException.NodeExistsException) {
+                        return envPath;
+                    } else {
                         throw error(error,
-                            String.format("Datamart [%s] already exists!", name),
-                            DatamartAlreadyExistsException::new);
+                                String.format("Can't create datamart [%s]", name),
+                                RuntimeException::new);
                     }
-                }
-                throw error(error,
-                    String.format("Can't create datamart [%s]", name),
-                    RuntimeException::new);
-            })
-            .compose(AsyncUtils::toEmptyVoidFuture)
-            .onSuccess(s -> log.info("Datamart [{}] successfully created", name));
+                })
+                .compose(r -> executor.multi(getCreateDatamartOps(getTargetPath(name))))
+                .otherwise(error -> {
+                    if (error instanceof KeeperException.NodeExistsException) {
+                        if (isDatamartExists((KeeperException) error)) {
+                            throw error(new DatamartAlreadyExistsException(name));
+                        }
+                    }
+                    throw error(error,
+                            String.format("Can't create datamart [%s]", name),
+                            RuntimeException::new);
+                })
+                .compose(AsyncUtils::toEmptyVoidFuture)
+                .onSuccess(s -> log.info("Datamart [{}] successfully created", name));
     }
 
     private List<Op> getCreateDatamartOps(String datamartPath) {
@@ -72,11 +70,11 @@ public class DatamartDaoImpl implements DatamartDao {
             throw new RuntimeException("Can't serialize delta");
         }
         return Arrays.asList(
-            Op.create(datamartPath, EMPTY_DATA, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT),
-            createDatamartNodeOp(datamartPath, "/entity"),
-            Op.create(datamartPath + "/delta", deltaData, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT),
-            createDatamartNodeOp(datamartPath, "/delta/num"),
-            createDatamartNodeOp(datamartPath, "/delta/date")
+                Op.create(datamartPath, EMPTY_DATA, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT),
+                createDatamartNodeOp(datamartPath, "/entity"),
+                Op.create(datamartPath + "/delta", deltaData, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT),
+                createDatamartNodeOp(datamartPath, "/delta/num"),
+                createDatamartNodeOp(datamartPath, "/delta/date")
         );
     }
 
@@ -92,46 +90,44 @@ public class DatamartDaoImpl implements DatamartDao {
     @Override
     public void getDatamartMeta(Handler<AsyncResult<List<DatamartInfo>>> resultHandler) {
         getDatamarts()
-            .onSuccess(names -> resultHandler.handle(
-                Future.succeededFuture(
-                    names.stream()
-                        .map(DatamartInfo::new)
-                        .collect(Collectors.toList()
-                        )
-                )))
-            .onFailure(error -> resultHandler.handle(Future.failedFuture(error)));
+                .onSuccess(names -> resultHandler.handle(
+                        Future.succeededFuture(
+                                names.stream()
+                                        .map(DatamartInfo::new)
+                                        .collect(Collectors.toList()
+                                        )
+                        )))
+                .onFailure(error -> resultHandler.handle(Future.failedFuture(error)));
     }
 
     @Override
     public Future<List<String>> getDatamarts() {
         return executor.getChildren(envPath)
-            .otherwise(error -> {
-                if (error instanceof KeeperException.NoNodeException) {
-                    throw error(error,
-                        String.format("Env [%s] not exists", envPath),
-                        RuntimeException::new);
-                } else {
-                    throw error(error,
-                        "Can't get datamarts",
-                        RuntimeException::new);
-                }
-            });
+                .otherwise(error -> {
+                    if (error instanceof KeeperException.NoNodeException) {
+                        throw error(error,
+                                String.format("Env [%s] not exists", envPath),
+                                RuntimeException::new);
+                    } else {
+                        throw error(error,
+                                "Can't get datamarts",
+                                RuntimeException::new);
+                    }
+                });
     }
 
     @Override
     public Future<?> getDatamart(String name) {
         return executor.getData(getTargetPath(name))
-            .otherwise(error -> {
-                if (error instanceof KeeperException.NoNodeException) {
-                    throw error(error,
-                        String.format("Datamart [%s] not exists", name),
-                        DatamartNotExistsException::new);
-                } else {
-                    throw error(error,
-                        String.format("Can't get datamarts [%s]", name),
-                        RuntimeException::new);
-                }
-            });
+                .otherwise(error -> {
+                    if (error instanceof KeeperException.NoNodeException) {
+                        throw error(new DatamartNotExistsException(name));
+                    } else {
+                        throw error(error,
+                                String.format("Can't get datamarts [%s]", name),
+                                RuntimeException::new);
+                    }
+                });
     }
 
     @Override
@@ -142,18 +138,16 @@ public class DatamartDaoImpl implements DatamartDao {
     @Override
     public Future<Void> deleteDatamart(String name) {
         return executor.deleteRecursive(getTargetPath(name))
-            .otherwise(error -> {
-                if (error instanceof IllegalArgumentException) {
-                    throw error(error,
-                        String.format("Datamart [%s] does not exists!", name),
-                        DatamartNotExistsException::new);
-                } else {
-                    throw error(error,
-                        String.format("Can't delete datamarts [%s]", name),
-                        RuntimeException::new);
-                }
-            })
-            .onSuccess(s -> log.info("Datamart [{}] successfully removed", name));
+                .otherwise(error -> {
+                    if (error instanceof IllegalArgumentException) {
+                        throw error(new DatamartNotExistsException(name));
+                    } else {
+                        throw error(error,
+                                String.format("Can't delete datamarts [%s]", name),
+                                RuntimeException::new);
+                    }
+                })
+                .onSuccess(s -> log.info("Datamart [{}] successfully removed", name));
     }
 
     private RuntimeException error(Throwable error,
@@ -161,6 +155,11 @@ public class DatamartDaoImpl implements DatamartDao {
                                    BiFunction<String, Throwable, RuntimeException> errFunc) {
         log.error(errMsg, error);
         return errFunc.apply(errMsg, error);
+    }
+
+    private RuntimeException error(RuntimeException error) {
+        log.error(error.getMessage(), error);
+        return error;
     }
 
     @Override

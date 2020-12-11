@@ -43,7 +43,10 @@ public class AdbMpprKafkaService implements MpprKafkaService<QueryResult> {
 				.compose(v -> dropWritableExtTable(schema, table))
 				.onSuccess(success -> asyncHandler.handle(Future.succeededFuture(QueryResult.emptyResult())))
 				.onFailure(err -> {
-					log.error("Failed to unload data from ADB: %s on request %s", err.getMessage(), request.getQueryRequest().getRequestId());
+					log.error("Failed to unload data from ADB: {} on request {}",
+							err.getMessage(),
+							request.getQueryRequest().getRequestId(),
+							err);
 					dropWritableExtTable(schema, table)
 							.onComplete(dropResult -> {
 								if (dropResult.failed()) {

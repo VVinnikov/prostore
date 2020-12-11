@@ -6,6 +6,7 @@ import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.extension.check.CheckType;
 import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckTable;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckException;
@@ -40,7 +41,9 @@ public class CheckTableExecutor implements CheckExecutor {
                     if (EntityType.TABLE.equals(entity.getEntityType())) {
                         return Future.succeededFuture(entity);
                     } else {
-                        return Future.failedFuture(String.format("%s.%s doesn't exist", datamartMnemonic, tableName));
+                        return Future.failedFuture(new DtmException(String.format("%s.%s doesn't exist",
+                                datamartMnemonic,
+                                tableName)));
                     }
                 })
                 .compose(entity -> checkEntity(entity, context));
@@ -49,7 +52,10 @@ public class CheckTableExecutor implements CheckExecutor {
     private Future<String> checkEntity(Entity entity, CheckContext context) {
         return Future.future(promise -> CompositeFuture.join(entity.getDestination()
                 .stream()
-                .map(type -> checkEntityByType(new CheckContext(context.getMetrics(), context.getRequest(), entity), type))
+                .map(type -> checkEntityByType(new CheckContext(context.getMetrics(),
+                                context.getRequest(),
+                                entity),
+                        type))
                 .collect(Collectors.toList()))
                 .onSuccess(result -> {
                     List<Pair<SourceType, Optional<String>>> list = result.list();

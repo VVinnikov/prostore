@@ -12,6 +12,7 @@ import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.impl.DeltaServiceDaoImpl;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadExternalTableExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadFailedExecutorImpl;
@@ -191,7 +192,7 @@ class UploadExternalTableExecutorTest {
         context.setSourceEntity(sourceEntity);
 
         when(deltaServiceDao.writeNewOperation(any()))
-                .thenReturn(Future.failedFuture(new RuntimeException("")));
+                .thenReturn(Future.failedFuture(new DtmException("")));
 
         uploadExternalTableExecutor.execute(context, ar -> {
             if (ar.succeeded()) {
@@ -232,7 +233,7 @@ class UploadExternalTableExecutorTest {
         }).when(uploadExecutors.get(0)).execute(any(), any());
 
         when(deltaServiceDao.writeOperationSuccess(eq(queryRequest.getDatamartMnemonic()),
-                eq(sysCn))).thenReturn(Future.failedFuture(new RuntimeException("")));
+                eq(sysCn))).thenReturn(Future.failedFuture(new DtmException("")));
 
         uploadExternalTableExecutor.execute(context, ar -> {
             if (ar.succeeded()) {
@@ -267,7 +268,7 @@ class UploadExternalTableExecutorTest {
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new RuntimeException("")));
+            handler.handle(Future.failedFuture(new DtmException("")));
             return null;
         }).when(uploadExecutors.get(0)).execute(any(), any());
 
@@ -311,12 +312,12 @@ class UploadExternalTableExecutorTest {
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new RuntimeException("")));
+            handler.handle(Future.failedFuture(new DtmException("")));
             return null;
         }).when(uploadExecutors.get(0)).execute(any(), any());
 
         when(deltaServiceDao.writeOperationError(eq("test"), eq(sysCn)))
-                .thenReturn(Future.failedFuture(new RuntimeException("")));
+                .thenReturn(Future.failedFuture(new DtmException("")));
 
         uploadExternalTableExecutor.execute(context, ar -> {
             if (ar.succeeded()) {
@@ -350,14 +351,15 @@ class UploadExternalTableExecutorTest {
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new RuntimeException("")));
+            handler.handle(Future.failedFuture(new DtmException("")));
             return null;
         }).when(uploadExecutors.get(0)).execute(any(), any());
 
         when(deltaServiceDao.writeOperationError(eq("test"), eq(sysCn)))
                 .thenReturn(Future.succeededFuture());
 
-        when(uploadFailedExecutor.execute(any())).thenReturn(Future.failedFuture(new RuntimeException("")));
+        when(uploadFailedExecutor.execute(any()))
+                .thenReturn(Future.failedFuture(new DtmException("")));
 
         uploadExternalTableExecutor.execute(context, ar -> {
             if (ar.succeeded()) {

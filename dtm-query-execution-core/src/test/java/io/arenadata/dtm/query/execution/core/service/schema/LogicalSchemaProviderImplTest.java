@@ -6,6 +6,7 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.schema.impl.LogicalSchemaProviderImpl;
 import io.arenadata.dtm.query.execution.core.service.schema.impl.LogicalSchemaServiceImpl;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
@@ -94,7 +95,7 @@ class LogicalSchemaProviderImplTest {
         Promise promise = Promise.promise();
         doAnswer(invocation -> {
             final Handler<AsyncResult<Map<DatamartSchemaKey, Entity>>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new RuntimeException("Ошибка создания схемы!")));
+            handler.handle(Future.failedFuture(new DtmException("Ошибка создания схемы!")));
             return null;
         }).when(logicalSchemaService).createSchema(any(), any());
 

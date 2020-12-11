@@ -2,6 +2,7 @@ package io.arenadata.dtm.query.execution.plugin.adqm.service.mock;
 
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -50,7 +51,7 @@ public class MockDatabaseExecutor implements DatabaseExecutor {
         if (r.getLeft()) {
             resultHandler.handle(Future.succeededFuture());
         } else {
-            resultHandler.handle(Future.failedFuture(r.getRight()));
+            resultHandler.handle(Future.failedFuture(new DataSourceException(r.getRight())));
         }
     }
 
@@ -60,7 +61,7 @@ public class MockDatabaseExecutor implements DatabaseExecutor {
         if (r.getLeft()) {
             completionHandler.handle(Future.succeededFuture());
         } else {
-            completionHandler.handle(Future.failedFuture(r.getRight()));
+            completionHandler.handle(Future.failedFuture(new DataSourceException(r.getRight())));
         }
     }
 
@@ -70,7 +71,7 @@ public class MockDatabaseExecutor implements DatabaseExecutor {
         if (r.getLeft()) {
             resultHandler.handle(Future.succeededFuture());
         } else {
-            resultHandler.handle(Future.failedFuture(r.getRight()));
+            resultHandler.handle(Future.failedFuture(new DataSourceException(r.getRight())));
         }
     }
 

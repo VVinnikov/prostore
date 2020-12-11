@@ -15,6 +15,7 @@ import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwKaf
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwKafkaRequestContext;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwTransferDataRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -65,7 +66,7 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
         return Future.future((Promise<QueryResult> promise) -> {
             val format = context.getRequest().getKafkaParameter().getUploadMetadata().getFormat();
             if (!Format.AVRO.equals(format)) {
-                promise.fail(new RuntimeException(String.format("Format %s not implemented", format)));
+                promise.fail(new DataSourceException(String.format("Format %s not implemented", format)));
             }
             List<KafkaBrokerInfo> brokers = context.getRequest().getKafkaParameter().getBrokers();
             getOrCreateServer(brokers, dbName)

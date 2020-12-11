@@ -8,6 +8,7 @@ import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.impl.DeltaServiceDaoImpl;
 import io.arenadata.dtm.query.execution.core.dto.delta.DeltaRecord;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.CommitDeltaQuery;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.delta.CommitDeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.service.delta.impl.CommitDeltaExecutor;
@@ -136,7 +137,7 @@ class CommitDeltaExecutorTest {
         QueryResult queryResult = new QueryResult();
         queryResult.setRequestId(req.getRequestId());
 
-        RuntimeException exception = new RuntimeException("");
+        RuntimeException exception = new DtmException("");
 
         when(deltaServiceDao.writeDeltaHotSuccess(eq(datamart)))
                 .thenReturn(Future.failedFuture(exception));
@@ -203,7 +204,7 @@ class CommitDeltaExecutorTest {
                 .thenReturn(Future.succeededFuture(deltaDate));
 
         when(deltaQueryResultFactory.create(any()))
-                .thenThrow(new RuntimeException(""));
+                .thenThrow(new DtmException(""));
 
         commitDeltaExecutor.execute(deltaQuery, handler -> {
             if (handler.succeeded()) {

@@ -8,6 +8,7 @@ import io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaB
 import io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaHot;
 import io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaOk;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.*;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.factory.DeltaQueryFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlDialect;
@@ -57,7 +58,7 @@ public class DeltaQueryFactoryImpl implements DeltaQueryFactory {
         } else if (sqlNode instanceof SqlRollbackDelta) {
             return RollbackDeltaQuery.builder().build();
         } else {
-            throw new RuntimeException(String.format("Query [%s] is not a DELTA operator",
+            throw new DtmException(String.format("Query [%s] is not a DELTA operator",
                     sqlNode.toSqlString(sqlDialect)));
         }
     }
@@ -67,7 +68,7 @@ public class DeltaQueryFactoryImpl implements DeltaQueryFactory {
             try {
                 return LocalDateTime.parse(deltaDateTimeStr, DELTA_DATE_TIME_FORMATTER);
             } catch (Exception e) {
-                throw new RuntimeException(String.format("Incorrect format of delta date value: %s, correct template: %s",
+                throw new DtmException(String.format("Incorrect format of delta date value: %s, correct template: %s",
                         deltaDateTimeStr, DELTA_DATE_TIME_PATTERN), e);
             }
         } else {

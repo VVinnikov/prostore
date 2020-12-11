@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.zookeeper.impl;
 
 import io.arenadata.dtm.query.execution.core.configuration.properties.ServiceDbZookeeperProperties;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.zookeeper.ZookeeperConnectionProvider;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +39,7 @@ public class ZookeeperConnectionProviderImpl implements ZookeeperConnectionProvi
             initializeEnv(envName);
         } catch (Exception e) {
             String errMsg = String.format("Can't create chroot node [%s] for zk datasource", properties.getChroot());
-            throw new RuntimeException(errMsg, e);
+            throw new DtmException(errMsg, e);
         } finally {
             close();
         }

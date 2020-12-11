@@ -7,6 +7,9 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.eddl.DropDownloadExternalTableQuery;
 import io.arenadata.dtm.query.execution.core.dto.eddl.EddlAction;
 import io.arenadata.dtm.query.execution.core.dto.eddl.EddlQuery;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
+import io.arenadata.dtm.query.execution.core.exception.table.ExternalTableNotExistsException;
+import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.eddl.EddlExecutor;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -49,25 +52,21 @@ public class DropDownloadExternalTableExecutor implements EddlExecutor {
 
     protected Future<Void> dropTable(String datamartName, String entityName) {
         return getEntity(datamartName, entityName)
-                .compose(entity -> dropEntityIfExists(entity));
+                .compose(this::dropEntityIfExists);
     }
 
     private Future<Entity> getEntity(String datamartName, String entityName) {
         return Future.future(entityPromise -> {
+            val tableWithSchema = datamartName + "." + entityName;
             entityDao.getEntity(datamartName, entityName)
                     .onSuccess(entity -> {
                         if (EntityType.DOWNLOAD_EXTERNAL_TABLE == entity.getEntityType()) {
                             entityPromise.complete(entity);
                         } else {
-                            val errMsg = String.format("Table [%s] in datamart [%s] doesn't exist!", entityName, datamartName);
-                            log.error(errMsg);
-                            entityPromise.fail(errMsg);
+                            entityPromise.fail(new ExternalTableNotExistsException(tableWithSchema));
                         }
                     })
-                    .onFailure(error -> {
-                        log.error("Table [{}] in datamart [{}] doesn't exist!", entityName, datamartName, error);
-                        entityPromise.fail(error);
-                    });
+                    .onFailure(error -> entityPromise.fail(new DtmException(error)));
         });
     }
 

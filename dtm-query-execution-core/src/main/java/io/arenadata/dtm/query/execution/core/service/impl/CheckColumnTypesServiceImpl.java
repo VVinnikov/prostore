@@ -35,13 +35,13 @@ public class CheckColumnTypesServiceImpl implements CheckColumnTypesService {
                     val destinationColumns = destinationFields.stream()
                             .map(field -> CalciteUtil.valueOf(field.getType()))
                             .collect(Collectors.toList());
-                    val sourceColumns = ar.result().getRelNode().validatedRowType.getFieldList().stream()
-                            .map(field -> field.getType().getSqlTypeName())
-                            .collect(Collectors.toList());
+                    val sourceColumns =
+                            ar.result().getRelNode().validatedRowType.getFieldList().stream()
+                                    .map(field -> field.getType().getSqlTypeName())
+                                    .collect(Collectors.toList());
                     promise.complete(destinationColumns.equals(sourceColumns));
                 } else {
                     promise.fail(ar.cause());
-
                 }
             } catch (Exception e) {
                 promise.fail(e);

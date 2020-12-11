@@ -37,7 +37,7 @@ public class WriteDeltaErrorExecutorImpl extends DeltaServiceDaoExecutorHelper i
                 if (delta.getHot() == null) {
                     throw new DeltaHotNotStartedException();
                 } else if (deltaHotNum != null && deltaHotNum != delta.getHot().getDeltaNum()) {
-                    throw new InvalidDeltaNumException();
+                    throw new DeltaNumIsNotNextToActualException(deltaHotNum.toString());
                 } else if (delta.getHot().isRollingBack()){
                     throw new DeltaAlreadyIsRollingBackException();
                 }

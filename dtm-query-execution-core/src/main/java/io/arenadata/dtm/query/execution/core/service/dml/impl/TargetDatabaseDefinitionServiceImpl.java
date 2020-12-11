@@ -7,6 +7,7 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QuerySourceRequest;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.dml.TargetDatabaseDefinitionService;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
@@ -85,10 +86,10 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
     private Set<SourceType> getSourceTypes(QuerySourceRequest request, List<Entity> entities) {
         final Set<SourceType> stResult = getCommonSourceTypes(entities);
         if (stResult.isEmpty()) {
-            throw new RuntimeException("Tables have no datasource in common");
+            throw new DtmException("Tables have no datasource in common");
         } else if (request.getSourceType() != null) {
             if (!stResult.contains(request.getSourceType())) {
-                throw new RuntimeException(String.format("Tables common datasources does not include %s",
+                throw new DtmException(String.format("Tables common datasources does not include %s",
                     request.getSourceType()));
             } else {
                 return newHashSet(request.getSourceType());

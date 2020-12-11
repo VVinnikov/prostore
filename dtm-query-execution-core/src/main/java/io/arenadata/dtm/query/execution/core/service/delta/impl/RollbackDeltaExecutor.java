@@ -5,6 +5,7 @@ import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.status.StatusEventCode;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.exception.delta.DeltaAlreadyIsRollingBackException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.delta.DeltaRecord;
@@ -75,14 +76,14 @@ public class RollbackDeltaExecutor implements DeltaExecutor, StatusEventPublishe
                     val errMsg = String.format("Can't publish result of delta rollback by datamart [%s]: %s",
                         deltaQuery.getDatamart(), e.getMessage());
                     log.error(errMsg);
-                    handler.handle(Future.failedFuture(new RuntimeException(errMsg)));
+                    handler.handle(Future.failedFuture(new DtmException(errMsg)));
                 }
             })
             .onFailure(error -> {
                 val errMsg = String.format("Can't rollback delta by datamart [%s]: %s",
                     deltaQuery.getDatamart(), error.getMessage());
                 log.error(errMsg);
-                handler.handle(Future.failedFuture(new RuntimeException(errMsg)));
+                handler.handle(Future.failedFuture(new DtmException(errMsg)));
             });
     }
 

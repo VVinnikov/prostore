@@ -8,6 +8,7 @@ import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.impl.DeltaServiceDaoImpl;
 import io.arenadata.dtm.query.execution.core.dto.delta.OkDelta;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.GetDeltaByDateTimeQuery;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.delta.BeginDeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.service.delta.impl.GetDeltaByDateTimeExecutor;
@@ -138,7 +139,7 @@ class GetDeltaByDateTimeExecutorTest {
                 .build();
 
         when(deltaServiceDao.getDeltaByDateTime(eq(datamart), eq(deltaDate)))
-                .thenReturn(Future.failedFuture(new RuntimeException("")));
+                .thenReturn(Future.failedFuture(new DtmException("")));
 
         deltaByDateTimeExecutor.execute(deltaQuery, handler -> {
             if (handler.succeeded()) {
@@ -174,7 +175,7 @@ class GetDeltaByDateTimeExecutorTest {
                 .thenReturn(Future.succeededFuture(deltaOk));
 
         when(deltaQueryResultFactory.create(any()))
-                .thenThrow(new RuntimeException(""));
+                .thenThrow(new DtmException(""));
 
         deltaByDateTimeExecutor.execute(deltaQuery, handler -> {
             if (handler.succeeded()) {

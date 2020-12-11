@@ -4,6 +4,7 @@ import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.core.configuration.properties.EdmlProperties;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.factory.MpprKafkaRequestFactory;
 import io.arenadata.dtm.query.execution.core.service.CheckColumnTypesService;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
@@ -53,14 +54,15 @@ public class DownloadKafkaExecutor implements EdmlDownloadExecutor {
         if (context.getSourceEntity().getDestination().contains(edmlProperties.getSourceType())) {
             QueryParserRequest queryParserRequest = new QueryParserRequest(context.getRequest().getQueryRequest(),
                     context.getLogicalSchema());
+            //TODO add checking for column names, and throw new ColumnNotExistsException if will be error
             return checkColumnTypesService.check(context.getDestinationEntity().getFields(), queryParserRequest)
                     .compose(areEqual -> areEqual ? mpprKafkaRequestFactory.create(context)
-                            : Future.failedFuture(String.format(CheckColumnTypesServiceImpl.FAIL_CHECK_COLUMNS_PATTERN,
-                            context.getDestinationEntity().getName())))
+                            : Future.failedFuture(new DtmException(String.format(CheckColumnTypesServiceImpl.FAIL_CHECK_COLUMNS_PATTERN,
+                            context.getDestinationEntity().getName()))))
                     .compose(mpprRequestContext -> initColumnMetadata(context, mpprRequestContext))
                     .compose(this::executeMppr);
         } else {
-            return Future.failedFuture(new IllegalStateException(
+            return Future.failedFuture(new DtmException(
                     String.format("Source not exist in [%s]", edmlProperties.getSourceType())));
         }
     }

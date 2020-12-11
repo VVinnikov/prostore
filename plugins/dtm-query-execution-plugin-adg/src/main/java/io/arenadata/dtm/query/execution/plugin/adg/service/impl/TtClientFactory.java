@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adg.service.impl;
 import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.TarantoolDatabaseProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.service.TtClient;
 import io.arenadata.dtm.query.execution.plugin.adg.service.TtResultTranslator;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import org.apache.commons.pool2.BasePooledObjectFactory;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
@@ -23,7 +24,7 @@ public class TtClientFactory extends BasePooledObjectFactory<TtClient> {
     try {
       client = new TtClientImpl(tarantoolProperties, resultTranslator);
     } catch (Exception e) {
-      throw new RuntimeException("Error connecting to Tarantool: " + tarantoolProperties, e);
+      throw new DataSourceException("Error connecting to Tarantool: " + tarantoolProperties, e);
     }
     return client;
   }

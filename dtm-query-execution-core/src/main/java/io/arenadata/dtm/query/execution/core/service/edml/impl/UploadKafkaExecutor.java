@@ -11,6 +11,7 @@ import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.kafka.core.configuration.properties.KafkaProperties;
 import io.arenadata.dtm.query.execution.core.configuration.properties.EdmlProperties;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.factory.MppwKafkaRequestFactory;
 import io.arenadata.dtm.query.execution.core.service.CheckColumnTypesService;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
@@ -78,10 +79,11 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                     destination);
             QueryParserRequest queryParserRequest = new QueryParserRequest(context.getRequest().getQueryRequest(),
                     context.getLogicalSchema());
+            //TODO add checking for column names, and throw new ColumnNotExistsException if will be error
             checkColumnTypesService.check(context.getDestinationEntity().getFields(), queryParserRequest)
                     .compose(areEqual -> areEqual ? mppwKafkaRequestFactory.create(context)
-                            : Future.failedFuture(String.format(CheckColumnTypesServiceImpl.FAIL_CHECK_COLUMNS_PATTERN,
-                            context.getDestinationEntity().getName())))
+                            : Future.failedFuture(new DtmException(String.format(CheckColumnTypesServiceImpl.FAIL_CHECK_COLUMNS_PATTERN,
+                            context.getDestinationEntity().getName()))))
                     .onSuccess(mppwRequestContext -> {
                         destination.forEach(ds ->
                                 startMppwFutureMap.put(ds, startMppw(ds, mppwRequestContext.copy(), context)));
@@ -125,7 +127,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                                         MppwStopFuture stopFuture = MppwStopFuture.builder()
                                                 .sourceType(ds)
                                                 .future(stopMppw(ds, mppwRequestContext))
-                                                .cause(new RuntimeException(String.format("Plugin %s consumer failed to start", ds)))
+                                                .cause(new DtmException(String.format("Plugin %s consumer failed to start", ds)))
                                                 .stopReason(MppwStopReason.ERROR_RECEIVED)
                                                 .build();
                                         promise.complete(stopFuture);
@@ -134,7 +136,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                                         MppwStopFuture stopFuture = MppwStopFuture.builder()
                                                 .sourceType(ds)
                                                 .future(stopMppw(ds, mppwRequestContext))
-                                                .cause(new RuntimeException(String.format("Plugin %s consumer offset stopped dead", ds)))
+                                                .cause(new DtmException(String.format("Plugin %s consumer offset stopped dead", ds)))
                                                 .stopReason(MppwStopReason.ERROR_RECEIVED)
                                                 .build();
                                         promise.complete(stopFuture);
@@ -235,7 +237,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                             resultHandler.handle(Future.succeededFuture(QueryResult.emptyResult()));
                         } else {
                             String stopStatus = collectStatus(mppwStopFutureMap);
-                            RuntimeException e = new RuntimeException(
+                            RuntimeException e = new DtmException(
                                     String.format("The offset of one of the plugins has changed: \n %s", stopStatus),
                                     stopComplete.cause());
                             log.error(MPPW_LOAD_ERROR_MESSAGE, e);

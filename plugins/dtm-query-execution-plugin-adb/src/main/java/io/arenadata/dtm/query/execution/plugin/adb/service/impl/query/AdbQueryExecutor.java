@@ -4,6 +4,7 @@ import io.arenadata.dtm.common.converter.SqlTypeConverter;
 import io.arenadata.dtm.common.plugin.sql.PreparedStatementRequest;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.exception.LlrDatasourceException;
 import io.reactiverse.pgclient.*;
 import io.reactiverse.pgclient.impl.ArrayTuple;
 import io.vertx.core.AsyncResult;
@@ -182,7 +183,7 @@ public class AdbQueryExecutor implements DatabaseExecutor {
             .compose(this::commitTransaction)
             .onSuccess(s -> handler.handle(Future.succeededFuture()))
             .onFailure(f -> handler.handle(Future.failedFuture(
-                String.format("Error executing queries: %s", f.getMessage()))));
+                new LlrDatasourceException(String.format("Error executing queries: %s", f.getMessage())))));
     }
 
     private Future<PgTransaction> beginTransaction(PgPool pgPool) {

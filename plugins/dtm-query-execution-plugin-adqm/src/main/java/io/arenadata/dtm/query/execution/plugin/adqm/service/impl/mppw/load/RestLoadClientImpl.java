@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load;
 
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.MppwProperties;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
@@ -33,7 +34,9 @@ public class RestLoadClientImpl implements RestLoadClient {
                     if (response.statusCode() < 400 && response.statusCode() >= 200) {
                         promise.complete();
                     } else {
-                        promise.fail(new RuntimeException(String.format("Received HTTP status %s, msg %s", response.statusCode(), response.bodyAsString())));
+                        promise.fail(new DataSourceException(String.format("Received HTTP status %s, msg %s",
+                                response.statusCode(),
+                                response.bodyAsString())));
                     }
                 } else {
                     promise.fail(ar.cause());

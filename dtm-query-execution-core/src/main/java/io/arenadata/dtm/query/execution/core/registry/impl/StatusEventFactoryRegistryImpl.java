@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.core.registry.impl;
 
 import io.arenadata.dtm.common.status.StatusEventCode;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.factory.StatusEventFactory;
 import io.arenadata.dtm.query.execution.core.registry.StatusEventFactoryRegistry;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +24,7 @@ public class StatusEventFactoryRegistryImpl implements StatusEventFactoryRegistr
         if (factoryMap.containsKey(eventCode)) {
             return factoryMap.get(eventCode);
         } else {
-            throw new RuntimeException("StatusEventCode not supported: " + eventCode);
+            throw new DtmException("StatusEventCode not supported: " + eventCode);
         }
     }
 

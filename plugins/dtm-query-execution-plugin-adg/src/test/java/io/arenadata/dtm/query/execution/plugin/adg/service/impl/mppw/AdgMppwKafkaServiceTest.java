@@ -11,6 +11,7 @@ import io.arenadata.dtm.query.execution.plugin.adg.factory.impl.AdgMppwKafkaCont
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.AdgCartridgeError;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.TtLoadDataKafkaResponse;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaParameter;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
@@ -211,7 +212,7 @@ class AdgMppwKafkaServiceTest {
     private void badSubscribeApiMock1() {
         doAnswer(invocation -> {
             Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture("subscribe error"));
+            handler.handle(Future.failedFuture(new DataSourceException("subscribe error")));
             return null;
         }).when(client).subscribe(any(), any());
     }
@@ -259,7 +260,7 @@ class AdgMppwKafkaServiceTest {
 
         doAnswer(invocation -> {
             Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture("transferDataToScdTable error"));
+            handler.handle(Future.failedFuture(new DataSourceException("transferDataToScdTable error")));
             return null;
         }).when(client).transferDataToScdTable(any(), any());
 

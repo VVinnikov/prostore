@@ -6,6 +6,10 @@ public class DtmException extends RuntimeException {
         super(message);
     }
 
+    public DtmException(Throwable throwable) {
+        super(throwable);
+    }
+
     public DtmException(String message, Throwable throwable) {
         super(message, throwable);
     }

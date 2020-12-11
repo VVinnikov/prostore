@@ -9,6 +9,7 @@ import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.impl.DeltaServi
 import io.arenadata.dtm.query.execution.core.dto.delta.OkDelta;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.GetDeltaByNumQuery;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.GetDeltaOkQuery;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.delta.BeginDeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.service.delta.impl.GetDeltaByNumExecutor;
@@ -139,7 +140,7 @@ class GetDeltaByNumExecutorTest {
                 .build();
 
         when(deltaServiceDao.getDeltaByNum(eq(datamart), eq(deltaNum)))
-                .thenReturn(Future.failedFuture(new RuntimeException("")));
+                .thenReturn(Future.failedFuture(new DtmException("")));
 
         deltaByNumExecutor.execute(deltaQuery, handler -> {
             if (handler.succeeded()) {
@@ -175,7 +176,7 @@ class GetDeltaByNumExecutorTest {
                 .thenReturn(Future.succeededFuture(deltaOk));
 
         when(deltaQueryResultFactory.create(any()))
-                .thenThrow(new RuntimeException(""));
+                .thenThrow(new DtmException(""));
 
         deltaByNumExecutor.execute(deltaQuery, handler -> {
             if (handler.succeeded()) {

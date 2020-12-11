@@ -5,6 +5,7 @@ import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.adb.service.QueryEnrichmentService;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.arenadata.dtm.query.execution.plugin.api.request.QueryCostRequest;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -97,7 +98,8 @@ class AdbQueryCostServiceTest {
 
     private void initEnrichmentBadMocks() {
         doAnswer((Answer<AsyncResult<Void>>) args -> {
-            ((Handler<AsyncResult<Void>>) args.getArgument(1)).handle(Future.failedFuture("Enrichment error"));
+            ((Handler<AsyncResult<Void>>) args.getArgument(1))
+                    .handle(Future.failedFuture(new DataSourceException("Enrichment error")));
             return null;
         }).when(adbQueryEnrichmentService).enrich(any(), any());
     }

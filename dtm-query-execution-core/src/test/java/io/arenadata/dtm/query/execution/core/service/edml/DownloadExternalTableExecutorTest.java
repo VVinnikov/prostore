@@ -11,6 +11,7 @@ import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
 import io.arenadata.dtm.query.calcite.core.service.impl.DeltaQueryPreprocessorImpl;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.DownloadExternalTableExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.DownloadKafkaExecutor;
 import io.arenadata.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
@@ -145,7 +146,7 @@ class DownloadExternalTableExecutorTest {
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<JsonObject>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new RuntimeException("")));
+            handler.handle(Future.failedFuture(new DtmException("")));
             return null;
         }).when(logicalSchemaProvider).getSchema(any(), any());
 
@@ -185,7 +186,7 @@ class DownloadExternalTableExecutorTest {
         }).when(logicalSchemaProvider).getSchema(any(), any());
 
         when(deltaQueryPreprocessor.process(any()))
-                .thenReturn(Future.failedFuture(new RuntimeException("")));
+                .thenReturn(Future.failedFuture(new DtmException("")));
 
         downloadExternalTableExecutor.execute(context, ar -> {
             if (ar.succeeded()) {
@@ -227,7 +228,7 @@ class DownloadExternalTableExecutorTest {
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new RuntimeException("")));
+            handler.handle(Future.failedFuture(new DtmException("")));
             return null;
         }).when(downloadExecutors.get(0)).execute(any(), any());
 

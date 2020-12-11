@@ -8,6 +8,7 @@ import io.arenadata.dtm.query.calcite.core.extension.check.CheckType;
 import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckData;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
+import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.verticle.TaskVerticleExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
@@ -21,7 +22,6 @@ import org.apache.calcite.util.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -52,8 +52,7 @@ public class CheckDataExecutor implements CheckExecutor {
         return entityDao.getEntity(context.getRequest().getQueryRequest().getDatamartMnemonic(), sqlCheckData.getTable())
                 .compose(entity -> EntityType.TABLE.equals(entity.getEntityType())
                         ? Future.succeededFuture(entity)
-                        : Future.failedFuture(new IllegalArgumentException(
-                        String.format("Table `%s` not exist", sqlCheckData.getTable()))))
+                        : Future.failedFuture(new TableNotExistsException(sqlCheckData.getTable())))
                 .compose(entity -> check(context, entity, sqlCheckData));
     }
 

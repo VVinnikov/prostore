@@ -11,7 +11,8 @@ import io.arenadata.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacadeImpl;
-import io.arenadata.dtm.query.execution.core.exception.entity.EntityNotExistsException;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
+import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDao;
@@ -154,7 +155,7 @@ class DropTableDdlExecutorTest {
         context.getRequest().getQueryRequest().setSql("DROP TABLE IF EXISTS accounts");
         String entityName = context.getRequest().getEntity().getName();
         Mockito.when(entityDao.getEntity(eq(schema), eq(entityName)))
-            .thenReturn(Future.failedFuture(new EntityNotExistsException(entityName)));
+            .thenReturn(Future.failedFuture(new TableNotExistsException(entityName)));
 
         dropTableDdlExecutor.execute(context, entityName, ar -> {
             if (ar.succeeded()) {
@@ -175,7 +176,7 @@ class DropTableDdlExecutorTest {
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new RuntimeException()));
+            handler.handle(Future.failedFuture(new DtmException("")));
             return null;
         }).when(metadataExecutor).execute(any(), any());
 
@@ -203,7 +204,7 @@ class DropTableDdlExecutorTest {
         }).when(metadataExecutor).execute(any(), any());
 
         Mockito.when(entityDao.deleteEntity(eq(schema), eq(context.getRequest().getEntity().getName())))
-            .thenReturn(Future.failedFuture("delete entity error"));
+            .thenReturn(Future.failedFuture(new DtmException("delete entity error")));
 
         dropTableDdlExecutor.execute(context, context.getRequest().getEntity().getName(), ar -> {
             if (ar.succeeded()) {

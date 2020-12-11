@@ -84,10 +84,13 @@ public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
     }
 
     private Future<Void> dropDatamart(DdlRequestContext context) {
-        log.debug("Deleted schema [{}] in data sources", context.getDatamartName());
+        log.debug("Delete schema [{}] in data sources", context.getDatamartName());
         return datamartDao.deleteDatamart(context.getDatamartName())
-            .onSuccess(success -> log.debug("Deleted datamart [{}] from datamart registry", context.getDatamartName()))
-            .onFailure(error -> log.error("Error deleting datamart [{}] from datamart registry!", context.getDatamartName(), error));
+            .onSuccess(success -> log.debug("Deleted datamart [{}] from datamart registry",
+                    context.getDatamartName()))
+            .onFailure(error -> log.error("Error deleting datamart [{}] from datamart registry!",
+                    context.getDatamartName(),
+                    error));
     }
 
     @Override

@@ -2,6 +2,7 @@ package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.truncate.SqlBaseTruncate;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.utils.ParseQueryUtils;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.PostSqlActionType;
@@ -80,7 +81,7 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
         if (sqlNode instanceof SqlAlter || sqlNode instanceof SqlDdl || sqlNode instanceof SqlBaseTruncate) {
             return (SqlCall) sqlNode;
         } else {
-            throw new RuntimeException("Not supported request type");
+            throw new DtmException("Not supported request type");
         }
     }
 

@@ -15,6 +15,7 @@ import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.kafka.core.configuration.properties.KafkaProperties;
 import io.arenadata.dtm.query.execution.core.configuration.properties.CoreDtmSettings;
 import io.arenadata.dtm.query.execution.core.configuration.properties.EdmlProperties;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.factory.MppwKafkaRequestFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.MppwKafkaRequestFactoryImpl;
 import io.arenadata.dtm.query.execution.core.service.CheckColumnTypesService;
@@ -218,7 +219,7 @@ class UploadKafkaExecutorTest {
                 final SourceType ds = invocation.getArgument(0);
                 final MppwRequestContext requestContext = invocation.getArgument(1);
                 if (ds.equals(SourceType.ADB) && requestContext.getRequest().getIsLoadStart()) {
-                    handler.handle(Future.failedFuture(new RuntimeException("Start mppw error")));
+                    handler.handle(Future.failedFuture(new DtmException("Start mppw error")));
                 } else if (ds.equals(SourceType.ADB) && !requestContext.getRequest().getIsLoadStart()) {
                     handler.handle(Future.succeededFuture(new QueryResult()));
                 } else if (ds.equals(SourceType.ADG)) {
@@ -246,7 +247,7 @@ class UploadKafkaExecutorTest {
     @Test
     void executeMppwWithFailedRetrievePluginStatus() {
         TestSuite suite = TestSuite.create("mppwLoadTest");
-        RuntimeException exception = new RuntimeException("Status receiving error");
+        RuntimeException exception = new DtmException("Status receiving error");
         suite.test("executeMppwWithFailedRetrievePluginStatus", context -> {
             Async async = context.async();
             resultException = null;

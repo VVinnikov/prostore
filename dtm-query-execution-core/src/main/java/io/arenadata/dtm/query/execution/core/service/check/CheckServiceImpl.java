@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.core.service.check;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.extension.check.CheckType;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckExecutor;
@@ -29,7 +30,7 @@ public class CheckServiceImpl implements CheckService {
         String datamart = context.getRequest().getQueryRequest().getDatamartMnemonic();
         if (StringUtils.isEmpty(datamart)) {
             handler.handle(Future.failedFuture(
-                    new IllegalArgumentException("Datamart must be specified for all tables and views")));
+                    new DtmException("Datamart must be specified for all tables and views")));
         } else {
             executorMap.get(context.getCheckType()).execute(context)
                     .onSuccess(result -> handler.handle(Future.succeededFuture(

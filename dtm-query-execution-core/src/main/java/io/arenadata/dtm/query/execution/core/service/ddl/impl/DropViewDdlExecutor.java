@@ -5,7 +5,8 @@ import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
-import io.arenadata.dtm.query.execution.core.exception.entity.ViewNotExistsException;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
+import io.arenadata.dtm.query.execution.core.exception.view.ViewNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
@@ -45,9 +46,9 @@ public class DropViewDdlExecutor extends QueryResultDdlExecutor {
             val tree = new SqlSelectTree(context.getQuery());
             val viewNameNode = SqlPreparer.getViewNameNode(tree);
             val schemaName = viewNameNode.tryGetSchemaName()
-                .orElseThrow(() -> new RuntimeException("Unable to get schema of view"));
+                .orElseThrow(() -> new DtmException("Unable to get schema of view"));
             val viewName = viewNameNode.tryGetTableName()
-                .orElseThrow(() -> new RuntimeException("Unable to get name of view"));
+                .orElseThrow(() -> new DtmException("Unable to get name of view"));
             context.setDatamartName(schemaName);
             entityCacheService.remove(schemaName, viewName);
             entityDao.getEntity(schemaName, viewName)

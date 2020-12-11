@@ -5,6 +5,7 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.SqlNodeUtils;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
 import io.arenadata.dtm.query.execution.core.utils.ColumnTypeUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -47,7 +48,7 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
                 } else if (col.getKind().equals(SqlKind.PRIMARY_KEY)) {
                     initPrimaryKeyColumns((SqlKeyConstraint) col, fieldMap);
                 } else {
-                    throw new RuntimeException("Attribute type " + col.getKind() + " is not supported!");
+                    throw new DtmException("Attribute type " + col.getKind() + " is not supported!");
                 }
             }
             initDistributedKeyColumns(sqlCreate, fieldMap);
@@ -124,7 +125,7 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
         if (col.getOperandList().size() > 0) {
             return ((SqlNodeList) col.getOperandList().get(1)).getList();
         } else {
-            throw new RuntimeException("Primary key definition failed!");
+            throw new DtmException("Primary key definition failed!");
         }
     }
 

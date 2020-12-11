@@ -9,6 +9,7 @@ import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
+import io.arenadata.dtm.query.execution.core.exception.table.TableAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
@@ -108,15 +109,8 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
     private Future<Void> createTableIfNotExists(DdlRequestContext context,
                                                 Boolean isTableExists) {
         if (isTableExists) {
-            final RuntimeException existsException =
-                new RuntimeException(String.format("Table [%s] is already exists in datamart [%s]!",
-                    context.getRequest().getEntity().getName(),
-                    context.getRequest().getEntity().getSchema()));
-            log.error("Error creating table [{}] in datamart [{}]!",
-                context.getRequest().getEntity().getName(),
-                context.getRequest().getEntity().getSchema(),
-                existsException);
-            return Future.failedFuture(existsException);
+            return Future.failedFuture(
+                    new TableAlreadyExistsException(context.getRequest().getEntity().getNameWithSchema()));
         } else {
             return createTable(context);
         }

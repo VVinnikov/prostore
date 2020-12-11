@@ -57,7 +57,8 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
                         val source = entities.get(1);
                         context.setDestinationEntity(destination);
                         context.setSourceEntity(source);
-                        if (destination.getEntityType() == EntityType.DOWNLOAD_EXTERNAL_TABLE && source.getEntityType() == EntityType.TABLE) {
+                        if (destination.getEntityType() == EntityType.DOWNLOAD_EXTERNAL_TABLE
+                            && checkSourceType(source)) {
                             edmlQueryPromise.complete(EdmlAction.DOWNLOAD);
                         } else if (source.getEntityType() == EntityType.UPLOAD_EXTERNAL_TABLE && destination.getEntityType() == EntityType.TABLE) {
                             edmlQueryPromise.complete(EdmlAction.UPLOAD);
@@ -68,6 +69,10 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
                     })
                     .onFailure(edmlQueryPromise::fail);
         });
+    }
+
+    private boolean checkSourceType(Entity source) {
+        return source.getEntityType() == EntityType.TABLE || source.getEntityType() == EntityType.VIEW;
     }
 
     private Future<List<Entity>> getDestinationAndSourceEntities(EdmlRequestContext context) {

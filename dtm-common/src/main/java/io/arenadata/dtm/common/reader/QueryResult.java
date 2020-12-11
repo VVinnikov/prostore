@@ -17,6 +17,7 @@ import java.util.*;
 @AllArgsConstructor
 public class QueryResult {
     private UUID requestId;
+    @Builder.Default
     private List<Map<String, Object>> result = new ArrayList<>();
     private List<ColumnMetadata> metadata;
     private String timeZone;

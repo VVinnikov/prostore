@@ -38,8 +38,11 @@ public class AdgLlrService implements LlrService<QueryResult> {
                 executorService.execute(enrich.result(), request.getMetadata(), exec -> {
                     if (exec.succeeded()) {
                         handler.handle(Future.succeededFuture(
-                                new QueryResult(request.getQueryRequest().getRequestId(),
-                                        exec.result(), request.getMetadata())));
+                            QueryResult.builder()
+                                .requestId(request.getQueryRequest().getRequestId())
+                                .metadata(request.getMetadata())
+                                .result(exec.result())
+                                .build()));
                     } else {
                         log.error("Request execution error {}", request, exec.cause());
                         handler.handle(Future.failedFuture(exec.cause()));

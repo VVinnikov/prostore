@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.check;
 
 import io.arenadata.dtm.common.model.ddl.ColumnType;
+import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountParams;
@@ -12,6 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service("adbCheckDataService")
 public class AdbCheckDataService implements CheckDataService {
@@ -32,15 +36,15 @@ public class AdbCheckDataService implements CheckDataService {
             "    RETURNS NULL ON NULL INPUT;";
     private static final String CHECK_DATA_BY_HASH_TEMPLATE =
             "SELECT sum(dtmInt32Hash(MD5(concat(%s))::bytea)) FROM\n" +
-            "(\n" +
-            "  SELECT %s \n" +
-            "  FROM %s.%s_history \n" +
-            "  WHERE (sys_to = %d AND sys_op = 1) OR sys_from = %d \n" +
-            "  UNION ALL \n" +
-            "  SELECT %s \n" +
-            "  FROM %s.%s_actual \n" +
-            "  WHERE sys_from = %d\n" +
-            ") AS tmp";
+                    "(\n" +
+                    "  SELECT %s \n" +
+                    "  FROM %s.%s_history \n" +
+                    "  WHERE (sys_to = %d AND sys_op = 1) OR sys_from = %d \n" +
+                    "  UNION ALL \n" +
+                    "  SELECT %s \n" +
+                    "  FROM %s.%s_actual \n" +
+                    "  WHERE sys_from = %d\n" +
+                    ") AS tmp";
     private static final String COLUMN_NAME = "count(1)";
     private final AdbQueryExecutor queryExecutor;
 
@@ -82,11 +86,17 @@ public class AdbCheckDataService implements CheckDataService {
 
     private Future<Long> checkDataByHash(CheckDataByHashInt32Params params) {
         return Future.future(p -> {
+            Map<String, EntityField> fields = params.getEntity().getFields().stream()
+                    .collect(Collectors.toMap(EntityField::getName, Function.identity()));
+            val fieldsConcatenationList = params.getColumns().stream()
+                    .map(fields::get)
+                    .map(this::getValue)
+                    .collect(Collectors.joining(",';',"));
             val columnsList = String.join(",';',", params.getColumns());
             val datamart = params.getEntity().getSchema();
             val table = params.getEntity().getName();
             val sysCn = params.getSysCn();
-            val sql = String.format(CHECK_DATA_BY_HASH_TEMPLATE, columnsList,
+            val sql = String.format(CHECK_DATA_BY_HASH_TEMPLATE, fieldsConcatenationList,
                     columnsList,
                     datamart, table,
                     sysCn - 1, sysCn,
@@ -107,5 +117,24 @@ public class AdbCheckDataService implements CheckDataService {
                 }
             });
         });
+    }
+
+    private String getValue(EntityField field) {
+        String result;
+        switch (field.getType()) {
+            case BOOLEAN:
+                result = String.format("%s::int", field.getName());
+                break;
+            case DATE:
+                result = String.format("%s - make_date(1970, 01, 01)", field.getName());
+                break;
+            case TIME:
+            case TIMESTAMP:
+                result = String.format("extract(epoch from %s)*1000000::bigint", field.getName());
+                break;
+            default:
+                result = field.getName();
+        }
+        return result;
     }
 }

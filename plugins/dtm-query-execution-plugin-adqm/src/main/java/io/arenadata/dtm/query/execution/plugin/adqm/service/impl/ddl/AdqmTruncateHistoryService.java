@@ -40,6 +40,7 @@ public class AdqmTruncateHistoryService implements TruncateHistoryService {
 
     @Override
     public Future<Void> truncateHistory(TruncateHistoryParams params) {
+        //TODO it's better to exclude generating sql query in separate factory class
         String sysCnExpression = params.getSysCn()
                 .map(sysCn -> String.format(" AND sys_to < %s", sysCn))
                 .orElse("");

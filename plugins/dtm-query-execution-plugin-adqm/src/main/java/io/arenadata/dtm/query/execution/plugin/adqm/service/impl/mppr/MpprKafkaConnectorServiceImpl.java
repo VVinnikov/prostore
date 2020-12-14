@@ -9,8 +9,6 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.client.WebClient;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -43,11 +41,9 @@ public class MpprKafkaConnectorServiceImpl implements MpprKafkaConnectorService 
                         if (ar.result().statusCode() == HttpURLConnection.HTTP_OK) {
                             handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
                         } else {
-                            log.error("Request execution error [{}]", request);
                             handler.handle(Future.failedFuture(ar.cause()));
                         }
                     } else {
-                        log.error("Query execution error [{}]", request);
                         handler.handle(Future.failedFuture(ar.cause()));
                     }
                 });

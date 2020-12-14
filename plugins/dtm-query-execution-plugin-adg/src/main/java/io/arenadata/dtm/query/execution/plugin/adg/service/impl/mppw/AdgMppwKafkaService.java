@@ -60,30 +60,27 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
                     ctx.getHelperTableNames().getStaging(),
                     ctx.getHelperTableNames().getActual(),
                     ctx.getHelperTableNames().getHistory(),
-                    ctx.getHotDelta()
-            );
+                    ctx.getHotDelta());
+
             val callbackFunction = new TtTransferDataScdCallbackFunction(
                     properties.getCallbackFunctionName(),
                     callbackFunctionParameter,
                     properties.getMaxNumberOfMessagesPerPartition(),
-                    properties.getCallbackFunctionSecIdle()
-            );
-
+                    properties.getCallbackFunctionSecIdle());
 
             val request = new TtSubscriptionKafkaRequest(
                     properties.getMaxNumberOfMessagesPerPartition(),
                     null,
                     ctx.getTopicName(),
                     Collections.singletonList(ctx.getHelperTableNames().getStaging()),
-                    callbackFunction
-            );
+                    callbackFunction);
+
             cartridgeClient.subscribe(request, ar -> {
                 if (ar.succeeded()) {
                     log.debug("Loading initialize completed by [{}]", request);
                     initializedLoadingByTopic.put(ctx.getTopicName(), ctx.getConsumerTableName());
                     handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
                 } else {
-                    log.error("Loading initialize error:", ar.cause());
                     handler.handle(Future.failedFuture(ar.cause()));
                 }
             });
@@ -98,7 +95,6 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
                         log.debug("Transfer Data completed by request [{}]", request);
                         handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
                     } else {
-                        log.error("Transfer Data error: ", ar.cause());
                         handler.handle(Future.failedFuture(ar.cause()));
                     }
                 }
@@ -114,7 +110,6 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
                     log.debug("Cancel Load Data completed by request [{}]", topicName);
                     handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
                 } else {
-                    log.error("Cancel Load Data error: ", ar.cause());
                     handler.handle(Future.failedFuture(ar.cause()));
                 }
             });

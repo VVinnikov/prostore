@@ -33,15 +33,16 @@ public class AdbMppwTransferDataHandler implements AdbMppwHandler {
     @Override
     public Future<Void> handle(MppwKafkaRequestContext requestContext) {
         return insertIntoStagingTable(requestContext.getMppwKafkaLoadRequest())
-            .compose(v -> commitKafkaMessages(requestContext))
-            .compose(s -> Future.future((Promise<Void> p) ->
-                mppwDataTransferService.execute(requestContext.getMppwTransferDataRequest(), p)));
+                .compose(v -> commitKafkaMessages(requestContext))
+                .compose(s -> Future.future((Promise<Void> p) ->
+                        mppwDataTransferService.execute(requestContext.getMppwTransferDataRequest(), p)));
     }
 
     private Future<Void> commitKafkaMessages(MppwKafkaRequestContext requestContext) {
         return Future.future(promise -> {
             val schema = requestContext.getMppwKafkaLoadRequest().getDatamart();
-            val table = MetadataSqlFactoryImpl.WRITABLE_EXT_TABLE_PREF + requestContext.getMppwKafkaLoadRequest().getRequestId().replaceAll("-", "_");
+            val table = MetadataSqlFactoryImpl.WRITABLE_EXT_TABLE_PREF +
+                    requestContext.getMppwKafkaLoadRequest().getRequestId().replaceAll("-", "_");
             val commitOffsetsSql = String.format(MetadataSqlFactoryImpl.COMMIT_OFFSETS, schema, table);
             adbQueryExecutor.executeUpdate(commitOffsetsSql, promise);
         });
@@ -53,13 +54,17 @@ public class AdbMppwTransferDataHandler implements AdbMppwHandler {
             val columns = String.join(", ", request.getColumns());
             val extTable = request.getWritableExtTableName().replaceAll("-", "_");
             val stagingTable = request.getTableName();
-            adbQueryExecutor.executeUpdate(metadataSqlFactory.insertIntoStagingTableSqlQuery(schema, columns, stagingTable, extTable), ar -> {
-                if (ar.succeeded()) {
-                    promise.complete();
-                } else {
-                    promise.fail(ar.cause());
-                }
-            });
+            adbQueryExecutor.executeUpdate(metadataSqlFactory.insertIntoStagingTableSqlQuery(schema,
+                    columns,
+                    stagingTable,
+                    extTable),
+                    ar -> {
+                        if (ar.succeeded()) {
+                            promise.complete();
+                        } else {
+                            promise.fail(ar.cause());
+                        }
+                    });
         });
     }
 }

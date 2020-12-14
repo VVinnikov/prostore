@@ -56,13 +56,13 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
                     executePostActions(context);
                 });
             } else {
-                String error = String.format("Not supported DDL query type [%s]", context.getQuery());
-                log.error(error);
-                handler.handle(Future.failedFuture(error));
+                handler.handle(Future.failedFuture(
+                        new DtmException(String.format("Not supported DDL query type [%s]",
+                                context.getQuery()))));
             }
         } catch (Exception e) {
-            log.error(e.getMessage());
-            handler.handle(Future.failedFuture(String.format("Not supported request type [%s]", context.getQuery())));
+            handler.handle(Future.failedFuture(new DtmException(String.format("Not supported request type [%s]",
+                    context.getQuery()), e)));
         }
     }
 
@@ -71,10 +71,9 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
                 .distinct()
                 .map(postType -> Optional.ofNullable(postExecutorMap.get(postType))
                         .map(postExecutor -> postExecutor.execute(context))
-                        .orElse(Future.failedFuture(String.format("Not supported DDL post executor type [%s]",
-                                postType))))
-                .collect(Collectors.toList()))
-                .onFailure(error -> log.error(error.getMessage()));
+                        .orElse(Future.failedFuture(new DtmException(String.format("Not supported DDL post executor type [%s]",
+                                postType)))))
+                .collect(Collectors.toList()));
     }
 
     private SqlCall getSqlCall(SqlNode sqlNode) {

@@ -9,6 +9,7 @@ import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.calcite.core.service.DeltaInformationExtractor;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaService;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
@@ -17,7 +18,6 @@ import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlNode;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -52,28 +52,23 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
                             .flatMap(di -> di.getTables().stream()
                                     .map(tableName -> new DatamartSchemaKey(di.getSchemaName(), tableName)))
                             .map(dsKey -> entityDao.getEntity(dsKey.getSchema(), dsKey.getTable()))
-                            .collect(Collectors.toList())
-            ).onFailure(error -> {
-                log.error("Error initializing table attributes!", error);
-                resultHandler.handle(Future.failedFuture(error));
-            }).onSuccess(success -> {
-                try {
-                    List<Entity> entities = success.list();
-                    val schemaKeyDatamartTableMap = entities.stream()
-                        .map(Entity::clone)
-                        .collect(Collectors.toMap(this::createDatamartSchemaKey, Function.identity()));
-                    resultHandler.handle(Future.succeededFuture(schemaKeyDatamartTableMap));
-                } catch (Exception ex) {
-                    log.error("Error initializing table attributes!", ex);
-                    resultHandler.handle(Future.failedFuture(ex));
-                }
-            });
+                            .collect(Collectors.toList()))
+                    .onSuccess(success -> {
+                        List<Entity> entities = success.list();
+                        val schemaKeyDatamartTableMap = entities.stream()
+                                .map(Entity::clone)
+                                .collect(Collectors.toMap(this::createDatamartSchemaKey, Function.identity()));
+                        resultHandler.handle(Future.succeededFuture(schemaKeyDatamartTableMap));
+                    })
+                    .onFailure(error -> {
+                        resultHandler.handle(Future.failedFuture(
+                                new DtmException("Error initializing table attributes", error)));
+                    });
         } catch (Exception e) {
-            resultHandler.handle(Future.failedFuture(e));
+            resultHandler.handle(Future.failedFuture(new DtmException("Error initializing schemas", e)));
         }
     }
 
-    @NotNull
     private List<DatamartInfo> getDatamartInfoListFromQuery(String sql) {
         val sqlNode = definitionService.processingQuery(sql);
         val tree = new SqlSelectTree(sqlNode);

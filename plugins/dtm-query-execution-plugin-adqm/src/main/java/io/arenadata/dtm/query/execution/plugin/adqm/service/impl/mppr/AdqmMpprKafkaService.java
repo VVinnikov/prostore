@@ -11,19 +11,20 @@ import io.arenadata.dtm.query.execution.plugin.api.service.MpprKafkaService;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 @Service("adqmMpprKafkaService")
+@Slf4j
 public class AdqmMpprKafkaService implements MpprKafkaService<QueryResult> {
-    private static final Logger LOG = LoggerFactory.getLogger(AdqmMpprKafkaService.class);
 
     private final QueryEnrichmentService adqmQueryEnrichmentService;
     private final MpprKafkaConnectorService mpprKafkaConnectorService;
     private final MpprKafkaConnectorRequestFactory requestFactory;
 
+    @Autowired
     public AdqmMpprKafkaService(@Qualifier("adqmQueryEnrichmentService") QueryEnrichmentService queryEnrichmentService,
                                 MpprKafkaConnectorService mpprKafkaConnectorService,
                                 MpprKafkaConnectorRequestFactory requestFactory) {
@@ -43,7 +44,6 @@ public class AdqmMpprKafkaService implements MpprKafkaService<QueryResult> {
                                 requestFactory.create(request, sqlResult.result()),
                                 asyncHandler);
                     } else {
-                        LOG.error("Error while enriching request");
                         asyncHandler.handle(Future.failedFuture(sqlResult.cause()));
                     }
                 });

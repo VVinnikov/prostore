@@ -4,6 +4,7 @@ import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.kafka.core.service.kafka.KafkaConsumerMonitor;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.StatusReporter;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.arenadata.dtm.query.execution.plugin.api.request.StatusRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.StatusService;
 import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
@@ -31,7 +32,7 @@ public class AdqmStatusService implements StatusService<StatusQueryResult>, Stat
 	@Override
 	public void execute(StatusRequestContext context, Handler<AsyncResult<StatusQueryResult>> handler) {
 		if (context == null || context.getRequest() == null) {
-			handler.handle(Future.failedFuture("StatusRequestContext should not be null"));
+			handler.handle(Future.failedFuture(new DataSourceException("StatusRequestContext should not be null")));
 			return;
 		}
 
@@ -48,7 +49,7 @@ public class AdqmStatusService implements StatusService<StatusQueryResult>, Stat
 					})
 					.onFailure(f -> handler.handle(Future.failedFuture(f)));
 		} else {
-			handler.handle(Future.failedFuture("Cannot find info about " + request.getTopic()));
+			handler.handle(Future.failedFuture(new DataSourceException("Cannot find info about " + request.getTopic())));
 		}
 	}
 

@@ -36,9 +36,7 @@ public class MetricsManagementServiceImpl implements MetricsManagementService {
                 return new MetricsSettingsUpdateResult(true, turnedOnMsg);
             }
         } catch (Exception e) {
-            final String error = "Error in turning on metrics";
-            log.error(error, e);
-            throw new DtmException(error, e);
+            throw new DtmException("Error in turning on metrics", e);
         }
     }
 
@@ -54,9 +52,7 @@ public class MetricsManagementServiceImpl implements MetricsManagementService {
                 return new MetricsSettingsUpdateResult(false, turnedOffMsg);
             }
         } catch (Exception e) {
-            final String error = "Error in turning off metrics";
-            log.error(error, e);
-            throw new RuntimeException(error, e);
+            throw new RuntimeException("Error in turning off metrics", e);
         }
     }
 }

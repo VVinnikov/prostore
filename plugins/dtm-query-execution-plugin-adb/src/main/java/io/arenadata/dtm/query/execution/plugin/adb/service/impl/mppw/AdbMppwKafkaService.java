@@ -33,13 +33,15 @@ public class AdbMppwKafkaService implements MppwKafkaService<QueryResult> {
         try {
             MppwRequest request = context.getRequest();
             if (request == null) {
-                asyncHandler.handle(Future.failedFuture(new MppwDatasourceException("MppwRequest should not be null")));
+                asyncHandler.handle(Future.failedFuture(
+                        new MppwDatasourceException("MppwRequest should not be null")));
                 return;
             }
             final LoadType loadType = LoadType.valueOf(context.getRequest().getIsLoadStart());
             mppwExecutors.get(loadType).execute(context).onComplete(asyncHandler);
         } catch (Exception e) {
-            asyncHandler.handle(Future.failedFuture(e));
+            asyncHandler.handle(Future.failedFuture(
+                    new MppwDatasourceException("Error generating kafka mppw request", e)));
         }
     }
 

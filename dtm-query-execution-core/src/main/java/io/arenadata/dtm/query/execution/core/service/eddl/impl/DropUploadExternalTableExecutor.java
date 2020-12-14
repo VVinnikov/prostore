@@ -47,8 +47,7 @@ public class DropUploadExternalTableExecutor implements EddlExecutor {
                 .onSuccess(r -> handler.handle(Future.succeededFuture()))
                 .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
         } catch (Exception e) {
-            log.error("Error deleting table!", e);
-            handler.handle(Future.failedFuture(e));
+            handler.handle(Future.failedFuture(new DtmException("Error preparing drop upload external table query", e)));
         }
     }
 

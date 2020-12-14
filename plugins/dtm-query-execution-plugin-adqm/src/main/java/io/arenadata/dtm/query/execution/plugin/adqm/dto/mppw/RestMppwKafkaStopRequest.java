@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load;
+package io.arenadata.dtm.query.execution.plugin.adqm.dto.mppw;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

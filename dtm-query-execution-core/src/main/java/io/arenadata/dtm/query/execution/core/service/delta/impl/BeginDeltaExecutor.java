@@ -8,6 +8,7 @@ import io.arenadata.dtm.query.execution.core.dto.delta.DeltaRecord;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.BeginDeltaQuery;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaAction;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaQuery;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaExecutor;
 import io.arenadata.dtm.query.execution.core.service.delta.StatusEventPublisher;
@@ -27,6 +28,7 @@ import static io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaAction.
 @Slf4j
 public class BeginDeltaExecutor implements DeltaExecutor, StatusEventPublisher {
 
+    private static final String ERR_GETTING_QUERY_RESULT_MSG = "Error creating begin delta result";
     private final DeltaServiceDao deltaServiceDao;
     private final DeltaQueryResultFactory deltaQueryResultFactory;
     private final Vertx vertx;
@@ -50,7 +52,8 @@ public class BeginDeltaExecutor implements DeltaExecutor, StatusEventPublisher {
                             handler.handle(Future.succeededFuture(getDeltaQueryResult(newDeltaHotNum,
                                     beginDeltaQuery)));
                         } catch (Exception e) {
-                            handler.handle(Future.failedFuture(e));
+                            handler.handle(Future.failedFuture(
+                                    new DtmException(ERR_GETTING_QUERY_RESULT_MSG, e)));
                         }
                     })
                     .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
@@ -61,7 +64,8 @@ public class BeginDeltaExecutor implements DeltaExecutor, StatusEventPublisher {
                             handler.handle(Future.succeededFuture(getDeltaQueryResult(newDeltaHotNum,
                                     beginDeltaQuery)));
                         } catch (Exception e) {
-                            handler.handle(Future.failedFuture(e));
+                            handler.handle(Future.failedFuture(
+                                    new DtmException(ERR_GETTING_QUERY_RESULT_MSG, e)));
                         }
                     })
                     .onFailure(fail -> handler.handle(Future.failedFuture(fail)));

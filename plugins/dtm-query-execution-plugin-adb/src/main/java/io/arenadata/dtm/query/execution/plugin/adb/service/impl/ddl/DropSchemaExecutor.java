@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adb.service.impl.ddl;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DdlDatasourceException;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
 import io.vertx.core.AsyncResult;
@@ -36,13 +37,12 @@ public class DropSchemaExecutor implements DdlExecutor<Void> {
                 if (ar.succeeded()) {
                     handler.handle(Future.succeededFuture());
                 } else {
-                    log.error("Error deleting schema [{}] !", schemaName, ar.cause());
                     handler.handle(Future.failedFuture(ar.cause()));
                 }
             });
         } catch (Exception e) {
-            log.error("Error executing drop schema query!", e);
-            handler.handle(Future.failedFuture(e));
+            handler.handle(Future.failedFuture(
+                    new DdlDatasourceException("Error generating drop schema query", e)));
         }
     }
 

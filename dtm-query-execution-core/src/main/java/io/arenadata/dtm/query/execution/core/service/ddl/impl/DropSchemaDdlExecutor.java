@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.DropDatabase;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
@@ -56,7 +57,6 @@ public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
                 .onSuccess(success -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
                 .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
         } catch (Exception e) {
-            log.error("Error deleting datamart!", e);
             handler.handle(Future.failedFuture(e));
         }
     }
@@ -78,8 +78,7 @@ public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
             log.debug("Delete physical objects in plugins for datamart: [{}]", context.getDatamartName());
             return Future.future((Promise<Void> promise) -> metadataExecutor.execute(context, promise));
         } catch (Exception e) {
-            log.error("Error in dropping schema [{}]", context.getDatamartName(), e);
-            return Future.failedFuture(e);
+            return Future.failedFuture(new DtmException("Error creating drop datamart request", e));
         }
     }
 
@@ -87,10 +86,7 @@ public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
         log.debug("Delete schema [{}] in data sources", context.getDatamartName());
         return datamartDao.deleteDatamart(context.getDatamartName())
             .onSuccess(success -> log.debug("Deleted datamart [{}] from datamart registry",
-                    context.getDatamartName()))
-            .onFailure(error -> log.error("Error deleting datamart [{}] from datamart registry!",
-                    context.getDatamartName(),
-                    error));
+                    context.getDatamartName()));
     }
 
     @Override

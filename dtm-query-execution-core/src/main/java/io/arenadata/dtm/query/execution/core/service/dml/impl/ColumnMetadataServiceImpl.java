@@ -5,6 +5,7 @@ import io.arenadata.dtm.common.dto.QueryParserResponse;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
 import io.arenadata.dtm.query.calcite.core.util.CalciteUtil;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.dml.ColumnMetadataService;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.vertx.core.AsyncResult;
@@ -38,11 +39,10 @@ public class ColumnMetadataServiceImpl implements ColumnMetadataService {
                 try {
                     handler.handle(Future.succeededFuture(getColumnMetadata(parserResponse.getRelNode())));
                 } catch (Exception ex) {
-                    log.error("Column meta data extract error: ", ex);
-                    handler.handle(Future.failedFuture(ex));
+                    handler.handle(Future.failedFuture(
+                            new DtmException("Error extracting meta data", ex)));
                 }
             } else {
-                log.error("Query parsing error: ", ar.cause());
                 handler.handle(Future.failedFuture(ar.cause()));
             }
         });

@@ -1,11 +1,12 @@
 package io.arenadata.dtm.query.execution.core.service.impl;
 
+import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.reader.QueryResult;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.QueryDispatcher;
 import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.DatamartExecutionService;
-import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -36,8 +37,8 @@ public class QueryDispatcherImpl implements QueryDispatcher {
             serviceMap.get(context.getProcessingType())
                     .execute(context, asyncResultHandler);
         } catch (Exception e) {
-            log.error("An error occurred while dispatching the request", e);
-            asyncResultHandler.handle(Future.failedFuture(e));
+            asyncResultHandler.handle(Future.failedFuture(
+                    new DtmException("An error occurred while dispatching the request", e)));
         }
     }
 }

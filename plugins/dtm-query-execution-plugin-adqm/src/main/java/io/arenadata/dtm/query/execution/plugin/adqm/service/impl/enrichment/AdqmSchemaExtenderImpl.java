@@ -7,6 +7,7 @@ import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.AdqmHelperTableNamesFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.SchemaExtender;
 import lombok.val;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -24,6 +25,7 @@ import static io.arenadata.dtm.query.execution.plugin.adqm.common.Constants.*;
 public class AdqmSchemaExtenderImpl implements SchemaExtender {
     private final AdqmHelperTableNamesFactory helperTableNamesFactory;
 
+    @Autowired
     public AdqmSchemaExtenderImpl(AdqmHelperTableNamesFactory helperTableNamesFactory) {
         this.helperTableNamesFactory = helperTableNamesFactory;
     }

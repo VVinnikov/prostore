@@ -45,6 +45,7 @@ public class AdqmCheckDataService implements CheckDataService {
     @Override
     public Future<Long> checkDataByCount(CheckDataByCountParams params) {
         Entity entity = params.getEntity();
+        //TODO it's better to exclude generating sql query in separate factory class
         String query = String.format(COUNT_QUERY_PATTERN, COUNT, params.getEnv(), entity.getSchema(),
                 entity.getName(), params.getSysCn() - 1, params.getSysCn());
         return adqmQueryExecutor.execute(query)

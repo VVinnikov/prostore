@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.core.service.delta.impl;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaQuery;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.factory.DeltaQueryFactory;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaQueryParamExtractor;
 import io.vertx.core.AsyncResult;
@@ -39,8 +40,7 @@ public class DeltaQueryParamExtractorImpl implements DeltaQueryParamExtractor {
                 SqlNode node = definitionService.processingQuery(request.getSql());
                 it.complete(node);
             } catch (Exception e) {
-                log.error("Request parsing error", e);
-                it.fail(e);
+                it.fail(new DtmException("Error parsing sql query", e));
             }
         }, ar -> {
             if (ar.succeeded()) {
@@ -50,8 +50,8 @@ public class DeltaQueryParamExtractorImpl implements DeltaQueryParamExtractor {
                     log.debug("Delta query created successfully: {}", deltaQuery);
                     handler.handle(Future.succeededFuture(deltaQuery));
                 } catch (Exception e) {
-                    log.error("Error creating delta query from sql node", e);
-                    handler.handle(Future.failedFuture(e));
+                    handler.handle(Future.failedFuture(
+                            new DtmException("Error creating delta query from sql node", e)));
                 }
             } else {
                 handler.handle(Future.failedFuture(ar.cause()));

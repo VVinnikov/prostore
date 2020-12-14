@@ -1,6 +1,8 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load;
 
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.MppwProperties;
+import io.arenadata.dtm.query.execution.plugin.adqm.dto.mppw.RestMppwKafkaLoadRequest;
+import io.arenadata.dtm.query.execution.plugin.adqm.dto.mppw.RestMppwKafkaStopRequest;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -44,7 +46,8 @@ public class RestLoadClientImpl implements RestLoadClient {
             });
             return promise.future();
         } catch (Exception e) {
-            return Future.failedFuture(e);
+            return Future.failedFuture(
+                    new DataSourceException(String.format("Error in processing request %s", request), e));
         }
     }
 
@@ -59,7 +62,9 @@ public class RestLoadClientImpl implements RestLoadClient {
                     if (response.statusCode() < 400 && response.statusCode() >= 200) {
                         promise.complete();
                     } else {
-                        promise.fail(new RuntimeException(String.format("Received HTTP status %s, msg %s", response.statusCode(), response.bodyAsString())));
+                        promise.fail(new DataSourceException(String.format("Received HTTP status %s, msg %s",
+                                response.statusCode(),
+                                response.bodyAsString())));
                     }
                 } else {
                     promise.fail(ar.cause());
@@ -67,7 +72,8 @@ public class RestLoadClientImpl implements RestLoadClient {
             });
             return promise.future();
         } catch (Exception e) {
-            return Future.failedFuture(e);
+            return Future.failedFuture(
+                    new DataSourceException(String.format("Error in processing request %s", request), e));
         }
     }
 }

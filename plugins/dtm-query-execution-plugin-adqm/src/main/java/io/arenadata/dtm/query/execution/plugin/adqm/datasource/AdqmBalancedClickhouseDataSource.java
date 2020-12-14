@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.datasource;
 
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import ru.yandex.clickhouse.BalancedClickhouseDataSource;
 import ru.yandex.clickhouse.ClickHouseConnection;
 import ru.yandex.clickhouse.settings.ClickHouseProperties;
@@ -27,7 +28,7 @@ public class AdqmBalancedClickhouseDataSource extends BalancedClickhouseDataSour
         } catch (SQLException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new SQLException(ex);
+            throw new DataSourceException(ex);
         }
     }
 
@@ -38,7 +39,7 @@ public class AdqmBalancedClickhouseDataSource extends BalancedClickhouseDataSour
         } catch (SQLException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new SQLException(ex);
+            throw new DataSourceException(ex);
         }
     }
 }

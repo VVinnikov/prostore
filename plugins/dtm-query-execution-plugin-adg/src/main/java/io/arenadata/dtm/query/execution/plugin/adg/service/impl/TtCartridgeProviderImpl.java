@@ -7,6 +7,7 @@ import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.adg.service.TtCartridgeProvider;
 import io.arenadata.dtm.query.execution.plugin.adg.service.TtCartridgeSchemaGenerator;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -60,7 +61,7 @@ public class TtCartridgeProviderImpl implements TtCartridgeProvider {
                         OperationYaml.class);
                 generator.generate(context, yaml, promise);
             } catch (Exception ex) {
-                promise.fail(ex);
+                promise.fail(new DataSourceException("Error in generating yaml", ex));
             }
         });
     }
@@ -72,10 +73,10 @@ public class TtCartridgeProviderImpl implements TtCartridgeProvider {
                 if (!yamlResult.isEmpty()) {
                     promise.complete(yamlResult);
                 } else {
-                    promise.fail("Empty generated yaml config");
+                    promise.fail(new DataSourceException("Empty generated yaml config"));
                 }
             } catch (Exception ex) {
-                promise.fail(ex);
+                promise.fail(new DataSourceException("Error in serializing yaml to string", ex));
             }
         });
     }

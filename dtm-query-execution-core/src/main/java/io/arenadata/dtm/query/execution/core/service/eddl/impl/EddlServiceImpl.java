@@ -49,7 +49,6 @@ public class EddlServiceImpl implements EddlService<QueryResult> {
                     if (execHandler.succeeded()) {
                         asyncResultHandler.handle(Future.succeededFuture(QueryResult.emptyResult()));
                     } else {
-                        log.error(execHandler.cause().getMessage());
                         asyncResultHandler.handle(Future.failedFuture(execHandler.cause()));
                     }
                 });

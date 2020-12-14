@@ -55,7 +55,6 @@ public class AdgQueryEnrichmentServiceImpl implements QueryEnrichmentService {
                                 log.debug("Request generated: {}", enrichedQueryResult.result());
                                 asyncHandler.handle(Future.succeededFuture(enrichedQueryResult.result()));
                             } else {
-                                log.error("Error while enriching request", enrichedQueryResult.cause());
                                 asyncHandler.handle(Future.failedFuture(enrichedQueryResult.cause()));
                             }
                         });

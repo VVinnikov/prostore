@@ -10,16 +10,15 @@ import io.arenadata.dtm.query.execution.core.service.metadata.DatamartMetaServic
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class DatamartMetaServiceImpl implements DatamartMetaService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DatamartMetaServiceImpl.class);
 
     private DatamartDao datamartDao;
     private EntityDao entityDao;
@@ -35,7 +34,6 @@ public class DatamartMetaServiceImpl implements DatamartMetaService {
             if (ar.succeeded()) {
                 resultHandler.handle(Future.succeededFuture(ar.result()));
             } else {
-                LOGGER.error("Error getting metadata", ar.cause());
                 resultHandler.handle(Future.failedFuture(ar.cause()));
             }
         });

@@ -6,6 +6,7 @@ import io.arenadata.dtm.common.eventbus.DataTopic;
 import io.arenadata.dtm.common.status.StatusEventCode;
 import io.arenadata.dtm.common.status.ddl.DatamartSchemaChangedEvent;
 import io.arenadata.dtm.query.execution.core.configuration.AppConfiguration;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.PostSqlActionType;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlPostExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
@@ -46,7 +47,7 @@ public class PublishStatusDdlPostExecutor implements DdlPostExecutor {
             vertx.eventBus().send(DataTopic.STATUS_EVENT_PUBLISH.getValue(), message, options);
             return Future.succeededFuture();
         } catch (Exception e) {
-            return Future.failedFuture(e);
+            return Future.failedFuture(new DtmException("Error creating change event", e));
         }
     }
 

@@ -2,6 +2,7 @@ package io.arenadata.dtm.query.execution.core.utils;
 
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.calcite.core.node.SqlTreeNode;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.avatica.util.Quoting;
@@ -85,7 +86,7 @@ public class SqlPreparer {
     public static SqlTreeNode getViewNameNode(SqlSelectTree tree) {
         val namesByView = tree.findNodesByPath(VIEW_NAME_PATH);
         if (namesByView.isEmpty()) {
-            throw new IllegalArgumentException(UNABLE_TO_GET_VIEW_NAME);
+            throw new DtmException(UNABLE_TO_GET_VIEW_NAME);
         } else {
             return namesByView.get(0);
         }

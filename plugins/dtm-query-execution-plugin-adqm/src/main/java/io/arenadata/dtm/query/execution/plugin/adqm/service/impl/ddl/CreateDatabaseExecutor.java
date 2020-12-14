@@ -5,6 +5,7 @@ import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfigurati
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DdlDatasourceException;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
 import io.vertx.core.AsyncResult;
@@ -38,7 +39,9 @@ public class CreateDatabaseExecutor implements DdlExecutor<Void> {
     public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<Void>> handler) {
         SqlNode query = context.getQuery();
         if (!(query instanceof SqlCreateDatabase)) {
-            handler.handle(Future.failedFuture(String.format("Expecting SqlCreateDatabase in context, receiving: %s", context)));
+            handler.handle(Future.failedFuture(
+                    new DdlDatasourceException(String.format("Expecting SqlCreateDatabase in context, receiving: %s",
+                            context))));
             return;
         }
 

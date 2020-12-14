@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load;
+package io.arenadata.dtm.query.execution.plugin.adqm.dto.mppw;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;

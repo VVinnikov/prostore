@@ -91,8 +91,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                     })
                     .onFailure(fail -> resultHandler.handle(Future.failedFuture(fail)));
         } catch (Exception e) {
-            log.error("Error starting mppw download!", e);
-            resultHandler.handle(Future.failedFuture(e));
+            resultHandler.handle(Future.failedFuture(new DtmException("Error starting mppw download", e)));
         }
     }
 
@@ -142,18 +141,19 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                                         promise.complete(stopFuture);
                                     }
                                 } else {
-                                    log.error("Error getting plugin status: {}", ds, chr.cause());
                                     vertx.cancelTimer(timerId);
-                                    promise.fail(chr.cause());
+                                    promise.fail(new DtmException(
+                                            String.format("Error getting plugin status: %s", ds),
+                                            chr.cause()));
                                 }
                             });
                 });
             } else {
-                log.error("Error starting loading mppw for plugin: {}", ds, ar.cause());
                 MppwStopFuture stopFuture = MppwStopFuture.builder()
                         .sourceType(ds)
                         .future(stopMppw(ds, mppwRequestContext))
-                        .cause(ar.cause())
+                        .cause(new DtmException(String.format("Error starting loading mppw for plugin: %s", ds),
+                                ar.cause()))
                         .stopReason(MppwStopReason.ERROR_RECEIVED)
                         .build();
                 promise.complete(stopFuture);
@@ -240,11 +240,9 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                             RuntimeException e = new DtmException(
                                     String.format("The offset of one of the plugins has changed: \n %s", stopStatus),
                                     stopComplete.cause());
-                            log.error(MPPW_LOAD_ERROR_MESSAGE, e);
                             resultHandler.handle(Future.failedFuture(e));
                         }
                     } else {
-                        log.error("Error mppw stopping", stopComplete.cause());
                         resultHandler.handle(Future.failedFuture(stopComplete.cause()));
                     }
                 });

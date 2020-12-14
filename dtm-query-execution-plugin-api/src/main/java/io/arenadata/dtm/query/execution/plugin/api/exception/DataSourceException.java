@@ -9,4 +9,8 @@ public class DataSourceException extends RuntimeException {
     public DataSourceException(String s, Throwable throwable) {
         super(s, throwable);
     }
+
+    public DataSourceException(Throwable throwable) {
+        super(throwable);
+    }
 }

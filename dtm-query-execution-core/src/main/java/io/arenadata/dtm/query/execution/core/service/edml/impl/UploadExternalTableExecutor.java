@@ -74,7 +74,6 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
                     nonExistDestionationTypes,
                     context.getDestinationEntity().getName(),
                     context.getDestinationEntity().getSchema());
-            log.error(failureMessage);
             return Future.failedFuture(new DtmException(failureMessage));
         } else {
             return Future.succeededFuture();
@@ -113,15 +112,13 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
                 .compose(ctx -> execute(context))
                         .onSuccess(promise::complete)
                         .onFailure(error -> {
-                            log.error("Edml write operation error!", error);
                             deltaServiceDao.writeOperationError(context.getSourceEntity().getSchema(), context.getSysCn())
                                     .compose(v -> uploadFailedExecutor.execute(context))
                                     .onComplete(writeErrorOpAr -> {
                                         if (writeErrorOpAr.succeeded()) {
                                             promise.fail(error);
                                         } else {
-                                            log.error("Can't write operation error!", writeErrorOpAr.cause());
-                                            promise.fail(writeErrorOpAr.cause());
+                                            promise.fail(new DtmException("Can't write operation error", writeErrorOpAr.cause()));
                                         }
                                     });
                         }));
@@ -138,8 +135,7 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
                     }
                 });
             } else {
-                log.error("Loading type {} not implemented", context.getSourceEntity().getExternalTableLocationType());
-                promise.fail(new DtmException("Other download types are not yet implemented!"));
+                promise.fail(new DtmException("Other download types are not yet implemented"));
             }
         });
     }

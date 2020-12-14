@@ -28,6 +28,7 @@ public class DropTableExecutor implements DdlExecutor<Void> {
     private final DdlProperties ddlProperties;
     private final AppConfiguration appConfiguration;
 
+    @Autowired
     public DropTableExecutor(DatabaseExecutor databaseExecutor,
                              DdlProperties ddlProperties,
                              AppConfiguration appConfiguration) {
@@ -35,7 +36,6 @@ public class DropTableExecutor implements DdlExecutor<Void> {
         this.ddlProperties = ddlProperties;
         this.appConfiguration = appConfiguration;
     }
-
 
     @Override
     public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<Void>> handler) {

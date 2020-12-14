@@ -9,6 +9,7 @@ import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateView;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.exception.view.ViewNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.DdlQueryGenerator;
@@ -44,6 +45,8 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     private static final int DATA_TYPE_COLUMN_INDEX = 3;
     private static final int IS_NULLABLE_COLUMN_INDEX = 4;
     private static final String IS_NULLABLE_COLUMN_TRUE = "YES";
+    private static final String SINGLE_BACK_QUOTE = "`";
+    private static final String EMPTY_CHAR = "";
 
     private final ApplicationContext applicationContext;
     private final DdlQueryGenerator ddlQueryGenerator;
@@ -77,10 +80,10 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
             case ALTER_VIEW:
             case DROP_VIEW:
             case DROP_TABLE:
-                return client.executeQuery(sql.toString().replace("`", ""))
+                return client.executeQuery(sql.toString().replace(SINGLE_BACK_QUOTE, EMPTY_CHAR))
                         .onFailure(this::shutdown);
             default:
-                throw new IllegalArgumentException("Sql type not supported: " + sql.getKind());
+                throw new DtmException(String.format("Sql type not supported: %s", sql.getKind()));
         }
     }
 
@@ -94,9 +97,9 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
             return client.executeQuery(String.format(InformationSchemaUtils.DROP_VIEW, sqlCreateView.getName()))
                     .compose(v -> client.executeQuery(String.format(InformationSchemaUtils.CREATE_VIEW,
                             sqlCreateView.getName(),
-                            sqlCreateView.getQuery().toString().replace("`", ""))));
+                            sqlCreateView.getQuery().toString().replace(SINGLE_BACK_QUOTE, EMPTY_CHAR))));
         } else {
-            return client.executeQuery(sqlCreateView.toString().replace("`", ""))
+            return client.executeQuery(sqlCreateView.toString().replace(SINGLE_BACK_QUOTE, EMPTY_CHAR))
                     .onFailure(this::shutdown);
         }
     }
@@ -104,38 +107,41 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     private Future<Void> createOrDropSchema(SqlNode sql) {
         var schemaSql = sql.toString()
                 .replace("DATABASE", "SCHEMA")
-                .replace("`", "");
+                .replace(SINGLE_BACK_QUOTE, EMPTY_CHAR);
         schemaSql = SqlKind.DROP_SCHEMA == sql.getKind() ? schemaSql + " CASCADE" : schemaSql;
         return client.executeQuery(schemaSql)
                 .onFailure(this::shutdown);
     }
 
     private Future<Void> createTable(SqlCreateTable createTable) {
-        val distributedByColumns = createTable.getDistributedBy().getDistributedBy().getList().stream()
-                .map(SqlNode::toString)
-                .collect(Collectors.toList());
-        val schemaTable = createTable.getOperandList().get(0).toString();
-        val table = getTableName(schemaTable);
-        val creatTableQuery = sqlWithoutDistributedBy(createTable);
+        try {
+            val distributedByColumns = createTable.getDistributedBy().getDistributedBy().getList().stream()
+                    .map(SqlNode::toString)
+                    .collect(Collectors.toList());
+            val schemaTable = createTable.getOperandList().get(0).toString();
+            val table = getTableName(schemaTable);
+            val creatTableQuery = sqlWithoutDistributedBy(createTable);
 
-        List<String> commentQueries = new ArrayList<>();
-        val columns = ((SqlNodeList) createTable.getOperandList().get(1)).getList();
-        columns.stream()
-                .filter(node -> node instanceof SqlColumnDeclaration)
-                .map(node -> (SqlColumnDeclaration) node)
-                .forEach(column -> {
-                    val columnName = column.getOperandList().get(0).toString();
-                    val typeString = getTypeWithoutSize(column.getOperandList().get(1).toString());
-                    val type = ColumnType.fromTypeString(typeString);
-                    if (needComment(type)) {
-                        commentQueries.add(commentOnColumn(schemaTable, columnName, typeString));
-                    }
-                });
-
-        return client.executeQuery(creatTableQuery)
-                .compose(r -> client.executeQuery(createShardingKeyIndex(table, schemaTable, distributedByColumns)))
-                .compose(r -> client.executeBatch(commentQueries))
-                .onFailure(this::shutdown);
+            List<String> commentQueries = new ArrayList<>();
+            val columns = ((SqlNodeList) createTable.getOperandList().get(1)).getList();
+            columns.stream()
+                    .filter(node -> node instanceof SqlColumnDeclaration)
+                    .map(node -> (SqlColumnDeclaration) node)
+                    .forEach(column -> {
+                        val columnName = column.getOperandList().get(0).toString();
+                        val typeString = getTypeWithoutSize(column.getOperandList().get(1).toString());
+                        val type = ColumnType.fromTypeString(typeString);
+                        if (needComment(type)) {
+                            commentQueries.add(commentOnColumn(schemaTable, columnName, typeString));
+                        }
+                    });
+            return client.executeQuery(creatTableQuery)
+                    .compose(r -> client.executeQuery(createShardingKeyIndex(table, schemaTable, distributedByColumns)))
+                    .compose(r -> client.executeBatch(commentQueries))
+                    .onFailure(this::shutdown);
+        } catch (Exception e) {
+            return Future.failedFuture(new DtmException("Error generating create table request", e));
+        }
     }
 
     private String getTypeWithoutSize(String type) {
@@ -148,7 +154,7 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
 
     private String sqlWithoutDistributedBy(SqlCreateTable createTable) {
         String sqlString = createTable.toString();
-        return sqlString.substring(0, sqlString.indexOf("DISTRIBUTED BY") - 1).replace("`", "");
+        return sqlString.substring(0, sqlString.indexOf("DISTRIBUTED BY") - 1).replace(SINGLE_BACK_QUOTE, EMPTY_CHAR);
     }
 
     private String commentOnColumn(String schemaTable, String column, String comment) {
@@ -170,8 +176,7 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
         return client.executeBatch(informationSchemaViewsQueries())
                 .compose(v -> createSchemasFromDatasource())
                 .compose(v -> initEntities())
-                .onSuccess(v -> log.info("Information schema initialized successfully"))
-                .onFailure(err -> log.error("Error while creating information schema views", err));
+                .onSuccess(v -> log.info("Information schema initialized successfully"));
     }
 
     private Future<Void> initEntities() {
@@ -198,10 +203,53 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
                                 .onFailure(promise::fail);
 
                     } catch (Exception e) {
-                        promise.fail(e);
+                        promise.fail(new DtmException("Error preparing entities for creating in information schema", e));
                     }
                 })
                 .onFailure(promise::fail));
+    }
+
+    private String createInitEntitiesQuery() {
+        return String.format("SELECT TABLE_NAME, ORDINAL_POSITION, COLUMN_NAME," +
+                        "  case" +
+                        "    when DATA_TYPE = 'DOUBLE PRECISION' then 'DOUBLE'" +
+                        "    when DATA_TYPE = 'CHARACTER VARYING' then 'VARCHAR'" +
+                        "    when DATA_TYPE = 'INTEGER' then 'INT'" +
+                        "    when DATA_TYPE = 'CHARACTER' then 'CHAR'" +
+                        "    else DATA_TYPE end as DATA_TYPE," +
+                        " IS_NULLABLE" +
+                        " FROM information_schema.columns WHERE TABLE_SCHEMA = '%s' and TABLE_NAME in (%s);",
+                InformationSchemaView.DTM_SCHEMA_NAME,
+                Arrays.stream(InformationSchemaView.values())
+                        .map(view -> String.format("'%s'", view.getRealName().toUpperCase()))
+                        .collect(Collectors.joining(",")));
+    }
+
+    private List<Entity> createEntity(final InformationSchemaView view, final List<EntityField> fields) {
+        return Arrays.asList(
+                Entity.builder()
+                        .schema(InformationSchemaView.SCHEMA_NAME.toLowerCase())
+                        .entityType(EntityType.VIEW)
+                        .name(view.name().toLowerCase())
+                        .viewQuery(String.format("select * from %s.%s", InformationSchemaView.SCHEMA_NAME.toLowerCase(),
+                                view.getRealName()))
+                        .fields(fields)
+                        .build(),
+                Entity.builder()
+                        .schema(InformationSchemaView.SCHEMA_NAME.toLowerCase())
+                        .entityType(EntityType.TABLE)
+                        .name(view.getRealName().toLowerCase())
+                        .fields(fields)
+                        .build());
+    }
+
+    private EntityField createField(final JsonArray jsonArray) {
+        return EntityField.builder()
+                .ordinalPosition(jsonArray.getInteger(ORDINAL_POSITION_COLUMN_INDEX))
+                .name(jsonArray.getString(COLUMN_NAME_COLUMN_INDEX).toLowerCase())
+                .type(ColumnType.valueOf(jsonArray.getString(DATA_TYPE_COLUMN_INDEX)))
+                .nullable(IS_NULLABLE_COLUMN_TRUE.equals(jsonArray.getString(IS_NULLABLE_COLUMN_INDEX)))
+                .build();
     }
 
     private Future<Void> createLogicSchemaDatamartInDatasource() {
@@ -235,49 +283,6 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     private Future<Void> createEntityIfNotExists(Entity entity) {
         return entityDao.existsEntity(entity.getSchema(), entity.getName())
                 .compose(isExists -> isExists ? Future.succeededFuture() : entityDao.createEntity(entity));
-    }
-
-    private String createInitEntitiesQuery() {
-        return String.format("SELECT TABLE_NAME, ORDINAL_POSITION, COLUMN_NAME," +
-                        "  case" +
-                        "    when DATA_TYPE = 'DOUBLE PRECISION' then 'DOUBLE'" +
-                        "    when DATA_TYPE = 'CHARACTER VARYING' then 'VARCHAR'" +
-                        "    when DATA_TYPE = 'INTEGER' then 'INT'" +
-                        "    when DATA_TYPE = 'CHARACTER' then 'CHAR'" +
-                        "    else DATA_TYPE end as DATA_TYPE," +
-                        " IS_NULLABLE" +
-                        " FROM information_schema.columns WHERE TABLE_SCHEMA = '%s' and TABLE_NAME in (%s);",
-                InformationSchemaView.DTM_SCHEMA_NAME,
-                Arrays.stream(InformationSchemaView.values())
-                        .map(view -> String.format("'%s'", view.getRealName().toUpperCase()))
-                        .collect(Collectors.joining(",")));
-    }
-
-    private EntityField createField(final JsonArray jsonArray) {
-        return EntityField.builder()
-                .ordinalPosition(jsonArray.getInteger(ORDINAL_POSITION_COLUMN_INDEX))
-                .name(jsonArray.getString(COLUMN_NAME_COLUMN_INDEX).toLowerCase())
-                .type(ColumnType.valueOf(jsonArray.getString(DATA_TYPE_COLUMN_INDEX)))
-                .nullable(IS_NULLABLE_COLUMN_TRUE.equals(jsonArray.getString(IS_NULLABLE_COLUMN_INDEX)))
-                .build();
-    }
-
-    private List<Entity> createEntity(final InformationSchemaView view, final List<EntityField> fields) {
-        return Arrays.asList(
-                Entity.builder()
-                        .schema(InformationSchemaView.SCHEMA_NAME.toLowerCase())
-                        .entityType(EntityType.VIEW)
-                        .name(view.name().toLowerCase())
-                        .viewQuery(String.format("select * from %s.%s", InformationSchemaView.SCHEMA_NAME.toLowerCase(),
-                                view.getRealName()))
-                        .fields(fields)
-                        .build(),
-                Entity.builder()
-                        .schema(InformationSchemaView.SCHEMA_NAME.toLowerCase())
-                        .entityType(EntityType.TABLE)
-                        .name(view.getRealName().toLowerCase())
-                        .fields(fields)
-                        .build());
     }
 
     private List<String> informationSchemaViewsQueries() {

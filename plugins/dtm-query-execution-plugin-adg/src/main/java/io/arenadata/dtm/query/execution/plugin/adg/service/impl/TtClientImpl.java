@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adg.service.impl;
 import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.TarantoolDatabaseProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.service.TtClient;
 import io.arenadata.dtm.query.execution.plugin.adg.service.TtResultTranslator;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -42,7 +43,7 @@ public class TtClientImpl implements TtClient {
         channel.socket().connect(new InetSocketAddress(tarantoolProperties.getHost(), tarantoolProperties.getPort()));
         return channel;
       } catch (IOException e) {
-        throw new IllegalStateException(e);
+        throw new DataSourceException("Error in socket provider", e);
       }
     };
     this.client = new TarantoolClientImpl(socketChannelProvider, config);

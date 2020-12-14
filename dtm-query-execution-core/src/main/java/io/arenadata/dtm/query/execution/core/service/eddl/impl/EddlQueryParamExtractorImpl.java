@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
 
-    public static final String ERROR_PARSING_EDDL_QUERY = "Request parsing error";
+    public static final String ERROR_PARSING_EDDL_QUERY = "Eddl request parsing error";
     public static final String START_LOCATION_TOKEN = "$";
     private static final int ZOOKEEPER_DEFAULT_PORT = 2181;
     private final DefinitionService<SqlNode> definitionService;
@@ -41,8 +41,7 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
             MetadataCalciteGenerator metadataCalciteGenerator,
             AvroSchemaGenerator avroSchemaGenerator,
             KafkaZookeeperProperties kafkaZookeeperProperties,
-            @Qualifier("coreVertx") Vertx vertx
-    ) {
+            @Qualifier("coreVertx") Vertx vertx) {
         this.definitionService = definitionService;
         this.metadataCalciteGenerator = metadataCalciteGenerator;
         this.avroSchemaGenerator = avroSchemaGenerator;
@@ -67,8 +66,7 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
             SqlNode node = definitionService.processingQuery(request.getSql());
             it.complete(node);
         } catch (Exception e) {
-            log.error("Request parsing error", e);
-            it.fail(e);
+            it.fail(new DtmException(ERROR_PARSING_EDDL_QUERY, e));
         }
     }
 
@@ -114,8 +112,8 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
             asyncResultHandler.handle(Future.succeededFuture(
                     new DropDownloadExternalTableQuery(tableInfo.getSchemaName(), tableInfo.getTableName())));
         } catch (RuntimeException e) {
-            log.error(ERROR_PARSING_EDDL_QUERY, e);
-            asyncResultHandler.handle(Future.failedFuture(e));
+            asyncResultHandler.handle(Future.failedFuture(
+                    new DtmException("Error generating drop download external table query", e)));
         }
     }
 
@@ -141,8 +139,8 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
                             avroSchema.toString(),
                             chunkSizeOperator.getChunkSize())));
         } catch (RuntimeException e) {
-            log.error(ERROR_PARSING_EDDL_QUERY, e);
-            asyncResultHandler.handle(Future.failedFuture(e));
+            asyncResultHandler.handle(Future.failedFuture(
+                    new DtmException("Error generating create download external table query", e)));
         }
     }
 
@@ -169,8 +167,8 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
                             messageLimitOperator.getMessageLimit())
             ));
         } catch (RuntimeException e) {
-            log.error(ERROR_PARSING_EDDL_QUERY, e);
-            asyncResultHandler.handle(Future.failedFuture(e));
+            asyncResultHandler.handle(Future.failedFuture(
+                    new DtmException("Error generating create upload external table query", e)));
         }
     }
 
@@ -191,19 +189,20 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
         }
     }
 
-    @NotNull
     private String getZookeeperHostPort() {
         return kafkaZookeeperProperties.getConnectionString() + ":" + ZOOKEEPER_DEFAULT_PORT;
     }
 
-    private void extractDropUploadExternalTable(SqlDropUploadExternalTable sqlNode, String defaultSchema, Handler<AsyncResult<EddlQuery>> asyncResultHandler) {
+    private void extractDropUploadExternalTable(SqlDropUploadExternalTable sqlNode,
+                                                String defaultSchema,
+                                                Handler<AsyncResult<EddlQuery>> asyncResultHandler) {
         try {
             TableInfo tableInfo = SqlNodeUtils.getTableInfo(sqlNode, defaultSchema);
             asyncResultHandler.handle(Future.succeededFuture(
                     new DropUploadExternalTableQuery(tableInfo.getSchemaName(), tableInfo.getTableName())));
         } catch (RuntimeException e) {
-            log.error(ERROR_PARSING_EDDL_QUERY, e);
-            asyncResultHandler.handle(Future.failedFuture(e));
+            asyncResultHandler.handle(Future.failedFuture(
+                    new DtmException("Error generating drop upload external table query", e)));
         }
     }
 }

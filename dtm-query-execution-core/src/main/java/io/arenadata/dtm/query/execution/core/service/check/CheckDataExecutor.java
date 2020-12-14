@@ -8,6 +8,7 @@ import io.arenadata.dtm.query.calcite.core.extension.check.CheckType;
 import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckData;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.verticle.TaskVerticleExecutor;
@@ -157,7 +158,7 @@ public class CheckDataExecutor implements CheckExecutor {
                 .collect(Collectors.toSet());
 
         if (!notExistColumns.isEmpty()) {
-            throw new IllegalArgumentException(String.format("Columns: `%s` don't exist.",
+            throw new DtmException(String.format("Columns: `%s` don't exist.",
                     String.join(", ", notExistColumns)));
         } else {
             return (type, sysCn) -> dataSourcePluginService.checkDataByHashInt32(

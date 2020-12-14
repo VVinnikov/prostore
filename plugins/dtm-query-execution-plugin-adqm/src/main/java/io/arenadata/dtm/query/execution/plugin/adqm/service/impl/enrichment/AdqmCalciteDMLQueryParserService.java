@@ -18,17 +18,16 @@ import static io.arenadata.dtm.query.execution.plugin.adqm.service.impl.enrichme
 @Service("adqmCalciteDMLQueryParserService")
 public class AdqmCalciteDMLQueryParserService extends CalciteDMLQueryParserService {
     public AdqmCalciteDMLQueryParserService(
-        @Qualifier("adqmCalciteContextProvider") CalciteContextProvider contextProvider,
-        @Qualifier("coreVertx") Vertx vertx
-    ) {
+            @Qualifier("adqmCalciteContextProvider") CalciteContextProvider contextProvider,
+            @Qualifier("coreVertx") Vertx vertx) {
         super(contextProvider, vertx);
     }
 
     @Override
     protected List<Datamart> extendSchemes(List<Datamart> datamarts) {
         return super.extendSchemes(datamarts.stream()
-            .map(this::withSystemFields)
-            .collect(Collectors.toList()));
+                .map(this::withSystemFields)
+                .collect(Collectors.toList()));
     }
 
     private Datamart withSystemFields(Datamart logicalSchema) {
@@ -39,8 +38,8 @@ public class AdqmCalciteDMLQueryParserService extends CalciteDMLQueryParserServi
             val extendedFields = new ArrayList<>(entity.getFields());
             extendedFields.addAll(getExtendedColumns());
             extendedDatamartClasses.add(entity.toBuilder()
-                .fields(extendedFields)
-                .build());
+                    .fields(extendedFields)
+                    .build());
         });
         extendedSchema.setEntities(extendedDatamartClasses);
         return extendedSchema;

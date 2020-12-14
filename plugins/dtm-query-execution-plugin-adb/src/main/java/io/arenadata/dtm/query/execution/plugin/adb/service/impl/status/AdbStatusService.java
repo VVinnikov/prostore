@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adb.service.impl.status;
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.kafka.core.service.kafka.KafkaConsumerMonitor;
 import io.arenadata.dtm.query.execution.plugin.adb.configuration.properties.MppwProperties;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.arenadata.dtm.query.execution.plugin.api.request.StatusRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.StatusService;
 import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
@@ -25,7 +26,7 @@ public class AdbStatusService implements StatusService<StatusQueryResult> {
     @Override
     public void execute(StatusRequestContext context, Handler<AsyncResult<StatusQueryResult>> handler) {
         if (context == null || context.getRequest() == null) {
-            handler.handle(Future.failedFuture("StatusRequestContext should not be null"));
+            handler.handle(Future.failedFuture(new DataSourceException("StatusRequestContext should not be null")));
             return;
         }
 

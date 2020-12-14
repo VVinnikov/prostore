@@ -52,8 +52,6 @@ public class DropTableExecutor implements DdlExecutor<Void> {
                 context.getRequest().getQueryRequest().getDatamartMnemonic(),
                 context.getRequest().getEntity().getName());
 
-
-
         val request = new TtDeleteTablesRequest(Arrays.asList(
                 tableNames.getStaging(),
                 tableNames.getActual(),

@@ -52,6 +52,7 @@ public class AdbCheckDataService implements CheckDataService {
     @Override
     public Future<Long> checkDataByCount(CheckDataByCountParams params) {
         return Future.future(p -> {
+            //TODO it's better to exclude generating sql query in separate factory class
             val sql = String.format(CHECK_DATA_BY_COUNT_TEMPLATE,
                     params.getEntity().getSchema(), params.getEntity().getName(),
                     params.getSysCn() - 1, params.getSysCn(),

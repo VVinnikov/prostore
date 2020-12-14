@@ -15,6 +15,6 @@ public class ParseQueryUtils {
                 .filter(t -> t instanceof SqlIdentifier)
                 .findFirst()
                 .map(Objects::toString)
-                .orElseThrow(() -> new DtmException("Can't get datamart name."));
+                .orElseThrow(() -> new DtmException("Can't get datamart name"));
     }
 }

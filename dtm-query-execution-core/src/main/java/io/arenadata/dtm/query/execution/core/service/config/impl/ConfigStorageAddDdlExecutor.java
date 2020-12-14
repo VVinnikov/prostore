@@ -7,6 +7,7 @@ import io.arenadata.dtm.query.calcite.core.extension.config.SqlConfigType;
 import io.arenadata.dtm.query.calcite.core.extension.config.function.SqlConfigStorageAdd;
 import io.arenadata.dtm.query.calcite.core.service.impl.CalciteDefinitionService;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.plugin.api.config.ConfigRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
@@ -53,24 +54,16 @@ public class ConfigStorageAddDdlExecutor implements ConfigExecutor {
                 val sourceType = configStorageAdd.getSourceType();
                 if (dataSourcePluginService.getSourceTypes().contains(sourceType)) {
                     datamartDao.getDatamarts()
-                        .compose(datamarts -> {
-                            String envName = context.getRequest().getQueryRequest().getEnvName();
-                            return joinCreateDatamartFutures(sourceType, datamarts, context);
-                        })
+                        .compose(datamarts -> joinCreateDatamartFutures(sourceType,
+                                datamarts,
+                                context))
                         .onSuccess(success -> p.complete(QueryResult.emptyResult()))
-                        .onFailure(error -> {
-                            val errMsg = String.format(CAN_T_ADD_STORAGE_S, sourceType);
-                            log.error(errMsg, error);
-                            p.fail(errMsg);
-                        });
+                        .onFailure(error -> p.fail(new DtmException(String.format(CAN_T_ADD_STORAGE_S, sourceType))));
                 } else {
-                    val errMsg = String.format(STORAGE_S_IS_NOT_ACTIVE, sourceType.name());
-                    log.error(errMsg);
-                    p.fail(errMsg);
+                    p.fail(new DtmException(String.format(STORAGE_S_IS_NOT_ACTIVE, sourceType.name())));
                 }
             } else {
-                log.error(SOURCE_TYPE_IS_NOT_SET);
-                p.fail(SOURCE_TYPE_IS_NOT_SET);
+                p.fail(new DtmException(SOURCE_TYPE_IS_NOT_SET));
             }
         });
     }
@@ -84,22 +77,17 @@ public class ConfigStorageAddDdlExecutor implements ConfigExecutor {
                 .collect(Collectors.toList()));
     }
 
-    @Override
-    public SqlConfigType getConfigType() {
-        return SqlConfigType.CONFIG_STORAGE_ADD;
-    }
-
     private Future<Void> createDatamartFuture(SourceType sourceType,
                                               String schemaName,
                                               ConfigRequestContext context) {
         return Future.future(p -> {
-            DdlRequestContext ddlRequestContext = getDdlRequestContext(schemaName, context);
+            DdlRequestContext ddlRequestContext = createDdlRequestContext(schemaName, context);
             dataSourcePluginService.ddl(sourceType, ddlRequestContext, p);
         });
     }
 
     @SneakyThrows
-    private DdlRequestContext getDdlRequestContext(String schemaName, ConfigRequestContext context) {
+    private DdlRequestContext createDdlRequestContext(String schemaName, ConfigRequestContext context) {
         val createDataBaseQuery = "CREATE DATABASE IF NOT EXISTS " + schemaName;
         val createDataBaseQueryNode = calciteDefinitionService.processingQuery(createDataBaseQuery);
         val ddlRequest = new DdlRequest(QueryRequest.builder()
@@ -108,6 +96,11 @@ public class ConfigStorageAddDdlExecutor implements ConfigExecutor {
             .sql(createDataBaseQuery)
             .build());
         return new DdlRequestContext(context.getMetrics(), ddlRequest, createDataBaseQueryNode);
+    }
+
+    @Override
+    public SqlConfigType getConfigType() {
+        return SqlConfigType.CONFIG_STORAGE_ADD;
     }
 
 }

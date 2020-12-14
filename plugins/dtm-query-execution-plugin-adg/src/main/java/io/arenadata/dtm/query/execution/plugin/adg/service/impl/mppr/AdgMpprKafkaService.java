@@ -6,6 +6,7 @@ import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.TtUpl
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.adg.service.QueryEnrichmentService;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
+import io.arenadata.dtm.query.execution.plugin.api.exception.MpprDatasourceException;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.kafka.DownloadExternalEntityMetadata;
 import io.arenadata.dtm.query.execution.plugin.api.request.MpprRequest;
@@ -36,7 +37,6 @@ public class AdgMpprKafkaService implements MpprKafkaService<QueryResult> {
             if (sqlResult.succeeded()) {
                 uploadData(request, asyncResultHandler, sqlResult.result());
             } else {
-                log.error("Error while enriching request");
                 asyncResultHandler.handle(Future.failedFuture(sqlResult.cause()));
             }
         });
@@ -51,19 +51,17 @@ public class AdgMpprKafkaService implements MpprKafkaService<QueryResult> {
                 sql,
                 queryRequest.getKafkaParameter().getTopic(),
                 downloadMetadata.getChunkSize(),
-                new JsonObject(downloadMetadata.getExternalSchema())
-        );
+                new JsonObject(downloadMetadata.getExternalSchema()));
+
         adgCartridgeClient.uploadData(request, ar -> {
                     UUID requestId = queryRequest.getQueryRequest().getRequestId();
                     if (ar.succeeded()) {
                         log.info("Uploading data from ADG was successful on request: {}", requestId);
                         asyncResultHandler.handle(Future.succeededFuture(QueryResult.emptyResult()));
                     } else {
-                        String errMsg = String.format("Error unloading data from ADG: %s on request %s",
-                                ar.cause().getMessage(),
-                                requestId);
-                        log.error(errMsg);
-                        asyncResultHandler.handle(Future.failedFuture(new DataSourceException(errMsg, ar.cause())));
+                        asyncResultHandler.handle(Future.failedFuture(
+                                new MpprDatasourceException(String.format("Error unloading data by request %s",
+                                        request), ar.cause())));
                     }
                 }
         );

@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.query;
 import io.arenadata.dtm.common.converter.SqlTypeConverter;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -45,16 +46,14 @@ public class AdqmQueryExecutor implements DatabaseExecutor {
                             List<Map<String, Object>> result = createResult(metadata, rs);
                             resultHandler.handle(Future.succeededFuture(result));
                         } catch (Exception e) {
-                            log.error("Error converting ADQM values to jdbc types!", e);
-                            resultHandler.handle(Future.failedFuture(e));
+                            resultHandler.handle(Future.failedFuture(
+                                    new DataSourceException("Error converting value to jdbc type", e)));
                         }
                     } else {
-                        log.error("ADQM query execution error: " + ar2.cause().getMessage());
                         resultHandler.handle(Future.failedFuture(ar2.cause()));
                     }
                 });
             } else {
-                log.error("ADQM connection error: " + ar1.cause().getMessage());
                 resultHandler.handle(Future.failedFuture(ar1.cause()));
             }
         });
@@ -107,7 +106,6 @@ public class AdqmQueryExecutor implements DatabaseExecutor {
                     conn.close();
                 });
             } else {
-                log.error("ADQM connection error: " + ar1.cause().getMessage());
                 completionHandler.handle(Future.failedFuture(ar1.cause()));
             }
         });
@@ -126,14 +124,14 @@ public class AdqmQueryExecutor implements DatabaseExecutor {
                             resultHandler.handle(Future.succeededFuture(result));
                         } catch (Exception e) {
                             log.error("Error converting ADQM values to jdbc types!", e);
-                            resultHandler.handle(Future.failedFuture(e));
+                            resultHandler.handle(Future.failedFuture(
+                                    new DataSourceException("Error converting value to jdbc type", e)));
                         }
                     } else {
                         resultHandler.handle(Future.failedFuture(ar2.cause()));
                     }
                 });
             } else {
-                log.error("ADQM connection error: " + ar1.cause().getMessage());
                 resultHandler.handle(Future.failedFuture(ar1.cause()));
             }
         });

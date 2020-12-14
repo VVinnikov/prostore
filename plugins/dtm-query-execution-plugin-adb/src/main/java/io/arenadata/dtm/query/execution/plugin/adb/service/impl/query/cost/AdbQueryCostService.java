@@ -29,7 +29,6 @@ public class AdbQueryCostService implements QueryCostService<Integer> {
                 log.debug("QueryCostRequest enrich completed: [{}]", ar.result());
                 handler.handle(Future.succeededFuture(0));
             } else {
-                log.error("QueryCost analyzing error", ar.cause());
                 handler.handle(Future.failedFuture(ar.cause()));
             }
         });

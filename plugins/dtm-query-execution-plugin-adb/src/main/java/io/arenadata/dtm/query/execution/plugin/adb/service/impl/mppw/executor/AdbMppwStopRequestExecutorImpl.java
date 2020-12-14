@@ -7,6 +7,7 @@ import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.impl.MetadataSqlFactoryImpl;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.MppwTopic;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -50,8 +51,7 @@ public class AdbMppwStopRequestExecutorImpl implements AdbMppwRequestExecutor {
                         log.debug("Mppw kafka stopped successfully");
                         promise.complete(QueryResult.emptyResult());
                     } else {
-                        log.error("Error stopping mppw kafka", ar.cause());
-                        promise.fail(ar.cause());
+                        promise.fail(new MppwDatasourceException("Error stopping mppw kafka", ar.cause()));
                     }
                 })));
     }
@@ -60,7 +60,8 @@ public class AdbMppwStopRequestExecutorImpl implements AdbMppwRequestExecutor {
         return Future.future(promise -> {
             QueryRequest queryRequest = requestContext.getRequest().getQueryRequest();
             val schema = queryRequest.getDatamartMnemonic();
-            val table = MetadataSqlFactoryImpl.WRITABLE_EXT_TABLE_PREF + queryRequest.getRequestId().toString().replaceAll("-", "_");
+            val table = MetadataSqlFactoryImpl.WRITABLE_EXT_TABLE_PREF +
+                    queryRequest.getRequestId().toString().replaceAll("-", "_");
             adbQueryExecutor.executeUpdate(metadataSqlFactory.dropExtTableSqlQuery(schema, table), promise);
         });
     }

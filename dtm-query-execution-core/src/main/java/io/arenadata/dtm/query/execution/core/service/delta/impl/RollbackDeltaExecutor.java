@@ -73,17 +73,15 @@ public class RollbackDeltaExecutor implements DeltaExecutor, StatusEventPublishe
                     val res = deltaQueryResultFactory.create(getDeltaRecord(deltaQuery.getDatamart(), deltaNum));
                     handler.handle(Future.succeededFuture(res));
                 } catch (Exception e) {
-                    val errMsg = String.format("Can't publish result of delta rollback by datamart [%s]: %s",
-                        deltaQuery.getDatamart(), e.getMessage());
-                    log.error(errMsg);
-                    handler.handle(Future.failedFuture(new DtmException(errMsg)));
+                    handler.handle(Future.failedFuture(
+                            new DtmException(String.format("Can't publish result of delta rollback by datamart [%s]",
+                            deltaQuery.getDatamart()), e)));
                 }
             })
             .onFailure(error -> {
-                val errMsg = String.format("Can't rollback delta by datamart [%s]: %s",
-                    deltaQuery.getDatamart(), error.getMessage());
-                log.error(errMsg);
-                handler.handle(Future.failedFuture(new DtmException(errMsg)));
+                handler.handle(Future.failedFuture(
+                        new DtmException(String.format("Can't rollback delta by datamart [%s]",
+                        deltaQuery.getDatamart()), error)));
             });
     }
 

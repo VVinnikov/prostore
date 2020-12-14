@@ -39,6 +39,7 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
     private static final String ACTUAL_DATA_TABLE_NAME = "_actual_data_table_name";
     private static final String HISTORICAL_DATA_TABLE_NAME = "_historical_data_table_name";
     private static final String DELTA_NUMBER = "_delta_number";
+    private static final String ERROR_IN_HANDLING_RESPONSE_MSG = "Error in handling response";
 
     private final WebClient webClient;
     private final TarantoolCartridgeProperties cartridgeProperties;
@@ -81,14 +82,14 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
         val uri = cartridgeProperties.getUrl() + cartridgeProperties.getKafkaUploadDataUrl();
         log.debug("send to [{}] request [{}]", uri, request);
         webClient.postAbs(uri)
-            .sendJson(request, ar -> {
-                if (ar.succeeded()) {
-                    val response = ar.result();
-                    handleUploadData(response, handler);
-                } else {
-                    handler.handle(Future.failedFuture(ar.cause()));
-                }
-            });
+                .sendJson(request, ar -> {
+                    if (ar.succeeded()) {
+                        val response = ar.result();
+                        handleUploadData(response, handler);
+                    } else {
+                        handler.handle(Future.failedFuture(ar.cause()));
+                    }
+                });
     }
 
     private void handleUploadData(HttpResponse<Buffer> response, Handler<AsyncResult<Void>> handler) {
@@ -113,14 +114,14 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
         val uri = cartridgeProperties.getUrl() + cartridgeProperties.getKafkaSubscriptionUrl();
         log.debug("send to [{}] request [{}]", uri, request);
         webClient.postAbs(uri)
-            .sendJson(request, ar -> {
-                if (ar.succeeded()) {
-                    val response = ar.result();
-                    handleSubscription(response, handler);
-                } else {
-                    handler.handle(Future.failedFuture(ar.cause()));
-                }
-            });
+                .sendJson(request, ar -> {
+                    if (ar.succeeded()) {
+                        val response = ar.result();
+                        handleSubscription(response, handler);
+                    } else {
+                        handler.handle(Future.failedFuture(ar.cause()));
+                    }
+                });
     }
 
     private void handleSubscription(HttpResponse<Buffer> response, Handler<AsyncResult<Void>> handler) {
@@ -136,7 +137,8 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
                 unexpectedResponse(handler, response);
             }
         } catch (Exception ex) {
-            handler.handle(Future.failedFuture(ex));
+            handler.handle(Future.failedFuture(
+                    new DataSourceException("Error in handling response", ex)));
         }
     }
 
@@ -146,14 +148,14 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
         val uri = cartridgeProperties.getUrl() + cartridgeProperties.getKafkaLoadDataUrl();
         log.debug("send to [{}] request [{}]", uri, request);
         webClient.postAbs(uri)
-            .sendJson(request, ar -> {
-                if (ar.succeeded()) {
-                    val response = ar.result();
-                    handleLoadData(response, handler);
-                } else {
-                    handler.handle(Future.failedFuture(ar.cause()));
-                }
-            });
+                .sendJson(request, ar -> {
+                    if (ar.succeeded()) {
+                        val response = ar.result();
+                        handleLoadData(response, handler);
+                    } else {
+                        handler.handle(Future.failedFuture(ar.cause()));
+                    }
+                });
     }
 
     private void handleLoadData(HttpResponse<Buffer> response,
@@ -173,7 +175,8 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
                 unexpectedResponse(handler, response);
             }
         } catch (Exception ex) {
-            handler.handle(Future.failedFuture(ex));
+            handler.handle(Future.failedFuture(
+                    new DataSourceException("Error in handling response", ex)));
         }
     }
 
@@ -183,27 +186,27 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
         log.debug("send to [{}] request [{}]", uri, request);
         val tableNames = request.getHelperTableNames();
         webClient.getAbs(uri)
-            .addQueryParam(STAGE_DATA_TABLE_NAME, tableNames.getStaging())
-            .addQueryParam(ACTUAL_DATA_TABLE_NAME, tableNames.getActual())
-            .addQueryParam(HISTORICAL_DATA_TABLE_NAME, tableNames.getHistory())
-            .addQueryParam(DELTA_NUMBER, String.valueOf(request.getDeltaNumber()))
-            .send(ar -> {
-                if (ar.succeeded()) {
-                    val response = ar.result();
-                    log.trace("handle [transfer data to scd table] response [{}]", response);
-                    val statusCode = response.statusCode();
-                    if (statusCode == 200) {
-                        handler.handle(Future.succeededFuture());
-                    } else if (statusCode == 500) {
-                        unexpectedResponse(handler, response);
+                .addQueryParam(STAGE_DATA_TABLE_NAME, tableNames.getStaging())
+                .addQueryParam(ACTUAL_DATA_TABLE_NAME, tableNames.getActual())
+                .addQueryParam(HISTORICAL_DATA_TABLE_NAME, tableNames.getHistory())
+                .addQueryParam(DELTA_NUMBER, String.valueOf(request.getDeltaNumber()))
+                .send(ar -> {
+                    if (ar.succeeded()) {
+                        val response = ar.result();
+                        log.trace("handle [transfer data to scd table] response [{}]", response);
+                        val statusCode = response.statusCode();
+                        if (statusCode == 200) {
+                            handler.handle(Future.succeededFuture());
+                        } else if (statusCode == 500) {
+                            unexpectedResponse(handler, response);
+                        } else {
+                            log.error("transfer data to scd table error: {}", response.statusMessage());
+                            handler.handle(Future.failedFuture(new DataSourceException(response.statusMessage())));
+                        }
                     } else {
-                        log.error("transfer data to scd table error: {}", response.statusMessage());
-                        handler.handle(Future.failedFuture(response.statusMessage()));
+                        handler.handle(Future.failedFuture(ar.cause()));
                     }
-                } else {
-                    handler.handle(Future.failedFuture(ar.cause()));
-                }
-            });
+                });
     }
 
     @Override
@@ -211,14 +214,14 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
         val uri = cartridgeProperties.getUrl() + cartridgeProperties.getKafkaSubscriptionUrl() + "/" + topicName;
         log.debug("send to [{}]", uri);
         webClient.deleteAbs(uri)
-            .send(ar -> {
-                if (ar.succeeded()) {
-                    val response = ar.result();
-                    handleCancelSubscription(response, handler);
-                } else {
-                    handler.handle(Future.failedFuture(ar.cause()));
-                }
-            });
+                .send(ar -> {
+                    if (ar.succeeded()) {
+                        val response = ar.result();
+                        handleCancelSubscription(response, handler);
+                    } else {
+                        handler.handle(Future.failedFuture(ar.cause()));
+                    }
+                });
     }
 
     private void handleCancelSubscription(HttpResponse<Buffer> response, Handler<AsyncResult<Void>> handler) {
@@ -233,13 +236,13 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
                 unexpectedResponse(handler, response);
             }
         } catch (Exception ex) {
-            handler.handle(Future.failedFuture(ex));
+            handler.handle(Future.failedFuture(new DataSourceException(ERROR_IN_HANDLING_RESPONSE_MSG, ex)));
         }
     }
 
     private <T> void unexpectedResponse(Handler<AsyncResult<T>> handler, HttpResponse<Buffer> response) {
         String failureMessage = String.format("Unexpected response %s", response.bodyAsJsonObject());
-        handler.handle(Future.failedFuture(failureMessage));
+        handler.handle(Future.failedFuture(new DataSourceException(failureMessage)));
     }
 
     @SneakyThrows
@@ -253,10 +256,13 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
                     if (ResStatusEnum.ok == res.getStatus()) {
                         handler.handle(Future.succeededFuture(res));
                     } else {
-                        handler.handle(Future.failedFuture(String.format("%s: %s", res.getErrorCode(), res.getError())));
+                        handler.handle(Future.failedFuture(
+                                new DataSourceException(String.format("%s: %s",
+                                        res.getErrorCode(),
+                                        res.getError()))));
                     }
                 } catch (Exception e) {
-                    handler.handle(Future.failedFuture(e));
+                    handler.handle(Future.failedFuture(new DataSourceException("Error in decoding response status", e)));
                 }
             } else {
                 handler.handle(Future.failedFuture(ar.cause()));
@@ -267,22 +273,22 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
     @SneakyThrows
     private void executePostRequest(ReqOperation reqOperation, Handler<AsyncResult<ResOperation>> handler) {
         circuitBreaker.<ResOperation>execute(future -> webClient.postAbs(cartridgeProperties.getUrl() + cartridgeProperties.getAdminApiUrl())
-            .sendJson(reqOperation, ar -> {
-                if (ar.succeeded()) {
-                    try {
-                        ResOperation res = new JsonObject(ar.result().body()).mapTo(ResOperation.class);
-                        if (CollectionUtils.isEmpty(res.getErrors())) {
-                            future.complete(res);
-                        } else {
-                            future.fail(new DataSourceException(res.getErrors().get(0).getMessage()));
+                .sendJson(reqOperation, ar -> {
+                    if (ar.succeeded()) {
+                        try {
+                            ResOperation res = new JsonObject(ar.result().body()).mapTo(ResOperation.class);
+                            if (CollectionUtils.isEmpty(res.getErrors())) {
+                                future.complete(res);
+                            } else {
+                                future.fail(new DataSourceException(res.getErrors().get(0).getMessage()));
+                            }
+                        } catch (Exception e) {
+                            future.fail(new DataSourceException("Error in decoding response operation", e));
                         }
-                    } catch (Exception e) {
-                        future.fail(e);
+                    } else {
+                        future.fail(ar.cause());
                     }
-                } else {
-                    future.fail(ar.cause());
-                }
-            })).setHandler(handler);
+                })).setHandler(handler);
     }
 
     public Future<Map<String, Space>> getSpaceDescriptions(Set<String> spaceNames) {
@@ -295,7 +301,7 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
                         try {
                             promise.complete(parseSpaces(ar.result().bodyAsString(), spaceNames));
                         } catch (Exception e) {
-                            promise.fail(e);
+                            promise.fail(new DataSourceException("Error in decoding response spaces", e));
                         }
                     } else {
                         promise.fail(ar.cause());
@@ -303,28 +309,32 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
                 }));
     }
 
-    private Map<String, Space> parseSpaces(String yaml, Set<String> spaceNames) throws JsonProcessingException { ;
+    private Map<String, Space> parseSpaces(String yaml, Set<String> spaceNames) throws JsonProcessingException {
+        ;
         JsonNode jsonNode = objectMapper.readTree(yaml).get("spaces");
         return spaceNames.stream()
                 .collect(Collectors.toMap(Function.identity(),
-                    name -> Optional.ofNullable(jsonNode.get(name))
-                        .map(space -> objectMapper.convertValue(space, Space.class))
-                        .orElseThrow(() -> new RuntimeException(String.format("`%s` space doesn't exist.", name)))));
+                        name -> Optional.ofNullable(jsonNode.get(name))
+                                .map(space -> objectMapper.convertValue(space, Space.class))
+                                .orElseThrow(() ->
+                                        new DataSourceException(String.format("`%s` space doesn't exist.",
+                                                name)))));
     }
 
     @Override
-    public void addSpacesToDeleteQueue(TtDeleteTablesRequest request, Handler<AsyncResult<TtDeleteBatchResponse>> handler) {
+    public void addSpacesToDeleteQueue(TtDeleteTablesRequest request,
+                                       Handler<AsyncResult<TtDeleteBatchResponse>> handler) {
         val uri = cartridgeProperties.getUrl() + cartridgeProperties.getTableBatchDeleteUrl();
         log.debug("send to [{}] request [{}]", uri, request);
         webClient.putAbs(uri)
-            .sendJson(request, ar -> {
-                if (ar.succeeded()) {
-                    val response = ar.result();
-                    handleAddSpacesToDeleteQueue(response, handler);
-                } else {
-                    handler.handle(Future.failedFuture(ar.cause()));
-                }
-            });
+                .sendJson(request, ar -> {
+                    if (ar.succeeded()) {
+                        val response = ar.result();
+                        handleAddSpacesToDeleteQueue(response, handler);
+                    } else {
+                        handler.handle(Future.failedFuture(ar.cause()));
+                    }
+                });
     }
 
     private void handleAddSpacesToDeleteQueue(HttpResponse<Buffer> response,
@@ -342,41 +352,42 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
                 unexpectedResponse(handler, response);
             }
         } catch (Exception ex) {
-            handler.handle(Future.failedFuture(ex));
+            handler.handle(Future.failedFuture(
+                    new DataSourceException(ERROR_IN_HANDLING_RESPONSE_MSG, ex)));
         }
     }
 
     @Override
     public void executeDeleteQueue(TtDeleteTablesQueueRequest request, Handler<AsyncResult<TtDeleteQueueResponse>> handler) {
         val uri = cartridgeProperties.getUrl() + cartridgeProperties.getTableBatchDeleteUrl() + "/"
-            + request.getBatchId();
+                + request.getBatchId();
         log.debug("send to [{}] request [{}]", uri, request);
         webClient.deleteAbs(uri)
-            .send(ar -> {
-                if (ar.succeeded()) {
-                    val response = ar.result();
-                    handleExecuteDeleteQueue(response, handler);
-                } else {
-                    handler.handle(Future.failedFuture(ar.cause()));
-                }
-            });
+                .send(ar -> {
+                    if (ar.succeeded()) {
+                        val response = ar.result();
+                        handleExecuteDeleteQueue(response, handler);
+                    } else {
+                        handler.handle(Future.failedFuture(ar.cause()));
+                    }
+                });
     }
 
     @Override
     public void executeDeleteSpacesWithPrefix(TtDeleteTablesWithPrefixRequest request,
                                               Handler<AsyncResult<TtDeleteQueueResponse>> handler) {
         val uri = cartridgeProperties.getUrl() + cartridgeProperties.getTableBatchDeleteUrl() + "/prefix/"
-            + request.getTablePrefix();
+                + request.getTablePrefix();
         log.debug("send to [{}] request [{}]", uri, request);
         webClient.deleteAbs(uri)
-            .send(ar -> {
-                if (ar.succeeded()) {
-                    val response = ar.result();
-                    handleExecuteDeleteQueue(response, handler);
-                } else {
-                    handler.handle(Future.failedFuture(ar.cause()));
-                }
-            });
+                .send(ar -> {
+                    if (ar.succeeded()) {
+                        val response = ar.result();
+                        handleExecuteDeleteQueue(response, handler);
+                    } else {
+                        handler.handle(Future.failedFuture(ar.cause()));
+                    }
+                });
     }
 
     private void handleExecuteDeleteQueue(HttpResponse<Buffer> response,
@@ -394,7 +405,8 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
                 unexpectedResponse(handler, response);
             }
         } catch (Exception ex) {
-            handler.handle(Future.failedFuture(ex));
+            handler.handle(Future.failedFuture(
+                    new DataSourceException(ERROR_IN_HANDLING_RESPONSE_MSG, ex)));
         }
     }
 
@@ -404,14 +416,14 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
         val data = JsonObject.mapFrom(request);
         log.debug("send to [{}] request [{}]", uri, data);
         webClient.postAbs(uri)
-            .sendJsonObject(data, ar -> {
-                if (ar.succeeded()) {
-                    val response = ar.result();
-                    handleReverseHistoryTransfer(response, handler);
-                } else {
-                    handler.handle(Future.failedFuture(ar.cause()));
-                }
-            });
+                .sendJsonObject(data, ar -> {
+                    if (ar.succeeded()) {
+                        val response = ar.result();
+                        handleReverseHistoryTransfer(response, handler);
+                    } else {
+                        handler.handle(Future.failedFuture(ar.cause()));
+                    }
+                });
     }
 
     private void handleReverseHistoryTransfer(HttpResponse<Buffer> response, Handler<AsyncResult<Void>> handler) {
@@ -426,7 +438,8 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
                 unexpectedResponse(handler, response);
             }
         } catch (Exception ex) {
-            handler.handle(Future.failedFuture(ex));
+            handler.handle(Future.failedFuture(
+                    new DataSourceException(ERROR_IN_HANDLING_RESPONSE_MSG, ex)));
         }
     }
 
@@ -434,9 +447,9 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
         val uri = cartridgeProperties.getUrl() + cartridgeProperties.getTableQueuedCreate();
         webClient.postAbs(uri)
                 .sendJson(request, ar -> {
-                    if(ar.succeeded()) {
+                    if (ar.succeeded()) {
                         val response = ar.result();
-                        handleExecuteCreateSpacesQueued(response,handler);
+                        handleExecuteCreateSpacesQueued(response, handler);
                     } else {
                         handler.handle(Future.failedFuture(ar.cause()));
                     }
@@ -455,7 +468,8 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
                 unexpectedResponse(handler, response);
             }
         } catch (Exception ex) {
-            handler.handle(Future.failedFuture(ex));
+            handler.handle(Future.failedFuture(
+                    new DataSourceException(ERROR_IN_HANDLING_RESPONSE_MSG, ex)));
         }
     }
 
@@ -463,10 +477,10 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
         val uri = cartridgeProperties.getUrl() + cartridgeProperties.getTableQueuedDelete();
         log.debug("send to [{}] request [{}]", uri, request);
         webClient.deleteAbs(uri)
-                .sendJson(request,ar -> {
+                .sendJson(request, ar -> {
                     if (ar.succeeded()) {
                         val response = ar.result();
-                        handleExecuteDeleteSpacesQueued(response,handler);
+                        handleExecuteDeleteSpacesQueued(response, handler);
                     } else {
                         handler.handle(Future.failedFuture(ar.cause()));
                     }
@@ -485,7 +499,8 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
                 unexpectedResponse(handler, response);
             }
         } catch (Exception ex) {
-            handler.handle(Future.failedFuture(ex));
+            handler.handle(Future.failedFuture(
+                    new DataSourceException(ERROR_IN_HANDLING_RESPONSE_MSG, ex)));
         }
     }
 
@@ -498,7 +513,7 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
                 .send(ar -> {
                     if (ar.succeeded()) {
                         val response = ar.result();
-                        handleExecuteDeleteSpacesWithPrefixQueued(response,handler);
+                        handleExecuteDeleteSpacesWithPrefixQueued(response, handler);
                     } else {
                         handler.handle(Future.failedFuture(ar.cause()));
                     }
@@ -518,15 +533,16 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
                 unexpectedResponse(handler, response);
             }
         } catch (Exception ex) {
-            handler.handle(Future.failedFuture(ex));
+            handler.handle(Future.failedFuture(
+                    new DataSourceException(ERROR_IN_HANDLING_RESPONSE_MSG, ex)));
         }
     }
 
     @Override
     public Future<Long> getCheckSumByInt32Hash(String actualDataTableName,
-                                                 String historicalDataTableName,
-                                                 Long sysCn,
-                                                 Set<String> columnList) {
+                                               String historicalDataTableName,
+                                               Long sysCn,
+                                               Set<String> columnList) {
         Map<String, Object> body = new HashMap<>();
         body.put("actualDataTableName", actualDataTableName);
         body.put("historicalDataTableName", historicalDataTableName);
@@ -541,7 +557,7 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
                         if (checkSum.isPresent()) {
                             promise.complete(checkSum.get());
                         } else {
-                            promise.fail(jsonObject.getString("error"));
+                            promise.fail(new DataSourceException(jsonObject.getString("error")));
                         }
                     } else {
                         promise.fail(ar.cause());
@@ -549,6 +565,7 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
                 }));
     }
 
+    @Override
     public Future<Void> deleteSpaceTuples(String spaceName, String whereCondition) {
         String url = cartridgeProperties.getUrl() + cartridgeProperties.getDeleteSpaceTuples();
         Map<String, String> body = new HashMap<>();
@@ -556,12 +573,12 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
         body.put("whereCondition", whereCondition);
         return Future.future(promise -> webClient.postAbs(url)
                 .sendJson(body, ar -> {
-                    if(ar.succeeded()) {
+                    if (ar.succeeded()) {
                         JsonObject jsonObject = ar.result().bodyAsJsonObject();
                         if (jsonObject == null) {
                             promise.complete();
                         } else {
-                            promise.fail(jsonObject.getString("error"));
+                            promise.fail(new DataSourceException(jsonObject.getString("error")));
                         }
                     } else {
                         promise.fail(ar.cause());

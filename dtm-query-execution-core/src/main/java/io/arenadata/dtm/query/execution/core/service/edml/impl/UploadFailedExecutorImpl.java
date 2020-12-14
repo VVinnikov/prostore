@@ -75,13 +75,6 @@ public class UploadFailedExecutorImpl implements EdmlUploadFailedExecutor {
                                 context.getRequest().getSysCn());
                             p.complete();
                         } else {
-                            log.error("Error rollback data in plugin [{}], " +
-                                    "datamart [{}], table [{}], sysCn [{}]",
-                                sourceType,
-                                context.getRequest().getDatamart(),
-                                context.getRequest().getDestinationTable(),
-                                context.getRequest().getSysCn(),
-                                ar.cause());
                             p.fail(ar.cause());
                         }
                     }))));
@@ -89,9 +82,9 @@ public class UploadFailedExecutorImpl implements EdmlUploadFailedExecutor {
                 if (ar.succeeded()) {
                     rbPromise.complete();
                 } else {
-                    log.error("Error in rolling back data", ar.cause());
                     rbPromise.fail(
-                        new CrashException("Error in rolling back data → Fatal error. Operation failed on execute and failed on undo.", ar.cause())
+                        new CrashException("Error in rolling back data → Fatal error. Operation failed on execute and failed on undo.",
+                                ar.cause())
                     );
                 }
             });

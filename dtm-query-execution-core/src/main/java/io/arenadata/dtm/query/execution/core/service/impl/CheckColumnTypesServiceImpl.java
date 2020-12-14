@@ -4,6 +4,7 @@ import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
 import io.arenadata.dtm.query.calcite.core.util.CalciteUtil;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.CheckColumnTypesService;
 import io.vertx.core.Future;
 import lombok.val;
@@ -30,21 +31,17 @@ public class CheckColumnTypesServiceImpl implements CheckColumnTypesService {
     @Override
     public Future<Boolean> check(List<EntityField> destinationFields, QueryParserRequest queryParseRequest) {
         return Future.future(promise -> queryParserService.parse(queryParseRequest, ar -> {
-            try {
-                if (ar.succeeded()) {
-                    val destinationColumns = destinationFields.stream()
-                            .map(field -> CalciteUtil.valueOf(field.getType()))
-                            .collect(Collectors.toList());
-                    val sourceColumns =
-                            ar.result().getRelNode().validatedRowType.getFieldList().stream()
-                                    .map(field -> field.getType().getSqlTypeName())
-                                    .collect(Collectors.toList());
-                    promise.complete(destinationColumns.equals(sourceColumns));
-                } else {
-                    promise.fail(ar.cause());
-                }
-            } catch (Exception e) {
-                promise.fail(e);
+            if (ar.succeeded()) {
+                val destinationColumns = destinationFields.stream()
+                        .map(field -> CalciteUtil.valueOf(field.getType()))
+                        .collect(Collectors.toList());
+                val sourceColumns =
+                        ar.result().getRelNode().validatedRowType.getFieldList().stream()
+                                .map(field -> field.getType().getSqlTypeName())
+                                .collect(Collectors.toList());
+                promise.complete(destinationColumns.equals(sourceColumns));
+            } else {
+                promise.fail(ar.cause());
             }
         }));
     }

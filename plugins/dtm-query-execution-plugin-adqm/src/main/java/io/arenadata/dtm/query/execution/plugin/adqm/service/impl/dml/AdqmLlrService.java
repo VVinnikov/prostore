@@ -45,7 +45,6 @@ public class AdqmLlrService implements LlrService<QueryResult> {
                     }
                 });
             } else {
-                log.error("Error while enriching request");
                 asyncHandler.handle(Future.failedFuture(sqlResult.cause()));
             }
         });

@@ -15,6 +15,7 @@ import io.arenadata.dtm.query.calcite.core.extension.delta.SqlRollbackDelta;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.DropDatabase;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.SqlCreateDatabase;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.factory.QueryRequestFactory;
 import io.arenadata.dtm.query.execution.core.factory.RequestContextFactory;
 import io.arenadata.dtm.query.execution.core.service.QueryAnalyzer;
@@ -92,14 +93,12 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
                             sqlNode = defaultDatamartSetter.set(sqlNode, queryRequest.getDatamartMnemonic());
                         }
                     }
-                    queryDispatcher.dispatch(
-                            requestContextFactory.create(queryRequest, sqlNode), asyncResultHandler
-                    );
+                    queryDispatcher.dispatch(requestContextFactory.create(queryRequest, sqlNode),
+                            asyncResultHandler);
                 } catch (Exception ex) {
                     asyncResultHandler.handle(Future.failedFuture(ex));
                 }
             } else {
-                log.debug("Request parsing error", parseResult.cause());
                 asyncResultHandler.handle(Future.failedFuture(parseResult.cause()));
             }
         });
@@ -116,8 +115,7 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
                 val node = definitionService.processingQuery(queryRequestWithoutHint.getQueryRequest().getSql());
                 it.complete(new ParsedQueryResponse(queryRequest, node));
             } catch (Exception e) {
-                log.error("Request parsing error", e);
-                it.fail(e);
+                it.fail(new DtmException("Error parsing query", e));
             }
         }, ar -> {
             if (ar.succeeded()) {

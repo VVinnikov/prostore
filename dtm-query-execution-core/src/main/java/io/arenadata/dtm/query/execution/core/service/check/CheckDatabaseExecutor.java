@@ -90,7 +90,6 @@ public class CheckDatabaseExecutor implements CheckExecutor {
                     .filter(Optional::isPresent)
                     .map(Optional::get)
                     .collect(Collectors.toList());
-
                 promise.complete(new Pair<>(sourceType, errors));
             })
             .onFailure(promise::fail));

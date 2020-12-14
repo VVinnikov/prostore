@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adb.service.impl.rollback;
 import io.arenadata.dtm.common.plugin.sql.PreparedStatementRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbRollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.exception.RollbackDatasourceException;
 import io.arenadata.dtm.query.execution.plugin.api.factory.RollbackRequestFactory;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.RollbackService;
@@ -44,7 +45,9 @@ public class AdbRollbackService implements RollbackService<Void> {
                 .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
         } catch (Exception e) {
             log.error("Rollback error while executing context: [{}]: {}", context, e);
-            handler.handle(Future.failedFuture(e));
+            handler.handle(Future.failedFuture(
+                    new RollbackDatasourceException(String.format("Rollback error while executing request [%s]",
+                            context.getRequest()), e)));
         }
     }
 

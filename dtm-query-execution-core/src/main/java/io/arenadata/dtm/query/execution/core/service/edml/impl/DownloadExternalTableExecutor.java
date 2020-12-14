@@ -102,14 +102,13 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
                                 destination.getName(), context.getDmlSubquery());
                         promise.complete(ar.result());
                     } else {
-                        log.error("Error executing mppr into table [{}] for dml query [{}]",
-                                destination.getName(),
-                                context.getDmlSubquery());
-                        promise.fail(ar.cause());
+                        promise.fail(new DtmException(
+                                String.format("Error executing mppr into table [%s] for dml query [%s]",
+                                        destination.getName(),
+                                        context.getDmlSubquery()), ar.cause()));
                     }
                 });
             } else {
-                log.error("Unload type {} not implemented", destination.getExternalTableLocationType());
                 promise.fail(new DtmException("Other types of upload are not yet implemented!"));
             }
         });

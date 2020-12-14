@@ -8,10 +8,12 @@ import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfigurati
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.MppwProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
+import io.arenadata.dtm.query.execution.plugin.adqm.dto.mppw.RestMppwKafkaLoadRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.AdqmRestMppwKafkaRequestFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.StatusReporter;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.*;
+import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
 import io.arenadata.dtm.query.execution.plugin.api.request.MppwRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -159,7 +161,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     private Future<String> getTableSetting(@NonNull String table, @NonNull String settingKey, List<ColumnMetadata> metadata) {
         val nameParts = splitQualifiedTableName(table);
         if (!nameParts.isPresent()) {
-            return Future.failedFuture(format("Cannot parse table name %s", table));
+            return Future.failedFuture(new MppwDatasourceException(format("Cannot parse table name %s", table)));
         }
         Promise<String> result = Promise.promise();
         String query = format(QUERY_TABLE_SETTINGS, settingKey, nameParts.get().getLeft(), nameParts.get().getRight());
@@ -171,7 +173,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> rows = ar.result();
             if (rows.isEmpty()) {
-                result.fail(format("Cannot find %s for %s", settingKey, table));
+                result.fail(new MppwDatasourceException(format("Cannot find %s for %s", settingKey, table)));
                 return;
             }
 
@@ -256,7 +258,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
             log.debug("ADQM: Send mppw kafka starting rest request {}", mppwKafkaLoadRequest);
             return restLoadClient.initiateLoading(mppwKafkaLoadRequest);
         } catch (Exception e) {
-            return Future.failedFuture(e);
+            return Future.failedFuture(new MppwDatasourceException("Error generating mppw kafka request", e));
         }
     }
 

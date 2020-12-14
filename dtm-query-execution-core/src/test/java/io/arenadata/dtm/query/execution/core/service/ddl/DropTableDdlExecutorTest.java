@@ -26,6 +26,7 @@ import io.arenadata.dtm.query.execution.core.service.impl.DataSourcePluginServic
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.impl.MetadataExecutorImpl;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -176,7 +177,7 @@ class DropTableDdlExecutorTest {
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new DtmException("")));
+            handler.handle(Future.failedFuture(new DataSourceException("Error drop table in plugin")));
             return null;
         }).when(metadataExecutor).execute(any(), any());
 

@@ -39,11 +39,9 @@ public class ConfigServiceImpl implements ConfigService<QueryResult> {
                 executor.execute(context)
                     .onComplete(handler);
             } else {
-                log.error(NOT_SUPPORTED_CONFIG_QUERY_TYPE);
                 handler.handle(Future.failedFuture(new DtmException(NOT_SUPPORTED_CONFIG_QUERY_TYPE)));
             }
         } catch (Exception e) {
-            log.error(NOT_SUPPORTED_CONFIG_QUERY_TYPE, e);
             handler.handle(Future.failedFuture(new DtmException(NOT_SUPPORTED_CONFIG_QUERY_TYPE)));
         }
     }

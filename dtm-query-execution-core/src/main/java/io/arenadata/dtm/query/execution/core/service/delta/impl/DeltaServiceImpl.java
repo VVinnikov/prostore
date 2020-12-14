@@ -52,7 +52,6 @@ public class DeltaServiceImpl implements DeltaService<QueryResult> {
         if (StringUtils.isEmpty(context.getRequest().getQueryRequest().getDatamartMnemonic())) {
             String errMsg = "Datamart must be not empty!\n" +
                     "For setting datamart you can use the following command: \"USE datamartName\"";
-            log.error(errMsg);
             handler.handle(Future.failedFuture(new DtmException(errMsg)));
         } else {
             extractDeltaQuery(context)
@@ -64,7 +63,6 @@ public class DeltaServiceImpl implements DeltaService<QueryResult> {
                                     context.getRequest().getQueryRequest(), queryDeltaResult);
                             handler.handle(Future.succeededFuture(queryDeltaResult));
                         } else {
-                            log.error(deltaExecHandler.cause().getMessage());
                             handler.handle(Future.failedFuture(deltaExecHandler.cause()));
                         }
                     });

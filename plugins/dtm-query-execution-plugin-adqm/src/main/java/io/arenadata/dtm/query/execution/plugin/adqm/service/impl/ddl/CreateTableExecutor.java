@@ -38,7 +38,8 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
         Entity tbl = context.getRequest().getEntity();
         DdlRequestContext dropCtx = new DdlRequestContext(new DdlRequest(new QueryRequest(), tbl));
 
-        dropTableExecutor.execute(dropCtx, SqlKind.DROP_TABLE.lowerName, ar -> createTable(context).onComplete(handler));
+        dropTableExecutor.execute(dropCtx, SqlKind.DROP_TABLE.lowerName, ar -> createTable(context)
+                .onComplete(handler));
     }
 
     @Override

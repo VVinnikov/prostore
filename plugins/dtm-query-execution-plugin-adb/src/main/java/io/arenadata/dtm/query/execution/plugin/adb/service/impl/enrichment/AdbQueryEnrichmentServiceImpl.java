@@ -31,8 +31,7 @@ public class AdbQueryEnrichmentServiceImpl implements QueryEnrichmentService {
             @Qualifier("adbCalciteDMLQueryParserService") QueryParserService queryParserService,
             AdbQueryGeneratorImpl adbQueryGeneratorimpl,
             AdbCalciteContextProvider contextProvider,
-            @Qualifier("adbSchemaExtender") SchemaExtender schemaExtender
-    ) {
+            @Qualifier("adbSchemaExtender") SchemaExtender schemaExtender) {
         this.queryParserService = queryParserService;
         this.adbQueryGenerator = adbQueryGeneratorimpl;
         this.contextProvider = contextProvider;
@@ -46,7 +45,6 @@ public class AdbQueryEnrichmentServiceImpl implements QueryEnrichmentService {
                 val parserResponse = ar.result();
                 contextProvider.enrichContext(parserResponse.getCalciteContext(),
                         generatePhysicalSchemas(request.getSchema()));
-                // form a new sql query
                 adbQueryGenerator.mutateQuery(parserResponse.getRelNode(),
                         parserResponse.getQueryRequest().getDeltaInformations(),
                         parserResponse.getCalciteContext(),
@@ -55,7 +53,6 @@ public class AdbQueryEnrichmentServiceImpl implements QueryEnrichmentService {
                                 log.trace("Request generated: {}", enrichedQueryResult.result());
                                 asyncHandler.handle(Future.succeededFuture(enrichedQueryResult.result()));
                             } else {
-                                log.debug("Error while enriching request", enrichedQueryResult.cause());
                                 asyncHandler.handle(Future.failedFuture(enrichedQueryResult.cause()));
                             }
                         });

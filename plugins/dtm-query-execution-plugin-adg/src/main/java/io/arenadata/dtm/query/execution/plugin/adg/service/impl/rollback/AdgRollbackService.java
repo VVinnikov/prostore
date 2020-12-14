@@ -27,12 +27,10 @@ public class AdgRollbackService implements RollbackService<Void> {
                 if (ar.succeeded()) {
                     handler.handle(Future.succeededFuture());
                 } else {
-                    log.error(ERR_MSG, ar.cause());
                     handler.handle(Future.failedFuture(new CrashException(ERR_MSG, ar.cause())));
                 }
             });
         } catch (Exception ex) {
-            log.error(ERR_MSG, ex);
             handler.handle(Future.failedFuture(new CrashException(ERR_MSG, ex)));
         }
     }

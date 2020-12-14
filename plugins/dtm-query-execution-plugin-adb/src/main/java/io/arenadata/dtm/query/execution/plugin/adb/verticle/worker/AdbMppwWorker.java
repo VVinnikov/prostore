@@ -77,10 +77,7 @@ public class AdbMppwWorker extends AbstractVerticle {
                                 requestContext.getMppwKafkaLoadRequest().getRequestId());
                         promise.complete();
                     })
-                    .onFailure(fail -> {
-                        log.error("Error executing request: {}", requestContext.getMppwKafkaLoadRequest(), fail);
-                        promise.fail(fail);
-                    });
+                    .onFailure(promise::fail);
         }
     }
 }

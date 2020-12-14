@@ -5,4 +5,8 @@ public class DdlDatasourceException extends DataSourceException {
     public DdlDatasourceException(String s) {
         super(s);
     }
+
+    public DdlDatasourceException(String s, Throwable throwable) {
+        super(s, throwable);
+    }
 }

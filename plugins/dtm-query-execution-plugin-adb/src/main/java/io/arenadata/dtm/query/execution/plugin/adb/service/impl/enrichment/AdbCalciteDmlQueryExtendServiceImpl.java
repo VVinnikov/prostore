@@ -88,8 +88,9 @@ public class AdbCalciteDmlQueryExtendServiceImpl implements QueryExtendService {
                 bottomRelNode = createBottomRelNodeDeltaNum(deltaInfo, relBuilder, rexNodes, mutableQualifiedName);
                 break;
             default:
-                throw new RuntimeException(String.format("Incorrect delta type %s, expected values: %s!",
-                        deltaInfo.getType(), Arrays.toString(DeltaType.values())));
+                throw new DataSourceException(String.format("Incorrect delta type %s, expected values: %s!",
+                        deltaInfo.getType(),
+                        Arrays.toString(DeltaType.values())));
         }
         return relBuilder.push(topRelNode).push(bottomRelNode).union(true).build();
     }

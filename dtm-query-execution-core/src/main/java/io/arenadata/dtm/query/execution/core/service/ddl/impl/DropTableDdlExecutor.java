@@ -5,6 +5,7 @@ import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
@@ -66,8 +67,7 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
                     .onSuccess(r -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
                     .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
         } catch (Exception e) {
-            log.error("Error deleting table!", e);
-            handler.handle(Future.failedFuture(e));
+            handler.handle(Future.failedFuture(new DtmException("Error create drop table request", e)));
         }
     }
 
@@ -131,7 +131,7 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
                 .collect(Collectors.toSet());
         if (!notExistsDestination.isEmpty()) {
             return Future.failedFuture(
-                    new IllegalArgumentException(String.format("Table [%s] doesn't exist in [%s]",
+                    new DtmException(String.format("Table [%s] doesn't exist in [%s]",
                             entity.getName(),
                             notExistsDestination)));
         } else {
@@ -172,9 +172,6 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
             if (ar.succeeded()) {
                 metaPromise.complete();
             } else {
-                log.error("Error deleting table [{}], datamart [{}] in datasources!",
-                        context.getRequest().getEntity().getName(),
-                        context.getDatamartName(), ar.cause());
                 metaPromise.fail(ar.cause());
             }
         }));

@@ -6,6 +6,7 @@ import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
@@ -69,12 +70,12 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
             context.getRequest().setEntity(entity);
             context.setDatamartName(schema);
             datamartDao.existsDatamart(schema)
-                .compose(isExistsDatamart -> isExistsDatamart ?
-                    entityDao.existsEntity(schema, entity.getName()) : getNotExistsDatamartFuture(schema))
-                .onSuccess(isExistsEntity -> createTableIfNotExists(context, isExistsEntity)
-                    .onSuccess(success -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
-                    .onFailure(fail -> handler.handle(Future.failedFuture(fail))))
-                .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
+                    .compose(isExistsDatamart -> isExistsDatamart ?
+                            entityDao.existsEntity(schema, entity.getName()) : getNotExistsDatamartFuture(schema))
+                    .onSuccess(isExistsEntity -> createTableIfNotExists(context, isExistsEntity)
+                            .onSuccess(success -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
+                            .onFailure(fail -> handler.handle(Future.failedFuture(fail))))
+                    .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
         } catch (Exception e) {
             log.error("Error creating table by query request: {}!", context.getRequest().getQueryRequest(), e);
             handler.handle(Future.failedFuture(e));
@@ -88,21 +89,21 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
     private void checkRequiredKeys(List<EntityField> fields) {
         val notExistsKeys = new ArrayList<String>();
         val notExistsPrimaryKeys = fields.stream()
-            .noneMatch(f -> f.getPrimaryOrder() != null);
+                .noneMatch(f -> f.getPrimaryOrder() != null);
         if (notExistsPrimaryKeys) {
             notExistsKeys.add("primary key(s)");
         }
 
         val notExistsShardingKey = fields.stream()
-            .noneMatch(f -> f.getShardingOrder() != null);
+                .noneMatch(f -> f.getShardingOrder() != null);
         if (notExistsShardingKey) {
             notExistsKeys.add("sharding key(s)");
         }
 
         if (!notExistsKeys.isEmpty()) {
-            throw new IllegalArgumentException(
-                "Primary keys and Sharding keys are required. The following keys do not exist: " + String.join(",", notExistsKeys)
-            );
+            throw new DtmException(
+                    String.format("Primary keys and Sharding keys are required. The following keys do not exist: %s",
+                            String.join(",", notExistsKeys)));
         }
     }
 
@@ -122,23 +123,14 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
             metadataExecutor.execute(context, ar -> {
                 if (ar.succeeded()) {
                     entityDao.createEntity(context.getRequest().getEntity())
-                        .onSuccess(ar2 -> {
-                            log.debug("Table [{}] in datamart [{}] successfully created",
-                                context.getRequest().getEntity().getName(),
-                                context.getDatamartName());
-                            promise.complete();
-                        })
-                        .onFailure(fail -> {
-                            log.error("Error creating table [{}] in datamart [{}]!",
-                                context.getRequest().getEntity().getName(),
-                                context.getDatamartName(), fail);
-                            promise.fail(fail);
-                        });
+                            .onSuccess(ar2 -> {
+                                log.debug("Table [{}] in datamart [{}] successfully created",
+                                        context.getRequest().getEntity().getName(),
+                                        context.getDatamartName());
+                                promise.complete();
+                            })
+                            .onFailure(promise::fail);
                 } else {
-                    log.error("Error creating table [{}], datamart [{}] in datasources!",
-                        context.getRequest().getEntity().getName(),
-                        context.getDatamartName(),
-                        ar.cause());
                     promise.fail(ar.cause());
                 }
             });

@@ -14,6 +14,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +29,7 @@ public class AdqmQueryEnrichmentServiceImpl implements QueryEnrichmentService {
     private final QueryGenerator adqmQueryGenerator;
     private final SchemaExtender schemaExtender;
 
+    @Autowired
     public AdqmQueryEnrichmentServiceImpl(
         @Qualifier("adqmCalciteDMLQueryParserService") QueryParserService queryParserService,
         AdqmCalciteContextProvider contextProvider,
@@ -56,7 +58,6 @@ public class AdqmQueryEnrichmentServiceImpl implements QueryEnrichmentService {
                             log.debug("Request generated: {}", enrichedQueryResult.result());
                             asyncHandler.handle(Future.succeededFuture(enrichedQueryResult.result()));
                         } else {
-                            log.error("Error while enriching request", enrichedQueryResult.cause());
                             asyncHandler.handle(Future.failedFuture(enrichedQueryResult.cause()));
                         }
                     });

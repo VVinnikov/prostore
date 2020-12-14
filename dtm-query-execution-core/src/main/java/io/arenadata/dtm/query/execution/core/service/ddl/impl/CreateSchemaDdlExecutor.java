@@ -41,7 +41,6 @@ public class CreateSchemaDdlExecutor extends QueryResultDdlExecutor {
             context.setDatamartName(schemaName);
             createDatamartIfNotExists(context, handler);
         } catch (Exception e) {
-            log.error("Error creating datamart!", e);
             handler.handle(Future.failedFuture(e));
         }
     }
@@ -55,7 +54,6 @@ public class CreateSchemaDdlExecutor extends QueryResultDdlExecutor {
                 resultHandler.handle(Future.succeededFuture(QueryResult.emptyResult()));
             })
             .onFailure(error -> {
-                log.error("Error creating datamart [{}]!", context.getDatamartName(), error);
                 resultHandler.handle(Future.failedFuture(error));
             });
     }
@@ -65,8 +63,7 @@ public class CreateSchemaDdlExecutor extends QueryResultDdlExecutor {
     }
 
     private Future<Void> createDatamartInPlugins(DdlRequestContext context) {
-        return Future.future((Promise<Void> promise) -> metadataExecutor.execute(context, promise))
-            .onFailure(fail -> log.error("Error creating schema [{}] in data sources!", context.getDatamartName(), fail));
+        return Future.future((Promise<Void> promise) -> metadataExecutor.execute(context, promise));
     }
 
     @Override

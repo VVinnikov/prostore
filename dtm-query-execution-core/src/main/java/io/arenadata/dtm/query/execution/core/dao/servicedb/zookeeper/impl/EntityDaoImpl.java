@@ -6,6 +6,7 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.query.execution.core.configuration.cache.CacheConfiguration;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.metadata.DatamartEntity;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.exception.table.TableAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
@@ -70,12 +71,12 @@ public class EntityDaoImpl implements EntityDao {
                             throw warn(new TableAlreadyExistsException(entity.getNameWithSchema(), error));
                         } else {
                             errMsg = String.format("Can't create entity [%s]", entity.getNameWithSchema());
-                            throw error(error, errMsg, RuntimeException::new);
+                            throw error(error, errMsg, DtmException::new);
                         }
                     });
         } catch (JsonProcessingException e) {
             return Future.failedFuture(
-                    error(e, String.format("Can't serialize entity [%s]", entity), RuntimeException::new)
+                    error(e, String.format("Can't serialize entity [%s]", entity), DtmException::new)
             );
         }
     }
@@ -96,12 +97,12 @@ public class EntityDaoImpl implements EntityDao {
                             throw warn(new TableNotExistsException(entity.getNameWithSchema()));
                         } else {
                             errMsg = String.format("Can't update entity [%s]", entity.getNameWithSchema());
-                            throw error(error, errMsg, RuntimeException::new);
+                            throw error(error, errMsg, DtmException::new);
                         }
                     });
         } catch (JsonProcessingException e) {
             return Future.failedFuture(
-                    error(e, String.format("Can't serialize entity [%s]", entity), RuntimeException::new)
+                    error(e, String.format("Can't serialize entity [%s]", entity), DtmException::new)
             );
         }
     }
@@ -126,7 +127,7 @@ public class EntityDaoImpl implements EntityDao {
                         throw warn(new TableNotExistsException(nameWithSchema));
                     } else {
                         errMsg = String.format("Can't delete entity [%s]", nameWithSchema);
-                        throw error(error, errMsg, RuntimeException::new);
+                        throw error(error, errMsg, DtmException::new);
                     }
                 });
     }
@@ -145,7 +146,7 @@ public class EntityDaoImpl implements EntityDao {
                     } catch (IOException e) {
                         throw error(e,
                                 String.format("Can't deserialize entity [%s]", nameWithSchema),
-                                RuntimeException::new);
+                                DtmException::new);
                     }
                 })
                 .otherwise(error -> {
@@ -154,7 +155,7 @@ public class EntityDaoImpl implements EntityDao {
                         throw warn(new TableNotExistsException(nameWithSchema));
                     } else {
                         errMsg = String.format("Can't get entity [%s]", nameWithSchema);
-                        throw error(error, errMsg, RuntimeException::new);
+                        throw error(error, errMsg, DtmException::new);
                     }
                 });
     }
@@ -168,7 +169,7 @@ public class EntityDaoImpl implements EntityDao {
                         throw warn(new DatamartNotExistsException(datamartMnemonic));
                     } else {
                         errMsg = String.format("Can't get entity names by datamartMnemonic [%s]", datamartMnemonic);
-                        throw error(error, errMsg, RuntimeException::new);
+                        throw error(error, errMsg, DtmException::new);
                     }
                 });
     }

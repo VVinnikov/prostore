@@ -9,7 +9,6 @@ import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -50,7 +49,6 @@ public class SystemDatamartViewsProviderImpl implements SystemDatamartViewsProvi
         return Future.succeededFuture();
     }
 
-    @NotNull
     private List<Datamart> getDatamartList(List<SystemDatamartView> systemViews) {
         val systemDatamart = new Datamart();
         systemDatamart.setEntities(systemViews.stream()

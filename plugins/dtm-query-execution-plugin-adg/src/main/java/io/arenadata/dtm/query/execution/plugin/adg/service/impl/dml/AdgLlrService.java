@@ -41,12 +41,10 @@ public class AdgLlrService implements LlrService<QueryResult> {
                                 new QueryResult(request.getQueryRequest().getRequestId(),
                                         exec.result(), request.getMetadata())));
                     } else {
-                        log.error("Request execution error {}", request, exec.cause());
                         handler.handle(Future.failedFuture(exec.cause()));
                     }
                 });
             } else {
-                log.error("Error while enriching request {}", request);
                 handler.handle(Future.failedFuture(enrich.cause()));
             }
         });

@@ -55,7 +55,7 @@ public class ZookeeperConnectionProviderImpl implements ZookeeperConnectionProvi
             log.debug("Env node [{}] is exists", envNodePath);
         } catch (Exception e) {
             String errMsg = String.format("Can't create env node [%s] for zk datasource", envNodePath);
-            throw new RuntimeException(errMsg, e);
+            throw new DtmException(errMsg, e);
         }
     }
 
@@ -91,9 +91,9 @@ public class ZookeeperConnectionProviderImpl implements ZookeeperConnectionProvi
             });
         connectionLatch.await(properties.getConnectionTimeoutMs(), TimeUnit.MILLISECONDS);
         if (!synConnected) {
-            val errMsg = String.format("Zookeeper connection timed out: [%d] ms", properties.getConnectionTimeoutMs());
-            log.error(errMsg);
-            throw new TimeoutException(errMsg);
+            val errMsg = String.format("Zookeeper connection timed out: [%d] ms",
+                    properties.getConnectionTimeoutMs());
+            throw new DtmException(errMsg);
         }
         return connection;
     }

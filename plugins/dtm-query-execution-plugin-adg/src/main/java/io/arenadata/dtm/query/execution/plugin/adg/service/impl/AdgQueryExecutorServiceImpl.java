@@ -6,6 +6,7 @@ import io.arenadata.dtm.query.execution.plugin.adg.model.metadata.ColumnTypeUtil
 import io.arenadata.dtm.query.execution.plugin.adg.service.QueryExecutorService;
 import io.arenadata.dtm.query.execution.plugin.adg.service.TtClient;
 import io.arenadata.dtm.query.execution.plugin.adg.service.TtPool;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -26,7 +27,7 @@ import java.util.stream.Collectors;
 @Service("adgQueryExecutor")
 public class AdgQueryExecutorServiceImpl implements QueryExecutorService {
 
-    private TtPool ttPool;
+    private final TtPool ttPool;
     private final SqlTypeConverter typeConverter;
 
     @Autowired
@@ -54,8 +55,8 @@ public class AdgQueryExecutorServiceImpl implements QueryExecutorService {
                             result.add(rowMap);
                         });
                     } catch (Exception e) {
-                        log.error("Error converting ADG values to jdbc types!", e);
-                        handler.handle(Future.failedFuture(e));
+                        handler.handle(Future.failedFuture(
+                                new DataSourceException("Error converting value to jdbc type", e)));
                         return;
                     }
                     handler.handle(Future.succeededFuture(result));
@@ -88,8 +89,7 @@ public class AdgQueryExecutorServiceImpl implements QueryExecutorService {
             try {
                 cl = ttPool.borrowObject();
             } catch (Exception e) {
-                log.error("Error creating Tarantool client", e);
-                promise.fail(e);
+                promise.fail(new DataSourceException("Error creating Tarantool client", e));
             }
             try {
                 cl.call(ar -> {
@@ -109,10 +109,10 @@ public class AdgQueryExecutorServiceImpl implements QueryExecutorService {
     private List<ColumnMetadata> getMetadata(List<Map<String, String>> columns) {
         return columns.stream().map(it -> {
             if (!it.containsKey("name")) {
-                throw new IllegalStateException("name is not specified");
+                throw new DataSourceException("name is not specified");
             }
             if (!it.containsKey("type")) {
-                throw new IllegalStateException("type is not specified");
+                throw new DataSourceException("type is not specified");
             }
             return new ColumnMetadata(it.get("name"), ColumnTypeUtil.columnTypeFromTtColumnType(it.get("type")));
         }).collect(Collectors.toList());

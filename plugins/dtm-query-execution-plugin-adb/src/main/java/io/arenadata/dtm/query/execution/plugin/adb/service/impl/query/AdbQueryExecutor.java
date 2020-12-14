@@ -4,6 +4,7 @@ import io.arenadata.dtm.common.converter.SqlTypeConverter;
 import io.arenadata.dtm.common.plugin.sql.PreparedStatementRequest;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.arenadata.dtm.query.execution.plugin.api.exception.LlrDatasourceException;
 import io.reactiverse.pgclient.*;
 import io.reactiverse.pgclient.impl.ArrayTuple;
@@ -49,12 +50,12 @@ public class AdbQueryExecutor implements DatabaseExecutor {
                                         resultHandler.handle(Future.succeededFuture(result));
                                     } catch (Exception e) {
                                         tryCloseConnect(conn);
-                                        log.error("Error converting ADB values to jdbc types!", e);
-                                        resultHandler.handle(Future.failedFuture(e));
+                                        resultHandler.handle(Future.failedFuture(
+                                                new DataSourceException("Error converting value to jdbc type",
+                                                        e)));
                                     }
                                 } else {
                                     tryCloseConnect(conn);
-                                    log.error("Error fetching cursor", res.cause());
                                     resultHandler.handle(Future.failedFuture(res.cause()));
                                 }
                             });
@@ -62,12 +63,10 @@ public class AdbQueryExecutor implements DatabaseExecutor {
                         tryCloseConnect(conn);
                     } else {
                         tryCloseConnect(conn);
-                        log.error("Request preparation error!", ar2.cause());
                         resultHandler.handle(Future.failedFuture(ar2.cause()));
                     }
                 });
             } else {
-                log.error("Connection error!", ar1.cause());
                 resultHandler.handle(Future.failedFuture(ar1.cause()));
             }
         });
@@ -122,13 +121,11 @@ public class AdbQueryExecutor implements DatabaseExecutor {
                         log.debug("ADB. update completed: [{}]", sql);
                         completionHandler.handle(Future.succeededFuture());
                     } else {
-                        log.error("ADB. update error: [{}]: {}", sql, ar2.cause().getMessage());
                         completionHandler.handle(Future.failedFuture(ar2.cause()));
                     }
                     tryCloseConnect(conn);
                 });
             } else {
-                log.error("Connection error!", ar1.cause());
                 completionHandler.handle(Future.failedFuture(ar1.cause()));
             }
         });
@@ -146,15 +143,14 @@ public class AdbQueryExecutor implements DatabaseExecutor {
                             resultHandler.handle(Future.succeededFuture(result));
                         } catch (Exception e) {
                             tryCloseConnect(conn);
-                            log.error("Error converting ADB values to jdbc types!", e);
-                            resultHandler.handle(Future.failedFuture(e));
+                            resultHandler.handle(Future.failedFuture(
+                                    new DataSourceException("Error converting value to jdbc type", e)));
                         }
                     } else {
                         resultHandler.handle(Future.failedFuture(ar2.cause()));
                     }
                 });
             } else {
-                log.error("Connection error!", ar1.cause());
                 resultHandler.handle(Future.failedFuture(ar1.cause()));
             }
         });
@@ -192,7 +188,6 @@ public class AdbQueryExecutor implements DatabaseExecutor {
                 log.trace("Transaction began");
                 promise.complete(ar.result());
             } else {
-                log.error("Connection error", ar.cause());
                 promise.fail(ar.cause());
             }
         }));
@@ -203,7 +198,6 @@ public class AdbQueryExecutor implements DatabaseExecutor {
             if (rs.succeeded()) {
                 promise.complete(tx);
             } else {
-                log.error("Error executing query [{}]", request.getSql(), rs.cause());
                 promise.fail(rs.cause());
             }
         }));
@@ -216,7 +210,6 @@ public class AdbQueryExecutor implements DatabaseExecutor {
                     log.debug("Transaction succeeded");
                     promise.complete();
                 } else {
-                    log.error("Transaction failed [{}]", txCommit.cause().getMessage());
                     promise.fail(txCommit.cause());
                 }
             }));

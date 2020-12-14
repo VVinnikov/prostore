@@ -11,6 +11,7 @@ import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.delta.DeltaWriteOp;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.RestoreStateService;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadFailedExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadExternalTableExecutor;
@@ -68,7 +69,9 @@ public class RestoreStateServiceImpl implements RestoreStateService {
         return datamartDao.getDatamarts()
                 .compose(this::processDatamarts)
                 .onSuccess(success -> log.info("State sucessfully restored"))
-                .onFailure(err -> log.error("Error while trying to restore state", err));
+                .onFailure(err -> {
+                    throw new DtmException("Error while trying to restore state", err);
+                });
     }
 
     private Future<Void> processDatamarts(List<String> datamarts) {

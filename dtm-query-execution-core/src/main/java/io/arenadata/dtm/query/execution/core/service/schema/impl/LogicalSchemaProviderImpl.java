@@ -39,12 +39,10 @@ public class LogicalSchemaProviderImpl implements LogicalSchemaProvider {
                     log.trace("Received data schema on request: {}; {}", request, datamartTableMap);
                     resultHandler.handle(Future.succeededFuture(getDatamartsSchemas(request.getDatamartMnemonic(), datamartTableMap)));
                 } else {
-                    log.error("Error getting data schema for request: {}", request, ar.cause());
                     resultHandler.handle(Future.failedFuture(ar.cause()));
                 }
             });
         } catch (Exception e) {
-            log.error("Error in generating a logic diagram on request {}", request.getSql(), e);
             resultHandler.handle(Future.failedFuture(e));
         }
     }

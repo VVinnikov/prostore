@@ -2,6 +2,7 @@ package io.arenadata.dtm.query.execution.plugin.adg.service.impl.ddl;
 
 import io.arenadata.dtm.query.execution.plugin.adg.AdgDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DdlDatasourceException;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
 import io.vertx.core.AsyncResult;
@@ -27,13 +28,14 @@ public class AdgDdlService implements DdlService<Void> {
     public void execute(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {
         SqlNode query = context.getQuery();
         if (query == null) {
-            handler.handle(Future.failedFuture("Ddl query is null!"));
+            handler.handle(Future.failedFuture(new DdlDatasourceException("Ddl query is null!")));
             return;
         }
         if (ddlExecutors.containsKey(query.getKind())) {
             ddlExecutors.get(query.getKind()).execute(context, query.getKind().lowerName, handler);
         } else {
-            handler.handle(Future.failedFuture(String.format("Unknown DDL: %s", query)));
+            handler.handle(Future.failedFuture(
+                    new DdlDatasourceException(String.format("Unknown DDL: %s", query))));
         }
     }
 

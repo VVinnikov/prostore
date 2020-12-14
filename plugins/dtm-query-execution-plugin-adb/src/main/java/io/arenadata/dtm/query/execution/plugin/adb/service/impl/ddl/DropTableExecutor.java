@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adb.service.impl.ddl;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DdlDatasourceException;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
 import io.vertx.core.AsyncResult;
@@ -33,8 +34,8 @@ public class DropTableExecutor implements DdlExecutor<Void> {
             String dropSql = sqlFactory.createDropTableScript(context.getRequest().getEntity());
             adbQueryExecutor.executeUpdate(dropSql, handler);
         } catch (Exception e) {
-            log.error("Error executing drop table query!", e);
-            handler.handle(Future.failedFuture(e));
+            handler.handle(Future.failedFuture(
+                    new DdlDatasourceException("Error generating drop table query", e)));
         }
     }
 

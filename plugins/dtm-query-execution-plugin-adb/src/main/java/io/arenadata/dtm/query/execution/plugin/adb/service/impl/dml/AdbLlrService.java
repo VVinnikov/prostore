@@ -11,6 +11,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +22,7 @@ public class AdbLlrService implements LlrService<QueryResult> {
 	private final QueryEnrichmentService adbQueryEnrichmentService;
 	private final DatabaseExecutor adbDatabaseExecutor;
 
+	@Autowired
 	public AdbLlrService(QueryEnrichmentService adbQueryEnrichmentService,
 						 @Qualifier("adbQueryExecutor") DatabaseExecutor adbDatabaseExecutor) {
 		this.adbQueryEnrichmentService = adbQueryEnrichmentService;
@@ -45,7 +47,6 @@ public class AdbLlrService implements LlrService<QueryResult> {
 					}
 				});
 			} else {
-				log.error("Error while enriching request");
 				asyncHandler.handle(Future.failedFuture(sqlResult.cause()));
 			}
 		});

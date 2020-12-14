@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.core.service.eddl.impl;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
+import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
@@ -52,8 +53,7 @@ public class CreateUploadExternalTableExecutor implements EddlExecutor {
                             .onFailure(fail -> handler.handle(Future.failedFuture(fail))))
                     .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
         } catch (Exception e) {
-            log.error("Error creating table by query request: {}!", query, e);
-            handler.handle(Future.failedFuture(e));
+            handler.handle(Future.failedFuture(new DtmException("Error creating table by query request", e)));
         }
     }
 
@@ -76,11 +76,6 @@ public class CreateUploadExternalTableExecutor implements EddlExecutor {
                     log.debug("Table [{}] in datamart [{}] successfully created",
                             entity.getName(),
                             entity.getSchema());
-                })
-                .onFailure(fail -> {
-                    log.error("Error creating table [{}] in datamart [{}]!",
-                            entity.getName(),
-                            entity.getSchema(), fail);
                 });
     }
 }

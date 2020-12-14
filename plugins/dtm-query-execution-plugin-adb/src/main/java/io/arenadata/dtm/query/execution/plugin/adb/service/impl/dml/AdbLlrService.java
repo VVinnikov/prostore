@@ -37,11 +37,11 @@ public class AdbLlrService implements LlrService<QueryResult> {
 			if (sqlResult.succeeded()) {
 				adbDatabaseExecutor.execute(sqlResult.result(), request.getMetadata(), executeResult -> {
 					if (executeResult.succeeded()) {
-						QueryResult queryResult = QueryResult.emptyResult();
-						queryResult.setRequestId(request.getQueryRequest().getRequestId());
-						queryResult.setResult(executeResult.result());
-						queryResult.setMetadata(request.getMetadata());
-						asyncHandler.handle(Future.succeededFuture(queryResult));
+						asyncHandler.handle(Future.succeededFuture(QueryResult.builder()
+							.requestId(request.getQueryRequest().getRequestId())
+							.metadata(request.getMetadata())
+							.result(executeResult.result())
+							.build()));
 					} else {
 						asyncHandler.handle(Future.failedFuture(executeResult.cause()));
 					}

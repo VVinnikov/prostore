@@ -45,7 +45,11 @@ public class InformationSchemaExecutorImpl implements InformationSchemaExecutor 
                         .map(JsonObject::getMap)
                         .collect(Collectors.toList());
                     asyncResultHandler.handle(Future.succeededFuture(
-                        new QueryResult(request.getQueryRequest().getRequestId(), result, request.getMetadata())));
+                        QueryResult.builder()
+                            .requestId(request.getQueryRequest().getRequestId())
+                            .metadata(request.getMetadata())
+                            .result(result)
+                            .build()));
                 })
                 .onFailure(r -> asyncResultHandler.handle(Future.failedFuture(r.getCause()))))
             .onFailure(error -> asyncResultHandler.handle(Future.failedFuture(error)));

@@ -60,7 +60,7 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
                         context.setDestinationEntity(destination);
                         context.setSourceEntity(source);
                         if (destination.getEntityType() == EntityType.DOWNLOAD_EXTERNAL_TABLE
-                                && source.getEntityType() == EntityType.TABLE) {
+                                && checkSourceType(source)) {
                             edmlQueryPromise.complete(EdmlAction.DOWNLOAD);
                         } else if (source.getEntityType() == EntityType.UPLOAD_EXTERNAL_TABLE
                                 && destination.getEntityType() == EntityType.TABLE) {
@@ -73,6 +73,10 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
                     })
                     .onFailure(edmlQueryPromise::fail);
         });
+    }
+
+    private boolean checkSourceType(Entity source) {
+        return source.getEntityType() == EntityType.TABLE || source.getEntityType() == EntityType.VIEW;
     }
 
     private Future<List<Entity>> getDestinationAndSourceEntities(EdmlRequestContext context) {

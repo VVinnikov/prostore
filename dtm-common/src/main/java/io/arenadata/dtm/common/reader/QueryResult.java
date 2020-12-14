@@ -1,38 +1,34 @@
 package io.arenadata.dtm.common.reader;
 
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import java.time.ZoneId;
 import java.util.*;
 
 /**
- * Результат выполнения запроса.
+ * The result of the query execution.
  */
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class QueryResult {
-    private static final QueryResult emptyResult = new QueryResult(null, new ArrayList<>());
     private UUID requestId;
-    private List<Map<String, Object>> result;
+    @Builder.Default
+    private List<Map<String, Object>> result = new ArrayList<>();
     private List<ColumnMetadata> metadata;
     private String timeZone;
-
-    public QueryResult(UUID requestId, List<Map<String, Object>> result, List<ColumnMetadata> metadata) {
-        this.requestId = requestId;
-        this.result = result;
-        this.metadata = metadata;
-    }
 
     public QueryResult(UUID requestId, List<Map<String, Object>> result) {
         this.requestId = requestId;
         this.result = result;
     }
 
-    public QueryResult() {
-    }
-
     public static QueryResult emptyResult() {
-        return emptyResult;
+        return new EmptyQueryResult();
     }
 
     public boolean isEmpty() {

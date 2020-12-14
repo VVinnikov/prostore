@@ -6,6 +6,7 @@ import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
 import io.arenadata.dtm.query.execution.core.dto.edml.EdmlAction;
 import io.arenadata.dtm.query.execution.core.exception.DtmException;
+import io.arenadata.dtm.query.execution.core.service.dml.LogicViewReplacer;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlDownloadExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlExecutor;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
@@ -35,23 +36,39 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
     private final LogicalSchemaProvider logicalSchemaProvider;
     private final DeltaQueryPreprocessor deltaQueryPreprocessor;
     private final Map<ExternalTableLocationType, EdmlDownloadExecutor> executors;
+    private final LogicViewReplacer logicViewReplacer;
 
     @Autowired
     public DownloadExternalTableExecutor(LogicalSchemaProvider logicalSchemaProvider,
                                          DeltaQueryPreprocessor deltaQueryPreprocessor,
-                                         List<EdmlDownloadExecutor> downloadExecutors) {
+                                         List<EdmlDownloadExecutor> downloadExecutors,
+                                         LogicViewReplacer logicViewReplacer) {
         this.logicalSchemaProvider = logicalSchemaProvider;
         this.deltaQueryPreprocessor = deltaQueryPreprocessor;
         this.executors = downloadExecutors.stream().collect(Collectors.toMap(EdmlDownloadExecutor::getDownloadType, it -> it));
+        this.logicViewReplacer = logicViewReplacer;
     }
 
     @Override
     public void execute(EdmlRequestContext context, Handler<AsyncResult<QueryResult>> resultHandler) {
         initDMLSubquery(context)
-                .compose(v -> initLogicalSchema(context))
-                .compose(v -> initDeltaInformation(context))
-                .compose(v -> execute(context))
-                .onComplete(resultHandler);
+            .compose(v -> replaceView(context))
+            .compose(v -> initLogicalSchema(context))
+            .compose(v -> initDeltaInformation(context))
+            .compose(v -> execute(context))
+            .onComplete(resultHandler);
+    }
+
+    private Future<Object> replaceView(EdmlRequestContext context) {
+        return Future.future(p -> logicViewReplacer.replace(context.getDmlSubquery(),
+            context.getRequest().getQueryRequest().getDatamartMnemonic(), ar -> {
+                if (ar.succeeded()) {
+                    context.setDmlSubquery(ar.result());
+                    p.complete();
+                } else {
+                    p.fail(ar.cause());
+                }
+            }));
     }
 
     private Future<Void> initDMLSubquery(EdmlRequestContext context) {
@@ -63,7 +80,9 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
 
     private Future<Void> initLogicalSchema(EdmlRequestContext context) {
         return Future.future(promise -> {
-            logicalSchemaProvider.getSchema(context.getRequest().getQueryRequest(), ar -> {
+            QueryRequest copy = context.getRequest().getQueryRequest().copy();
+            copy.setSql(context.getDmlSubquery());
+            logicalSchemaProvider.getSchema(copy, ar -> {
                 if (ar.succeeded()) {
                     final List<Datamart> logicalSchema = ar.result();
                     context.setLogicalSchema(logicalSchema);
@@ -80,15 +99,15 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
             val copyRequest = context.getRequest().getQueryRequest().copy();
             copyRequest.setSql(context.getDmlSubquery());
             deltaQueryPreprocessor.process(copyRequest)
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            final QueryRequest queryRequest = ar.result();
-                            context.getRequest().setQueryRequest(queryRequest);
-                            promise.complete(queryRequest);
-                        } else {
-                            promise.fail(ar.cause());
-                        }
-                    });
+                .onComplete(ar -> {
+                    if (ar.succeeded()) {
+                        final QueryRequest queryRequest = ar.result();
+                        context.getRequest().setQueryRequest(queryRequest);
+                        promise.complete(queryRequest);
+                    } else {
+                        promise.fail(ar.cause());
+                    }
+                });
         });
     }
 
@@ -99,7 +118,7 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
                 executors.get(destination.getExternalTableLocationType()).execute(context, ar -> {
                     if (ar.succeeded()) {
                         log.debug("Mppr into table [{}] for dml query [{}] finished successfully",
-                                destination.getName(), context.getDmlSubquery());
+                            destination.getName(), context.getDmlSubquery());
                         promise.complete(ar.result());
                     } else {
                         promise.fail(new DtmException(

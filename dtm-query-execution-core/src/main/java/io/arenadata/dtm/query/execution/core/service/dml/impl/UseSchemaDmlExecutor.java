@@ -48,39 +48,38 @@ public class UseSchemaDmlExecutor implements DmlExecutor<QueryResult> {
     @Override
     public void execute(DmlRequestContext context, Handler<AsyncResult<QueryResult>> handler) {
         sendMetricsAndExecute(context)
-                .onComplete(handler);
+            .onComplete(handler);
     }
 
     private Future<QueryResult> sendMetricsAndExecute(DmlRequestContext context) {
         return Future.future(promise -> {
             String datamart = parseQueryUtils.getDatamartName(((SqlUseSchema) context.getQuery()).getOperandList());
             datamartDao.existsDatamart(datamart)
-                    .onComplete(metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
-                            SqlProcessingType.DML,
-                            context.getMetrics(),
-                            ar -> {
-                                if (ar.succeeded()) {
-                                    if (ar.result()) {
-                                        promise.complete(createQueryResult(context, datamart));
-                                    } else {
-                                        promise.fail(new DatamartNotExistsException(datamart));
-                                    }
-                                } else {
-                                    promise.fail(ar.cause());
-                                }
-                            }));
+                .onComplete(metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
+                    SqlProcessingType.DML,
+                    context.getMetrics(),
+                    ar -> {
+                        if (ar.succeeded()) {
+                            if (ar.result()) {
+                                promise.complete(createQueryResult(context, datamart));
+                            } else {
+                                promise.fail(new DatamartNotExistsException(datamart));
+                            }
+                        } else {
+                            promise.fail(ar.cause());
+                        }
+                    }));
         });
     }
 
     private QueryResult createQueryResult(DmlRequestContext context, String datamart) {
-        final QueryResult result = new QueryResult();
-        result.setRequestId(context.getRequest().getQueryRequest().getRequestId());
-        result.setMetadata(Collections.singletonList(new ColumnMetadata(SCHEMA_COLUMN_NAME, SystemMetadata.SCHEMA,
-                ColumnType.VARCHAR)));
         Map<String, Object> rowMap = new HashMap<>();
         rowMap.put(SCHEMA_COLUMN_NAME, datamart);
-        result.setResult(Collections.singletonList(rowMap));
-        return result;
+        return QueryResult.builder()
+            .metadata(Collections.singletonList(new ColumnMetadata(SCHEMA_COLUMN_NAME, SystemMetadata.SCHEMA, ColumnType.VARCHAR)))
+            .requestId(context.getRequest().getQueryRequest().getRequestId())
+            .result(Collections.singletonList(rowMap))
+            .build();
     }
 
     @Override

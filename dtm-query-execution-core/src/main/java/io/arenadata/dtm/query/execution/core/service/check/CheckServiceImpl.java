@@ -14,7 +14,10 @@ import io.vertx.core.Handler;
 import org.springframework.stereotype.Service;
 import org.tarantool.util.StringUtils;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 @Service("coreCheckService")
 public class CheckServiceImpl implements CheckService {
@@ -30,12 +33,12 @@ public class CheckServiceImpl implements CheckService {
         String datamart = context.getRequest().getQueryRequest().getDatamartMnemonic();
         if (StringUtils.isEmpty(datamart)) {
             handler.handle(Future.failedFuture(
-                    new DtmException("Datamart must be specified for all tables and views")));
+                new DtmException("Datamart must be specified for all tables and views")));
         } else {
             executorMap.get(context.getCheckType()).execute(context)
-                    .onSuccess(result -> handler.handle(Future.succeededFuture(
-                            createQueryResult(context.getRequest().getQueryRequest().getRequestId(), result))))
-                    .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
+                .onSuccess(result -> handler.handle(Future.succeededFuture(
+                    createQueryResult(context.getRequest().getQueryRequest().getRequestId(), result))))
+                .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
         }
 
     }
@@ -46,15 +49,15 @@ public class CheckServiceImpl implements CheckService {
     }
 
     private QueryResult createQueryResult(UUID requestId, String result) {
-        QueryResult queryResult = new QueryResult();
-        queryResult.setRequestId(requestId);
-        queryResult.setMetadata(Collections.singletonList(ColumnMetadata.builder()
-                .name(CHECK_RESULT_COLUMN_NAME)
-                .type(ColumnType.VARCHAR)
-                .build()));
         Map<String, Object> resultMap = new HashMap<>();
         resultMap.put(CHECK_RESULT_COLUMN_NAME, result);
-        queryResult.setResult(Collections.singletonList(resultMap));
-        return queryResult;
+        return QueryResult.builder()
+            .requestId(requestId)
+            .metadata(Collections.singletonList(ColumnMetadata.builder()
+                .name(CHECK_RESULT_COLUMN_NAME)
+                .type(ColumnType.VARCHAR)
+                .build()))
+            .result(Collections.singletonList(resultMap))
+            .build();
     }
 }

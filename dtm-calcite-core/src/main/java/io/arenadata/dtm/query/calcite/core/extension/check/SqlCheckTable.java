@@ -12,9 +12,9 @@ public class SqlCheckTable extends SqlCheckCall {
     private final String table;
     private final String schema;
 
-    public SqlCheckTable(SqlParserPos pos, SqlNode name) {
-        super(pos, name);
-        String nameWithSchema = Objects.requireNonNull(((SqlCharStringLiteral) name).getNlsString().getValue());
+    public SqlCheckTable(SqlParserPos pos, SqlIdentifier id) {
+        super(pos, id);
+        String nameWithSchema = Objects.requireNonNull(id.toString());
         this.schema = CalciteUtil.parseSchemaName(nameWithSchema);
         this.table = CalciteUtil.parseTableName(nameWithSchema);
     }

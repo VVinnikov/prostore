@@ -11,7 +11,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Component("deltaOkQueryResultFactory")
 public class DeltaOkQueryResultFactory implements DeltaQueryResultFactory {
@@ -41,10 +44,9 @@ public class DeltaOkQueryResultFactory implements DeltaQueryResultFactory {
 
     @Override
     public QueryResult createEmpty() {
-        QueryResult result = new QueryResult();
-        result.setResult(new ArrayList<>());
-        result.setMetadata(getMetadata());
-        return result;
+        return QueryResult.builder()
+            .metadata(getMetadata())
+            .build();
     }
 
     private List<ColumnMetadata> getMetadata() {

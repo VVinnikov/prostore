@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl.mppw;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.AdgMppwKafkaProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.dto.mppw.AdgMppwKafkaContext;
@@ -41,17 +42,17 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
     }
 
     @Override
-    public void execute(MppwRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
+    public void execute(MppwRequestContext context, AsyncHandler<QueryResult> handler) {
         log.debug("mppw start");
         val mppwKafkaContext = contextFactory.create(context.getRequest());
         if (context.getRequest().getIsLoadStart()) {
-            initializeLoading(mppwKafkaContext, asyncResultHandler);
+            initializeLoading(mppwKafkaContext, handler);
         } else {
-            cancelLoadData(mppwKafkaContext, asyncResultHandler);
+            cancelLoadData(mppwKafkaContext, handler);
         }
     }
 
-    private void initializeLoading(AdgMppwKafkaContext ctx, Handler<AsyncResult<QueryResult>> handler) {
+    private void initializeLoading(AdgMppwKafkaContext ctx, AsyncHandler<QueryResult> handler) {
         if (initializedLoadingByTopic.containsKey(ctx.getTopicName())) {
             transferData(ctx, handler);
         } else {
@@ -79,38 +80,38 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
                 if (ar.succeeded()) {
                     log.debug("Loading initialize completed by [{}]", request);
                     initializedLoadingByTopic.put(ctx.getTopicName(), ctx.getConsumerTableName());
-                    handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
+                    handler.handleSuccess(QueryResult.emptyResult());
                 } else {
-                    handler.handle(Future.failedFuture(ar.cause()));
+                    handler.handleError(ar.cause());
                 }
             });
         }
     }
 
-    private void transferData(AdgMppwKafkaContext ctx, Handler<AsyncResult<QueryResult>> handler) {
+    private void transferData(AdgMppwKafkaContext ctx, AsyncHandler<QueryResult> handler) {
         val request = new TtTransferDataEtlRequest(ctx.getHelperTableNames(), ctx.getHotDelta());
         cartridgeClient.transferDataToScdTable(
                 request, ar -> {
                     if (ar.succeeded()) {
                         log.debug("Transfer Data completed by request [{}]", request);
-                        handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
+                        handler.handleSuccess(QueryResult.emptyResult());
                     } else {
-                        handler.handle(Future.failedFuture(ar.cause()));
+                        handler.handleError(ar.cause());
                     }
                 }
         );
     }
 
-    private void cancelLoadData(AdgMppwKafkaContext ctx, Handler<AsyncResult<QueryResult>> handler) {
+    private void cancelLoadData(AdgMppwKafkaContext ctx, AsyncHandler<QueryResult> handler) {
         val topicName = ctx.getTopicName();
         transferData(ctx, tr -> {
             cartridgeClient.cancelSubscription(topicName, ar -> {
                 initializedLoadingByTopic.remove(topicName);
                 if (ar.succeeded()) {
                     log.debug("Cancel Load Data completed by request [{}]", topicName);
-                    handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
+                    handler.handleSuccess(QueryResult.emptyResult());
                 } else {
-                    handler.handle(Future.failedFuture(ar.cause()));
+                    handler.handleError(ar.cause());
                 }
             });
         });

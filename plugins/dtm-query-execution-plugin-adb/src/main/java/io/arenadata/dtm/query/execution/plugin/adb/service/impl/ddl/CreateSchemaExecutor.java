@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.ddl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.SqlCreateDatabase;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
@@ -34,30 +35,29 @@ public class CreateSchemaExecutor implements DdlExecutor<Void> {
     @Override
     public void execute(DdlRequestContext context,
                         String sqlNodeName,
-                        Handler<AsyncResult<Void>> handler) {
+                        AsyncHandler<Void> handler) {
         try {
             SqlNode query = context.getQuery();
             if (!(query instanceof SqlCreateDatabase)) {
-                handler.handle(Future.failedFuture(new DdlDatasourceException(
+                handler.handleError(new DdlDatasourceException(
                         String.format("Expecting SqlCreateDatabase in context, receiving: %s",
-                                context.getQuery()))));
+                                context.getQuery())));
                 return;
             }
             String schemaName = ((SqlCreateDatabase) query).getName().names.get(0);
             createSchema(schemaName, handler);
         } catch (Exception e) {
-            handler.handle(Future.failedFuture(
-                    new DdlDatasourceException("Error generating create schema query", e)));
+            handler.handleError(new DdlDatasourceException("Error generating create schema query", e));
         }
     }
 
-    private void createSchema(String schemaName, Handler<AsyncResult<Void>> handler) {
+    private void createSchema(String schemaName, AsyncHandler<Void> handler) {
         String createSchemaSql = sqlFactory.createSchemaSqlQuery(schemaName);
         adbQueryExecutor.executeUpdate(createSchemaSql, ar -> {
             if (ar.succeeded()) {
-                handler.handle(Future.succeededFuture());
+                handler.handleSuccess();
             } else {
-                handler.handle(Future.failedFuture(ar.cause()));
+                handler.handleError(ar.cause());
             }
         });
     }

@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.rollback;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.plugin.sql.PreparedStatementRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbRollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
@@ -33,7 +34,7 @@ public class AdbRollbackService implements RollbackService<Void> {
     }
 
     @Override
-    public void execute(RollbackRequestContext context, Handler<AsyncResult<Void>> handler) {
+    public void execute(RollbackRequestContext context, AsyncHandler<Void> handler) {
         try {
             val rollbackRequest = rollbackRequestFactory.create(context.getRequest());
             executeSql(rollbackRequest.getTruncate().getSql())
@@ -41,13 +42,12 @@ public class AdbRollbackService implements RollbackService<Void> {
                 .compose(v -> executeSqlInTran(
                     Arrays.asList(rollbackRequest.getInsert(), rollbackRequest.getDeleteFromHistory())
                 ))
-                .onSuccess(success -> handler.handle(Future.succeededFuture()))
-                .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
+                .onSuccess(success -> handler.handleSuccess())
+                .onFailure(handler::handleError);
         } catch (Exception e) {
-            log.error("Rollback error while executing context: [{}]: {}", context, e);
-            handler.handle(Future.failedFuture(
+            handler.handleError(
                     new RollbackDatasourceException(String.format("Rollback error while executing request [%s]",
-                            context.getRequest()), e)));
+                            context.getRequest()), e));
         }
     }
 

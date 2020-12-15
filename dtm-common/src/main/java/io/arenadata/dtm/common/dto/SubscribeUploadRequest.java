@@ -1,4 +1,4 @@
-package io.arenadata.dtm.common.service;
+package io.arenadata.dtm.common.dto;
 
 /*DTO для квитанций об отправке от отправителя*/
 public class SubscribeUploadRequest {

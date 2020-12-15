@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
@@ -21,9 +22,7 @@ import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
 import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import org.junit.jupiter.api.Test;
@@ -56,36 +55,36 @@ public class DtmDataSourcePluginIT {
         }
 
         @Override
-        public void ddl(DdlRequestContext ddlRequest, Handler<AsyncResult<Void>> handler) {
+        public void ddl(DdlRequestContext ddlRequest, AsyncHandler<Void> handler) {
         }
 
         @Override
-        public void llr(LlrRequestContext llrRequest, Handler<AsyncResult<QueryResult>> handler) {
-
-        }
-
-        @Override
-        public void mppr(MpprRequestContext mpprRequest, Handler<AsyncResult<QueryResult>> handler) {
+        public void llr(LlrRequestContext llrRequest, AsyncHandler<QueryResult> handler) {
 
         }
 
         @Override
-        public void mppw(MppwRequestContext mppwRequest, Handler<AsyncResult<QueryResult>> handler) {
+        public void mppr(MpprRequestContext mpprRequest, AsyncHandler<QueryResult> handler) {
 
         }
 
         @Override
-        public void calcQueryCost(QueryCostRequestContext calcQueryCostRequest, Handler<AsyncResult<Integer>> handler) {
+        public void mppw(MppwRequestContext mppwRequest, AsyncHandler<QueryResult> handler) {
 
         }
 
         @Override
-        public void status(StatusRequestContext context, Handler<AsyncResult<StatusQueryResult>> asyncResultHandler) {
+        public void calcQueryCost(QueryCostRequestContext calcQueryCostRequest, AsyncHandler<Integer> handler) {
 
         }
 
         @Override
-        public void rollback(RollbackRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler) {
+        public void status(StatusRequestContext context, AsyncHandler<StatusQueryResult> asyncResultHandler) {
+
+        }
+
+        @Override
+        public void rollback(RollbackRequestContext context, AsyncHandler<Void> asyncResultHandler) {
 
         }
 
@@ -118,7 +117,7 @@ public class DtmDataSourcePluginIT {
     @Test
     void testDdl(VertxTestContext testContext) throws Throwable {
         Entity entity = new Entity("test.test_", Arrays.asList(
-                new EntityField(0,"id", ColumnType.INT.name(), false, 1, 1, null),
+                new EntityField(0, "id", ColumnType.INT.name(), false, 1, 1, null),
                 new EntityField(1, "test", ColumnType.VARCHAR.name(), true, 1, 1, null)
         ));
         DdlRequest dto = new DdlRequest(null, entity);

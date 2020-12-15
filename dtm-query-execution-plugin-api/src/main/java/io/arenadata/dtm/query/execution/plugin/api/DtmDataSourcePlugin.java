@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.api;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
@@ -45,11 +46,10 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
 
     /**
      * <p>execute DDL operation</p>
-     *
-     * @param context            DDL context
+     *  @param context            DDL context
      * @param asyncResultHandler async handler
      */
-    void ddl(DdlRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler);
+    void ddl(DdlRequestContext context, AsyncHandler<Void> asyncResultHandler);
 
     /**
      * <p>execute Low Latency Reading</p>
@@ -57,7 +57,7 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
      * @param context            LLR context
      * @param asyncResultHandler async handler
      */
-    void llr(LlrRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler);
+    void llr(LlrRequestContext context, AsyncHandler<QueryResult> asyncResultHandler);
 
     /**
      * <p>execute Massively Parallel Processing Reading</p>
@@ -65,7 +65,7 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
      * @param context            MPPR context
      * @param asyncResultHandler async handler
      */
-    void mppr(MpprRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler);
+    void mppr(MpprRequestContext context, AsyncHandler<QueryResult> asyncResultHandler);
 
     /**
      * <p>execute Massively Parallel Processing Writing</p>
@@ -73,7 +73,7 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
      * @param context            MPPW context
      * @param asyncResultHandler async handler
      */
-    void mppw(MppwRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler);
+    void mppw(MppwRequestContext context, AsyncHandler<QueryResult> asyncResultHandler);
 
     /**
      * <p>Calculate executing query cost</p>
@@ -81,21 +81,21 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
      * @param context            Query cost context
      * @param asyncResultHandler async handler
      */
-    void calcQueryCost(QueryCostRequestContext context, Handler<AsyncResult<Integer>> asyncResultHandler);
+    void calcQueryCost(QueryCostRequestContext context, AsyncHandler<Integer> asyncResultHandler);
 
     /**
      * <p>Get plugin status information</p>
      * @param context            Status request context
      * @param asyncResultHandler async handler
      */
-    void status(StatusRequestContext context, Handler<AsyncResult<StatusQueryResult>> asyncResultHandler);
+    void status(StatusRequestContext context, AsyncHandler<StatusQueryResult> asyncResultHandler);
 
     /**
      *
      * @param context            Rollback request context
      * @param asyncResultHandler async handler
      */
-    void rollback(RollbackRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler);
+    void rollback(RollbackRequestContext context, AsyncHandler<Void> asyncResultHandler);
 
     /**
      * <p>Get name set of active caches</p>

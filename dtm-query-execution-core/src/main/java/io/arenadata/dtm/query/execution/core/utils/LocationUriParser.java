@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.core.utils;
 
 import io.arenadata.dtm.kafka.core.configuration.kafka.KafkaZookeeperProperties;
-import io.arenadata.dtm.query.execution.core.exception.DtmException;
+import io.arenadata.dtm.common.exception.DtmException;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;

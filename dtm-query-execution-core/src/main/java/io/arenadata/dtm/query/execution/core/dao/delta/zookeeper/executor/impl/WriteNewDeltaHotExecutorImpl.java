@@ -17,6 +17,7 @@ import lombok.var;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
 import org.apache.zookeeper.data.Stat;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -26,6 +27,7 @@ import java.util.Arrays;
 @Component
 public class WriteNewDeltaHotExecutorImpl extends DeltaServiceDaoExecutorHelper implements WriteNewDeltaHotExecutor {
 
+    @Autowired
     public WriteNewDeltaHotExecutorImpl(ZookeeperExecutor executor,
                                         @Value("${core.env.name}") String envName) {
         super(executor, envName);
@@ -71,7 +73,6 @@ public class WriteNewDeltaHotExecutorImpl extends DeltaServiceDaoExecutorHelper 
                     val errMsg = String.format("Can't write new delta hot on datamart[%s], deltaHotNumber[%d]",
                             datamart,
                             deltaHotNum);
-                    log.error(errMsg, error);
                     if (error instanceof KeeperException.NodeExistsException
                             || error instanceof KeeperException.BadVersionException) {
                         resultPromise.fail(new DeltaIsNotCommittedException(deltaHotNum.toString(), error));

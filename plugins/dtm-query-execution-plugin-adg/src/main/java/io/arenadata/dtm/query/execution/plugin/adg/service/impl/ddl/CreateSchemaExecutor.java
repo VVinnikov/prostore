@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl.ddl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
@@ -15,8 +16,8 @@ import org.springframework.stereotype.Component;
 public class CreateSchemaExecutor implements DdlExecutor<Void> {
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<Void>> handler) {
-        handler.handle(Future.succeededFuture());
+    public void execute(DdlRequestContext context, String sqlNodeName, AsyncHandler<Void> handler) {
+        handler.handleSuccess();
     }
 
     @Override

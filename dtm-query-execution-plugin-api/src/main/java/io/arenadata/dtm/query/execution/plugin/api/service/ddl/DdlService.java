@@ -6,7 +6,7 @@ import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.vertx.core.AsyncResult;
 
 
-public interface DdlService<T> extends DatamartExecutionService<DdlRequestContext, AsyncResult<T>> {
+public interface DdlService<T> extends DatamartExecutionService<DdlRequestContext, T> {
 
     default SqlProcessingType getSqlProcessingType() {
         return SqlProcessingType.DDL;

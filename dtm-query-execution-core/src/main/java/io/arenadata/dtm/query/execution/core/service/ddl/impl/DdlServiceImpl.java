@@ -1,8 +1,9 @@
 package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.truncate.SqlBaseTruncate;
-import io.arenadata.dtm.query.execution.core.exception.DtmException;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.utils.ParseQueryUtils;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.PostSqlActionType;
@@ -40,29 +41,28 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
 
     @Override
     public void execute(DdlRequestContext context,
-                        Handler<AsyncResult<QueryResult>> handler) {
+                        AsyncHandler<QueryResult> handler) {
         try {
             SqlCall sqlCall = getSqlCall(context.getQuery());
             DdlExecutor<QueryResult> executor = executorMap.get(sqlCall.getKind());
             if (executor != null) {
                 executor.execute(context, parseQueryUtils.getDatamartName(sqlCall.getOperandList()), ddlAr -> {
                     if (ddlAr.succeeded()) {
-                        handler.handle(Future.succeededFuture(ddlAr.result()));
+                        handler.handleSuccess(ddlAr.result());
                         context.getPostActions().addAll(executor.getPostActions());
 
                     } else {
-                        handler.handle(Future.failedFuture(ddlAr.cause()));
+                        handler.handleError(ddlAr.cause());
                     }
                     executePostActions(context);
                 });
             } else {
-                handler.handle(Future.failedFuture(
-                        new DtmException(String.format("Not supported DDL query type [%s]",
-                                context.getQuery()))));
+                handler.handleError(String.format("Not supported DDL query type [%s]",
+                                context.getQuery()));
             }
         } catch (Exception e) {
-            handler.handle(Future.failedFuture(new DtmException(String.format("Not supported request type [%s]",
-                    context.getQuery()), e)));
+            handler.handleError(String.format("Not supported request type [%s]",
+                    context.getQuery()), e);
         }
     }
 

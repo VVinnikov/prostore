@@ -1,9 +1,10 @@
 package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.DropDatabase;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
-import io.arenadata.dtm.query.execution.core.exception.DtmException;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
@@ -45,7 +46,7 @@ public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<QueryResult>> handler) {
+    public void execute(DdlRequestContext context, String sqlNodeName, AsyncHandler<QueryResult> handler) {
         try {
             String schemaName = ((DropDatabase) context.getQuery()).getName().names.get(0);
             clearCacheByDatamartName(schemaName);
@@ -54,10 +55,10 @@ public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
             datamartDao.existsDatamart(schemaName)
                 .compose(isExists -> isExists ? dropDatamartInPlugins(context) : getNotExistsDatamartFuture(schemaName))
                 .compose(r -> dropDatamart(context))
-                .onSuccess(success -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
-                .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
+                .onSuccess(success -> handler.handleSuccess(QueryResult.emptyResult()))
+                .onFailure(handler::handleError);
         } catch (Exception e) {
-            handler.handle(Future.failedFuture(e));
+            handler.handleError("Error executing drop datamart request", e);
         }
     }
 
@@ -78,7 +79,7 @@ public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
             log.debug("Delete physical objects in plugins for datamart: [{}]", context.getDatamartName());
             return Future.future((Promise<Void> promise) -> metadataExecutor.execute(context, promise));
         } catch (Exception e) {
-            return Future.failedFuture(new DtmException("Error creating drop datamart request", e));
+            return Future.failedFuture(new DtmException("Error generating drop datamart request", e));
         }
     }
 

@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppr;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.EnrichQueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.MpprKafkaConnectorRequestFactory;
@@ -34,7 +35,7 @@ public class AdqmMpprKafkaService implements MpprKafkaService<QueryResult> {
     }
 
     @Override
-    public void execute(MpprRequestContext context, Handler<AsyncResult<QueryResult>> asyncHandler) {
+    public void execute(MpprRequestContext context, AsyncHandler<QueryResult> handler) {
         MpprRequest request = context.getRequest();
         adqmQueryEnrichmentService.enrich(
                 EnrichQueryRequest.generate(request.getQueryRequest(), request.getLogicalSchema(), true),
@@ -42,9 +43,9 @@ public class AdqmMpprKafkaService implements MpprKafkaService<QueryResult> {
                     if (sqlResult.succeeded()) {
                         mpprKafkaConnectorService.call(
                                 requestFactory.create(request, sqlResult.result()),
-                                asyncHandler);
+                                handler);
                     } else {
-                        asyncHandler.handle(Future.failedFuture(sqlResult.cause()));
+                        handler.handleError(sqlResult.cause());
                     }
                 });
     }

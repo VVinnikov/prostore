@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.dml.impl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.api.dml.DmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.dml.DmlExecutor;
@@ -23,7 +24,7 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
     }
 
     @Override
-    public void execute(DmlRequestContext context, Handler<AsyncResult<QueryResult>> handler) {
+    public void execute(DmlRequestContext context, AsyncHandler<QueryResult> handler) {
         executorMap.get(context.getQuery().getKind()).execute(context, handler);
     }
 

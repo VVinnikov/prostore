@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.status;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.kafka.core.service.kafka.KafkaConsumerMonitor;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
@@ -30,9 +31,9 @@ public class AdqmStatusService implements StatusService<StatusQueryResult>, Stat
 	}
 
 	@Override
-	public void execute(StatusRequestContext context, Handler<AsyncResult<StatusQueryResult>> handler) {
+	public void execute(StatusRequestContext context, AsyncHandler<StatusQueryResult> handler) {
 		if (context == null || context.getRequest() == null) {
-			handler.handle(Future.failedFuture(new DataSourceException("StatusRequestContext should not be null")));
+			handler.handleError(new DataSourceException("StatusRequestContext should not be null"));
 			return;
 		}
 
@@ -45,11 +46,13 @@ public class AdqmStatusService implements StatusService<StatusQueryResult>, Stat
 					.onSuccess(p -> {
 						StatusQueryResult result = new StatusQueryResult();
 						result.setPartitionInfo(p);
-						handler.handle(Future.succeededFuture(result));
+						handler.handleSuccess(result);
 					})
-					.onFailure(f -> handler.handle(Future.failedFuture(f)));
+					.onFailure(handler::handleError);
 		} else {
-			handler.handle(Future.failedFuture(new DataSourceException("Cannot find info about " + request.getTopic())));
+			handler.handleError(
+					new DataSourceException(String.format("Cannot find information about topic [%s]",
+							request.getTopic())));
 		}
 	}
 

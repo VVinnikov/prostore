@@ -5,6 +5,7 @@ import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.delta.DeltaInformationResult;
 import io.arenadata.dtm.common.delta.DeltaType;
 import io.arenadata.dtm.common.delta.SelectOnInterval;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.calcite.core.extension.snapshot.SqlSnapshot;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.calcite.core.node.SqlTreeNode;
@@ -40,8 +41,7 @@ public class DeltaInformationExtractorImpl implements DeltaInformationExtractor 
             replaceSnapshots(getSnapshots(allTableAndSnapshots));
             return new DeltaInformationResult(deltaInformations, root.toSqlString(DIALECT).toString());
         } catch (Exception e) {
-            log.error("DeltaInformation extracts Error", e);
-            throw e;
+            throw new DtmException("Error extracting delta information", e);
         }
     }
 

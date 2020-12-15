@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.ddl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTables;
@@ -34,7 +35,7 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<Void>> handler) {
+    public void execute(DdlRequestContext context, String sqlNodeName, AsyncHandler<Void> handler) {
         Entity tbl = context.getRequest().getEntity();
         DdlRequestContext dropCtx = new DdlRequestContext(new DdlRequest(new QueryRequest(), tbl));
 

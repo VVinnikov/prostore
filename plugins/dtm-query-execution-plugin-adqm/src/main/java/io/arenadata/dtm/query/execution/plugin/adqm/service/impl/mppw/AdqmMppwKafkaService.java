@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
@@ -45,16 +46,16 @@ public class AdqmMppwKafkaService implements MppwKafkaService<QueryResult> {
     }
 
     @Override
-    public void execute(MppwRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
+    public void execute(MppwRequestContext context, AsyncHandler<QueryResult> handler) {
         MppwRequest request = context.getRequest();
         if (request == null) {
-            asyncResultHandler.handle(Future.failedFuture(new MppwDatasourceException("MppwRequest should not be null")));
+            handler.handleError(new MppwDatasourceException("MppwRequest should not be null"));
             return;
         }
 
         LoadType loadType = LoadType.valueOf(request.getIsLoadStart());
         log.debug("Mppw {}", loadType);
-        handlers.get(loadType).execute(request).onComplete(asyncResultHandler);
+        handlers.get(loadType).execute(request).onComplete(handler);
     }
 
 }

@@ -1,19 +1,18 @@
 package io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.async.AsyncUtils;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.query.execution.core.configuration.cache.CacheConfiguration;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.metadata.DatamartEntity;
-import io.arenadata.dtm.query.execution.core.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.exception.table.TableAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.json.jackson.DatabindCodec;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -25,7 +24,6 @@ import org.springframework.stereotype.Repository;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -40,7 +38,7 @@ public class EntityDaoImpl implements EntityDao {
     }
 
     @Override
-    public void getEntitiesMeta(String datamartMnemonic, Handler<AsyncResult<List<DatamartEntity>>> resultHandler) {
+    public void getEntitiesMeta(String datamartMnemonic, AsyncHandler<List<DatamartEntity>> resultHandler) {
         //TODO implemented receiving entity column informations
         getEntityNamesByDatamart(datamartMnemonic)
                 .onSuccess(names -> resultHandler.handle(
@@ -50,7 +48,7 @@ public class EntityDaoImpl implements EntityDao {
                                         .collect(Collectors.toList())
                         )
                 ))
-                .onFailure(error -> resultHandler.handle(Future.failedFuture(error)));
+                .onFailure(resultHandler::handleError);
     }
 
     @Override
@@ -64,20 +62,17 @@ public class EntityDaoImpl implements EntityDao {
             return executor.createPersistentPath(getTargetPath(entity), entityData)
                     .compose(AsyncUtils::toEmptyVoidFuture)
                     .otherwise(error -> {
-                        String errMsg;
                         if (error instanceof KeeperException.NoNodeException) {
-                            throw error(new DatamartNotExistsException(entity.getSchema(), error));
+                            throw new DatamartNotExistsException(entity.getSchema(), error);
                         } else if (error instanceof KeeperException.NodeExistsException) {
                             throw warn(new TableAlreadyExistsException(entity.getNameWithSchema(), error));
                         } else {
-                            errMsg = String.format("Can't create entity [%s]", entity.getNameWithSchema());
-                            throw error(error, errMsg, DtmException::new);
+                            throw new DtmException(String.format("Can't create entity [%s]", entity.getNameWithSchema()), error);
                         }
                     });
         } catch (JsonProcessingException e) {
             return Future.failedFuture(
-                    error(e, String.format("Can't serialize entity [%s]", entity), DtmException::new)
-            );
+                    new DtmException(String.format("Can't serialize entity [%s]", entity)));
         }
     }
 
@@ -92,18 +87,17 @@ public class EntityDaoImpl implements EntityDao {
             return executor.setData(getTargetPath(entity), entityData, -1)
                     .compose(AsyncUtils::toEmptyVoidFuture)
                     .otherwise(error -> {
-                        String errMsg;
                         if (error instanceof KeeperException.NoNodeException) {
                             throw warn(new TableNotExistsException(entity.getNameWithSchema()));
                         } else {
-                            errMsg = String.format("Can't update entity [%s]", entity.getNameWithSchema());
-                            throw error(error, errMsg, DtmException::new);
+                            throw new DtmException(String.format("Can't update entity [%s]",
+                                    entity.getNameWithSchema()),
+                                    error);
                         }
                     });
         } catch (JsonProcessingException e) {
             return Future.failedFuture(
-                    error(e, String.format("Can't serialize entity [%s]", entity), DtmException::new)
-            );
+                    new DtmException(String.format("Can't serialize entity [%s]", entity), e));
         }
     }
 
@@ -122,12 +116,10 @@ public class EntityDaoImpl implements EntityDao {
         return executor.delete(getTargetPath(datamartMnemonic, entityName), -1)
                 .compose(AsyncUtils::toEmptyVoidFuture)
                 .otherwise(error -> {
-                    String errMsg;
                     if (error instanceof KeeperException.NoNodeException) {
                         throw warn(new TableNotExistsException(nameWithSchema));
                     } else {
-                        errMsg = String.format("Can't delete entity [%s]", nameWithSchema);
-                        throw error(error, errMsg, DtmException::new);
+                        throw new DtmException(String.format("Can't delete entity [%s]", nameWithSchema), error);
                     }
                 });
     }
@@ -144,18 +136,16 @@ public class EntityDaoImpl implements EntityDao {
                     try {
                         return DatabindCodec.mapper().readValue(entityData, Entity.class);
                     } catch (IOException e) {
-                        throw error(e,
+                        throw new DtmException(
                                 String.format("Can't deserialize entity [%s]", nameWithSchema),
-                                DtmException::new);
+                                e);
                     }
                 })
                 .otherwise(error -> {
-                    String errMsg;
                     if (error instanceof KeeperException.NoNodeException) {
                         throw warn(new TableNotExistsException(nameWithSchema));
                     } else {
-                        errMsg = String.format("Can't get entity [%s]", nameWithSchema);
-                        throw error(error, errMsg, DtmException::new);
+                        throw new DtmException(String.format("Can't get entity [%s]", nameWithSchema), error);
                     }
                 });
     }
@@ -164,27 +154,13 @@ public class EntityDaoImpl implements EntityDao {
     public Future<List<String>> getEntityNamesByDatamart(String datamartMnemonic) {
         return executor.getChildren(getEntitiesPath(datamartMnemonic))
                 .onFailure(error -> {
-                    String errMsg;
                     if (error instanceof KeeperException.NoNodeException) {
                         throw warn(new DatamartNotExistsException(datamartMnemonic));
                     } else {
-                        errMsg = String.format("Can't get entity names by datamartMnemonic [%s]", datamartMnemonic);
-                        throw error(error, errMsg, DtmException::new);
+                        throw new DtmException(String.format("Can't get entity names by datamart [%s]",
+                                datamartMnemonic), error);
                     }
                 });
-    }
-
-
-    private RuntimeException error(Throwable error,
-                                   String errMsg,
-                                   BiFunction<String, Throwable, RuntimeException> errFunc) {
-        log.error(errMsg, error);
-        return errFunc.apply(errMsg, error);
-    }
-
-    private RuntimeException error(RuntimeException error) {
-        log.error(error.getMessage(), error);
-        return error;
     }
 
     private RuntimeException warn(RuntimeException error) {

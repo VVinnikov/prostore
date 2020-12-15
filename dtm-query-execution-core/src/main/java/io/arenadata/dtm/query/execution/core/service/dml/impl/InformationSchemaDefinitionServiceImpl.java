@@ -3,7 +3,7 @@ package io.arenadata.dtm.query.execution.core.service.dml.impl;
 import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.reader.InformationSchemaView;
 import io.arenadata.dtm.common.reader.QuerySourceRequest;
-import io.arenadata.dtm.query.execution.core.exception.DtmException;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.dml.InformationSchemaDefinitionService;
 import org.springframework.stereotype.Service;
 

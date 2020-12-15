@@ -12,6 +12,7 @@ import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.zookeeper.KeeperException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 @Component
 public class GetDeltaWriteOperationsExecutorImpl extends DeltaServiceDaoExecutorHelper implements GetDeltaWriteOperationsExecutor {
 
+    @Autowired
     public GetDeltaWriteOperationsExecutorImpl(ZookeeperExecutor executor,
                                                @Value("${core.env.name}") String envName) {
         super(executor, envName);
@@ -49,7 +51,6 @@ public class GetDeltaWriteOperationsExecutorImpl extends DeltaServiceDaoExecutor
             .onFailure(error -> {
                 val errMsg = String.format("Can't get delta write operation list by datamart[%s]",
                     datamart);
-                log.error(errMsg, error);
                 if (error instanceof KeeperException.NoNodeException) {
                     resultPromise.complete(null);
                 } else if (error instanceof DeltaException) {

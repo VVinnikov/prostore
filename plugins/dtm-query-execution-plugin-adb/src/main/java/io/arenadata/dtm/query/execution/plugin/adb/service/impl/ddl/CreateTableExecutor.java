@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.ddl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbTables;
@@ -42,13 +43,13 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<Void>> handler) {
+    public void execute(DdlRequestContext context, String sqlNodeName, AsyncHandler<Void> handler) {
         try {
             SqlNode query = context.getQuery();
             if (!(query instanceof SqlCreateTable)) {
-                handler.handle(Future.failedFuture(new DdlDatasourceException(
+                handler.handleError(new DdlDatasourceException(
                         String.format("Expecting SqlCreateTable in context, receiving: %s",
-                                context.getQuery()))));
+                                context.getQuery())));
                 return;
             }
             DdlRequestContext dropCtx = createDropRequestContext(context);
@@ -56,16 +57,15 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
                 if (ar.succeeded()) {
                     createTable(context, handler);
                 } else {
-                    handler.handle(Future.failedFuture(ar.cause()));
+                    handler.handleError(ar.cause());
                 }
             });
         } catch (Exception e) {
-            handler.handle(Future.failedFuture(
-                    new DdlDatasourceException("Error generating create table query", e)));
+            handler.handleError(new DdlDatasourceException("Error generating create table query", e));
         }
     }
 
-    private void createTable(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {
+    private void createTable(DdlRequestContext context, AsyncHandler<Void> handler) {
         AdbTables<String> createTableQueries = createTableQueriesFactory.create(context);
         String createTablesSql = String.join("; ", createTableQueries.getActual(),
                 createTableQueries.getHistory(), createTableQueries.getStaging());

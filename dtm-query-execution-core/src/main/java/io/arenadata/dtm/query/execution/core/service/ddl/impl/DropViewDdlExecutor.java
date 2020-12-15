@@ -1,11 +1,12 @@
 package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
-import io.arenadata.dtm.query.execution.core.exception.DtmException;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.exception.view.ViewNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
@@ -41,7 +42,7 @@ public class DropViewDdlExecutor extends QueryResultDdlExecutor {
     @Override
     public void execute(DdlRequestContext context,
                         String sqlNodeName,
-                        Handler<AsyncResult<QueryResult>> handler) {
+                        AsyncHandler<QueryResult> handler) {
         try {
             val tree = new SqlSelectTree(context.getQuery());
             val viewNameNode = SqlPreparer.getViewNameNode(tree);
@@ -54,10 +55,10 @@ public class DropViewDdlExecutor extends QueryResultDdlExecutor {
             entityDao.getEntity(schemaName, viewName)
                 .compose(this::checkEntityType)
                 .compose(v -> entityDao.deleteEntity(schemaName, viewName))
-                .onSuccess(success -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
-                .onFailure(error -> handler.handle(Future.failedFuture(error)));
+                .onSuccess(success -> handler.handleSuccess(QueryResult.emptyResult()))
+                .onFailure(handler::handleError);
         } catch (Exception e) {
-            handler.handle(Future.failedFuture(e));
+            handler.handleError("Error executing drop view request", e);
         }
     }
 

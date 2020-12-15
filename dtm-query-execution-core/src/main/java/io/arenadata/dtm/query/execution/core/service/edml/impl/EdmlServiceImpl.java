@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.edml.impl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.dto.TableInfo;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
@@ -8,7 +9,7 @@ import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.edml.EdmlAction;
-import io.arenadata.dtm.query.execution.core.exception.DtmException;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.exception.table.ExternalTableNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
@@ -44,10 +45,10 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
     }
 
     @Override
-    public void execute(EdmlRequestContext context, Handler<AsyncResult<QueryResult>> resultHandler) {
+    public void execute(EdmlRequestContext context, AsyncHandler<QueryResult> handler) {
         defineTablesAndType(context)
                 .compose(edmlType -> execute(context, edmlType))
-                .setHandler(resultHandler);
+                .onComplete(handler);
     }
 
 
@@ -68,7 +69,7 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
                         } else {
                             edmlQueryPromise.fail(new ExternalTableNotExistsException(
                                     String.format("Can't determine external table from query [%s]",
-                                    context.getSqlNode().toSqlString(SQL_DIALECT).toString())));
+                                            context.getSqlNode().toSqlString(SQL_DIALECT).toString())));
                         }
                     })
                     .onFailure(edmlQueryPromise::fail);
@@ -90,7 +91,7 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
         val sourceTable = tableInfos.get(1);
         return Future.future(p -> CompositeFuture.join(
                 entityDao.getEntity(destinationTable.getSchemaName(),
-                destinationTable.getTableName()),
+                        destinationTable.getTableName()),
                 entityDao.getEntity(sourceTable.getSchemaName(),
                         sourceTable.getTableName()))
                 .onSuccess(entities -> p.complete(entities.list()))

@@ -5,7 +5,7 @@ import io.arenadata.dtm.query.execution.core.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.core.controller.DatamartMetaController;
 import io.arenadata.dtm.query.execution.core.controller.MetricsController;
 import io.arenadata.dtm.query.execution.core.controller.QueryController;
-import io.arenadata.dtm.query.execution.core.controller.RequestParam;
+import io.arenadata.dtm.query.execution.core.dto.request.RequestParam;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.json.JsonObject;

@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.eddl.impl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.reader.QueryResult;
@@ -42,14 +43,14 @@ public class EddlServiceImpl implements EddlService<QueryResult> {
     }
 
     @Override
-    public void execute(EddlRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
+    public void execute(EddlRequestContext context, AsyncHandler<QueryResult> handler) {
         extractQuery(context)
                 .compose(eddlQuery -> sendMetricsAndExecute(context, eddlQuery))
                 .onComplete(execHandler -> {
                     if (execHandler.succeeded()) {
-                        asyncResultHandler.handle(Future.succeededFuture(QueryResult.emptyResult()));
+                        handler.handleSuccess(QueryResult.emptyResult());
                     } else {
-                        asyncResultHandler.handle(Future.failedFuture(execHandler.cause()));
+                        handler.handleError(execHandler.cause());
                     }
                 });
     }
@@ -69,7 +70,7 @@ public class EddlServiceImpl implements EddlService<QueryResult> {
                     metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
                             SqlProcessingType.EDDL,
                             context.getMetrics(),
-                            promise));
+                            (AsyncHandler<Void>) promise));
         });
     }
 

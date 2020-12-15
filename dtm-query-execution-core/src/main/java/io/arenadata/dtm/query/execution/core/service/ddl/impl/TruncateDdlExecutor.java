@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.QueryResult;
@@ -48,15 +49,15 @@ public class TruncateDdlExecutor extends QueryResultDdlExecutor {
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<QueryResult>> handler) {
+    public void execute(DdlRequestContext context, String sqlNodeName, AsyncHandler<QueryResult> handler) {
         val schema = getSchemaName(context.getRequest().getQueryRequest(), sqlNodeName);
         context.setDatamartName(schema);
         val table = getTableName(sqlNodeName);
         val sqlTruncateHistory = (SqlTruncateHistory) context.getQuery();
         CompositeFuture.join(getTableEntity(schema, table), calcCnTo(schema, sqlTruncateHistory))
                 .compose(entityCnTo -> CompositeFuture.join(executeTruncate(entityCnTo, context, sqlTruncateHistory)))
-                .onSuccess(success -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
-                .onFailure(err -> handler.handle(Future.failedFuture(err)));
+                .onSuccess(success -> handler.handleSuccess(QueryResult.emptyResult()))
+                .onFailure(handler::handleError);
     }
 
     private List<Future> executeTruncate(CompositeFuture entityCnTo, DdlRequestContext context, SqlTruncateHistory sqlTruncateHistory) {

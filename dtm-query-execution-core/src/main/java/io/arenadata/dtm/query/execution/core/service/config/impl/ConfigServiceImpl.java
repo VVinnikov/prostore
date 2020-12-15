@@ -1,9 +1,10 @@
 package io.arenadata.dtm.query.execution.core.service.config.impl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.extension.config.SqlConfigCall;
 import io.arenadata.dtm.query.calcite.core.extension.config.SqlConfigType;
-import io.arenadata.dtm.query.execution.core.exception.DtmException;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.plugin.api.config.ConfigRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.config.ConfigExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.config.ConfigService;
@@ -31,7 +32,7 @@ public class ConfigServiceImpl implements ConfigService<QueryResult> {
 
     @Override
     public void execute(ConfigRequestContext context,
-                        Handler<AsyncResult<QueryResult>> handler) {
+                        AsyncHandler<QueryResult> handler) {
         try {
             SqlConfigCall configCall = context.getSqlConfigCall();
             ConfigExecutor executor = executorMap.get(configCall.getSqlConfigType());
@@ -39,10 +40,10 @@ public class ConfigServiceImpl implements ConfigService<QueryResult> {
                 executor.execute(context)
                     .onComplete(handler);
             } else {
-                handler.handle(Future.failedFuture(new DtmException(NOT_SUPPORTED_CONFIG_QUERY_TYPE)));
+                handler.handleError(NOT_SUPPORTED_CONFIG_QUERY_TYPE);
             }
         } catch (Exception e) {
-            handler.handle(Future.failedFuture(new DtmException(NOT_SUPPORTED_CONFIG_QUERY_TYPE)));
+            handler.handleError(NOT_SUPPORTED_CONFIG_QUERY_TYPE, e);
         }
     }
 

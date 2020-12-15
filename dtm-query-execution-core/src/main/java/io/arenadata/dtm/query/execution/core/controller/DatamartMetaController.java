@@ -1,9 +1,10 @@
 package io.arenadata.dtm.query.execution.core.controller;
 
+import io.arenadata.dtm.async.AsyncHandler;
+import io.arenadata.dtm.query.execution.core.dto.request.RequestParam;
 import io.arenadata.dtm.query.execution.core.service.metadata.DatamartMetaService;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.Json;
 import io.vertx.ext.web.RoutingContext;
@@ -49,9 +50,9 @@ public class DatamartMetaController {
         return context.request().getParam(paramName);
     }
 
-    private static class ListToJsonHandler<T> implements Handler<AsyncResult<List<T>>> {
+    private static class ListToJsonHandler<T> implements AsyncHandler<List<T>> {
         private final RoutingContext context;
-        private String successLogMessage;
+        private final String successLogMessage;
 
         ListToJsonHandler(RoutingContext context, String successLogMessage) {
             this.context = context;

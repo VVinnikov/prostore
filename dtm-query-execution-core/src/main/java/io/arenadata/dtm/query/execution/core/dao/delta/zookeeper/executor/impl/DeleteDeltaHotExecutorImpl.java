@@ -34,13 +34,12 @@ public class DeleteDeltaHotExecutorImpl extends DeltaServiceDaoExecutorHelper im
             })
             .compose(deltaData -> executor.setData(getDeltaPath(datamart), deltaData, deltaStat.getVersion()))
             .onSuccess(r -> {
-                log.debug("deletion delta hot by datamart[{}] completed successfully", datamart);
+                log.debug("Deletion delta hot by datamart[{}] completed successfully", datamart);
                 resultPromise.complete();
             })
             .onFailure(error -> {
-                val errMsg = String.format("can't delete delta hot on datamart[%s]",
+                val errMsg = String.format("Can't delete delta hot on datamart[%s]",
                     datamart);
-                log.error(errMsg, error);
                 if (error instanceof DeltaException) {
                     resultPromise.fail(error);
                 } else {

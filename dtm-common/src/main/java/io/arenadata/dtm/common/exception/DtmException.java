@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.exception;
+package io.arenadata.dtm.common.exception;
 
 public class DtmException extends RuntimeException {
 

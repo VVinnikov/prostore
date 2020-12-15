@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl.ddl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.AdgHelperTableNamesFactory;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.TtDeleteTablesQueueRequest;
@@ -46,7 +47,7 @@ public class DropTableExecutor implements DdlExecutor<Void> {
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<Void>> handler) {
+    public void execute(DdlRequestContext context, String sqlNodeName, AsyncHandler<Void> handler) {
         val tableNames = adgHelperTableNamesFactory.create(
                 context.getRequest().getQueryRequest().getEnvName(),
                 context.getRequest().getQueryRequest().getDatamartMnemonic(),
@@ -60,9 +61,9 @@ public class DropTableExecutor implements DdlExecutor<Void> {
 
         cartridgeClient.executeDeleteSpacesQueued(request, ar -> {
             if(ar.succeeded()) {
-                handler.handle(Future.succeededFuture());
+                handler.handleSuccess();
             } else {
-                handler.handle(Future.failedFuture(ar.cause()));
+                handler.handleError(ar.cause());
             }
         });
     }

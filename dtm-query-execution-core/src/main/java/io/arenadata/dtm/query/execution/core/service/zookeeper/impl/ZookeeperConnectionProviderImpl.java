@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.zookeeper.impl;
 
 import io.arenadata.dtm.query.execution.core.configuration.properties.ServiceDbZookeeperProperties;
-import io.arenadata.dtm.query.execution.core.exception.DtmException;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.zookeeper.ZookeeperConnectionProvider;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +13,6 @@ import org.apache.zookeeper.ZooKeeper;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import static org.apache.zookeeper.Watcher.Event.KeeperState.SyncConnected;
 

@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.metrics.impl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.metrics.MetricsTopic;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
@@ -30,16 +31,16 @@ public abstract class AbstractMetricsService<T extends RequestMetrics> implement
     }
 
     @Override
-    public <R> Handler<AsyncResult<R>> sendMetrics(SourceType type,
+    public <R> AsyncHandler<R> sendMetrics(SourceType type,
                                                    SqlProcessingType actionType,
                                                    T requestMetrics,
-                                                   Handler<AsyncResult<R>> handler) {
+                                                   AsyncHandler<R> handler) {
         if (!metricsSettings.isEnabled()) {
             return ar -> {
                 if (ar.succeeded()) {
-                    handler.handle(Future.succeededFuture(ar.result()));
+                    handler.handleSuccess(ar.result());
                 } else {
-                    handler.handle(Future.failedFuture(ar.cause()));
+                    handler.handleError(ar.cause());
                 }
             };
         } else {
@@ -48,11 +49,11 @@ public abstract class AbstractMetricsService<T extends RequestMetrics> implement
                 if (ar.succeeded()) {
                     requestMetrics.setStatus(RequestStatus.SUCCESS);
                     metricsProducer.publish(MetricsTopic.ALL_EVENTS, requestMetrics);
-                    handler.handle(Future.succeededFuture(ar.result()));
+                    handler.handleSuccess(ar.result());
                 } else {
                     requestMetrics.setStatus(RequestStatus.ERROR);
                     metricsProducer.publish(MetricsTopic.ALL_EVENTS, requestMetrics);
-                    handler.handle(Future.failedFuture(ar.cause()));
+                    handler.handleError(ar.cause());
                 }
             };
         }

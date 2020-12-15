@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.executor.AdbMppwRequestExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
@@ -29,19 +30,17 @@ public class AdbMppwKafkaService implements MppwKafkaService<QueryResult> {
     }
 
     @Override
-    public void execute(MppwRequestContext context, Handler<AsyncResult<QueryResult>> asyncHandler) {
+    public void execute(MppwRequestContext context, AsyncHandler<QueryResult> handler) {
         try {
             MppwRequest request = context.getRequest();
             if (request == null) {
-                asyncHandler.handle(Future.failedFuture(
-                        new MppwDatasourceException("MppwRequest should not be null")));
+                handler.handleError(new MppwDatasourceException("MppwRequest should not be null"));
                 return;
             }
             final LoadType loadType = LoadType.valueOf(context.getRequest().getIsLoadStart());
-            mppwExecutors.get(loadType).execute(context).onComplete(asyncHandler);
+            mppwExecutors.get(loadType).execute(context).onComplete(handler);
         } catch (Exception e) {
-            asyncHandler.handle(Future.failedFuture(
-                    new MppwDatasourceException("Error generating kafka mppw request", e)));
+            handler.handleError(new MppwDatasourceException("Error generating kafka mppw request", e));
         }
     }
 

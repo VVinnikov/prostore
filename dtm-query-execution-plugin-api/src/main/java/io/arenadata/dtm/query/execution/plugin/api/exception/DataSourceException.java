@@ -1,6 +1,8 @@
 package io.arenadata.dtm.query.execution.plugin.api.exception;
 
-public class DataSourceException extends RuntimeException {
+import io.arenadata.dtm.common.exception.DtmException;
+
+public class DataSourceException extends DtmException {
 
     public DataSourceException(String s) {
         super(s);

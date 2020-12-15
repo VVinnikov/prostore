@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl.rollback;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.exception.CrashException;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.ReverseHistoryTransferRequestFactory;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
@@ -21,17 +22,17 @@ public class AdgRollbackService implements RollbackService<Void> {
     private final AdgCartridgeClient cartridgeClient;
 
     @Override
-    public void execute(RollbackRequestContext context, Handler<AsyncResult<Void>> handler) {
+    public void execute(RollbackRequestContext context, AsyncHandler<Void> handler) {
         try {
             cartridgeClient.reverseHistoryTransfer(requestFactory.create(context), ar -> {
                 if (ar.succeeded()) {
-                    handler.handle(Future.succeededFuture());
+                    handler.handleSuccess();
                 } else {
-                    handler.handle(Future.failedFuture(new CrashException(ERR_MSG, ar.cause())));
+                    handler.handleError(new CrashException(ERR_MSG, ar.cause()));
                 }
             });
         } catch (Exception ex) {
-            handler.handle(Future.failedFuture(new CrashException(ERR_MSG, ex)));
+            handler.handleError(new CrashException(ERR_MSG, ex));
         }
     }
 }

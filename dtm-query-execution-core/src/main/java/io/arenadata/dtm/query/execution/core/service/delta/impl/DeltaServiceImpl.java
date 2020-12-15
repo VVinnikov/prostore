@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.delta.impl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.RequestStatus;
 import io.arenadata.dtm.common.model.SqlProcessingType;
@@ -8,7 +9,7 @@ import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaAction;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaQuery;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.RollbackDeltaQuery;
-import io.arenadata.dtm.query.execution.core.exception.DtmException;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaExecutor;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaQueryParamExtractor;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaService;
@@ -48,11 +49,11 @@ public class DeltaServiceImpl implements DeltaService<QueryResult> {
     }
 
     @Override
-    public void execute(DeltaRequestContext context, Handler<AsyncResult<QueryResult>> handler) {
+    public void execute(DeltaRequestContext context, AsyncHandler<QueryResult> handler) {
         if (StringUtils.isEmpty(context.getRequest().getQueryRequest().getDatamartMnemonic())) {
             String errMsg = "Datamart must be not empty!\n" +
                     "For setting datamart you can use the following command: \"USE datamartName\"";
-            handler.handle(Future.failedFuture(new DtmException(errMsg)));
+            handler.handleError(errMsg);
         } else {
             extractDeltaQuery(context)
                     .compose(deltaQuery -> sendMetricsAndExecute(context, deltaQuery))
@@ -61,16 +62,18 @@ public class DeltaServiceImpl implements DeltaService<QueryResult> {
                             QueryResult queryDeltaResult = deltaExecHandler.result();
                             log.debug("Query result: {}, queryResult : {}",
                                     context.getRequest().getQueryRequest(), queryDeltaResult);
-                            handler.handle(Future.succeededFuture(queryDeltaResult));
+                            handler.handleSuccess(queryDeltaResult);
                         } else {
-                            handler.handle(Future.failedFuture(deltaExecHandler.cause()));
+                            handler.handleError(deltaExecHandler.cause());
                         }
                     });
         }
     }
 
     private Future<DeltaQuery> extractDeltaQuery(DeltaRequestContext context) {
-        return Future.future(promise -> deltaQueryParamExtractor.extract(context.getRequest().getQueryRequest(), promise));
+        return Future.future(promise ->
+                deltaQueryParamExtractor.extract(context.getRequest().getQueryRequest(),
+                        (AsyncHandler<DeltaQuery>) promise));
     }
 
     private Future<QueryResult> sendMetricsAndExecute(DeltaRequestContext context, DeltaQuery deltaQuery) {
@@ -90,18 +93,26 @@ public class DeltaServiceImpl implements DeltaService<QueryResult> {
                     .isActive(true)
                     .build());
             return Future.future(promise -> executors.get(deltaQuery.getDeltaAction())
-                    .execute(rollbackDeltaQuery, promise));
+                    .execute(rollbackDeltaQuery, (AsyncHandler<QueryResult>) promise));
         }
     }
 
     private Future<QueryResult> execute(DeltaRequestContext context, DeltaQuery deltaQuery) {
         return Future.future((Promise<QueryResult> promise) -> {
+            final Handler<AsyncResult<QueryResult>> handler = metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
+                    SqlProcessingType.DELTA,
+                    context.getMetrics(),
+                    ar -> {
+                        if (ar.succeeded()) {
+                            promise.complete(ar.result());
+                        } else {
+                            promise.fail(ar.cause());
+                        }
+                    });
+            final AsyncHandler<QueryResult> asyncHandler = (AsyncHandler<QueryResult>) handler;
             executors.get(deltaQuery.getDeltaAction())
                     .execute(deltaQuery,
-                            metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
-                                    SqlProcessingType.DELTA,
-                                    context.getMetrics(),
-                                    promise));
+                            asyncHandler);
         });
     }
 }

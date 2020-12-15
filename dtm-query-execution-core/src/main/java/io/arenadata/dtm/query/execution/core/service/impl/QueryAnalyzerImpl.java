@@ -1,12 +1,11 @@
 package io.arenadata.dtm.query.execution.core.service.impl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.reader.InputQueryRequest;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.QuerySourceRequest;
 import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckCall;
-import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckDatabase;
-import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckTable;
 import io.arenadata.dtm.query.calcite.core.extension.config.function.SqlConfigStorageAdd;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlUseSchema;
 import io.arenadata.dtm.query.calcite.core.extension.delta.SqlBeginDelta;
@@ -15,7 +14,7 @@ import io.arenadata.dtm.query.calcite.core.extension.delta.SqlRollbackDelta;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.DropDatabase;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.SqlCreateDatabase;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
-import io.arenadata.dtm.query.execution.core.exception.DtmException;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.factory.QueryRequestFactory;
 import io.arenadata.dtm.query.execution.core.factory.RequestContextFactory;
 import io.arenadata.dtm.query.execution.core.service.QueryAnalyzer;
@@ -78,7 +77,7 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
     }
 
     @Override
-    public void analyzeAndExecute(InputQueryRequest execQueryRequest, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
+    public void analyzeAndExecute(InputQueryRequest execQueryRequest, AsyncHandler<QueryResult> handler) {
         getParsedQuery(execQueryRequest, parseResult -> {
             if (parseResult.succeeded()) {
                 try {
@@ -94,18 +93,18 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
                         }
                     }
                     queryDispatcher.dispatch(requestContextFactory.create(queryRequest, sqlNode),
-                            asyncResultHandler);
+                            handler);
                 } catch (Exception ex) {
-                    asyncResultHandler.handle(Future.failedFuture(ex));
+                    handler.handleError(ex);
                 }
             } else {
-                asyncResultHandler.handle(Future.failedFuture(parseResult.cause()));
+                handler.handleError(parseResult.cause());
             }
         });
     }
 
     private void getParsedQuery(InputQueryRequest inputQueryRequest,
-                                Handler<AsyncResult<ParsedQueryResponse>> asyncResultHandler) {
+                                AsyncHandler<ParsedQueryResponse> handler) {
         vertx.executeBlocking(it -> {
             try {
                 val queryRequest = queryRequestFactory.create(inputQueryRequest);
@@ -119,9 +118,9 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
             }
         }, ar -> {
             if (ar.succeeded()) {
-                asyncResultHandler.handle(Future.succeededFuture((ParsedQueryResponse) ar.result()));
+                handler.handleSuccess((ParsedQueryResponse) ar.result());
             } else {
-                asyncResultHandler.handle(Future.failedFuture(ar.cause()));
+                handler.handleError(ar.cause());
             }
         });
     }

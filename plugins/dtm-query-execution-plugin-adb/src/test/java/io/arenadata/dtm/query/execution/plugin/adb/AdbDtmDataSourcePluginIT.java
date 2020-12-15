@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adb;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
@@ -56,37 +57,37 @@ class AdbDtmDataSourcePluginIT {
         }
 
         @Override
-        public void ddl(DdlRequestContext ddlRequest, Handler<AsyncResult<Void>> handler) {
+        public void ddl(DdlRequestContext ddlRequest, AsyncHandler<Void> handler) {
             ddlService.execute(ddlRequest, handler);
         }
 
         @Override
-        public void llr(LlrRequestContext llrRequest, Handler<AsyncResult<QueryResult>> handler) {
+        public void llr(LlrRequestContext llrRequest, AsyncHandler<QueryResult> handler) {
 
         }
 
         @Override
-        public void mppr(MpprRequestContext mpprRequest, Handler<AsyncResult<QueryResult>> handler) {
+        public void mppr(MpprRequestContext mpprRequest, AsyncHandler<QueryResult> handler) {
 
         }
 
         @Override
-        public void mppw(MppwRequestContext mppwRequest, Handler<AsyncResult<QueryResult>> handler) {
+        public void mppw(MppwRequestContext mppwRequest, AsyncHandler<QueryResult> handler) {
 
         }
 
         @Override
-        public void calcQueryCost(QueryCostRequestContext queryCostRequest, Handler<AsyncResult<Integer>> handler) {
+        public void calcQueryCost(QueryCostRequestContext queryCostRequest, AsyncHandler<Integer> handler) {
 
         }
 
         @Override
-        public void status(StatusRequestContext context, Handler<AsyncResult<StatusQueryResult>> asyncResultHandler) {
+        public void status(StatusRequestContext context, AsyncHandler<StatusQueryResult> asyncResultHandler) {
 
         }
 
         @Override
-        public void rollback(RollbackRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler) {
+        public void rollback(RollbackRequestContext context, AsyncHandler<Void> asyncResultHandler) {
 
         }
 

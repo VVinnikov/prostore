@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
@@ -42,7 +43,7 @@ public interface DataSourcePluginService {
      */
     void ddl(SourceType sourceType,
              DdlRequestContext context,
-             Handler<AsyncResult<Void>> asyncResultHandler);
+             AsyncHandler<Void> asyncResultHandler);
 
     /**
      * <p>execute Low Latency Reading request</p>
@@ -53,7 +54,7 @@ public interface DataSourcePluginService {
      */
     void llr(SourceType sourceType,
              LlrRequestContext context,
-             Handler<AsyncResult<QueryResult>> asyncResultHandler);
+             AsyncHandler<QueryResult> asyncResultHandler);
 
     /**
      * <p>execute Massively Parallel Processing Reading</p>
@@ -64,7 +65,7 @@ public interface DataSourcePluginService {
      */
     void mppr(SourceType sourceType,
               MpprRequestContext context,
-              Handler<AsyncResult<QueryResult>> asyncResultHandler);
+              AsyncHandler<QueryResult> asyncResultHandler);
 
     /**
      * <p>execute Massively Parallel Processing Writing</p>
@@ -73,8 +74,9 @@ public interface DataSourcePluginService {
      * @param mppwRequestContext MPPW context
      * @param resultHandler      async handler
      */
-    void mppw(SourceType sourceType, MppwRequestContext mppwRequestContext,
-              Handler<AsyncResult<QueryResult>> resultHandler);
+    void mppw(SourceType sourceType,
+              MppwRequestContext mppwRequestContext,
+              AsyncHandler<QueryResult> resultHandler);
 
     /**
      * <p>Calculate executing query cost</p>
@@ -85,7 +87,7 @@ public interface DataSourcePluginService {
      */
     void calcQueryCost(SourceType sourceType,
                        QueryCostRequestContext context,
-                       Handler<AsyncResult<Integer>> asyncResultHandler);
+                       AsyncHandler<Integer> asyncResultHandler);
 
     /**
      * <p>Get plugin status information</p>
@@ -94,14 +96,18 @@ public interface DataSourcePluginService {
      * @param statusRequestContext Status request context
      * @param asyncResultHandler   async handler
      */
-    void status(SourceType sourceType, StatusRequestContext statusRequestContext, Handler<AsyncResult<StatusQueryResult>> asyncResultHandler);
+    void status(SourceType sourceType,
+                StatusRequestContext statusRequestContext,
+                AsyncHandler<StatusQueryResult> asyncResultHandler);
 
     /**
      * @param sourceType         Data source type
      * @param context            Rollback request context
      * @param asyncResultHandler async handler
      */
-    void rollback(SourceType sourceType, RollbackRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler);
+    void rollback(SourceType sourceType,
+                  RollbackRequestContext context,
+                  AsyncHandler<Void> asyncResultHandler);
 
     /**
      * Get plugin by source type

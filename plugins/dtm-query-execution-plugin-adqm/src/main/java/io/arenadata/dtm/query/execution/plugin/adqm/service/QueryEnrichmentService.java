@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.EnrichQueryRequest;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -9,5 +10,5 @@ import io.vertx.core.Handler;
  */
 public interface QueryEnrichmentService {
 
-    void enrich(EnrichQueryRequest request, Handler<AsyncResult<String>> handler);
+    void enrich(EnrichQueryRequest request, AsyncHandler<String> handler);
 }

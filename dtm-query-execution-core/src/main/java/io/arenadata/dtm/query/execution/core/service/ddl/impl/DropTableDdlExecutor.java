@@ -1,11 +1,12 @@
 package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
-import io.arenadata.dtm.query.execution.core.exception.DtmException;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
@@ -54,7 +55,7 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<QueryResult>> handler) {
+    public void execute(DdlRequestContext context, String sqlNodeName, AsyncHandler<QueryResult> handler) {
         try {
             String schema = getSchemaName(context.getRequest().getQueryRequest(), sqlNodeName);
             String tableName = getTableName(sqlNodeName);
@@ -64,10 +65,10 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
             context.setDatamartName(schema);
             context.setDdlType(DdlType.DROP_TABLE);
             dropTable(context, containsIfExistsCheck(context.getRequest().getQueryRequest().getSql()))
-                    .onSuccess(r -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
-                    .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
+                    .onSuccess(r -> handler.handleSuccess(QueryResult.emptyResult()))
+                    .onFailure(handler::handleError);
         } catch (Exception e) {
-            handler.handle(Future.failedFuture(new DtmException("Error create drop table request", e)));
+            handler.handleError("Error create drop table request", e);
         }
     }
 

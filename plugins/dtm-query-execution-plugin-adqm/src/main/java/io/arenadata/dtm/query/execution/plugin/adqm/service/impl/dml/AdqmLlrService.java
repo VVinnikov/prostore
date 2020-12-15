@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.dml;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.EnrichQueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
@@ -28,26 +29,26 @@ public class AdqmLlrService implements LlrService<QueryResult> {
     }
 
     @Override
-    public void execute(LlrRequestContext context, Handler<AsyncResult<QueryResult>> asyncHandler) {
+    public void execute(LlrRequestContext context, AsyncHandler<QueryResult> handler) {
         LlrRequest request = context.getRequest();
         EnrichQueryRequest enrichQueryRequest = EnrichQueryRequest.generate(request.getQueryRequest(), request.getSchema());
         adqmQueryEnrichmentService.enrich(enrichQueryRequest, sqlResult -> {
             if (sqlResult.succeeded()) {
                 adqmDatabaseExecutor.execute(sqlResult.result(), request.getMetadata(), executeResult -> {
                     if (executeResult.succeeded()) {
-                        asyncHandler.handle(Future.succeededFuture(
-                            QueryResult.builder()
-                                .requestId(request.getQueryRequest().getRequestId())
-                                .metadata(request.getMetadata())
-                                .result(executeResult.result())
-                                .build()
-                        ));
+                        handler.handleSuccess(
+                                QueryResult.builder()
+                                        .requestId(request.getQueryRequest().getRequestId())
+                                        .metadata(request.getMetadata())
+                                        .result(executeResult.result())
+                                        .build()
+                        );
                     } else {
-                        asyncHandler.handle(Future.failedFuture(executeResult.cause()));
+                        handler.handleError(executeResult.cause());
                     }
                 });
             } else {
-                asyncHandler.handle(Future.failedFuture(sqlResult.cause()));
+                handler.handleError(sqlResult.cause());
             }
         });
     }

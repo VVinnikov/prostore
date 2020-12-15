@@ -8,7 +8,7 @@ import io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaB
 import io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaHot;
 import io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaOk;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.*;
-import io.arenadata.dtm.query.execution.core.exception.DtmException;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.factory.DeltaQueryFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlDialect;

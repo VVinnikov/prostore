@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppr;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.EnrichQueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
@@ -10,9 +11,7 @@ import io.arenadata.dtm.query.execution.plugin.api.exception.MpprDatasourceExcep
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.MpprRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.MpprKafkaService;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.stereotype.Service;
@@ -34,7 +33,7 @@ public class AdbMpprKafkaService implements MpprKafkaService<QueryResult> {
     }
 
     @Override
-    public void execute(MpprRequestContext context, Handler<AsyncResult<QueryResult>> asyncHandler) {
+    public void execute(MpprRequestContext context, AsyncHandler<QueryResult> handler) {
         val request = context.getRequest();
         val schema = request.getQueryRequest().getDatamartMnemonic();
         val table = MetadataSqlFactoryImpl.WRITABLE_EXTERNAL_TABLE_PREF +
@@ -43,18 +42,17 @@ public class AdbMpprKafkaService implements MpprKafkaService<QueryResult> {
                 .compose(v -> getEnrichedQuery(request))
                 .compose(sql -> executeInsert(schema, table, sql))
                 .compose(v -> dropWritableExtTable(schema, table))
-                .onSuccess(success -> asyncHandler.handle(Future.succeededFuture(QueryResult.emptyResult())))
+                .onSuccess(success -> handler.handleSuccess(QueryResult.emptyResult()))
                 .onFailure(err -> {
                     dropWritableExtTable(schema, table)
                             .onComplete(dropResult -> {
                                 if (dropResult.failed()) {
                                     log.error("Failed to drop writable external table {}.{}", schema, table);
                                 }
-                                asyncHandler.handle(Future.failedFuture(
-                                        new MpprDatasourceException(
-                                                String.format("Failed to unload data from datasource by request %s",
-                                                        context.getRequest()),
-                                                err)));
+                                handler.handleError(new MpprDatasourceException(
+                                        String.format("Failed to unload data from datasource by request %s",
+                                                context.getRequest()),
+                                        err));
                             });
                 });
     }

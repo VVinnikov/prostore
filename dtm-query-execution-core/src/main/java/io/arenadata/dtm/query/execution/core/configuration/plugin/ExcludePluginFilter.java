@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.filter;
+package io.arenadata.dtm.query.execution.core.configuration.plugin;
 
 import io.arenadata.dtm.common.reader.SourceType;
 import lombok.val;

@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.ddl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
@@ -29,13 +30,12 @@ public class DropTableExecutor implements DdlExecutor<Void> {
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<Void>> handler) {
+    public void execute(DdlRequestContext context, String sqlNodeName, AsyncHandler<Void> handler) {
         try {
             String dropSql = sqlFactory.createDropTableScript(context.getRequest().getEntity());
             adbQueryExecutor.executeUpdate(dropSql, handler);
         } catch (Exception e) {
-            handler.handle(Future.failedFuture(
-                    new DdlDatasourceException("Error generating drop table query", e)));
+            handler.handleError(new DdlDatasourceException("Error generating drop table query", e));
         }
     }
 

@@ -1,4 +1,4 @@
-package io.arenadata.dtm.common.service;
+package io.arenadata.dtm.common.dto;
 
 import java.util.Set;
 

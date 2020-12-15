@@ -37,6 +37,7 @@ public class LogicalSchemaProviderImpl implements LogicalSchemaProvider {
                 if (ar.succeeded()) {
                     Map<DatamartSchemaKey, Entity> datamartTableMap = ar.result();
                     log.trace("Received data schema on request: {}; {}", request, datamartTableMap);
+
                     resultHandler.handle(Future.succeededFuture(getDatamartsSchemas(request.getDatamartMnemonic(), datamartTableMap)));
                 } else {
                     resultHandler.handle(Future.failedFuture(ar.cause()));

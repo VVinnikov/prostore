@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl.ddl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.OperationYaml;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.ResOperation;
@@ -37,13 +38,12 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<Void>> handler) {
+    public void execute(DdlRequestContext context, String sqlNodeName, AsyncHandler<Void> handler) {
         try {
             SqlNode query = context.getQuery();
             if (!(query instanceof SqlCreateTable)) {
-                handler.handle(Future.failedFuture(
-                        new DdlDatasourceException(String.format("Expecting SqlCreateTable in context, receiving: %s",
-                                context.getQuery()))));
+                handler.handleError(new DdlDatasourceException(String.format("Expecting SqlCreateTable in context, receiving: %s",
+                        context.getQuery())));
                 return;
             }
             DdlRequestContext dropCtx = createDropRequestContext(context);
@@ -55,12 +55,11 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
                                     client.executeCreateSpacesQueued(operationYaml, promise)))
                             .onComplete(handler);
                 } else {
-                    handler.handle(Future.failedFuture(ar.cause()));
+                    handler.handleError(ar.cause());
                 }
             });
         } catch (Exception e) {
-            handler.handle(Future.failedFuture(
-                    new DdlDatasourceException("Error generating create table request", e)));
+            handler.handleError(new DdlDatasourceException("Error generating create table request", e));
         }
     }
 

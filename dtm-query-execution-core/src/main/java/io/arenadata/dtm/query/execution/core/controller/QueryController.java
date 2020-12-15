@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.core.controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.InputQueryRequest;
 import io.arenadata.dtm.query.execution.core.service.QueryAnalyzer;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -49,6 +50,7 @@ public class QueryController {
                             .end(json);
                 } catch (JsonProcessingException e) {
                     log.error("Error in serializing query result", e);
+                    context.fail(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), new DtmException(e));
                 }
             } else {
                 log.error("Error while executing request [{}]", inputQueryRequest, queryResult.cause());

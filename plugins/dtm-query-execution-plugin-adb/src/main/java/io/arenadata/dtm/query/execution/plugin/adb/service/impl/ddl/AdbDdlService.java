@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.ddl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.query.execution.plugin.adb.AdbDtmDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DdlDatasourceException;
@@ -23,7 +24,7 @@ public class AdbDdlService implements DdlService<Void> {
 
     @Override
     @CacheEvict(value = AdbDtmDataSourcePlugin.ADB_DATAMART_CACHE, key = "#context.getDatamartName()")
-    public void execute(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {
+    public void execute(DdlRequestContext context, AsyncHandler<Void> handler) {
         SqlNode query = context.getQuery();
         if (query == null) {
             handler.handle(Future.failedFuture(new DdlDatasourceException("Ddl query is null!")));

@@ -14,6 +14,7 @@ import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.zookeeper.KeeperException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -29,6 +30,7 @@ import java.util.stream.Collectors;
 @Component
 public class GetDeltaByDateTimeExecutorImpl extends DeltaServiceDaoExecutorHelper implements GetDeltaByDateTimeExecutor {
 
+    @Autowired
     public GetDeltaByDateTimeExecutorImpl(ZookeeperExecutor executor,
                                           @Value("${core.env.name}") String envName) {
         super(executor, envName);
@@ -60,7 +62,6 @@ public class GetDeltaByDateTimeExecutorImpl extends DeltaServiceDaoExecutorHelpe
                 val errMsg = String.format("can't get delta ok on datamart[%s], dateTime[%s]",
                     datamart,
                     dateTime);
-                log.error(errMsg, error.getMessage());
                 if (error instanceof KeeperException.NoNodeException) {
                     resultPromise.fail(new DatamartNotExistsException(datamart));
                 } else if (error instanceof DeltaException) {

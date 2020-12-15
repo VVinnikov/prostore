@@ -36,9 +36,8 @@ public class GetDeltaHotExecutorImpl extends DeltaServiceDaoExecutorHelper imple
                 resultPromise.complete(r);
             })
             .onFailure(error -> {
-                val errMsg = String.format("can't get delta hot on datamart[%s]",
+                val errMsg = String.format("Can't get delta hot on datamart[%s]",
                     datamart);
-                log.error(errMsg, error);
                 if (error instanceof KeeperException.NoNodeException) {
                     resultPromise.fail(new DeltaNotFoundException(error));
                 } else if (error instanceof DeltaException) {

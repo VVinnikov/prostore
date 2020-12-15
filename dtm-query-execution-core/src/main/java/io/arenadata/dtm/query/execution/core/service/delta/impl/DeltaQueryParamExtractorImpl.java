@@ -1,14 +1,13 @@
 package io.arenadata.dtm.query.execution.core.service.delta.impl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaQuery;
-import io.arenadata.dtm.query.execution.core.exception.DtmException;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.factory.DeltaQueryFactory;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaQueryParamExtractor;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlNode;
@@ -34,7 +33,7 @@ public class DeltaQueryParamExtractorImpl implements DeltaQueryParamExtractor {
     }
 
     @Override
-    public void extract(QueryRequest request, Handler<AsyncResult<DeltaQuery>> handler) {
+    public void extract(QueryRequest request, AsyncHandler<DeltaQuery> handler) {
         coreVertx.executeBlocking(it -> {
             try {
                 SqlNode node = definitionService.processingQuery(request.getSql());
@@ -48,13 +47,12 @@ public class DeltaQueryParamExtractorImpl implements DeltaQueryParamExtractor {
                 try {
                     final DeltaQuery deltaQuery = deltaQueryFactory.create(sqlNode);
                     log.debug("Delta query created successfully: {}", deltaQuery);
-                    handler.handle(Future.succeededFuture(deltaQuery));
+                    handler.handleSuccess(deltaQuery);
                 } catch (Exception e) {
-                    handler.handle(Future.failedFuture(
-                            new DtmException("Error creating delta query from sql node", e)));
+                    handler.handleError("Error creating delta query from sql node", e);
                 }
             } else {
-                handler.handle(Future.failedFuture(ar.cause()));
+                handler.handleError(ar.cause());
             }
         });
     }

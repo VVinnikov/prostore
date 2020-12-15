@@ -2,7 +2,7 @@ package io.arenadata.dtm.query.execution.core.service.metrics.impl;
 
 import io.arenadata.dtm.query.execution.core.configuration.metrics.MetricsSettings;
 import io.arenadata.dtm.query.execution.core.dto.metrics.MetricsSettingsUpdateResult;
-import io.arenadata.dtm.query.execution.core.exception.DtmException;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsManagementService;
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsProvider;
 import lombok.extern.slf4j.Slf4j;

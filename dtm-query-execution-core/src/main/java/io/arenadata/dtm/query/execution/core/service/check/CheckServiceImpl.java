@@ -1,9 +1,10 @@
 package io.arenadata.dtm.query.execution.core.service.check;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.extension.check.CheckType;
-import io.arenadata.dtm.query.execution.core.exception.DtmException;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckExecutor;
@@ -29,7 +30,7 @@ public class CheckServiceImpl implements CheckService {
     }
 
     @Override
-    public void execute(CheckContext context, Handler<AsyncResult<QueryResult>> handler) {
+    public void execute(CheckContext context, AsyncHandler<QueryResult> handler) {
         String datamart = context.getRequest().getQueryRequest().getDatamartMnemonic();
         if (StringUtils.isEmpty(datamart)) {
             handler.handle(Future.failedFuture(
@@ -60,4 +61,5 @@ public class CheckServiceImpl implements CheckService {
             .result(Collections.singletonList(resultMap))
             .build();
     }
+
 }

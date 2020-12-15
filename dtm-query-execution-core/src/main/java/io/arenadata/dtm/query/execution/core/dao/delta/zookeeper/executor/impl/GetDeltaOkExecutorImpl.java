@@ -13,6 +13,7 @@ import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.zookeeper.KeeperException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class GetDeltaOkExecutorImpl extends DeltaServiceDaoExecutorHelper implements GetDeltaOkExecutor {
 
+    @Autowired
     public GetDeltaOkExecutorImpl(ZookeeperExecutor executor,
                                      @Value("${core.env.name}") String envName) {
         super(executor, envName);
@@ -36,9 +38,8 @@ public class GetDeltaOkExecutorImpl extends DeltaServiceDaoExecutorHelper implem
                 resultPromise.complete(r);
             })
             .onFailure(error -> {
-                val errMsg = String.format("can't get delta ok on datamart[%s]",
+                val errMsg = String.format("Can't get delta ok on datamart[%s]",
                     datamart);
-                log.error(errMsg, error);
                 if (error instanceof KeeperException.NoNodeException) {
                     resultPromise.fail(new DeltaNotFoundException(error));
                 } else if (error instanceof DeltaException) {

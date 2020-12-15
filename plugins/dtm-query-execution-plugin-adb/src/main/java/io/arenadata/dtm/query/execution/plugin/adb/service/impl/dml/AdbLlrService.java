@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.dml;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.EnrichQueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
@@ -30,7 +31,7 @@ public class AdbLlrService implements LlrService<QueryResult> {
 	}
 
 	@Override
-	public void execute(LlrRequestContext context, Handler<AsyncResult<QueryResult>> asyncHandler) {
+	public void execute(LlrRequestContext context, AsyncHandler<QueryResult> asyncHandler) {
 		LlrRequest request = context.getRequest();
 		EnrichQueryRequest enrichQueryRequest = EnrichQueryRequest.generate(request.getQueryRequest(), request.getSchema());
 		adbQueryEnrichmentService.enrich(enrichQueryRequest, sqlResult -> {

@@ -1,13 +1,11 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl.ddl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.query.execution.plugin.adg.AdgDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DdlDatasourceException;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
@@ -25,17 +23,16 @@ public class AdgDdlService implements DdlService<Void> {
 
     @Override
     @CacheEvict(value = AdgDataSourcePlugin.ADG_DATAMART_CACHE, key = "#context.getDatamartName()")
-    public void execute(DdlRequestContext context, Handler<AsyncResult<Void>> handler) {
+    public void execute(DdlRequestContext context, AsyncHandler<Void> handler) {
         SqlNode query = context.getQuery();
         if (query == null) {
-            handler.handle(Future.failedFuture(new DdlDatasourceException("Ddl query is null!")));
+            handler.handleError(new DdlDatasourceException("Ddl query is null!"));
             return;
         }
         if (ddlExecutors.containsKey(query.getKind())) {
             ddlExecutors.get(query.getKind()).execute(context, query.getKind().lowerName, handler);
         } else {
-            handler.handle(Future.failedFuture(
-                    new DdlDatasourceException(String.format("Unknown DDL: %s", query))));
+            handler.handleError(new DdlDatasourceException(String.format("Unknown DDL: %s", query)));
         }
     }
 

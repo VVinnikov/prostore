@@ -1,9 +1,10 @@
 package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
-import io.arenadata.dtm.query.execution.core.exception.DtmException;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
 import io.arenadata.dtm.query.execution.core.service.dml.ColumnMetadataService;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
@@ -40,18 +41,18 @@ public class AlterViewDdlExecutor extends CreateViewDdlExecutor {
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<QueryResult>> handler) {
+    public void execute(DdlRequestContext context, String sqlNodeName, AsyncHandler<QueryResult> handler) {
         checkViewQuery(context)
             .compose(v -> getCreateViewContext(context))
-            .onFailure(error -> handler.handle(Future.failedFuture(error)))
+            .onFailure(handler::handleError)
             .onSuccess(ctx -> {
                 val viewEntity = ctx.getViewEntity();
                 context.setDatamartName(viewEntity.getSchema());
                 entityDao.getEntity(viewEntity.getSchema(), viewEntity.getName())
                     .map(this::checkEntityType)
                     .compose(r -> entityDao.updateEntity(viewEntity))
-                    .onSuccess(success -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
-                    .onFailure(error -> handler.handle(Future.failedFuture(error)));
+                    .onSuccess(success -> handler.handleSuccess(QueryResult.emptyResult()))
+                    .onFailure(handler::handleError);
             });
     }
 

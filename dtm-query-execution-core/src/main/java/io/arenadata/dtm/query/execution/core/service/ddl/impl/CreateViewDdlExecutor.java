@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
@@ -10,7 +11,7 @@ import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.calcite.core.node.SqlTreeNode;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
-import io.arenadata.dtm.query.execution.core.exception.DtmException;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.exception.table.TableAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.exception.view.ViewAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.exception.view.ViewDisalowedOrDirectiveException;
@@ -73,10 +74,10 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<QueryResult>> handler) {
+    public void execute(DdlRequestContext context, String sqlNodeName, AsyncHandler<QueryResult> handler) {
         checkViewQuery(context)
                 .compose(v -> getCreateViewContext(context))
-                .onFailure(error -> handler.handle(Future.failedFuture(error)))
+                .onFailure(handler::handleError)
                 .onSuccess(ctx -> createOrReplaceEntity(ctx, handler));
     }
 
@@ -219,7 +220,7 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
         }
     }
 
-    private void createOrReplaceEntity(CreateViewContext ctx, Handler<AsyncResult<QueryResult>> handler) {
+    private void createOrReplaceEntity(CreateViewContext ctx, AsyncHandler<QueryResult> handler) {
         val viewEntity = ctx.getViewEntity();
         entityCacheService.remove(viewEntity.getSchema(), viewEntity.getName());
         entityDao.createEntity(viewEntity)
@@ -227,8 +228,8 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
                 .compose(r -> entityDao.getEntity(viewEntity.getSchema(), viewEntity.getName()))
                 .map(this::checkEntityType)
                 .compose(r -> entityDao.updateEntity(viewEntity))
-                .onSuccess(success -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
-                .onFailure(error -> handler.handle(Future.failedFuture(error)));
+                .onSuccess(success -> handler.handleSuccess(QueryResult.emptyResult()))
+                .onFailure(handler::handleError);
     }
 
     private Void checkCreateOrReplace(CreateViewContext ctx, Throwable error) {

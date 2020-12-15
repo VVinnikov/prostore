@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.api.service.ddl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.PostSqlActionType;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.vertx.core.AsyncResult;
@@ -11,7 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public interface DdlExecutor<T> {
-    void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<T>> handler);
+    void execute(DdlRequestContext context, String sqlNodeName, AsyncHandler<T> handler);
 
     SqlKind getSqlKind();
 

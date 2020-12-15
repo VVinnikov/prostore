@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.core.utils;
 
-import io.arenadata.dtm.query.execution.core.exception.DtmException;
+import io.arenadata.dtm.common.exception.DtmException;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
 import org.springframework.stereotype.Component;

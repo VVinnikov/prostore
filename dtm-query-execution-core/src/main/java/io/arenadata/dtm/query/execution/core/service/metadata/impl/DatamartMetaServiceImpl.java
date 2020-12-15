@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.metadata.impl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
@@ -7,9 +8,7 @@ import io.arenadata.dtm.query.execution.core.dto.metadata.DatamartEntity;
 import io.arenadata.dtm.query.execution.core.dto.metadata.DatamartInfo;
 import io.arenadata.dtm.query.execution.core.dto.metadata.EntityAttribute;
 import io.arenadata.dtm.query.execution.core.service.metadata.DatamartMetaService;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -29,27 +28,29 @@ public class DatamartMetaServiceImpl implements DatamartMetaService {
     }
 
     @Override
-    public void getDatamartMeta(Handler<AsyncResult<List<DatamartInfo>>> resultHandler) {
+    public void getDatamartMeta(AsyncHandler<List<DatamartInfo>> handler) {
         datamartDao.getDatamartMeta(ar -> {
             if (ar.succeeded()) {
-                resultHandler.handle(Future.succeededFuture(ar.result()));
+                handler.handleSuccess(ar.result());
             } else {
-                resultHandler.handle(Future.failedFuture(ar.cause()));
+                handler.handleError(ar.cause());
             }
         });
     }
 
     @Override
-    public void getEntitiesMeta(String datamartMnemonic, Handler<AsyncResult<List<DatamartEntity>>> resultHandler) {
-        entityDao.getEntitiesMeta(datamartMnemonic, resultHandler);
+    public void getEntitiesMeta(String datamartMnemonic, AsyncHandler<List<DatamartEntity>> handler) {
+        entityDao.getEntitiesMeta(datamartMnemonic, handler);
     }
 
     @Override
-    public void getAttributesMeta(String datamartMnemonic, String entityMnemonic, Handler<AsyncResult<List<EntityAttribute>>> resultHandler) {
+    public void getAttributesMeta(String datamartMnemonic,
+                                  String entityMnemonic,
+                                  AsyncHandler<List<EntityAttribute>> handler) {
         entityDao.getEntity(datamartMnemonic, entityMnemonic)
-                .onFailure(error -> resultHandler.handle(Future.failedFuture(error)))
+                .onFailure(error -> handler.handle(Future.failedFuture(error)))
                 .onSuccess(entity -> {
-                    resultHandler.handle(Future.succeededFuture(entity.getFields().stream()
+                    handler.handleSuccess(entity.getFields().stream()
                             .map(ef -> EntityAttribute.builder()
                                     .datamartMnemonic(datamartMnemonic)
                                     .entityMnemonic(entityMnemonic)
@@ -63,7 +64,7 @@ public class DatamartMetaServiceImpl implements DatamartMetaService {
                                     .nullable(ef.getNullable())
                                     .accuracy(ef.getAccuracy())
                                     .build())
-                            .collect(Collectors.toList())));
+                            .collect(Collectors.toList()));
                 });
     }
 }

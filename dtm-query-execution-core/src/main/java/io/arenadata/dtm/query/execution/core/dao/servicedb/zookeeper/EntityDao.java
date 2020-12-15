@@ -1,15 +1,14 @@
 package io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.query.execution.core.dto.metadata.DatamartEntity;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 
 import java.util.List;
 
 public interface EntityDao extends ZookeeperDao<Entity> {
-    void getEntitiesMeta(String datamartMnemonic, Handler<AsyncResult<List<DatamartEntity>>> resultHandler);
+    void getEntitiesMeta(String datamartMnemonic, AsyncHandler<List<DatamartEntity>> resultHandler);
 
     Future<Void> createEntity(Entity entity);
 

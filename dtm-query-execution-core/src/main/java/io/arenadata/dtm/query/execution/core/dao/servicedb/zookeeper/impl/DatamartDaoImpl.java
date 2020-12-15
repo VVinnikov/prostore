@@ -1,10 +1,11 @@
 package io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.async.AsyncUtils;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.dto.delta.Delta;
 import io.arenadata.dtm.query.execution.core.dto.metadata.DatamartInfo;
-import io.arenadata.dtm.query.execution.core.exception.DtmException;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
@@ -88,16 +89,15 @@ public class DatamartDaoImpl implements DatamartDao {
     }
 
     @Override
-    public void getDatamartMeta(Handler<AsyncResult<List<DatamartInfo>>> resultHandler) {
+    public void getDatamartMeta(AsyncHandler<List<DatamartInfo>> handler) {
         getDatamarts()
-                .onSuccess(names -> resultHandler.handle(
-                        Future.succeededFuture(
+                .onSuccess(names -> handler.handleSuccess(
                                 names.stream()
                                         .map(DatamartInfo::new)
                                         .collect(Collectors.toList()
                                         )
-                        )))
-                .onFailure(error -> resultHandler.handle(Future.failedFuture(error)));
+                        ))
+                .onFailure(handler::handleError);
     }
 
     @Override

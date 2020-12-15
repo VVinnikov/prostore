@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.enrichment;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
@@ -41,7 +42,7 @@ public class AdqmQueryEnrichmentServiceImpl implements QueryEnrichmentService {
     }
 
     @Override
-    public void enrich(EnrichQueryRequest request, Handler<AsyncResult<String>> asyncHandler) {
+    public void enrich(EnrichQueryRequest request, AsyncHandler<String> handler) {
         queryParserService.parse(new QueryParserRequest(request.getQueryRequest(), request.getSchema()), ar -> {
             if (ar.succeeded()) {
                 val parserResponse = ar.result();
@@ -56,13 +57,13 @@ public class AdqmQueryEnrichmentServiceImpl implements QueryEnrichmentService {
                     enrichedQueryResult -> {
                         if (enrichedQueryResult.succeeded()) {
                             log.debug("Request generated: {}", enrichedQueryResult.result());
-                            asyncHandler.handle(Future.succeededFuture(enrichedQueryResult.result()));
+                            handler.handle(Future.succeededFuture(enrichedQueryResult.result()));
                         } else {
-                            asyncHandler.handle(Future.failedFuture(enrichedQueryResult.cause()));
+                            handler.handle(Future.failedFuture(enrichedQueryResult.cause()));
                         }
                     });
             } else {
-                asyncHandler.handle(Future.failedFuture(ar.cause()));
+                handler.handle(Future.failedFuture(ar.cause()));
             }
         });
     }

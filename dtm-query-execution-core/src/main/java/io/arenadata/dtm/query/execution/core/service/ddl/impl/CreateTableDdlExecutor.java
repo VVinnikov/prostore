@@ -1,12 +1,13 @@
 package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
-import io.arenadata.dtm.query.execution.core.exception.DtmException;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
@@ -54,7 +55,7 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<QueryResult>> handler) {
+    public void execute(DdlRequestContext context, String sqlNodeName, AsyncHandler<QueryResult> handler) {
         try {
             val schema = getSchemaName(context.getRequest().getQueryRequest(), sqlNodeName);
             context.getRequest().getQueryRequest().setDatamartMnemonic(schema);
@@ -73,12 +74,11 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
                     .compose(isExistsDatamart -> isExistsDatamart ?
                             entityDao.existsEntity(schema, entity.getName()) : getNotExistsDatamartFuture(schema))
                     .onSuccess(isExistsEntity -> createTableIfNotExists(context, isExistsEntity)
-                            .onSuccess(success -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
-                            .onFailure(fail -> handler.handle(Future.failedFuture(fail))))
-                    .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
+                            .onSuccess(success -> handler.handleSuccess(QueryResult.emptyResult()))
+                            .onFailure(handler::handleError)
+                    .onFailure(handler::handleError));
         } catch (Exception e) {
-            log.error("Error creating table by query request: {}!", context.getRequest().getQueryRequest(), e);
-            handler.handle(Future.failedFuture(e));
+            handler.handleError("Error generating create table request", e);
         }
     }
 

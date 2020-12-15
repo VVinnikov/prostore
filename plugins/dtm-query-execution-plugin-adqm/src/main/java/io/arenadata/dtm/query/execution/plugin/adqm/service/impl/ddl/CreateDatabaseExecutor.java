@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.ddl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.SqlCreateDatabase;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
@@ -36,12 +37,12 @@ public class CreateDatabaseExecutor implements DdlExecutor<Void> {
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<Void>> handler) {
+    public void execute(DdlRequestContext context, String sqlNodeName, AsyncHandler<Void> handler) {
         SqlNode query = context.getQuery();
         if (!(query instanceof SqlCreateDatabase)) {
-            handler.handle(Future.failedFuture(
-                    new DdlDatasourceException(String.format("Expecting SqlCreateDatabase in context, receiving: %s",
-                            context))));
+            handler.handleError(new DdlDatasourceException(
+                    String.format("Expecting SqlCreateDatabase in context, receiving: %s",
+                    context)));
             return;
         }
 

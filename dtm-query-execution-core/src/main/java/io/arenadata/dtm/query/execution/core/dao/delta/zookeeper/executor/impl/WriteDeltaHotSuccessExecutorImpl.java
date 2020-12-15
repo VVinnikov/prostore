@@ -65,16 +65,15 @@ public class WriteDeltaHotSuccessExecutorImpl extends DeltaServiceDaoExecutorHel
                 .build())
             .compose(delta -> executor.multi(getWriteDeltaHotSuccessOps(datamart, delta, deltaStat.getVersion())).map(delta))
             .onSuccess(delta -> {
-                log.debug("write delta hot \"success\" by datamart[{}], deltaHotDate[{}] completed successfully",
+                log.debug("Write delta hot \"success\" by datamart[{}], deltaHotDate[{}] completed successfully",
                     datamart,
                     delta.getOk().getDeltaDate());
                 resultPromise.complete(delta.getOk().getDeltaDate());
             })
             .onFailure(error -> {
-                val errMsg = String.format("can't write delta hot \"success\" by datamart[%s], deltaDate[%s]",
+                val errMsg = String.format("Can't write delta hot \"success\" by datamart[%s], deltaDate[%s]",
                     datamart,
                     deltaHotDate);
-                log.error(errMsg, error);
                 if (error instanceof KeeperException) {
                     if (error instanceof KeeperException.NotEmptyException) {
                         resultPromise.fail(new DeltaNotFinishedException(error));

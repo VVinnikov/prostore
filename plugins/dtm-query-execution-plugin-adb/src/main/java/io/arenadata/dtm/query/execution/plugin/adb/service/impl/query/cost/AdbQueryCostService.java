@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.cost;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.EnrichQueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.service.QueryEnrichmentService;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
@@ -21,21 +22,22 @@ public class AdbQueryCostService implements QueryCostService<Integer> {
     private final QueryEnrichmentService enrichmentService;
 
     @Override
-    public void calc(QueryCostRequestContext context, Handler<AsyncResult<Integer>> handler) {
+    public void calc(QueryCostRequestContext context, AsyncHandler<Integer> handler) {
         val request = (QueryCostRequest) context.getRequest();
-        val enrichQueryRequest = EnrichQueryRequest.generate(request.getQueryRequest(), request.getSchema());
+        val enrichQueryRequest = EnrichQueryRequest.generate(request.getQueryRequest(),
+                request.getSchema());
         enrichmentService.enrich(enrichQueryRequest, ar -> {
             if (ar.succeeded()) {
                 log.debug("QueryCostRequest enrich completed: [{}]", ar.result());
-                handler.handle(Future.succeededFuture(0));
+                handler.handleSuccess(0);
             } else {
-                handler.handle(Future.failedFuture(ar.cause()));
+                handler.handleError(ar.cause());
             }
         });
     }
 
     @Override
-    public void execute(QueryCostRequestContext context, Handler<AsyncResult<Integer>> handler) {
+    public void execute(QueryCostRequestContext context, AsyncHandler<Integer> handler) {
         handler.handle(Future.failedFuture(new DataSourceException("Unsupported operation")));
     }
 }

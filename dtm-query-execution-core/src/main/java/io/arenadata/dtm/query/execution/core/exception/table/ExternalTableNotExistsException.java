@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.core.exception.table;
 
-import io.arenadata.dtm.query.execution.core.exception.DtmException;
+import io.arenadata.dtm.common.exception.DtmException;
 
 public class ExternalTableNotExistsException extends DtmException {
 

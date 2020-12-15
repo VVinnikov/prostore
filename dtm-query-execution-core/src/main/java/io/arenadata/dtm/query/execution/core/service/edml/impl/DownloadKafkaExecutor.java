@@ -1,10 +1,11 @@
 package io.arenadata.dtm.query.execution.core.service.edml.impl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.core.configuration.properties.EdmlProperties;
-import io.arenadata.dtm.query.execution.core.exception.DtmException;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.factory.MpprKafkaRequestFactory;
 import io.arenadata.dtm.query.execution.core.service.CheckColumnTypesService;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
@@ -46,8 +47,8 @@ public class DownloadKafkaExecutor implements EdmlDownloadExecutor {
     }
 
     @Override
-    public void execute(EdmlRequestContext context, Handler<AsyncResult<QueryResult>> resultHandler) {
-        execute(context).onComplete(resultHandler);
+    public void execute(EdmlRequestContext context, AsyncHandler<QueryResult> handler) {
+        execute(context).onComplete(handler);
     }
 
     private Future<QueryResult> execute(EdmlRequestContext context) {
@@ -90,7 +91,7 @@ public class DownloadKafkaExecutor implements EdmlDownloadExecutor {
 
     private Future<QueryResult> executeMppr(MpprRequestContext mpprRequestContext) {
         return Future.future(promise -> pluginService.mppr(edmlProperties.getSourceType(),
-                mpprRequestContext, promise));
+                mpprRequestContext, (AsyncHandler<QueryResult>) promise));
     }
 
     @Override

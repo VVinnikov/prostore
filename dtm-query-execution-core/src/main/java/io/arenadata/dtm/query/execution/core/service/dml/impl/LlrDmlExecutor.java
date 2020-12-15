@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.dml.impl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.SqlProcessingType;
@@ -135,7 +136,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                         .onComplete(metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
                                 SqlProcessingType.LLR,
                                 context.getMetrics(),
-                                promise));
+                                (AsyncHandler<QueryResult>) promise));
             } else {
                 defineTargetSourceType(sourceRequest)
                         .compose(querySourceRequest -> pluginExecute(querySourceRequest, context.getMetrics()))
@@ -164,7 +165,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                                     request.getLogicalSchema(),
                                     request.getMetadata())
                     ),
-                    p);
+                    (AsyncHandler<QueryResult>) p);
         });
     }
 

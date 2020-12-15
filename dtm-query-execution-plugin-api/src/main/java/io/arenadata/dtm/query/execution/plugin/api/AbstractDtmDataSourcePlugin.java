@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.api;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
@@ -58,38 +59,38 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
     }
 
     @Override
-    public void ddl(DdlRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler) {
+    public void ddl(DdlRequestContext context, AsyncHandler<Void> asyncResultHandler) {
         ddlService.execute(context, asyncResultHandler);
     }
 
     @Override
-    public void llr(LlrRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
+    public void llr(LlrRequestContext context, AsyncHandler<QueryResult> asyncResultHandler) {
         llrService.execute(context, asyncResultHandler);
     }
 
     @Override
-    public void mppr(MpprRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
+    public void mppr(MpprRequestContext context, AsyncHandler<QueryResult> asyncResultHandler) {
         mpprKafkaService.execute(context, asyncResultHandler);
     }
 
     @Override
-    public void mppw(MppwRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
+    public void mppw(MppwRequestContext context, AsyncHandler<QueryResult> asyncResultHandler) {
         mppwKafkaService.execute(context, asyncResultHandler);
     }
 
     @Override
     public void calcQueryCost(QueryCostRequestContext context,
-                              Handler<AsyncResult<Integer>> asyncResultHandler) {
+                              AsyncHandler<Integer> asyncResultHandler) {
         queryCostService.calc(context, asyncResultHandler);
     }
 
     @Override
-    public void status(StatusRequestContext context, Handler<AsyncResult<StatusQueryResult>> asyncResultHandler) {
+    public void status(StatusRequestContext context, AsyncHandler<StatusQueryResult> asyncResultHandler) {
         statusService.execute(context, asyncResultHandler);
     }
 
     @Override
-    public void rollback(RollbackRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler) {
+    public void rollback(RollbackRequestContext context, AsyncHandler<Void> asyncResultHandler) {
         rollbackService.execute(context, asyncResultHandler);
     }
 

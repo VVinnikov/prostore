@@ -10,7 +10,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Класс для работы с запросами в информационную схему
+ * Service for preparing query to information_schema
  */
 public class MetaDataQueryPreparer {
 
@@ -20,10 +20,10 @@ public class MetaDataQueryPreparer {
     );
 
     /**
-     * Найти в запросе информационные представления
+     * Find information_schema views in sql query
      *
-     * @param sql запрос
-     * @return список позиций представлений в запросе
+     * @param sql query
+     * @return List of information_schema positions
      */
     public static List<InformationSchemaViewPosition> findInformationSchemaViews(String sql) {
         List<InformationSchemaViewPosition> viewPositions = new ArrayList<>();
@@ -42,10 +42,10 @@ public class MetaDataQueryPreparer {
     }
 
     /**
-     * Модифицировать запрос
+     * Modify query
      *
-     * @param sql запрос
-     * @return модифицированный запрос
+     * @param sql query
+     * @return modified query
      */
     public static String modify(String sql) {
         List<InformationSchemaViewPosition> viewPositions = findInformationSchemaViews(sql);

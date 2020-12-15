@@ -52,7 +52,7 @@ public class MetricsManagementServiceImpl implements MetricsManagementService {
                 return new MetricsSettingsUpdateResult(false, turnedOffMsg);
             }
         } catch (Exception e) {
-            throw new RuntimeException("Error in turning off metrics", e);
+            throw new DtmException("Error in turning off metrics", e);
         }
     }
 }

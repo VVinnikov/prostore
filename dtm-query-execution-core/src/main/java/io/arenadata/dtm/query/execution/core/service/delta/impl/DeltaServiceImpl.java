@@ -74,6 +74,8 @@ public class DeltaServiceImpl implements DeltaService<QueryResult> {
     }
 
     private Future<QueryResult> sendMetricsAndExecute(DeltaRequestContext context, DeltaQuery deltaQuery) {
+        deltaQuery.setDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic());
+        deltaQuery.setRequest(context.getRequest().getQueryRequest());
         if (deltaQuery.getDeltaAction() != DeltaAction.ROLLBACK_DELTA) {
             return executeWithMetrics(context, deltaQuery);
         } else {
@@ -85,20 +87,20 @@ public class DeltaServiceImpl implements DeltaService<QueryResult> {
                     .isActive(true)
                     .build());
             return getExecutor(deltaQuery)
-                    .compose(deltaExecutor -> execute(context, rollbackDeltaQuery));
+                    .compose(deltaExecutor -> execute(rollbackDeltaQuery));
         }
     }
 
     private Future<QueryResult> executeWithMetrics(DeltaRequestContext context, DeltaQuery deltaQuery) {
         return Future.future((Promise<QueryResult> promise) ->
                 metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA, SqlProcessingType.DELTA, context.getMetrics())
-                        .compose(result -> execute(context, deltaQuery))
+                        .compose(result -> execute(deltaQuery))
                         .onComplete(metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
                                 SqlProcessingType.DELTA,
                                 context.getMetrics(), promise)));
     }
 
-    private Future<QueryResult> execute(DeltaRequestContext context, DeltaQuery deltaQuery) {
+    private Future<QueryResult> execute(DeltaQuery deltaQuery) {
         return getExecutor(deltaQuery)
                 .compose(deltaExecutor -> deltaExecutor.execute(deltaQuery));
     }

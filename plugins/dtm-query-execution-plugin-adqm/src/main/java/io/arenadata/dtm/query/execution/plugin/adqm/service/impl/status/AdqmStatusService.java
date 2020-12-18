@@ -40,11 +40,12 @@ public class AdqmStatusService implements StatusService<StatusQueryResult>, Stat
                 String consumerGroup = topicsInUse.get(request.getTopic());
 
                 kafkaConsumerMonitor.getAggregateGroupConsumerInfo(consumerGroup, request.getTopic())
-                        .onSuccess(p -> {
+                        .map(kafkaInfo -> {
                             StatusQueryResult result = new StatusQueryResult();
-                            result.setPartitionInfo(p);
-                            promise.complete(result);
+                            result.setPartitionInfo(kafkaInfo);
+                            return result;
                         })
+                        .onSuccess(promise::complete)
                         .onFailure(promise::fail);
             }
         });

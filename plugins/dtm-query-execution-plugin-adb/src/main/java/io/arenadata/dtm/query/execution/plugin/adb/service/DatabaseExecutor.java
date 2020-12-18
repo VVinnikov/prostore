@@ -15,9 +15,11 @@ public interface DatabaseExecutor {
 
     Future<List<Map<String, Object>>> execute(String sql, List<ColumnMetadata> metadata);
 
-    Future<Void> executeUpdate(String sql);
+    Future<List<Map<String, Object>>> executeWithCursor(String sql, List<ColumnMetadata> metadata);
 
-    Future<?> executeWithParams(String sql, List<Object> params, List<ColumnMetadata> metadata);
+    Future<List<Map<String, Object>>> executeWithParams(String sql, List<Object> params, List<ColumnMetadata> metadata);
+
+    Future<Void> executeUpdate(String sql);
 
     Future<Void> executeInTransaction(List<PreparedStatementRequest> requests);
 

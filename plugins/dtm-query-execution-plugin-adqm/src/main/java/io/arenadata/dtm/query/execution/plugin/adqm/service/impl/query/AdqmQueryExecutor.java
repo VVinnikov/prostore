@@ -33,11 +33,11 @@ public class AdqmQueryExecutor implements DatabaseExecutor {
     @Override
     public Future<List<Map<String, Object>>> execute(String sql, List<ColumnMetadata> metadata) {
         log.debug(String.format("ADQM. Execute %s", sql));
+        //TODO perhaps it's better to use RowStream interface for getting rows one by one and create chunks here
         return getSqlConnection()
                 .compose(conn -> executeQuery(conn, sql))
                 .map(resultSet -> {
                     try {
-                        log.debug("ADQM query result");
                         return createResult(metadata, resultSet);
                     } catch (Exception e) {
                         throw new DataSourceException("Error converting value to jdbc type", e);
@@ -49,17 +49,17 @@ public class AdqmQueryExecutor implements DatabaseExecutor {
     public Future<Void> executeUpdate(String sql) {
         log.debug(String.format("ADQM. Execute update %s", sql));
         return getSqlConnection()
-                .compose(conn -> executeUpdate(sql));
+                .compose(conn -> executeQueryUpdate(conn, sql));
     }
 
     @Override
     public Future<?> executeWithParams(String sql, List<Object> params, List<ColumnMetadata> metadata) {
         log.debug(String.format("ADQM. Execute with params %s", sql));
+        //TODO perhaps it's better to use RowStream interface for getting rows one by one and create chunks here
         return getSqlConnection()
                 .compose(conn -> executeQueryWithParams(conn, sql, new JsonArray(params)))
                 .map(resultSet -> {
                     try {
-                        log.debug("ADQM query with params result");
                         return createResult(metadata, resultSet);
                     } catch (Exception e) {
                         throw new DataSourceException("Error converting value to jdbc type", e);

@@ -224,7 +224,6 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                     if (startComplete.succeeded()) {
                         processStopFutures(mppwStopFutureMap, startComplete.result(), resultHandler);
                     } else {
-                        log.error(MPPW_LOAD_ERROR_MESSAGE, startComplete.cause());
                         resultHandler.handle(Future.failedFuture(startComplete.cause()));
                     }
                 });

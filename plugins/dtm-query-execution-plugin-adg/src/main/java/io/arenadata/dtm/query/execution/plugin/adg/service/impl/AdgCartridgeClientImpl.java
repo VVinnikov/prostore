@@ -269,22 +269,7 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
                     .addQueryParam(ACTUAL_DATA_TABLE_NAME, tableNames.getActual())
                     .addQueryParam(HISTORICAL_DATA_TABLE_NAME, tableNames.getHistory())
                     .addQueryParam(DELTA_NUMBER, String.valueOf(request.getDeltaNumber()))
-                    .send(ar -> {
-                        if (ar.succeeded()) {
-                            val response = ar.result();
-                            log.trace("handle [transfer data to scd table] response [{}]", response);
-                            val statusCode = response.statusCode();
-                            if (statusCode == 200) {
-                                promise.complete();
-                            } else if (statusCode == 500) {
-                                promise.fail(unexpectedResponse(response));
-                            } else {
-                                promise.fail(new DataSourceException(response.statusMessage()));
-                            }
-                        } else {
-                            promise.fail(ar.cause());
-                        }
-                    });
+                    .send(promise);
         });
     }
 

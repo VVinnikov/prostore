@@ -25,7 +25,7 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
     @Override
     public Future<QueryResult> execute(DmlRequestContext context) {
         return getExecutor(context)
-                .compose(executor -> execute(context));
+                .compose(executor -> executor.execute(context));
     }
 
     private Future<DmlExecutor<QueryResult>> getExecutor(DmlRequestContext context) {

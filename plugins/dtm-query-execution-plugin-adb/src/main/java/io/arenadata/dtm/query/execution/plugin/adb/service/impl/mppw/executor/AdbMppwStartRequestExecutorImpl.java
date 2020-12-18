@@ -88,7 +88,9 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
             val brokersList = brokers.stream()
                     .map(KafkaBrokerInfo::getAddress)
                     .collect(Collectors.joining(","));
-            adbQueryExecutor.execute(metadataSqlFactory.checkServerSqlQuery(currentDatabase, brokersList), columnMetadata)
+            final String serverSqlQuery = metadataSqlFactory.checkServerSqlQuery(currentDatabase, brokersList);
+            log.debug("Created check server for mppw query {}", serverSqlQuery);
+            adbQueryExecutor.execute(serverSqlQuery, columnMetadata)
                     .compose(result -> {
                         if (result.isEmpty()) {
                             return createServer(brokersList, currentDatabase);

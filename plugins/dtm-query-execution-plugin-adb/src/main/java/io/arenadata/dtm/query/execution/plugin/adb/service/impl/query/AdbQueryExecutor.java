@@ -1,22 +1,24 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.query;
 
 import io.arenadata.dtm.common.converter.SqlTypeConverter;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.plugin.sql.PreparedStatementRequest;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.exception.LlrDatasourceException;
 import io.reactiverse.pgclient.*;
 import io.reactiverse.pgclient.impl.ArrayTuple;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 @Slf4j
@@ -34,7 +36,11 @@ public class AdbQueryExecutor implements DatabaseExecutor {
 
     @Override
     public Future<List<Map<String, Object>>> execute(String sql, List<ColumnMetadata> metadata) {
-        //TODO check
+        return executeWithParams(sql, Collections.emptyList(), metadata);
+    }
+
+    @Override
+    public Future<List<Map<String, Object>>> executeWithCursor(String sql, List<ColumnMetadata> metadata) {
         return Future.future(promise -> {
             final AdbConnectionCtx connectionCtx = new AdbConnectionCtx();
             getConnection()
@@ -42,15 +48,38 @@ public class AdbQueryExecutor implements DatabaseExecutor {
                         connectionCtx.setConnection(conn);
                         return conn;
                     })
-                    .compose(conn -> prepareQuery(conn, sql))
-                    .compose(pgPreparedQuery -> {
-                        do {
-                            readCursor(pgPreparedQuery.cursor(), fetchSize)
-                                    .map(rowSet -> createResult(metadata, rowSet))
-                                    .onComplete(promise);
-                            return promise.future();
-                        } while (pgPreparedQuery.cursor().hasMore());
+                    .compose(conn -> {
+                        log.debug("ADB.Execute cursor query: {}", sql);
+                        return prepareQuery(conn, sql);
                     })
+                    .compose(pgPreparedQuery -> readDataWithCursor(pgPreparedQuery, metadata, fetchSize))
+                    .onSuccess(result -> {
+                        tryCloseConnect(connectionCtx.getConnection());
+                        promise.complete(result);
+                    })
+                    .onFailure(fail -> {
+                        if (connectionCtx.getConnection() != null) {
+                            tryCloseConnect(connectionCtx.getConnection());
+                        }
+                        promise.fail(fail);
+                    });
+        });
+    }
+
+    @Override
+    public Future<List<Map<String, Object>>> executeWithParams(String sql, List<Object> params, List<ColumnMetadata> metadata) {
+        return Future.future(promise -> {
+            final AdbConnectionCtx connectionCtx = new AdbConnectionCtx();
+            getConnection()
+                    .map(conn -> {
+                        connectionCtx.setConnection(conn);
+                        return conn;
+                    })
+                    .compose(conn -> {
+                        log.debug("ADB.Execute query: {} with params: {}", sql, params);
+                        return executePreparedQuery(conn, sql, new ArrayTuple(params));
+                    })
+                    .map(rowSet -> createResult(metadata, rowSet))
                     .onSuccess(promise::complete)
                     .onFailure(fail -> {
                         if (connectionCtx.getConnection() != null) {
@@ -84,24 +113,51 @@ public class AdbQueryExecutor implements DatabaseExecutor {
         });
     }
 
-    @Override
-    public Future<?> executeWithParams(String sql, List<Object> params, List<ColumnMetadata> metadata) {
+    private Future<List<Map<String, Object>>> readDataWithCursor(PgPreparedQuery preparedQuery,
+                                                                 List<ColumnMetadata> metadata,
+                                                                 Integer fetchSize) {
         return Future.future(promise -> {
-            final AdbConnectionCtx connectionCtx = new AdbConnectionCtx();
-            getConnection()
-                    .map(conn -> {
-                        connectionCtx.setConnection(conn);
-                        return conn;
-                    })
-                    .compose(conn -> executePreparedQuery(conn, sql, new ArrayTuple(params)))
-                    .map(rowSet -> createResult(metadata, rowSet))
-                    .onSuccess(promise::complete)
-                    .onFailure(fail -> {
-                        if (connectionCtx.getConnection() != null) {
-                            tryCloseConnect(connectionCtx.getConnection());
+            List<Map<String, Object>> result = new ArrayList<>();
+            final PgCursor pgCursor = preparedQuery.cursor();
+            readCursor(pgCursor, fetchSize, metadata, ar -> {
+                        if (ar.succeeded()) {
+                            result.addAll(ar.result());
+                        } else {
+                            promise.fail(ar.cause());
                         }
-                        promise.fail(fail);
+                    },
+                    rr -> {
+                        if (rr.succeeded()) {
+                            promise.complete(result);
+                        } else {
+                            promise.fail(new DtmException("Error executing fetching data with cursor", rr.cause()));
+                        }
                     });
+        });
+    }
+
+    private void readCursor(PgCursor cursor,
+                            int chunkSize,
+                            List<ColumnMetadata> metadata,
+                            Handler<AsyncResult<List<Map<String, Object>>>> itemHandler,
+                            Handler<AsyncResult<List<Map<String, Object>>>> handler) {
+        cursor.read(chunkSize, res -> {
+            if (res.succeeded()) {
+                val dataSet = createResult(metadata, res.result());
+                itemHandler.handle(Future.succeededFuture(dataSet));
+                if (cursor.hasMore()) {
+                    readCursor(cursor,
+                            chunkSize,
+                            metadata,
+                            itemHandler,
+                            handler);
+                } else {
+                    cursor.close();
+                    handler.handle(Future.succeededFuture(dataSet));
+                }
+            } else {
+                handler.handle(Future.failedFuture(res.cause()));
+            }
         });
     }
 
@@ -140,10 +196,6 @@ public class AdbQueryExecutor implements DatabaseExecutor {
 
     private Future<PgPreparedQuery> prepareQuery(PgConnection conn, String sql) {
         return Future.future(promise -> conn.prepare(sql, promise));
-    }
-
-    private Future<PgRowSet> readCursor(PgCursor cursor, Integer fetchSize) {
-        return Future.future(promise -> cursor.read(fetchSize, promise));
     }
 
     private Future<PgRowSet> executeQueryUpdate(PgConnection conn, String sql) {

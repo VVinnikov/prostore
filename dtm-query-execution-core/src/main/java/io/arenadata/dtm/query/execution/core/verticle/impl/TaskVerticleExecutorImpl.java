@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.core.verticle.impl;
 
-import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.eventbus.DataTopic;
 import io.arenadata.dtm.query.execution.core.configuration.properties.VertxPoolProperties;
 import io.arenadata.dtm.query.execution.core.verticle.TaskVerticle;
@@ -35,7 +34,7 @@ public class TaskVerticleExecutorImpl extends AbstractVerticle implements TaskVe
     }
 
     @Override
-    public <T> void execute(Handler<Promise<T>> codeHandler, AsyncHandler<T> resultHandler) {
+    public <T> void execute(Handler<Promise<T>> codeHandler, Handler<AsyncResult<T>> resultHandler) {
         String taskId = UUID.randomUUID().toString();
         taskMap.put(taskId, (Handler) codeHandler);
         vertx.eventBus().request(
@@ -47,7 +46,7 @@ public class TaskVerticleExecutorImpl extends AbstractVerticle implements TaskVe
                     resultHandler.handle((AsyncResult<T>) resultMap.remove(ar.result().body().toString()));
                 } else {
                     taskMap.remove(taskId);
-                    resultHandler.handleError(ar.cause());
+                    resultHandler.handle(Future.failedFuture(ar.cause()));
                 }
             });
     }

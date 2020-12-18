@@ -103,15 +103,9 @@ class EdmlServiceImplTest {
             final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
             handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
             return null;
-        }).when(edmlExecutors.get(0)).execute(any(), any());
+        }).when(edmlExecutors.get(0)).execute(any());
 
-        edmlService.execute(context, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        edmlService.execute(context);
 
         assertTrue(promise.future().succeeded());
         assertEquals(context.getSourceEntity(), sourceEntity);
@@ -154,15 +148,9 @@ class EdmlServiceImplTest {
             final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
             handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
             return null;
-        }).when(edmlExecutors.get(1)).execute(any(), any());
+        }).when(edmlExecutors.get(1)).execute(any());
 
-        edmlService.execute(context, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        edmlService.execute(context);
         assertTrue(promise.future().succeeded());
         assertEquals(context.getSourceEntity(), sourceEntity);
         assertEquals(context.getDestinationEntity(), destinationEntity);
@@ -205,13 +193,7 @@ class EdmlServiceImplTest {
 
         Mockito.when(entityDao.getEntity(eq("test"), eq("pso"))).thenReturn(Future.succeededFuture(sourceEntity));
 
-        edmlService.execute(context, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        edmlService.execute(context);
         assertNotNull(promise.future().cause());
     }
 
@@ -252,13 +234,7 @@ class EdmlServiceImplTest {
 
         Mockito.when(entityDao.getEntity(eq("test"), eq("pso"))).thenReturn(Future.succeededFuture(sourceEntity));
 
-        edmlService.execute(context, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        edmlService.execute(context);
         assertNotNull(promise.future().cause());
     }
 }

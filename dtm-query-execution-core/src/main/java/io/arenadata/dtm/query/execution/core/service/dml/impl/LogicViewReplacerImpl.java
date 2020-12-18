@@ -11,12 +11,14 @@ import io.arenadata.dtm.query.execution.core.service.dml.SqlSnapshotReplacer;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -35,11 +37,11 @@ public class LogicViewReplacerImpl implements LogicViewReplacer {
     private final SqlSnapshotReplacer snapshotReplacer;
     private final DatamartViewWrapLoader viewLoader;
 
+    @Autowired
     public LogicViewReplacerImpl(
             @Qualifier("coreCalciteDefinitionService") DefinitionService<SqlNode> definitionService,
             SqlSnapshotReplacer snapshotReplacer,
-            DatamartViewWrapLoader viewLoader
-    ) {
+            DatamartViewWrapLoader viewLoader) {
         this.definitionService = definitionService;
         this.snapshotReplacer = snapshotReplacer;
         this.viewLoader = viewLoader;
@@ -47,13 +49,13 @@ public class LogicViewReplacerImpl implements LogicViewReplacer {
 
     @SneakyThrows
     @Override
-    public void replace(String sql,
-                        String datamart,
-                        Handler<AsyncResult<String>> resultHandler) {
-        log.debug("before replacing:\n{}", sql);
-        val ctx = getReplaceContext(sql, datamart, resultHandler);
-        preparing(ctx);
-        replace(ctx);
+    public Future<String> replace(String sql, String datamart) {
+        return Future.future((Promise<String> promise) -> {
+            log.debug("before replacing:\n{}", sql);
+            val ctx = getReplaceContext(sql, datamart, promise);
+            preparing(ctx);
+            replace(ctx);
+        });
     }
 
     @NotNull

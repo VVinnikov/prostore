@@ -38,59 +38,57 @@ import static org.mockito.Mockito.when;
 class LogicViewReplacerImplTest {
 
     public static final String EXPECTED_WITHOUT_JOIN = "SELECT v.col1 AS c, v.col2 AS r\n" +
-        "FROM (SELECT col4, col5\n" +
-        "FROM tblx FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14'\n" +
-        "WHERE tblx.col6 = 0) AS v";
+            "FROM (SELECT col4, col5\n" +
+            "FROM tblx FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14'\n" +
+            "WHERE tblx.col6 = 0) AS v";
 
     public static final String EXPECTED_WITH_JOIN = "SELECT v.col1 AS c, v.col2 AS r\n" +
-        "FROM tbl FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' AS t\n" +
-        "INNER JOIN (SELECT col4, col5\n" +
-        "FROM tblx FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59'\n" +
-        "WHERE tblx.col6 = 0) AS v ON t.col3 = v.col4";
+            "FROM tbl FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' AS t\n" +
+            "INNER JOIN (SELECT col4, col5\n" +
+            "FROM tblx FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59'\n" +
+            "WHERE tblx.col6 = 0) AS v ON t.col3 = v.col4";
 
     public static final String EXPECTED_WITH_JOIN_WITHOUT_ALIAS = "SELECT view.col1 AS c, view.col2 AS r\n" +
-        "FROM (SELECT col4, col5\n" +
-        "FROM tblx\n" +
-        "WHERE tblx.col6 = 0) AS view";
+            "FROM (SELECT col4, col5\n" +
+            "FROM tblx\n" +
+            "WHERE tblx.col6 = 0) AS view";
 
     public static final String EXPECTED_WITH_JOIN_AND_WHERE = "SELECT v.col1 AS c, v.col2 AS r\n" +
-        "FROM tbl FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' AS t\n" +
-        "INNER JOIN (SELECT col4, col5\n" +
-        "FROM tblx FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59'\n" +
-        "WHERE tblx.col6 = 0) AS v ON t.col3 = v.col4\n" +
-        "WHERE EXISTS (SELECT id\n" +
-        "FROM (SELECT col4, col5\n" +
-        "FROM tblx\n" +
-        "WHERE tblx.col6 = 0) AS view)";
+            "FROM tbl FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' AS t\n" +
+            "INNER JOIN (SELECT col4, col5\n" +
+            "FROM tblx FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59'\n" +
+            "WHERE tblx.col6 = 0) AS v ON t.col3 = v.col4\n" +
+            "WHERE EXISTS (SELECT id\n" +
+            "FROM (SELECT col4, col5\n" +
+            "FROM tblx\n" +
+            "WHERE tblx.col6 = 0) AS view)";
 
     public static final String EXPECTED_WITH_SELECT = "SELECT t.col1 AS c, (SELECT id\n" +
-        "FROM (SELECT col4, col5\n" +
-        "FROM tblx\n" +
-        "WHERE tblx.col6 = 0) AS view\n" +
-        "LIMIT 1) AS r\n" +
-        "FROM tblt AS t";
+            "FROM (SELECT col4, col5\n" +
+            "FROM tblx\n" +
+            "WHERE tblx.col6 = 0) AS view\n" +
+            "LIMIT 1) AS r\n" +
+            "FROM tblt AS t";
 
     public static final String EXPECTED_WITH_DATAMART = "SELECT v.col1 AS c, v.col2 AS r\n" +
-        "FROM (SELECT col4, col5\n" +
-        "FROM tblx\n" +
-        "WHERE tblx.col6 = 0) AS v";
+            "FROM (SELECT col4, col5\n" +
+            "FROM tblx\n" +
+            "WHERE tblx.col6 = 0) AS v";
 
     public static final String EXPECTED_WITH_VIEW_IN_VIEW = "SELECT v.col1 AS c, v.col2 AS r\n" +
-        "FROM (SELECT col4, col5\n" +
-        "FROM (SELECT col4, col5\n" +
-        "FROM tblc FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14'\n" +
-        "WHERE tblc.col9 = 0) AS tblz\n" +
-        "WHERE tblz.col6 = 0) AS v";
+            "FROM (SELECT col4, col5\n" +
+            "FROM (SELECT col4, col5\n" +
+            "FROM tblc FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14'\n" +
+            "WHERE tblc.col9 = 0) AS tblz\n" +
+            "WHERE tblz.col6 = 0) AS v";
 
     private final CalciteConfiguration config = new CalciteConfiguration();
     private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
     private final ServiceDbDao serviceDbDao = mock(ServiceDbDaoImpl.class);
     private final EntityDao entityDao = mock(EntityDaoImpl.class);
-    private CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
+    private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private final DefinitionService<SqlNode> definitionService =
-        new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
-
-    private final InformationSchemaService informationSchemaService = mock(InformationSchemaServiceImpl.class);
+            new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
 
     @BeforeEach
     void setUp() {
@@ -103,26 +101,27 @@ class LogicViewReplacerImplTest {
         val testContext = new VertxTestContext();
         val serviceDao = mock(ServiceDbFacade.class);
         Mockito.when(entityDao.getEntity(any(), any()))
-            .thenReturn(Future.succeededFuture(Entity.builder()
-                .entityType(EntityType.VIEW)
-                .name("view")
-                .viewQuery("SELECT Col4, Col5 \n" +
-                    "FROM tblX \n" +
-                    "WHERE tblX.Col6 = 0")
-                .build()));
+                .thenReturn(Future.succeededFuture(Entity.builder()
+                        .entityType(EntityType.VIEW)
+                        .name("view")
+                        .viewQuery("SELECT Col4, Col5 \n" +
+                                "FROM tblX \n" +
+                                "WHERE tblX.Col6 = 0")
+                        .build()));
 
-        val loader = new DatamartViewWrapLoaderImpl(serviceDao, informationSchemaService);
+        val loader = new DatamartViewWrapLoaderImpl(serviceDao);
         val replacer = new LogicViewReplacerImpl(definitionService, new SqlSnapshotReplacerImpl(), loader);
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
-            "FROM view FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' v";
-        replacer.replace(sql, "datamart", sqlResult -> {
-            if (sqlResult.succeeded()) {
-                assertEquals(EXPECTED_WITHOUT_JOIN, sqlResult.result());
-                testContext.completeNow();
-            } else {
-                testContext.failNow(sqlResult.cause());
-            }
-        });
+                "FROM view FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' v";
+        replacer.replace(sql, "datamart")
+                .onComplete(sqlResult -> {
+                    if (sqlResult.succeeded()) {
+                        assertEquals(EXPECTED_WITHOUT_JOIN, sqlResult.result());
+                        testContext.completeNow();
+                    } else {
+                        testContext.failNow(sqlResult.cause());
+                    }
+                });
         assertThat(testContext.awaitCompletion(5, TimeUnit.SECONDS)).isTrue();
     }
 
@@ -131,26 +130,27 @@ class LogicViewReplacerImplTest {
         val testContext = new VertxTestContext();
 
         Mockito.when(entityDao.getEntity(any(), any()))
-            .thenReturn(Future.succeededFuture(Entity.builder()
-                .entityType(EntityType.VIEW)
-                .name("view")
-                .viewQuery("SELECT Col4, Col5 \n" +
-                    "FROM tblX \n" +
-                    "WHERE tblX.Col6 = 0")
-                .build()));
+                .thenReturn(Future.succeededFuture(Entity.builder()
+                        .entityType(EntityType.VIEW)
+                        .name("view")
+                        .viewQuery("SELECT Col4, Col5 \n" +
+                                "FROM tblX \n" +
+                                "WHERE tblX.Col6 = 0")
+                        .build()));
 
-        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade, informationSchemaService);
+        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade);
         val replacer = new LogicViewReplacerImpl(definitionService, new SqlSnapshotReplacerImpl(), loader);
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
-            "FROM test.view v";
-        replacer.replace(sql, "datamart", sqlResult -> {
-            if (sqlResult.succeeded()) {
-                assertEquals(EXPECTED_WITH_DATAMART, sqlResult.result());
-                testContext.completeNow();
-            } else {
-                testContext.failNow(sqlResult.cause());
-            }
-        });
+                "FROM test.view v";
+        replacer.replace(sql, "datamart")
+                .onComplete(sqlResult -> {
+                    if (sqlResult.succeeded()) {
+                        assertEquals(EXPECTED_WITH_DATAMART, sqlResult.result());
+                        testContext.completeNow();
+                    } else {
+                        testContext.failNow(sqlResult.cause());
+                    }
+                });
         assertThat(testContext.awaitCompletion(5, TimeUnit.SECONDS)).isTrue();
     }
 
@@ -159,26 +159,27 @@ class LogicViewReplacerImplTest {
         val testContext = new VertxTestContext();
 
         Mockito.when(entityDao.getEntity(any(), any()))
-            .thenReturn(Future.succeededFuture(Entity.builder()
-                .entityType(EntityType.VIEW)
-                .name("view")
-                .viewQuery("SELECT Col4, Col5 \n" +
-                    "FROM tblX \n" +
-                    "WHERE tblX.Col6 = 0")
-                .build()));
+                .thenReturn(Future.succeededFuture(Entity.builder()
+                        .entityType(EntityType.VIEW)
+                        .name("view")
+                        .viewQuery("SELECT Col4, Col5 \n" +
+                                "FROM tblX \n" +
+                                "WHERE tblX.Col6 = 0")
+                        .build()));
 
-        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade, informationSchemaService);
+        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade);
         val replacer = new LogicViewReplacerImpl(definitionService, new SqlSnapshotReplacerImpl(), loader);
         val sql = "SELECT view.Col1 as c, view.Col2 r\n" +
-            "FROM view";
-        replacer.replace(sql, "datamart", sqlResult -> {
-            if (sqlResult.succeeded()) {
-                assertEquals(EXPECTED_WITH_JOIN_WITHOUT_ALIAS, sqlResult.result());
-                testContext.completeNow();
-            } else {
-                testContext.failNow(sqlResult.cause());
-            }
-        });
+                "FROM view";
+        replacer.replace(sql, "datamart")
+                .onComplete(sqlResult -> {
+                    if (sqlResult.succeeded()) {
+                        assertEquals(EXPECTED_WITH_JOIN_WITHOUT_ALIAS, sqlResult.result());
+                        testContext.completeNow();
+                    } else {
+                        testContext.failNow(sqlResult.cause());
+                    }
+                });
         assertThat(testContext.awaitCompletion(5, TimeUnit.SECONDS)).isTrue();
     }
 
@@ -187,28 +188,29 @@ class LogicViewReplacerImplTest {
         val testContext = new VertxTestContext();
 
         Mockito.when(entityDao.getEntity(any(), any()))
-            .thenReturn(Future.succeededFuture(Entity.builder()
-                .entityType(EntityType.VIEW)
-                .name("view")
-                .viewQuery("SELECT Col4, Col5 \n" +
-                    "FROM tblX \n" +
-                    "WHERE tblX.Col6 = 0")
-                .build()));
+                .thenReturn(Future.succeededFuture(Entity.builder()
+                        .entityType(EntityType.VIEW)
+                        .name("view")
+                        .viewQuery("SELECT Col4, Col5 \n" +
+                                "FROM tblX \n" +
+                                "WHERE tblX.Col6 = 0")
+                        .build()));
 
-        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade, informationSchemaService);
+        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade);
         val replacer = new LogicViewReplacerImpl(definitionService, new SqlSnapshotReplacerImpl(), loader);
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
-            "FROM tbl FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' t\n" +
-            "JOIN view FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59' v\n" +
-            "ON t.Col3 = v.Col4";
-        replacer.replace(sql, "datamart", sqlResult -> {
-            if (sqlResult.succeeded()) {
-                assertEquals(EXPECTED_WITH_JOIN, sqlResult.result());
-                testContext.completeNow();
-            } else {
-                testContext.failNow(sqlResult.cause());
-            }
-        });
+                "FROM tbl FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' t\n" +
+                "JOIN view FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59' v\n" +
+                "ON t.Col3 = v.Col4";
+        replacer.replace(sql, "datamart")
+                .onComplete(sqlResult -> {
+                    if (sqlResult.succeeded()) {
+                        assertEquals(EXPECTED_WITH_JOIN, sqlResult.result());
+                        testContext.completeNow();
+                    } else {
+                        testContext.failNow(sqlResult.cause());
+                    }
+                });
         assertThat(testContext.awaitCompletion(5, TimeUnit.SECONDS)).isTrue();
     }
 
@@ -217,29 +219,30 @@ class LogicViewReplacerImplTest {
         val testContext = new VertxTestContext();
 
         Mockito.when(entityDao.getEntity(any(), any()))
-            .thenReturn(Future.succeededFuture(Entity.builder()
-                .entityType(EntityType.VIEW)
-                .name("view")
-                .viewQuery("SELECT Col4, Col5 \n" +
-                    "FROM tblX \n" +
-                    "WHERE tblX.Col6 = 0")
-                .build()));
+                .thenReturn(Future.succeededFuture(Entity.builder()
+                        .entityType(EntityType.VIEW)
+                        .name("view")
+                        .viewQuery("SELECT Col4, Col5 \n" +
+                                "FROM tblX \n" +
+                                "WHERE tblX.Col6 = 0")
+                        .build()));
 
-        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade, informationSchemaService);
+        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade);
         val replacer = new LogicViewReplacerImpl(definitionService, new SqlSnapshotReplacerImpl(), loader);
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
-            "FROM tbl FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' t\n" +
-            "JOIN view FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59' v\n" +
-            "ON t.Col3 = v.Col4 \n" +
-            "WHERE exists (select id from view)";
-        replacer.replace(sql, "datamart", sqlResult -> {
-            if (sqlResult.succeeded()) {
-                assertEquals(EXPECTED_WITH_JOIN_AND_WHERE, sqlResult.result());
-                testContext.completeNow();
-            } else {
-                testContext.failNow(sqlResult.cause());
-            }
-        });
+                "FROM tbl FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' t\n" +
+                "JOIN view FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59' v\n" +
+                "ON t.Col3 = v.Col4 \n" +
+                "WHERE exists (select id from view)";
+        replacer.replace(sql, "datamart")
+                .onComplete(sqlResult -> {
+                    if (sqlResult.succeeded()) {
+                        assertEquals(EXPECTED_WITH_JOIN_AND_WHERE, sqlResult.result());
+                        testContext.completeNow();
+                    } else {
+                        testContext.failNow(sqlResult.cause());
+                    }
+                });
         assertThat(testContext.awaitCompletion(5, TimeUnit.SECONDS)).isTrue();
     }
 
@@ -247,25 +250,26 @@ class LogicViewReplacerImplTest {
     void withJoinAndSelect() throws InterruptedException {
         val testContext = new VertxTestContext();
         Mockito.when(entityDao.getEntity(any(), any()))
-            .thenReturn(Future.succeededFuture(Entity.builder()
-                .entityType(EntityType.VIEW)
-                .name("view")
-                .viewQuery("SELECT Col4, Col5 \n" +
-                    "FROM tblX \n" +
-                    "WHERE tblX.Col6 = 0")
-                .build()));
-        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade, informationSchemaService);
+                .thenReturn(Future.succeededFuture(Entity.builder()
+                        .entityType(EntityType.VIEW)
+                        .name("view")
+                        .viewQuery("SELECT Col4, Col5 \n" +
+                                "FROM tblX \n" +
+                                "WHERE tblX.Col6 = 0")
+                        .build()));
+        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade);
         val replacer = new LogicViewReplacerImpl(definitionService, new SqlSnapshotReplacerImpl(), loader);
         val sql = "SELECT t.Col1 as c, (select id from view limit 1) r\n" +
-            "FROM tblt t";
-        replacer.replace(sql, "datamart", sqlResult -> {
-            if (sqlResult.succeeded()) {
-                assertEquals(EXPECTED_WITH_SELECT, sqlResult.result());
-                testContext.completeNow();
-            } else {
-                testContext.failNow(sqlResult.cause());
-            }
-        });
+                "FROM tblt t";
+        replacer.replace(sql, "datamart")
+                .onComplete(sqlResult -> {
+                    if (sqlResult.succeeded()) {
+                        assertEquals(EXPECTED_WITH_SELECT, sqlResult.result());
+                        testContext.completeNow();
+                    } else {
+                        testContext.failNow(sqlResult.cause());
+                    }
+                });
         assertThat(testContext.awaitCompletion(5, TimeUnit.SECONDS)).isTrue();
     }
 
@@ -273,27 +277,27 @@ class LogicViewReplacerImplTest {
     void viewInView() throws InterruptedException {
         val testContext = new VertxTestContext();
         Mockito.when(entityDao.getEntity(any(), any()))
-            .thenReturn(
-                Future.succeededFuture(Entity.builder()
-                    .entityType(EntityType.VIEW)
-                    .name("view")
-                    .viewQuery("SELECT Col4, Col5 \n" +
-                        "FROM tblZ \n" +
-                        "WHERE tblZ.Col6 = 0")
-                    .build()),
-                Future.succeededFuture(Entity.builder()
-                    .entityType(EntityType.VIEW)
-                    .name("tblZ")
-                    .viewQuery("SELECT Col4, Col5 \n" +
-                        "FROM tblC \n" +
-                        "WHERE tblC.Col9 = 0")
-                    .build())
-            );
-        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade, informationSchemaService);
+                .thenReturn(
+                        Future.succeededFuture(Entity.builder()
+                                .entityType(EntityType.VIEW)
+                                .name("view")
+                                .viewQuery("SELECT Col4, Col5 \n" +
+                                        "FROM tblZ \n" +
+                                        "WHERE tblZ.Col6 = 0")
+                                .build()),
+                        Future.succeededFuture(Entity.builder()
+                                .entityType(EntityType.VIEW)
+                                .name("tblZ")
+                                .viewQuery("SELECT Col4, Col5 \n" +
+                                        "FROM tblC \n" +
+                                        "WHERE tblC.Col9 = 0")
+                                .build())
+                );
+        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade);
         val replacer = new LogicViewReplacerImpl(definitionService, new SqlSnapshotReplacerImpl(), loader);
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
-            "FROM view FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' v";
-        replacer.replace(sql, "datamart", sqlResult -> {
+                "FROM view FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' v";
+        replacer.replace(sql, "datamart").onComplete(sqlResult -> {
             if (sqlResult.succeeded()) {
                 assertEquals(EXPECTED_WITH_VIEW_IN_VIEW, sqlResult.result());
                 testContext.completeNow();

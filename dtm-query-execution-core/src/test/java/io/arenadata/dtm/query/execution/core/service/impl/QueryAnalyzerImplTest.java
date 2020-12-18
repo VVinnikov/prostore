@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.impl;
 
+import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.reader.InputQueryRequest;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
@@ -19,10 +20,7 @@ import io.arenadata.dtm.query.execution.core.utils.DefaultDatamartSetter;
 import io.arenadata.dtm.query.execution.core.utils.HintExtractor;
 import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
-import io.arenadata.dtm.common.model.SqlProcessingType;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.TestOptions;
 import io.vertx.ext.unit.report.ReportOptions;
@@ -164,10 +162,11 @@ class QueryAnalyzerImplTest {
         TestSuite suite = TestSuite.create("parse");
         suite.test("parse", context -> {
             Async async = context.async();
-            queryAnalyzer.analyzeAndExecute(queryRequest, res -> {
-                testData.setResult("complete");
-                async.complete();
-            });
+            queryAnalyzer.analyzeAndExecute(queryRequest)
+                    .onComplete(res -> {
+                        testData.setResult("complete");
+                        async.complete();
+                    });
             async.awaitSuccess();
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
@@ -179,10 +178,8 @@ class QueryAnalyzerImplTest {
             final RequestContext ddlRequest = invocation.getArgument(0);
             testData.setRequest(ddlRequest.getRequest().getQueryRequest());
             testData.setProcessingType(ddlRequest.getProcessingType());
-            Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
-            return null;
-        }).when(queryDispatcher).dispatch(any(), any());
+            return Future.succeededFuture(QueryResult.emptyResult());
+        }).when(queryDispatcher).dispatch(any());
         return testData;
     }
 

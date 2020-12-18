@@ -42,31 +42,49 @@ public class BeginDeltaExecutor implements DeltaExecutor, StatusEventPublisher {
     }
 
     @Override
-    public void execute(DeltaQuery deltaQuery, AsyncHandler<QueryResult> handler) {
-        val beginDeltaQuery = (BeginDeltaQuery) deltaQuery;
-        if (beginDeltaQuery.getDeltaNum() == null) {
-            deltaServiceDao.writeNewDeltaHot(beginDeltaQuery.getDatamart())
-                    .onSuccess(newDeltaHotNum -> {
-                        try {
-                            handler.handleSuccess(getDeltaQueryResult(newDeltaHotNum,
-                                    beginDeltaQuery));
-                        } catch (Exception e) {
-                            handler.handleError(ERR_GETTING_QUERY_RESULT_MSG, e);
-                        }
-                    })
-                    .onFailure(handler::handleError);
-        } else {
+    public Future<QueryResult> execute(DeltaQuery deltaQuery) {
+        return beginDelta(deltaQuery);
+    }
+
+    private Future<QueryResult> beginDelta(DeltaQuery deltaQuery) {
+        return Future.future(promise -> {
+            val beginDeltaQuery = (BeginDeltaQuery) deltaQuery;
+            if (beginDeltaQuery.getDeltaNum() == null) {
+                writeDeltaHot(beginDeltaQuery).onComplete(promise);
+            } else {
+                writeDeltaHotByNum(beginDeltaQuery).onComplete(promise);
+            }
+        });
+    }
+
+    private Future<QueryResult> writeDeltaHotByNum(BeginDeltaQuery beginDeltaQuery) {
+        return Future.future(promise -> {
             deltaServiceDao.writeNewDeltaHot(beginDeltaQuery.getDatamart(), beginDeltaQuery.getDeltaNum())
                     .onSuccess(newDeltaHotNum -> {
                         try {
-                            handler.handleSuccess(getDeltaQueryResult(newDeltaHotNum,
+                            promise.complete(getDeltaQueryResult(newDeltaHotNum,
                                     beginDeltaQuery));
                         } catch (Exception e) {
-                            handler.handleError(ERR_GETTING_QUERY_RESULT_MSG, e);
+                            promise.fail(new DtmException(ERR_GETTING_QUERY_RESULT_MSG, e));
                         }
                     })
-                    .onFailure(handler::handleError);
-        }
+                    .onFailure(promise::fail);
+        });
+    }
+
+    private Future<QueryResult> writeDeltaHot(BeginDeltaQuery beginDeltaQuery) {
+        return Future.future(promise -> {
+            deltaServiceDao.writeNewDeltaHot(beginDeltaQuery.getDatamart())
+                    .onSuccess(newDeltaHotNum -> {
+                        try {
+                            promise.complete(getDeltaQueryResult(newDeltaHotNum,
+                                    beginDeltaQuery));
+                        } catch (Exception e) {
+                            promise.fail(new DtmException(ERR_GETTING_QUERY_RESULT_MSG, e));
+                        }
+                    })
+                    .onFailure(promise::fail);
+        });
     }
 
     private QueryResult getDeltaQueryResult(Long deltaHotNum, BeginDeltaQuery deltaQuery) {

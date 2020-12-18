@@ -94,13 +94,7 @@ public class CreateDownloadExternalTableExecutorTest {
         Mockito.when(entityDao.createEntity(any()))
                 .thenReturn(Future.succeededFuture());
 
-        createDownloadExteranlTableExecutor.execute(query, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        createDownloadExteranlTableExecutor.execute(query);
         assertTrue(promise.future().succeeded());
     }
 
@@ -117,13 +111,7 @@ public class CreateDownloadExternalTableExecutorTest {
         Mockito.when(entityDao.createEntity(any()))
                 .thenReturn(Future.succeededFuture());
 
-        createDownloadExteranlTableExecutor.execute(query, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        createDownloadExteranlTableExecutor.execute(query);
         assertTrue(promise.future().succeeded());
         assertEquals(query.getEntity().getExternalTableDownloadChunkSize(), defaultChunkSize);
     }
@@ -135,13 +123,7 @@ public class CreateDownloadExternalTableExecutorTest {
         Mockito.when(datamartDao.existsDatamart(eq(schema)))
                 .thenReturn(Future.succeededFuture(false));
 
-        createDownloadExteranlTableExecutor.execute(query, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        createDownloadExteranlTableExecutor.execute(query);
 
         assertTrue(promise.future().failed());
         assertTrue(promise.future().cause() instanceof DatamartNotExistsException);
@@ -157,13 +139,7 @@ public class CreateDownloadExternalTableExecutorTest {
         Mockito.when(entityDao.existsEntity(eq(schema), eq(entity.getName())))
                 .thenReturn(Future.succeededFuture(true));
 
-        createDownloadExteranlTableExecutor.execute(query, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        createDownloadExteranlTableExecutor.execute(query);
 
         assertTrue(promise.future().failed());
         assertTrue(promise.future().cause() instanceof TableAlreadyExistsException);
@@ -176,13 +152,7 @@ public class CreateDownloadExternalTableExecutorTest {
         Mockito.when(datamartDao.existsDatamart(eq(schema)))
                 .thenReturn(Future.failedFuture(new DtmException("exists datamart error")));
 
-        createDownloadExteranlTableExecutor.execute(query, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        createDownloadExteranlTableExecutor.execute(query);
 
         assertTrue(promise.future().failed());
         assertEquals("exists datamart error", promise.future().cause().getMessage());
@@ -198,13 +168,7 @@ public class CreateDownloadExternalTableExecutorTest {
         Mockito.when(entityDao.existsEntity(eq(schema), eq(entity.getName())))
                 .thenReturn(Future.failedFuture(new DtmException("exists entity error")));
 
-        createDownloadExteranlTableExecutor.execute(query, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        createDownloadExteranlTableExecutor.execute(query);
 
         assertTrue(promise.future().failed());
         assertEquals("exists entity error", promise.future().cause().getMessage());
@@ -223,13 +187,7 @@ public class CreateDownloadExternalTableExecutorTest {
         Mockito.when(entityDao.createEntity(any()))
                 .thenReturn(Future.failedFuture(new DtmException("create entity error")));
 
-        createDownloadExteranlTableExecutor.execute(query, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        createDownloadExteranlTableExecutor.execute(query);
 
         assertTrue(promise.future().failed());
         assertEquals("create entity error", promise.future().cause().getMessage());

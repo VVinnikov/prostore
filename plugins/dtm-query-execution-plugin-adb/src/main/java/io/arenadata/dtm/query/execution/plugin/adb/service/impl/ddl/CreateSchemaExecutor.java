@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.ddl;
 
-import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.SqlCreateDatabase;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
@@ -8,9 +7,7 @@ import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DdlDatasourceException;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
@@ -33,32 +30,22 @@ public class CreateSchemaExecutor implements DdlExecutor<Void> {
     }
 
     @Override
-    public void execute(DdlRequestContext context,
-                        String sqlNodeName,
-                        AsyncHandler<Void> handler) {
-        try {
+    public Future<Void> execute(DdlRequestContext context, String sqlNodeName) {
+        return createQuerySql(context)
+                .compose(adbQueryExecutor::executeUpdate);
+    }
+
+    private Future<String> createQuerySql(DdlRequestContext context) {
+        return Future.future(promise -> {
             SqlNode query = context.getQuery();
             if (!(query instanceof SqlCreateDatabase)) {
-                handler.handleError(new DdlDatasourceException(
+                promise.fail(new DdlDatasourceException(
                         String.format("Expecting SqlCreateDatabase in context, receiving: %s",
                                 context.getQuery())));
                 return;
             }
             String schemaName = ((SqlCreateDatabase) query).getName().names.get(0);
-            createSchema(schemaName, handler);
-        } catch (Exception e) {
-            handler.handleError(new DdlDatasourceException("Error generating create schema query", e));
-        }
-    }
-
-    private void createSchema(String schemaName, AsyncHandler<Void> handler) {
-        String createSchemaSql = sqlFactory.createSchemaSqlQuery(schemaName);
-        adbQueryExecutor.executeUpdate(createSchemaSql, ar -> {
-            if (ar.succeeded()) {
-                handler.handleSuccess();
-            } else {
-                handler.handleError(ar.cause());
-            }
+            promise.complete(sqlFactory.createSchemaSqlQuery(schemaName));
         });
     }
 

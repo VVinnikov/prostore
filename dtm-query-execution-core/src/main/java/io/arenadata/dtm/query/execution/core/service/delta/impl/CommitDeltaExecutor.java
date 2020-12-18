@@ -44,31 +44,47 @@ public class CommitDeltaExecutor implements DeltaExecutor, StatusEventPublisher 
     }
 
     @Override
-    public void execute(DeltaQuery deltaQuery, AsyncHandler<QueryResult> handler) {
-        val commitDeltaQuery = (CommitDeltaQuery) deltaQuery;
-        if (commitDeltaQuery.getDeltaDate() == null) {
-            deltaServiceDao.writeDeltaHotSuccess(commitDeltaQuery.getDatamart())
-                    .onSuccess(deltaDate -> {
-                        try {
-                            QueryResult res = getQueryResult(commitDeltaQuery, deltaDate);
-                            handler.handleSuccess(res);
-                        } catch (Exception e) {
-                            handler.handleError(ERR_GETTING_QUERY_RESULT_MSG, e);
-                        }
-                    })
-                    .onFailure(handler::handleError);
-        } else {
+    public Future<QueryResult> execute(DeltaQuery deltaQuery) {
+        return commitDelta(deltaQuery);
+    }
+
+    private Future<QueryResult> commitDelta(DeltaQuery deltaQuery) {
+        return Future.future(promise -> {
+            val commitDeltaQuery = (CommitDeltaQuery) deltaQuery;
+            if (commitDeltaQuery.getDeltaDate() == null) {
+                writeDeltaHot(commitDeltaQuery).onComplete(promise);
+            } else {
+                writeDeltaHotByDate(commitDeltaQuery).onComplete(promise);
+            }
+        });
+    }
+
+    private Future<QueryResult> writeDeltaHotByDate(CommitDeltaQuery commitDeltaQuery) {
+        return Future.future(promise -> {
             deltaServiceDao.writeDeltaHotSuccess(commitDeltaQuery.getDatamart(), commitDeltaQuery.getDeltaDate())
                     .onSuccess(deltaDate -> {
                         try {
-                            QueryResult res = getQueryResult(commitDeltaQuery, deltaDate);
-                            handler.handleSuccess(res);
+                            promise.complete(getQueryResult(commitDeltaQuery, deltaDate));
                         } catch (Exception e) {
-                            handler.handleError(ERR_GETTING_QUERY_RESULT_MSG, e);
+                            promise.fail(new DtmException(ERR_GETTING_QUERY_RESULT_MSG, e));
                         }
                     })
-                    .onFailure(handler::handleError);
-        }
+                    .onFailure(promise::fail);
+        });
+    }
+
+    private Future<QueryResult> writeDeltaHot(CommitDeltaQuery commitDeltaQuery) {
+        return Future.future(promise -> {
+            deltaServiceDao.writeDeltaHotSuccess(commitDeltaQuery.getDatamart())
+                    .onSuccess(deltaDate -> {
+                        try {
+                            promise.complete(getQueryResult(commitDeltaQuery, deltaDate));
+                        } catch (Exception e) {
+                            promise.fail(new DtmException(ERR_GETTING_QUERY_RESULT_MSG, e));
+                        }
+                    })
+                    .onFailure(promise::fail);
+        });
     }
 
     private QueryResult getQueryResult(CommitDeltaQuery commitDeltaQuery, LocalDateTime deltaDate) {

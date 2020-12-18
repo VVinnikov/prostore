@@ -48,7 +48,7 @@ public class AdbTruncateHistoryServiceTest {
     @BeforeEach
     void setUp() {
         when(adbQueryExecutor.execute(anyString())).thenReturn(Future.succeededFuture());
-        doNothing().when(adbQueryExecutor).executeInTransaction(any(), any());
+        doNothing().when(adbQueryExecutor).executeInTransaction(any());
     }
 
     @Test
@@ -87,11 +87,11 @@ public class AdbTruncateHistoryServiceTest {
 
     private void test(String conditions, List<String> list) {
         adbTruncateHistoryService.truncateHistory(getParams(null, conditions));
+
         verify(adbQueryExecutor).executeInTransaction(argThat(input -> input.stream()
                         .map(PreparedStatementRequest::getSql)
                         .collect(Collectors.toList())
-                        .equals(list)),
-                any());
+                        .equals(list)));
     }
 
     private void test(Long sysCn, String conditions, String expected) {

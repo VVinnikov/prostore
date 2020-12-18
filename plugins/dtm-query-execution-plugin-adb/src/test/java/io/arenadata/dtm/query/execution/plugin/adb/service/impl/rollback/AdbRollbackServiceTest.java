@@ -82,7 +82,7 @@ class AdbRollbackServiceTest {
             execCount.put(sql, 1);
             handler.handle(Future.succeededFuture(resultSet));
             return null;
-        }).when(adbQueryExecutor).execute(any(), any(), any());
+        }).when(adbQueryExecutor).execute(any(), any());
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<List<Map<String, Object>>>> handler = invocation.getArgument(1);
@@ -90,15 +90,9 @@ class AdbRollbackServiceTest {
             requests.forEach(r -> execCount.put(r.getSql(), 1));
             handler.handle(Future.succeededFuture(resultSet));
             return null;
-        }).when(adbQueryExecutor).executeInTransaction(any(), any());
+        }).when(adbQueryExecutor).executeInTransaction(any());
 
-        adbRollbackService.execute(context, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        adbRollbackService.execute(context);
         assertTrue(promise.future().succeeded());
         assertEquals(execCount.get(sqlList.getStatements().get(0).getSql()), 1);
         assertEquals(execCount.get(sqlList.getStatements().get(1).getSql()), 1);
@@ -129,21 +123,15 @@ class AdbRollbackServiceTest {
             final Handler<AsyncResult<List<Map<String, Object>>>> handler = invocation.getArgument(2);
             handler.handle(Future.failedFuture(new DataSourceException("")));
             return null;
-        }).when(adbQueryExecutor).execute(any(), any(), any());
+        }).when(adbQueryExecutor).execute(any(), any());
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<List<Map<String, Object>>>> handler = invocation.getArgument(1);
             handler.handle(Future.failedFuture(new DataSourceException("")));
             return null;
-        }).when(adbQueryExecutor).executeInTransaction(any(), any());
+        }).when(adbQueryExecutor).executeInTransaction(any());
 
-        adbRollbackService.execute(context, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        adbRollbackService.execute(context);
         assertTrue(promise.future().failed());
     }
 }

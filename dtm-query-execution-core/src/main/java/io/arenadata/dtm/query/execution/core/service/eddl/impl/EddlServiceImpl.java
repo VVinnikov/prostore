@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.eddl.impl;
 
-import io.arenadata.dtm.async.AsyncHandler;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.reader.QueryResult;
@@ -12,10 +12,7 @@ import io.arenadata.dtm.query.execution.core.service.eddl.EddlQueryParamExtracto
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsService;
 import io.arenadata.dtm.query.execution.plugin.api.eddl.EddlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.EddlService;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -43,34 +40,27 @@ public class EddlServiceImpl implements EddlService<QueryResult> {
     }
 
     @Override
-    public void execute(EddlRequestContext context, AsyncHandler<QueryResult> handler) {
-        extractQuery(context)
-                .compose(eddlQuery -> sendMetricsAndExecute(context, eddlQuery))
-                .onComplete(execHandler -> {
-                    if (execHandler.succeeded()) {
-                        handler.handleSuccess(QueryResult.emptyResult());
-                    } else {
-                        handler.handleError(execHandler.cause());
-                    }
-                });
+    public Future<QueryResult> execute(EddlRequestContext context) {
+        return paramExtractor.extract(context.getRequest().getQueryRequest())
+                .compose(eddlQuery -> sendMetricsAndExecute(context, eddlQuery));
     }
 
-    private Future<EddlQuery> extractQuery(EddlRequestContext context) {
-        return Future.future(promise -> paramExtractor.extract(context.getRequest().getQueryRequest(), promise));
-    }
-
-    private Future<Void> sendMetricsAndExecute(EddlRequestContext context, EddlQuery eddlQuery) {
+    private Future<QueryResult> sendMetricsAndExecute(EddlRequestContext context, EddlQuery eddlQuery) {
         return metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA, SqlProcessingType.EDDL, context.getMetrics())
-                .compose(v -> execute(context, eddlQuery));
+                .compose(v -> getExecutor(eddlQuery))
+                .compose(executor -> executor.execute(eddlQuery));
     }
 
-    private Future<Void> execute(EddlRequestContext context, EddlQuery eddlQuery) {
-        return Future.future((Promise<Void> promise) -> {
-            executors.get(eddlQuery.getAction()).execute(eddlQuery,
-                    metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
-                            SqlProcessingType.EDDL,
-                            context.getMetrics(),
-                            (AsyncHandler<Void>) promise));
+    private Future<EddlExecutor> getExecutor(EddlQuery eddlQuery) {
+        return Future.future(promise -> {
+            final EddlExecutor executor = executors.get(eddlQuery.getAction());
+            if (executor != null) {
+                promise.complete(executor);
+            } else {
+                promise.fail(new DtmException(
+                        String.format("Couldn't find eddl executor for action %s",
+                                eddlQuery.getAction())));
+            }
         });
     }
 

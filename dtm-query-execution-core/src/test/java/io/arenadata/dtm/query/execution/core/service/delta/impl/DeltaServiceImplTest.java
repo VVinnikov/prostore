@@ -43,13 +43,7 @@ class DeltaServiceImplTest {
         DeltaRequestContext context = new DeltaRequestContext(new RequestMetrics(), datamartRequest);
 
         request.setDatamartMnemonic(null);
-        deltaService.execute(context, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        deltaService.execute(context);
         assertTrue(promise.future().failed());
     }
 
@@ -60,13 +54,7 @@ class DeltaServiceImplTest {
         DatamartRequest datamartRequest = new DatamartRequest(request);
         DeltaRequestContext context = new DeltaRequestContext(new RequestMetrics(), datamartRequest);
         request.setDatamartMnemonic("");
-        deltaService.execute(context, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        deltaService.execute(context);
         assertTrue(promise.future().failed());
     }
 }

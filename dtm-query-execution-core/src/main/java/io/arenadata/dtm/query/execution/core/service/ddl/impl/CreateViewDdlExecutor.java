@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
-import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.dto.QueryParserRequest;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityType;
@@ -11,7 +11,6 @@ import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.calcite.core.node.SqlTreeNode;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
-import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.exception.table.TableAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.exception.view.ViewAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.exception.view.ViewDisalowedOrDirectiveException;
@@ -25,10 +24,8 @@ import io.arenadata.dtm.query.execution.core.utils.SqlPreparer;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -74,16 +71,54 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, AsyncHandler<QueryResult> handler) {
-        checkViewQuery(context)
+    public Future<QueryResult> execute(DdlRequestContext context, String sqlNodeName) {
+        return checkViewQuery(context)
                 .compose(v -> getCreateViewContext(context))
-                .onFailure(handler::handleError)
-                .onSuccess(ctx -> createOrReplaceEntity(ctx, handler));
+                .compose(this::createOrReplaceEntity);
     }
 
     protected Future<Void> checkViewQuery(DdlRequestContext context) {
         return checkSnapshotNotExist(context)
                 .compose(v -> checkEntitiesType(context));
+    }
+
+    protected Future<CreateViewContext> getCreateViewContext(DdlRequestContext context) {
+        return Future.future(p -> {
+            val tree = new SqlSelectTree(context.getQuery());
+            val viewQuery = getViewQuery(tree);
+            QueryRequest request = QueryRequest.builder()
+                    .datamartMnemonic(context.getDatamartName())
+                    .requestId(UUID.randomUUID())
+                    .sql(viewQuery)
+                    .build();
+            getEntityFuture(context, request)
+                    .map(entity -> {
+                        String sql = context.getRequest().getQueryRequest().getSql();
+                        return CreateViewContext.builder()
+                                .createOrReplace(SqlPreparer.isCreateOrReplace(sql))
+                                .viewEntity(entity)
+                                .sql(sql)
+                                .build();
+                    })
+                    .onComplete(p);
+        });
+    }
+
+    private Future<QueryResult> createOrReplaceEntity(CreateViewContext ctx) {
+        return Future.future(promise -> {
+            val viewEntity = ctx.getViewEntity();
+            entityCacheService.remove(viewEntity.getSchema(), viewEntity.getName());
+            entityDao.createEntity(viewEntity)
+                    .otherwise(error -> checkCreateOrReplace(ctx, error))
+                    .compose(r -> entityDao.getEntity(viewEntity.getSchema(), viewEntity.getName()))
+                    .map(this::checkEntityType)
+                    .compose(r -> entityDao.updateEntity(viewEntity))
+                    .onSuccess(success -> {
+                        promise.complete(QueryResult.emptyResult());
+                    })
+                    .onFailure(promise::fail);
+        });
+
     }
 
     private Future<Void> checkSnapshotNotExist(DdlRequestContext context) {
@@ -142,40 +177,10 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
         return entityFutures;
     }
 
-    protected Future<CreateViewContext> getCreateViewContext(DdlRequestContext context) {
-        return Future.future(p -> {
-            val tree = new SqlSelectTree(context.getQuery());
-            val viewQuery = getViewQuery(tree);
-            QueryRequest request = QueryRequest.builder()
-                    .datamartMnemonic(context.getDatamartName())
-                    .requestId(UUID.randomUUID())
-                    .sql(viewQuery)
-                    .build();
-            getEntityFuture(context, request)
-                    .map(entity -> {
-                        String sql = context.getRequest().getQueryRequest().getSql();
-                        return CreateViewContext.builder()
-                                .createOrReplace(SqlPreparer.isCreateOrReplace(sql))
-                                .viewEntity(entity)
-                                .sql(sql)
-                                .build();
-                    })
-                    .onComplete(p);
-        });
-    }
-
     private Future<Entity> getEntityFuture(DdlRequestContext ctx, QueryRequest request) {
-        return getLogicalSchema(request)
-                .compose(datamarts -> getColumnMetadata(request, datamarts))
+        return logicalSchemaProvider.getSchema(request)
+                .compose(datamarts -> columnMetadataService.getColumnMetadata(new QueryParserRequest(request, datamarts)))
                 .map(columnMetadata -> toViewEntity(ctx, columnMetadata));
-    }
-
-    private Future<List<Datamart>> getLogicalSchema(QueryRequest request) {
-        return Future.future(p -> logicalSchemaProvider.getSchema(request, p));
-    }
-
-    private Future<List<ColumnMetadata>> getColumnMetadata(QueryRequest request, List<Datamart> datamarts) {
-        return Future.future(p -> columnMetadataService.getColumnMetadata(new QueryParserRequest(request, datamarts), p));
     }
 
     private Entity toViewEntity(DdlRequestContext ctx, List<ColumnMetadata> columnMetadata) {
@@ -218,18 +223,6 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
         } else {
             return queryByView.get(0).getNode().toSqlString(sqlDialect).toString();
         }
-    }
-
-    private void createOrReplaceEntity(CreateViewContext ctx, AsyncHandler<QueryResult> handler) {
-        val viewEntity = ctx.getViewEntity();
-        entityCacheService.remove(viewEntity.getSchema(), viewEntity.getName());
-        entityDao.createEntity(viewEntity)
-                .otherwise(error -> checkCreateOrReplace(ctx, error))
-                .compose(r -> entityDao.getEntity(viewEntity.getSchema(), viewEntity.getName()))
-                .map(this::checkEntityType)
-                .compose(r -> entityDao.updateEntity(viewEntity))
-                .onSuccess(success -> handler.handleSuccess(QueryResult.emptyResult()))
-                .onFailure(handler::handleError);
     }
 
     private Void checkCreateOrReplace(CreateViewContext ctx, Throwable error) {

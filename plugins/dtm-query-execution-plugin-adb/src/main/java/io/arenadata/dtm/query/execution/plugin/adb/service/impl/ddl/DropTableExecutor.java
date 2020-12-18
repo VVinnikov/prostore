@@ -1,15 +1,11 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.ddl;
 
-import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.exception.DdlDatasourceException;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,13 +26,12 @@ public class DropTableExecutor implements DdlExecutor<Void> {
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, AsyncHandler<Void> handler) {
-        try {
+    public Future<Void> execute(DdlRequestContext context, String sqlNodeName) {
+        return Future.future(promise -> {
             String dropSql = sqlFactory.createDropTableScript(context.getRequest().getEntity());
-            adbQueryExecutor.executeUpdate(dropSql, handler);
-        } catch (Exception e) {
-            handler.handleError(new DdlDatasourceException("Error generating drop table query", e));
-        }
+            adbQueryExecutor.executeUpdate(dropSql)
+                    .onComplete(promise);
+        });
     }
 
     @Override

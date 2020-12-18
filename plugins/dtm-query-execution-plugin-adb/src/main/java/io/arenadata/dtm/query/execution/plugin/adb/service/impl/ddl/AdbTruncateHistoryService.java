@@ -45,10 +45,9 @@ public class AdbTruncateHistoryService implements TruncateHistoryService {
                 AdbTables.ACTUAL_TABLE_POSTFIX, whereExpression),
                 String.format(DELETE_RECORDS_PATTERN, entity.getSchema(), entity.getName(),
                         AdbTables.HISTORY_TABLE_POSTFIX, whereExpression));
-        return Future.future(promise -> adbQueryExecutor.executeInTransaction(queries.stream()
-                        .map(PreparedStatementRequest::onlySql)
-                        .collect(Collectors.toList()),
-                promise));
+        return adbQueryExecutor.executeInTransaction(queries.stream()
+                .map(PreparedStatementRequest::onlySql)
+                .collect(Collectors.toList()));
     }
 
     private Future<Void> executeWithSysCn(TruncateHistoryParams params) {

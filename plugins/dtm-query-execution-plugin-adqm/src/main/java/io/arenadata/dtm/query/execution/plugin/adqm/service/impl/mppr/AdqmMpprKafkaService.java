@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppr;
 
-import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.EnrichQueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.MpprKafkaConnectorRequestFactory;
@@ -9,9 +8,7 @@ import io.arenadata.dtm.query.execution.plugin.adqm.service.QueryEnrichmentServi
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.MpprRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.MpprKafkaService;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -35,18 +32,13 @@ public class AdqmMpprKafkaService implements MpprKafkaService<QueryResult> {
     }
 
     @Override
-    public void execute(MpprRequestContext context, AsyncHandler<QueryResult> handler) {
+    public Future<QueryResult> execute(MpprRequestContext context) {
         MpprRequest request = context.getRequest();
-        adqmQueryEnrichmentService.enrich(
-                EnrichQueryRequest.generate(request.getQueryRequest(), request.getLogicalSchema(), true),
-                sqlResult -> {
-                    if (sqlResult.succeeded()) {
-                        mpprKafkaConnectorService.call(
-                                requestFactory.create(request, sqlResult.result()),
-                                handler);
-                    } else {
-                        handler.handleError(sqlResult.cause());
-                    }
-                });
+        return adqmQueryEnrichmentService.enrich(EnrichQueryRequest.generate(
+                request.getQueryRequest(),
+                request.getLogicalSchema(),
+                true))
+                .compose(enrichedQuery -> mpprKafkaConnectorService.call(
+                        requestFactory.create(request, enrichedQuery)));
     }
 }

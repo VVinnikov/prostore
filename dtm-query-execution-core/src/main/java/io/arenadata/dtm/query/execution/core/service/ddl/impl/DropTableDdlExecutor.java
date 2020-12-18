@@ -1,14 +1,13 @@
 package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
-import io.arenadata.dtm.async.AsyncHandler;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
-import io.arenadata.dtm.common.exception.DtmException;
-import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
+import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
@@ -16,9 +15,7 @@ import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlType;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.PostSqlActionType;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -55,8 +52,12 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, AsyncHandler<QueryResult> handler) {
-        try {
+    public Future<QueryResult> execute(DdlRequestContext context, String sqlNodeName) {
+        return dropTable(context, sqlNodeName);
+    }
+
+    private Future<QueryResult> dropTable(DdlRequestContext context, String sqlNodeName) {
+        return Future.future(promise -> {
             String schema = getSchemaName(context.getRequest().getQueryRequest(), sqlNodeName);
             String tableName = getTableName(sqlNodeName);
             entityCacheService.remove(schema, tableName);
@@ -65,11 +66,11 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
             context.setDatamartName(schema);
             context.setDdlType(DdlType.DROP_TABLE);
             dropTable(context, containsIfExistsCheck(context.getRequest().getQueryRequest().getSql()))
-                    .onSuccess(r -> handler.handleSuccess(QueryResult.emptyResult()))
-                    .onFailure(handler::handleError);
-        } catch (Exception e) {
-            handler.handleError("Error create drop table request", e);
-        }
+                    .onSuccess(r -> {
+                        promise.complete(QueryResult.emptyResult());
+                    })
+                    .onFailure(promise::fail);
+        });
     }
 
     private Entity createClassTable(String schema, String tableName) {
@@ -153,7 +154,7 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
                 if (entity.getDestination().isEmpty()) {
                     return dropEntityFromEverywhere(context, entity.getName());
                 } else {
-                    return dropEntityFromPlugins(context)
+                    return metadataExecutor.execute(context)
                             .compose(v -> entityDao.updateEntity(entity));
                 }
             }
@@ -161,23 +162,12 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
     }
 
     private Future<Void> dropEntityFromEverywhere(DdlRequestContext context, String entityName) {
-        return dropEntityFromPlugins(context)
+        return metadataExecutor.execute(context)
                 .compose(v -> {
                     context.getPostActions().add(PostSqlActionType.UPDATE_INFORMATION_SCHEMA);
                     return entityDao.deleteEntity(context.getDatamartName(), entityName);
                 });
     }
-
-    private Future<Void> dropEntityFromPlugins(DdlRequestContext context) {
-        return Future.future((Promise<Void> metaPromise) -> metadataExecutor.execute(context, ar -> {
-            if (ar.succeeded()) {
-                metaPromise.complete();
-            } else {
-                metaPromise.fail(ar.cause());
-            }
-        }));
-    }
-
 
     @Override
     public SqlKind getSqlKind() {

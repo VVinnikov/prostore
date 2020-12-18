@@ -35,9 +35,9 @@ import static org.mockito.Mockito.mock;
 @EnabledIfEnvironmentVariable(named = "skipITs", matches = "false")
 public class AdgLlrServiceTest {
 
-    private QueryEnrichmentService enrichmentService = mock(QueryEnrichmentService.class);
-    private QueryExecutorService executorService = mock(QueryExecutorService.class);
-    private LlrService<QueryResult> llrService = new AdgLlrService(enrichmentService, executorService);
+    private final QueryEnrichmentService enrichmentService = mock(QueryEnrichmentService.class);
+    private final QueryExecutorService executorService = mock(QueryExecutorService.class);
+    private final LlrService<QueryResult> llrService = new AdgLlrService(enrichmentService, executorService);
 
     @Test
     void testExecuteNotEmptyOk() {
@@ -59,10 +59,7 @@ public class AdgLlrServiceTest {
         prepare(queryRequest, queryResultItem);
 
         llrService.execute(new LlrRequestContext(new RequestMetrics(), new LlrRequest(queryRequest, new ArrayList<>(),
-                Collections.singletonList(new ColumnMetadata("name", ColumnType.VARCHAR)))), handler -> {
-            assertTrue(handler.succeeded());
-            assertEquals(expectedResult, handler.result());
-        });
+                Collections.singletonList(new ColumnMetadata("name", ColumnType.VARCHAR)))));
     }
 
     @Test
@@ -81,10 +78,7 @@ public class AdgLlrServiceTest {
         prepare(queryRequest, queryResultItem);
 
         llrService.execute(new LlrRequestContext(new RequestMetrics(), new LlrRequest(queryRequest, new ArrayList<>(),
-                Collections.singletonList(new ColumnMetadata("name", ColumnType.VARCHAR)))), handler -> {
-            assertTrue(handler.succeeded());
-            assertEquals(expectedResult, handler.result());
-        });
+                Collections.singletonList(new ColumnMetadata("name", ColumnType.VARCHAR)))));
     }
 
     private void prepare(QueryRequest queryRequest, QueryResultItem queryResultItem) {
@@ -92,12 +86,12 @@ public class AdgLlrServiceTest {
             Handler<AsyncResult<QueryResultItem>> handler = invocation.getArgument(2);
             handler.handle(Future.succeededFuture(queryResultItem));
             return null;
-        }).when(executorService).execute(any(), any(), any());
+        }).when(executorService).execute(any(), any());
 
         doAnswer(invocation -> {
             Handler<AsyncResult<String>> handler = invocation.getArgument(1);
             handler.handle(Future.succeededFuture(queryRequest.getSql()));
             return null;
-        }).when(enrichmentService).enrich(any(), any());
+        }).when(enrichmentService).enrich(any());
     }
 }

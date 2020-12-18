@@ -2,6 +2,7 @@ package io.arenadata.dtm.query.execution.core.service.eddl.impl;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
+import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.eddl.DropUploadExternalTableQuery;
@@ -12,9 +13,7 @@ import io.arenadata.dtm.query.execution.core.exception.table.ExternalTableNotExi
 import io.arenadata.dtm.query.execution.core.service.cache.CacheService;
 import io.arenadata.dtm.query.execution.core.service.cache.key.EntityKey;
 import io.arenadata.dtm.query.execution.core.service.eddl.EddlExecutor;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,28 +35,21 @@ public class DropUploadExternalTableExecutor implements EddlExecutor {
     }
 
     @Override
-    public void execute(EddlQuery query, Handler<AsyncResult<Void>> handler) {
-        try {
+    public Future<QueryResult> execute(EddlQuery query) {
+        return Future.future(promise -> {
             DropUploadExternalTableQuery castQuery = (DropUploadExternalTableQuery) query;
             val datamartName = castQuery.getSchemaName();
             val entityName = castQuery.getTableName();
             evictEntityCache(datamartName, entityName);
             dropTable(datamartName, entityName)
-                .onSuccess(r -> handler.handle(Future.succeededFuture()))
-                .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
-        } catch (Exception e) {
-            handler.handle(Future.failedFuture(new DtmException("Error preparing drop upload external table query", e)));
-        }
-    }
-
-    @Override
-    public EddlAction getAction() {
-        return EddlAction.DROP_UPLOAD_EXTERNAL_TABLE;
+                    .onSuccess(r -> promise.complete(QueryResult.emptyResult()))
+                    .onFailure(promise::fail);
+        });
     }
 
     protected Future<Void> dropTable(String datamartName, String entityName) {
         return getEntity(datamartName, entityName)
-            .compose(this::dropEntityIfExists);
+                .compose(this::dropEntityIfExists);
     }
 
     private void evictEntityCache(String datamartName, String entityName) {
@@ -68,14 +60,14 @@ public class DropUploadExternalTableExecutor implements EddlExecutor {
         return Future.future(entityPromise -> {
             val tableWithSchema = datamartName + "." + entityName;
             entityDao.getEntity(datamartName, entityName)
-                .onSuccess(entity -> {
-                    if (EntityType.UPLOAD_EXTERNAL_TABLE == entity.getEntityType()) {
-                        entityPromise.complete(entity);
-                    } else {
-                        entityPromise.fail(new ExternalTableNotExistsException(tableWithSchema));
-                    }
-                })
-                .onFailure(error -> entityPromise.fail(new DtmException(error)));
+                    .onSuccess(entity -> {
+                        if (EntityType.UPLOAD_EXTERNAL_TABLE == entity.getEntityType()) {
+                            entityPromise.complete(entity);
+                        } else {
+                            entityPromise.fail(new ExternalTableNotExistsException(tableWithSchema));
+                        }
+                    })
+                    .onFailure(error -> entityPromise.fail(new DtmException(error)));
         });
     }
 
@@ -85,5 +77,10 @@ public class DropUploadExternalTableExecutor implements EddlExecutor {
         } else {
             return Future.succeededFuture();
         }
+    }
+
+    @Override
+    public EddlAction getAction() {
+        return EddlAction.DROP_UPLOAD_EXTERNAL_TABLE;
     }
 }

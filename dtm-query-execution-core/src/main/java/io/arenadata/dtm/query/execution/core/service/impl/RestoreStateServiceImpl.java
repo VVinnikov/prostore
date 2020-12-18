@@ -5,6 +5,7 @@ import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.RequestStatus;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QueryRequest;
+import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
@@ -110,8 +111,6 @@ public class RestoreStateServiceImpl implements RestoreStateService {
     }
 
     private Future<Void> processWriteOperation(Entity dest, Entity source, DeltaWriteOp op) {
-        Promise promise = Promise.promise();
-
         val queryRequest = new QueryRequest();
         queryRequest.setRequestId(UUID.randomUUID());
         queryRequest.setEnvName(envName);
@@ -131,8 +130,9 @@ public class RestoreStateServiceImpl implements RestoreStateService {
         context.setDestinationEntity(dest);
 
         if (op.getStatus() == 0) {
-            uploadExternalTableExecutor.execute(context, promise);
-            return promise.future();
+            return Future.future(promise -> uploadExternalTableExecutor.execute(context)
+                    .onSuccess(success -> promise.complete())
+                    .onFailure(promise::fail));
         } else if (op.getStatus() == 2) {
             return edmlUploadFailedExecutor.execute(context);
         } else return Future.succeededFuture();

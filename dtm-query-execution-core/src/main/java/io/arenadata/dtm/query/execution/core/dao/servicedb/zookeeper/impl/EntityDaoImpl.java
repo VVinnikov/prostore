@@ -38,17 +38,12 @@ public class EntityDaoImpl implements EntityDao {
     }
 
     @Override
-    public void getEntitiesMeta(String datamartMnemonic, AsyncHandler<List<DatamartEntity>> resultHandler) {
+    public Future<List<DatamartEntity>> getEntitiesMeta(String datamartMnemonic) {
         //TODO implemented receiving entity column informations
-        getEntityNamesByDatamart(datamartMnemonic)
-                .onSuccess(names -> resultHandler.handle(
-                        Future.succeededFuture(
-                                names.stream()
-                                        .map(name -> new DatamartEntity(null, name, datamartMnemonic))
-                                        .collect(Collectors.toList())
-                        )
-                ))
-                .onFailure(resultHandler::handleError);
+        return getEntityNamesByDatamart(datamartMnemonic)
+                .map(names -> names.stream()
+                        .map(name -> new DatamartEntity(null, name, datamartMnemonic))
+                        .collect(Collectors.toList()));
     }
 
     @Override

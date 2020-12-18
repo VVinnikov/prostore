@@ -101,13 +101,7 @@ class UseSchemaDmlExecutorTest {
                     }
                 });
 
-        useSchemaDdlExecutor.execute(context, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        useSchemaDdlExecutor.execute(context);
         assertEquals(result, promise.future().result());
         assertEquals(schema, ((QueryResult) promise.future().result()).getResult().get(0).get("schema"));
     }
@@ -124,13 +118,7 @@ class UseSchemaDmlExecutorTest {
                     promise.fail(ar.cause());
                 });
 
-        useSchemaDdlExecutor.execute(context, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        useSchemaDdlExecutor.execute(context);
         assertTrue(promise.future().failed());
     }
 
@@ -149,13 +137,7 @@ class UseSchemaDmlExecutorTest {
             }
         });
 
-        useSchemaDdlExecutor.execute(context, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        useSchemaDdlExecutor.execute(context);
         assertTrue(promise.future().failed());
     }
 }

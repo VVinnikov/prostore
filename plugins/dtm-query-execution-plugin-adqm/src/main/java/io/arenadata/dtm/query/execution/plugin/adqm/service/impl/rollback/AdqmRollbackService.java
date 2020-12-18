@@ -1,10 +1,8 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.rollback;
 
-import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.plugin.sql.PreparedStatementRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmRollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.query.AdqmQueryExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.exception.RollbackDatasourceException;
 import io.arenadata.dtm.query.execution.plugin.api.factory.RollbackRequestFactory;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.RollbackService;
@@ -28,30 +26,15 @@ public class AdqmRollbackService implements RollbackService<Void> {
     }
 
     @Override
-    public void execute(RollbackRequestContext context, AsyncHandler<Void> handler) {
-        try {
+    public Future<Void> execute(RollbackRequestContext context) {
+        return Future.future(promise -> {
             val rollbackRequest = rollbackRequestFactory.create(context.getRequest());
             Future<Void> executingFuture = Future.succeededFuture();
             for (PreparedStatementRequest statement : rollbackRequest.getStatements()) {
-                executingFuture = executingFuture.compose(v -> executeSql(statement.getSql()));
+                executingFuture = executingFuture.compose(v -> adqmQueryExecutor.executeUpdate(statement.getSql()));
             }
-            executingFuture.onSuccess(success -> handler.handleSuccess())
-                    .onFailure(handler::handleError);
-        } catch (Exception e) {
-            log.error("Rollback error while executing context: [{}]: {}", context, e);
-            handler.handleError(new RollbackDatasourceException(
-                    String.format("Rollback error while executing request %s", context.getRequest()),
-                    e));
-        }
-    }
-
-    private Future<Void> executeSql(String sql) {
-        return Future.future(p -> adqmQueryExecutor.executeUpdate(sql, ar -> {
-            if (ar.succeeded()) {
-                p.complete();
-            } else {
-                p.fail(ar.cause());
-            }
-        }));
+            executingFuture.onSuccess(success -> promise.complete())
+                    .onFailure(promise::fail);
+        });
     }
 }

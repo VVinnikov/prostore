@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.plugin.adqm.common;
+package io.arenadata.dtm.query.execution.plugin.adqm.utils;
 
 import java.util.Arrays;
 import java.util.HashSet;

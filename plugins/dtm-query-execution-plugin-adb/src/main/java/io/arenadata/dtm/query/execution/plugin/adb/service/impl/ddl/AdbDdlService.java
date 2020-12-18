@@ -1,14 +1,11 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.ddl;
 
-import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.query.execution.plugin.adb.AdbDtmDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DdlDatasourceException;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.springframework.cache.annotation.CacheEvict;
@@ -24,18 +21,22 @@ public class AdbDdlService implements DdlService<Void> {
 
     @Override
     @CacheEvict(value = AdbDtmDataSourcePlugin.ADB_DATAMART_CACHE, key = "#context.getDatamartName()")
-    public void execute(DdlRequestContext context, AsyncHandler<Void> handler) {
-        SqlNode query = context.getQuery();
-        if (query == null) {
-            handler.handle(Future.failedFuture(new DdlDatasourceException("Ddl query is null!")));
-            return;
-        }
-        if (ddlExecutors.containsKey(query.getKind())) {
-            ddlExecutors.get(query.getKind()).execute(context, query.getKind().lowerName, handler);
-        } else {
-            handler.handle(Future.failedFuture(new DdlDatasourceException(String.format("Unknown DDL: %s",
-                    query))));
-        }
+    public Future<Void> execute(DdlRequestContext context) {
+        return Future.future(promise -> {
+            SqlNode query = context.getQuery();
+            if (query == null) {
+                promise.fail(new DdlDatasourceException("Ddl query is null!"));
+                return;
+            }
+            if (ddlExecutors.containsKey(query.getKind())) {
+                ddlExecutors.get(query.getKind())
+                        .execute(context, query.getKind().lowerName)
+                        .onComplete(promise);
+            } else {
+                promise.fail(new DdlDatasourceException(String.format("Unknown DDL: %s",
+                        query)));
+            }
+        });
     }
 
     @Override

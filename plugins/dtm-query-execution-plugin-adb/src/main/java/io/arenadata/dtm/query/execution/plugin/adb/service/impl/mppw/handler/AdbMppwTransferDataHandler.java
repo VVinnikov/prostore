@@ -7,7 +7,6 @@ import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwKaf
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwKafkaRequestContext;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 import io.vertx.core.Future;
-import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,8 +33,7 @@ public class AdbMppwTransferDataHandler implements AdbMppwHandler {
     public Future<Void> handle(MppwKafkaRequestContext requestContext) {
         return insertIntoStagingTable(requestContext.getMppwKafkaLoadRequest())
                 .compose(v -> commitKafkaMessages(requestContext))
-                .compose(s -> Future.future((Promise<Void> p) ->
-                        mppwDataTransferService.execute(requestContext.getMppwTransferDataRequest(), p)));
+                .compose(s -> mppwDataTransferService.execute(requestContext.getMppwTransferDataRequest()));
     }
 
     private Future<Void> commitKafkaMessages(MppwKafkaRequestContext requestContext) {
@@ -44,7 +42,8 @@ public class AdbMppwTransferDataHandler implements AdbMppwHandler {
             val table = MetadataSqlFactoryImpl.WRITABLE_EXT_TABLE_PREF +
                     requestContext.getMppwKafkaLoadRequest().getRequestId().replaceAll("-", "_");
             val commitOffsetsSql = String.format(MetadataSqlFactoryImpl.COMMIT_OFFSETS, schema, table);
-            adbQueryExecutor.executeUpdate(commitOffsetsSql, promise);
+            adbQueryExecutor.executeUpdate(commitOffsetsSql)
+                    .onComplete(promise);
         });
     }
 
@@ -57,8 +56,8 @@ public class AdbMppwTransferDataHandler implements AdbMppwHandler {
             adbQueryExecutor.executeUpdate(metadataSqlFactory.insertIntoStagingTableSqlQuery(schema,
                     columns,
                     stagingTable,
-                    extTable),
-                    ar -> {
+                    extTable))
+                    .onComplete(ar -> {
                         if (ar.succeeded()) {
                             promise.complete();
                         } else {

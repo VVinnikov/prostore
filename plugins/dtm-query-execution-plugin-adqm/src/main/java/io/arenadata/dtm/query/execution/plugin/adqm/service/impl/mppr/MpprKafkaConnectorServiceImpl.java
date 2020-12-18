@@ -30,22 +30,27 @@ public class MpprKafkaConnectorServiceImpl implements MpprKafkaConnectorService 
     }
 
     @Override
-    public void call(MpprKafkaConnectorRequest request, Handler<AsyncResult<QueryResult>> handler) {
-        log.debug("Calling MpprKafkaConnector with parameters: host = {}, port = {}, url = {}, request = {}",
-                connectorProperties.getHost(), connectorProperties.getPort(), connectorProperties.getUrl(), request);
-        client.post(connectorProperties.getPort(),
-                connectorProperties.getHost(),
-                connectorProperties.getUrl())
-                .sendJson(request, ar -> {
-                    if (ar.succeeded()) {
-                        if (ar.result().statusCode() == HttpURLConnection.HTTP_OK) {
-                            handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
+    public Future<QueryResult> call(MpprKafkaConnectorRequest request) {
+        return Future.future(promise -> {
+            log.debug("Calling MpprKafkaConnector with parameters: host = {}, port = {}, url = {}, request = {}",
+                    connectorProperties.getHost(),
+                    connectorProperties.getPort(),
+                    connectorProperties.getUrl(),
+                    request);
+            client.post(connectorProperties.getPort(),
+                    connectorProperties.getHost(),
+                    connectorProperties.getUrl())
+                    .sendJson(request, ar -> {
+                        if (ar.succeeded()) {
+                            if (ar.result().statusCode() == HttpURLConnection.HTTP_OK) {
+                                promise.complete(QueryResult.emptyResult());
+                            } else {
+                                promise.fail(ar.cause());
+                            }
                         } else {
-                            handler.handle(Future.failedFuture(ar.cause()));
+                            promise.fail(ar.cause());
                         }
-                    } else {
-                        handler.handle(Future.failedFuture(ar.cause()));
-                    }
-                });
+                    });
+        });
     }
 }

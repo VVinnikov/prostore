@@ -33,7 +33,6 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
         return new Entity(getTableName(names), getSchema(names), fields);
     }
 
-
     private List<EntityField> createTableFields(SqlCreate sqlCreate) {
         final List<EntityField> fields = new ArrayList<>();
         final SqlNodeList columnList = (SqlNodeList) sqlCreate.getOperandList().get(1);

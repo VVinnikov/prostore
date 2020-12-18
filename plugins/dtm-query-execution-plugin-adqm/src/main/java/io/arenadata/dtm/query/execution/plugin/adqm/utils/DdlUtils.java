@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.plugin.adqm.common;
+package io.arenadata.dtm.query.execution.plugin.adqm.utils;
 
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.EntityField;

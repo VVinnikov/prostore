@@ -3,7 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
-import io.arenadata.dtm.query.execution.plugin.adqm.common.DdlUtils;
+import io.arenadata.dtm.query.execution.plugin.adqm.utils.DdlUtils;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.MppwProperties;
@@ -29,9 +29,9 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.arenadata.dtm.query.execution.plugin.adqm.common.Constants.*;
-import static io.arenadata.dtm.query.execution.plugin.adqm.common.DdlUtils.avroTypeToNative;
-import static io.arenadata.dtm.query.execution.plugin.adqm.common.DdlUtils.splitQualifiedTableName;
+import static io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants.*;
+import static io.arenadata.dtm.query.execution.plugin.adqm.utils.DdlUtils.avroTypeToNative;
+import static io.arenadata.dtm.query.execution.plugin.adqm.utils.DdlUtils.splitQualifiedTableName;
 import static io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.LoadType.KAFKA;
 import static io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.LoadType.REST;
 import static java.lang.String.format;
@@ -165,20 +165,21 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         }
         Promise<String> result = Promise.promise();
         String query = format(QUERY_TABLE_SETTINGS, settingKey, nameParts.get().getLeft(), nameParts.get().getRight());
-        databaseExecutor.execute(query, metadata, ar -> {
-            if (ar.failed()) {
-                result.fail(ar.cause());
-                return;
-            }
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> rows = ar.result();
-            if (rows.isEmpty()) {
-                result.fail(new MppwDatasourceException(format("Cannot find %s for %s", settingKey, table)));
-                return;
-            }
+        databaseExecutor.execute(query, metadata)
+                .onComplete(ar -> {
+                    if (ar.failed()) {
+                        result.fail(ar.cause());
+                        return;
+                    }
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> rows = ar.result();
+                    if (rows.isEmpty()) {
+                        result.fail(new MppwDatasourceException(format("Cannot find %s for %s", settingKey, table)));
+                        return;
+                    }
 
-            result.complete(rows.get(0).get(settingKey).toString());
-        });
+                    result.complete(rows.get(0).get(settingKey).toString());
+                });
         return result.future();
     }
 

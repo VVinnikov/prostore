@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.status;
 
-import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.kafka.core.service.kafka.KafkaConsumerMonitor;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
@@ -9,9 +8,7 @@ import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException
 import io.arenadata.dtm.query.execution.plugin.api.request.StatusRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.StatusService;
 import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -23,53 +20,50 @@ import java.util.Map;
 @Service("adqmStatusService")
 @Slf4j
 public class AdqmStatusService implements StatusService<StatusQueryResult>, StatusReporter {
-	private final KafkaConsumerMonitor kafkaConsumerMonitor;
-	private final Map<String, String> topicsInUse = new HashMap<>();
+    private final KafkaConsumerMonitor kafkaConsumerMonitor;
+    private final Map<String, String> topicsInUse = new HashMap<>();
 
-	public AdqmStatusService(@Qualifier("coreKafkaConsumerMonitor") KafkaConsumerMonitor kafkaConsumerMonitor) {
-		this.kafkaConsumerMonitor = kafkaConsumerMonitor;
-	}
+    public AdqmStatusService(@Qualifier("coreKafkaConsumerMonitor") KafkaConsumerMonitor kafkaConsumerMonitor) {
+        this.kafkaConsumerMonitor = kafkaConsumerMonitor;
+    }
 
-	@Override
-	public void execute(StatusRequestContext context, AsyncHandler<StatusQueryResult> handler) {
-		if (context == null || context.getRequest() == null) {
-			handler.handleError(new DataSourceException("StatusRequestContext should not be null"));
-			return;
-		}
+    @Override
+    public Future<StatusQueryResult> execute(StatusRequestContext context) {
+        return Future.future(promise -> {
+            if (context == null || context.getRequest() == null) {
+                promise.fail(new DataSourceException("StatusRequestContext should not be null"));
+                return;
+            }
+            StatusRequest request = context.getRequest();
 
-		StatusRequest request = context.getRequest();
+            if (topicsInUse.containsKey(request.getTopic())) {
+                String consumerGroup = topicsInUse.get(request.getTopic());
 
-		if (topicsInUse.containsKey(request.getTopic())) {
-			String consumerGroup = topicsInUse.get(request.getTopic());
+                kafkaConsumerMonitor.getAggregateGroupConsumerInfo(consumerGroup, request.getTopic())
+                        .onSuccess(p -> {
+                            StatusQueryResult result = new StatusQueryResult();
+                            result.setPartitionInfo(p);
+                            promise.complete(result);
+                        })
+                        .onFailure(promise::fail);
+            }
+        });
+    }
 
-			kafkaConsumerMonitor.getAggregateGroupConsumerInfo(consumerGroup, request.getTopic())
-					.onSuccess(p -> {
-						StatusQueryResult result = new StatusQueryResult();
-						result.setPartitionInfo(p);
-						handler.handleSuccess(result);
-					})
-					.onFailure(handler::handleError);
-		} else {
-			handler.handleError(
-					new DataSourceException(String.format("Cannot find information about topic [%s]",
-							request.getTopic())));
-		}
-	}
+    @Override
+    public void onStart(@NonNull final StatusReportDto payload) {
+        String topic = payload.getTopic();
+        String consumerGroup = payload.getConsumerGroup();
+        topicsInUse.put(topic, consumerGroup);
+    }
 
-	@Override
-	public void onStart(@NonNull final StatusReportDto payload) {
-		String topic = payload.getTopic();
-		String consumerGroup = payload.getConsumerGroup();
-		topicsInUse.put(topic, consumerGroup);
-	}
+    @Override
+    public void onFinish(@NonNull final StatusReportDto payload) {
+        topicsInUse.remove(payload.getTopic());
+    }
 
-	@Override
-	public void onFinish(@NonNull final StatusReportDto payload) {
-		topicsInUse.remove(payload.getTopic());
-	}
-
-	@Override
-	public void onError(@NonNull final StatusReportDto payload) {
-		topicsInUse.remove(payload.getTopic());
-	}
+    @Override
+    public void onError(@NonNull final StatusReportDto payload) {
+        topicsInUse.remove(payload.getTopic());
+    }
 }

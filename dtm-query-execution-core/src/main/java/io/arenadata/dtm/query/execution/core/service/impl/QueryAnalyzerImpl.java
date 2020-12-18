@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.impl;
 
-import io.arenadata.dtm.async.AsyncHandler;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.InputQueryRequest;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
@@ -14,7 +14,6 @@ import io.arenadata.dtm.query.calcite.core.extension.delta.SqlRollbackDelta;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.DropDatabase;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.SqlCreateDatabase;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
-import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.factory.QueryRequestFactory;
 import io.arenadata.dtm.query.execution.core.factory.RequestContextFactory;
 import io.arenadata.dtm.query.execution.core.service.QueryAnalyzer;
@@ -25,9 +24,7 @@ import io.arenadata.dtm.query.execution.core.utils.DefaultDatamartSetter;
 import io.arenadata.dtm.query.execution.core.utils.HintExtractor;
 import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -49,7 +46,6 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
     private final Vertx vertx;
     private final HintExtractor hintExtractor;
     private final RequestContextFactory<RequestContext<? extends DatamartRequest>, QueryRequest> requestContextFactory;
-
     private final DatamartMnemonicExtractor datamartMnemonicExtractor;
     private final DefaultDatamartSetter defaultDatamartSetter;
     private final SemicolonRemover semicolonRemover;
@@ -77,35 +73,30 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
     }
 
     @Override
-    public void analyzeAndExecute(InputQueryRequest execQueryRequest, AsyncHandler<QueryResult> handler) {
-        getParsedQuery(execQueryRequest, parseResult -> {
-            if (parseResult.succeeded()) {
-                try {
-                    ParsedQueryResponse parsedQueryResponse = parseResult.result();
-                    SqlNode sqlNode = parsedQueryResponse.getSqlNode();
-                    QueryRequest queryRequest = parsedQueryResponse.getQueryRequest();
-                    if (existsDatamart(sqlNode)) {
-                        if (Strings.isEmpty(queryRequest.getDatamartMnemonic())) {
-                            val datamartMnemonic = datamartMnemonicExtractor.extract(sqlNode);
-                            queryRequest.setDatamartMnemonic(datamartMnemonic);
-                        } else {
-                            sqlNode = defaultDatamartSetter.set(sqlNode, queryRequest.getDatamartMnemonic());
-                        }
-                    }
-                    queryDispatcher.dispatch(requestContextFactory.create(queryRequest, sqlNode),
-                            handler);
-                } catch (Exception ex) {
-                    handler.handleError(ex);
+    public Future<QueryResult> analyzeAndExecute(InputQueryRequest execQueryRequest) {
+        return getParsedQuery(execQueryRequest)
+                .compose(this::dispatchQuery);
+    }
+
+    private Future<QueryResult> dispatchQuery(ParsedQueryResponse parsedQueryResponse) {
+        return Future.future(promise -> {
+            SqlNode sqlNode = parsedQueryResponse.getSqlNode();
+            QueryRequest queryRequest = parsedQueryResponse.getQueryRequest();
+            if (existsDatamart(sqlNode)) {
+                if (Strings.isEmpty(queryRequest.getDatamartMnemonic())) {
+                    val datamartMnemonic = datamartMnemonicExtractor.extract(sqlNode);
+                    queryRequest.setDatamartMnemonic(datamartMnemonic);
+                } else {
+                    sqlNode = defaultDatamartSetter.set(sqlNode, queryRequest.getDatamartMnemonic());
                 }
-            } else {
-                handler.handleError(parseResult.cause());
             }
+            queryDispatcher.dispatch(requestContextFactory.create(queryRequest, sqlNode))
+                    .onComplete(promise);
         });
     }
 
-    private void getParsedQuery(InputQueryRequest inputQueryRequest,
-                                AsyncHandler<ParsedQueryResponse> handler) {
-        vertx.executeBlocking(it -> {
+    private Future<ParsedQueryResponse> getParsedQuery(InputQueryRequest inputQueryRequest) {
+        return Future.future(promise -> vertx.executeBlocking(it -> {
             try {
                 val queryRequest = queryRequestFactory.create(inputQueryRequest);
                 val queryRequestWithoutHint = getQueryRequestWithoutHint(queryRequest);
@@ -116,13 +107,7 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
             } catch (Exception e) {
                 it.fail(new DtmException("Error parsing query", e));
             }
-        }, ar -> {
-            if (ar.succeeded()) {
-                handler.handleSuccess((ParsedQueryResponse) ar.result());
-            } else {
-                handler.handleError(ar.cause());
-            }
-        });
+        }, promise));
     }
 
     private QuerySourceRequest getQueryRequestWithoutHint(QueryRequest queryRequest) {

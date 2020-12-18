@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.delta;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
@@ -8,7 +9,6 @@ import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.impl.DeltaServiceDaoImpl;
 import io.arenadata.dtm.query.execution.core.dto.delta.DeltaRecord;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.CommitDeltaQuery;
-import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.delta.CommitDeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.service.delta.impl.CommitDeltaExecutor;
@@ -74,13 +74,8 @@ class CommitDeltaExecutorTest {
 
         when(deltaQueryResultFactory.create(any())).thenReturn(queryResult);
 
-        commitDeltaExecutor.execute(deltaQuery, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        commitDeltaExecutor.execute(deltaQuery)
+                .onComplete(promise);
         assertEquals(deltaDate, ((QueryResult) promise.future().result()).getResult()
                 .get(0).get(DeltaQueryUtil.DATE_TIME_FIELD));
     }
@@ -110,13 +105,8 @@ class CommitDeltaExecutorTest {
 
         when(deltaQueryResultFactory.create(any())).thenReturn(queryResult);
 
-        commitDeltaExecutor.execute(deltaQuery, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        commitDeltaExecutor.execute(deltaQuery)
+                .onComplete(promise);
 
         assertEquals(deltaDate, ((QueryResult) promise.future().result()).getResult()
                 .get(0).get(DeltaQueryUtil.DATE_TIME_FIELD));
@@ -142,13 +132,8 @@ class CommitDeltaExecutorTest {
         when(deltaServiceDao.writeDeltaHotSuccess(eq(datamart)))
                 .thenReturn(Future.failedFuture(exception));
 
-        commitDeltaExecutor.execute(deltaQuery, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        commitDeltaExecutor.execute(deltaQuery)
+                .onComplete(promise);
         assertTrue(promise.future().failed());
     }
 
@@ -172,13 +157,8 @@ class CommitDeltaExecutorTest {
         when(deltaServiceDao.writeDeltaHotSuccess(eq(datamart), eq(deltaDate)))
                 .thenReturn(Future.failedFuture(new RuntimeException("")));
 
-        commitDeltaExecutor.execute(deltaQuery, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        commitDeltaExecutor.execute(deltaQuery)
+                .onComplete(promise);
         assertTrue(promise.future().failed());
     }
 
@@ -206,13 +186,8 @@ class CommitDeltaExecutorTest {
         when(deltaQueryResultFactory.create(any()))
                 .thenThrow(new DtmException(""));
 
-        commitDeltaExecutor.execute(deltaQuery, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        commitDeltaExecutor.execute(deltaQuery)
+                .onComplete(promise);
         assertTrue(promise.future().failed());
     }
 

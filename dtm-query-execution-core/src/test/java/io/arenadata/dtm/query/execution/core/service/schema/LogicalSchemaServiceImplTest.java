@@ -125,13 +125,7 @@ class LogicalSchemaServiceImplTest {
                         .name(TABLE_DOC)
                         .build())
             );
-        logicalSchemaService.createSchema(queryRequest, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        logicalSchemaService.createSchema(queryRequest);
         Map<DatamartSchemaKey, Entity> schemaMap = promise.future().result();
         assertNotNull(schemaMap);
         schemaMap.forEach((k, v) -> {
@@ -153,13 +147,7 @@ class LogicalSchemaServiceImplTest {
         Mockito.when(entityDao.getEntity(any(), any()))
             .thenReturn(Future.failedFuture(new DtmException("Error getting entities!")));
 
-        logicalSchemaService.createSchema(queryRequest, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        logicalSchemaService.createSchema(queryRequest);
         assertNotNull(promise.future().cause());
     }
 

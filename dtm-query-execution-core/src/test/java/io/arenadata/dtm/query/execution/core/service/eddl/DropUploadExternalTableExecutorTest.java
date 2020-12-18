@@ -75,13 +75,7 @@ public class DropUploadExternalTableExecutorTest {
         Mockito.when(entityDao.deleteEntity(eq(schema), eq(table)))
             .thenReturn(Future.succeededFuture());
 
-        dropUploadExternalTableExecutor.execute(query, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        dropUploadExternalTableExecutor.execute(query);
 
         assertTrue(promise.future().succeeded());
     }
@@ -93,13 +87,7 @@ public class DropUploadExternalTableExecutorTest {
         Mockito.when(entityDao.getEntity(eq(schema), eq(table)))
             .thenReturn(Future.succeededFuture(entityWithWrongType));
 
-        dropUploadExternalTableExecutor.execute(query, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        dropUploadExternalTableExecutor.execute(query);
 
         assertTrue(promise.future().failed());
         assertTrue(promise.future().cause() instanceof TableNotExistsException);
@@ -112,13 +100,7 @@ public class DropUploadExternalTableExecutorTest {
         Mockito.when(entityDao.getEntity(eq(schema), eq(table)))
             .thenReturn(Future.failedFuture(new TableNotExistsException("")));
 
-        dropUploadExternalTableExecutor.execute(query, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        dropUploadExternalTableExecutor.execute(query);
 
         assertTrue(promise.future().failed());
         assertTrue(promise.future().cause() instanceof TableNotExistsException);
@@ -134,13 +116,7 @@ public class DropUploadExternalTableExecutorTest {
         Mockito.when(entityDao.deleteEntity(eq(schema), eq(table)))
             .thenReturn(Future.failedFuture("delete entity error"));
 
-        dropUploadExternalTableExecutor.execute(query, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        dropUploadExternalTableExecutor.execute(query);
 
         assertTrue(promise.future().failed());
         assertEquals("delete entity error", promise.future().cause().getMessage());

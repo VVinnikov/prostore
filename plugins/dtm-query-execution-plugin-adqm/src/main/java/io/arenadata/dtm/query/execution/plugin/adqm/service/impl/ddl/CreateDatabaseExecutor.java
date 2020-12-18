@@ -37,17 +37,20 @@ public class CreateDatabaseExecutor implements DdlExecutor<Void> {
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, AsyncHandler<Void> handler) {
-        SqlNode query = context.getQuery();
-        if (!(query instanceof SqlCreateDatabase)) {
-            handler.handleError(new DdlDatasourceException(
-                    String.format("Expecting SqlCreateDatabase in context, receiving: %s",
-                    context)));
-            return;
-        }
+    public Future<Void> execute(DdlRequestContext context, String sqlNodeName) {
+        return Future.future(promise -> {
+            SqlNode query = context.getQuery();
+            if (!(query instanceof SqlCreateDatabase)) {
+                promise.fail(new DdlDatasourceException(
+                        String.format("Expecting SqlCreateDatabase in context, receiving: %s",
+                                context)));
+                return;
+            }
 
-        String name = ((SqlCreateDatabase) query).getName().names.get(0);
-        createDatabase(name).onComplete(handler);
+            String name = ((SqlCreateDatabase) query).getName().names.get(0);
+            createDatabase(name)
+                    .onComplete(promise);
+        });
     }
 
     @Override

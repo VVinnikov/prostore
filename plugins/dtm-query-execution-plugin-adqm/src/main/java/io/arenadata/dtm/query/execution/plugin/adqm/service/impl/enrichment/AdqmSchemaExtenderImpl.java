@@ -15,7 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static io.arenadata.dtm.query.execution.plugin.adqm.common.Constants.*;
+import static io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants.*;
 
 
 /**

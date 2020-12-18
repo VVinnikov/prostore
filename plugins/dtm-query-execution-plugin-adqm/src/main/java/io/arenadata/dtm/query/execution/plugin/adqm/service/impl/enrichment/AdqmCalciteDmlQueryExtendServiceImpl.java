@@ -30,7 +30,7 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.arenadata.dtm.query.execution.plugin.adqm.common.Constants.*;
+import static io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants.*;
 
 
 @Slf4j

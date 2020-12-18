@@ -1,19 +1,12 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl.ddl;
 
-import io.arenadata.dtm.async.AsyncHandler;
-import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.AdgHelperTableNamesFactory;
-import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.TtDeleteTablesQueueRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.TtDeleteTablesRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
-import io.arenadata.dtm.query.execution.plugin.adg.service.QueryExecutorService;
-import io.arenadata.dtm.query.execution.plugin.adg.service.TtCartridgeProvider;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlKind;
@@ -23,59 +16,36 @@ import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 
-import static io.arenadata.dtm.query.execution.plugin.adg.constants.ColumnFields.*;
-import static io.arenadata.dtm.query.execution.plugin.adg.constants.Procedures.DROP_SPACE;
-
 @Component
 @Slf4j
 public class DropTableExecutor implements DdlExecutor<Void> {
 
-    private final QueryExecutorService executorService;
-    private final TtCartridgeProvider cartridgeProvider;
     private final AdgCartridgeClient cartridgeClient;
     private final AdgHelperTableNamesFactory adgHelperTableNamesFactory;
 
     @Autowired
-    public DropTableExecutor(QueryExecutorService executorService,
-                             TtCartridgeProvider cartridgeProvider,
-                             AdgCartridgeClient cartridgeClient,
+    public DropTableExecutor(AdgCartridgeClient cartridgeClient,
                              AdgHelperTableNamesFactory adgHelperTableNamesFactory) {
-        this.executorService = executorService;
-        this.cartridgeProvider = cartridgeProvider;
         this.cartridgeClient = cartridgeClient;
         this.adgHelperTableNamesFactory = adgHelperTableNamesFactory;
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, AsyncHandler<Void> handler) {
-        val tableNames = adgHelperTableNamesFactory.create(
-                context.getRequest().getQueryRequest().getEnvName(),
-                context.getRequest().getQueryRequest().getDatamartMnemonic(),
-                context.getRequest().getEntity().getName());
+    public Future<Void> execute(DdlRequestContext context, String sqlNodeName) {
+        return Future.future(promise -> {
+            val tableNames = adgHelperTableNamesFactory.create(
+                    context.getRequest().getQueryRequest().getEnvName(),
+                    context.getRequest().getQueryRequest().getDatamartMnemonic(),
+                    context.getRequest().getEntity().getName());
 
-        val request = new TtDeleteTablesRequest(Arrays.asList(
-                tableNames.getStaging(),
-                tableNames.getActual(),
-                tableNames.getHistory()
-        ));
-
-        cartridgeClient.executeDeleteSpacesQueued(request, ar -> {
-            if(ar.succeeded()) {
-                handler.handleSuccess();
-            } else {
-                handler.handleError(ar.cause());
-            }
+            val request = new TtDeleteTablesRequest(Arrays.asList(
+                    tableNames.getStaging(),
+                    tableNames.getActual(),
+                    tableNames.getHistory()
+            ));
+            cartridgeClient.executeDeleteSpacesQueued(request)
+                    .onComplete(promise);
         });
-    }
-
-    private Future<Object> dropSpacesFromDb(final Entity entity) {
-        String actualTable = entity.getName() + ACTUAL_POSTFIX;
-        String historyTable = entity.getName() + HISTORY_POSTFIX;
-        String stagingTable = entity.getName() + STAGING_POSTFIX;
-        // TODO It is better to drop all spaces at one, but currently it is not supported by cartridge
-        return executorService.executeProcedure(DROP_SPACE, actualTable)
-                .compose(f -> executorService.executeProcedure(DROP_SPACE, historyTable))
-                .compose(f -> executorService.executeProcedure(DROP_SPACE, stagingTable));
     }
 
     @Override

@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.core.service.delta.impl;
 
-import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
@@ -29,9 +28,8 @@ public class GetDeltaOkExecutor implements DeltaExecutor {
     }
 
     @Override
-    public void execute(DeltaQuery deltaQuery, AsyncHandler<QueryResult> handler) {
-        getDeltaOk(deltaQuery)
-                .onComplete(handler);
+    public Future<QueryResult> execute(DeltaQuery deltaQuery) {
+        return getDeltaOk(deltaQuery);
     }
 
     private Future<QueryResult> getDeltaOk(DeltaQuery deltaQuery) {

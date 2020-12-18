@@ -11,10 +11,8 @@ import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaService;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlNode;
@@ -39,13 +37,13 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
                                     @Qualifier("coreCalciteDefinitionService") DefinitionService<SqlNode> definitionService,
                                     DeltaInformationExtractor deltaInformationExtractor) {
         this.definitionService = definitionService;
-        entityDao = serviceDbFacade.getServiceDbDao().getEntityDao();
+        this.entityDao = serviceDbFacade.getServiceDbDao().getEntityDao();
         this.deltaInformationExtractor = deltaInformationExtractor;
     }
 
     @Override
-    public void createSchema(QueryRequest request, Handler<AsyncResult<Map<DatamartSchemaKey, Entity>>> resultHandler) {
-        try {
+    public Future<Map<DatamartSchemaKey, Entity>> createSchema(QueryRequest request) {
+        return Future.future(promise -> {
             final List<DatamartInfo> datamartInfoList = getDatamartInfoListFromQuery(request.getSql());
             CompositeFuture.join(
                     datamartInfoList.stream()
@@ -58,15 +56,12 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
                         val schemaKeyDatamartTableMap = entities.stream()
                                 .map(Entity::clone)
                                 .collect(Collectors.toMap(this::createDatamartSchemaKey, Function.identity()));
-                        resultHandler.handle(Future.succeededFuture(schemaKeyDatamartTableMap));
+                        promise.complete(schemaKeyDatamartTableMap);
                     })
                     .onFailure(error -> {
-                        resultHandler.handle(Future.failedFuture(
-                                new DtmException("Error initializing table attributes", error)));
+                        promise.fail(new DtmException("Error initializing table attributes", error));
                     });
-        } catch (Exception e) {
-            resultHandler.handle(Future.failedFuture(new DtmException("Error initializing schemas", e)));
-        }
+        });
     }
 
     private List<DatamartInfo> getDatamartInfoListFromQuery(String sql) {

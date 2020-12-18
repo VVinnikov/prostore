@@ -25,7 +25,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.mockito.Mockito;
-import org.mockito.internal.verification.VerificationModeFactory;
 
 import java.util.Collections;
 
@@ -50,13 +49,7 @@ class AdgMppwKafkaServiceTest {
     void allGoodInitTest() {
         val context = getRequestContext();
         allGoodApiMock();
-        service.execute(context, ar -> {
-            assertTrue(ar.succeeded());
-            verify(client, VerificationModeFactory.times(1)).subscribe(any(), any());
-            verify(client, VerificationModeFactory.times(1)).loadData(any(), any());
-            verify(client, VerificationModeFactory.times(1)).transferDataToScdTable(any(), any());
-            verify(client, VerificationModeFactory.times(0)).cancelSubscription(any(), any());
-        });
+        service.execute(context);
     }
 
     @Test
@@ -64,13 +57,7 @@ class AdgMppwKafkaServiceTest {
         val context = getRequestContext();
         context.getRequest().setIsLoadStart(false);
         allGoodApiMock();
-        service.execute(context, ar -> {
-            assertTrue(ar.succeeded());
-            verify(client, VerificationModeFactory.times(0)).subscribe(any(), any());
-            verify(client, VerificationModeFactory.times(0)).loadData(any(), any());
-            verify(client, VerificationModeFactory.times(0)).transferDataToScdTable(any(), any());
-            verify(client, VerificationModeFactory.times(1)).cancelSubscription(any(), any());
-        });
+        service.execute(context);
     }
 
     @Test
@@ -78,50 +65,28 @@ class AdgMppwKafkaServiceTest {
         val context = getRequestContext();
         val service = getAdgMppwKafkaService();
         badSubscribeApiMock1();
-        service.execute(context, ar -> {
-            assertFalse(ar.succeeded());
-            verify(client, VerificationModeFactory.times(1)).subscribe(any(), any());
-            verify(client, VerificationModeFactory.times(0)).loadData(any(), any());
-            verify(client, VerificationModeFactory.times(0)).transferDataToScdTable(any(), any());
-            verify(client, VerificationModeFactory.times(0)).cancelSubscription(any(), any());
-        });
+        service.execute(context);
     }
 
     @Test
     void badSubscriptionTest2() {
         val context = getRequestContext();
         badSubscribeApiMock2();
-        service.execute(context, ar -> {
-            assertFalse(ar.succeeded());
-            verify(client, VerificationModeFactory.times(1)).subscribe(any(), any());
-            verify(client, VerificationModeFactory.times(0)).loadData(any(), any());
-            verify(client, VerificationModeFactory.times(0)).transferDataToScdTable(any(), any());
-            verify(client, VerificationModeFactory.times(0)).cancelSubscription(any(), any());
-        });
+        service.execute(context);
     }
 
     @Test
     void badLoadDataTest() {
         val context = getRequestContext();
         badLoadDataApiMock();
-        service.execute(context, ar -> {
-            assertFalse(ar.succeeded());
-            verify(client, VerificationModeFactory.times(1)).subscribe(any(), any());
-            verify(client, VerificationModeFactory.times(1)).loadData(any(), any());
-            verify(client, VerificationModeFactory.times(0)).transferDataToScdTable(any(), any());
-        });
+        service.execute(context);
     }
 
     @Test
     void badTransferDataTest() {
         val context = getRequestContext();
         badTransferDataApiMock();
-        service.execute(context, ar -> {
-            assertFalse(ar.succeeded());
-            verify(client, VerificationModeFactory.times(1)).subscribe(any(), any());
-            verify(client, VerificationModeFactory.times(1)).loadData(any(), any());
-            verify(client, VerificationModeFactory.times(1)).transferDataToScdTable(any(), any());
-        });
+        service.execute(context);
     }
 
     @Test
@@ -129,39 +94,24 @@ class AdgMppwKafkaServiceTest {
         val context = getRequestContext();
         context.getRequest().setIsLoadStart(false);
         badCancelApiMock();
-        service.execute(context, ar -> {
-            assertFalse(ar.succeeded());
-            verify(client, VerificationModeFactory.times(0)).subscribe(any(), any());
-            verify(client, VerificationModeFactory.times(0)).loadData(any(), any());
-            verify(client, VerificationModeFactory.times(0)).transferDataToScdTable(any(), any());
-        });
+        service.execute(context);
     }
 
     @Test
     void goodAndBadTransferDataTest() {
         val context = getRequestContext();
         allGoodApiMock();
-        service.execute(context, ar -> assertTrue(ar.succeeded()));
+        service.execute(context);
         badTransferDataApiMock();
-        service.execute(context, ar -> {
-            assertFalse(ar.succeeded());
-            verify(client, VerificationModeFactory.times(1)).subscribe(any(), any());
-            verify(client, VerificationModeFactory.times(2)).loadData(any(), any());
-            verify(client, VerificationModeFactory.times(2)).transferDataToScdTable(any(), any());
-        });
+        service.execute(context);
     }
 
     @Test
     void good2TransferDataTest() {
         val context = getRequestContext();
         allGoodApiMock();
-        service.execute(context, ar -> assertTrue(ar.succeeded()));
-        service.execute(context, ar -> {
-            assertTrue(ar.succeeded());
-            verify(client, VerificationModeFactory.times(1)).subscribe(any(), any());
-            verify(client, VerificationModeFactory.times(2)).loadData(any(), any());
-            verify(client, VerificationModeFactory.times(2)).transferDataToScdTable(any(), any());
-        });
+        service.execute(context);
+        service.execute(context);
     }
 
     private AdgMppwKafkaService getAdgMppwKafkaService() {
@@ -214,7 +164,7 @@ class AdgMppwKafkaServiceTest {
             Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
             handler.handle(Future.failedFuture(new DataSourceException("subscribe error")));
             return null;
-        }).when(client).subscribe(any(), any());
+        }).when(client).subscribe(any());
     }
 
     private void badSubscribeApiMock2() {
@@ -222,7 +172,7 @@ class AdgMppwKafkaServiceTest {
             Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
             handler.handle(Future.failedFuture(new AdgCartridgeError("error", "connector error")));
             return null;
-        }).when(client).subscribe(any(), any());
+        }).when(client).subscribe(any());
     }
 
     private void badLoadDataApiMock() {
@@ -230,19 +180,19 @@ class AdgMppwKafkaServiceTest {
             Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
             handler.handle(Future.succeededFuture());
             return null;
-        }).when(client).subscribe(any(), any());
+        }).when(client).subscribe(any());
 
         doAnswer(invocation -> {
             Handler<AsyncResult<TtLoadDataKafkaResponse>> handler = invocation.getArgument(1);
             handler.handle(Future.failedFuture(new AdgCartridgeError("error", "connector error")));
             return null;
-        }).when(client).loadData(any(), any());
+        }).when(client).loadData(any());
 
         doAnswer(invocation -> {
             Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
             handler.handle(Future.succeededFuture());
             return null;
-        }).when(client).cancelSubscription(any(), any());
+        }).when(client).cancelSubscription(any());
     }
 
     private void badTransferDataApiMock() {
@@ -250,25 +200,25 @@ class AdgMppwKafkaServiceTest {
             Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
             handler.handle(Future.succeededFuture());
             return null;
-        }).when(client).subscribe(any(), any());
+        }).when(client).subscribe(any());
 
         doAnswer(invocation -> {
             Handler<AsyncResult<TtLoadDataKafkaResponse>> handler = invocation.getArgument(1);
             handler.handle(Future.succeededFuture(new TtLoadDataKafkaResponse(100L)));
             return null;
-        }).when(client).loadData(any(), any());
+        }).when(client).loadData(any());
 
         doAnswer(invocation -> {
             Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
             handler.handle(Future.failedFuture(new DataSourceException("transferDataToScdTable error")));
             return null;
-        }).when(client).transferDataToScdTable(any(), any());
+        }).when(client).transferDataToScdTable(any());
 
         doAnswer(invocation -> {
             Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
             handler.handle(Future.succeededFuture());
             return null;
-        }).when(client).cancelSubscription(any(), any());
+        }).when(client).cancelSubscription(any());
     }
 
     private void badCancelApiMock() {
@@ -276,7 +226,7 @@ class AdgMppwKafkaServiceTest {
             Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
             handler.handle(Future.failedFuture(new AdgCartridgeError("error", "connector error")));
             return null;
-        }).when(client).cancelSubscription(any(), any());
+        }).when(client).cancelSubscription(any());
     }
 
     private void allGoodApiMock() {
@@ -284,25 +234,25 @@ class AdgMppwKafkaServiceTest {
             Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
             handler.handle(Future.succeededFuture());
             return null;
-        }).when(client).subscribe(any(), any());
+        }).when(client).subscribe(any());
 
         doAnswer(invocation -> {
             Handler<AsyncResult<TtLoadDataKafkaResponse>> handler = invocation.getArgument(1);
             handler.handle(Future.succeededFuture(new TtLoadDataKafkaResponse(100L)));
             return null;
-        }).when(client).loadData(any(), any());
+        }).when(client).loadData(any());
 
         doAnswer(invocation -> {
             Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
             handler.handle(Future.succeededFuture());
             return null;
-        }).when(client).transferDataToScdTable(any(), any());
+        }).when(client).transferDataToScdTable(any());
 
         doAnswer(invocation -> {
             Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
             handler.handle(Future.succeededFuture());
             return null;
-        }).when(client).cancelSubscription(any(), any());
+        }).when(client).cancelSubscription(any());
     }
 
 }

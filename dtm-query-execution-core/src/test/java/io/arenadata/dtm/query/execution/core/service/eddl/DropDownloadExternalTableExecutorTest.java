@@ -72,13 +72,7 @@ public class DropDownloadExternalTableExecutorTest {
         Mockito.when(entityDao.deleteEntity(eq(schema), eq(table)))
                 .thenReturn(Future.succeededFuture());
 
-        dropDownloadExternalTableExecutor.execute(query, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        dropDownloadExternalTableExecutor.execute(query);
 
         assertTrue(promise.future().succeeded());
     }
@@ -90,13 +84,7 @@ public class DropDownloadExternalTableExecutorTest {
         Mockito.when(entityDao.getEntity(eq(schema), eq(table)))
                 .thenReturn(Future.succeededFuture(entityWithWrongType));
 
-        dropDownloadExternalTableExecutor.execute(query, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        dropDownloadExternalTableExecutor.execute(query);
 
         assertTrue(promise.future().failed());
         assertTrue(promise.future().cause() instanceof TableNotExistsException);
@@ -109,13 +97,7 @@ public class DropDownloadExternalTableExecutorTest {
         Mockito.when(entityDao.getEntity(eq(schema), eq(table)))
                 .thenReturn(Future.failedFuture(new TableNotExistsException("")));
 
-        dropDownloadExternalTableExecutor.execute(query, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        dropDownloadExternalTableExecutor.execute(query);
 
         assertTrue(promise.future().failed());
         assertTrue(promise.future().cause() instanceof TableNotExistsException);
@@ -131,13 +113,7 @@ public class DropDownloadExternalTableExecutorTest {
         Mockito.when(entityDao.deleteEntity(eq(schema), eq(table)))
                 .thenReturn(Future.failedFuture("delete entity error"));
 
-        dropDownloadExternalTableExecutor.execute(query, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        dropDownloadExternalTableExecutor.execute(query);
 
         assertTrue(promise.future().failed());
     }

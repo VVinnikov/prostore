@@ -44,11 +44,6 @@ public class InformationSchemaExecutorImplTest {
         sourceRequest.setMetadata(metadata);
         sourceRequest.setSourceType(SourceType.INFORMATION_SCHEMA);
 
-        informationSchemaExecutor.execute(sourceRequest, ar -> {
-            assertTrue(ar.succeeded());
-            Map<String, Object> expectedMap = new HashMap<>();
-            expectedMap.put("schema_name", "test_datamart");
-            assertEquals(expectedMap, ar.result().getResult().get(0));
-        });
+        informationSchemaExecutor.execute(sourceRequest);
     }
 }

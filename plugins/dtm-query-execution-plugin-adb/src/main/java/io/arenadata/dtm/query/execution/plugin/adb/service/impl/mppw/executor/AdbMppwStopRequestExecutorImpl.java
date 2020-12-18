@@ -42,18 +42,18 @@ public class AdbMppwStopRequestExecutorImpl implements AdbMppwRequestExecutor {
     @Override
     public Future<QueryResult> execute(MppwRequestContext requestContext) {
         return dropExtTable(requestContext)
-            .compose(v -> Future.future((Promise<QueryResult> promise) -> vertx.eventBus().request(
-                MppwTopic.KAFKA_STOP.getValue(),
-                requestContext.getRequest().getQueryRequest().getRequestId().toString(),
-                new DeliveryOptions().setSendTimeout(mppwProperties.getStopTimeoutMs()),
-                ar -> {
-                    if (ar.succeeded()) {
-                        log.debug("Mppw kafka stopped successfully");
-                        promise.complete(QueryResult.emptyResult());
-                    } else {
-                        promise.fail(new MppwDatasourceException("Error stopping mppw kafka", ar.cause()));
-                    }
-                })));
+                .compose(v -> Future.future((Promise<QueryResult> promise) -> vertx.eventBus().request(
+                        MppwTopic.KAFKA_STOP.getValue(),
+                        requestContext.getRequest().getQueryRequest().getRequestId().toString(),
+                        new DeliveryOptions().setSendTimeout(mppwProperties.getStopTimeoutMs()),
+                        ar -> {
+                            if (ar.succeeded()) {
+                                log.debug("Mppw kafka stopped successfully");
+                                promise.complete(QueryResult.emptyResult());
+                            } else {
+                                promise.fail(new MppwDatasourceException("Error stopping mppw kafka", ar.cause()));
+                            }
+                        })));
     }
 
     private Future<Void> dropExtTable(MppwRequestContext requestContext) {
@@ -62,7 +62,8 @@ public class AdbMppwStopRequestExecutorImpl implements AdbMppwRequestExecutor {
             val schema = queryRequest.getDatamartMnemonic();
             val table = MetadataSqlFactoryImpl.WRITABLE_EXT_TABLE_PREF +
                     queryRequest.getRequestId().toString().replaceAll("-", "_");
-            adbQueryExecutor.executeUpdate(metadataSqlFactory.dropExtTableSqlQuery(schema, table), promise);
+            adbQueryExecutor.executeUpdate(metadataSqlFactory.dropExtTableSqlQuery(schema, table))
+                    .onComplete(promise);
         });
     }
 }

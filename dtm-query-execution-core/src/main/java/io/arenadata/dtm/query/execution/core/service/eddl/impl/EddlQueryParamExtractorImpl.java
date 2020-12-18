@@ -49,76 +49,58 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
     }
 
     @Override
-    public void extract(QueryRequest request, Handler<AsyncResult<EddlQuery>> asyncResultHandler) {
-        vertx.executeBlocking(it -> processSqlQuery(request, it), ar -> {
-            if (ar.succeeded()) {
-                SqlNode sqlNode = (SqlNode) ar.result();
-                extract(sqlNode, request.getDatamartMnemonic(), asyncResultHandler);
+    public Future<EddlQuery> extract(QueryRequest request) {
+        return processSqlQuery(request)
+                .compose(sqlNode -> extract(sqlNode, request.getDatamartMnemonic()));
+    }
+
+    private Future<SqlNode> processSqlQuery(QueryRequest request) {
+        return Future.future(promise -> vertx.executeBlocking(it -> {
+            SqlNode node = definitionService.processingQuery(request.getSql());
+            it.complete(node);
+        }, promise));
+    }
+
+    private Future<EddlQuery> extract(SqlNode sqlNode, String defaultSchema) {
+        return Future.future(promise -> {
+            if (sqlNode instanceof SqlDdl) {
+                if (sqlNode instanceof SqlDropDownloadExternalTable) {
+                    promise.complete(extractDropDownloadExternalTable(
+                            (SqlDropDownloadExternalTable) sqlNode,
+                            defaultSchema));
+                } else if (sqlNode instanceof SqlCreateDownloadExternalTable) {
+                    promise.complete(extractCreateDownloadExternalTable(
+                            (SqlCreateDownloadExternalTable) sqlNode,
+                            defaultSchema));
+                } else if (sqlNode instanceof SqlCreateUploadExternalTable) {
+                    promise.complete(extractCreateUploadExternalTable((SqlCreateUploadExternalTable) sqlNode,
+                            defaultSchema));
+                } else if (sqlNode instanceof SqlDropUploadExternalTable) {
+                    promise.complete(extractDropUploadExternalTable((SqlDropUploadExternalTable) sqlNode,
+                            defaultSchema));
+                } else {
+                    promise.fail(new DtmException(String.format("Query [%s] is not an EDDL statement",
+                            sqlNode)));
+                }
             } else {
-                asyncResultHandler.handle(Future.failedFuture(ar.cause()));
+                promise.fail(new DtmException(String.format("Query [%s] is not an EDDL statement",
+                        sqlNode)));
             }
         });
     }
 
-    private void processSqlQuery(QueryRequest request, Promise<Object> it) {
-        try {
-            SqlNode node = definitionService.processingQuery(request.getSql());
-            it.complete(node);
-        } catch (Exception e) {
-            it.fail(new DtmException(ERROR_PARSING_EDDL_QUERY, e));
-        }
-    }
-
-    private void extract(SqlNode sqlNode,
-                         String defaultSchema,
-                         Handler<AsyncResult<EddlQuery>> asyncResultHandler) {
-        if (sqlNode instanceof SqlDdl) {
-            if (sqlNode instanceof SqlDropDownloadExternalTable) {
-                extractDropDownloadExternalTable(
-                        (SqlDropDownloadExternalTable) sqlNode,
-                        defaultSchema,
-                        asyncResultHandler);
-            } else if (sqlNode instanceof SqlCreateDownloadExternalTable) {
-                extractCreateDownloadExternalTable(
-                        (SqlCreateDownloadExternalTable) sqlNode,
-                        defaultSchema,
-                        asyncResultHandler);
-            } else if (sqlNode instanceof SqlCreateUploadExternalTable) {
-                extractCreateUploadExternalTable((SqlCreateUploadExternalTable) sqlNode,
-                        defaultSchema,
-                        asyncResultHandler);
-            } else if (sqlNode instanceof SqlDropUploadExternalTable) {
-                extractDropUploadExternalTable((SqlDropUploadExternalTable) sqlNode,
-                        defaultSchema,
-                        asyncResultHandler);
-            } else {
-                asyncResultHandler.handle(Future.failedFuture(
-                        new DtmException(String.format("Query [%s] is not an EDDL statement",
-                                sqlNode))));
-            }
-        } else {
-            asyncResultHandler.handle(Future.failedFuture(
-                    new DtmException(String.format("Query [%s] is not an EDDL statement",
-                            sqlNode))));
-        }
-    }
-
-    private void extractDropDownloadExternalTable(SqlDropDownloadExternalTable ddl,
-                                                  String defaultSchema,
-                                                  Handler<AsyncResult<EddlQuery>> asyncResultHandler) {
+    private DropDownloadExternalTableQuery extractDropDownloadExternalTable(SqlDropDownloadExternalTable ddl,
+                                                                            String defaultSchema) {
         try {
             TableInfo tableInfo = SqlNodeUtils.getTableInfo(ddl, defaultSchema);
-            asyncResultHandler.handle(Future.succeededFuture(
-                    new DropDownloadExternalTableQuery(tableInfo.getSchemaName(), tableInfo.getTableName())));
+            return new DropDownloadExternalTableQuery(tableInfo.getSchemaName(), tableInfo.getTableName());
         } catch (RuntimeException e) {
-            asyncResultHandler.handle(Future.failedFuture(
-                    new DtmException("Error generating drop download external table query", e)));
+            throw new DtmException("Error generating drop download external table query", e);
         }
     }
 
-    private void extractCreateDownloadExternalTable(SqlCreateDownloadExternalTable ddl,
-                                                    String defaultSchema,
-                                                    Handler<AsyncResult<EddlQuery>> asyncResultHandler) {
+    private CreateDownloadExternalTableQuery extractCreateDownloadExternalTable(SqlCreateDownloadExternalTable ddl,
+                                                                                String defaultSchema) {
         try {
             val tableInfo = SqlNodeUtils.getTableInfo(ddl, defaultSchema);
             val entity = metadataCalciteGenerator.generateTableMetadata(ddl);
@@ -127,25 +109,22 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
             val locationOperator = SqlNodeUtils.getOne(ddl, LocationOperator.class);
             val format = SqlNodeUtils.getOne(ddl, FormatOperator.class).getFormat();
             val chunkSizeOperator = SqlNodeUtils.getOne(ddl, ChunkSizeOperator.class);
-            asyncResultHandler.handle(Future.succeededFuture(
-                    new CreateDownloadExternalTableQuery(
-                            tableInfo.getSchemaName(),
-                            tableInfo.getTableName(),
-                            entity,
-                            locationOperator.getType(),
-                            getLocation(locationOperator),
-                            format,
-                            avroSchema.toString(),
-                            chunkSizeOperator.getChunkSize())));
+            return new CreateDownloadExternalTableQuery(
+                    tableInfo.getSchemaName(),
+                    tableInfo.getTableName(),
+                    entity,
+                    locationOperator.getType(),
+                    getLocation(locationOperator),
+                    format,
+                    avroSchema.toString(),
+                    chunkSizeOperator.getChunkSize());
         } catch (RuntimeException e) {
-            asyncResultHandler.handle(Future.failedFuture(
-                    new DtmException("Error generating create download external table query", e)));
+            throw new DtmException("Error generating create download external table query", e);
         }
     }
 
-    private void extractCreateUploadExternalTable(SqlCreateUploadExternalTable ddl,
-                                                  String defaultSchema,
-                                                  Handler<AsyncResult<EddlQuery>> asyncResultHandler) {
+    private CreateUploadExternalTableQuery extractCreateUploadExternalTable(SqlCreateUploadExternalTable ddl,
+                                                                            String defaultSchema) {
         try {
             val tableInfo = SqlNodeUtils.getTableInfo(ddl, defaultSchema);
             val entity = metadataCalciteGenerator.generateTableMetadata(ddl);
@@ -154,20 +133,27 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
             val locationOperator = SqlNodeUtils.getOne(ddl, LocationOperator.class);
             val format = SqlNodeUtils.getOne(ddl, FormatOperator.class).getFormat();
             val messageLimitOperator = SqlNodeUtils.getOne(ddl, MassageLimitOperator.class);
-            asyncResultHandler.handle(Future.succeededFuture(
-                    new CreateUploadExternalTableQuery(
-                            tableInfo.getSchemaName(),
-                            tableInfo.getTableName(),
-                            entity,
-                            locationOperator.getType(),
-                            getLocation(locationOperator),
-                            format,
-                            avroSchema.toString(),
-                            messageLimitOperator.getMessageLimit())
-            ));
+            return new CreateUploadExternalTableQuery(
+                    tableInfo.getSchemaName(),
+                    tableInfo.getTableName(),
+                    entity,
+                    locationOperator.getType(),
+                    getLocation(locationOperator),
+                    format,
+                    avroSchema.toString(),
+                    messageLimitOperator.getMessageLimit());
         } catch (RuntimeException e) {
-            asyncResultHandler.handle(Future.failedFuture(
-                    new DtmException("Error generating create upload external table query", e)));
+            throw new DtmException("Error generating create upload external table query", e);
+        }
+    }
+
+    private DropUploadExternalTableQuery extractDropUploadExternalTable(SqlDropUploadExternalTable sqlNode,
+                                                                        String defaultSchema) {
+        try {
+            TableInfo tableInfo = SqlNodeUtils.getTableInfo(sqlNode, defaultSchema);
+            return new DropUploadExternalTableQuery(tableInfo.getSchemaName(), tableInfo.getTableName());
+        } catch (RuntimeException e) {
+            throw new DtmException("Error generating drop upload external table query", e);
         }
     }
 
@@ -190,18 +176,5 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
 
     private String getZookeeperHostPort() {
         return kafkaZookeeperProperties.getConnectionString() + ":" + ZOOKEEPER_DEFAULT_PORT;
-    }
-
-    private void extractDropUploadExternalTable(SqlDropUploadExternalTable sqlNode,
-                                                String defaultSchema,
-                                                Handler<AsyncResult<EddlQuery>> asyncResultHandler) {
-        try {
-            TableInfo tableInfo = SqlNodeUtils.getTableInfo(sqlNode, defaultSchema);
-            asyncResultHandler.handle(Future.succeededFuture(
-                    new DropUploadExternalTableQuery(tableInfo.getSchemaName(), tableInfo.getTableName())));
-        } catch (RuntimeException e) {
-            asyncResultHandler.handle(Future.failedFuture(
-                    new DtmException("Error generating drop upload external table query", e)));
-        }
     }
 }

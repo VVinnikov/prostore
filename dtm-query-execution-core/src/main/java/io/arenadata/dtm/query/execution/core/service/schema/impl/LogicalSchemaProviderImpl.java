@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.schema.impl;
 
 import io.arenadata.dtm.common.dto.schema.DatamartSchemaKey;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
@@ -31,21 +32,12 @@ public class LogicalSchemaProviderImpl implements LogicalSchemaProvider {
     }
 
     @Override
-    public void getSchema(QueryRequest request, Handler<AsyncResult<List<Datamart>>> resultHandler) {
-        try {
-            logicalSchemaService.createSchema(request, ar -> {
-                if (ar.succeeded()) {
-                    Map<DatamartSchemaKey, Entity> datamartTableMap = ar.result();
-                    log.trace("Received data schema on request: {}; {}", request, datamartTableMap);
-
-                    resultHandler.handle(Future.succeededFuture(getDatamartsSchemas(request.getDatamartMnemonic(), datamartTableMap)));
-                } else {
-                    resultHandler.handle(Future.failedFuture(ar.cause()));
-                }
-            });
-        } catch (Exception e) {
-            resultHandler.handle(Future.failedFuture(e));
-        }
+    public Future<List<Datamart>> getSchema(QueryRequest request) {
+        return logicalSchemaService.createSchema(request)
+                .map(schemaMap -> {
+                    log.trace("Received data schema on request: {}; {}", request, schemaMap);
+                    return getDatamartsSchemas(request.getDatamartMnemonic(), schemaMap);
+                });
     }
 
     @NotNull
@@ -72,8 +64,9 @@ public class LogicalSchemaProviderImpl implements LogicalSchemaProvider {
     }
 
     @Override
-    public void updateSchema(QueryRequest request, Handler<AsyncResult<List<Datamart>>> resultHandler) {
+    public Future<List<Datamart>> updateSchema(QueryRequest request) {
         //TODO implement
+        return Future.failedFuture(new DtmException("Feature is not implemented"));
     }
 
 }

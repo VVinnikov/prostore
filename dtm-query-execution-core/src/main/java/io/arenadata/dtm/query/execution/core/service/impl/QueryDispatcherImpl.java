@@ -1,16 +1,13 @@
 package io.arenadata.dtm.query.execution.core.service.impl;
 
-import io.arenadata.dtm.async.AsyncHandler;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.reader.QueryResult;
-import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.QueryDispatcher;
 import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.DatamartExecutionService;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -33,12 +30,11 @@ public class QueryDispatcherImpl implements QueryDispatcher {
     }
 
     @Override
-    public void dispatch(RequestContext<?> context, AsyncHandler<QueryResult> handler) {
+    public Future<QueryResult> dispatch(RequestContext<?> context) {
         try {
-            serviceMap.get(context.getProcessingType())
-                    .execute(context, handler);
+            return serviceMap.get(context.getProcessingType()).execute(context);
         } catch (Exception e) {
-            handler.handleError("An error occurred while dispatching the request", e);
+            return Future.failedFuture(new DtmException("An error occurred while dispatching the request", e));
         }
     }
 }

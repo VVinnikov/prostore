@@ -69,120 +69,59 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     }
 
     @Override
-    public void ddl(SourceType sourceType,
-                    DdlRequestContext context,
-                    AsyncHandler<Void> asyncResultHandler) {
-        metricsService.sendMetrics(sourceType,
+    public Future<Void> ddl(SourceType sourceType, DdlRequestContext context) {
+        return executeWithMetrics(sourceType,
                 SqlProcessingType.DDL,
-                context.getMetrics())
-                .onSuccess(ar -> {
-                    taskVerticleExecutor.execute(p -> getPlugin(sourceType).ddl(context, (AsyncHandler<Void>) p),
-                            metricsService.sendMetrics(sourceType,
-                                    SqlProcessingType.DDL,
-                                    context.getMetrics(),
-                                    asyncResultHandler));
-                })
-                .onFailure(fail -> asyncResultHandler.handle(Future.failedFuture(fail)));
+                context.getMetrics(),
+                plugin -> plugin.ddl(context));
     }
 
     @Override
-    public void llr(SourceType sourceType,
-                    LlrRequestContext context,
-                    AsyncHandler<QueryResult> asyncResultHandler) {
-        metricsService.sendMetrics(sourceType,
+    public Future<QueryResult> llr(SourceType sourceType, LlrRequestContext context) {
+        return executeWithMetrics(sourceType,
                 SqlProcessingType.LLR,
-                context.getMetrics())
-                .onSuccess(ar -> {
-                    taskVerticleExecutor.execute(p -> getPlugin(sourceType).llr(context, (AsyncHandler<QueryResult>) p),
-                            metricsService.sendMetrics(sourceType,
-                                    SqlProcessingType.LLR,
-                                    context.getMetrics(),
-                                    asyncResultHandler));
-                })
-                .onFailure(fail -> asyncResultHandler.handle(Future.failedFuture(fail)));
+                context.getMetrics(),
+                plugin -> plugin.llr(context));
     }
 
     @Override
-    public void mppr(SourceType sourceType,
-                     MpprRequestContext context,
-                     AsyncHandler<QueryResult> asyncResultHandler) {
-        metricsService.sendMetrics(sourceType,
+    public Future<QueryResult> mppr(SourceType sourceType, MpprRequestContext context) {
+        return executeWithMetrics(sourceType,
                 SqlProcessingType.MPPR,
-                context.getMetrics())
-                .onSuccess(ar -> {
-                    taskVerticleExecutor.execute(p -> getPlugin(sourceType).mppr(context, (AsyncHandler<QueryResult>) p),
-                            metricsService.sendMetrics(sourceType,
-                                    SqlProcessingType.MPPR,
-                                    context.getMetrics(),
-                                    asyncResultHandler));
-                })
-                .onFailure(fail -> asyncResultHandler.handle(Future.failedFuture(fail)));
+                context.getMetrics(),
+                plugin -> plugin.mppr(context));
     }
 
     @Override
-    public void mppw(SourceType sourceType,
-                     MppwRequestContext context,
-                     AsyncHandler<QueryResult> asyncResultHandler) {
-        metricsService.sendMetrics(sourceType,
+    public Future<QueryResult> mppw(SourceType sourceType, MppwRequestContext context) {
+        return executeWithMetrics(sourceType,
                 SqlProcessingType.MPPW,
-                context.getMetrics())
-                .onSuccess(ar -> {
-                    taskVerticleExecutor.execute(p -> getPlugin(sourceType).mppw(context, (AsyncHandler<QueryResult>) p),
-                            metricsService.sendMetrics(sourceType,
-                                    SqlProcessingType.MPPW,
-                                    context.getMetrics(),
-                                    asyncResultHandler));
-                })
-                .onFailure(fail -> asyncResultHandler.handle(Future.failedFuture(fail)));
+                context.getMetrics(),
+                plugin -> plugin.mppw(context));
     }
 
     @Override
-    public void calcQueryCost(SourceType sourceType,
-                              QueryCostRequestContext context,
-                              AsyncHandler<Integer> asyncResultHandler) {
-        metricsService.sendMetrics(sourceType,
-                SqlProcessingType.MPPW,
-                context.getMetrics())
-                .onSuccess(ar -> {
-                    taskVerticleExecutor.execute(p -> getPlugin(sourceType).calcQueryCost(context, (AsyncHandler<Integer>) p),
-                            metricsService.sendMetrics(sourceType,
-                                    SqlProcessingType.COST,
-                                    context.getMetrics(),
-                                    asyncResultHandler));
-                })
-                .onFailure(fail -> asyncResultHandler.handle(Future.failedFuture(fail)));
+    public Future<Integer> calcQueryCost(SourceType sourceType, QueryCostRequestContext context) {
+        return executeWithMetrics(sourceType,
+                SqlProcessingType.COST,
+                context.getMetrics(),
+                plugin -> plugin.calcQueryCost(context));
     }
 
     @Override
-    public void status(SourceType sourceType, StatusRequestContext context,
-                       AsyncHandler<StatusQueryResult> asyncResultHandler) {
-        metricsService.sendMetrics(sourceType,
+    public Future<StatusQueryResult> status(SourceType sourceType, StatusRequestContext context) {
+        return executeWithMetrics(sourceType,
                 SqlProcessingType.STATUS,
-                context.getMetrics())
-                .onSuccess(ar -> {
-                    taskVerticleExecutor.execute(p -> getPlugin(sourceType).status(context, (AsyncHandler<StatusQueryResult>) p),
-                            metricsService.sendMetrics(sourceType,
-                                    SqlProcessingType.STATUS,
-                                    context.getMetrics(),
-                                    asyncResultHandler));
-                })
-                .onFailure(fail -> asyncResultHandler.handle(Future.failedFuture(fail)));
+                context.getMetrics(),
+                plugin -> plugin.status(context));
     }
 
     @Override
-    public void rollback(SourceType sourceType, RollbackRequestContext context,
-                         AsyncHandler<Void> asyncResultHandler) {
-        metricsService.sendMetrics(sourceType,
+    public Future<Void> rollback(SourceType sourceType, RollbackRequestContext context) {
+        return executeWithMetrics(sourceType,
                 SqlProcessingType.ROLLBACK,
-                context.getMetrics())
-                .onSuccess(ar -> {
-                    taskVerticleExecutor.execute(p -> getPlugin(sourceType).rollback(context, (AsyncHandler<Void>) p),
-                            metricsService.sendMetrics(sourceType,
-                                    SqlProcessingType.ROLLBACK,
-                                    context.getMetrics(),
-                                    asyncResultHandler));
-                })
-                .onFailure(fail -> asyncResultHandler.handle(Future.failedFuture(fail)));
+                context.getMetrics(),
+                plugin -> plugin.rollback(context));
     }
 
     @Override
@@ -197,7 +136,8 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
 
     @Override
     public Future<Void> checkTable(SourceType sourceType, CheckContext context) {
-        return check(new PluginParams(sourceType, context.getMetrics()), plugin -> plugin.checkTable(context));
+        return check(new PluginParams(sourceType, context.getMetrics()),
+                plugin -> plugin.checkTable(context));
     }
 
     @Override
@@ -210,30 +150,45 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
         return check(params, plugin -> plugin.checkDataByHashInt32(params));
     }
 
+    @Override
     public Future<Void> truncateHistory(TruncateHistoryParams params) {
-        return metricsWrapper(SqlProcessingType.TRUNCATE, params, plugin -> plugin.truncateHistory(params));
+        return executeWithMetrics(SqlProcessingType.TRUNCATE,
+                params,
+                plugin -> plugin.truncateHistory(params));
     }
 
     private <T> Future<T> check(PluginParams pluginParams,
                                 Function<DtmDataSourcePlugin, Future<T>> func) {
-        return metricsWrapper(SqlProcessingType.CHECK, pluginParams, func);
+        return executeWithMetrics(SqlProcessingType.CHECK, pluginParams, func);
     }
 
-    private <T> Future<T> metricsWrapper(SqlProcessingType sqlProcessingType,
-                                         PluginParams pluginParams,
-                                         Function<DtmDataSourcePlugin, Future<T>> func) {
+    private <T> Future<T> executeWithMetrics(SqlProcessingType sqlProcessingType,
+                                             PluginParams pluginParams,
+                                             Function<DtmDataSourcePlugin, Future<T>> func) {
         SourceType sourceType = pluginParams.getSourceType();
         RequestMetrics requestMetrics = pluginParams.getRequestMetrics();
-        return Future.future((Promise<T> promise) -> metricsService.sendMetrics(sourceType, sqlProcessingType, requestMetrics)
-                .compose(result -> executorWrapper(func.apply(getPlugin(sourceType))))
-                .onComplete(metricsService.sendMetrics(sourceType, sqlProcessingType, requestMetrics, (AsyncHandler<T>) promise)));
-
+        return executeWithMetrics(sourceType, sqlProcessingType, requestMetrics, func);
     }
 
-    private <T> Future<T> executorWrapper(Future<T> future) {
+    private <T> Future<T> executeWithMetrics(SourceType sourceType,
+                                             SqlProcessingType sqlProcessingType,
+                                             RequestMetrics requestMetrics,
+                                             Function<DtmDataSourcePlugin, Future<T>> func) {
+        return Future.future((Promise<T> promise) ->
+                metricsService.sendMetrics(sourceType,
+                        sqlProcessingType,
+                        requestMetrics)
+                        .compose(result -> execute(func.apply(getPlugin(sourceType))))
+                        .onComplete(metricsService.sendMetrics(sourceType,
+                                sqlProcessingType,
+                                requestMetrics,
+                                promise)));
+    }
+
+    private <T> Future<T> execute(Future<T> future) {
         return Future.future((Promise<T> promise) -> taskVerticleExecutor.execute(p -> future
                         .onSuccess(promise::complete)
                         .onFailure(p::fail),
-                (AsyncHandler<T>) promise));
+                promise));
     }
 }

@@ -34,28 +34,29 @@ public class QueryController {
     public void executeQueryWithoutParams(RoutingContext context) {
         InputQueryRequest inputQueryRequest = context.getBodyAsJson().mapTo(InputQueryRequest.class);
         log.info("Execution request sent: [{}]", inputQueryRequest);
-        queryAnalyzer.analyzeAndExecute(inputQueryRequest, queryResult -> {
-            if (queryResult.succeeded()) {
+        queryAnalyzer.analyzeAndExecute(inputQueryRequest)
+                .onComplete(queryResult -> {
+                    if (queryResult.succeeded()) {
 
-                if (queryResult.result().getRequestId() == null) {
-                    queryResult.result().setRequestId(inputQueryRequest.getRequestId());
-                }
-                queryResult.result().setTimeZone(this.dtmSettings.getTimeZone().toString());
-                log.info("Request completed: [{}]", inputQueryRequest.getSql());
-                try {
-                    final String json = objectMapper.writeValueAsString(queryResult.result());
-                    context.response()
-                            .putHeader(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE)
-                            .setStatusCode(HttpResponseStatus.OK.code())
-                            .end(json);
-                } catch (JsonProcessingException e) {
-                    log.error("Error in serializing query result", e);
-                    context.fail(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), new DtmException(e));
-                }
-            } else {
-                log.error("Error while executing request [{}]", inputQueryRequest, queryResult.cause());
-                context.fail(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), queryResult.cause());
-            }
-        });
+                        if (queryResult.result().getRequestId() == null) {
+                            queryResult.result().setRequestId(inputQueryRequest.getRequestId());
+                        }
+                        queryResult.result().setTimeZone(this.dtmSettings.getTimeZone().toString());
+                        log.info("Request completed: [{}]", inputQueryRequest.getSql());
+                        try {
+                            final String json = objectMapper.writeValueAsString(queryResult.result());
+                            context.response()
+                                    .putHeader(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE)
+                                    .setStatusCode(HttpResponseStatus.OK.code())
+                                    .end(json);
+                        } catch (JsonProcessingException e) {
+                            log.error("Error in serializing query result", e);
+                            context.fail(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), new DtmException(e));
+                        }
+                    } else {
+                        log.error("Error while executing request [{}]", inputQueryRequest, queryResult.cause());
+                        context.fail(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), queryResult.cause());
+                    }
+                });
     }
 }

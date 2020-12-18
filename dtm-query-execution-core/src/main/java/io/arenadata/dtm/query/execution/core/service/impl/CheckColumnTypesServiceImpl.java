@@ -29,19 +29,16 @@ public class CheckColumnTypesServiceImpl implements CheckColumnTypesService {
 
     @Override
     public Future<Boolean> check(List<EntityField> destinationFields, QueryParserRequest queryParseRequest) {
-        return Future.future(promise -> queryParserService.parse(queryParseRequest, ar -> {
-            if (ar.succeeded()) {
-                val destinationColumns = destinationFields.stream()
-                        .map(field -> CalciteUtil.valueOf(field.getType()))
-                        .collect(Collectors.toList());
-                val sourceColumns =
-                        ar.result().getRelNode().validatedRowType.getFieldList().stream()
-                                .map(field -> field.getType().getSqlTypeName())
-                                .collect(Collectors.toList());
-                promise.complete(destinationColumns.equals(sourceColumns));
-            } else {
-                promise.fail(ar.cause());
-            }
-        }));
+        return queryParserService.parse(queryParseRequest)
+                .map(response -> {
+                    val destinationColumns = destinationFields.stream()
+                            .map(field -> CalciteUtil.valueOf(field.getType()))
+                            .collect(Collectors.toList());
+                    val sourceColumns =
+                            response.getRelNode().validatedRowType.getFieldList().stream()
+                                    .map(field -> field.getType().getSqlTypeName())
+                                    .collect(Collectors.toList());
+                    return destinationColumns.equals(sourceColumns);
+                });
     }
 }

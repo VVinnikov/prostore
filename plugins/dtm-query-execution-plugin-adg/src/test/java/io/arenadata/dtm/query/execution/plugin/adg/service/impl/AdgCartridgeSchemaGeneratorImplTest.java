@@ -15,7 +15,7 @@ import io.arenadata.dtm.query.execution.plugin.adg.factory.impl.AdgCreateTableQu
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.OperationYaml;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.AdgSpace;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.Space;
-import io.arenadata.dtm.query.execution.plugin.adg.service.TtCartridgeSchemaGenerator;
+import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeSchemaGenerator;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.factory.CreateTableQueriesFactory;
@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 
-class TtCartridgeSchemaGeneratorImplTest {
+class AdgCartridgeSchemaGeneratorImplTest {
 
     private ObjectMapper mapper;
     private DdlRequestContext ddlRequestContext;
@@ -57,21 +57,21 @@ class TtCartridgeSchemaGeneratorImplTest {
 
     @Test
     void generateWithEmptySpaces() throws JsonProcessingException {
-        Promise promise = Promise.promise();
-
+        Promise<OperationYaml> promise = Promise.promise();
         AdgSpace adgSpace = new AdgSpace("test", new Space());
         AdgTables<AdgSpace> adqmCreateTableQueries = new AdgTables<>(adgSpace, adgSpace, adgSpace);
         CreateTableQueriesFactory<AdgTables<AdgSpace>> createTableQueriesFactory = mock(AdgCreateTableQueriesFactory.class);
         Mockito.when(createTableQueriesFactory.create(any())).thenReturn(adqmCreateTableQueries);
-        TtCartridgeSchemaGenerator cartridgeSchemaGenerator = new TtCartridgeSchemaGeneratorImpl(createTableQueriesFactory);
-        cartridgeSchemaGenerator.generate(ddlRequestContext, mapper.readValue("{}", OperationYaml.class), ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
+        AdgCartridgeSchemaGenerator cartridgeSchemaGenerator = new AdgCartridgeSchemaGeneratorImpl(createTableQueriesFactory);
+        cartridgeSchemaGenerator.generate(ddlRequestContext, mapper.readValue("{}", OperationYaml.class))
+                .onComplete(ar -> {
+                    if (ar.succeeded()) {
+                        promise.complete(ar.result());
 
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+                    } else {
+                        promise.fail(ar.cause());
+                    }
+                });
         assertTrue(promise.future().succeeded());
     }
 }

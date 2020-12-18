@@ -1,15 +1,12 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl.ddl;
 
-import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.AdgHelperTableNamesFactory;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.TtDeleteTablesWithPrefixRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.val;
 import org.apache.calcite.sql.SqlKind;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,21 +28,17 @@ public class DropSchemaExecutor implements DdlExecutor<Void> {
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, AsyncHandler<Void> handler) {
+    public Future<Void> execute(DdlRequestContext context, String sqlNodeName) {
+        return Future.future(promise -> {
+            val tableNames = adgHelperTableNamesFactory.create(
+                    context.getRequest().getQueryRequest().getEnvName(),
+                    context.getRequest().getQueryRequest().getDatamartMnemonic(),
+                    "table");
 
-        val tableNames = adgHelperTableNamesFactory.create(
-                context.getRequest().getQueryRequest().getEnvName(),
-                context.getRequest().getQueryRequest().getDatamartMnemonic(),
-                "table");
+            val request = new TtDeleteTablesWithPrefixRequest(tableNames.getPrefix());
 
-        val request = new TtDeleteTablesWithPrefixRequest(tableNames.getPrefix());
-
-        cartridgeClient.executeDeleteSpacesWithPrefixQueued(request, ar -> {
-            if(ar.succeeded()) {
-                handler.handleSuccess();
-            } else {
-                handler.handleError(ar.cause());
-            }
+            cartridgeClient.executeDeleteSpacesWithPrefixQueued(request)
+                    .onComplete(promise);
         });
     }
 

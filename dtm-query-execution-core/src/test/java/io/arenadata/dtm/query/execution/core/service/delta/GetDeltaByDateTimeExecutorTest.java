@@ -48,7 +48,7 @@ class GetDeltaByDateTimeExecutorTest {
     @Test
     void executeSuccess() {
         deltaByDateTimeExecutor = new GetDeltaByDateTimeExecutor(serviceDbFacade, deltaQueryResultFactory);
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         final LocalDateTime deltaDate = LocalDateTime.parse("2020-06-15 14:00:11",
                 DeltaQueryUtil.DELTA_DATE_TIME_FORMATTER);
         final long cnFrom = 0L;
@@ -75,28 +75,23 @@ class GetDeltaByDateTimeExecutorTest {
         when(deltaQueryResultFactory.create(any()))
                 .thenReturn(queryResult);
 
-        deltaByDateTimeExecutor.execute(deltaQuery, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        deltaByDateTimeExecutor.execute(deltaQuery)
+                .onComplete(promise);
 
-        assertEquals(deltaNum, ((QueryResult) promise.future().result()).getResult()
+        assertEquals(deltaNum, promise.future().result().getResult()
                 .get(0).get(DeltaQueryUtil.NUM_FIELD));
-        assertEquals(deltaDate, ((QueryResult) promise.future().result()).getResult()
+        assertEquals(deltaDate, promise.future().result().getResult()
                 .get(0).get(DeltaQueryUtil.DATE_TIME_FIELD));
-        assertEquals(cnFrom, ((QueryResult) promise.future().result()).getResult()
+        assertEquals(cnFrom, promise.future().result().getResult()
                 .get(0).get(DeltaQueryUtil.CN_FROM_FIELD));
-        assertNull(((QueryResult) promise.future().result()).getResult()
+        assertNull(promise.future().result().getResult()
                 .get(0).get(DeltaQueryUtil.CN_TO_FIELD));
     }
 
     @Test
     void executeEmptySuccess() {
         deltaByDateTimeExecutor = new GetDeltaByDateTimeExecutor(serviceDbFacade, deltaQueryResultFactory);
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         final LocalDateTime deltaDate = LocalDateTime.parse("2020-06-15 14:00:11",
                 DeltaQueryUtil.DELTA_DATE_TIME_FORMATTER);
         GetDeltaByDateTimeQuery deltaQuery = GetDeltaByDateTimeQuery.builder()
@@ -115,13 +110,8 @@ class GetDeltaByDateTimeExecutorTest {
         when(deltaQueryResultFactory.createEmpty())
                 .thenReturn(queryResult);
 
-        deltaByDateTimeExecutor.execute(deltaQuery, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        deltaByDateTimeExecutor.execute(deltaQuery)
+                .onComplete(promise);
 
         assertTrue(promise.future().succeeded());
     }
@@ -129,7 +119,7 @@ class GetDeltaByDateTimeExecutorTest {
     @Test
     void executeDeltaByDateTimeError() {
         deltaByDateTimeExecutor = new GetDeltaByDateTimeExecutor(serviceDbFacade, deltaQueryResultFactory);
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         final LocalDateTime deltaDate = LocalDateTime.parse("2020-06-15 14:00:11",
                 DeltaQueryUtil.DELTA_DATE_TIME_FORMATTER);
         GetDeltaByDateTimeQuery deltaQuery = GetDeltaByDateTimeQuery.builder()
@@ -141,20 +131,15 @@ class GetDeltaByDateTimeExecutorTest {
         when(deltaServiceDao.getDeltaByDateTime(eq(datamart), eq(deltaDate)))
                 .thenReturn(Future.failedFuture(new DtmException("")));
 
-        deltaByDateTimeExecutor.execute(deltaQuery, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        deltaByDateTimeExecutor.execute(deltaQuery)
+                .onComplete(promise);
         assertTrue(promise.future().failed());
     }
 
     @Test
     void executeDeltaQueryResultFactoryError() {
         deltaByDateTimeExecutor = new GetDeltaByDateTimeExecutor(serviceDbFacade, deltaQueryResultFactory);
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         final LocalDateTime deltaDate = LocalDateTime.parse("2020-06-15 14:00:11",
                 DeltaQueryUtil.DELTA_DATE_TIME_FORMATTER);
         final long cnFrom = 0L;
@@ -177,13 +162,8 @@ class GetDeltaByDateTimeExecutorTest {
         when(deltaQueryResultFactory.create(any()))
                 .thenThrow(new DtmException(""));
 
-        deltaByDateTimeExecutor.execute(deltaQuery, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        deltaByDateTimeExecutor.execute(deltaQuery)
+                .onComplete(promise);
 
         assertTrue(promise.future().failed());
     }

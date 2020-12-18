@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.core.service.metadata.impl;
 
-import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
@@ -19,8 +18,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DatamartMetaServiceImpl implements DatamartMetaService {
 
-    private DatamartDao datamartDao;
-    private EntityDao entityDao;
+    private final DatamartDao datamartDao;
+    private final EntityDao entityDao;
 
     public DatamartMetaServiceImpl(ServiceDbFacade serviceDbFacade) {
         this.datamartDao = serviceDbFacade.getServiceDbDao().getDatamartDao();
@@ -28,43 +27,33 @@ public class DatamartMetaServiceImpl implements DatamartMetaService {
     }
 
     @Override
-    public void getDatamartMeta(AsyncHandler<List<DatamartInfo>> handler) {
-        datamartDao.getDatamartMeta(ar -> {
-            if (ar.succeeded()) {
-                handler.handleSuccess(ar.result());
-            } else {
-                handler.handleError(ar.cause());
-            }
-        });
+    public Future<List<DatamartInfo>> getDatamartMeta() {
+        return datamartDao.getDatamartMeta();
     }
 
     @Override
-    public void getEntitiesMeta(String datamartMnemonic, AsyncHandler<List<DatamartEntity>> handler) {
-        entityDao.getEntitiesMeta(datamartMnemonic, handler);
+    public Future<List<DatamartEntity>> getEntitiesMeta(String datamartMnemonic) {
+        return entityDao.getEntitiesMeta(datamartMnemonic);
     }
 
     @Override
-    public void getAttributesMeta(String datamartMnemonic,
-                                  String entityMnemonic,
-                                  AsyncHandler<List<EntityAttribute>> handler) {
-        entityDao.getEntity(datamartMnemonic, entityMnemonic)
-                .onFailure(error -> handler.handle(Future.failedFuture(error)))
-                .onSuccess(entity -> {
-                    handler.handleSuccess(entity.getFields().stream()
-                            .map(ef -> EntityAttribute.builder()
-                                    .datamartMnemonic(datamartMnemonic)
-                                    .entityMnemonic(entityMnemonic)
-                                    .accuracy(ef.getAccuracy())
-                                    .distributeKeykOrder(ef.getShardingOrder())
-                                    .primaryKeyOrder(ef.getPrimaryOrder())
-                                    .dataType(ef.getType())
-                                    .length(ef.getSize())
-                                    .mnemonic(ef.getName())
-                                    .ordinalPosition(ef.getOrdinalPosition())
-                                    .nullable(ef.getNullable())
-                                    .accuracy(ef.getAccuracy())
-                                    .build())
-                            .collect(Collectors.toList()));
-                });
+    public Future<List<EntityAttribute>> getAttributesMeta(String datamartMnemonic,
+                                                           String entityMnemonic) {
+        return entityDao.getEntity(datamartMnemonic, entityMnemonic)
+                .map(entity -> entity.getFields().stream()
+                        .map(ef -> EntityAttribute.builder()
+                                .datamartMnemonic(datamartMnemonic)
+                                .entityMnemonic(entityMnemonic)
+                                .accuracy(ef.getAccuracy())
+                                .distributeKeykOrder(ef.getShardingOrder())
+                                .primaryKeyOrder(ef.getPrimaryOrder())
+                                .dataType(ef.getType())
+                                .length(ef.getSize())
+                                .mnemonic(ef.getName())
+                                .ordinalPosition(ef.getOrdinalPosition())
+                                .nullable(ef.getNullable())
+                                .accuracy(ef.getAccuracy())
+                                .build())
+                        .collect(Collectors.toList()));
     }
 }

@@ -53,7 +53,7 @@ class BeginDeltaExecutorTest {
     void executeSuccessWithoutNum() {
         req.setSql("BEGIN DELTA");
         beginDeltaExecutor = new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         long deltaNum = 1L;
         BeginDeltaQuery deltaQuery = BeginDeltaQuery.builder()
                 .datamart(datamart)
@@ -69,15 +69,10 @@ class BeginDeltaExecutorTest {
 
         when(deltaQueryResultFactory.create(any())).thenReturn(queryResult);
 
-        beginDeltaExecutor.execute(deltaQuery, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        beginDeltaExecutor.execute(deltaQuery)
+                .onComplete(promise);
 
-        assertEquals(deltaNum, ((QueryResult) promise.future().result()).getResult()
+        assertEquals(deltaNum, promise.future().result().getResult()
                 .get(0).get(DeltaQueryUtil.NUM_FIELD));
     }
 
@@ -85,7 +80,7 @@ class BeginDeltaExecutorTest {
     void executeSuccessWithNum() {
         req.setSql("BEGIN DELTA SET 2");
         beginDeltaExecutor = new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         final long deltaNum = 2L;
         BeginDeltaQuery deltaQuery = BeginDeltaQuery.builder()
                 .datamart(datamart)
@@ -102,15 +97,10 @@ class BeginDeltaExecutorTest {
 
         when(deltaQueryResultFactory.create(any())).thenReturn(queryResult);
 
-        beginDeltaExecutor.execute(deltaQuery, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        beginDeltaExecutor.execute(deltaQuery)
+                .onComplete(promise);
 
-        assertEquals(deltaNum, ((QueryResult) promise.future().result()).getResult()
+        assertEquals(deltaNum, promise.future().result().getResult()
                 .get(0).get(DeltaQueryUtil.NUM_FIELD));
     }
 
@@ -118,7 +108,7 @@ class BeginDeltaExecutorTest {
     void executeWriteNewDeltaHotError() {
         req.setSql("BEGIN DELTA");
         beginDeltaExecutor = new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
 
         final long deltaNum = 2L;
         BeginDeltaQuery deltaQuery = BeginDeltaQuery.builder()
@@ -135,13 +125,8 @@ class BeginDeltaExecutorTest {
         when(deltaServiceDao.writeNewDeltaHot(eq(datamart)))
                 .thenReturn(Future.failedFuture(exception));
 
-        beginDeltaExecutor.execute(deltaQuery, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        beginDeltaExecutor.execute(deltaQuery)
+                .onComplete(promise);
         assertEquals(exception, promise.future().cause());
     }
 
@@ -149,7 +134,7 @@ class BeginDeltaExecutorTest {
     void executeWithNumWriteNewDeltaHotError() {
         req.setSql("BEGIN DELTA");
         beginDeltaExecutor = new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
 
         BeginDeltaQuery deltaQuery = BeginDeltaQuery.builder()
                 .datamart(datamart)
@@ -159,13 +144,8 @@ class BeginDeltaExecutorTest {
         when(deltaServiceDao.writeNewDeltaHot(eq(datamart)))
                 .thenReturn(Future.failedFuture(new DtmException("")));
 
-        beginDeltaExecutor.execute(deltaQuery, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        beginDeltaExecutor.execute(deltaQuery)
+                .onComplete(promise);
         assertTrue(promise.future().failed());
     }
 
@@ -173,7 +153,7 @@ class BeginDeltaExecutorTest {
     void executeDeltaQueryResultFactoryError() {
         req.setSql("BEGIN DELTA");
         beginDeltaExecutor = new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
 
         final long deltaNum = 2L;
         BeginDeltaQuery deltaQuery = BeginDeltaQuery.builder()
@@ -191,13 +171,8 @@ class BeginDeltaExecutorTest {
         when(deltaQueryResultFactory.create(any()))
                 .thenThrow(new DtmException(""));
 
-        beginDeltaExecutor.execute(deltaQuery, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        beginDeltaExecutor.execute(deltaQuery)
+                .onComplete(promise);
 
         assertTrue(promise.future().failed());
     }

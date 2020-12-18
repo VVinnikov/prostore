@@ -2,6 +2,7 @@ package io.arenadata.dtm.query.execution.plugin.adb.service.impl.enrichment;
 
 import io.arenadata.dtm.common.calcite.CalciteContext;
 import io.arenadata.dtm.common.delta.DeltaInformation;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.calcite.core.rel2sql.NullNotCastableRelToSqlConverter;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.QueryGeneratorContext;
 import io.arenadata.dtm.query.execution.plugin.adb.service.QueryExtendService;
@@ -13,9 +14,12 @@ import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.tools.RelConversionException;
 import org.apache.calcite.util.Util;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +32,7 @@ public class AdbQueryGeneratorImpl implements QueryGenerator {
     private final QueryExtendService queryExtendService;
     private final SqlDialect sqlDialect;
 
+    @Autowired
     public AdbQueryGeneratorImpl(QueryExtendService queryExtendService,
                                  @Qualifier("adbSqlDialect") SqlDialect sqlDialect) {
         this.queryExtendService = queryExtendService;
@@ -35,26 +40,28 @@ public class AdbQueryGeneratorImpl implements QueryGenerator {
     }
 
     @Override
-    public void mutateQuery(RelRoot relNode,
-                            List<DeltaInformation> deltaInformations,
-                            CalciteContext calciteContext,
-                            Handler<AsyncResult<String>> handler) {
+    public Future<String> mutateQuery(RelRoot relNode,
+                                      List<DeltaInformation> deltaInformations,
+                                      CalciteContext calciteContext) {
         if (deltaInformations.isEmpty()) {
             log.warn("Deltas list cannot be empty");
         }
-        try {
+        return Future.future(promise -> {
             val generatorContext = getContext(relNode, deltaInformations, calciteContext);
             val extendedQuery = queryExtendService.extendQuery(generatorContext);
-            val planAfter = calciteContext.getPlanner().transform(0,
-                    extendedQuery.getTraitSet().replace(EnumerableConvention.INSTANCE),
-                    extendedQuery);
+            RelNode planAfter = null;
+            try {
+                planAfter = calciteContext.getPlanner().transform(0,
+                        extendedQuery.getTraitSet().replace(EnumerableConvention.INSTANCE),
+                        extendedQuery);
+            } catch (RelConversionException e) {
+                promise.fail(new DtmException("Error converting rel node", e));
+            }
             val sqlNodeResult = new NullNotCastableRelToSqlConverter(sqlDialect).visitChild(0, planAfter).asStatement();
             val queryResult = Util.toLinux(sqlNodeResult.toSqlString(sqlDialect).getSql()).replaceAll("\n", " ");
             log.debug("sql = " + queryResult);
-            handler.handle(Future.succeededFuture(queryResult));
-        } catch (Exception e) {
-            handler.handle(Future.failedFuture(new DataSourceException("Error in extending query", e)));
-        }
+            promise.complete(queryResult);
+        });
     }
 
     private QueryGeneratorContext getContext(RelRoot relNode,

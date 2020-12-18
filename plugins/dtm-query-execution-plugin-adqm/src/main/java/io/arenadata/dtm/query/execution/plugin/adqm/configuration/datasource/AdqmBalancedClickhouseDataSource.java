@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.plugin.adqm.datasource;
+package io.arenadata.dtm.query.execution.plugin.adqm.configuration.datasource;
 
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import ru.yandex.clickhouse.BalancedClickhouseDataSource;

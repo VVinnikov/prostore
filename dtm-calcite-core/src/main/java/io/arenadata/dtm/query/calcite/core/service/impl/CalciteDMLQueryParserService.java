@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.calcite.core.service.impl;
 
-import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.dto.QueryParserResponse;
 import io.arenadata.dtm.common.exception.DtmException;
@@ -26,8 +25,8 @@ public abstract class CalciteDMLQueryParserService implements QueryParserService
     }
 
     @Override
-    public void parse(QueryParserRequest request, AsyncHandler<QueryParserResponse> handler) {
-        vertx.executeBlocking(it -> {
+    public Future<QueryParserResponse> parse(QueryParserRequest request) {
+        return Future.future(promise -> vertx.executeBlocking(it -> {
             try {
                 val context = contextProvider.context(extendSchemes(request.getSchema()));
                 val sql = request.getQueryRequest().getSql();
@@ -48,11 +47,11 @@ public abstract class CalciteDMLQueryParserService implements QueryParserService
             }
         }, ar -> {
             if (ar.succeeded()) {
-                handler.handleSuccess((QueryParserResponse) ar.result());
+                promise.complete((QueryParserResponse) ar.result());
             } else {
-                handler.handleError(ar.cause());
+                promise.fail(ar.cause());
             }
-        });
+        }));
     }
 
     protected List<Datamart> extendSchemes(List<Datamart> datamarts) {

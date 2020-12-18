@@ -82,7 +82,8 @@ public class ConfigStorageAddDdlExecutor implements ConfigExecutor {
                                               ConfigRequestContext context) {
         return Future.future(p -> {
             DdlRequestContext ddlRequestContext = createDdlRequestContext(schemaName, context);
-            dataSourcePluginService.ddl(sourceType, ddlRequestContext, (AsyncHandler<Void>) p);
+            dataSourcePluginService.ddl(sourceType, ddlRequestContext)
+                    .onComplete(p);
         });
     }
 

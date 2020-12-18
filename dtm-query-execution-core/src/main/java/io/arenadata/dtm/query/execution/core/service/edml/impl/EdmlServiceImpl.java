@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.core.service.edml.impl;
 
-import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.dto.TableInfo;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
@@ -33,7 +32,6 @@ import java.util.stream.Collectors;
 public class EdmlServiceImpl implements EdmlService<QueryResult> {
 
     private static final SqlDialect SQL_DIALECT = new SqlDialect(SqlDialect.EMPTY_CONTEXT);
-
     private final EntityDao entityDao;
     private final Map<EdmlAction, EdmlExecutor> executors;
 
@@ -45,12 +43,10 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
     }
 
     @Override
-    public void execute(EdmlRequestContext context, AsyncHandler<QueryResult> handler) {
-        defineTablesAndType(context)
-                .compose(edmlType -> execute(context, edmlType))
-                .onComplete(handler);
+    public Future<QueryResult> execute(EdmlRequestContext context) {
+        return defineTablesAndType(context)
+                .compose(edmlType -> executeInternal(context, edmlType));
     }
-
 
     private Future<EdmlAction> defineTablesAndType(EdmlRequestContext context) {
         return Future.future(edmlQueryPromise -> {
@@ -99,15 +95,10 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
         );
     }
 
-    private Future<QueryResult> execute(EdmlRequestContext context, EdmlAction edmlAction) {
+    private Future<QueryResult> executeInternal(EdmlRequestContext context, EdmlAction edmlAction) {
         return Future.future((Promise<QueryResult> promise) ->
-                executors.get(edmlAction).execute(context, ar -> {
-                    if (ar.succeeded()) {
-                        promise.complete(ar.result());
-                    } else {
-                        promise.fail(ar.cause());
-                    }
-                }));
+                executors.get(edmlAction).execute(context)
+                        .onComplete(promise));
     }
 
     private RuntimeException getCantGetTableNameError(EdmlRequestContext context) {

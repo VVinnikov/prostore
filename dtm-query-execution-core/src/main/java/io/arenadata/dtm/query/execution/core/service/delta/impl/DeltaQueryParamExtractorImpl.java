@@ -33,27 +33,30 @@ public class DeltaQueryParamExtractorImpl implements DeltaQueryParamExtractor {
     }
 
     @Override
-    public void extract(QueryRequest request, AsyncHandler<DeltaQuery> handler) {
-        coreVertx.executeBlocking(it -> {
-            try {
-                SqlNode node = definitionService.processingQuery(request.getSql());
-                it.complete(node);
-            } catch (Exception e) {
-                it.fail(new DtmException("Error parsing sql query", e));
-            }
-        }, ar -> {
-            if (ar.succeeded()) {
-                SqlNode sqlNode = (SqlNode) ar.result();
+    public Future<DeltaQuery> extract(QueryRequest request) {
+        return Future.future(promise -> {
+            coreVertx.executeBlocking(it -> {
                 try {
-                    final DeltaQuery deltaQuery = deltaQueryFactory.create(sqlNode);
-                    log.debug("Delta query created successfully: {}", deltaQuery);
-                    handler.handleSuccess(deltaQuery);
+                    SqlNode node = definitionService.processingQuery(request.getSql());
+                    it.complete(node);
                 } catch (Exception e) {
-                    handler.handleError("Error creating delta query from sql node", e);
+                    it.fail(new DtmException("Error parsing sql query", e));
                 }
-            } else {
-                handler.handleError(ar.cause());
-            }
+            }, ar -> {
+                if (ar.succeeded()) {
+                    SqlNode sqlNode = (SqlNode) ar.result();
+                    try {
+                        final DeltaQuery deltaQuery = deltaQueryFactory.create(sqlNode);
+                        log.debug("Delta query created successfully: {}", deltaQuery);
+                        promise.complete(deltaQuery);
+                    } catch (Exception e) {
+                        promise.fail(new DtmException("Error creating delta query from sql node", e));
+                    }
+                } else {
+                    promise.fail(ar.cause());
+                }
+            });
         });
+
     }
 }

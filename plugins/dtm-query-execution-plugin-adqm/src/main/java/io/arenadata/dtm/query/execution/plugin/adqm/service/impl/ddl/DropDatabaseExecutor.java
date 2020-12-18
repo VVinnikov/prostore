@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.ddl;
 
-import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
@@ -23,6 +22,7 @@ public class DropDatabaseExecutor implements DdlExecutor<Void> {
     private final DdlProperties ddlProperties;
     private final AppConfiguration appConfiguration;
 
+    @Autowired
     public DropDatabaseExecutor(DatabaseExecutor databaseExecutor,
                                 DdlProperties ddlProperties,
                                 AppConfiguration appConfiguration) {
@@ -32,9 +32,9 @@ public class DropDatabaseExecutor implements DdlExecutor<Void> {
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, AsyncHandler<Void> handler) {
+    public Future<Void> execute(DdlRequestContext context, String sqlNodeName) {
         String name = context.getDatamartName();
-        dropDatabase(name).onComplete(handler);
+        return dropDatabase(name);
     }
 
     @Override

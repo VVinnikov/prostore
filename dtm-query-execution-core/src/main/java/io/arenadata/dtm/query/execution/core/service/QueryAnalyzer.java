@@ -1,10 +1,8 @@
 package io.arenadata.dtm.query.execution.core.service;
 
-import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.reader.InputQueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
+import io.vertx.core.Future;
 
 /**
  * Service for analyzing and executing query
@@ -12,9 +10,8 @@ import io.vertx.core.Handler;
 public interface QueryAnalyzer {
 
   /**
-   *
-   * @param inputQueryRequest       queryRequest
-   * @param handler asyncHandler
+   *  @param inputQueryRequest       queryRequest
+   * @return query result
    */
-  void analyzeAndExecute(InputQueryRequest inputQueryRequest, AsyncHandler<QueryResult> handler);
+  Future<QueryResult> analyzeAndExecute(InputQueryRequest inputQueryRequest);
 }

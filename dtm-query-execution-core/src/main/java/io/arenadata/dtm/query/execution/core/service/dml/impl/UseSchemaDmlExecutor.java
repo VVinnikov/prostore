@@ -15,9 +15,7 @@ import io.arenadata.dtm.query.execution.core.utils.ParseQueryUtils;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.api.dml.DmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.dml.DmlExecutor;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,9 +44,8 @@ public class UseSchemaDmlExecutor implements DmlExecutor<QueryResult> {
     }
 
     @Override
-    public void execute(DmlRequestContext context, Handler<AsyncResult<QueryResult>> handler) {
-        sendMetricsAndExecute(context)
-            .onComplete(handler);
+    public Future<QueryResult> execute(DmlRequestContext context) {
+        return sendMetricsAndExecute(context);
     }
 
     private Future<QueryResult> sendMetricsAndExecute(DmlRequestContext context) {

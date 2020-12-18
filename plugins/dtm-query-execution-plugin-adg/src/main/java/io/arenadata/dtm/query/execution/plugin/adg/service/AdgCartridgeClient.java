@@ -18,44 +18,41 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * REST-клиент общения с Tarantool Cartridge
+ * REST-client for connecting with Tarantool Cartridge
  */
 public interface AdgCartridgeClient {
-  void getFiles(Handler<AsyncResult<ResOperation>> handler);
 
-  void setFiles(List<OperationFile> files, Handler<AsyncResult<ResOperation>> handler);
+  Future<ResOperation> getFiles();
 
-  void getSchema(Handler<AsyncResult<ResOperation>> handler);
+  Future<ResOperation> setFiles(List<OperationFile> files);
 
-  void setSchema(String yaml, Handler<AsyncResult<ResOperation>> handler);
+  Future<ResOperation> getSchema();
 
-  void uploadData(TtUploadDataKafkaRequest request, Handler<AsyncResult<Void>> handler);
+  Future<ResOperation> setSchema(String yaml);
 
-  void subscribe(TtSubscriptionKafkaRequest request, Handler<AsyncResult<Void>> handler);
+  Future<Void> uploadData(TtUploadDataKafkaRequest request);
 
-  void loadData(TtLoadDataKafkaRequest request,
-                Handler<AsyncResult<TtLoadDataKafkaResponse>> handler);
+  Future<Void> subscribe(TtSubscriptionKafkaRequest request);
 
-  void transferDataToScdTable(TtTransferDataEtlRequest request,
-                              Handler<AsyncResult<Void>> handler);
+  Future<TtLoadDataKafkaResponse> loadData(TtLoadDataKafkaRequest request);
 
-  void cancelSubscription(String topicName, Handler<AsyncResult<Void>> handler);
+  Future<Void> transferDataToScdTable(TtTransferDataEtlRequest request);
 
-  void addSpacesToDeleteQueue(TtDeleteTablesRequest request, Handler<AsyncResult<TtDeleteBatchResponse>> handler);
+  Future<Void> cancelSubscription(String topicName);
 
-  void executeDeleteQueue(TtDeleteTablesQueueRequest request, Handler<AsyncResult<TtDeleteQueueResponse>> handler);
+  Future<TtDeleteBatchResponse> addSpacesToDeleteQueue(TtDeleteTablesRequest request);
 
-  void executeDeleteSpacesWithPrefix(TtDeleteTablesWithPrefixRequest request,
-                                    Handler<AsyncResult<TtDeleteQueueResponse>> handler);
+  Future<TtDeleteQueueResponse> executeDeleteQueue(TtDeleteTablesQueueRequest request);
 
-  void reverseHistoryTransfer(ReverseHistoryTransferRequest request, Handler<AsyncResult<Void>> handler);
+  Future<TtDeleteQueueResponse> executeDeleteSpacesWithPrefix(TtDeleteTablesWithPrefixRequest request);
 
-  void executeCreateSpacesQueued(OperationYaml request, Handler<AsyncResult<Void>> handler);
+  Future<Void> reverseHistoryTransfer(ReverseHistoryTransferRequest request);
 
-  void executeDeleteSpacesQueued(TtDeleteTablesRequest request, Handler<AsyncResult<Void>> handler);
+  Future<Void> executeCreateSpacesQueued(OperationYaml request);
 
-  void executeDeleteSpacesWithPrefixQueued(TtDeleteTablesWithPrefixRequest request,
-                                           Handler<AsyncResult<Void>> handler);
+  Future<Void> executeDeleteSpacesQueued(TtDeleteTablesRequest request);
+
+  Future<Void> executeDeleteSpacesWithPrefixQueued(TtDeleteTablesWithPrefixRequest request);
 
   Future<Map<String, Space>> getSpaceDescriptions(Set<String> spaceNames);
 

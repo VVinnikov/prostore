@@ -1,14 +1,13 @@
 package io.arenadata.dtm.query.execution.core.service;
 
-import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
-import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountParams;
 import io.arenadata.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountParams;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Params;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
 import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
@@ -16,9 +15,7 @@ import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 
 import java.util.Set;
 
@@ -37,77 +34,63 @@ public interface DataSourcePluginService {
     /**
      * <p>execute DDL operation</p>
      *
-     * @param sourceType         Data source type
-     * @param context            DDL context
-     * @param asyncResultHandler async handler
+     * @param sourceType Data source type
+     * @param context    DDL context
+     * @return future object
      */
-    void ddl(SourceType sourceType,
-             DdlRequestContext context,
-             AsyncHandler<Void> asyncResultHandler);
+    Future<Void> ddl(SourceType sourceType, DdlRequestContext context);
 
     /**
      * <p>execute Low Latency Reading request</p>
      *
-     * @param sourceType         Data source type
-     * @param context            LLR context
-     * @param asyncResultHandler async handler
+     * @param sourceType Data source type
+     * @param context    LLR context
+     * @return future object
      */
-    void llr(SourceType sourceType,
-             LlrRequestContext context,
-             AsyncHandler<QueryResult> asyncResultHandler);
+    Future<QueryResult> llr(SourceType sourceType, LlrRequestContext context);
 
     /**
      * <p>execute Massively Parallel Processing Reading</p>
      *
-     * @param sourceType         Data source type
-     * @param context            MPPR context
-     * @param asyncResultHandler async handler
+     * @param sourceType Data source type
+     * @param context    MPPR context
+     * @return future object
      */
-    void mppr(SourceType sourceType,
-              MpprRequestContext context,
-              AsyncHandler<QueryResult> asyncResultHandler);
+    Future<QueryResult> mppr(SourceType sourceType, MpprRequestContext context);
 
     /**
      * <p>execute Massively Parallel Processing Writing</p>
      *
      * @param sourceType         Data source type
      * @param mppwRequestContext MPPW context
-     * @param resultHandler      async handler
+     * @return future object
      */
-    void mppw(SourceType sourceType,
-              MppwRequestContext mppwRequestContext,
-              AsyncHandler<QueryResult> resultHandler);
+    Future<QueryResult> mppw(SourceType sourceType, MppwRequestContext mppwRequestContext);
 
     /**
      * <p>Calculate executing query cost</p>
      *
-     * @param sourceType         Data source type
-     * @param context            Query cost context
-     * @param asyncResultHandler async handler
+     * @param sourceType Data source type
+     * @param context    Query cost context
+     * @return future object
      */
-    void calcQueryCost(SourceType sourceType,
-                       QueryCostRequestContext context,
-                       AsyncHandler<Integer> asyncResultHandler);
+    Future<Integer> calcQueryCost(SourceType sourceType, QueryCostRequestContext context);
 
     /**
      * <p>Get plugin status information</p>
      *
      * @param sourceType           Data source type
      * @param statusRequestContext Status request context
-     * @param asyncResultHandler   async handler
+     * @return future object
      */
-    void status(SourceType sourceType,
-                StatusRequestContext statusRequestContext,
-                AsyncHandler<StatusQueryResult> asyncResultHandler);
+    Future<StatusQueryResult> status(SourceType sourceType, StatusRequestContext statusRequestContext);
 
     /**
-     * @param sourceType         Data source type
-     * @param context            Rollback request context
-     * @param asyncResultHandler async handler
+     * @param sourceType Data source type
+     * @param context    Rollback request context
+     * @return future object
      */
-    void rollback(SourceType sourceType,
-                  RollbackRequestContext context,
-                  AsyncHandler<Void> asyncResultHandler);
+    Future<Void> rollback(SourceType sourceType, RollbackRequestContext context);
 
     /**
      * Get plugin by source type
@@ -125,23 +108,19 @@ public interface DataSourcePluginService {
     Set<String> getActiveCaches();
 
     /**
-     *
      * @param sourceType SourceType
-     * @param context CheckContext
+     * @param context    CheckContext
      * @return failed future with errors if check failed
      */
     Future<Void> checkTable(SourceType sourceType, CheckContext context);
 
     /**
-     *
-     *
      * @param params CheckDataByCountParams
      * @return count of records
      */
     Future<Long> checkDataByCount(CheckDataByCountParams params);
 
     /**
-     *
      * @param params CheckDataByHashInt32Params
      * @return checksum
      */

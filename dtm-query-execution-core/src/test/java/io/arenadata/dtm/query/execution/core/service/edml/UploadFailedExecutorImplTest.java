@@ -1,15 +1,16 @@
 package io.arenadata.dtm.query.execution.core.service.edml;
 
 import io.arenadata.dtm.common.exception.CrashException;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.reader.QueryRequest;
+import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.impl.DeltaServiceDaoImpl;
-import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.factory.RollbackRequestContextFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.RollbackRequestContextFactoryImpl;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
@@ -75,7 +76,7 @@ class UploadFailedExecutorImplTest {
 
     @Test
     void executeSuccess() {
-        Promise promise = Promise.promise();
+        Promise<Void> promise = Promise.promise();
         uploadFailedExecutor = new UploadFailedExecutorImpl(deltaServiceDao,
                 rollbackRequestContextFactory, pluginService);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
@@ -103,11 +104,8 @@ class UploadFailedExecutorImplTest {
 
         when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Void>> handler = invocation.getArgument(2);
-            handler.handle(Future.succeededFuture());
-            return null;
-        }).when(pluginService).rollback(any(), any(), any());
+        when(pluginService.rollback(any(), any()))
+                .thenReturn(Future.succeededFuture());
 
         when(deltaServiceDao.deleteWriteOperation(eq(sourceEntity.getSchema()), eq(context.getSysCn())))
                 .thenReturn(Future.succeededFuture());
@@ -119,7 +117,7 @@ class UploadFailedExecutorImplTest {
 
     @Test
     void executePluginRollbackError() {
-        Promise promise = Promise.promise();
+        Promise<Void> promise = Promise.promise();
         uploadFailedExecutor = new UploadFailedExecutorImpl(deltaServiceDao,
                 rollbackRequestContextFactory, pluginService);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
@@ -147,11 +145,8 @@ class UploadFailedExecutorImplTest {
 
         when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Void>> handler = invocation.getArgument(2);
-            handler.handle(Future.failedFuture(new DtmException("")));
-            return null;
-        }).when(pluginService).rollback(any(), any(), any());
+        when(pluginService.rollback(any(), any()))
+                .thenReturn(Future.failedFuture(new DtmException("")));
 
         uploadFailedExecutor.execute(context)
                 .onComplete(promise);
@@ -161,7 +156,7 @@ class UploadFailedExecutorImplTest {
 
     @Test
     void executeDeleteOperationError() {
-        Promise promise = Promise.promise();
+        Promise<Void> promise = Promise.promise();
         uploadFailedExecutor = new UploadFailedExecutorImpl(deltaServiceDao,
                 rollbackRequestContextFactory, pluginService);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
@@ -176,11 +171,8 @@ class UploadFailedExecutorImplTest {
 
         when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Void>> handler = invocation.getArgument(2);
-            handler.handle(Future.succeededFuture());
-            return null;
-        }).when(pluginService).rollback(any(), any(), any());
+        when(pluginService.rollback(any(), any()))
+                .thenReturn(Future.succeededFuture());
 
         when(deltaServiceDao.deleteWriteOperation(eq(sourceEntity.getSchema()), eq(context.getSysCn())))
                 .thenReturn(Future.failedFuture(new DtmException("")));

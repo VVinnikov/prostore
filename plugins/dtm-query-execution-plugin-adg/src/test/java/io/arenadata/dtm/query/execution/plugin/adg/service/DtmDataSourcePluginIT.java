@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service;
 
-import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
@@ -42,7 +41,7 @@ public class DtmDataSourcePluginIT {
     @Autowired
     private DdlService ddlService;
 
-    private DtmDataSourcePlugin plugin = new DtmDataSourcePlugin() {
+    private final DtmDataSourcePlugin plugin = new DtmDataSourcePlugin() {
 
         @Override
         public boolean supports(SourceType sourceType) {
@@ -55,37 +54,38 @@ public class DtmDataSourcePluginIT {
         }
 
         @Override
-        public void ddl(DdlRequestContext ddlRequest, AsyncHandler<Void> handler) {
+        public Future<Void> ddl(DdlRequestContext context) {
+            return null;
         }
 
         @Override
-        public void llr(LlrRequestContext llrRequest, AsyncHandler<QueryResult> handler) {
-
+        public Future<QueryResult> llr(LlrRequestContext context) {
+            return null;
         }
 
         @Override
-        public void mppr(MpprRequestContext mpprRequest, AsyncHandler<QueryResult> handler) {
-
+        public Future<QueryResult> mppr(MpprRequestContext context) {
+            return null;
         }
 
         @Override
-        public void mppw(MppwRequestContext mppwRequest, AsyncHandler<QueryResult> handler) {
-
+        public Future<QueryResult> mppw(MppwRequestContext context) {
+            return null;
         }
 
         @Override
-        public void calcQueryCost(QueryCostRequestContext calcQueryCostRequest, AsyncHandler<Integer> handler) {
-
+        public Future<Integer> calcQueryCost(QueryCostRequestContext context) {
+            return null;
         }
 
         @Override
-        public void status(StatusRequestContext context, AsyncHandler<StatusQueryResult> asyncResultHandler) {
-
+        public Future<StatusQueryResult> status(StatusRequestContext context) {
+            return null;
         }
 
         @Override
-        public void rollback(RollbackRequestContext context, AsyncHandler<Void> asyncResultHandler) {
-
+        public Future<Void> rollback(RollbackRequestContext context) {
+            return null;
         }
 
         @Override
@@ -123,13 +123,14 @@ public class DtmDataSourcePluginIT {
         DdlRequest dto = new DdlRequest(null, entity);
         DdlRequestContext context = new DdlRequestContext(dto);
         context.setDdlType(DdlType.CREATE_TABLE);
-        plugin.ddl(context, ar -> {
-            if (ar.succeeded()) {
-                testContext.completeNow();
-            } else {
-                testContext.failNow(ar.cause());
-            }
-        });
+        plugin.ddl(context)
+                .onComplete(ar -> {
+                    if (ar.succeeded()) {
+                        testContext.completeNow();
+                    } else {
+                        testContext.failNow(ar.cause());
+                    }
+                });
         testContext.awaitCompletion(5, TimeUnit.SECONDS);
     }
 

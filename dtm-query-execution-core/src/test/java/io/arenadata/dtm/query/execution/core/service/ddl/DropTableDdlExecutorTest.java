@@ -1,24 +1,25 @@
 package io.arenadata.dtm.query.execution.core.service.ddl;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.QueryRequest;
+import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacadeImpl;
-import io.arenadata.dtm.common.exception.DtmException;
-import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.DatamartDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
+import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
 import io.arenadata.dtm.query.execution.core.service.ddl.impl.DropTableDdlExecutor;
@@ -47,6 +48,7 @@ import java.util.HashSet;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -101,119 +103,85 @@ class DropTableDdlExecutorTest {
 
     @Test
     void executeSuccess() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
 
         when(pluginService.getSourceTypes()).thenReturn(new HashSet<>(Arrays.asList(SourceType.ADB)));
 
-        Mockito.when(entityDao.getEntity(eq(schema), eq(context.getRequest().getEntity().getName())))
-            .thenReturn(Future.succeededFuture(context.getRequest().getEntity()));
+        when(entityDao.getEntity(eq(schema), eq(context.getRequest().getEntity().getName())))
+                .thenReturn(Future.succeededFuture(context.getRequest().getEntity()));
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture());
-            return null;
-        }).when(metadataExecutor).execute(any(), any());
+        when(metadataExecutor.execute(any()))
+                .thenReturn(Future.succeededFuture());
 
-        Mockito.when(entityDao.deleteEntity(eq(schema), eq(context.getRequest().getEntity().getName())))
-            .thenReturn(Future.succeededFuture());
+        when(entityDao.deleteEntity(eq(schema), eq(context.getRequest().getEntity().getName())))
+                .thenReturn(Future.succeededFuture());
 
-        dropTableDdlExecutor.execute(context, context.getRequest().getEntity().getName(), ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-            assertNotNull(promise.future().result());
-        });
+        dropTableDdlExecutor.execute(context, context.getRequest().getEntity().getName())
+                .onComplete(promise);
+        assertTrue(promise.future().succeeded());
     }
 
     @Test
     void executeWithFindView() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         when(pluginService.getSourceTypes()).thenReturn(new HashSet<>(Arrays.asList(SourceType.ADB)));
 
-        Mockito.when(entityDao.getEntity(eq(schema), eq(context.getRequest().getEntity().getName())))
-            .thenReturn(Future.succeededFuture(Entity.builder()
-                .schema(schema)
-                .name(context.getRequest().getEntity().getName())
-                .entityType(EntityType.VIEW)
-                .build()));
+        when(entityDao.getEntity(eq(schema), eq(context.getRequest().getEntity().getName())))
+                .thenReturn(Future.succeededFuture(Entity.builder()
+                        .schema(schema)
+                        .name(context.getRequest().getEntity().getName())
+                        .entityType(EntityType.VIEW)
+                        .build()));
 
-        dropTableDdlExecutor.execute(context, context.getRequest().getEntity().getName(), ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        dropTableDdlExecutor.execute(context, context.getRequest().getEntity().getName())
+                .onComplete(promise);
         assertNotNull(promise.future().cause());
     }
 
     @Test
     void executeWithIfExistsStmtSuccess() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         when(pluginService.getSourceTypes()).thenReturn(new HashSet<>(Arrays.asList(SourceType.ADB)));
         context.getRequest().getQueryRequest().setSql("DROP TABLE IF EXISTS accounts");
         String entityName = context.getRequest().getEntity().getName();
         Mockito.when(entityDao.getEntity(eq(schema), eq(entityName)))
-            .thenReturn(Future.failedFuture(new TableNotExistsException(entityName)));
+                .thenReturn(Future.failedFuture(new TableNotExistsException(entityName)));
 
-        dropTableDdlExecutor.execute(context, entityName, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        dropTableDdlExecutor.execute(context, entityName)
+                .onComplete(promise);
         assertNotNull(promise.future().result());
     }
 
     @Test
     void executeWithMetadataExecuteError() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         when(pluginService.getSourceTypes()).thenReturn(new HashSet<>(Arrays.asList(SourceType.ADB)));
         Mockito.when(entityDao.getEntity(eq(schema), eq(context.getRequest().getEntity().getName())))
-            .thenReturn(Future.succeededFuture(context.getRequest().getEntity()));
+                .thenReturn(Future.succeededFuture(context.getRequest().getEntity()));
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new DataSourceException("Error drop table in plugin")));
-            return null;
-        }).when(metadataExecutor).execute(any(), any());
+        when(metadataExecutor.execute(any()))
+                .thenReturn(Future.failedFuture(new DataSourceException("Error drop table in plugin")));
 
-        dropTableDdlExecutor.execute(context, context.getRequest().getEntity().getName(), ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        dropTableDdlExecutor.execute(context, context.getRequest().getEntity().getName())
+                .onComplete(promise);
         assertNotNull(promise.future().cause());
     }
 
     @Test
     void executeWithDropEntityError() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         when(pluginService.getSourceTypes()).thenReturn(new HashSet<>(Arrays.asList(SourceType.ADB)));
         Mockito.when(entityDao.getEntity(eq(schema), eq(context.getRequest().getEntity().getName())))
-            .thenReturn(Future.succeededFuture(context.getRequest().getEntity()));
+                .thenReturn(Future.succeededFuture(context.getRequest().getEntity()));
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture());
-            return null;
-        }).when(metadataExecutor).execute(any(), any());
+        when(metadataExecutor.execute(any()))
+                .thenReturn(Future.succeededFuture());
 
         Mockito.when(entityDao.deleteEntity(eq(schema), eq(context.getRequest().getEntity().getName())))
-            .thenReturn(Future.failedFuture(new DtmException("delete entity error")));
+                .thenReturn(Future.failedFuture(new DtmException("delete entity error")));
 
-        dropTableDdlExecutor.execute(context, context.getRequest().getEntity().getName(), ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        dropTableDdlExecutor.execute(context, context.getRequest().getEntity().getName())
+                .onComplete(promise);
         assertNotNull(promise.future().cause());
     }
 }

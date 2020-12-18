@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.core.controller;
 
-import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.query.execution.core.dto.request.RequestParam;
 import io.arenadata.dtm.query.execution.core.service.metadata.DatamartMetaService;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -27,19 +26,19 @@ public class DatamartMetaController {
     }
 
     public void getDatamartMeta(RoutingContext context) {
-        datamartMetaService.getDatamartMeta(
-        );
+        datamartMetaService.getDatamartMeta()
+                .onComplete(result -> handleData(context, "Reply sent with datamarts {}", result));
     }
 
     public void getDatamartEntityMeta(RoutingContext context) {
-        datamartMetaService.getEntitiesMeta(getDatamartMnemonic(context)
-        );
+        datamartMetaService.getEntitiesMeta(getDatamartMnemonic(context))
+                .onComplete(result -> handleData(context, "Reply sent with entities {}", result));
     }
 
     public void getEntityAttributesMeta(RoutingContext context) {
         datamartMetaService.getAttributesMeta(getDatamartMnemonic(context),
-                getParam(context, RequestParam.ENTITY_MNEMONIC)
-        );
+                getParam(context, RequestParam.ENTITY_MNEMONIC))
+                .onComplete(result -> handleData(context, "Reply sent with attributes {}", result));
     }
 
     private String getDatamartMnemonic(RoutingContext context) {
@@ -50,27 +49,17 @@ public class DatamartMetaController {
         return context.request().getParam(paramName);
     }
 
-    private static class ListToJsonHandler<T> implements AsyncHandler<List<T>> {
-        private final RoutingContext context;
-        private final String successLogMessage;
-
-        ListToJsonHandler(RoutingContext context, String successLogMessage) {
-            this.context = context;
-            this.successLogMessage = successLogMessage;
-        }
-
-        @Override
-        public void handle(AsyncResult<List<T>> asyncResult) {
-            if (asyncResult.succeeded()) {
-                String json = Json.encode(asyncResult.result());
-                log.info(successLogMessage, json);
-                context.response()
-                        .putHeader(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE)
-                        .setStatusCode(HttpResponseStatus.OK.code())
-                        .end(json);
-            } else {
-                context.fail(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), asyncResult.cause());
-            }
+    private <T> void handleData(RoutingContext context, String successLogMessage, AsyncResult<List<T>> asyncResult) {
+        if (asyncResult.succeeded()) {
+            String json = Json.encode(asyncResult.result());
+            log.info(successLogMessage, json);
+            context.response()
+                    .putHeader(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE)
+                    .setStatusCode(HttpResponseStatus.OK.code())
+                    .end(json);
+        } else {
+            context.fail(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), asyncResult.cause());
         }
     }
+
 }

@@ -11,18 +11,15 @@ import io.arenadata.dtm.query.execution.core.configuration.properties.CoreDtmSet
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.common.exception.DtmException;
-import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.dml.impl.TargetDatabaseDefinitionServiceImpl;
-import io.arenadata.dtm.query.execution.core.service.impl.DataSourcePluginServiceImpl;
+import io.arenadata.dtm.query.execution.core.service.datasource.impl.DataSourcePluginServiceImpl;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.time.ZoneId;
 import java.util.*;

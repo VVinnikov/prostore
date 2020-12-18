@@ -1,7 +1,7 @@
-package io.arenadata.dtm.query.execution.core.service;
+package io.arenadata.dtm.query.execution.core.service.query;
 
 import io.arenadata.dtm.common.reader.QueryRequest;
 
-public interface SemicolonRemover {
+public interface QuerySemicolonRemover {
     QueryRequest remove(QueryRequest queryRequest);
 }

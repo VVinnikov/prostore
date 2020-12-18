@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.service;
+package io.arenadata.dtm.query.execution.core.service.metadata;
 
 import io.vertx.core.Future;
 import org.apache.calcite.sql.SqlNode;

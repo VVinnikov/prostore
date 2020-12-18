@@ -19,7 +19,7 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDa
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
 import io.arenadata.dtm.common.exception.DtmException;
-import io.arenadata.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
+import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDefinitionService;
 import io.arenadata.dtm.query.execution.core.service.schema.impl.LogicalSchemaServiceImpl;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;

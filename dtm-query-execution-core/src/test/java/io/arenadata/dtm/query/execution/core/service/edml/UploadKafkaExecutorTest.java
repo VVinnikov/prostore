@@ -18,11 +18,11 @@ import io.arenadata.dtm.query.execution.core.configuration.properties.EdmlProper
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.factory.MppwKafkaRequestFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.MppwKafkaRequestFactoryImpl;
-import io.arenadata.dtm.query.execution.core.service.CheckColumnTypesService;
-import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.service.query.CheckColumnTypesService;
+import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadKafkaExecutor;
-import io.arenadata.dtm.query.execution.core.service.impl.CheckColumnTypesServiceImpl;
-import io.arenadata.dtm.query.execution.core.service.impl.DataSourcePluginServiceImpl;
+import io.arenadata.dtm.query.execution.core.service.query.impl.CheckColumnTypesServiceImpl;
+import io.arenadata.dtm.query.execution.core.service.datasource.impl.DataSourcePluginServiceImpl;
 import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaParameter;

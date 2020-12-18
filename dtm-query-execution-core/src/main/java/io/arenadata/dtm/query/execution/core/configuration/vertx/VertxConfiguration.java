@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.core.configuration.vertx;
 
-import io.arenadata.dtm.query.execution.core.service.InformationSchemaService;
-import io.arenadata.dtm.query.execution.core.service.RestoreStateService;
+import io.arenadata.dtm.query.execution.core.service.metadata.InformationSchemaService;
+import io.arenadata.dtm.query.execution.core.service.rollback.RestoreStateService;
 import io.arenadata.dtm.query.execution.core.verticle.QueryVerticle;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;

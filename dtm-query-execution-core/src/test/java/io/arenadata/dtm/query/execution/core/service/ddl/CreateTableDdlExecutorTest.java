@@ -19,9 +19,9 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.Datama
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
-import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.ddl.impl.CreateTableDdlExecutor;
-import io.arenadata.dtm.query.execution.core.service.impl.DataSourcePluginServiceImpl;
+import io.arenadata.dtm.query.execution.core.service.datasource.impl.DataSourcePluginServiceImpl;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.impl.MetadataCalciteGeneratorImpl;

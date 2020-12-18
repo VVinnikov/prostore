@@ -7,14 +7,17 @@ import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.calcite.core.service.impl.DeltaInformationExtractorImpl;
+import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDefinitionService;
 import io.arenadata.dtm.query.execution.core.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import io.arenadata.dtm.query.execution.core.configuration.properties.CoreDtmSettings;
 import io.arenadata.dtm.query.execution.core.factory.RequestContextFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.QueryRequestFactoryImpl;
 import io.arenadata.dtm.query.execution.core.factory.impl.RequestContextFactoryImpl;
-import io.arenadata.dtm.query.execution.core.service.QueryAnalyzer;
-import io.arenadata.dtm.query.execution.core.service.QueryDispatcher;
+import io.arenadata.dtm.query.execution.core.service.query.impl.QuerySemicolonRemoverImpl;
+import io.arenadata.dtm.query.execution.core.service.query.QueryAnalyzer;
+import io.arenadata.dtm.query.execution.core.service.query.QueryDispatcher;
+import io.arenadata.dtm.query.execution.core.service.query.impl.QueryAnalyzerImpl;
 import io.arenadata.dtm.query.execution.core.utils.DatamartMnemonicExtractor;
 import io.arenadata.dtm.query.execution.core.utils.DefaultDatamartSetter;
 import io.arenadata.dtm.query.execution.core.utils.HintExtractor;
@@ -63,7 +66,7 @@ class QueryAnalyzerImplTest {
                 new HintExtractor(),
                 new DatamartMnemonicExtractor(new DeltaInformationExtractorImpl(dtmSettings)),
                 new DefaultDatamartSetter(),
-                new SemicolonRemoverImpl(), new QueryRequestFactoryImpl(new AppConfiguration(mock(Environment.class))));
+                new QuerySemicolonRemoverImpl(), new QueryRequestFactoryImpl(new AppConfiguration(mock(Environment.class))));
     }
 
     @Test

@@ -13,26 +13,22 @@ import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfig
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.impl.DeltaServiceDaoImpl;
 import io.arenadata.dtm.common.exception.DtmException;
-import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadExternalTableExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadFailedExecutorImpl;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadKafkaExecutor;
-import io.arenadata.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
-import io.arenadata.dtm.query.execution.core.service.impl.DataSourcePluginServiceImpl;
+import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDefinitionService;
+import io.arenadata.dtm.query.execution.core.service.datasource.impl.DataSourcePluginServiceImpl;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import io.arenadata.dtm.query.execution.core.service.schema.impl.LogicalSchemaProviderImpl;
-import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.*;
 

@@ -1,11 +1,10 @@
-package io.arenadata.dtm.query.execution.core.service.impl;
+package io.arenadata.dtm.query.execution.core.service.rollback.impl;
 
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.RequestStatus;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QueryRequest;
-import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
@@ -13,14 +12,13 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.delta.DeltaWriteOp;
 import io.arenadata.dtm.common.exception.DtmException;
-import io.arenadata.dtm.query.execution.core.service.RestoreStateService;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadFailedExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadExternalTableExecutor;
+import io.arenadata.dtm.query.execution.core.service.rollback.RestoreStateService;
 import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
-import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlInsert;

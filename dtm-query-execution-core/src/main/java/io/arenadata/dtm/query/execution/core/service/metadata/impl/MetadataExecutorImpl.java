@@ -2,7 +2,7 @@ package io.arenadata.dtm.query.execution.core.service.metadata.impl;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.SourceType;
-import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.vertx.core.CompositeFuture;

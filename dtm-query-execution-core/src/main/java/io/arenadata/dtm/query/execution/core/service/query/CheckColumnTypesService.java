@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.service;
+package io.arenadata.dtm.query.execution.core.service.query;
 
 import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.model.ddl.EntityField;

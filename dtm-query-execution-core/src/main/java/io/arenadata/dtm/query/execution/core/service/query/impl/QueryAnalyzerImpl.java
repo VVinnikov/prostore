@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.service.impl;
+package io.arenadata.dtm.query.execution.core.service.query.impl;
 
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.InputQueryRequest;
@@ -16,9 +16,9 @@ import io.arenadata.dtm.query.calcite.core.extension.eddl.SqlCreateDatabase;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.execution.core.factory.QueryRequestFactory;
 import io.arenadata.dtm.query.execution.core.factory.RequestContextFactory;
-import io.arenadata.dtm.query.execution.core.service.QueryAnalyzer;
-import io.arenadata.dtm.query.execution.core.service.QueryDispatcher;
-import io.arenadata.dtm.query.execution.core.service.SemicolonRemover;
+import io.arenadata.dtm.query.execution.core.service.query.QuerySemicolonRemover;
+import io.arenadata.dtm.query.execution.core.service.query.QueryAnalyzer;
+import io.arenadata.dtm.query.execution.core.service.query.QueryDispatcher;
 import io.arenadata.dtm.query.execution.core.utils.DatamartMnemonicExtractor;
 import io.arenadata.dtm.query.execution.core.utils.DefaultDatamartSetter;
 import io.arenadata.dtm.query.execution.core.utils.HintExtractor;
@@ -48,7 +48,7 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
     private final RequestContextFactory<RequestContext<? extends DatamartRequest>, QueryRequest> requestContextFactory;
     private final DatamartMnemonicExtractor datamartMnemonicExtractor;
     private final DefaultDatamartSetter defaultDatamartSetter;
-    private final SemicolonRemover semicolonRemover;
+    private final QuerySemicolonRemover querySemicolonRemover;
     private final QueryRequestFactory queryRequestFactory;
 
     @Autowired
@@ -59,7 +59,7 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
                              HintExtractor hintExtractor,
                              DatamartMnemonicExtractor datamartMnemonicExtractor,
                              DefaultDatamartSetter defaultDatamartSetter,
-                             SemicolonRemover semicolonRemover,
+                             QuerySemicolonRemover querySemicolonRemover,
                              QueryRequestFactory queryRequestFactory) {
         this.queryDispatcher = queryDispatcher;
         this.definitionService = definitionService;
@@ -68,7 +68,7 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
         this.hintExtractor = hintExtractor;
         this.datamartMnemonicExtractor = datamartMnemonicExtractor;
         this.defaultDatamartSetter = defaultDatamartSetter;
-        this.semicolonRemover = semicolonRemover;
+        this.querySemicolonRemover = querySemicolonRemover;
         this.queryRequestFactory = queryRequestFactory;
     }
 
@@ -111,7 +111,7 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
     }
 
     private QuerySourceRequest getQueryRequestWithoutHint(QueryRequest queryRequest) {
-        val withoutSemicolon = semicolonRemover.remove(queryRequest);
+        val withoutSemicolon = querySemicolonRemover.remove(queryRequest);
         return hintExtractor.extractHint(withoutSemicolon);
     }
 

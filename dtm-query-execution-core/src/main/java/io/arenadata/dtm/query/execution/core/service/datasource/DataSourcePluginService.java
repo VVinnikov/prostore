@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.service;
+package io.arenadata.dtm.query.execution.core.service.datasource;
 
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
@@ -126,5 +126,10 @@ public interface DataSourcePluginService {
      */
     Future<Long> checkDataByHashInt32(CheckDataByHashInt32Params params);
 
+    /**
+     *
+     * @param params TruncateHistoryParams
+     * @return void
+     */
     Future<Void> truncateHistory(TruncateHistoryParams params);
 }

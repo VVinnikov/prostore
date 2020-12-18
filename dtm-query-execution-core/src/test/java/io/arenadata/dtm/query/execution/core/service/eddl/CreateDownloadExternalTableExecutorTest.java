@@ -20,7 +20,7 @@ import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.exception.table.TableAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.service.avro.AvroSchemaGenerator;
-import io.arenadata.dtm.query.execution.core.service.avro.AvroSchemaGeneratorImpl;
+import io.arenadata.dtm.query.execution.core.service.avro.impl.AvroSchemaGeneratorImpl;
 import io.arenadata.dtm.query.execution.core.service.eddl.impl.CreateDownloadExternalTableExecutor;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;

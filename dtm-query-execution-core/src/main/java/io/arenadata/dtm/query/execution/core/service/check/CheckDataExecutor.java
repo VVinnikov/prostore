@@ -10,7 +10,7 @@ import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
-import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.verticle.TaskVerticleExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckException;

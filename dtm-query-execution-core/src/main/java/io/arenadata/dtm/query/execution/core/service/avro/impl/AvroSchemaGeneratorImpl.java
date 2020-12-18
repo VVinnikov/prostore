@@ -1,7 +1,8 @@
-package io.arenadata.dtm.query.execution.core.service.avro;
+package io.arenadata.dtm.query.execution.core.service.avro.impl;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
+import io.arenadata.dtm.query.execution.core.service.avro.AvroSchemaGenerator;
 import io.arenadata.dtm.query.execution.core.utils.AvroUtils;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;

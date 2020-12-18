@@ -11,7 +11,7 @@ import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.impl.DeltaServi
 import io.arenadata.dtm.query.execution.core.dto.delta.HotDelta;
 import io.arenadata.dtm.query.execution.core.dto.delta.OkDelta;
 import io.arenadata.dtm.common.exception.DtmException;
-import io.arenadata.dtm.query.execution.core.service.impl.DeltaServiceImpl;
+import io.arenadata.dtm.query.execution.core.service.delta.impl.DeltaServiceExternalImpl;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,19 +27,19 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class DeltaServiceImplTest {
+class DeltaServiceExternalImplTest {
 
     private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
     private final DeltaServiceDao deltaServiceDao = mock(DeltaServiceDaoImpl.class);
     private DeltaService deltaService;
-    private DtmConfig dtmSettings = mock(CoreDtmSettings.class);
+    private final DtmConfig dtmSettings = mock(CoreDtmSettings.class);
     private ZoneId timeZone;
 
     @BeforeEach
     void setUp() {
         when(serviceDbFacade.getDeltaServiceDao()).thenReturn(deltaServiceDao);
         when(dtmSettings.getTimeZone()).thenReturn(ZoneId.of("UTC"));
-        deltaService = new DeltaServiceImpl(serviceDbFacade);
+        deltaService = new DeltaServiceExternalImpl(serviceDbFacade);
         timeZone = dtmSettings.getTimeZone();
     }
 

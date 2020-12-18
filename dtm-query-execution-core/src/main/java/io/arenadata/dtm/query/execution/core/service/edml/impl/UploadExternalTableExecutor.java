@@ -8,7 +8,7 @@ import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dto.delta.DeltaWriteOpRequest;
 import io.arenadata.dtm.query.execution.core.dto.edml.EdmlAction;
-import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadFailedExecutor;

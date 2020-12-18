@@ -1,12 +1,11 @@
-package io.arenadata.dtm.query.execution.core.service.impl;
+package io.arenadata.dtm.query.execution.core.service.datasource.impl;
 
-import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
-import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsService;
 import io.arenadata.dtm.query.execution.core.verticle.TaskVerticleExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.DtmDataSourcePlugin;

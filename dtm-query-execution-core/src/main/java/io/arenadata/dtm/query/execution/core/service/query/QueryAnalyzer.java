@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.service;
+package io.arenadata.dtm.query.execution.core.service.query;
 
 import io.arenadata.dtm.common.reader.InputQueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;

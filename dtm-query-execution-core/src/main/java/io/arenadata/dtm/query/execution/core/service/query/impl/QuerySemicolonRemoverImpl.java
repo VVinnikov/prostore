@@ -1,13 +1,13 @@
-package io.arenadata.dtm.query.execution.core.service.impl;
+package io.arenadata.dtm.query.execution.core.service.query.impl;
 
 import io.arenadata.dtm.common.reader.QueryRequest;
-import io.arenadata.dtm.query.execution.core.service.SemicolonRemover;
+import io.arenadata.dtm.query.execution.core.service.query.QuerySemicolonRemover;
 import lombok.val;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Component;
 
 @Component
-public class SemicolonRemoverImpl implements SemicolonRemover {
+public class QuerySemicolonRemoverImpl implements QuerySemicolonRemover {
     private static final String SEMICOLON_PATTERN = ";\\z";
 
     @Override

@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.service.impl;
+package io.arenadata.dtm.query.execution.core.service.metadata.impl;
 
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
@@ -12,9 +12,9 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.exception.view.ViewNotExistsException;
-import io.arenadata.dtm.query.execution.core.service.DdlQueryGenerator;
-import io.arenadata.dtm.query.execution.core.service.InformationSchemaService;
+import io.arenadata.dtm.query.execution.core.service.metadata.DdlQueryGenerator;
 import io.arenadata.dtm.query.execution.core.service.hsql.HSQLClient;
+import io.arenadata.dtm.query.execution.core.service.metadata.InformationSchemaService;
 import io.arenadata.dtm.query.execution.core.utils.InformationSchemaUtils;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;

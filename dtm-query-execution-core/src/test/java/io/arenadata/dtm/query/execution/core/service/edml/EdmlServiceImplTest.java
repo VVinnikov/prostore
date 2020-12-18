@@ -19,7 +19,7 @@ import io.arenadata.dtm.query.execution.core.dto.edml.EdmlAction;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.DownloadExternalTableExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.EdmlServiceImpl;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadExternalTableExecutor;
-import io.arenadata.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
+import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDefinitionService;
 import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.EdmlService;

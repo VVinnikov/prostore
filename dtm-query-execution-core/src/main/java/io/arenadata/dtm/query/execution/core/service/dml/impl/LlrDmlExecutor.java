@@ -8,7 +8,7 @@ import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.QuerySourceRequest;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
-import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.dml.*;
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsService;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;

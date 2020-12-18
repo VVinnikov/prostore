@@ -1,9 +1,9 @@
-package io.arenadata.dtm.query.execution.core.service.impl;
+package io.arenadata.dtm.query.execution.core.service.query.impl;
 
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.reader.QueryResult;
-import io.arenadata.dtm.query.execution.core.service.QueryDispatcher;
+import io.arenadata.dtm.query.execution.core.service.query.QueryDispatcher;
 import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.DatamartExecutionService;

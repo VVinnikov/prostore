@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.core.service.config.impl;
 
-import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
@@ -9,7 +8,7 @@ import io.arenadata.dtm.query.calcite.core.extension.config.SqlConfigType;
 import io.arenadata.dtm.query.calcite.core.extension.config.function.SqlConfigStorageAdd;
 import io.arenadata.dtm.query.calcite.core.service.impl.CalciteDefinitionService;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
-import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.plugin.api.config.ConfigRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;

@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.InputQueryRequest;
-import io.arenadata.dtm.query.execution.core.service.QueryAnalyzer;
+import io.arenadata.dtm.query.execution.core.service.query.QueryAnalyzer;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.ext.web.RoutingContext;

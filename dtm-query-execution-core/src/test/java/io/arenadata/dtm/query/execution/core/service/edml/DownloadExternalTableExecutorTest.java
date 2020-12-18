@@ -16,7 +16,7 @@ import io.arenadata.dtm.query.execution.core.service.dml.LogicViewReplacer;
 import io.arenadata.dtm.query.execution.core.service.dml.impl.LogicViewReplacerImpl;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.DownloadExternalTableExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.DownloadKafkaExecutor;
-import io.arenadata.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
+import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDefinitionService;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import io.arenadata.dtm.query.execution.core.service.schema.impl.LogicalSchemaProviderImpl;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;

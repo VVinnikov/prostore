@@ -20,7 +20,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
-class DeltaServiceImplTest {
+class DeltaServiceExternalImplTest {
 
     private final DeltaQueryParamExtractor deltaQueryParamExtractor = mock(DeltaQueryParamExtractorImpl.class);
     private final DeltaExecutor beginDeltaExecutor = mock(BeginDeltaExecutor.class);

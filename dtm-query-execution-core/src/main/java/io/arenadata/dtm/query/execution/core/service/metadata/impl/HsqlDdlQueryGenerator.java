@@ -1,9 +1,9 @@
-package io.arenadata.dtm.query.execution.core.service.impl;
+package io.arenadata.dtm.query.execution.core.service.metadata.impl;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityFieldUtils;
-import io.arenadata.dtm.query.execution.core.service.DdlQueryGenerator;
+import io.arenadata.dtm.query.execution.core.service.metadata.DdlQueryGenerator;
 import lombok.val;
 import org.springframework.stereotype.Component;
 

@@ -1,10 +1,10 @@
-package io.arenadata.dtm.query.execution.core.service.impl;
+package io.arenadata.dtm.query.execution.core.service.query.impl;
 
 import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
 import io.arenadata.dtm.query.calcite.core.util.CalciteUtil;
-import io.arenadata.dtm.query.execution.core.service.CheckColumnTypesService;
+import io.arenadata.dtm.query.execution.core.service.query.CheckColumnTypesService;
 import io.vertx.core.Future;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;

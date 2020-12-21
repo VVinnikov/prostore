@@ -68,6 +68,7 @@ import static org.mockito.Mockito.when;
         KafkaZookeeperProperties.class
 })
 @ExtendWith(VertxExtension.class)
+@Disabled
 class StatusEventVerticleTest {
     public static final long EXPECTED_SIN_ID = 2L;
     public static final String EXPECTED_DATAMART = "test_datamart";

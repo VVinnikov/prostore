@@ -199,7 +199,7 @@ class DownloadExternalTableExecutorTest {
             .thenReturn(Future.succeededFuture(copyRequest));
 
         when(downloadExecutors.get(0).execute(any()))
-                .thenReturn(Future.succeededFuture(QueryResult.emptyResult()));
+                .thenReturn(Future.failedFuture(new DtmException("")));
 
         downloadExternalTableExecutor.execute(context)
                 .onComplete(promise);

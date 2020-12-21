@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 @Component
 @ConfigurationProperties("adqm.mppr")
 @Data
-public class ConnectorProperties {
+public class AdqmMpprProperties {
     private String host;
     private Integer port;
     private String url;

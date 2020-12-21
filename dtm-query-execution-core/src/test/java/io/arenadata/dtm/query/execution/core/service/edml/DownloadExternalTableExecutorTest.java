@@ -50,15 +50,15 @@ class DownloadExternalTableExecutorTest {
     private final DeltaQueryPreprocessor deltaQueryPreprocessor = mock(DeltaQueryPreprocessorImpl.class);
     private final List<EdmlDownloadExecutor> downloadExecutors = Arrays.asList(mock(DownloadKafkaExecutor.class));
     private DownloadExternalTableExecutor downloadExternalTableExecutor;
-    private CalciteConfiguration config = new CalciteConfiguration();
-    private CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
-    private DefinitionService<SqlNode> definitionService =
+    private final CalciteConfiguration config = new CalciteConfiguration();
+    private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
+    private final DefinitionService<SqlNode> definitionService =
         new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
     private QueryRequest queryRequest;
     private Entity destEntity;
     private Entity sourceEntity;
-    private List<Datamart> schema = Collections.emptyList();
-    private LogicViewReplacer logicViewReplacer = mock(LogicViewReplacerImpl.class);
+    private final List<Datamart> schema = Collections.emptyList();
+    private final LogicViewReplacer logicViewReplacer = mock(LogicViewReplacerImpl.class);
 
     @BeforeEach
     void setUp() {
@@ -66,11 +66,7 @@ class DownloadExternalTableExecutorTest {
         queryRequest.setDatamartMnemonic("test");
         queryRequest.setRequestId(UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"));
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<String>> handler = invocation.getArgument(2);
-            handler.handle(Future.succeededFuture(SELECT_SQL));
-            return null;
-        }).when(logicViewReplacer).replace(any(), any());
+        when(logicViewReplacer.replace(any(), any())).thenReturn(Future.succeededFuture(SELECT_SQL));
 
         destEntity = Entity.builder()
             .entityType(EntityType.DOWNLOAD_EXTERNAL_TABLE)
@@ -108,20 +104,14 @@ class DownloadExternalTableExecutorTest {
         QueryRequest copyRequest = context.getRequest().getQueryRequest();
         copyRequest.setDeltaInformations(Collections.emptyList());
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<List<Datamart>>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(schema));
-            return null;
-        }).when(logicalSchemaProvider).getSchema(any());
+        when(logicalSchemaProvider.getSchema(any()))
+                .thenReturn(Future.succeededFuture(schema));
 
         when(deltaQueryPreprocessor.process(any()))
             .thenReturn(Future.succeededFuture(copyRequest));
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
-            return null;
-        }).when(downloadExecutors.get(0)).execute(any());
+        when(downloadExecutors.get(0).execute(any()))
+                .thenReturn(Future.succeededFuture(QueryResult.emptyResult()));
 
         downloadExternalTableExecutor.execute(context)
                 .onComplete(promise);
@@ -147,11 +137,8 @@ class DownloadExternalTableExecutorTest {
         QueryRequest copyRequest = context.getRequest().getQueryRequest();
         copyRequest.setDeltaInformations(Collections.emptyList());
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<JsonObject>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new DtmException("")));
-            return null;
-        }).when(logicalSchemaProvider).getSchema(any());
+        when(logicalSchemaProvider.getSchema(any()))
+        .thenReturn(Future.failedFuture(new DtmException("")));
 
         downloadExternalTableExecutor.execute(context)
                 .onComplete(promise);
@@ -176,11 +163,8 @@ class DownloadExternalTableExecutorTest {
         QueryRequest copyRequest = context.getRequest().getQueryRequest();
         copyRequest.setDeltaInformations(Collections.emptyList());
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<List<Datamart>>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(schema));
-            return null;
-        }).when(logicalSchemaProvider).getSchema(any());
+        when(logicalSchemaProvider.getSchema(any()))
+                .thenReturn(Future.succeededFuture(schema));
 
         when(deltaQueryPreprocessor.process(any()))
                 .thenReturn(Future.failedFuture(new DtmException("")));
@@ -208,20 +192,14 @@ class DownloadExternalTableExecutorTest {
         QueryRequest copyRequest = context.getRequest().getQueryRequest();
         copyRequest.setDeltaInformations(Collections.emptyList());
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<List<Datamart>>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(schema));
-            return null;
-        }).when(logicalSchemaProvider).getSchema(any());
+        when(logicalSchemaProvider.getSchema(any()))
+                .thenReturn(Future.succeededFuture(schema));
 
         when(deltaQueryPreprocessor.process(any()))
             .thenReturn(Future.succeededFuture(copyRequest));
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new DtmException("")));
-            return null;
-        }).when(downloadExecutors.get(0)).execute(any());
+        when(downloadExecutors.get(0).execute(any()))
+                .thenReturn(Future.failedFuture(new DtmException("")));
 
         downloadExternalTableExecutor.execute(context)
                 .onComplete(promise);

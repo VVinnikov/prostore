@@ -17,7 +17,6 @@ import java.time.LocalDateTime;
 @Service
 public class DeltaServiceExternalImpl implements DeltaService {
 
-    private static final long EMPTY_DELTA_NUM_VALUE = -1L;
     private final DeltaServiceDao deltaServiceDao;
 
     @Autowired
@@ -29,14 +28,14 @@ public class DeltaServiceExternalImpl implements DeltaService {
     public Future<Long> getCnToByDeltaDatetime(String datamart, LocalDateTime dateTime) {
         return Future.future(handler -> deltaServiceDao.getDeltaByDateTime(datamart, dateTime)
                 .onSuccess(delta -> handler.handle(Future.succeededFuture(delta.getCnTo())))
-                .onFailure(err -> handler.handle(Future.succeededFuture(EMPTY_DELTA_NUM_VALUE))));
+                .onFailure(err -> handler.handle(Future.succeededFuture(-1L))));
     }
 
     @Override
     public Future<Long> getCnToByDeltaNum(String datamart, long num) {
         return Future.future(handler -> deltaServiceDao.getDeltaByNum(datamart, num)
                 .onSuccess(delta -> handler.handle(Future.succeededFuture(delta.getCnTo())))
-                .onFailure(err -> handler.handle(Future.succeededFuture(EMPTY_DELTA_NUM_VALUE))));
+                .onFailure(err -> handler.handle(Future.succeededFuture(-1L))));
     }
 
     @Override
@@ -51,30 +50,26 @@ public class DeltaServiceExternalImpl implements DeltaService {
                                     if (okDelta != null) {
                                         handler.handle(Future.succeededFuture(okDelta.getCnTo()));
                                     } else {
-                                        handler.handle(Future.succeededFuture(EMPTY_DELTA_NUM_VALUE));
+                                        handler.handle(Future.succeededFuture(-1L));
                                     }
                                 })
                                 .onFailure(handler::fail);
                     }
-                }));
+                })
+                .onFailure(handler::fail));
     }
 
     @Override
     public Future<SelectOnInterval> getCnFromCnToByDeltaNums(String datamart, long deltaFrom, long deltaTo) {
-        return Future.future(handler -> CompositeFuture.join(
-                deltaServiceDao.getDeltaByNum(datamart, deltaFrom),
-                deltaServiceDao.getDeltaByNum(datamart, deltaTo))
+        return Future.future(handler -> CompositeFuture.join(deltaServiceDao.getDeltaByNum(datamart, deltaFrom), deltaServiceDao.getDeltaByNum(datamart, deltaTo))
                 .onSuccess(ar -> {
                     Long cnFrom = ((OkDelta) ar.resultAt(0)).getCnFrom();
                     Long cnTo = ((OkDelta) ar.resultAt(1)).getCnTo();
                     handler.handle(Future.succeededFuture(new SelectOnInterval(cnFrom, cnTo)));
                 })
                 .onFailure(err -> {
-                    handler.handle(Future.failedFuture(
-                            new DeltaRangeInvalidException(String.format("Invalid delta range [%d, %d]",
-                                    deltaFrom,
-                                    deltaTo),
-                                    err)));
+                    val ex = new DeltaRangeInvalidException(String.format("Invalid delta range [%d, %d]", deltaFrom, deltaTo), err);
+                    handler.handle(Future.failedFuture(ex));
                 }));
     }
 }

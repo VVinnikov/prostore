@@ -47,7 +47,7 @@ class LogicalSchemaServiceImplTest {
             new DeltaInformationExtractorImpl(new CoreDtmSettings(ZoneId.of("UTC")));
     private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private final DefinitionService<SqlNode> definitionService =
-        new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
+            new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
     private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
     private final ServiceDbDao serviceDbDao = mock(ServiceDbDaoImpl.class);
     private final EntityDao entityDao = mock(EntityDaoImpl.class);
@@ -69,29 +69,29 @@ class LogicalSchemaServiceImplTest {
         Promise<Map<DatamartSchemaKey, Entity>> promise = Promise.promise();
         final Map<DatamartSchemaKey, Entity> resultSchemaMap = new HashMap<>();
         queryRequest.setSql("select t1.id, cast(t2.id as varchar(10)) as tt from test_datamart.pso t1 \n" +
-            " join test_datamart.doc t2 on t1.id = t2.id");
+                " join test_datamart.doc t2 on t1.id = t2.id");
         Entity pso = Entity.builder()
-            .schema(DATAMART)
-            .name(TABLE_PSO)
-            .build();
+                .schema(DATAMART)
+                .name(TABLE_PSO)
+                .build();
 
         EntityField entityField = EntityField.builder()
-            .name("id")
-            .type(ColumnType.INT)
-            .ordinalPosition(0)
-            .shardingOrder(1)
-            .nullable(false)
-            .primaryOrder(1)
-            .accuracy(0)
-            .size(0)
-            .build();
+                .name("id")
+                .type(ColumnType.INT)
+                .ordinalPosition(0)
+                .shardingOrder(1)
+                .nullable(false)
+                .primaryOrder(1)
+                .accuracy(0)
+                .size(0)
+                .build();
         List<EntityField> psoAttrs = Collections.singletonList(entityField);
         pso.setFields(psoAttrs);
 
         Entity doc = Entity.builder()
-            .schema(DATAMART)
-            .name(TABLE_DOC)
-            .build();
+                .schema(DATAMART)
+                .name(TABLE_DOC)
+                .build();
         List<EntityField> docAttrs = Collections.singletonList(entityField);
         doc.setFields(docAttrs);
 
@@ -99,33 +99,34 @@ class LogicalSchemaServiceImplTest {
         resultSchemaMap.put(new DatamartSchemaKey(DATAMART, TABLE_DOC), doc);
 
         Entity.EntityBuilder builder = Entity.builder()
-            .schema(DATAMART)
-            .entityType(EntityType.TABLE)
-            .fields(Collections.singletonList(
-                EntityField.builder()
-                    .name("id")
-                    .accuracy(0)
-                    .size(0)
-                    .ordinalPosition(0)
-                    .nullable(false)
-                    .shardingOrder(1)
-                    .primaryOrder(1)
-                    .type(ColumnType.INT)
-                    .build()
-            ));
+                .schema(DATAMART)
+                .entityType(EntityType.TABLE)
+                .fields(Collections.singletonList(
+                        EntityField.builder()
+                                .name("id")
+                                .accuracy(0)
+                                .size(0)
+                                .ordinalPosition(0)
+                                .nullable(false)
+                                .shardingOrder(1)
+                                .primaryOrder(1)
+                                .type(ColumnType.INT)
+                                .build()
+                ));
 
-        Mockito.when(entityDao.getEntity(any(), any()))
-            .thenReturn(
-                Future.succeededFuture(
-                    builder
-                        .name(TABLE_PSO)
-                        .build()),
-                Future.succeededFuture(
-                    builder
-                        .name(TABLE_DOC)
-                        .build())
-            );
-        logicalSchemaService.createSchema(queryRequest);
+        when(entityDao.getEntity(any(), any()))
+                .thenReturn(
+                        Future.succeededFuture(
+                                builder
+                                        .name(TABLE_PSO)
+                                        .build()),
+                        Future.succeededFuture(
+                                builder
+                                        .name(TABLE_DOC)
+                                        .build())
+                );
+        logicalSchemaService.createSchema(queryRequest)
+                .onComplete(promise);
         Map<DatamartSchemaKey, Entity> schemaMap = promise.future().result();
         assertNotNull(schemaMap);
         schemaMap.forEach((k, v) -> {
@@ -142,12 +143,13 @@ class LogicalSchemaServiceImplTest {
     void createSchemaWithDatamartEntityError() {
         Promise<Map<DatamartSchemaKey, Entity>> promise = Promise.promise();
         queryRequest.setSql("select t1.id, cast(t2.id as varchar(10)) as tt from test_datamart.pso t1 \n" +
-            " join test_datamart.doc t2 on t1.id = t2.id");
+                " join test_datamart.doc t2 on t1.id = t2.id");
 
         Mockito.when(entityDao.getEntity(any(), any()))
-            .thenReturn(Future.failedFuture(new DtmException("Error getting entities!")));
+                .thenReturn(Future.failedFuture(new DtmException("Error getting entities!")));
 
-        logicalSchemaService.createSchema(queryRequest);
+        logicalSchemaService.createSchema(queryRequest)
+                .onComplete(promise);
         assertNotNull(promise.future().cause());
     }
 

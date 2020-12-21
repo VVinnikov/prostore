@@ -13,13 +13,16 @@ import org.springframework.context.annotation.Profile;
 @EnableAutoConfiguration(exclude = {SpringApplicationAdminJmxAutoConfiguration.class})
 @ComponentScan(basePackages = {
         "io.arenadata.dtm.query.execution.core.calcite",
+        "io.arenadata.dtm.query.execution.core.configuration",
+        "io.arenadata.dtm.query.execution.core.converter",
+        "io.arenadata.dtm.query.execution.core.dao",
+        "io.arenadata.dtm.query.execution.core.factory",
+        "io.arenadata.dtm.query.execution.core.registry",
+        "io.arenadata.dtm.query.execution.core.service",
         "io.arenadata.dtm.query.execution.core.transformer",
         "io.arenadata.dtm.query.execution.core.utils",
-        "io.arenadata.dtm.query.execution.core.service",
-        "io.arenadata.dtm.query.execution.core.dao",
-        "io.arenadata.dtm.query.execution.core.registry",
-        "io.arenadata.dtm.query.execution.core.factory",
-        "io.arenadata.dtm.query.execution.core.configuration",
-        "io.arenadata.dtm.kafka.core.configuration"}, nameGenerator = BeanNameGenerator.class)
+        "io.arenadata.dtm.kafka.core.configuration",
+        "io.arenadata.dtm.kafka.core.repository",
+        "io.arenadata.dtm.kafka.core.service.kafka"}, nameGenerator = BeanNameGenerator.class)
 public class CoreTestConfiguration {
 }

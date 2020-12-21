@@ -7,6 +7,7 @@ import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.plugin.exload.Format;
 import io.arenadata.dtm.common.plugin.exload.Type;
+import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.core.configuration.properties.EdmlProperties;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacadeImpl;
@@ -18,6 +19,7 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.Entity
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
 import io.arenadata.dtm.query.execution.core.dto.eddl.CreateDownloadExternalTableQuery;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
+import io.arenadata.dtm.query.execution.core.exception.table.ExternalTableAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.exception.table.TableAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.service.avro.AvroSchemaGenerator;
 import io.arenadata.dtm.query.execution.core.service.avro.impl.AvroSchemaGeneratorImpl;
@@ -85,7 +87,7 @@ public class CreateDownloadExternalTableExecutorTest {
 
     @Test
     void executeSuccess() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
 
         Mockito.when(datamartDao.existsDatamart(eq(schema)))
                 .thenReturn(Future.succeededFuture(true));
@@ -96,13 +98,14 @@ public class CreateDownloadExternalTableExecutorTest {
         Mockito.when(entityDao.createEntity(any()))
                 .thenReturn(Future.succeededFuture());
 
-        createDownloadExteranlTableExecutor.execute(query);
+        createDownloadExteranlTableExecutor.execute(query)
+                .onComplete(promise);
         assertTrue(promise.future().succeeded());
     }
 
     @Test
     void executeDefaultChunkSizeSuccess() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         query.setChunkSize(null);
         Mockito.when(datamartDao.existsDatamart(eq(schema)))
                 .thenReturn(Future.succeededFuture(true));
@@ -113,19 +116,21 @@ public class CreateDownloadExternalTableExecutorTest {
         Mockito.when(entityDao.createEntity(any()))
                 .thenReturn(Future.succeededFuture());
 
-        createDownloadExteranlTableExecutor.execute(query);
+        createDownloadExteranlTableExecutor.execute(query)
+                .onComplete(promise);
         assertTrue(promise.future().succeeded());
         assertEquals(query.getEntity().getExternalTableDownloadChunkSize(), defaultChunkSize);
     }
 
     @Test
     void executeDatamartNotExists() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
 
         Mockito.when(datamartDao.existsDatamart(eq(schema)))
                 .thenReturn(Future.succeededFuture(false));
 
-        createDownloadExteranlTableExecutor.execute(query);
+        createDownloadExteranlTableExecutor.execute(query)
+                .onComplete(promise);
 
         assertTrue(promise.future().failed());
         assertTrue(promise.future().cause() instanceof DatamartNotExistsException);
@@ -133,7 +138,7 @@ public class CreateDownloadExternalTableExecutorTest {
 
     @Test
     void executeTableExists() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
 
         Mockito.when(datamartDao.existsDatamart(eq(schema)))
                 .thenReturn(Future.succeededFuture(true));
@@ -141,20 +146,22 @@ public class CreateDownloadExternalTableExecutorTest {
         Mockito.when(entityDao.existsEntity(eq(schema), eq(entity.getName())))
                 .thenReturn(Future.succeededFuture(true));
 
-        createDownloadExteranlTableExecutor.execute(query);
+        createDownloadExteranlTableExecutor.execute(query)
+                .onComplete(promise);
 
         assertTrue(promise.future().failed());
-        assertTrue(promise.future().cause() instanceof TableAlreadyExistsException);
+        assertTrue(promise.future().cause() instanceof ExternalTableAlreadyExistsException);
     }
 
     @Test
     void executeExistsDatamartError() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
 
         Mockito.when(datamartDao.existsDatamart(eq(schema)))
                 .thenReturn(Future.failedFuture(new DtmException("exists datamart error")));
 
-        createDownloadExteranlTableExecutor.execute(query);
+        createDownloadExteranlTableExecutor.execute(query)
+                .onComplete(promise);
 
         assertTrue(promise.future().failed());
         assertEquals("exists datamart error", promise.future().cause().getMessage());
@@ -162,7 +169,7 @@ public class CreateDownloadExternalTableExecutorTest {
 
     @Test
     void executeExistsEntityError() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
 
         Mockito.when(datamartDao.existsDatamart(eq(schema)))
                 .thenReturn(Future.succeededFuture(true));
@@ -170,7 +177,8 @@ public class CreateDownloadExternalTableExecutorTest {
         Mockito.when(entityDao.existsEntity(eq(schema), eq(entity.getName())))
                 .thenReturn(Future.failedFuture(new DtmException("exists entity error")));
 
-        createDownloadExteranlTableExecutor.execute(query);
+        createDownloadExteranlTableExecutor.execute(query)
+                .onComplete(promise);
 
         assertTrue(promise.future().failed());
         assertEquals("exists entity error", promise.future().cause().getMessage());
@@ -178,7 +186,7 @@ public class CreateDownloadExternalTableExecutorTest {
 
     @Test
     void executeCreateEntityError() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
 
         Mockito.when(datamartDao.existsDatamart(eq(schema)))
                 .thenReturn(Future.succeededFuture(true));
@@ -189,7 +197,8 @@ public class CreateDownloadExternalTableExecutorTest {
         Mockito.when(entityDao.createEntity(any()))
                 .thenReturn(Future.failedFuture(new DtmException("create entity error")));
 
-        createDownloadExteranlTableExecutor.execute(query);
+        createDownloadExteranlTableExecutor.execute(query)
+                .onComplete(promise);
 
         assertTrue(promise.future().failed());
         assertEquals("create entity error", promise.future().cause().getMessage());

@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load;
 
-import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.MppwProperties;
+import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.AdqmMppwProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.mppw.RestMppwKafkaLoadRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.mppw.RestMppwKafkaStopRequest;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
@@ -19,11 +19,11 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class RestLoadClientImpl implements RestLoadClient {
     private final WebClient webClient;
-    private final MppwProperties mppwProperties;
+    private final AdqmMppwProperties mppwProperties;
 
     @Autowired
     public RestLoadClientImpl(@Qualifier("coreVertx") Vertx vertx,
-                              MppwProperties mppwProperties) {
+                              AdqmMppwProperties mppwProperties) {
         this.webClient = WebClient.create(vertx);
         this.mppwProperties = mppwProperties;
     }

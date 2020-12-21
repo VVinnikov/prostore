@@ -118,6 +118,8 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
                 .collect(Collectors.toList()))
                 .onSuccess(ar -> {
                     SourceType sourceType = ar.list().stream()
+                            //this sort is needed to get the first source type - ADB if all costs will be equal
+                            .sorted(Comparator.comparing(st -> ((Pair<SourceType, Integer>) st).getKey().ordinal()))
                             .map(res -> (Pair<SourceType, Integer>) res)
                             .min(Comparator.comparingInt(Pair::getValue))
                             .map(Pair::getKey)

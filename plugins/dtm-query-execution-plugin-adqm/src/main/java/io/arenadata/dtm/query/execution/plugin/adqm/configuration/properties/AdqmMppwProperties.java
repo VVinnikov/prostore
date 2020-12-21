@@ -8,7 +8,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties("adqm.mppw")
 @Getter
 @Setter
-public class MppwProperties {
+public class AdqmMppwProperties {
     private String consumerGroup;
     private String kafkaBrokers;
     private LoadType loadType;

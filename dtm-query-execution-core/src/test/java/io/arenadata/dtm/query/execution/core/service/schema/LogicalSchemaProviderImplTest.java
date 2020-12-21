@@ -10,9 +10,7 @@ import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfig
 import io.arenadata.dtm.query.execution.core.service.schema.impl.LogicalSchemaProviderImpl;
 import io.arenadata.dtm.query.execution.core.service.schema.impl.LogicalSchemaServiceImpl;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -73,11 +71,8 @@ class LogicalSchemaProviderImplTest {
         dm.setMnemonic("test");
         dm.setEntities(Arrays.asList(table2, table1));
         datamarts.add(dm);
-        doAnswer(invocation -> {
-            final Handler<AsyncResult<Map<DatamartSchemaKey, Entity>>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(datamartTableMap));
-            return null;
-        }).when(logicalSchemaService).createSchema(any());
+        when(logicalSchemaService.createSchema(any()))
+                .thenReturn(Future.succeededFuture(datamartTableMap));
 
         logicalSchemaProvider.getSchema(queryRequest)
                 .onComplete(promise);
@@ -88,11 +83,8 @@ class LogicalSchemaProviderImplTest {
     @Test
     void createSchemaWithServiceError() {
         Promise<List<Datamart>> promise = Promise.promise();
-        doAnswer(invocation -> {
-            final Handler<AsyncResult<Map<DatamartSchemaKey, Entity>>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new DtmException("Ошибка создания схемы!")));
-            return null;
-        }).when(logicalSchemaService).createSchema(any());
+        when(logicalSchemaService.createSchema(any()))
+                .thenReturn(Future.failedFuture(new DtmException("Ошибка создания схемы!")));
 
         logicalSchemaProvider.getSchema(queryRequest)
                 .onComplete(promise);

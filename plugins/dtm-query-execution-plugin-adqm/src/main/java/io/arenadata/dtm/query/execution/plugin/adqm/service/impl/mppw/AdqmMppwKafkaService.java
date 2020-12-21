@@ -1,12 +1,11 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw;
 
 import io.arenadata.dtm.common.reader.QueryResult;
+import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.MppwRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.MppwKafkaService;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -44,16 +43,19 @@ public class AdqmMppwKafkaService implements MppwKafkaService<QueryResult> {
     }
 
     @Override
-    public void execute(MppwRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-        MppwRequest request = context.getRequest();
-        if (request == null) {
-            asyncResultHandler.handle(Future.failedFuture("MppwRequest should not be null"));
-            return;
-        }
+    public Future<QueryResult> execute(MppwRequestContext context) {
+        return Future.future(promise -> {
+            MppwRequest request = context.getRequest();
+            if (request == null) {
+                promise.fail(new MppwDatasourceException("MppwRequest should not be null"));
+                return;
+            }
 
-        LoadType loadType = LoadType.valueOf(request.getIsLoadStart());
-        log.debug("Mppw {}", loadType);
-        handlers.get(loadType).execute(request).onComplete(asyncResultHandler);
+            LoadType loadType = LoadType.valueOf(request.getIsLoadStart());
+            log.debug("Mppw {}", loadType);
+            handlers.get(loadType).execute(request)
+                    .onComplete(promise);
+        });
     }
 
 }

@@ -6,6 +6,7 @@ import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.common.model.SqlProcessingType;
 import lombok.Data;
 import lombok.ToString;
+import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlNode;
 
 import java.util.ArrayList;
@@ -19,6 +20,7 @@ import static io.arenadata.dtm.common.model.SqlProcessingType.DDL;
 public class DdlRequestContext extends RequestContext<DdlRequest> {
 
     private DdlType ddlType;
+    private SqlCall sqlCall;
     private String datamartName;
     private SqlNode query;
     private String systemName;

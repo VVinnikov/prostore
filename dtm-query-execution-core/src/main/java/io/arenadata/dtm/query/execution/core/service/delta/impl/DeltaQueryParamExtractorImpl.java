@@ -1,13 +1,12 @@
 package io.arenadata.dtm.query.execution.core.service.delta.impl;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaQuery;
 import io.arenadata.dtm.query.execution.core.factory.DeltaQueryFactory;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaQueryParamExtractor;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlNode;
@@ -33,29 +32,30 @@ public class DeltaQueryParamExtractorImpl implements DeltaQueryParamExtractor {
     }
 
     @Override
-    public void extract(QueryRequest request, Handler<AsyncResult<DeltaQuery>> handler) {
-        coreVertx.executeBlocking(it -> {
-            try {
-                SqlNode node = definitionService.processingQuery(request.getSql());
-                it.complete(node);
-            } catch (Exception e) {
-                log.error("Request parsing error", e);
-                it.fail(e);
-            }
-        }, ar -> {
-            if (ar.succeeded()) {
-                SqlNode sqlNode = (SqlNode) ar.result();
+    public Future<DeltaQuery> extract(QueryRequest request) {
+        return Future.future(promise -> {
+            coreVertx.executeBlocking(it -> {
                 try {
-                    final DeltaQuery deltaQuery = deltaQueryFactory.create(sqlNode);
-                    log.debug("Delta query created successfully: {}", deltaQuery);
-                    handler.handle(Future.succeededFuture(deltaQuery));
+                    SqlNode node = definitionService.processingQuery(request.getSql());
+                    it.complete(node);
                 } catch (Exception e) {
-                    log.error("Error creating delta query from sql node", e);
-                    handler.handle(Future.failedFuture(e));
+                    it.fail(new DtmException("Error parsing sql query", e));
                 }
-            } else {
-                handler.handle(Future.failedFuture(ar.cause()));
-            }
+            }, ar -> {
+                if (ar.succeeded()) {
+                    SqlNode sqlNode = (SqlNode) ar.result();
+                    try {
+                        final DeltaQuery deltaQuery = deltaQueryFactory.create(sqlNode);
+                        log.debug("Delta query created successfully: {}", deltaQuery);
+                        promise.complete(deltaQuery);
+                    } catch (Exception e) {
+                        promise.fail(new DtmException("Error creating delta query from sql node", e));
+                    }
+                } else {
+                    promise.fail(ar.cause());
+                }
+            });
         });
+
     }
 }

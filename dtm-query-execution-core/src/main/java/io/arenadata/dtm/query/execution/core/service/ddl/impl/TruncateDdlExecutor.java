@@ -6,18 +6,16 @@ import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.truncate.SqlTruncateHistory;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
-import io.arenadata.dtm.query.execution.core.dao.exception.entity.TableNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
-import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
+import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.PostSqlActionType;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlKind;
@@ -48,15 +46,23 @@ public class TruncateDdlExecutor extends QueryResultDdlExecutor {
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<QueryResult>> handler) {
-        val schema = getSchemaName(context.getRequest().getQueryRequest(), sqlNodeName);
-        context.setDatamartName(schema);
-        val table = getTableName(sqlNodeName);
-        val sqlTruncateHistory = (SqlTruncateHistory) context.getQuery();
-        CompositeFuture.join(getTableEntity(schema, table), calcCnTo(schema, sqlTruncateHistory))
-                .compose(entityCnTo -> CompositeFuture.join(executeTruncate(entityCnTo, context, sqlTruncateHistory)))
-                .onSuccess(success -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
-                .onFailure(err -> handler.handle(Future.failedFuture(err)));
+    public Future<QueryResult> execute(DdlRequestContext context, String sqlNodeName) {
+        return truncateEntity(context, sqlNodeName);
+    }
+
+    private Future<QueryResult> truncateEntity(DdlRequestContext context, String sqlNodeName) {
+        return Future.future(promise -> {
+            val schema = getSchemaName(context.getRequest().getQueryRequest(), sqlNodeName);
+            context.setDatamartName(schema);
+            val table = getTableName(sqlNodeName);
+            val sqlTruncateHistory = (SqlTruncateHistory) context.getQuery();
+            CompositeFuture.join(getTableEntity(schema, table), calcCnTo(schema, sqlTruncateHistory))
+                    .compose(entityCnTo -> CompositeFuture.join(executeTruncate(entityCnTo, context, sqlTruncateHistory)))
+                    .onSuccess(success -> {
+                        promise.complete(QueryResult.emptyResult());
+                    })
+                    .onFailure(promise::fail);
+        });
     }
 
     private List<Future> executeTruncate(CompositeFuture entityCnTo, DdlRequestContext context, SqlTruncateHistory sqlTruncateHistory) {
@@ -64,12 +70,12 @@ public class TruncateDdlExecutor extends QueryResultDdlExecutor {
         val cnTo = (Long) entityCnTo.resultAt(1);
         val env = context.getRequest().getQueryRequest().getEnvName();
         return entity.getDestination().stream()
-                        .map(sourceType -> {
-                            val truncateParams = new TruncateHistoryParams(sourceType,
-                                    context.getMetrics(), cnTo, entity, env, sqlTruncateHistory.getConditions());
-                            return dataSourcePluginService.truncateHistory(truncateParams);
-                        })
-                        .collect(Collectors.toList());
+                .map(sourceType -> {
+                    val truncateParams = new TruncateHistoryParams(sourceType,
+                            context.getMetrics(), cnTo, entity, env, sqlTruncateHistory.getConditions());
+                    return dataSourcePluginService.truncateHistory(truncateParams);
+                })
+                .collect(Collectors.toList());
     }
 
     private Future<Entity> getTableEntity(String schema, String table) {

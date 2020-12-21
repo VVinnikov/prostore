@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import io.arenadata.dtm.query.execution.core.dao.exception.delta.DeltaException;
+import io.arenadata.dtm.query.execution.core.exception.delta.DeltaException;
 import io.arenadata.dtm.query.execution.core.dto.delta.Delta;
 import io.arenadata.dtm.query.execution.core.dto.delta.DeltaWriteOp;
 import io.arenadata.dtm.query.execution.core.dto.delta.OkDelta;

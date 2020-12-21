@@ -8,7 +8,7 @@ import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.plugin.adg.service.QueryExecutorService;
-import io.arenadata.dtm.query.execution.plugin.adg.service.TtCartridgeProvider;
+import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeProvider;
 import io.arenadata.dtm.query.execution.plugin.adg.service.impl.ddl.AdgDdlService;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
@@ -28,11 +28,11 @@ import static org.mockito.Mockito.*;
 
 public class AdgDdlServiceImpl {
 
-    private TtCartridgeProvider cartridgeProvider = mock(TtCartridgeProvider.class);
-    private KafkaConfig kafkaProperties = mock(KafkaConfig.class);
+    private AdgCartridgeProvider cartridgeProvider = mock(AdgCartridgeProvider.class);
+    private final KafkaConfig kafkaProperties = mock(KafkaConfig.class);
     private final QueryExecutorService executorService = mock(QueryExecutorService.class);
 
-    private AdgDdlService adgDdlService = new AdgDdlService();
+    private final AdgDdlService adgDdlService = new AdgDdlService();
 
     @Test
     @Disabled
@@ -68,8 +68,6 @@ public class AdgDdlServiceImpl {
 
         DdlRequestContext context = new DdlRequestContext(new DdlRequest(queryRequest, entity));
         context.setDdlType(DROP_TABLE);
-        adgDdlService.execute(context, handler -> {
-            assertTrue(handler.succeeded());
-        });
+        adgDdlService.execute(context);
     }
 }

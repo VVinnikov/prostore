@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.core.service.dml.impl;
 import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.reader.InformationSchemaView;
 import io.arenadata.dtm.common.reader.QuerySourceRequest;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.dml.InformationSchemaDefinitionService;
 import org.springframework.stereotype.Service;
 
@@ -22,7 +23,7 @@ public class InformationSchemaDefinitionServiceImpl implements InformationSchema
         boolean informationSchemaExists = unicSchemes.contains(InformationSchemaView.SCHEMA_NAME);
 
         if (unicSchemes.size() > 1 && informationSchemaExists) {
-            throw new IllegalArgumentException("Simultaneous query to the information schema and user schema isn't supported");
+            throw new DtmException("Simultaneous query to the information schema and user schema isn't supported");
         } else {
             return informationSchemaExists;
         }

@@ -14,6 +14,7 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.DatamartDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.dml.impl.UseSchemaDmlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsService;
 import io.arenadata.dtm.query.execution.core.service.metrics.impl.MetricsServiceImpl;
@@ -100,13 +101,7 @@ class UseSchemaDmlExecutorTest {
                     }
                 });
 
-        useSchemaDdlExecutor.execute(context, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        useSchemaDdlExecutor.execute(context);
         assertEquals(result, promise.future().result());
         assertEquals(schema, ((QueryResult) promise.future().result()).getResult().get(0).get("schema"));
     }
@@ -123,13 +118,7 @@ class UseSchemaDmlExecutorTest {
                     promise.fail(ar.cause());
                 });
 
-        useSchemaDdlExecutor.execute(context, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        useSchemaDdlExecutor.execute(context);
         assertTrue(promise.future().failed());
     }
 
@@ -138,7 +127,7 @@ class UseSchemaDmlExecutorTest {
         Promise promise = Promise.promise();
 
         Mockito.when(datamartDao.existsDatamart(eq(schema)))
-                .thenReturn(Future.failedFuture(new RuntimeException("")));
+                .thenReturn(Future.failedFuture(new DtmException("")));
 
         when(metricsService.sendMetrics(any(), any(), any(), any())).thenReturn(ar -> {
             if (ar.succeeded()) {
@@ -148,13 +137,7 @@ class UseSchemaDmlExecutorTest {
             }
         });
 
-        useSchemaDdlExecutor.execute(context, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        useSchemaDdlExecutor.execute(context);
         assertTrue(promise.future().failed());
     }
 }

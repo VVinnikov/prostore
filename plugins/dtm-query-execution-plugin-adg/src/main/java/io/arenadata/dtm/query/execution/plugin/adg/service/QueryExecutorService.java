@@ -9,10 +9,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Сервис исполнения запросов
+ * Query execution service
  */
 public interface QueryExecutorService {
-    void execute(String sql, List<ColumnMetadata> metadata, Handler<AsyncResult<List<Map<String, Object>>>> handler);
+    Future<List<Map<String, Object>>> execute(String sql, List<ColumnMetadata> metadata);
 
     Future<Object> executeProcedure(String procedure, Object... args);
 }

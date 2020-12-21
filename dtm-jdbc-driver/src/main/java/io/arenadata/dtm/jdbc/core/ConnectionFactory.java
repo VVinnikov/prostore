@@ -1,6 +1,6 @@
 package io.arenadata.dtm.jdbc.core;
 
-import io.arenadata.dtm.jdbc.util.DtmException;
+import io.arenadata.dtm.jdbc.util.DtmSqlException;
 
 import java.sql.SQLException;
 import java.util.Properties;
@@ -16,7 +16,7 @@ public abstract class ConnectionFactory {
             if (queryExecutor != null) {
                 return queryExecutor;
             } else {
-                throw new DtmException("Can't create query executor");
+                throw new DtmSqlException("Can't create query executor");
             }
     }
 

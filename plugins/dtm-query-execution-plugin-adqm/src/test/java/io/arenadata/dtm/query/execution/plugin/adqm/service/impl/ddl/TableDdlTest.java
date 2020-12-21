@@ -42,9 +42,12 @@ class TableDdlTest {
 
         DdlRequestContext context = new DdlRequestContext(new DdlRequest(new QueryRequest(), tbl));
 
-        executor.execute(context, "DROP", ar -> {
-            assertTrue(ar.succeeded());
-            assertEquals(mockExecutor.getExpectedCalls().size(), mockExecutor.getCallCount(), "All calls should be performed");
-        });
+        executor.execute(context, "DROP")
+                .onComplete(ar -> {
+                    assertTrue(ar.succeeded());
+                    assertEquals(mockExecutor.getExpectedCalls().size(),
+                            mockExecutor.getCallCount(),
+                            "All calls should be performed");
+                });
     }
 }

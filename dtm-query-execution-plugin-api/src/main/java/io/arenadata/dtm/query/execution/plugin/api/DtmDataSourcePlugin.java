@@ -14,9 +14,7 @@ import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import org.springframework.plugin.core.Plugin;
 
 import java.util.Set;
@@ -47,55 +45,55 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
      * <p>execute DDL operation</p>
      *
      * @param context            DDL context
-     * @param asyncResultHandler async handler
+     * @return void
      */
-    void ddl(DdlRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler);
+    Future<Void> ddl(DdlRequestContext context);
 
     /**
      * <p>execute Low Latency Reading</p>
      *
-     * @param context            LLR context
-     * @param asyncResultHandler async handler
+     * @param context LLR context
+     * @return query result
      */
-    void llr(LlrRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler);
+    Future<QueryResult> llr(LlrRequestContext context);
 
     /**
      * <p>execute Massively Parallel Processing Reading</p>
      *
-     * @param context            MPPR context
-     * @param asyncResultHandler async handler
+     * @param context MPPR context
+     * @return query result
      */
-    void mppr(MpprRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler);
+    Future<QueryResult> mppr(MpprRequestContext context);
 
     /**
      * <p>execute Massively Parallel Processing Writing</p>
      *
-     * @param context            MPPW context
-     * @param asyncResultHandler async handler
+     * @param context MPPW context
+     * @return query result
      */
-    void mppw(MppwRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler);
+    Future<QueryResult> mppw(MppwRequestContext context);
 
     /**
      * <p>Calculate executing query cost</p>
      *
-     * @param context            Query cost context
-     * @param asyncResultHandler async handler
+     * @param context Query cost context
+     * @return query cost
      */
-    void calcQueryCost(QueryCostRequestContext context, Handler<AsyncResult<Integer>> asyncResultHandler);
+    Future<Integer> calcQueryCost(QueryCostRequestContext context);
 
     /**
      * <p>Get plugin status information</p>
-     * @param context            Status request context
-     * @param asyncResultHandler async handler
+     *
+     * @param context Status request context
+     * @return query status
      */
-    void status(StatusRequestContext context, Handler<AsyncResult<StatusQueryResult>> asyncResultHandler);
+    Future<StatusQueryResult> status(StatusRequestContext context);
 
     /**
-     *
-     * @param context            Rollback request context
-     * @param asyncResultHandler async handler
+     * @param context Rollback request context
+     * @return void
      */
-    void rollback(RollbackRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler);
+    Future<Void> rollback(RollbackRequestContext context);
 
     /**
      * <p>Get name set of active caches</p>
@@ -105,25 +103,26 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
     Set<String> getActiveCaches();
 
     /**
-     *
      * @param context CheckContext
      * @return error if check failed
      */
     Future<Void> checkTable(CheckContext context);
 
     /**
-     *
      * @param params CheckDataByCountParams
      * @return count of records
      */
     Future<Long> checkDataByCount(CheckDataByCountParams params);
 
     /**
-     *
      * @param params CheckDataByHashInt32Params
      * @return checksum
      */
     Future<Long> checkDataByHashInt32(CheckDataByHashInt32Params params);
 
+    /**
+     * @param params truncate params
+     * @return future object
+     */
     Future<Void> truncateHistory(TruncateHistoryParams params);
 }

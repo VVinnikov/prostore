@@ -3,9 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adg.service.impl.ddl;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import org.apache.calcite.sql.SqlKind;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -15,8 +13,8 @@ import org.springframework.stereotype.Component;
 public class CreateSchemaExecutor implements DdlExecutor<Void> {
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<Void>> handler) {
-        handler.handle(Future.succeededFuture());
+    public Future<Void> execute(DdlRequestContext context, String sqlNodeName) {
+        return Future.succeededFuture();
     }
 
     @Override

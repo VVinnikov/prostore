@@ -21,9 +21,7 @@ import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
 import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import org.junit.jupiter.api.Test;
@@ -56,38 +54,38 @@ class AdbDtmDataSourcePluginIT {
         }
 
         @Override
-        public void ddl(DdlRequestContext ddlRequest, Handler<AsyncResult<Void>> handler) {
-            ddlService.execute(ddlRequest, handler);
+        public Future<Void> ddl(DdlRequestContext ddlRequest) {
+            return ddlService.execute(ddlRequest);
         }
 
         @Override
-        public void llr(LlrRequestContext llrRequest, Handler<AsyncResult<QueryResult>> handler) {
-
+        public Future<QueryResult> llr(LlrRequestContext llrRequest) {
+            return null;
         }
 
         @Override
-        public void mppr(MpprRequestContext mpprRequest, Handler<AsyncResult<QueryResult>> handler) {
-
+        public Future<QueryResult> mppr(MpprRequestContext mpprRequest) {
+            return null;
         }
 
         @Override
-        public void mppw(MppwRequestContext mppwRequest, Handler<AsyncResult<QueryResult>> handler) {
-
+        public Future<QueryResult> mppw(MppwRequestContext mppwRequest) {
+            return null;
         }
 
         @Override
-        public void calcQueryCost(QueryCostRequestContext queryCostRequest, Handler<AsyncResult<Integer>> handler) {
-
+        public Future<Integer> calcQueryCost(QueryCostRequestContext queryCostRequest) {
+            return null;
         }
 
         @Override
-        public void status(StatusRequestContext context, Handler<AsyncResult<StatusQueryResult>> asyncResultHandler) {
-
+        public Future<StatusQueryResult> status(StatusRequestContext context) {
+            return null;
         }
 
         @Override
-        public void rollback(RollbackRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler) {
-
+        public Future<Void> rollback(RollbackRequestContext context) {
+            return null;
         }
 
         @Override
@@ -126,13 +124,14 @@ class AdbDtmDataSourcePluginIT {
         DdlRequest dto = new DdlRequest(null, entity);
         DdlRequestContext context = new DdlRequestContext(dto);
         context.setDdlType(DdlType.CREATE_TABLE);
-        plugin.ddl(context, ar -> {
-            if (ar.succeeded()) {
-                testContext.completeNow();
-            } else {
-                testContext.failNow(ar.cause());
-            }
-        });
+        plugin.ddl(context)
+                .onComplete(ar -> {
+                    if (ar.succeeded()) {
+                        testContext.completeNow();
+                    } else {
+                        testContext.failNow(ar.cause());
+                    }
+                });
         testContext.awaitCompletion(5, TimeUnit.SECONDS);
     }
 }

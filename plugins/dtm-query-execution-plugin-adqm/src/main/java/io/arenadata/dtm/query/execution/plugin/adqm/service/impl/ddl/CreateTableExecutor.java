@@ -5,13 +5,11 @@ import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTables;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.factory.CreateTableQueriesFactory;
+import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +23,7 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
     private final DropTableExecutor dropTableExecutor;
     private final CreateTableQueriesFactory<AdqmTables<String>> createTableQueriesFactory;
 
+    @Autowired
     public CreateTableExecutor(DatabaseExecutor databaseExecutor,
                                DropTableExecutor dropTableExecutor,
                                CreateTableQueriesFactory<AdqmTables<String>> createTableQueriesFactory) {
@@ -34,11 +33,15 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<Void>> handler) {
-        Entity tbl = context.getRequest().getEntity();
-        DdlRequestContext dropCtx = new DdlRequestContext(new DdlRequest(new QueryRequest(), tbl));
+    public Future<Void> execute(DdlRequestContext context, String sqlNodeName) {
+        return Future.future(promise -> {
+            Entity tbl = context.getRequest().getEntity();
+            DdlRequestContext dropCtx = new DdlRequestContext(new DdlRequest(new QueryRequest(), tbl));
 
-        dropTableExecutor.execute(dropCtx, SqlKind.DROP_TABLE.lowerName, ar -> createTable(context).onComplete(handler));
+            dropTableExecutor.execute(dropCtx, SqlKind.DROP_TABLE.lowerName)
+                    .compose(v -> createTable(context))
+                    .onComplete(promise);
+        });
     }
 
     @Override

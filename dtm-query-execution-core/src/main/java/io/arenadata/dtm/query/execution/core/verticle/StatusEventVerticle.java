@@ -49,7 +49,7 @@ public class StatusEventVerticle extends AbstractVerticle {
                 }
             });
         } catch (Exception e) {
-            log.error("StatusEvent publish error", e);
+            log.error("Error generating status event request", e);
         }
     }
 }

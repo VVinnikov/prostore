@@ -3,12 +3,12 @@ package io.arenadata.dtm.query.execution.core.service.schema.impl;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.SystemDatamartView;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.schema.SystemDatamartViewsProvider;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -39,7 +39,7 @@ public class SystemDatamartViewsProviderImpl implements SystemDatamartViewsProvi
         if (datamartList != null) {
             return datamartList;
         } else {
-            throw new RuntimeException("System Views is not loaded");
+            throw new DtmException("System Views is not loaded");
         }
     }
 
@@ -49,7 +49,6 @@ public class SystemDatamartViewsProviderImpl implements SystemDatamartViewsProvi
         return Future.succeededFuture();
     }
 
-    @NotNull
     private List<Datamart> getDatamartList(List<SystemDatamartView> systemViews) {
         val systemDatamart = new Datamart();
         systemDatamart.setEntities(systemViews.stream()

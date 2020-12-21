@@ -6,9 +6,7 @@ import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +22,7 @@ public class DropDatabaseExecutor implements DdlExecutor<Void> {
     private final DdlProperties ddlProperties;
     private final AppConfiguration appConfiguration;
 
+    @Autowired
     public DropDatabaseExecutor(DatabaseExecutor databaseExecutor,
                                 DdlProperties ddlProperties,
                                 AppConfiguration appConfiguration) {
@@ -33,9 +32,9 @@ public class DropDatabaseExecutor implements DdlExecutor<Void> {
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<Void>> handler) {
+    public Future<Void> execute(DdlRequestContext context, String sqlNodeName) {
         String name = context.getDatamartName();
-        dropDatabase(name).onComplete(handler);
+        return dropDatabase(name);
     }
 
     @Override

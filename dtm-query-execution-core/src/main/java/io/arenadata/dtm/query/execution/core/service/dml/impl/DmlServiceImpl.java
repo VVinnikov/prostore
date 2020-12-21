@@ -1,11 +1,11 @@
 package io.arenadata.dtm.query.execution.core.service.dml.impl;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.api.dml.DmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.dml.DmlExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.dml.DmlService;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
+import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
 import org.springframework.stereotype.Service;
@@ -23,8 +23,22 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
     }
 
     @Override
-    public void execute(DmlRequestContext context, Handler<AsyncResult<QueryResult>> handler) {
-        executorMap.get(context.getQuery().getKind()).execute(context, handler);
+    public Future<QueryResult> execute(DmlRequestContext context) {
+        return getExecutor(context)
+                .compose(executor -> executor.execute(context));
+    }
+
+    private Future<DmlExecutor<QueryResult>> getExecutor(DmlRequestContext context) {
+        return Future.future(promise -> {
+            final DmlExecutor<QueryResult> dmlExecutor = executorMap.get(context.getQuery().getKind());
+            if (dmlExecutor != null) {
+                promise.complete(dmlExecutor);
+            } else {
+                promise.fail(new DtmException(
+                        String.format("Couldn't find dml executor for query kind %s",
+                                context.getQuery().getKind())));
+            }
+        });
     }
 
     @Override

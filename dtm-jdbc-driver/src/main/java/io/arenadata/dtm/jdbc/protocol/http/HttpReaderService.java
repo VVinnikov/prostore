@@ -9,7 +9,7 @@ import io.arenadata.dtm.jdbc.model.ColumnInfo;
 import io.arenadata.dtm.jdbc.model.SchemaInfo;
 import io.arenadata.dtm.jdbc.model.TableInfo;
 import io.arenadata.dtm.jdbc.protocol.Protocol;
-import io.arenadata.dtm.jdbc.util.DtmException;
+import io.arenadata.dtm.jdbc.util.DtmSqlException;
 import io.arenadata.dtm.jdbc.util.ResponseException;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -49,7 +49,7 @@ public class HttpReaderService implements Protocol {
     @SneakyThrows
     public HttpReaderService(CloseableHttpClient client, String dbHost, String schema) {
         if (isEmpty(dbHost)) {
-            throw new DtmException(String.format("Unable to create connection because parameter '%s' is not specified", HOST_PROPERTY));
+            throw new DtmSqlException(String.format("Unable to create connection because parameter '%s' is not specified", HOST_PROPERTY));
         }
         this.backendHostUrl = "http://" + dbHost;
         this.schema = schema;
@@ -136,7 +136,7 @@ public class HttpReaderService implements Protocol {
         }
     }
 
-    private void setUsedSchemaIfExists(QueryResult result) throws DtmException {
+    private void setUsedSchemaIfExists(QueryResult result) throws DtmSqlException {
         if (result.getMetadata() != null && result.getMetadata().size() == 1
                 && SystemMetadata.SCHEMA == result.getMetadata().get(0).getSystemMetadata()) {
             if (!result.isEmpty()) {
@@ -144,10 +144,10 @@ public class HttpReaderService implements Protocol {
                 if (schemaOptional.isPresent()) {
                     this.schema = schemaOptional.get().toString();
                 } else {
-                    throw new DtmException("Schema value not found!");
+                    throw new DtmSqlException("Schema value not found!");
                 }
             } else {
-                throw new DtmException("Empty result for using schema!");
+                throw new DtmSqlException("Empty result for using schema!");
             }
         }
     }
@@ -159,13 +159,13 @@ public class HttpReaderService implements Protocol {
                 String res = MAPPER.readValue(response.getEntity().getContent(), ResponseException.class)
                         .getExceptionMessage();
                 log.error("The system returned an unsuccessful response: {}", res);
-                throw new DtmException(res != null && !res.isEmpty() ? res :
+                throw new DtmSqlException(res != null && !res.isEmpty() ? res :
                         String.format("The system returned an unsuccessful response: %s", response.getStatusLine().getReasonPhrase()));
-            } catch (DtmException e) {
+            } catch (DtmSqlException e) {
                 throw e;
             } catch (Exception e) {
                 log.error("The system returned an unsuccessful response: {}", response.getStatusLine().getReasonPhrase());
-                throw new DtmException(String.format("The system returned an unsuccessful response:%s", response.getStatusLine().getReasonPhrase()));
+                throw new DtmSqlException(String.format("The system returned an unsuccessful response:%s", response.getStatusLine().getReasonPhrase()));
             }
         }
     }

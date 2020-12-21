@@ -56,32 +56,25 @@ public class AdbCheckDataService implements CheckDataService {
     @Override
     public Future<Long> checkDataByCount(CheckDataByCountParams params) {
         return Future.future(p -> {
+            //TODO it's better to exclude generating sql query in separate factory class
             val sql = String.format(CHECK_DATA_BY_COUNT_TEMPLATE,
                     params.getEntity().getSchema(), params.getEntity().getName(),
                     params.getSysCn() - 1, params.getSysCn(),
                     params.getEntity().getSchema(), params.getEntity().getName(),
                     params.getSysCn());
             ColumnMetadata metadata = new ColumnMetadata(COLUMN_NAME, ColumnType.BIGINT);
-            queryExecutor.execute(sql, Collections.singletonList(metadata), ar -> {
-                if (ar.succeeded()) {
-                    p.complete(Long.valueOf(ar.result().get(0).get(COLUMN_NAME).toString()));
-                } else {
-                    p.fail(ar.cause());
-                }
-            });
+            queryExecutor.execute(sql, Collections.singletonList(metadata))
+                    .onSuccess(result -> {
+                        p.complete(Long.valueOf(result.get(0).get(COLUMN_NAME).toString()));
+                    })
+                    .onFailure(p::fail);
         });
     }
 
     @Override
     public Future<Long> checkDataByHashInt32(CheckDataByHashInt32Params params) {
-        return createOrReplaceFunction()
+        return queryExecutor.executeUpdate(CREATE_OR_REPLACE_FUNC)
                 .compose(v -> checkDataByHash(params));
-    }
-
-    private Future<Void> createOrReplaceFunction() {
-        return Future.future(p -> {
-            queryExecutor.executeUpdate(CREATE_OR_REPLACE_FUNC, p);
-        });
     }
 
     private Future<Long> checkDataByHash(CheckDataByHashInt32Params params) {
@@ -104,18 +97,16 @@ public class AdbCheckDataService implements CheckDataService {
                     datamart, table,
                     sysCn);
             val columnMetadata = new ColumnMetadata("sum", ColumnType.BIGINT);
-            queryExecutor.execute(sql, Collections.singletonList(columnMetadata), ar -> {
-                if (ar.succeeded()) {
-                    val res = ar.result().get(0).get("sum");
-                    if (res == null) {
-                        p.complete(0L);
-                    } else {
-                        p.complete(Long.valueOf(res.toString()));
-                    }
-                } else {
-                    p.fail(ar.cause());
-                }
-            });
+            queryExecutor.execute(sql, Collections.singletonList(columnMetadata))
+                    .onSuccess(result -> {
+                        val res = result.get(0).get("sum");
+                        if (res == null) {
+                            p.complete(0L);
+                        } else {
+                            p.complete(Long.valueOf(res.toString()));
+                        }
+                    })
+                    .onFailure(p::fail);
         });
     }
 

@@ -18,7 +18,8 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
-import io.arenadata.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
+import io.arenadata.dtm.common.exception.DtmException;
+import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDefinitionService;
 import io.arenadata.dtm.query.execution.core.service.schema.impl.LogicalSchemaServiceImpl;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -124,13 +125,7 @@ class LogicalSchemaServiceImplTest {
                         .name(TABLE_DOC)
                         .build())
             );
-        logicalSchemaService.createSchema(queryRequest, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        logicalSchemaService.createSchema(queryRequest);
         Map<DatamartSchemaKey, Entity> schemaMap = promise.future().result();
         assertNotNull(schemaMap);
         schemaMap.forEach((k, v) -> {
@@ -150,15 +145,9 @@ class LogicalSchemaServiceImplTest {
             " join test_datamart.doc t2 on t1.id = t2.id");
 
         Mockito.when(entityDao.getEntity(any(), any()))
-            .thenReturn(Future.failedFuture(new RuntimeException("Error getting entities!")));
+            .thenReturn(Future.failedFuture(new DtmException("Error getting entities!")));
 
-        logicalSchemaService.createSchema(queryRequest, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        logicalSchemaService.createSchema(queryRequest);
         assertNotNull(promise.future().cause());
     }
 

@@ -2,7 +2,7 @@ package io.arenadata.dtm.jdbc.ext;
 
 import io.arenadata.dtm.jdbc.core.BaseConnection;
 import io.arenadata.dtm.jdbc.core.Field;
-import io.arenadata.dtm.jdbc.util.DtmException;
+import io.arenadata.dtm.jdbc.util.DtmSqlException;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import lombok.SneakyThrows;
 import lombok.val;
@@ -91,7 +91,7 @@ public class DtmResultSet implements ResultSet {
     public int findColumn(String columnLabel) {
         int col = findColumnIndex(columnLabel);
         if (col == 0) {
-            throw new DtmException("Column not found" + columnLabel);
+            throw new DtmSqlException("Column not found" + columnLabel);
         }
         return col;
     }

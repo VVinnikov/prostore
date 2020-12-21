@@ -20,13 +20,14 @@ class QueryExecutorServiceImplIT {
 
     @Test
     void execute(VertxTestContext testContext) throws Throwable {
-        executorService.execute("select * FROM DOC limit 1", Collections.emptyList(), ar -> {
-            if (ar.succeeded()) {
-                testContext.completeNow();
-            } else {
-                testContext.failNow(ar.cause());
-            }
-        });
+        executorService.execute("select * FROM DOC limit 1", Collections.emptyList())
+                .onComplete(ar -> {
+                    if (ar.succeeded()) {
+                        testContext.completeNow();
+                    } else {
+                        testContext.failNow(ar.cause());
+                    }
+                });
         testContext.awaitCompletion(5, TimeUnit.SECONDS);
     }
 }

@@ -1,17 +1,20 @@
 package io.arenadata.dtm.query.execution.core.service.dml.impl;
 
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.RequestStatus;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QuerySourceRequest;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
-import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.dml.TargetDatabaseDefinitionService;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.QueryCostRequest;
-import io.vertx.core.*;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import lombok.val;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,20 +43,19 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
     }
 
     @Override
-    public void getTargetSource(QuerySourceRequest request, Handler<AsyncResult<QuerySourceRequest>> handler) {
-        getEntitiesSourceTypes(request)
-            .compose(entities -> defineTargetSourceType(entities, request))
-            .map(sourceType -> {
-                val queryRequestWithSourceType = request.getQueryRequest().copy();
-                queryRequestWithSourceType.setSourceType(sourceType);
-                return QuerySourceRequest.builder()
-                    .queryRequest(queryRequestWithSourceType)
-                    .logicalSchema(request.getLogicalSchema())
-                    .metadata(request.getMetadata())
-                    .sourceType(sourceType)
-                    .build();
-            })
-            .onComplete(handler);
+    public Future<QuerySourceRequest> getTargetSource(QuerySourceRequest request) {
+        return getEntitiesSourceTypes(request)
+                .compose(entities -> defineTargetSourceType(entities, request))
+                .map(sourceType -> {
+                    val queryRequestWithSourceType = request.getQueryRequest().copy();
+                    queryRequestWithSourceType.setSourceType(sourceType);
+                    return QuerySourceRequest.builder()
+                            .queryRequest(queryRequestWithSourceType)
+                            .logicalSchema(request.getLogicalSchema())
+                            .metadata(request.getMetadata())
+                            .sourceType(sourceType)
+                            .build();
+                });
     }
 
     private Future<List<Entity>> getEntitiesSourceTypes(QuerySourceRequest request) {
@@ -65,8 +67,8 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
                     ));
 
             CompositeFuture.join(entityFutures)
-                .onSuccess(entities -> promise.complete(entities.list()))
-                .onFailure(promise::fail);
+                    .onSuccess(entities -> promise.complete(entities.list()))
+                    .onFailure(promise::fail);
         });
     }
 
@@ -77,7 +79,7 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
                 promise.complete(sourceTypes.iterator().next());
             } else {
                 getTargetSourceByCalcQueryCost(sourceTypes, request)
-                    .onComplete(promise);
+                        .onComplete(promise);
             }
         });
     }
@@ -85,11 +87,11 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
     private Set<SourceType> getSourceTypes(QuerySourceRequest request, List<Entity> entities) {
         final Set<SourceType> stResult = getCommonSourceTypes(entities);
         if (stResult.isEmpty()) {
-            throw new RuntimeException("Tables have no datasource in common");
+            throw new DtmException("Tables have no datasource in common");
         } else if (request.getSourceType() != null) {
             if (!stResult.contains(request.getSourceType())) {
-                throw new RuntimeException(String.format("Tables common datasources does not include %s",
-                    request.getSourceType()));
+                throw new DtmException(String.format("Tables common datasources does not include %s",
+                        request.getSourceType()));
             } else {
                 return newHashSet(request.getSourceType());
             }
@@ -112,20 +114,18 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
 
     private Future<SourceType> getTargetSourceByCalcQueryCost(Set<SourceType> sourceTypes, QuerySourceRequest request) {
         return Future.future(promise -> CompositeFuture.join(sourceTypes.stream()
-            .map(sourceType -> calcQueryCostInPlugin(request, sourceType))
-            .collect(Collectors.toList()))
-            .onComplete(ar -> {
-                if (ar.succeeded()) {
-                    SourceType sourceType = ar.result().list().stream()
-                        .map(res -> (Pair<SourceType, Integer>) res)
-                        .min(Comparator.comparingInt(Pair::getValue))
-                        .map(Pair::getKey)
-                        .orElse(null);
+                .map(sourceType -> calcQueryCostInPlugin(request, sourceType))
+                .collect(Collectors.toList()))
+                .onSuccess(ar -> {
+                    SourceType sourceType = ar.list().stream()
+                            .map(res -> (Pair<SourceType, Integer>) res)
+                            .min(Comparator.comparingInt(Pair::getValue))
+                            .map(Pair::getKey)
+                            .orElse(null);
                     promise.complete(sourceType);
-                } else {
-                    promise.fail(ar.cause());
-                }
-            }));
+                })
+                .onFailure(promise::fail)
+        );
     }
 
     private Future<Object> calcQueryCostInPlugin(QuerySourceRequest request, SourceType sourceType) {
@@ -134,13 +134,14 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
             val costRequestContext = new QueryCostRequestContext(
                     createRequestMetrics(request),
                     costRequest);
-            pluginService.calcQueryCost(sourceType, costRequestContext, costHandler -> {
-                if (costHandler.succeeded()) {
-                    p.complete(Pair.of(sourceType, costHandler.result()));
-                } else {
-                    p.fail(costHandler.cause());
-                }
-            });
+            pluginService.calcQueryCost(sourceType, costRequestContext)
+                    .onComplete(costHandler -> {
+                        if (costHandler.succeeded()) {
+                            p.complete(Pair.of(sourceType, costHandler.result()));
+                        } else {
+                            p.fail(costHandler.cause());
+                        }
+                    });
         });
     }
 

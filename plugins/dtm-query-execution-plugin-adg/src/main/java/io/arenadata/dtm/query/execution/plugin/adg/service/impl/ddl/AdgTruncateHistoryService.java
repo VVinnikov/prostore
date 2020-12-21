@@ -40,6 +40,7 @@ public class AdgTruncateHistoryService implements TruncateHistoryService {
     }
 
     private Future<String> getConditions(TruncateHistoryParams params) {
+        //TODO it's better to exclude generating conditions in separate factory class
         List<String> conditions = new ArrayList<>();
         params.getConditions()
                 .map(val -> String.format("(%s)", val.toSqlString(sqlDialect)))

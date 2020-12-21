@@ -5,22 +5,27 @@ import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguratio
 import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckData;
 import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckDatabase;
 import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckTable;
-import io.arenadata.dtm.query.calcite.core.extension.ddl.*;
+import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlAlterView;
+import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
+import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateView;
+import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlDropTable;
+import io.arenadata.dtm.query.calcite.core.extension.dml.SqlUseSchema;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
-import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDefinitionService;
+import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.junit.jupiter.api.Test;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SqlDdlParserImplTest {
     private static final String CREATE_TABLE_QUERY = "create table test.table_name\n" +

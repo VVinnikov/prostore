@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.calcite.core.extension.ddl;
+package io.arenadata.dtm.query.calcite.core.extension.dml;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.sql.*;

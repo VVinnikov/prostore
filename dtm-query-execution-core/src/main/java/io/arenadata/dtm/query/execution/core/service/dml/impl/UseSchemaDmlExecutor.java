@@ -6,7 +6,8 @@ import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.SystemMetadata;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
-import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlUseSchema;
+import io.arenadata.dtm.query.calcite.core.extension.dml.DmlType;
+import io.arenadata.dtm.query.calcite.core.extension.dml.SqlUseSchema;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
@@ -17,7 +18,6 @@ import io.arenadata.dtm.query.execution.plugin.api.dml.DmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.dml.DmlExecutor;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.sql.SqlKind;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -80,7 +80,7 @@ public class UseSchemaDmlExecutor implements DmlExecutor<QueryResult> {
     }
 
     @Override
-    public SqlKind getSqlKind() {
-        return SqlKind.OTHER;
+    public DmlType getType() {
+        return DmlType.USE;
     }
 }

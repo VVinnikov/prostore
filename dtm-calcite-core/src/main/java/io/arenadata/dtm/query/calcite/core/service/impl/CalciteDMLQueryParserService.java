@@ -40,7 +40,7 @@ public abstract class CalciteDMLQueryParserService implements QueryParserService
                         copyRequest,
                         request.getSchema(),
                         relQuery,
-                        parse
+                        validatedQuery
                 ));
             } catch (Exception e) {
                 it.fail(new DtmException("Request parsing error", e));

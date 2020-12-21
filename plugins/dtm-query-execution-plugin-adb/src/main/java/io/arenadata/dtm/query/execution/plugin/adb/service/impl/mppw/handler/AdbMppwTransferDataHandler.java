@@ -57,13 +57,8 @@ public class AdbMppwTransferDataHandler implements AdbMppwHandler {
                     columns,
                     stagingTable,
                     extTable))
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            promise.complete();
-                        } else {
-                            promise.fail(ar.cause());
-                        }
-                    });
+                    .onSuccess(promise::complete)
+                    .onFailure(promise::fail);
         });
     }
 }

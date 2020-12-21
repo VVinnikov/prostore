@@ -64,13 +64,10 @@ public class AdbCheckDataService implements CheckDataService {
                     params.getSysCn());
             ColumnMetadata metadata = new ColumnMetadata(COLUMN_NAME, ColumnType.BIGINT);
             queryExecutor.execute(sql, Collections.singletonList(metadata))
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            p.complete(Long.valueOf(ar.result().get(0).get(COLUMN_NAME).toString()));
-                        } else {
-                            p.fail(ar.cause());
-                        }
-                    });
+                    .onSuccess(result -> {
+                        p.complete(Long.valueOf(result.get(0).get(COLUMN_NAME).toString()));
+                    })
+                    .onFailure(p::fail);
         });
     }
 
@@ -101,18 +98,15 @@ public class AdbCheckDataService implements CheckDataService {
                     sysCn);
             val columnMetadata = new ColumnMetadata("sum", ColumnType.BIGINT);
             queryExecutor.execute(sql, Collections.singletonList(columnMetadata))
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            val res = ar.result().get(0).get("sum");
-                            if (res == null) {
-                                p.complete(0L);
-                            } else {
-                                p.complete(Long.valueOf(res.toString()));
-                            }
+                    .onSuccess(result -> {
+                        val res = result.get(0).get("sum");
+                        if (res == null) {
+                            p.complete(0L);
                         } else {
-                            p.fail(ar.cause());
+                            p.complete(Long.valueOf(res.toString()));
                         }
-                    });
+                    })
+                    .onFailure(p::fail);
         });
     }
 

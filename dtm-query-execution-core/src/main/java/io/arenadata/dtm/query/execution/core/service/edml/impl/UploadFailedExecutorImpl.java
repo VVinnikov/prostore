@@ -65,19 +65,16 @@ public class UploadFailedExecutorImpl implements EdmlUploadFailedExecutor {
                     futures.add(Future.future(p -> dataSourcePluginService.rollback(
                             sourceType,
                             context)
-                            .onComplete(ar -> {
-                                if (ar.succeeded()) {
-                                    log.debug("Rollback data in plugin [{}], datamart [{}], " +
-                                                    "table [{}], sysCn [{}] finished successfully",
-                                            sourceType,
-                                            context.getRequest().getDatamart(),
-                                            context.getRequest().getDestinationTable(),
-                                            context.getRequest().getSysCn());
-                                    p.complete();
-                                } else {
-                                    p.fail(ar.cause());
-                                }
-                            }))));
+                            .onSuccess(result -> {
+                                log.debug("Rollback data in plugin [{}], datamart [{}], " +
+                                                "table [{}], sysCn [{}] finished successfully",
+                                        sourceType,
+                                        context.getRequest().getDatamart(),
+                                        context.getRequest().getDestinationTable(),
+                                        context.getRequest().getSysCn());
+                                p.complete();
+                            })
+                            .onFailure(p::fail))));
             CompositeFuture.join(futures).setHandler(ar -> {
                 if (ar.succeeded()) {
                     rbPromise.complete();

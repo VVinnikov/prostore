@@ -81,15 +81,12 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
                         callbackFunction);
 
                 cartridgeClient.subscribe(request)
-                        .onComplete(ar -> {
-                            if (ar.succeeded()) {
-                                log.debug("Loading initialize completed by [{}]", request);
-                                initializedLoadingByTopic.put(ctx.getTopicName(), ctx.getConsumerTableName());
-                                promise.complete(QueryResult.emptyResult());
-                            } else {
-                                promise.fail(ar.cause());
-                            }
-                        });
+                        .onSuccess(result -> {
+                            log.debug("Loading initialize completed by [{}]", request);
+                            initializedLoadingByTopic.put(ctx.getTopicName(), ctx.getConsumerTableName());
+                            promise.complete(QueryResult.emptyResult());
+                        })
+                        .onFailure(promise::fail);
             });
         }
     }
@@ -99,15 +96,12 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
             val topicName = ctx.getTopicName();
             transferData(ctx)
                     .compose(result -> cartridgeClient.cancelSubscription(topicName))
-                    .onComplete(ar -> {
+                    .onSuccess(result -> {
                         initializedLoadingByTopic.remove(topicName);
-                        if (ar.succeeded()) {
-                            log.debug("Cancel Load Data completed by request [{}]", topicName);
-                            promise.complete(QueryResult.emptyResult());
-                        } else {
-                            promise.fail(ar.cause());
-                        }
-                    });
+                        log.debug("Cancel Load Data completed by request [{}]", topicName);
+                        promise.complete(QueryResult.emptyResult());
+                    })
+                    .onFailure(promise::fail);
         });
     }
 
@@ -115,15 +109,12 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
         return Future.future(promise -> {
             val request = new TtTransferDataEtlRequest(ctx.getHelperTableNames(), ctx.getHotDelta());
             cartridgeClient.transferDataToScdTable(request)
-                    .onComplete(ar -> {
-                                if (ar.succeeded()) {
-                                    log.debug("Transfer Data completed by request [{}]", request);
-                                    promise.complete(QueryResult.emptyResult());
-                                } else {
-                                    promise.fail(ar.cause());
-                                }
+                    .onSuccess(result -> {
+                                log.debug("Transfer Data completed by request [{}]", request);
+                                promise.complete(QueryResult.emptyResult());
                             }
-                    );
+                    )
+                    .onFailure(promise::fail);
         });
     }
 }

@@ -49,18 +49,15 @@ public class AdgMpprKafkaService implements MpprKafkaService<QueryResult> {
                     new JsonObject(downloadMetadata.getExternalSchema()));
 
             adgCartridgeClient.uploadData(request)
-                    .onComplete(ar -> {
+                    .onSuccess(queryResult -> {
                                 UUID requestId = queryRequest.getQueryRequest().getRequestId();
-                                if (ar.succeeded()) {
-                                    log.info("Uploading data from ADG was successful on request: {}", requestId);
-                                    promise.complete(QueryResult.emptyResult());
-                                } else {
-                                    promise.fail(new MpprDatasourceException(
-                                            String.format("Error unloading data by request %s", request),
-                                            ar.cause()));
-                                }
+                                log.info("Uploading data from ADG was successful on request: {}", requestId);
+                                promise.complete(QueryResult.emptyResult());
                             }
-                    );
+                    )
+                    .onFailure(fail -> promise.fail(new MpprDatasourceException(
+                            String.format("Error unloading data by request %s", request),
+                            fail)));
         });
     }
 }

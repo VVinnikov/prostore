@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.eddl;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
@@ -16,7 +17,6 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.Datama
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
 import io.arenadata.dtm.query.execution.core.dto.eddl.CreateDownloadExternalTableQuery;
-import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.exception.table.TableAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.service.avro.AvroSchemaGenerator;
@@ -50,7 +50,7 @@ public class CreateDownloadExternalTableExecutorTest {
     private CreateDownloadExternalTableQuery query;
     private String schema;
     private Entity entity;
-    private Integer defaultChunkSize = 1000;
+    private final Integer defaultChunkSize = 1000;
 
     @BeforeEach
     void setUp() {
@@ -70,14 +70,16 @@ public class CreateDownloadExternalTableExecutorTest {
         Schema avroSchema = avroSchemaGenerator.generateTableSchema(entity, false);
         int chunkSize = 10;
         String locationPath = "kafka://localhost:2181/KAFKA_TOPIC";
-        query = new CreateDownloadExternalTableQuery(schema,
-                table,
-                entity,
-                Type.KAFKA_TOPIC,
-                locationPath,
-                Format.AVRO,
-                avroSchema.toString(),
-                chunkSize);
+        query = CreateDownloadExternalTableQuery.builder()
+                .schemaName(schema)
+                .tableName(table)
+                .entity(entity)
+                .locationType(Type.KAFKA_TOPIC)
+                .locationPath(locationPath)
+                .format(Format.AVRO)
+                .tableSchema(avroSchema.toString())
+                .chunkSize(chunkSize)
+                .build();
 
     }
 

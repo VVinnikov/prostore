@@ -12,7 +12,7 @@ import io.arenadata.dtm.query.calcite.core.node.SqlTreeNode;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.exception.table.TableAlreadyExistsException;
-import io.arenadata.dtm.query.execution.core.exception.view.ViewAlreadyExistsException;
+import io.arenadata.dtm.query.execution.core.exception.view.EntityAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.exception.view.ViewDisalowedOrDirectiveException;
 import io.arenadata.dtm.query.execution.core.exception.view.ViewNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
@@ -22,7 +22,6 @@ import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import io.arenadata.dtm.query.execution.core.utils.SqlPreparer;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
-import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
@@ -231,8 +230,7 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
             // then continue
             return null;
         } else {
-            //TODO asked about correct excp TableAlreadyExistsException*
-            throw new ViewAlreadyExistsException(ctx.getViewEntity().getNameWithSchema());
+            throw new EntityAlreadyExistsException(ctx.getViewEntity().getNameWithSchema());
         }
     }
 

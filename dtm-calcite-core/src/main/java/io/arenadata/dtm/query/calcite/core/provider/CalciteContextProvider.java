@@ -42,11 +42,15 @@ public abstract class CalciteContextProvider {
         final SchemaPlus rootSchema = DtmCalciteFramework.createRootSchema(true);
         Datamart defaultDatamart = null;
         if (schemas != null) {
-            Optional<Datamart> defaultSchemaOptional = schemas.stream().filter(Datamart::getIsDefault).findFirst();
+            Optional<Datamart> defaultSchemaOptional = schemas.stream()
+                    .filter(Datamart::getIsDefault)
+                    .findFirst();
             if (defaultSchemaOptional.isPresent()) {
                 defaultDatamart = defaultSchemaOptional.get();
             }
-            schemas.stream().filter(d -> !d.getIsDefault()).forEach(d -> calciteSchemaFactory.addSchema(rootSchema, d));
+            schemas.stream()
+                    .filter(d -> !d.getIsDefault())
+                    .forEach(d -> calciteSchemaFactory.addSchema(rootSchema, d));
         }
 
         final SchemaPlus defaultSchema = defaultDatamart == null ?

@@ -56,14 +56,11 @@ public class AdgQueryEnrichmentServiceImpl implements QueryEnrichmentService {
                     parsedQuery.getQueryRequest().getDeltaInformations(),
                     parsedQuery.getCalciteContext(),
                     request.getQueryRequest())
-                    .onComplete(enrichedQueryResult -> {
-                        if (enrichedQueryResult.succeeded()) {
-                            log.debug("Request generated: {}", enrichedQueryResult.result());
-                            promise.complete(enrichedQueryResult.result());
-                        } else {
-                            promise.fail(enrichedQueryResult.cause());
-                        }
-                    });
+                    .onSuccess(enrichResult -> {
+                        log.debug("Request generated: {}", enrichResult);
+                        promise.complete(enrichResult);
+                    })
+                    .onFailure(promise::fail);
         });
     }
 

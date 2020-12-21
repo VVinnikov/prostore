@@ -35,28 +35,27 @@ public class QueryController {
         InputQueryRequest inputQueryRequest = context.getBodyAsJson().mapTo(InputQueryRequest.class);
         log.info("Execution request sent: [{}]", inputQueryRequest);
         queryAnalyzer.analyzeAndExecute(inputQueryRequest)
-                .onComplete(queryResult -> {
-                    if (queryResult.succeeded()) {
-
-                        if (queryResult.result().getRequestId() == null) {
-                            queryResult.result().setRequestId(inputQueryRequest.getRequestId());
-                        }
-                        queryResult.result().setTimeZone(this.dtmSettings.getTimeZone().toString());
-                        log.info("Request completed: [{}]", inputQueryRequest.getSql());
-                        try {
-                            final String json = objectMapper.writeValueAsString(queryResult.result());
-                            context.response()
-                                    .putHeader(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE)
-                                    .setStatusCode(HttpResponseStatus.OK.code())
-                                    .end(json);
-                        } catch (JsonProcessingException e) {
-                            log.error("Error in serializing query result", e);
-                            context.fail(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), new DtmException(e));
-                        }
-                    } else {
-                        log.error("Error while executing request [{}]", inputQueryRequest, queryResult.cause());
-                        context.fail(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), queryResult.cause());
+                .onSuccess(queryResult -> {
+                    if (queryResult.getRequestId() == null) {
+                        queryResult.setRequestId(inputQueryRequest.getRequestId());
                     }
+                    queryResult.setTimeZone(this.dtmSettings.getTimeZone().toString());
+                    log.info("Request completed: [{}]", inputQueryRequest.getSql());
+                    try {
+                        final String json = objectMapper.writeValueAsString(queryResult);
+                        context.response()
+                                .putHeader(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE)
+                                .setStatusCode(HttpResponseStatus.OK.code())
+                                .end(json);
+                    } catch (JsonProcessingException e) {
+                        log.error("Error in serializing query result", e);
+                        context.fail(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), new DtmException(e));
+                    }
+                })
+                .onFailure(fail -> {
+                    log.error("Error while executing request [{}]", inputQueryRequest, fail);
+                    context.fail(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), fail);
+
                 });
     }
 }

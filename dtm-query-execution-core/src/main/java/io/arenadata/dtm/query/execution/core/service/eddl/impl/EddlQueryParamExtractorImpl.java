@@ -109,15 +109,16 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
             val locationOperator = SqlNodeUtils.getOne(ddl, LocationOperator.class);
             val format = SqlNodeUtils.getOne(ddl, FormatOperator.class).getFormat();
             val chunkSizeOperator = SqlNodeUtils.getOne(ddl, ChunkSizeOperator.class);
-            return new CreateDownloadExternalTableQuery(
-                    tableInfo.getSchemaName(),
-                    tableInfo.getTableName(),
-                    entity,
-                    locationOperator.getType(),
-                    getLocation(locationOperator),
-                    format,
-                    avroSchema.toString(),
-                    chunkSizeOperator.getChunkSize());
+            return CreateDownloadExternalTableQuery.builder()
+                    .schemaName(tableInfo.getSchemaName())
+                    .tableName(tableInfo.getTableName())
+                    .entity(entity)
+                    .locationType(locationOperator.getType())
+                    .locationPath(getLocation(locationOperator))
+                    .format(format)
+                    .tableSchema(avroSchema.toString())
+                    .chunkSize(chunkSizeOperator.getChunkSize())
+                    .build();
         } catch (RuntimeException e) {
             throw new DtmException("Error generating create download external table query", e);
         }
@@ -133,15 +134,16 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
             val locationOperator = SqlNodeUtils.getOne(ddl, LocationOperator.class);
             val format = SqlNodeUtils.getOne(ddl, FormatOperator.class).getFormat();
             val messageLimitOperator = SqlNodeUtils.getOne(ddl, MassageLimitOperator.class);
-            return new CreateUploadExternalTableQuery(
-                    tableInfo.getSchemaName(),
-                    tableInfo.getTableName(),
-                    entity,
-                    locationOperator.getType(),
-                    getLocation(locationOperator),
-                    format,
-                    avroSchema.toString(),
-                    messageLimitOperator.getMessageLimit());
+            return CreateUploadExternalTableQuery.builder()
+                    .schemaName(tableInfo.getSchemaName())
+                    .tableName(tableInfo.getTableName())
+                    .entity(entity)
+                    .locationType(locationOperator.getType())
+                    .locationPath(getLocation(locationOperator))
+                    .format(format)
+                    .tableSchema(avroSchema.toString())
+                    .messageLimit(messageLimitOperator.getMessageLimit())
+                    .build();
         } catch (RuntimeException e) {
             throw new DtmException("Error generating create upload external table query", e);
         }

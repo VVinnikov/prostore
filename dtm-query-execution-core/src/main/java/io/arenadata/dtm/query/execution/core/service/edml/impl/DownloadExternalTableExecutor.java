@@ -77,15 +77,11 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
             QueryRequest copy = context.getRequest().getQueryRequest().copy();
             copy.setSql(context.getDmlSubquery());
             logicalSchemaProvider.getSchema(copy)
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            final List<Datamart> logicalSchema = ar.result();
-                            context.setLogicalSchema(logicalSchema);
-                            promise.complete();
-                        } else {
-                            promise.fail(ar.cause());
-                        }
-                    });
+                    .onSuccess(schema -> {
+                        context.setLogicalSchema(schema);
+                        promise.complete();
+                    })
+                    .onFailure(promise::fail);
         });
     }
 
@@ -94,15 +90,11 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
             val copyRequest = context.getRequest().getQueryRequest().copy();
             copyRequest.setSql(context.getDmlSubquery());
             deltaQueryPreprocessor.process(copyRequest)
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            final QueryRequest queryRequest = ar.result();
-                            context.getRequest().setQueryRequest(queryRequest);
-                            promise.complete(queryRequest);
-                        } else {
-                            promise.fail(ar.cause());
-                        }
-                    });
+                    .onSuccess(result -> {
+                        context.getRequest().setQueryRequest(result);
+                        promise.complete(result);
+                    })
+                    .onFailure(promise::fail);
         });
     }
 
@@ -111,18 +103,15 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
             val destination = context.getDestinationEntity();
             if (ExternalTableLocationType.KAFKA == destination.getExternalTableLocationType()) {
                 executors.get(destination.getExternalTableLocationType()).execute(context)
-                        .onComplete(ar -> {
-                            if (ar.succeeded()) {
-                                log.debug("Mppr into table [{}] for dml query [{}] finished successfully",
-                                        destination.getName(), context.getDmlSubquery());
-                                promise.complete(ar.result());
-                            } else {
-                                promise.fail(new DtmException(
-                                        String.format("Error executing mppr into table [%s] for dml query [%s]",
-                                                destination.getName(),
-                                                context.getDmlSubquery()), ar.cause()));
-                            }
-                        });
+                        .onSuccess(queryResult -> {
+                            log.debug("Mppr into table [{}] for dml query [{}] finished successfully",
+                                    destination.getName(), context.getDmlSubquery());
+                            promise.complete(queryResult);
+                        })
+                        .onFailure(fail -> promise.fail(new DtmException(
+                                String.format("Error executing mppr into table [%s] for dml query [%s]",
+                                        destination.getName(),
+                                        context.getDmlSubquery()), fail)));
             } else {
                 promise.fail(new DtmException("Other types of upload are not yet implemented!"));
             }

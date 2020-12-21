@@ -1,18 +1,20 @@
 package io.arenadata.dtm.query.execution.core.service.dml.impl;
 
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.RequestStatus;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QuerySourceRequest;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
-import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.dml.TargetDatabaseDefinitionService;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.QueryCostRequest;
-import io.vertx.core.*;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import lombok.val;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -114,18 +116,16 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
         return Future.future(promise -> CompositeFuture.join(sourceTypes.stream()
                 .map(sourceType -> calcQueryCostInPlugin(request, sourceType))
                 .collect(Collectors.toList()))
-                .onComplete(ar -> {
-                    if (ar.succeeded()) {
-                        SourceType sourceType = ar.result().list().stream()
-                                .map(res -> (Pair<SourceType, Integer>) res)
-                                .min(Comparator.comparingInt(Pair::getValue))
-                                .map(Pair::getKey)
-                                .orElse(null);
-                        promise.complete(sourceType);
-                    } else {
-                        promise.fail(ar.cause());
-                    }
-                }));
+                .onSuccess(ar -> {
+                    SourceType sourceType = ar.list().stream()
+                            .map(res -> (Pair<SourceType, Integer>) res)
+                            .min(Comparator.comparingInt(Pair::getValue))
+                            .map(Pair::getKey)
+                            .orElse(null);
+                    promise.complete(sourceType);
+                })
+                .onFailure(promise::fail)
+        );
     }
 
     private Future<Object> calcQueryCostInPlugin(QuerySourceRequest request, SourceType sourceType) {

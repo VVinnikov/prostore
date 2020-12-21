@@ -25,14 +25,11 @@ public class AdbQueryCostService implements QueryCostService<Integer> {
             val enrichQueryRequest = EnrichQueryRequest.generate(request.getQueryRequest(),
                     request.getSchema());
             enrichmentService.enrich(enrichQueryRequest)
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            log.debug("QueryCostRequest enrich completed: [{}]", ar.result());
-                            promise.complete(0);
-                        } else {
-                            promise.fail(ar.cause());
-                        }
-                    });
+                    .onSuccess(result -> {
+                        log.debug("QueryCostRequest enrich completed: [{}]", result);
+                        promise.complete(0);
+                    })
+                    .onFailure(promise::fail);
         });
     }
 

@@ -560,7 +560,7 @@ SqlNode SqlUseSchema() :
         pos = getPos();
 }
     {
-        return new io.arenadata.dtm.query.calcite.core.extension.ddl.SqlUseSchema(pos, id);
+        return new io.arenadata.dtm.query.calcite.core.extension.dml.SqlUseSchema(pos, id);
     }
 }
 SqlNode SqlGetDeltaOk() :

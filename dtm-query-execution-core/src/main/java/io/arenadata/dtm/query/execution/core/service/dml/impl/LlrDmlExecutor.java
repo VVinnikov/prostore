@@ -7,6 +7,7 @@ import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.QuerySourceRequest;
 import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.query.calcite.core.extension.dml.DmlType;
 import io.arenadata.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.dml.*;
@@ -19,7 +20,6 @@ import io.arenadata.dtm.query.execution.plugin.api.service.dml.DmlExecutor;
 import io.vertx.core.Future;
 import lombok.SneakyThrows;
 import lombok.val;
-import org.apache.calcite.sql.SqlKind;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -116,7 +116,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
     }
 
     private Future<QueryResult> informationSchemaExecute(QuerySourceRequest querySourceRequest) {
-        return Future.future(p -> informationSchemaExecutor.execute(querySourceRequest));
+        return informationSchemaExecutor.execute(querySourceRequest);
     }
 
     @SneakyThrows
@@ -133,8 +133,8 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
     }
 
     @Override
-    public SqlKind getSqlKind() {
-        return SqlKind.SELECT;
+    public DmlType getType() {
+        return DmlType.LLR;
     }
 
 }

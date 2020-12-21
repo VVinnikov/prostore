@@ -52,7 +52,7 @@ class DownloadExternalTableExecutorTest {
     private CalciteConfiguration config = new CalciteConfiguration();
     private CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private DefinitionService<SqlNode> definitionService =
-            new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
+        new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
     private QueryRequest queryRequest;
     private Entity destEntity;
     private Entity sourceEntity;
@@ -72,21 +72,21 @@ class DownloadExternalTableExecutorTest {
         }).when(logicViewReplacer).replace(any(), any(), any());
 
         destEntity = Entity.builder()
-                .entityType(EntityType.DOWNLOAD_EXTERNAL_TABLE)
-                .externalTableFormat("avro")
-                .externalTableLocationPath("kafka://kafka-1.dtm.local:9092/topic")
-                .externalTableLocationType(ExternalTableLocationType.KAFKA)
-                .externalTableUploadMessageLimit(1000)
-                .name("download_table")
-                .schema("test")
-                .externalTableSchema("")
-                .build();
+            .entityType(EntityType.DOWNLOAD_EXTERNAL_TABLE)
+            .externalTableFormat("avro")
+            .externalTableLocationPath("kafka://kafka-1.dtm.local:9092/topic")
+            .externalTableLocationType(ExternalTableLocationType.KAFKA)
+            .externalTableUploadMessageLimit(1000)
+            .name("download_table")
+            .schema("test")
+            .externalTableSchema("")
+            .build();
 
         sourceEntity = Entity.builder()
-                .schema("test")
-                .name("pso")
-                .entityType(EntityType.TABLE)
-                .build();
+            .schema("test")
+            .name("pso")
+            .entityType(EntityType.TABLE)
+            .build();
     }
 
     @Test
@@ -94,7 +94,7 @@ class DownloadExternalTableExecutorTest {
         Promise promise = Promise.promise();
         when(downloadExecutors.get(0).getDownloadType()).thenReturn(ExternalTableLocationType.KAFKA);
         downloadExternalTableExecutor = new DownloadExternalTableExecutor(logicalSchemaProvider,
-                deltaQueryPreprocessor, downloadExecutors, logicViewReplacer);
+            deltaQueryPreprocessor, downloadExecutors, logicViewReplacer);
         String insertSql = "insert into test.download_table " + SELECT_SQL;
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
@@ -114,7 +114,7 @@ class DownloadExternalTableExecutorTest {
         }).when(logicalSchemaProvider).getSchema(any(), any());
 
         when(deltaQueryPreprocessor.process(any()))
-                .thenReturn(Future.succeededFuture(copyRequest));
+            .thenReturn(Future.succeededFuture(copyRequest));
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
@@ -138,7 +138,7 @@ class DownloadExternalTableExecutorTest {
         Promise promise = Promise.promise();
         when(downloadExecutors.get(0).getDownloadType()).thenReturn(ExternalTableLocationType.KAFKA);
         downloadExternalTableExecutor = new DownloadExternalTableExecutor(logicalSchemaProvider,
-                deltaQueryPreprocessor, downloadExecutors, logicViewReplacer);
+            deltaQueryPreprocessor, downloadExecutors, logicViewReplacer);
         String insertSql = "insert into test.download_table " + SELECT_SQL;
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
@@ -172,7 +172,7 @@ class DownloadExternalTableExecutorTest {
         Promise promise = Promise.promise();
         when(downloadExecutors.get(0).getDownloadType()).thenReturn(ExternalTableLocationType.KAFKA);
         downloadExternalTableExecutor = new DownloadExternalTableExecutor(logicalSchemaProvider,
-                deltaQueryPreprocessor, downloadExecutors, logicViewReplacer);
+            deltaQueryPreprocessor, downloadExecutors, logicViewReplacer);
         String insertSql = "insert into test.download_table " + SELECT_SQL;
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
@@ -192,7 +192,7 @@ class DownloadExternalTableExecutorTest {
         }).when(logicalSchemaProvider).getSchema(any(), any());
 
         when(deltaQueryPreprocessor.process(any()))
-                .thenReturn(Future.failedFuture(new RuntimeException("")));
+            .thenReturn(Future.failedFuture(new RuntimeException("")));
 
         downloadExternalTableExecutor.execute(context, ar -> {
             if (ar.succeeded()) {
@@ -209,7 +209,7 @@ class DownloadExternalTableExecutorTest {
         Promise promise = Promise.promise();
         when(downloadExecutors.get(0).getDownloadType()).thenReturn(ExternalTableLocationType.KAFKA);
         downloadExternalTableExecutor = new DownloadExternalTableExecutor(logicalSchemaProvider,
-                deltaQueryPreprocessor, downloadExecutors, logicViewReplacer);
+            deltaQueryPreprocessor, downloadExecutors, logicViewReplacer);
         String insertSql = "insert into test.download_table " + SELECT_SQL;
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
@@ -229,7 +229,7 @@ class DownloadExternalTableExecutorTest {
         }).when(logicalSchemaProvider).getSchema(any(), any());
 
         when(deltaQueryPreprocessor.process(any()))
-                .thenReturn(Future.succeededFuture(copyRequest));
+            .thenReturn(Future.succeededFuture(copyRequest));
 
         Mockito.doAnswer(invocation -> {
             final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);

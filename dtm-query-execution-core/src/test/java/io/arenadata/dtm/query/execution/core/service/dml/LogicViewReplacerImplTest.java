@@ -11,12 +11,8 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
-import io.arenadata.dtm.query.execution.core.service.InformationSchemaService;
-import io.arenadata.dtm.query.execution.core.service.dml.impl.DatamartViewWrapLoaderImpl;
 import io.arenadata.dtm.query.execution.core.service.dml.impl.LogicViewReplacerImpl;
-import io.arenadata.dtm.query.execution.core.service.dml.impl.SqlSnapshotReplacerImpl;
 import io.arenadata.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
-import io.arenadata.dtm.query.execution.core.service.impl.InformationSchemaServiceImpl;
 import io.vertx.core.Future;
 import io.vertx.junit5.VertxTestContext;
 import lombok.extern.slf4j.Slf4j;
@@ -86,11 +82,9 @@ class LogicViewReplacerImplTest {
     private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
     private final ServiceDbDao serviceDbDao = mock(ServiceDbDaoImpl.class);
     private final EntityDao entityDao = mock(EntityDaoImpl.class);
-    private CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
+    private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private final DefinitionService<SqlNode> definitionService =
         new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
-
-    private final InformationSchemaService informationSchemaService = mock(InformationSchemaServiceImpl.class);
 
     @BeforeEach
     void setUp() {
@@ -99,22 +93,27 @@ class LogicViewReplacerImplTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void withoutJoin() throws InterruptedException {
         val testContext = new VertxTestContext();
-        val serviceDao = mock(ServiceDbFacade.class);
-        Mockito.when(entityDao.getEntity(any(), any()))
-            .thenReturn(Future.succeededFuture(Entity.builder()
-                .entityType(EntityType.VIEW)
-                .name("view")
-                .viewQuery("SELECT Col4, Col5 \n" +
-                    "FROM tblX \n" +
-                    "WHERE tblX.Col6 = 0")
-                .build()));
-
-        val loader = new DatamartViewWrapLoaderImpl(serviceDao, informationSchemaService);
-        val replacer = new LogicViewReplacerImpl(definitionService, new SqlSnapshotReplacerImpl(), loader);
+        Mockito
+            .when(entityDao.getEntity(any(), any()))
+            .thenReturn(
+                Future.succeededFuture(Entity.builder()
+                    .entityType(EntityType.VIEW)
+                    .name("view")
+                    .viewQuery("SELECT Col4, Col5 \n" +
+                        "FROM tblX \n" +
+                        "WHERE tblX.Col6 = 0")
+                    .build()),
+                Future.succeededFuture(Entity.builder()
+                    .entityType(EntityType.TABLE)
+                    .name("tblX")
+                    .build())
+            );
+        val replacer = new LogicViewReplacerImpl(definitionService, serviceDbDao.getEntityDao());
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
-            "FROM view FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' v";
+            "FROM test.view FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' v";
         replacer.replace(sql, "datamart", sqlResult -> {
             if (sqlResult.succeeded()) {
                 assertEquals(EXPECTED_WITHOUT_JOIN, sqlResult.result());
@@ -126,21 +125,29 @@ class LogicViewReplacerImplTest {
         assertThat(testContext.awaitCompletion(5, TimeUnit.SECONDS)).isTrue();
     }
 
+
     @Test
+    @SuppressWarnings("unchecked")
     void withDatamart() throws InterruptedException {
         val testContext = new VertxTestContext();
 
-        Mockito.when(entityDao.getEntity(any(), any()))
-            .thenReturn(Future.succeededFuture(Entity.builder()
-                .entityType(EntityType.VIEW)
-                .name("view")
-                .viewQuery("SELECT Col4, Col5 \n" +
-                    "FROM tblX \n" +
-                    "WHERE tblX.Col6 = 0")
-                .build()));
+        Mockito
+            .when(entityDao.getEntity(any(), any()))
+            .thenReturn(
+                Future.succeededFuture(Entity.builder()
+                    .entityType(EntityType.VIEW)
+                    .name("view")
+                    .viewQuery("SELECT Col4, Col5 \n" +
+                        "FROM tblX \n" +
+                        "WHERE tblX.Col6 = 0")
+                    .build()),
+                Future.succeededFuture(Entity.builder()
+                    .entityType(EntityType.TABLE)
+                    .name("tblX")
+                    .build())
+            );
 
-        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade, informationSchemaService);
-        val replacer = new LogicViewReplacerImpl(definitionService, new SqlSnapshotReplacerImpl(), loader);
+        val replacer = new LogicViewReplacerImpl(definitionService, serviceDbDao.getEntityDao());
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
             "FROM test.view v";
         replacer.replace(sql, "datamart", sqlResult -> {
@@ -155,20 +162,27 @@ class LogicViewReplacerImplTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void withoutJoin_withoutAlias() throws InterruptedException {
         val testContext = new VertxTestContext();
 
-        Mockito.when(entityDao.getEntity(any(), any()))
-            .thenReturn(Future.succeededFuture(Entity.builder()
-                .entityType(EntityType.VIEW)
-                .name("view")
-                .viewQuery("SELECT Col4, Col5 \n" +
-                    "FROM tblX \n" +
-                    "WHERE tblX.Col6 = 0")
-                .build()));
+        Mockito
+            .when(entityDao.getEntity(any(), any()))
+            .thenReturn(
+                Future.succeededFuture(Entity.builder()
+                    .entityType(EntityType.VIEW)
+                    .name("view")
+                    .viewQuery("SELECT Col4, Col5 \n" +
+                        "FROM tblX \n" +
+                        "WHERE tblX.Col6 = 0")
+                    .build()),
+                Future.succeededFuture(Entity.builder()
+                    .entityType(EntityType.TABLE)
+                    .name("tblX")
+                    .build())
+            );
 
-        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade, informationSchemaService);
-        val replacer = new LogicViewReplacerImpl(definitionService, new SqlSnapshotReplacerImpl(), loader);
+        val replacer = new LogicViewReplacerImpl(definitionService, serviceDbDao.getEntityDao());
         val sql = "SELECT view.Col1 as c, view.Col2 r\n" +
             "FROM view";
         replacer.replace(sql, "datamart", sqlResult -> {
@@ -183,20 +197,30 @@ class LogicViewReplacerImplTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void withJoin() throws InterruptedException {
         val testContext = new VertxTestContext();
 
-        Mockito.when(entityDao.getEntity(any(), any()))
-            .thenReturn(Future.succeededFuture(Entity.builder()
-                .entityType(EntityType.VIEW)
-                .name("view")
-                .viewQuery("SELECT Col4, Col5 \n" +
-                    "FROM tblX \n" +
-                    "WHERE tblX.Col6 = 0")
-                .build()));
-
-        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade, informationSchemaService);
-        val replacer = new LogicViewReplacerImpl(definitionService, new SqlSnapshotReplacerImpl(), loader);
+        Mockito
+            .when(entityDao.getEntity(any(), any()))
+            .thenReturn(
+                Future.succeededFuture(Entity.builder()
+                    .entityType(EntityType.TABLE)
+                    .name("tbl")
+                    .build()),
+                Future.succeededFuture(Entity.builder()
+                    .entityType(EntityType.VIEW)
+                    .name("view")
+                    .viewQuery("SELECT Col4, Col5 \n" +
+                        "FROM tblX \n" +
+                        "WHERE tblX.Col6 = 0")
+                    .build()),
+                Future.succeededFuture(Entity.builder()
+                    .entityType(EntityType.TABLE)
+                    .name("tblX")
+                    .build())
+            );
+        val replacer = new LogicViewReplacerImpl(definitionService, serviceDbDao.getEntityDao());
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
             "FROM tbl FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' t\n" +
             "JOIN view FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59' v\n" +
@@ -213,20 +237,42 @@ class LogicViewReplacerImplTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void withJoinAndWhere() throws InterruptedException {
         val testContext = new VertxTestContext();
 
-        Mockito.when(entityDao.getEntity(any(), any()))
-            .thenReturn(Future.succeededFuture(Entity.builder()
-                .entityType(EntityType.VIEW)
-                .name("view")
-                .viewQuery("SELECT Col4, Col5 \n" +
-                    "FROM tblX \n" +
-                    "WHERE tblX.Col6 = 0")
-                .build()));
+        Mockito
+            .when(entityDao.getEntity(any(), any()))
+            .thenReturn(
+                Future.succeededFuture(Entity.builder()
+                    .entityType(EntityType.TABLE)
+                    .name("tbl")
+                    .build()),
+                Future.succeededFuture(Entity.builder()
+                    .entityType(EntityType.VIEW)
+                    .name("view")
+                    .viewQuery("SELECT Col4, Col5 \n" +
+                        "FROM tblX \n" +
+                        "WHERE tblX.Col6 = 0")
+                    .build()),
+                Future.succeededFuture(Entity.builder()
+                    .entityType(EntityType.TABLE)
+                    .name("tblX")
+                    .build()),
+                Future.succeededFuture(Entity.builder()
+                    .entityType(EntityType.VIEW)
+                    .name("view")
+                    .viewQuery("SELECT Col4, Col5 \n" +
+                        "FROM tblX \n" +
+                        "WHERE tblX.Col6 = 0")
+                    .build()),
+                Future.succeededFuture(Entity.builder()
+                    .entityType(EntityType.TABLE)
+                    .name("tblX")
+                    .build())
+            );
 
-        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade, informationSchemaService);
-        val replacer = new LogicViewReplacerImpl(definitionService, new SqlSnapshotReplacerImpl(), loader);
+        val replacer = new LogicViewReplacerImpl(definitionService, serviceDbDao.getEntityDao());
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
             "FROM tbl FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' t\n" +
             "JOIN view FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59' v\n" +
@@ -244,18 +290,29 @@ class LogicViewReplacerImplTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void withJoinAndSelect() throws InterruptedException {
         val testContext = new VertxTestContext();
-        Mockito.when(entityDao.getEntity(any(), any()))
-            .thenReturn(Future.succeededFuture(Entity.builder()
-                .entityType(EntityType.VIEW)
-                .name("view")
-                .viewQuery("SELECT Col4, Col5 \n" +
-                    "FROM tblX \n" +
-                    "WHERE tblX.Col6 = 0")
-                .build()));
-        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade, informationSchemaService);
-        val replacer = new LogicViewReplacerImpl(definitionService, new SqlSnapshotReplacerImpl(), loader);
+        Mockito
+            .when(entityDao.getEntity(any(), any()))
+            .thenReturn(
+                Future.succeededFuture(Entity.builder()
+                    .entityType(EntityType.VIEW)
+                    .name("view")
+                    .viewQuery("SELECT Col4, Col5 \n" +
+                        "FROM tblX \n" +
+                        "WHERE tblX.Col6 = 0")
+                    .build()),
+                Future.succeededFuture(Entity.builder()
+                    .entityType(EntityType.TABLE)
+                    .name("tblt")
+                    .build()),
+                Future.succeededFuture(Entity.builder()
+                    .entityType(EntityType.TABLE)
+                    .name("tblX")
+                    .build())
+            );
+        val replacer = new LogicViewReplacerImpl(definitionService, serviceDbDao.getEntityDao());
         val sql = "SELECT t.Col1 as c, (select id from view limit 1) r\n" +
             "FROM tblt t";
         replacer.replace(sql, "datamart", sqlResult -> {
@@ -270,6 +327,7 @@ class LogicViewReplacerImplTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void viewInView() throws InterruptedException {
         val testContext = new VertxTestContext();
         Mockito.when(entityDao.getEntity(any(), any()))
@@ -287,10 +345,13 @@ class LogicViewReplacerImplTest {
                     .viewQuery("SELECT Col4, Col5 \n" +
                         "FROM tblC \n" +
                         "WHERE tblC.Col9 = 0")
+                    .build()),
+                Future.succeededFuture(Entity.builder()
+                    .entityType(EntityType.TABLE)
+                    .name("tblC")
                     .build())
             );
-        val loader = new DatamartViewWrapLoaderImpl(serviceDbFacade, informationSchemaService);
-        val replacer = new LogicViewReplacerImpl(definitionService, new SqlSnapshotReplacerImpl(), loader);
+        val replacer = new LogicViewReplacerImpl(definitionService, serviceDbDao.getEntityDao());
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
             "FROM view FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' v";
         replacer.replace(sql, "datamart", sqlResult -> {

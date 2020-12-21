@@ -1,15 +1,12 @@
 package io.arenadata.dtm.query.execution.core.service.dml.impl;
 
 import io.arenadata.dtm.common.dto.QueryParserRequest;
-import io.arenadata.dtm.common.dto.QueryParserResponse;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
 import io.arenadata.dtm.query.calcite.core.util.CalciteUtil;
 import io.arenadata.dtm.query.execution.core.service.dml.ColumnMetadataService;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.type.RelDataType;
@@ -31,28 +28,16 @@ public class ColumnMetadataServiceImpl implements ColumnMetadataService {
     }
 
     @Override
-    public void getColumnMetadata(QueryParserRequest request, Handler<AsyncResult<List<ColumnMetadata>>> handler) {
-        parserService.parse(request, ar -> {
-            if (ar.succeeded()) {
-                QueryParserResponse parserResponse = ar.result();
-                try {
-                    handler.handle(Future.succeededFuture(getColumnMetadata(parserResponse.getRelNode())));
-                } catch (Exception ex) {
-                    log.error("Column meta data extract error: ", ex);
-                    handler.handle(Future.failedFuture(ex));
-                }
-            } else {
-                log.error("Query parsing error: ", ar.cause());
-                handler.handle(Future.failedFuture(ar.cause()));
-            }
-        });
+    public Future<List<ColumnMetadata>> getColumnMetadata(QueryParserRequest request) {
+        return parserService.parse(request)
+                .map(response -> getColumnMetadata(response.getRelNode()));
     }
 
     private List<ColumnMetadata> getColumnMetadata(RelRoot relNode) {
         return relNode.project().getRowType().getFieldList().stream()
-            .sorted(Comparator.comparing(RelDataTypeField::getIndex))
-            .map(f -> new ColumnMetadata(f.getName(), getType(f.getType())))
-            .collect(Collectors.toList());
+                .sorted(Comparator.comparing(RelDataTypeField::getIndex))
+                .map(f -> new ColumnMetadata(f.getName(), getType(f.getType())))
+                .collect(Collectors.toList());
     }
 
     private ColumnType getType(RelDataType type) {

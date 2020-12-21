@@ -13,8 +13,8 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static io.arenadata.dtm.query.execution.plugin.adqm.common.DdlUtils.NOT_NULLABLE_FIELD;
-import static io.arenadata.dtm.query.execution.plugin.adqm.common.DdlUtils.NULLABLE_FIELD;
+import static io.arenadata.dtm.query.execution.plugin.adqm.utils.DdlUtils.NOT_NULLABLE_FIELD;
+import static io.arenadata.dtm.query.execution.plugin.adqm.utils.DdlUtils.NULLABLE_FIELD;
 
 @Service("adqmCreateTableQueriesFactory")
 public class AdqmCreateTableQueriesFactory implements CreateTableQueriesFactory<AdqmTables<String>> {

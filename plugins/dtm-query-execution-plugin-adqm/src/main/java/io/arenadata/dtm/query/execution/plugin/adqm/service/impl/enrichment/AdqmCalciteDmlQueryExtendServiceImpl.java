@@ -5,6 +5,7 @@ import io.arenadata.dtm.common.delta.DeltaType;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.QueryGeneratorContext;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.AdqmHelperTableNamesFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.QueryExtendService;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -23,20 +24,21 @@ import org.apache.calcite.sql.SqlBinaryOperator;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.arenadata.dtm.query.execution.plugin.adqm.common.Constants.*;
+import static io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants.*;
 
 
 @Slf4j
 @Service("adqmCalciteDmlQueryExtendService")
 public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService {
     private final static List<String> SYSTEM_FIELDS_PATTERNS = SYSTEM_FIELDS.stream()
-        .map(sf -> sf + "(\\d+|)")
-        .collect(Collectors.toList());
+            .map(sf -> sf + "(\\d+|)")
+            .collect(Collectors.toList());
     private static final int SCHEMA_INDEX = 0;
     private static final int TABLE_NAME_INDEX = 1;
     private static final int ONE_LITERAL = 1;
@@ -45,6 +47,7 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
     private static final int LIMIT_1 = 1;
     private final AdqmHelperTableNamesFactory helperTableNamesFactory;
 
+    @Autowired
     public AdqmCalciteDmlQueryExtendServiceImpl(AdqmHelperTableNamesFactory helperTableNamesFactory) {
         this.helperTableNamesFactory = helperTableNamesFactory;
     }
@@ -404,27 +407,28 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
     private List<RexNode> getDeltaConditions(List<DeltaInformation> deltaInformations,
                                              RelBuilder builder) {
         List<RexNode> conditions = deltaInformations.stream()
-            .flatMap(deltaInfo -> {
-                val conditionContext = DeltaConditionContext.builder()
-                    .tableCount(deltaInformations.size())
-                    .deltaInfo(deltaInfo)
-                    .builder(builder)
-                    .finalize(false)
-                    .build();
+                .flatMap(deltaInfo -> {
+                    val conditionContext = DeltaConditionContext.builder()
+                            .tableCount(deltaInformations.size())
+                            .deltaInfo(deltaInfo)
+                            .builder(builder)
+                            .finalize(false)
+                            .build();
 
-                switch (deltaInfo.getType()) {
-                    case STARTED_IN:
-                        return createRelNodeDeltaStartedIn(conditionContext).stream();
-                    case FINISHED_IN:
-                        return createRelNodeDeltaFinishedIn(conditionContext).stream();
-                    case DATETIME:
-                    case NUM:
-                        return createRelNodeDeltaNum(conditionContext).stream();
-                    default:
-                        throw new RuntimeException(String.format("Incorrect delta type %s, expected values: %s!",
-                            deltaInfo.getType(), Arrays.toString(DeltaType.values())));
-                }
-            }).collect(Collectors.toList());
+                    switch (deltaInfo.getType()) {
+                        case STARTED_IN:
+                            return createRelNodeDeltaStartedIn(conditionContext).stream();
+                        case FINISHED_IN:
+                            return createRelNodeDeltaFinishedIn(conditionContext).stream();
+                        case DATETIME:
+                        case NUM:
+                            return createRelNodeDeltaNum(conditionContext).stream();
+                        default:
+                            throw new DataSourceException(String.format("Incorrect delta type %s, expected values: %s!",
+                                    deltaInfo.getType(),
+                                    Arrays.toString(DeltaType.values())));
+                    }
+                }).collect(Collectors.toList());
         deltaInformations.clear();
         return conditions;
     }

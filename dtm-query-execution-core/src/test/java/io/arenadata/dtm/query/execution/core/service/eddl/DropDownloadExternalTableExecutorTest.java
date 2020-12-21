@@ -13,6 +13,7 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.Datama
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
 import io.arenadata.dtm.query.execution.core.dto.eddl.DropDownloadExternalTableQuery;
+import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.eddl.impl.DropDownloadExternalTableExecutor;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -71,13 +72,7 @@ public class DropDownloadExternalTableExecutorTest {
         Mockito.when(entityDao.deleteEntity(eq(schema), eq(table)))
                 .thenReturn(Future.succeededFuture());
 
-        dropDownloadExternalTableExecutor.execute(query, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        dropDownloadExternalTableExecutor.execute(query);
 
         assertTrue(promise.future().succeeded());
     }
@@ -89,16 +84,10 @@ public class DropDownloadExternalTableExecutorTest {
         Mockito.when(entityDao.getEntity(eq(schema), eq(table)))
                 .thenReturn(Future.succeededFuture(entityWithWrongType));
 
-        dropDownloadExternalTableExecutor.execute(query, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        dropDownloadExternalTableExecutor.execute(query);
 
         assertTrue(promise.future().failed());
-        assertEquals(String.format("Table [%s] in datamart [%s] doesn't exist!", table, schema), promise.future().cause().getMessage());
+        assertTrue(promise.future().cause() instanceof TableNotExistsException);
     }
 
     @Test
@@ -106,18 +95,12 @@ public class DropDownloadExternalTableExecutorTest {
         Promise promise = Promise.promise();
 
         Mockito.when(entityDao.getEntity(eq(schema), eq(table)))
-                .thenReturn(Future.failedFuture("entity not exists"));
+                .thenReturn(Future.failedFuture(new TableNotExistsException("")));
 
-        dropDownloadExternalTableExecutor.execute(query, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        dropDownloadExternalTableExecutor.execute(query);
 
         assertTrue(promise.future().failed());
-        assertEquals("entity not exists", promise.future().cause().getMessage());
+        assertTrue(promise.future().cause() instanceof TableNotExistsException);
     }
 
     @Test
@@ -130,15 +113,8 @@ public class DropDownloadExternalTableExecutorTest {
         Mockito.when(entityDao.deleteEntity(eq(schema), eq(table)))
                 .thenReturn(Future.failedFuture("delete entity error"));
 
-        dropDownloadExternalTableExecutor.execute(query, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        dropDownloadExternalTableExecutor.execute(query);
 
         assertTrue(promise.future().failed());
-        assertEquals("delete entity error", promise.future().cause().getMessage());
     }
 }

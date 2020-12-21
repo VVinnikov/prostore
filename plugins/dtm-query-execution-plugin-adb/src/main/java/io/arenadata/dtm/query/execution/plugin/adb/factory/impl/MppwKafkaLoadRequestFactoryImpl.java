@@ -17,7 +17,8 @@ import java.util.stream.Collectors;
 @Component
 public class MppwKafkaLoadRequestFactoryImpl implements MppwKafkaLoadRequestFactory {
 
-    private final List<String> excludeSystemFields = Arrays.asList(MetadataSqlFactoryImpl.SYS_FROM_ATTR, MetadataSqlFactoryImpl.SYS_TO_ATTR);
+    private final List<String> excludeSystemFields = Arrays.asList(MetadataSqlFactoryImpl.SYS_FROM_ATTR,
+            MetadataSqlFactoryImpl.SYS_TO_ATTR);
 
     @Override
     public MppwKafkaLoadRequest create(MppwRequestContext context, String server, MppwProperties mppwProperties) {
@@ -33,7 +34,9 @@ public class MppwKafkaLoadRequestFactoryImpl implements MppwKafkaLoadRequestFact
             .writableExtTableName(MetadataSqlFactoryImpl.WRITABLE_EXT_TABLE_PREF + reqId)
             .columns(getColumns(schema))
             .schema(schema)
-            .brokers(context.getRequest().getKafkaParameter().getBrokers().stream().map(KafkaBrokerInfo::getAddress).collect(Collectors.joining(",")))
+            .brokers(context.getRequest().getKafkaParameter().getBrokers().stream()
+                    .map(KafkaBrokerInfo::getAddress)
+                    .collect(Collectors.joining(",")))
             .consumerGroup(mppwProperties.getConsumerGroup())
             .timeout(mppwProperties.getStopTimeoutMs())
             .topic(context.getRequest().getKafkaParameter().getTopic())

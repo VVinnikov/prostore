@@ -1,6 +1,7 @@
 package io.arenadata.dtm.kafka.core.service.kafka;
 
 import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.kafka.core.configuration.kafka.KafkaZookeeperProperties;
 import io.vertx.core.json.Json;
 import lombok.SneakyThrows;
@@ -56,9 +57,8 @@ public class KafkaZookeeperConnectionProviderImpl implements KafkaZookeeperConne
                 });
         connectionLatch.await(properties.getConnectionTimeoutMs(), TimeUnit.MILLISECONDS);
         if (!synConnected) {
-            val errMsg = String.format("Zookeeper connection timed out: [%d] ms", properties.getConnectionTimeoutMs());
-            log.error(errMsg);
-            throw new TimeoutException(errMsg);
+            throw new DtmException(String.format("Zookeeper connection timed out: [%d] ms",
+                    properties.getConnectionTimeoutMs()));
         }
         return connection;
     }
@@ -74,7 +74,7 @@ public class KafkaZookeeperConnectionProviderImpl implements KafkaZookeeperConne
                     .map(id -> getKafkaBrokerInfo(connection, id))
                     .collect(Collectors.toList());
         } catch (Exception e) {
-            throw new RuntimeException("Error getting kafka broker info list", e);
+            throw new DtmException("Error getting kafka broker info list", e);
         }
     }
 
@@ -83,7 +83,7 @@ public class KafkaZookeeperConnectionProviderImpl implements KafkaZookeeperConne
             return Json.decodeValue(new String(zk.getData(getBrokersIdsPath() + "/" + id, false, null)),
                     KafkaBrokerInfo.class);
         } catch (Exception e) {
-            throw new RuntimeException("Error decode response from zk for getting kafka brokers", e);
+            throw new DtmException("Error decode response from zk for getting kafka brokers", e);
         }
     }
 

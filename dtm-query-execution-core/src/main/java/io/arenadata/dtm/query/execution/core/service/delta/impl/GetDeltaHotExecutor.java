@@ -9,9 +9,7 @@ import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaAction;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaQuery;
 import io.arenadata.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaExecutor;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -30,9 +28,8 @@ public class GetDeltaHotExecutor implements DeltaExecutor {
     }
 
     @Override
-    public void execute(DeltaQuery deltaQuery, Handler<AsyncResult<QueryResult>> handler) {
-        getDeltaHot(deltaQuery)
-                .onComplete(handler);
+    public Future<QueryResult> execute(DeltaQuery deltaQuery) {
+        return getDeltaHot(deltaQuery);
     }
 
     private Future<QueryResult> getDeltaHot(DeltaQuery deltaQuery) {

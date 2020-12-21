@@ -3,9 +3,9 @@ package io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.impl;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaDaoExecutor;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaServiceDaoExecutorHelper;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.GetDeltaByNumExecutor;
-import io.arenadata.dtm.query.execution.core.dao.exception.delta.DeltaException;
-import io.arenadata.dtm.query.execution.core.dao.exception.delta.DeltaNotExistException;
-import io.arenadata.dtm.query.execution.core.dao.exception.delta.DeltaNotFoundException;
+import io.arenadata.dtm.query.execution.core.exception.delta.DeltaException;
+import io.arenadata.dtm.query.execution.core.exception.delta.DeltaNotExistException;
+import io.arenadata.dtm.query.execution.core.exception.delta.DeltaNotFoundException;
 import io.arenadata.dtm.query.execution.core.dto.delta.OkDelta;
 import io.arenadata.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
 import io.vertx.core.Future;
@@ -13,6 +13,7 @@ import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.zookeeper.KeeperException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class GetDeltaByNumExecutorImpl extends DeltaServiceDaoExecutorHelper implements GetDeltaByNumExecutor {
 
+    @Autowired
     public GetDeltaByNumExecutorImpl(ZookeeperExecutor executor,
                                         @Value("${core.env.name}") String envName) {
         super(executor, envName);
@@ -39,14 +41,13 @@ public class GetDeltaByNumExecutorImpl extends DeltaServiceDaoExecutorHelper imp
             .compose(okDelta -> okDelta.getDeltaNum() == deltaNum
                 ? Future.succeededFuture(okDelta) : getDeltaByNumber(datamart, deltaNum))
             .onSuccess(r -> {
-                log.debug("get delta ok by datamart[{}], deltaNum[{}] completed successfully: [{}]", datamart, deltaNum, r);
+                log.debug("Get delta ok by datamart[{}], deltaNum[{}] completed successfully: [{}]", datamart, deltaNum, r);
                 resultPromise.complete(r);
             })
             .onFailure(error -> {
-                val errMsg = String.format("can't get delta ok on datamart[%s], deltaNum[%d]",
+                val errMsg = String.format("Can't get delta ok on datamart[%s], deltaNum[%d]",
                     datamart,
                     deltaNum);
-                log.error(errMsg, error);
                 if (error instanceof KeeperException.NoNodeException) {
                     resultPromise.fail(new DeltaNotFoundException(error));
                 } else if (error instanceof DeltaException) {

@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.core.service.avro;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
+import io.arenadata.dtm.query.execution.core.service.avro.impl.AvroSchemaGeneratorImpl;
 import org.apache.avro.Schema;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.delta.impl;
 
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.status.StatusEventCode;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
@@ -8,12 +9,11 @@ import io.arenadata.dtm.query.execution.core.dto.delta.DeltaRecord;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.BeginDeltaQuery;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaAction;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaQuery;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaExecutor;
 import io.arenadata.dtm.query.execution.core.service.delta.StatusEventPublisher;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -27,6 +27,7 @@ import static io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaAction.
 @Slf4j
 public class BeginDeltaExecutor implements DeltaExecutor, StatusEventPublisher {
 
+    private static final String ERR_GETTING_QUERY_RESULT_MSG = "Error creating begin delta result";
     private final DeltaServiceDao deltaServiceDao;
     private final DeltaQueryResultFactory deltaQueryResultFactory;
     private final Vertx vertx;
@@ -41,31 +42,49 @@ public class BeginDeltaExecutor implements DeltaExecutor, StatusEventPublisher {
     }
 
     @Override
-    public void execute(DeltaQuery deltaQuery, Handler<AsyncResult<QueryResult>> handler) {
-        val beginDeltaQuery = (BeginDeltaQuery) deltaQuery;
-        if (beginDeltaQuery.getDeltaNum() == null) {
-            deltaServiceDao.writeNewDeltaHot(beginDeltaQuery.getDatamart())
-                    .onSuccess(newDeltaHotNum -> {
-                        try {
-                            handler.handle(Future.succeededFuture(getDeltaQueryResult(newDeltaHotNum,
-                                    beginDeltaQuery)));
-                        } catch (Exception e) {
-                            handler.handle(Future.failedFuture(e));
-                        }
-                    })
-                    .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
-        } else {
+    public Future<QueryResult> execute(DeltaQuery deltaQuery) {
+        return beginDelta(deltaQuery);
+    }
+
+    private Future<QueryResult> beginDelta(DeltaQuery deltaQuery) {
+        return Future.future(promise -> {
+            val beginDeltaQuery = (BeginDeltaQuery) deltaQuery;
+            if (beginDeltaQuery.getDeltaNum() == null) {
+                writeDeltaHot(beginDeltaQuery).onComplete(promise);
+            } else {
+                writeDeltaHotByNum(beginDeltaQuery).onComplete(promise);
+            }
+        });
+    }
+
+    private Future<QueryResult> writeDeltaHotByNum(BeginDeltaQuery beginDeltaQuery) {
+        return Future.future(promise -> {
             deltaServiceDao.writeNewDeltaHot(beginDeltaQuery.getDatamart(), beginDeltaQuery.getDeltaNum())
                     .onSuccess(newDeltaHotNum -> {
                         try {
-                            handler.handle(Future.succeededFuture(getDeltaQueryResult(newDeltaHotNum,
-                                    beginDeltaQuery)));
+                            promise.complete(getDeltaQueryResult(newDeltaHotNum,
+                                    beginDeltaQuery));
                         } catch (Exception e) {
-                            handler.handle(Future.failedFuture(e));
+                            promise.fail(new DtmException(ERR_GETTING_QUERY_RESULT_MSG, e));
                         }
                     })
-                    .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
-        }
+                    .onFailure(promise::fail);
+        });
+    }
+
+    private Future<QueryResult> writeDeltaHot(BeginDeltaQuery beginDeltaQuery) {
+        return Future.future(promise -> {
+            deltaServiceDao.writeNewDeltaHot(beginDeltaQuery.getDatamart())
+                    .onSuccess(newDeltaHotNum -> {
+                        try {
+                            promise.complete(getDeltaQueryResult(newDeltaHotNum,
+                                    beginDeltaQuery));
+                        } catch (Exception e) {
+                            promise.fail(new DtmException(ERR_GETTING_QUERY_RESULT_MSG, e));
+                        }
+                    })
+                    .onFailure(promise::fail);
+        });
     }
 
     private QueryResult getDeltaQueryResult(Long deltaHotNum, BeginDeltaQuery deltaQuery) {

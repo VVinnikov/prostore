@@ -1,8 +1,10 @@
 package io.arenadata.dtm.query.execution.core.factory.impl;
 
 import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.plugin.exload.Format;
 import io.arenadata.dtm.kafka.core.repository.ZookeeperKafkaProviderRepository;
+import io.arenadata.dtm.query.execution.core.exception.UnreachableLocationException;
 import io.arenadata.dtm.query.execution.core.factory.MpprKafkaRequestFactory;
 import io.arenadata.dtm.query.execution.core.utils.LocationUriParser;
 import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
@@ -72,7 +74,7 @@ public class MpprKafkaRequestFactoryImpl implements MpprKafkaRequestFactory {
             try {
                 blockingPromise.complete(zkConnProviderRepository.getOrCreate(connectionString).getKafkaBrokers());
             } catch (Exception e) {
-                blockingPromise.fail(e);
+                blockingPromise.fail(new UnreachableLocationException(connectionString, e));
             }
         }, promise));
     }

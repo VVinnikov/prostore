@@ -29,8 +29,8 @@ public abstract class CalciteContextProvider {
                                   CalciteSchemaFactory calciteSchemaFactory) {
         this.configParser = configParser;
         prepareRules =
-            RuleSets.ofList(
-                EnumerableRules.ENUMERABLE_RULES);
+                RuleSets.ofList(
+                        EnumerableRules.ENUMERABLE_RULES);
 
         traitDefs = new ArrayList<>();
         traitDefs.add(ConventionTraitDef.INSTANCE);
@@ -39,32 +39,31 @@ public abstract class CalciteContextProvider {
     }
 
     public CalciteContext context(List<Datamart> schemas) {
-        try {
-            final SchemaPlus rootSchema = DtmCalciteFramework.createRootSchema(true);
-            Datamart defaultDatamart = null;
-            if (schemas != null) {
-                Optional<Datamart> defaultSchemaOptional = schemas.stream().filter(Datamart::getIsDefault).findFirst();
-                if (defaultSchemaOptional.isPresent()) {
-                    defaultDatamart = defaultSchemaOptional.get();
-                }
-                schemas.stream().filter(d -> !d.getIsDefault()).forEach(d -> calciteSchemaFactory.addSchema(rootSchema, d));
+        final SchemaPlus rootSchema = DtmCalciteFramework.createRootSchema(true);
+        Datamart defaultDatamart = null;
+        if (schemas != null) {
+            Optional<Datamart> defaultSchemaOptional = schemas.stream()
+                    .filter(Datamart::getIsDefault)
+                    .findFirst();
+            if (defaultSchemaOptional.isPresent()) {
+                defaultDatamart = defaultSchemaOptional.get();
             }
+            schemas.stream()
+                    .filter(d -> !d.getIsDefault())
+                    .forEach(d -> calciteSchemaFactory.addSchema(rootSchema, d));
+        }
 
-            final SchemaPlus defaultSchema = defaultDatamart == null ?
+        final SchemaPlus defaultSchema = defaultDatamart == null ?
                 rootSchema : calciteSchemaFactory.addSchema(rootSchema, defaultDatamart);
 
-            FrameworkConfig config = DtmCalciteFramework.newConfigBuilder()
+        FrameworkConfig config = DtmCalciteFramework.newConfigBuilder()
                 .parserConfig(configParser)
                 .defaultSchema(defaultSchema)
                 .traitDefs(traitDefs).programs(Programs.of(prepareRules))
                 .sqlToRelConverterConfig(SqlToRelConverter.configBuilder().withExpand(false).build())
                 .build();
-            Planner planner = DtmCalciteFramework.getPlanner(config);
-            return new CalciteContext(rootSchema, planner, RelBuilder.create(config));
-        } catch (Exception e) {
-            log.error("Planner creation error", e);
-        }
-        return null;
+        Planner planner = DtmCalciteFramework.getPlanner(config);
+        return new CalciteContext(rootSchema, planner, RelBuilder.create(config));
     }
 
     public void enrichContext(CalciteContext context, List<Datamart> schemas) {

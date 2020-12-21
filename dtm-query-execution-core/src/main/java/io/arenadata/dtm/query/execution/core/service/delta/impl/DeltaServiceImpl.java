@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.delta.impl;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.RequestStatus;
 import io.arenadata.dtm.common.model.SqlProcessingType;
@@ -13,9 +14,7 @@ import io.arenadata.dtm.query.execution.core.service.delta.DeltaQueryParamExtrac
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaService;
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsService;
 import io.arenadata.dtm.query.execution.plugin.api.delta.DeltaRequestContext;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -47,41 +46,38 @@ public class DeltaServiceImpl implements DeltaService<QueryResult> {
     }
 
     @Override
-    public void execute(DeltaRequestContext context, Handler<AsyncResult<QueryResult>> handler) {
+    public Future<QueryResult> execute(DeltaRequestContext context) {
         if (StringUtils.isEmpty(context.getRequest().getQueryRequest().getDatamartMnemonic())) {
             String errMsg = "Datamart must be not empty!\n" +
                     "For setting datamart you can use the following command: \"USE datamartName\"";
-            log.error(errMsg);
-            handler.handle(Future.failedFuture(errMsg));
+            return Future.failedFuture(new DtmException(errMsg));
         } else {
-            extractDeltaQuery(context)
+            return extractDeltaAndExecute(context);
+        }
+    }
+
+    private Future<QueryResult> extractDeltaAndExecute(DeltaRequestContext context) {
+        return Future.future(promise -> {
+            deltaQueryParamExtractor.extract(context.getRequest().getQueryRequest())
                     .compose(deltaQuery -> sendMetricsAndExecute(context, deltaQuery))
                     .onComplete(deltaExecHandler -> {
                         if (deltaExecHandler.succeeded()) {
                             QueryResult queryDeltaResult = deltaExecHandler.result();
                             log.debug("Query result: {}, queryResult : {}",
                                     context.getRequest().getQueryRequest(), queryDeltaResult);
-                            handler.handle(Future.succeededFuture(queryDeltaResult));
+                            promise.complete(queryDeltaResult);
                         } else {
-                            log.error(deltaExecHandler.cause().getMessage());
-                            handler.handle(Future.failedFuture(deltaExecHandler.cause()));
+                            promise.fail(deltaExecHandler.cause());
                         }
                     });
-        }
-    }
-
-    private Future<DeltaQuery> extractDeltaQuery(DeltaRequestContext context) {
-        return Future.future(promise -> deltaQueryParamExtractor.extract(context.getRequest().getQueryRequest(), promise));
+        });
     }
 
     private Future<QueryResult> sendMetricsAndExecute(DeltaRequestContext context, DeltaQuery deltaQuery) {
         deltaQuery.setDatamart(context.getRequest().getQueryRequest().getDatamartMnemonic());
         deltaQuery.setRequest(context.getRequest().getQueryRequest());
         if (deltaQuery.getDeltaAction() != DeltaAction.ROLLBACK_DELTA) {
-            return metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
-                    SqlProcessingType.DELTA,
-                    context.getMetrics())
-                    .compose(v -> execute(context, deltaQuery));
+            return executeWithMetrics(context, deltaQuery);
         } else {
             final RollbackDeltaQuery rollbackDeltaQuery = (RollbackDeltaQuery) deltaQuery;
             rollbackDeltaQuery.setRequestMetrics(RequestMetrics.builder()
@@ -90,19 +86,35 @@ public class DeltaServiceImpl implements DeltaService<QueryResult> {
                     .status(RequestStatus.IN_PROCESS)
                     .isActive(true)
                     .build());
-            return Future.future(promise -> executors.get(deltaQuery.getDeltaAction())
-                    .execute(rollbackDeltaQuery, promise));
+            return getExecutor(deltaQuery)
+                    .compose(deltaExecutor -> execute(rollbackDeltaQuery));
         }
     }
 
-    private Future<QueryResult> execute(DeltaRequestContext context, DeltaQuery deltaQuery) {
-        return Future.future((Promise<QueryResult> promise) -> {
-            executors.get(deltaQuery.getDeltaAction())
-                    .execute(deltaQuery,
-                            metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
-                                    SqlProcessingType.DELTA,
-                                    context.getMetrics(),
-                                    promise));
+    private Future<QueryResult> executeWithMetrics(DeltaRequestContext context, DeltaQuery deltaQuery) {
+        return Future.future((Promise<QueryResult> promise) ->
+                metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA, SqlProcessingType.DELTA, context.getMetrics())
+                        .compose(result -> execute(deltaQuery))
+                        .onComplete(metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
+                                SqlProcessingType.DELTA,
+                                context.getMetrics(), promise)));
+    }
+
+    private Future<QueryResult> execute(DeltaQuery deltaQuery) {
+        return getExecutor(deltaQuery)
+                .compose(deltaExecutor -> deltaExecutor.execute(deltaQuery));
+    }
+
+    private Future<DeltaExecutor> getExecutor(DeltaQuery deltaQuery) {
+        return Future.future(promise -> {
+            final DeltaExecutor executor = executors.get(deltaQuery.getDeltaAction());
+            if (executor != null) {
+                promise.complete(executor);
+            } else {
+                promise.fail(new DtmException(String.format("Couldn't find delta executor for action %s",
+                        deltaQuery.getDeltaAction())));
+            }
         });
     }
+
 }

@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.config.impl;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
@@ -7,7 +8,7 @@ import io.arenadata.dtm.query.calcite.core.extension.config.SqlConfigType;
 import io.arenadata.dtm.query.calcite.core.extension.config.function.SqlConfigStorageAdd;
 import io.arenadata.dtm.query.calcite.core.service.impl.CalciteDefinitionService;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
-import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.plugin.api.config.ConfigRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
@@ -35,7 +36,6 @@ public class ConfigStorageAddDdlExecutor implements ConfigExecutor {
     private final DataSourcePluginService dataSourcePluginService;
     private final DatamartDao datamartDao;
 
-
     @Autowired
     public ConfigStorageAddDdlExecutor(@Qualifier("coreCalciteDefinitionService") CalciteDefinitionService calciteDefinitionService,
                                        DataSourcePluginService dataSourcePluginService,
@@ -53,24 +53,16 @@ public class ConfigStorageAddDdlExecutor implements ConfigExecutor {
                 val sourceType = configStorageAdd.getSourceType();
                 if (dataSourcePluginService.getSourceTypes().contains(sourceType)) {
                     datamartDao.getDatamarts()
-                        .compose(datamarts -> {
-                            String envName = context.getRequest().getQueryRequest().getEnvName();
-                            return joinCreateDatamartFutures(sourceType, datamarts, context);
-                        })
-                        .onSuccess(success -> p.complete(QueryResult.emptyResult()))
-                        .onFailure(error -> {
-                            val errMsg = String.format(CAN_T_ADD_STORAGE_S, sourceType);
-                            log.error(errMsg, error);
-                            p.fail(errMsg);
-                        });
+                            .compose(datamarts -> joinCreateDatamartFutures(sourceType,
+                                    datamarts,
+                                    context))
+                            .onSuccess(success -> p.complete(QueryResult.emptyResult()))
+                            .onFailure(error -> p.fail(new DtmException(String.format(CAN_T_ADD_STORAGE_S, sourceType))));
                 } else {
-                    val errMsg = String.format(STORAGE_S_IS_NOT_ACTIVE, sourceType.name());
-                    log.error(errMsg);
-                    p.fail(errMsg);
+                    p.fail(new DtmException(String.format(STORAGE_S_IS_NOT_ACTIVE, sourceType.name())));
                 }
             } else {
-                log.error(SOURCE_TYPE_IS_NOT_SET);
-                p.fail(SOURCE_TYPE_IS_NOT_SET);
+                p.fail(new DtmException(SOURCE_TYPE_IS_NOT_SET));
             }
         });
     }
@@ -79,35 +71,36 @@ public class ConfigStorageAddDdlExecutor implements ConfigExecutor {
                                                       List<String> datamarts,
                                                       ConfigRequestContext context) {
         return CompositeFuture.join(
-            datamarts.stream()
-                .map(datamart -> createDatamartFuture(sourceType, datamart, context))
-                .collect(Collectors.toList()));
-    }
-
-    @Override
-    public SqlConfigType getConfigType() {
-        return SqlConfigType.CONFIG_STORAGE_ADD;
+                datamarts.stream()
+                        .map(datamart -> createDatamartFuture(sourceType, datamart, context))
+                        .collect(Collectors.toList()));
     }
 
     private Future<Void> createDatamartFuture(SourceType sourceType,
                                               String schemaName,
                                               ConfigRequestContext context) {
         return Future.future(p -> {
-            DdlRequestContext ddlRequestContext = getDdlRequestContext(schemaName, context);
-            dataSourcePluginService.ddl(sourceType, ddlRequestContext, p);
+            DdlRequestContext ddlRequestContext = createDdlRequestContext(schemaName, context);
+            dataSourcePluginService.ddl(sourceType, ddlRequestContext)
+                    .onComplete(p);
         });
     }
 
     @SneakyThrows
-    private DdlRequestContext getDdlRequestContext(String schemaName, ConfigRequestContext context) {
+    private DdlRequestContext createDdlRequestContext(String schemaName, ConfigRequestContext context) {
         val createDataBaseQuery = "CREATE DATABASE IF NOT EXISTS " + schemaName;
         val createDataBaseQueryNode = calciteDefinitionService.processingQuery(createDataBaseQuery);
         val ddlRequest = new DdlRequest(QueryRequest.builder()
-            .envName(context.getRequest().getQueryRequest().getEnvName())
-            .datamartMnemonic(schemaName)
-            .sql(createDataBaseQuery)
-            .build());
+                .envName(context.getRequest().getQueryRequest().getEnvName())
+                .datamartMnemonic(schemaName)
+                .sql(createDataBaseQuery)
+                .build());
         return new DdlRequestContext(context.getMetrics(), ddlRequest, createDataBaseQueryNode);
+    }
+
+    @Override
+    public SqlConfigType getConfigType() {
+        return SqlConfigType.CONFIG_STORAGE_ADD;
     }
 
 }

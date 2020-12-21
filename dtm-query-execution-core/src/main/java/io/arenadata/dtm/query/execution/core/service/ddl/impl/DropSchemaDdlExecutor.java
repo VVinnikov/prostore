@@ -1,19 +1,18 @@
 package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.DropDatabase;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
-import io.arenadata.dtm.query.execution.core.dao.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
+import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
 import io.arenadata.dtm.query.execution.core.service.cache.impl.HotDeltaCacheService;
 import io.arenadata.dtm.query.execution.core.service.cache.impl.OkDeltaCacheService;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
@@ -44,21 +43,24 @@ public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<QueryResult>> handler) {
-        try {
+    public Future<QueryResult> execute(DdlRequestContext context, String sqlNodeName) {
+        return dropSchema(context, sqlNodeName);
+    }
+
+    private Future<QueryResult> dropSchema(DdlRequestContext context, String sqlNodeName) {
+        return Future.future(promise -> {
             String schemaName = ((DropDatabase) context.getQuery()).getName().names.get(0);
             clearCacheByDatamartName(schemaName);
             context.getRequest().getQueryRequest().setDatamartMnemonic(schemaName);
             context.setDatamartName(schemaName);
             datamartDao.existsDatamart(schemaName)
-                .compose(isExists -> isExists ? dropDatamartInPlugins(context) : getNotExistsDatamartFuture(schemaName))
-                .compose(r -> dropDatamart(context))
-                .onSuccess(success -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
-                .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
-        } catch (Exception e) {
-            log.error("Error deleting datamart!", e);
-            handler.handle(Future.failedFuture(e));
-        }
+                    .compose(isExists -> isExists ? dropDatamartInPlugins(context) : getNotExistsDatamartFuture(schemaName))
+                    .compose(r -> dropDatamart(context))
+                    .onSuccess(success -> {
+                        promise.complete(QueryResult.emptyResult());
+                    })
+                    .onFailure(promise::fail);
+        });
     }
 
     private void clearCacheByDatamartName(String schemaName) {
@@ -76,18 +78,17 @@ public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
             context.getRequest().setQueryRequest(replaceDatabaseInSql(context.getRequest().getQueryRequest()));
             context.setDdlType(DROP_SCHEMA);
             log.debug("Delete physical objects in plugins for datamart: [{}]", context.getDatamartName());
-            return Future.future((Promise<Void> promise) -> metadataExecutor.execute(context, promise));
+            return metadataExecutor.execute(context);
         } catch (Exception e) {
-            log.error("Error in dropping schema [{}]", context.getDatamartName(), e);
-            return Future.failedFuture(e);
+            return Future.failedFuture(new DtmException("Error generating drop datamart request", e));
         }
     }
 
     private Future<Void> dropDatamart(DdlRequestContext context) {
-        log.debug("Deleted schema [{}] in data sources", context.getDatamartName());
+        log.debug("Delete schema [{}] in data sources", context.getDatamartName());
         return datamartDao.deleteDatamart(context.getDatamartName())
-            .onSuccess(success -> log.debug("Deleted datamart [{}] from datamart registry", context.getDatamartName()))
-            .onFailure(error -> log.error("Error deleting datamart [{}] from datamart registry!", context.getDatamartName(), error));
+                .onSuccess(success -> log.debug("Deleted datamart [{}] from datamart registry",
+                        context.getDatamartName()));
     }
 
     @Override

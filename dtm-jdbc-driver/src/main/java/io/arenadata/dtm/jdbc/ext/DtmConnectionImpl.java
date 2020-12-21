@@ -5,7 +5,7 @@ import io.arenadata.dtm.jdbc.core.ConnectionFactory;
 import io.arenadata.dtm.jdbc.core.BaseConnection;
 import io.arenadata.dtm.jdbc.core.QueryExecutor;
 import io.arenadata.dtm.jdbc.model.ColumnInfo;
-import io.arenadata.dtm.jdbc.util.DtmException;
+import io.arenadata.dtm.jdbc.util.DtmSqlException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -113,7 +113,7 @@ public class DtmConnectionImpl implements BaseConnection {
 
     private void checkClosed() throws SQLException {
         if (isClosed()) {
-            throw new DtmException("The connection was closed");
+            throw new DtmSqlException("The connection was closed");
         }
     }
 

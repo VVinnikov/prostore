@@ -8,15 +8,16 @@ import io.arenadata.dtm.query.calcite.core.rel2sql.NullNotCastableRelToSqlConver
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.QueryGeneratorContext;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.QueryExtendService;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.QueryGenerator;
-import io.vertx.core.AsyncResult;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.tools.RelConversionException;
 import org.apache.calcite.util.Util;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -38,23 +39,27 @@ public class AdqmQueryGeneratorImpl implements QueryGenerator {
     }
 
     @Override
-    public void mutateQuery(RelRoot relNode,
-                            List<DeltaInformation> deltaInformations,
-                            CalciteContext calciteContext,
-                            QueryRequest queryRequest,
-                            boolean isLocal,
-                            Handler<AsyncResult<String>> handler) {
-        try {
+    public Future<String> mutateQuery(RelRoot relNode,
+                                      List<DeltaInformation> deltaInformations,
+                                      CalciteContext calciteContext,
+                                      QueryRequest queryRequest,
+                                      boolean isLocal) {
+        return Future.future(promise -> {
             val generatorContext = getContext(relNode,
                     deltaInformations,
                     calciteContext,
                     queryRequest,
                     isLocal);
             val extendedQuery = queryExtendService.extendQuery(generatorContext);
-            val planAfter = calciteContext.getPlanner()
-                    .transform(0,
-                            extendedQuery.getTraitSet().replace(EnumerableConvention.INSTANCE),
-                            extendedQuery);
+            RelNode planAfter = null;
+            try {
+                planAfter = calciteContext.getPlanner()
+                        .transform(0,
+                                extendedQuery.getTraitSet().replace(EnumerableConvention.INSTANCE),
+                                extendedQuery);
+            } catch (RelConversionException relConversionException) {
+                promise.fail(new DataSourceException("Error in converting relation node", relConversionException));
+            }
             val sqlNodeResult = new NullNotCastableRelToSqlConverter(sqlDialect)
                     .visitChild(0, planAfter)
                     .asStatement();
@@ -63,11 +68,8 @@ public class AdqmQueryGeneratorImpl implements QueryGenerator {
             replaceDollarSuffixInAlias(sqlTree);
             val queryResult = Util.toLinux(sqlNodeResult.toSqlString(sqlDialect).getSql()).replaceAll("\n", " ");
             log.debug("sql = " + queryResult);
-            handler.handle(Future.succeededFuture(queryResult));
-        } catch (Exception e) {
-            log.error("Request conversion execution error", e);
-            handler.handle(Future.failedFuture(e));
-        }
+            promise.complete(queryResult);
+        });
     }
 
     private void addFinalOperatorTopUnionTables(SqlSelectTree tree) {

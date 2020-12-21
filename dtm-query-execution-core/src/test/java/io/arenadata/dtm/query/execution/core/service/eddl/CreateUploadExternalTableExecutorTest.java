@@ -15,8 +15,11 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.Datama
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
 import io.arenadata.dtm.query.execution.core.dto.eddl.CreateUploadExternalTableQuery;
+import io.arenadata.dtm.common.exception.DtmException;
+import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
+import io.arenadata.dtm.query.execution.core.exception.table.TableAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.service.avro.AvroSchemaGenerator;
-import io.arenadata.dtm.query.execution.core.service.avro.AvroSchemaGeneratorImpl;
+import io.arenadata.dtm.query.execution.core.service.avro.impl.AvroSchemaGeneratorImpl;
 import io.arenadata.dtm.query.execution.core.service.eddl.impl.CreateUploadExternalTableExecutor;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -87,13 +90,7 @@ public class CreateUploadExternalTableExecutorTest {
         Mockito.when(entityDao.createEntity(any()))
                 .thenReturn(Future.succeededFuture());
 
-        createUploadExteranlTableExecutor.execute(query, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        createUploadExteranlTableExecutor.execute(query);
 
         assertTrue(promise.future().succeeded());
     }
@@ -105,16 +102,10 @@ public class CreateUploadExternalTableExecutorTest {
         Mockito.when(datamartDao.existsDatamart(eq(schema)))
                 .thenReturn(Future.succeededFuture(false));
 
-        createUploadExteranlTableExecutor.execute(query, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        createUploadExteranlTableExecutor.execute(query);
 
         assertTrue(promise.future().failed());
-        assertEquals(String.format("Datamart [%s] not exists!", schema), promise.future().cause().getMessage());
+        assertTrue(promise.future().cause() instanceof DatamartNotExistsException);
     }
 
     @Test
@@ -127,16 +118,10 @@ public class CreateUploadExternalTableExecutorTest {
         Mockito.when(entityDao.existsEntity(eq(schema), eq(entity.getName())))
                 .thenReturn(Future.succeededFuture(true));
 
-        createUploadExteranlTableExecutor.execute(query, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        createUploadExteranlTableExecutor.execute(query);
 
         assertTrue(promise.future().failed());
-        assertEquals(String.format("Table [%s] is already exists in datamart [%s]!", entity.getName(), schema), promise.future().cause().getMessage());
+        assertTrue(promise.future().cause() instanceof TableAlreadyExistsException);
     }
 
     @Test
@@ -144,15 +129,9 @@ public class CreateUploadExternalTableExecutorTest {
         Promise promise = Promise.promise();
 
         Mockito.when(datamartDao.existsDatamart(eq(schema)))
-                .thenReturn(Future.failedFuture("exists datamart error"));
+                .thenReturn(Future.failedFuture(new DtmException("exists datamart error")));
 
-        createUploadExteranlTableExecutor.execute(query, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        createUploadExteranlTableExecutor.execute(query);
 
         assertTrue(promise.future().failed());
         assertEquals("exists datamart error", promise.future().cause().getMessage());
@@ -166,15 +145,9 @@ public class CreateUploadExternalTableExecutorTest {
                 .thenReturn(Future.succeededFuture(true));
 
         Mockito.when(entityDao.existsEntity(eq(schema), eq(entity.getName())))
-                .thenReturn(Future.failedFuture("exists entity error"));
+                .thenReturn(Future.failedFuture(new DtmException("exists entity error")));
 
-        createUploadExteranlTableExecutor.execute(query, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        createUploadExteranlTableExecutor.execute(query);
 
         assertTrue(promise.future().failed());
         assertEquals("exists entity error", promise.future().cause().getMessage());
@@ -191,15 +164,9 @@ public class CreateUploadExternalTableExecutorTest {
                 .thenReturn(Future.succeededFuture(false));
 
         Mockito.when(entityDao.createEntity(any()))
-                .thenReturn(Future.failedFuture("create entity error"));
+                .thenReturn(Future.failedFuture(new DtmException("create entity error")));
 
-        createUploadExteranlTableExecutor.execute(query, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        createUploadExteranlTableExecutor.execute(query);
 
         assertTrue(promise.future().failed());
         assertEquals("create entity error", promise.future().cause().getMessage());

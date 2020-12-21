@@ -6,6 +6,7 @@ import io.arenadata.dtm.common.model.ddl.EntityFieldUtils;
 import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.TarantoolDatabaseProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.dto.AdgTables;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.*;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.arenadata.dtm.query.execution.plugin.api.factory.TableEntitiesFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -104,7 +105,7 @@ public class AdgTableEntitiesFactory implements TableEntitiesFactory<AdgTables<S
                         ), SpaceIndexTypes.TREE, BUCKET_ID)
                 );
             default:
-                throw new RuntimeException(String.format("Table type [%s] doesn't support", tablePosfix));
+                throw new DataSourceException(String.format("Table type [%s] doesn't support", tablePosfix));
         }
     }
 
@@ -116,7 +117,7 @@ public class AdgTableEntitiesFactory implements TableEntitiesFactory<AdgTables<S
             case STAGING_POSTFIX:
                 return Collections.singletonList(new SpaceAttribute(false, SYS_OP_FIELD, SpaceAttributeTypes.NUMBER));
             default:
-                throw new RuntimeException(String.format("Unknown table prefix [%s]", tablePostfix));
+                throw new DataSourceException(String.format("Unknown table prefix [%s]", tablePostfix));
         }
     }
 

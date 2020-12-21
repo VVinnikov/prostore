@@ -5,12 +5,10 @@ import io.arenadata.dtm.query.execution.core.factory.MetricsEventFactory;
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsConsumer;
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsProcessingService;
 import io.vertx.core.eventbus.Message;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
 public class MetricsConsumerImpl implements MetricsConsumer {
 
     private final MetricsEventFactory<RequestMetrics> eventFactory;

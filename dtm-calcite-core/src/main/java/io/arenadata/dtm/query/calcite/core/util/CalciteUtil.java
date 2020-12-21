@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.calcite.core.util;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import lombok.val;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -17,8 +18,10 @@ public class CalciteUtil {
         try {
             return LocalDateTime.parse(localDateTime, CalciteUtil.LOCAL_DATE_TIME);
         } catch (Exception e) {
-            val errMsg = String.format("Time[%s] is not in format: [%s]", localDateTime, LOCAL_DATE_TIME_PATTERN);
-            throw new RuntimeException(errMsg, e);
+            throw new DtmException(String.format("Time [%s] is not in format: [%s]",
+                    localDateTime,
+                    LOCAL_DATE_TIME_PATTERN),
+                    e);
         }
     }
 

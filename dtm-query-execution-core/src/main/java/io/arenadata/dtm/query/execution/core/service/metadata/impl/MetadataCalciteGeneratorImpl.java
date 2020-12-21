@@ -5,6 +5,7 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.SqlNodeUtils;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
 import io.arenadata.dtm.query.execution.core.utils.ColumnTypeUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +33,6 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
         return new Entity(getTableName(names), getSchema(names), fields);
     }
 
-
     private List<EntityField> createTableFields(SqlCreate sqlCreate) {
         final List<EntityField> fields = new ArrayList<>();
         final SqlNodeList columnList = (SqlNodeList) sqlCreate.getOperandList().get(1);
@@ -47,7 +47,7 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
                 } else if (col.getKind().equals(SqlKind.PRIMARY_KEY)) {
                     initPrimaryKeyColumns((SqlKeyConstraint) col, fieldMap);
                 } else {
-                    throw new RuntimeException("Attribute type " + col.getKind() + " is not supported!");
+                    throw new DtmException(String.format("Attribute type %s is not supported", col.getKind()));
                 }
             }
             initDistributedKeyColumns(sqlCreate, fieldMap);
@@ -116,7 +116,7 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
         if (col.getOperandList().size() > 1) {
             return (SqlDataTypeSpec) col.getOperandList().get(1);
         } else {
-            throw new RuntimeException("Column type error!");
+            throw new DtmException("Column type error");
         }
     }
 
@@ -124,7 +124,7 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
         if (col.getOperandList().size() > 0) {
             return ((SqlNodeList) col.getOperandList().get(1)).getList();
         } else {
-            throw new RuntimeException("Primary key definition failed!");
+            throw new DtmException("Primary key definition failed");
         }
     }
 
@@ -155,7 +155,8 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
             SqlIdentifier node = (SqlIdentifier) sqlNode;
             final EntityField field = fieldMap.get(node.getSimple());
             if (field == null) {
-                throw new RuntimeException(String.format("Incorrect distributed key column name %s!", node.getSimple()));
+                throw new DtmException(String.format("Incorrect distributed key column name %s",
+                        node.getSimple()));
             }
             field.setShardingOrder(dkOrder);
             dkOrder++;

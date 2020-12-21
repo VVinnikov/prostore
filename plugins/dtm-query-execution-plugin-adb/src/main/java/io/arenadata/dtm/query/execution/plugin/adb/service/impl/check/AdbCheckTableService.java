@@ -123,6 +123,7 @@ public class AdbCheckTableService implements CheckTableService {
     }
 
     private Future<Optional<AdbTableEntity>> getMetadata(AdbTableEntity expTableEntity) {
+        //TODO it's better to exclude generating sql query in separate factory class
         String query = String.format(QUERY_PATTERN_WITH_CONDITION, expTableEntity.getSchema(), expTableEntity.getName());
         return adbQueryExecutor.execute(query)
                 .compose(result -> Future.succeededFuture(result.isEmpty()

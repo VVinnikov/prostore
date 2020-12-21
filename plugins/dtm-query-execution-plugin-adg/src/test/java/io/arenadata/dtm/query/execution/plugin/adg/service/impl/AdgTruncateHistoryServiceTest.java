@@ -8,6 +8,7 @@ import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.adg.service.impl.ddl.AdgTruncateHistoryService;
 import io.arenadata.dtm.query.execution.plugin.adg.utils.AdgUtils;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TruncateHistoryService;
 import io.vertx.core.Future;
 import org.apache.calcite.sql.SqlNode;
@@ -104,7 +105,7 @@ public class AdgTruncateHistoryServiceTest {
                         return ((SqlSelect) planner.parse(String.format("SELECT * from t WHERE %s", conditions)))
                                 .getWhere();
                     } catch (SqlParseException e) {
-                        throw new RuntimeException(e);
+                        throw new DataSourceException("Error", e);
                     }
                 })
                 .orElse(null);

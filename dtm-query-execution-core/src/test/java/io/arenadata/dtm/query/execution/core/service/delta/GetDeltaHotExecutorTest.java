@@ -9,6 +9,7 @@ import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.impl.DeltaServi
 import io.arenadata.dtm.query.execution.core.dto.delta.HotDelta;
 import io.arenadata.dtm.query.execution.core.dto.delta.operation.WriteOpFinish;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.GetDeltaHotQuery;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.delta.BeginDeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.service.delta.impl.GetDeltaHotExecutor;
@@ -49,7 +50,7 @@ class GetDeltaHotExecutorTest {
     @Test
     void executeSuccess() {
         deltaHotExecutor = new GetDeltaHotExecutor(serviceDbFacade, deltaQueryResultFactory);
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         GetDeltaHotQuery deltaQuery = GetDeltaHotQuery.builder()
                 .request(req)
                 .datamart(datamart)
@@ -84,32 +85,27 @@ class GetDeltaHotExecutorTest {
         when(deltaQueryResultFactory.create(any()))
                 .thenReturn(queryResult);
 
-        deltaHotExecutor.execute(deltaQuery, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        deltaHotExecutor.execute(deltaQuery)
+                .onComplete(promise);
 
-        assertEquals(deltaNum, ((QueryResult) promise.future().result()).getResult()
+        assertEquals(deltaNum, promise.future().result().getResult()
                 .get(0).get(DeltaQueryUtil.NUM_FIELD));
-        assertEquals(cnFrom, ((QueryResult) promise.future().result()).getResult()
+        assertEquals(cnFrom, promise.future().result().getResult()
                 .get(0).get(DeltaQueryUtil.CN_FROM_FIELD));
-        assertNull(((QueryResult) promise.future().result()).getResult()
+        assertNull(promise.future().result().getResult()
                 .get(0).get(DeltaQueryUtil.CN_TO_FIELD));
-        assertEquals(cnMax, ((QueryResult) promise.future().result()).getResult()
+        assertEquals(cnMax, promise.future().result().getResult()
                 .get(0).get(DeltaQueryUtil.CN_MAX_FIELD));
-        assertEquals(isRollingBack, ((QueryResult) promise.future().result()).getResult()
+        assertEquals(isRollingBack, promise.future().result().getResult()
                 .get(0).get(DeltaQueryUtil.IS_ROLLING_BACK_FIELD));
-        assertEquals(writeOpFinishListStr, ((QueryResult) promise.future().result()).getResult()
+        assertEquals(writeOpFinishListStr, promise.future().result().getResult()
                 .get(0).get(DeltaQueryUtil.WRITE_OP_FINISHED_FIELD));
     }
 
     @Test
     void executeEmptySuccess() {
         deltaHotExecutor = new GetDeltaHotExecutor(serviceDbFacade, deltaQueryResultFactory);
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         GetDeltaHotQuery deltaQuery = GetDeltaHotQuery.builder()
                 .request(req)
                 .datamart(datamart)
@@ -125,13 +121,8 @@ class GetDeltaHotExecutorTest {
         when(deltaQueryResultFactory.createEmpty())
                 .thenReturn(queryResult);
 
-        deltaHotExecutor.execute(deltaQuery, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        deltaHotExecutor.execute(deltaQuery)
+                .onComplete(promise);
 
         assertTrue(promise.future().succeeded());
     }
@@ -139,29 +130,24 @@ class GetDeltaHotExecutorTest {
     @Test
     void executeGetDeltaHotError() {
         deltaHotExecutor = new GetDeltaHotExecutor(serviceDbFacade, deltaQueryResultFactory);
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         GetDeltaHotQuery deltaQuery = GetDeltaHotQuery.builder()
                 .request(req)
                 .datamart(datamart)
                 .build();
 
         when(deltaServiceDao.getDeltaHot(eq(datamart)))
-                .thenReturn(Future.failedFuture(new RuntimeException("")));
+                .thenReturn(Future.failedFuture(new DtmException("")));
 
-        deltaHotExecutor.execute(deltaQuery, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        deltaHotExecutor.execute(deltaQuery)
+                .onComplete(promise);
         assertTrue(promise.future().failed());
     }
 
     @Test
     void executeDeltaQueryResultFactoryError() {
         deltaHotExecutor = new GetDeltaHotExecutor(serviceDbFacade, deltaQueryResultFactory);
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         GetDeltaHotQuery deltaQuery = GetDeltaHotQuery.builder()
                 .request(req)
                 .datamart(datamart)
@@ -186,15 +172,10 @@ class GetDeltaHotExecutorTest {
                 .thenReturn(Future.succeededFuture(deltaHot));
 
         when(deltaQueryResultFactory.create(any()))
-                .thenThrow(new RuntimeException(""));
+                .thenThrow(new DtmException(""));
 
-        deltaHotExecutor.execute(deltaQuery, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        deltaHotExecutor.execute(deltaQuery)
+                .onComplete(promise);
         assertTrue(promise.future().failed());
     }
 

@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.edml.impl;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.reader.QueryResult;
@@ -7,16 +8,14 @@ import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dto.delta.DeltaWriteOpRequest;
 import io.arenadata.dtm.query.execution.core.dto.edml.EdmlAction;
-import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadFailedExecutor;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlDialect;
@@ -56,12 +55,13 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
     }
 
     @Override
-    public void execute(EdmlRequestContext context, Handler<AsyncResult<QueryResult>> resultHandler) {
-        isEntitySourceTypesExistsInConfiguration(context)
+    public Future<QueryResult> execute(EdmlRequestContext context) {
+        return isEntitySourceTypesExistsInConfiguration(context)
                 .compose(v -> writeNewOperationIfNeeded(context, context.getSourceEntity()))
                 .compose(v -> executeAndWriteOp(context))
-                .compose(queryResult -> writeOpSuccess(context.getSourceEntity().getSchema(), context.getSysCn(), queryResult))
-                .onComplete(resultHandler);
+                .compose(queryResult -> writeOpSuccess(context.getSourceEntity().getSchema(),
+                        context.getSysCn(),
+                        queryResult));
     }
 
     private Future<Void> isEntitySourceTypesExistsInConfiguration(EdmlRequestContext context) {
@@ -73,8 +73,7 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
                     nonExistDestionationTypes,
                     context.getDestinationEntity().getName(),
                     context.getDestinationEntity().getSchema());
-            log.error(failureMessage);
-            return Future.failedFuture(failureMessage);
+            return Future.failedFuture(new DtmException(failureMessage));
         } else {
             return Future.succeededFuture();
         }
@@ -109,36 +108,29 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
     private Future<QueryResult> executeAndWriteOp(EdmlRequestContext context) {
         return Future.future(promise ->
                 initLogicalSchema(context)
-                .compose(ctx -> execute(context))
+                        .compose(ctx -> executeInternal(context))
                         .onSuccess(promise::complete)
                         .onFailure(error -> {
-                            log.error("Edml write operation error!", error);
                             deltaServiceDao.writeOperationError(context.getSourceEntity().getSchema(), context.getSysCn())
                                     .compose(v -> uploadFailedExecutor.execute(context))
                                     .onComplete(writeErrorOpAr -> {
                                         if (writeErrorOpAr.succeeded()) {
                                             promise.fail(error);
                                         } else {
-                                            log.error("Can't write operation error!", writeErrorOpAr.cause());
-                                            promise.fail(writeErrorOpAr.cause());
+                                            promise.fail(new DtmException("Can't write operation error", writeErrorOpAr.cause()));
                                         }
                                     });
                         }));
     }
 
-    private Future<QueryResult> execute(EdmlRequestContext context) {
+    private Future<QueryResult> executeInternal(EdmlRequestContext context) {
         return Future.future((Promise<QueryResult> promise) -> {
             if (ExternalTableLocationType.KAFKA == context.getSourceEntity().getExternalTableLocationType()) {
-                executors.get(context.getSourceEntity().getExternalTableLocationType()).execute(context, ar -> {
-                    if (ar.succeeded()) {
-                        promise.complete(ar.result());
-                    } else {
-                        promise.fail(ar.cause());
-                    }
-                });
+                executors.get(context.getSourceEntity().getExternalTableLocationType())
+                        .execute(context)
+                        .onComplete(promise);
             } else {
-                log.error("Loading type {} not implemented", context.getSourceEntity().getExternalTableLocationType());
-                promise.fail(new RuntimeException("Other download types are not yet implemented!"));
+                promise.fail(new DtmException("Other download types are not yet implemented"));
             }
         });
     }
@@ -152,15 +144,16 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
 
     private Future<Void> initLogicalSchema(EdmlRequestContext context) {
         return Future.future(promise -> {
-            logicalSchemaProvider.getSchema(context.getRequest().getQueryRequest(), ar -> {
-                if (ar.succeeded()) {
-                    final List<Datamart> logicalSchema = ar.result();
-                    context.setLogicalSchema(logicalSchema);
-                    promise.complete();
-                } else {
-                    promise.fail(ar.cause());
-                }
-            });
+            logicalSchemaProvider.getSchema(context.getRequest().getQueryRequest())
+                    .onComplete(ar -> {
+                        if (ar.succeeded()) {
+                            final List<Datamart> logicalSchema = ar.result();
+                            context.setLogicalSchema(logicalSchema);
+                            promise.complete();
+                        } else {
+                            promise.fail(ar.cause());
+                        }
+                    });
         });
     }
 

@@ -2,7 +2,7 @@ package io.arenadata.dtm.query.execution.core.configuration.cache;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.common.collect.Lists;
-import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;

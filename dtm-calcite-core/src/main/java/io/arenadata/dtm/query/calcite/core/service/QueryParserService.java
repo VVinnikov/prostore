@@ -2,12 +2,11 @@ package io.arenadata.dtm.query.calcite.core.service;
 
 import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.dto.QueryParserResponse;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
+import io.vertx.core.Future;
 
 /**
- * Сервис парсинга запроса
+ * Query parsing service
  */
 public interface QueryParserService {
-    void parse(QueryParserRequest request, Handler<AsyncResult<QueryParserResponse>> asyncResultHandler);
+    Future<QueryParserResponse> parse(QueryParserRequest request);
 }

@@ -40,14 +40,14 @@ public class AdbTruncateHistoryService implements TruncateHistoryService {
                 .map(conditions -> String.format(" WHERE %s", conditions.toSqlString(sqlDialect)))
                 .orElse("");
         Entity entity = params.getEntity();
+        //TODO it's better to exclude generating sql query in separate factory class
         List<String> queries = Arrays.asList(String.format(DELETE_RECORDS_PATTERN, entity.getSchema(), entity.getName(),
                 AdbTables.ACTUAL_TABLE_POSTFIX, whereExpression),
                 String.format(DELETE_RECORDS_PATTERN, entity.getSchema(), entity.getName(),
                         AdbTables.HISTORY_TABLE_POSTFIX, whereExpression));
-        return Future.future(promise -> adbQueryExecutor.executeInTransaction(queries.stream()
-                        .map(PreparedStatementRequest::onlySql)
-                        .collect(Collectors.toList()),
-                promise));
+        return adbQueryExecutor.executeInTransaction(queries.stream()
+                .map(PreparedStatementRequest::onlySql)
+                .collect(Collectors.toList()));
     }
 
     private Future<Void> executeWithSysCn(TruncateHistoryParams params) {

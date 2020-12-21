@@ -1,7 +1,7 @@
 package io.arenadata.dtm.jdbc.ext;
 
 import io.arenadata.dtm.jdbc.core.*;
-import io.arenadata.dtm.jdbc.util.DtmException;
+import io.arenadata.dtm.jdbc.util.DtmSqlException;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import lombok.extern.slf4j.Slf4j;
 
@@ -85,7 +85,7 @@ public class DtmStatement implements BaseStatement {
             this.checkClosed();
             ResultSetWrapper result = this.result;
             if (result.getNext() != null) {
-                throw new DtmException("Multiple ResultSets were returned by the query.");
+                throw new DtmSqlException("Multiple ResultSets were returned by the query.");
             } else {
                 return result.getResultSet();
             }
@@ -292,7 +292,7 @@ public class DtmStatement implements BaseStatement {
 
     protected void checkClosed() throws SQLException {
         if (this.isClosed()) {
-            throw new DtmException("This statement has been closed.");
+            throw new DtmSqlException("This statement has been closed.");
         }
     }
 

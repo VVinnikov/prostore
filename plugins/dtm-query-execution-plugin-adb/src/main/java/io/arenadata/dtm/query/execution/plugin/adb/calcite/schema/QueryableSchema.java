@@ -5,7 +5,7 @@ import org.apache.calcite.schema.impl.AbstractSchema;
 
 public class QueryableSchema extends AbstractSchema {
 
-  private AdbDtmConvention convention;
+  private final AdbDtmConvention convention;
 
   public QueryableSchema(AdbDtmConvention convention) {
     this.convention = convention;

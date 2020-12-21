@@ -2,8 +2,8 @@ package io.arenadata.dtm.query.execution.plugin.adqm.factory.impl;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
-import io.arenadata.dtm.query.execution.plugin.adqm.common.Constants;
-import io.arenadata.dtm.query.execution.plugin.adqm.common.DdlUtils;
+import io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants;
+import io.arenadata.dtm.query.execution.plugin.adqm.utils.DdlUtils;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTableColumn;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTableEntity;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTables;
@@ -15,8 +15,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static io.arenadata.dtm.query.execution.plugin.adqm.common.Constants.ACTUAL_POSTFIX;
-import static io.arenadata.dtm.query.execution.plugin.adqm.common.Constants.ACTUAL_SHARD_POSTFIX;
+import static io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants.ACTUAL_POSTFIX;
+import static io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants.ACTUAL_SHARD_POSTFIX;
 
 @Service("adqmTableEntitiesFactory")
 public class AdqmTableEntitiesFactory implements TableEntitiesFactory<AdqmTables<AdqmTableEntity>> {

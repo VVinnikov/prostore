@@ -43,22 +43,22 @@ public class AdgQueryEnrichmentServiceImplTest {
         val calciteConfiguration = new AdgCalciteConfiguration();
         calciteConfiguration.init();
         val parserConfig = calciteConfiguration.configDdlParser(
-            calciteConfiguration.ddlParserImplFactory()
+                calciteConfiguration.ddlParserImplFactory()
         );
         val contextProvider = new AdgCalciteContextProvider(
-            parserConfig,
-            new AdgCalciteSchemaFactory(new AdgSchemaFactory()));
+                parserConfig,
+                new AdgCalciteSchemaFactory(new AdgSchemaFactory()));
 
         val queryParserService = new AdgCalciteDMLQueryParserService(contextProvider, Vertx.vertx());
         val helperTableNamesFactory = new AdgHelperTableNamesFactoryImpl();
         val queryExtendService = new AdgCalciteDmlQueryExtendServiceImpl(helperTableNamesFactory);
 
         enrichService = new AdgQueryEnrichmentServiceImpl(
-            queryParserService,
-            contextProvider,
-            new AdgQueryGeneratorImpl(queryExtendService,
-                calciteConfiguration.adgSqlDialect()),
-            new AdgSchemaExtenderImpl(helperTableNamesFactory));
+                queryParserService,
+                contextProvider,
+                new AdgQueryGeneratorImpl(queryExtendService,
+                        calciteConfiguration.adgSqlDialect()),
+                new AdgSchemaExtenderImpl(helperTableNamesFactory));
     }
 
     private static void assertGrep(String data, String regexp) {
@@ -70,50 +70,50 @@ public class AdgQueryEnrichmentServiceImplTest {
     @Test
     void enrichWithDeltaNum() throws Throwable {
         enrichWithGrep(prepareRequestDeltaNum("SELECT account_id FROM shares.accounts"),
-            Arrays.asList("\"local__shares__accounts_history\" WHERE \"sys_from\" <= 1 AND \"sys_to\" >= 1",
-                "\"local__shares__accounts_actual\" WHERE \"sys_from\" <= 1"));
+                Arrays.asList("\"local__shares__accounts_history\" WHERE \"sys_from\" <= 1 AND \"sys_to\" >= 1",
+                        "\"local__shares__accounts_actual\" WHERE \"sys_from\" <= 1"));
     }
 
     @Test
     void enrichWithFinishedIn() throws Throwable {
         enrichWithEquals(prepareRequestDeltaFinishedIn("SELECT account_id FROM shares.accounts"),
-            Collections.singletonList("SELECT \"account_id\" FROM \"local__shares__accounts_history\" WHERE \"sys_to\" >= 0 AND (\"sys_to\" <= 0 AND \"sys_op\" = 1)"));
+                Collections.singletonList("SELECT \"account_id\" FROM \"local__shares__accounts_history\" WHERE \"sys_to\" >= 0 AND (\"sys_to\" <= 0 AND \"sys_op\" = 1)"));
     }
 
     @Test
     void enrichWithDeltaInterval() throws Throwable {
         enrichWithGrep(prepareRequestDeltaInterval("select *, CASE WHEN (account_type = 'D' AND  amount >= 0) " +
-            "OR (account_type = 'C' AND  amount <= 0) THEN 'OK    ' ELSE 'NOT OK' END\n" +
-            "  from (\n" +
-            "    select a.account_id, coalesce(sum(amount),0) amount, account_type\n" +
-            "    from shares.accounts a\n" +
-            "    left join shares.transactions t using(account_id)\n" +
-            "   group by a.account_id, account_type\n" +
-            ")x"), Arrays.asList("\"local__shares__accounts_history\" where \"sys_from\" >= 1 and \"sys_from\" <= 5",
-            "\"local__shares__accounts_actual\" where \"sys_from\" >= 1 and \"sys_from\" <= 5",
-            "\"local__shares__transactions_history\" where \"sys_to\" >= 2",
-            "\"sys_to\" <= 3 and \"sys_op\" = 1"));
+                "OR (account_type = 'C' AND  amount <= 0) THEN 'OK    ' ELSE 'NOT OK' END\n" +
+                "  from (\n" +
+                "    select a.account_id, coalesce(sum(amount),0) amount, account_type\n" +
+                "    from shares.accounts a\n" +
+                "    left join shares.transactions t using(account_id)\n" +
+                "   group by a.account_id, account_type\n" +
+                ")x"), Arrays.asList("\"local__shares__accounts_history\" where \"sys_from\" >= 1 and \"sys_from\" <= 5",
+                "\"local__shares__accounts_actual\" where \"sys_from\" >= 1 and \"sys_from\" <= 5",
+                "\"local__shares__transactions_history\" where \"sys_to\" >= 2",
+                "\"sys_to\" <= 3 and \"sys_op\" = 1"));
     }
 
     @Test
     void enrichWithQuotes() throws Throwable {
         enrichWithGrep(prepareRequestDeltaNum("SELECT \"account_id\" FROM \"shares\".\"accounts\""),
-            Arrays.asList("\"local__shares__accounts_history\" where \"sys_from\" <= 1 and \"sys_to\" >= 1",
-                "\"local__shares__accounts_actual\" where \"sys_from\" <= 1"));
+                Arrays.asList("\"local__shares__accounts_history\" where \"sys_from\" <= 1 and \"sys_to\" >= 1",
+                        "\"local__shares__accounts_actual\" where \"sys_from\" <= 1"));
     }
 
     @Test
     void enrichWithMultipleSchemas() throws Throwable {
         enrichWithGrep(prepareRequestMultipleSchema("SELECT a.account_id FROM accounts a " +
-                "JOIN shares_2.accounts aa ON aa.account_id = a.account_id " +
-                "JOIN test_datamart.transactions t ON t.account_id = a.account_id"),
-            Arrays.asList(
-                "\"local__shares__accounts_history\" WHERE \"sys_from\" <= 1 AND \"sys_to\" >= 1",
-                "\"local__shares__accounts_actual\" where \"sys_from\" <= 1",
-                "\"local__shares_2__accounts_history\" WHERE \"sys_from\" <= 2 AND \"sys_to\" >= 2",
-                "\"local__shares_2__accounts_actual\" WHERE \"sys_from\" <= 2",
-                "\"local__test_datamart__transactions_history\" WHERE \"sys_from\" <= 2 AND \"sys_to\" >= 2",
-                "\"local__test_datamart__transactions_actual\" WHERE \"sys_from\" <= 2"));
+                        "JOIN shares_2.accounts aa ON aa.account_id = a.account_id " +
+                        "JOIN test_datamart.transactions t ON t.account_id = a.account_id"),
+                Arrays.asList(
+                        "\"local__shares__accounts_history\" WHERE \"sys_from\" <= 1 AND \"sys_to\" >= 1",
+                        "\"local__shares__accounts_actual\" where \"sys_from\" <= 1",
+                        "\"local__shares_2__accounts_history\" WHERE \"sys_from\" <= 2 AND \"sys_to\" >= 2",
+                        "\"local__shares_2__accounts_actual\" WHERE \"sys_from\" <= 2",
+                        "\"local__test_datamart__transactions_history\" WHERE \"sys_from\" <= 2 AND \"sys_to\" >= 2",
+                        "\"local__test_datamart__transactions_actual\" WHERE \"sys_from\" <= 2"));
     }
 
     private void enrichWithGrep(EnrichQueryRequest enrichRequest,
@@ -122,7 +122,7 @@ public class AdgQueryEnrichmentServiceImplTest {
     }
 
     private void enrichWithEquals(EnrichQueryRequest enrichRequest,
-                                List<String> expectedValues) {
+                                  List<String> expectedValues) {
         enrichWith(enrichRequest, expectedValues, false);
     }
 
@@ -134,19 +134,20 @@ public class AdgQueryEnrichmentServiceImplTest {
         TestSuite suite = TestSuite.create("the_test_suite");
         suite.test("executeQuery", context -> {
             Async async = context.async();
-            enrichService.enrich(enrichRequest, ar -> {
-                if (ar.succeeded()) {
-                    sqlResult[0] = ar.result();
-                    if (grep) {
-                        expectedValues.forEach(v -> assertGrep(sqlResult[0], v));
-                    } else {
-                        expectedValues.forEach(v -> assertEquals(v, sqlResult[0]));
-                    }
-                    async.complete();
-                } else {
-                    sqlResult[0] = "-1";
-                }
-            });
+            enrichService.enrich(enrichRequest)
+                    .onComplete(ar -> {
+                        if (ar.succeeded()) {
+                            sqlResult[0] = ar.result();
+                            if (grep) {
+                                expectedValues.forEach(v -> assertGrep(sqlResult[0], v));
+                            } else {
+                                expectedValues.forEach(v -> assertEquals(v, sqlResult[0]));
+                            }
+                            async.complete();
+                        } else {
+                            sqlResult[0] = "-1";
+                        }
+                    });
             async.awaitSuccess();
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
@@ -154,9 +155,9 @@ public class AdgQueryEnrichmentServiceImplTest {
 
     private EnrichQueryRequest prepareRequestMultipleSchema(String sql) {
         List<Datamart> datamarts = Arrays.asList(
-            getSchema("shares", true),
-            getSchema("shares_2", false),
-            getSchema("test_datamart", false));
+                getSchema("shares", true),
+                getSchema("shares_2", false),
+                getSchema("test_datamart", false));
         String defaultSchema = datamarts.get(0).getMnemonic();
         QueryRequest queryRequest = new QueryRequest();
         queryRequest.setSql(sql);
@@ -291,18 +292,18 @@ public class AdgQueryEnrichmentServiceImplTest {
         queryRequest.setDatamartMnemonic(schemaName);
         SqlParserPos pos = new SqlParserPos(0, 0);
         queryRequest.setDeltaInformations(Collections.singletonList(
-            DeltaInformation.builder()
-                .tableAlias("a")
-                .deltaTimestamp(null)
-                .isLatestUncommittedDelta(false)
-                .selectOnNum(1L)
-                .selectOnInterval(new SelectOnInterval(1L, 1L))
-                .selectOnInterval(new SelectOnInterval(1L, 1L))
-                .type(DeltaType.FINISHED_IN)
-                .schemaName(schemaName)
-                .tableName(datamarts.get(0).getEntities().get(0).getName())
-                .pos(pos)
-                .build()
+                DeltaInformation.builder()
+                        .tableAlias("a")
+                        .deltaTimestamp(null)
+                        .isLatestUncommittedDelta(false)
+                        .selectOnNum(1L)
+                        .selectOnInterval(new SelectOnInterval(1L, 1L))
+                        .selectOnInterval(new SelectOnInterval(1L, 1L))
+                        .type(DeltaType.FINISHED_IN)
+                        .schemaName(schemaName)
+                        .tableName(datamarts.get(0).getEntities().get(0).getName())
+                        .pos(pos)
+                        .build()
         ));
         LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts, Collections.emptyList());
         return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
@@ -310,79 +311,79 @@ public class AdgQueryEnrichmentServiceImplTest {
 
     private Datamart getSchema(String schemaName, boolean isDefault) {
         Entity accounts = Entity.builder()
-            .schema(schemaName)
-            .name("accounts")
-            .build();
+                .schema(schemaName)
+                .name("accounts")
+                .build();
         List<EntityField> accAttrs = Arrays.asList(
-            EntityField.builder()
-                .type(ColumnType.BIGINT)
-                .name("account_id")
-                .ordinalPosition(1)
-                .shardingOrder(1)
-                .primaryOrder(1)
-                .nullable(false)
-                .accuracy(null)
-                .size(null)
-                .build(),
-            EntityField.builder()
-                .type(ColumnType.VARCHAR)
-                .name("account_type")
-                .ordinalPosition(2)
-                .shardingOrder(null)
-                .primaryOrder(null)
-                .nullable(false)
-                .accuracy(null)
-                .size(1)
-                .build()
+                EntityField.builder()
+                        .type(ColumnType.BIGINT)
+                        .name("account_id")
+                        .ordinalPosition(1)
+                        .shardingOrder(1)
+                        .primaryOrder(1)
+                        .nullable(false)
+                        .accuracy(null)
+                        .size(null)
+                        .build(),
+                EntityField.builder()
+                        .type(ColumnType.VARCHAR)
+                        .name("account_type")
+                        .ordinalPosition(2)
+                        .shardingOrder(null)
+                        .primaryOrder(null)
+                        .nullable(false)
+                        .accuracy(null)
+                        .size(1)
+                        .build()
         );
         accounts.setFields(accAttrs);
 
         Entity transactions = Entity.builder()
-            .schema(schemaName)
-            .name("transactions")
-            .build();
+                .schema(schemaName)
+                .name("transactions")
+                .build();
 
         List<EntityField> trAttr = Arrays.asList(
-            EntityField.builder()
-                .type(ColumnType.BIGINT)
-                .name("transaction_id")
-                .ordinalPosition(1)
-                .shardingOrder(1)
-                .primaryOrder(1)
-                .nullable(false)
-                .accuracy(null)
-                .size(null)
-                .build(),
-            EntityField.builder()
-                .type(ColumnType.DATE)
-                .name("transaction_date")
-                .ordinalPosition(2)
-                .shardingOrder(null)
-                .primaryOrder(null)
-                .nullable(true)
-                .accuracy(null)
-                .size(null)
-                .build(),
-            EntityField.builder()
-                .type(ColumnType.BIGINT)
-                .name("account_id")
-                .ordinalPosition(3)
-                .shardingOrder(1)
-                .primaryOrder(2)
-                .nullable(false)
-                .accuracy(null)
-                .size(null)
-                .build(),
-            EntityField.builder()
-                .type(ColumnType.BIGINT)
-                .name("amount")
-                .ordinalPosition(4)
-                .shardingOrder(null)
-                .primaryOrder(null)
-                .nullable(false)
-                .accuracy(null)
-                .size(null)
-                .build()
+                EntityField.builder()
+                        .type(ColumnType.BIGINT)
+                        .name("transaction_id")
+                        .ordinalPosition(1)
+                        .shardingOrder(1)
+                        .primaryOrder(1)
+                        .nullable(false)
+                        .accuracy(null)
+                        .size(null)
+                        .build(),
+                EntityField.builder()
+                        .type(ColumnType.DATE)
+                        .name("transaction_date")
+                        .ordinalPosition(2)
+                        .shardingOrder(null)
+                        .primaryOrder(null)
+                        .nullable(true)
+                        .accuracy(null)
+                        .size(null)
+                        .build(),
+                EntityField.builder()
+                        .type(ColumnType.BIGINT)
+                        .name("account_id")
+                        .ordinalPosition(3)
+                        .shardingOrder(1)
+                        .primaryOrder(2)
+                        .nullable(false)
+                        .accuracy(null)
+                        .size(null)
+                        .build(),
+                EntityField.builder()
+                        .type(ColumnType.BIGINT)
+                        .name("amount")
+                        .ordinalPosition(4)
+                        .shardingOrder(null)
+                        .primaryOrder(null)
+                        .nullable(false)
+                        .accuracy(null)
+                        .size(null)
+                        .build()
         );
 
         transactions.setFields(trAttr);

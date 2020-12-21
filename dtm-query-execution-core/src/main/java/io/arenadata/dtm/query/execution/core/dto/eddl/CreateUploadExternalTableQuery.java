@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.core.dto.eddl;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.plugin.exload.Format;
 import io.arenadata.dtm.common.plugin.exload.Type;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -41,10 +42,7 @@ public class CreateUploadExternalTableQuery extends EddlQuery {
      */
     private Integer messageLimit;
 
-    public CreateUploadExternalTableQuery() {
-        super(EddlAction.CREATE_UPLOAD_EXTERNAL_TABLE);
-    }
-
+    @Builder
     public CreateUploadExternalTableQuery(String schemaName,
                                           String tableName,
                                           Entity entity,

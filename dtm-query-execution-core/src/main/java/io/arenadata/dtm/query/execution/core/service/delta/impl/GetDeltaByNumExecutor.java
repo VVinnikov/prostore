@@ -3,20 +3,14 @@ package io.arenadata.dtm.query.execution.core.service.delta.impl;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
-import io.arenadata.dtm.query.execution.core.dto.delta.DeltaRecord;
-import io.arenadata.dtm.query.execution.core.dto.delta.OkDelta;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaAction;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaQuery;
 import io.arenadata.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaExecutor;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
-
-import java.util.Optional;
 
 @Component
 public class GetDeltaByNumExecutor extends GetDeltaOkExecutor implements DeltaExecutor {
@@ -31,9 +25,8 @@ public class GetDeltaByNumExecutor extends GetDeltaOkExecutor implements DeltaEx
     }
 
     @Override
-    public void execute(DeltaQuery deltaQuery, Handler<AsyncResult<QueryResult>> handler) {
-        getDeltaOk(deltaQuery)
-                .onComplete(handler);
+    public Future<QueryResult> execute(DeltaQuery deltaQuery) {
+        return getDeltaOk(deltaQuery);
     }
 
     private Future<QueryResult> getDeltaOk(DeltaQuery deltaQuery) {

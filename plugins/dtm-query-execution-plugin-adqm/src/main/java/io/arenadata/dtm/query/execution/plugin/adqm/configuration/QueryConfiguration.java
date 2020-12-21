@@ -2,7 +2,7 @@ package io.arenadata.dtm.query.execution.plugin.adqm.configuration;
 
 import io.arenadata.dtm.common.converter.SqlTypeConverter;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.ClickhouseProperties;
-import io.arenadata.dtm.query.execution.plugin.adqm.datasource.AdqmBalancedClickhouseDataSource;
+import io.arenadata.dtm.query.execution.plugin.adqm.configuration.datasource.AdqmBalancedClickhouseDataSource;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.query.AdqmQueryExecutor;
 import io.vertx.core.Vertx;
 import org.springframework.beans.factory.annotation.Qualifier;

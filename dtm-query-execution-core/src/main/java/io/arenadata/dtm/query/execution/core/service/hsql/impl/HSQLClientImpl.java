@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.hsql.impl;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.hsql.HSQLClient;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -36,23 +37,23 @@ public class HSQLClientImpl implements HSQLClient {
     }
 
     @Override
-    public Future<Void> executeQuery(String query){
+    public Future<Void> executeQuery(String query) {
         return execute(String.format("Error occurred while executing query: %s", query),
-            (sqlConnection, handler) -> sqlConnection.execute(query, handler));
+                (sqlConnection, handler) -> sqlConnection.execute(query, handler));
     }
 
     @Override
     public Future<Void> executeBatch(List<String> queries) {
         return execute(String.format("Error while executing queries batch:\n %s", String.join(";\n", queries)),
-            (sqlConnection, handler) -> sqlConnection.batch(queries,
-                batchHandler -> handler.handle(batchHandler.succeeded() ? Future.succeededFuture()
-                        : Future.failedFuture(batchHandler.cause()))));
+                (sqlConnection, handler) -> sqlConnection.batch(queries,
+                        batchHandler -> handler.handle(batchHandler.succeeded() ? Future.succeededFuture()
+                                : Future.failedFuture(batchHandler.cause()))));
     }
 
     @Override
-    public Future<ResultSet> getQueryResult(String query){
+    public Future<ResultSet> getQueryResult(String query) {
         return execute(String.format("Error occurred while executing query: %s", query),
-            (sqlConnection, handler) -> sqlConnection.query(query, handler));
+                (sqlConnection, handler) -> sqlConnection.query(query, handler));
     }
 
     private <T> Future<T> execute(String error, BiConsumer<SQLConnection, Handler<AsyncResult<T>>> consumer) {
@@ -64,13 +65,11 @@ public class HSQLClientImpl implements HSQLClient {
                     if (handler.succeeded()) {
                         promise.complete(handler.result());
                     } else {
-                        log.error(error, handler.cause());
-                        promise.fail(handler.cause());
+                        promise.fail(new DtmException(error, handler.cause()));
                     }
                 });
             } else {
-                log.error("Could not open hsqldb connection", conn.cause());
-                promise.fail(conn.cause());
+                promise.fail(new DtmException("Could not open hsqldb connection", conn.cause()));
             }
         }));
     }

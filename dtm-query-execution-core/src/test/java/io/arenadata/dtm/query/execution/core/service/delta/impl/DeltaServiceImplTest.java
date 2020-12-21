@@ -26,7 +26,7 @@ class DeltaServiceImplTest {
     private final DeltaExecutor beginDeltaExecutor = mock(BeginDeltaExecutor.class);
     private final MetricsService<RequestMetrics> metricsService = mock(MetricsServiceImpl.class);
     private DeltaService<QueryResult> deltaService;
-    private QueryRequest request = new QueryRequest();
+    private final QueryRequest request = new QueryRequest();
 
     @BeforeEach
     void setUp() {
@@ -38,35 +38,25 @@ class DeltaServiceImplTest {
 
     @Test
     void executeWithNullDatamart() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         DatamartRequest datamartRequest = new DatamartRequest(request);
         DeltaRequestContext context = new DeltaRequestContext(new RequestMetrics(), datamartRequest);
 
         request.setDatamartMnemonic(null);
-        deltaService.execute(context, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        deltaService.execute(context)
+                .onComplete(promise);
         assertTrue(promise.future().failed());
     }
 
     @Test
     void executeWithEmptyDatamart() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
 
         DatamartRequest datamartRequest = new DatamartRequest(request);
         DeltaRequestContext context = new DeltaRequestContext(new RequestMetrics(), datamartRequest);
         request.setDatamartMnemonic("");
-        deltaService.execute(context, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        deltaService.execute(context)
+                .onComplete(promise);
         assertTrue(promise.future().failed());
     }
 }

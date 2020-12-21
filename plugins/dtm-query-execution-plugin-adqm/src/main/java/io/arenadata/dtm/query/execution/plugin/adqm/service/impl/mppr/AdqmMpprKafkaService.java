@@ -8,22 +8,21 @@ import io.arenadata.dtm.query.execution.plugin.adqm.service.QueryEnrichmentServi
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.MpprRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.MpprKafkaService;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 @Service("adqmMpprKafkaService")
+@Slf4j
 public class AdqmMpprKafkaService implements MpprKafkaService<QueryResult> {
-    private static final Logger LOG = LoggerFactory.getLogger(AdqmMpprKafkaService.class);
 
     private final QueryEnrichmentService adqmQueryEnrichmentService;
     private final MpprKafkaConnectorService mpprKafkaConnectorService;
     private final MpprKafkaConnectorRequestFactory requestFactory;
 
+    @Autowired
     public AdqmMpprKafkaService(@Qualifier("adqmQueryEnrichmentService") QueryEnrichmentService queryEnrichmentService,
                                 MpprKafkaConnectorService mpprKafkaConnectorService,
                                 MpprKafkaConnectorRequestFactory requestFactory) {
@@ -33,19 +32,13 @@ public class AdqmMpprKafkaService implements MpprKafkaService<QueryResult> {
     }
 
     @Override
-    public void execute(MpprRequestContext context, Handler<AsyncResult<QueryResult>> asyncHandler) {
+    public Future<QueryResult> execute(MpprRequestContext context) {
         MpprRequest request = context.getRequest();
-        adqmQueryEnrichmentService.enrich(
-                EnrichQueryRequest.generate(request.getQueryRequest(), request.getLogicalSchema(), true),
-                sqlResult -> {
-                    if (sqlResult.succeeded()) {
-                        mpprKafkaConnectorService.call(
-                                requestFactory.create(request, sqlResult.result()),
-                                asyncHandler);
-                    } else {
-                        LOG.error("Error while enriching request");
-                        asyncHandler.handle(Future.failedFuture(sqlResult.cause()));
-                    }
-                });
+        return adqmQueryEnrichmentService.enrich(EnrichQueryRequest.generate(
+                request.getQueryRequest(),
+                request.getLogicalSchema(),
+                true))
+                .compose(enrichedQuery -> mpprKafkaConnectorService.call(
+                        requestFactory.create(request, enrichedQuery)));
     }
 }

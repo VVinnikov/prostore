@@ -3,7 +3,7 @@ package io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.impl;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.DeleteDeltaHotExecutor;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaDaoExecutor;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaServiceDaoExecutorHelper;
-import io.arenadata.dtm.query.execution.core.dao.exception.delta.DeltaException;
+import io.arenadata.dtm.query.execution.core.exception.delta.DeltaException;
 import io.arenadata.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -34,13 +34,12 @@ public class DeleteDeltaHotExecutorImpl extends DeltaServiceDaoExecutorHelper im
             })
             .compose(deltaData -> executor.setData(getDeltaPath(datamart), deltaData, deltaStat.getVersion()))
             .onSuccess(r -> {
-                log.debug("deletion delta hot by datamart[{}] completed successfully", datamart);
+                log.debug("Deletion delta hot by datamart[{}] completed successfully", datamart);
                 resultPromise.complete();
             })
             .onFailure(error -> {
-                val errMsg = String.format("can't delete delta hot on datamart[%s]",
+                val errMsg = String.format("Can't delete delta hot on datamart[%s]",
                     datamart);
-                log.error(errMsg, error);
                 if (error instanceof DeltaException) {
                     resultPromise.fail(error);
                 } else {

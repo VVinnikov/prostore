@@ -4,6 +4,7 @@ import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.delta.DeltaType;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.QueryGeneratorContext;
 import io.arenadata.dtm.query.execution.plugin.adb.service.QueryExtendService;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.rel.RelNode;
@@ -41,7 +42,7 @@ public class AdbCalciteDmlQueryExtendServiceImpl implements QueryExtendService {
         if (node.getInputs() == null || node.getInputs().isEmpty()) {
             if (node instanceof TableScan) {
                 if (!context.getDeltaIterator().hasNext()) {
-                    throw new RuntimeException("No parameters defined to enrich the request");
+                    throw new DataSourceException("No parameters defined to enrich the request");
                 }
                 relBuilder.push(insertModifiedTableScan(relBuilder, node, deltaIterator.next()));
             } else {
@@ -87,8 +88,9 @@ public class AdbCalciteDmlQueryExtendServiceImpl implements QueryExtendService {
                 bottomRelNode = createBottomRelNodeDeltaNum(deltaInfo, relBuilder, rexNodes, mutableQualifiedName);
                 break;
             default:
-                throw new RuntimeException(String.format("Incorrect delta type %s, expected values: %s!",
-                        deltaInfo.getType(), Arrays.toString(DeltaType.values())));
+                throw new DataSourceException(String.format("Incorrect delta type %s, expected values: %s!",
+                        deltaInfo.getType(),
+                        Arrays.toString(DeltaType.values())));
         }
         return relBuilder.push(topRelNode).push(bottomRelNode).union(true).build();
     }

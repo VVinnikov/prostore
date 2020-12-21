@@ -1,11 +1,12 @@
 package io.arenadata.dtm.query.execution.core.utils;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.calcite.core.service.impl.DeltaInformationExtractorImpl;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import io.arenadata.dtm.query.execution.core.configuration.properties.CoreDtmSettings;
-import io.arenadata.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
+import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDefinitionService;
 import lombok.val;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;
@@ -33,7 +34,7 @@ class DatamartMnemonicExtractorTest {
 
     @Test
     void extractFromSelectWithoutDatamart() {
-        assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(DtmException.class, () -> {
             SqlNode sqlNode = definitionService.processingQuery("select * from tbl1");
             extractor.extract(sqlNode);
         });
@@ -49,7 +50,7 @@ class DatamartMnemonicExtractorTest {
 
     @Test
     void extractFromSelectSnapshotWithoutDatamart() {
-        assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(DtmException.class, () -> {
             val sqlNode = definitionService.processingQuery("select * from tbl1 FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' AS t");
             extractor.extract(sqlNode);
         });
@@ -89,7 +90,7 @@ class DatamartMnemonicExtractorTest {
 
     @Test
     void extractFromCreateTableWithoutDatamart() {
-        assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(DtmException.class, () -> {
             val sqlNode = definitionService.processingQuery(
                     "CREATE TABLE table_name (col1 datatype1, col2 datatype2, PRIMARY KEY (col1, col2) )" +
                             " DISTRIBUTED BY (col1, col2)"
@@ -107,7 +108,7 @@ class DatamartMnemonicExtractorTest {
 
     @Test
     void extractFromDropTableWithoutDatamart() {
-        assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(DtmException.class, () -> {
             val sqlNode = definitionService.processingQuery("DROP TABLE table_name");
             extractor.extract(sqlNode);
         });
@@ -131,7 +132,7 @@ class DatamartMnemonicExtractorTest {
 
     @Test
     void extractFromCreateViewWithoutDatamart() {
-        assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(DtmException.class, () -> {
             val sqlNode = definitionService.processingQuery("CREATE VIEW view1 as select * from test2.tbl1 " +
                     "JOIN test2.view FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59'");
             extractor.extract(sqlNode);

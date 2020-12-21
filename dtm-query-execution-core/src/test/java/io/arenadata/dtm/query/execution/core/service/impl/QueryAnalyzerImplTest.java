@@ -1,28 +1,29 @@
 package io.arenadata.dtm.query.execution.core.service.impl;
 
+import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.reader.InputQueryRequest;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.calcite.core.service.impl.DeltaInformationExtractorImpl;
+import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDefinitionService;
 import io.arenadata.dtm.query.execution.core.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import io.arenadata.dtm.query.execution.core.configuration.properties.CoreDtmSettings;
 import io.arenadata.dtm.query.execution.core.factory.RequestContextFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.QueryRequestFactoryImpl;
 import io.arenadata.dtm.query.execution.core.factory.impl.RequestContextFactoryImpl;
-import io.arenadata.dtm.query.execution.core.service.QueryAnalyzer;
-import io.arenadata.dtm.query.execution.core.service.QueryDispatcher;
+import io.arenadata.dtm.query.execution.core.service.query.impl.QuerySemicolonRemoverImpl;
+import io.arenadata.dtm.query.execution.core.service.query.QueryAnalyzer;
+import io.arenadata.dtm.query.execution.core.service.query.QueryDispatcher;
+import io.arenadata.dtm.query.execution.core.service.query.impl.QueryAnalyzerImpl;
 import io.arenadata.dtm.query.execution.core.utils.DatamartMnemonicExtractor;
 import io.arenadata.dtm.query.execution.core.utils.DefaultDatamartSetter;
 import io.arenadata.dtm.query.execution.core.utils.HintExtractor;
 import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
-import io.arenadata.dtm.common.model.SqlProcessingType;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.TestOptions;
 import io.vertx.ext.unit.report.ReportOptions;
@@ -65,7 +66,7 @@ class QueryAnalyzerImplTest {
                 new HintExtractor(),
                 new DatamartMnemonicExtractor(new DeltaInformationExtractorImpl(dtmSettings)),
                 new DefaultDatamartSetter(),
-                new SemicolonRemoverImpl(), new QueryRequestFactoryImpl(new AppConfiguration(mock(Environment.class))));
+                new QuerySemicolonRemoverImpl(), new QueryRequestFactoryImpl(new AppConfiguration(mock(Environment.class))));
     }
 
     @Test
@@ -164,10 +165,11 @@ class QueryAnalyzerImplTest {
         TestSuite suite = TestSuite.create("parse");
         suite.test("parse", context -> {
             Async async = context.async();
-            queryAnalyzer.analyzeAndExecute(queryRequest, res -> {
-                testData.setResult("complete");
-                async.complete();
-            });
+            queryAnalyzer.analyzeAndExecute(queryRequest)
+                    .onComplete(res -> {
+                        testData.setResult("complete");
+                        async.complete();
+                    });
             async.awaitSuccess();
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
@@ -179,10 +181,8 @@ class QueryAnalyzerImplTest {
             final RequestContext ddlRequest = invocation.getArgument(0);
             testData.setRequest(ddlRequest.getRequest().getQueryRequest());
             testData.setProcessingType(ddlRequest.getProcessingType());
-            Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
-            return null;
-        }).when(queryDispatcher).dispatch(any(), any());
+            return Future.succeededFuture(QueryResult.emptyResult());
+        }).when(queryDispatcher).dispatch(any());
         return testData;
     }
 

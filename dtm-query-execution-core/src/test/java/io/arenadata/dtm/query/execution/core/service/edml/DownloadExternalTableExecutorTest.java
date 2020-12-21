@@ -11,11 +11,12 @@ import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
 import io.arenadata.dtm.query.calcite.core.service.impl.DeltaQueryPreprocessorImpl;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.dml.LogicViewReplacer;
 import io.arenadata.dtm.query.execution.core.service.dml.impl.LogicViewReplacerImpl;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.DownloadExternalTableExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.DownloadKafkaExecutor;
-import io.arenadata.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
+import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDefinitionService;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import io.arenadata.dtm.query.execution.core.service.schema.impl.LogicalSchemaProviderImpl;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
@@ -49,15 +50,15 @@ class DownloadExternalTableExecutorTest {
     private final DeltaQueryPreprocessor deltaQueryPreprocessor = mock(DeltaQueryPreprocessorImpl.class);
     private final List<EdmlDownloadExecutor> downloadExecutors = Arrays.asList(mock(DownloadKafkaExecutor.class));
     private DownloadExternalTableExecutor downloadExternalTableExecutor;
-    private CalciteConfiguration config = new CalciteConfiguration();
-    private CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
-    private DefinitionService<SqlNode> definitionService =
-            new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
+    private final CalciteConfiguration config = new CalciteConfiguration();
+    private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
+    private final DefinitionService<SqlNode> definitionService =
+        new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
     private QueryRequest queryRequest;
     private Entity destEntity;
     private Entity sourceEntity;
-    private List<Datamart> schema = Collections.emptyList();
-    private LogicViewReplacer logicViewReplacer = mock(LogicViewReplacerImpl.class);
+    private final List<Datamart> schema = Collections.emptyList();
+    private final LogicViewReplacer logicViewReplacer = mock(LogicViewReplacerImpl.class);
 
     @BeforeEach
     void setUp() {
@@ -65,36 +66,32 @@ class DownloadExternalTableExecutorTest {
         queryRequest.setDatamartMnemonic("test");
         queryRequest.setRequestId(UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"));
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<String>> handler = invocation.getArgument(2);
-            handler.handle(Future.succeededFuture(SELECT_SQL));
-            return null;
-        }).when(logicViewReplacer).replace(any(), any(), any());
+        when(logicViewReplacer.replace(any(), any())).thenReturn(Future.succeededFuture(SELECT_SQL));
 
         destEntity = Entity.builder()
-                .entityType(EntityType.DOWNLOAD_EXTERNAL_TABLE)
-                .externalTableFormat("avro")
-                .externalTableLocationPath("kafka://kafka-1.dtm.local:9092/topic")
-                .externalTableLocationType(ExternalTableLocationType.KAFKA)
-                .externalTableUploadMessageLimit(1000)
-                .name("download_table")
-                .schema("test")
-                .externalTableSchema("")
-                .build();
+            .entityType(EntityType.DOWNLOAD_EXTERNAL_TABLE)
+            .externalTableFormat("avro")
+            .externalTableLocationPath("kafka://kafka-1.dtm.local:9092/topic")
+            .externalTableLocationType(ExternalTableLocationType.KAFKA)
+            .externalTableUploadMessageLimit(1000)
+            .name("download_table")
+            .schema("test")
+            .externalTableSchema("")
+            .build();
 
         sourceEntity = Entity.builder()
-                .schema("test")
-                .name("pso")
-                .entityType(EntityType.TABLE)
-                .build();
+            .schema("test")
+            .name("pso")
+            .entityType(EntityType.TABLE)
+            .build();
     }
 
     @Test
     void executeKafkaExecutorSuccess() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         when(downloadExecutors.get(0).getDownloadType()).thenReturn(ExternalTableLocationType.KAFKA);
         downloadExternalTableExecutor = new DownloadExternalTableExecutor(logicalSchemaProvider,
-                deltaQueryPreprocessor, downloadExecutors, logicViewReplacer);
+            deltaQueryPreprocessor, downloadExecutors, logicViewReplacer);
         String insertSql = "insert into test.download_table " + SELECT_SQL;
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
@@ -107,38 +104,27 @@ class DownloadExternalTableExecutorTest {
         QueryRequest copyRequest = context.getRequest().getQueryRequest();
         copyRequest.setDeltaInformations(Collections.emptyList());
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<List<Datamart>>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(schema));
-            return null;
-        }).when(logicalSchemaProvider).getSchema(any(), any());
+        when(logicalSchemaProvider.getSchema(any()))
+                .thenReturn(Future.succeededFuture(schema));
 
         when(deltaQueryPreprocessor.process(any()))
-                .thenReturn(Future.succeededFuture(copyRequest));
+            .thenReturn(Future.succeededFuture(copyRequest));
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
-            return null;
-        }).when(downloadExecutors.get(0)).execute(any(), any());
+        when(downloadExecutors.get(0).execute(any()))
+                .thenReturn(Future.succeededFuture(QueryResult.emptyResult()));
 
-        downloadExternalTableExecutor.execute(context, ar -> {
-            if (ar.succeeded()) {
-                promise.complete();
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        downloadExternalTableExecutor.execute(context)
+                .onComplete(promise);
         assertTrue(promise.future().succeeded());
         assertNotNull(context.getRequest().getQueryRequest().getDeltaInformations());
     }
 
     @Test
     void executeKafkaGetLogicalSchemaError() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         when(downloadExecutors.get(0).getDownloadType()).thenReturn(ExternalTableLocationType.KAFKA);
         downloadExternalTableExecutor = new DownloadExternalTableExecutor(logicalSchemaProvider,
-                deltaQueryPreprocessor, downloadExecutors, logicViewReplacer);
+            deltaQueryPreprocessor, downloadExecutors, logicViewReplacer);
         String insertSql = "insert into test.download_table " + SELECT_SQL;
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
@@ -151,28 +137,20 @@ class DownloadExternalTableExecutorTest {
         QueryRequest copyRequest = context.getRequest().getQueryRequest();
         copyRequest.setDeltaInformations(Collections.emptyList());
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<JsonObject>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new RuntimeException("")));
-            return null;
-        }).when(logicalSchemaProvider).getSchema(any(), any());
+        when(logicalSchemaProvider.getSchema(any()))
+        .thenReturn(Future.failedFuture(new DtmException("")));
 
-        downloadExternalTableExecutor.execute(context, ar -> {
-            if (ar.succeeded()) {
-                promise.complete();
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        downloadExternalTableExecutor.execute(context)
+                .onComplete(promise);
         assertTrue(promise.future().failed());
     }
 
     @Test
     void executeKafkaDeltaProcessError() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         when(downloadExecutors.get(0).getDownloadType()).thenReturn(ExternalTableLocationType.KAFKA);
         downloadExternalTableExecutor = new DownloadExternalTableExecutor(logicalSchemaProvider,
-                deltaQueryPreprocessor, downloadExecutors, logicViewReplacer);
+            deltaQueryPreprocessor, downloadExecutors, logicViewReplacer);
         String insertSql = "insert into test.download_table " + SELECT_SQL;
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
@@ -185,31 +163,23 @@ class DownloadExternalTableExecutorTest {
         QueryRequest copyRequest = context.getRequest().getQueryRequest();
         copyRequest.setDeltaInformations(Collections.emptyList());
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<List<Datamart>>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(schema));
-            return null;
-        }).when(logicalSchemaProvider).getSchema(any(), any());
+        when(logicalSchemaProvider.getSchema(any()))
+                .thenReturn(Future.succeededFuture(schema));
 
         when(deltaQueryPreprocessor.process(any()))
-                .thenReturn(Future.failedFuture(new RuntimeException("")));
+                .thenReturn(Future.failedFuture(new DtmException("")));
 
-        downloadExternalTableExecutor.execute(context, ar -> {
-            if (ar.succeeded()) {
-                promise.complete();
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        downloadExternalTableExecutor.execute(context)
+                .onComplete(promise);
         assertTrue(promise.future().failed());
     }
 
     @Test
     void executeKafkaExecutorError() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         when(downloadExecutors.get(0).getDownloadType()).thenReturn(ExternalTableLocationType.KAFKA);
         downloadExternalTableExecutor = new DownloadExternalTableExecutor(logicalSchemaProvider,
-                deltaQueryPreprocessor, downloadExecutors, logicViewReplacer);
+            deltaQueryPreprocessor, downloadExecutors, logicViewReplacer);
         String insertSql = "insert into test.download_table " + SELECT_SQL;
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
@@ -222,28 +192,17 @@ class DownloadExternalTableExecutorTest {
         QueryRequest copyRequest = context.getRequest().getQueryRequest();
         copyRequest.setDeltaInformations(Collections.emptyList());
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<List<Datamart>>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(schema));
-            return null;
-        }).when(logicalSchemaProvider).getSchema(any(), any());
+        when(logicalSchemaProvider.getSchema(any()))
+                .thenReturn(Future.succeededFuture(schema));
 
         when(deltaQueryPreprocessor.process(any()))
-                .thenReturn(Future.succeededFuture(copyRequest));
+            .thenReturn(Future.succeededFuture(copyRequest));
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new RuntimeException("")));
-            return null;
-        }).when(downloadExecutors.get(0)).execute(any(), any());
+        when(downloadExecutors.get(0).execute(any()))
+                .thenReturn(Future.failedFuture(new DtmException("")));
 
-        downloadExternalTableExecutor.execute(context, ar -> {
-            if (ar.succeeded()) {
-                promise.complete();
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        downloadExternalTableExecutor.execute(context)
+                .onComplete(promise);
         assertTrue(promise.future().failed());
     }
 }

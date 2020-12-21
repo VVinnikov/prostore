@@ -6,14 +6,14 @@ import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
-import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.MppwProperties;
+import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.AdqmMppwProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.AdqmRestMppwKafkaRequestFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmRestMppwKafkaRequestFactoryImpl;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.LoadType;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.RestLoadClient;
-import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.RestMppwKafkaLoadRequest;
+import io.arenadata.dtm.query.execution.plugin.adqm.dto.mppw.RestMppwKafkaLoadRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockDatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockEnvironment;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockStatusReporter;
@@ -209,12 +209,12 @@ class MppwStartRequestHandlerTest {
         return "{\"type\":\"record\",\"name\":\"accounts\",\"namespace\":\"dm2\",\"fields\":[{\"name\":\"column1\",\"type\":[\"null\",\"long\"],\"default\":null,\"defaultValue\":\"null\"},{\"name\":\"column2\",\"type\":[\"null\",\"long\"],\"default\":null,\"defaultValue\":\"null\"},{\"name\":\"column3\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}],\"default\":null,\"defaultValue\":\"null\"},{\"name\":\"sys_op\",\"type\":\"int\",\"default\":0}]}";
     }
 
-    private MppwProperties createMppwProperties(LoadType loadType) {
-        MppwProperties mppwProperties = new MppwProperties();
-        mppwProperties.setConsumerGroup(TEST_CONSUMER_GROUP);
-        mppwProperties.setKafkaBrokers("localhost:9092");
-        mppwProperties.setLoadType(loadType);
-        mppwProperties.setRestLoadConsumerGroup("restConsumerGroup");
-        return mppwProperties;
+    private AdqmMppwProperties createMppwProperties(LoadType loadType) {
+        AdqmMppwProperties adqmMppwProperties = new AdqmMppwProperties();
+        adqmMppwProperties.setConsumerGroup(TEST_CONSUMER_GROUP);
+        adqmMppwProperties.setKafkaBrokers("localhost:9092");
+        adqmMppwProperties.setLoadType(loadType);
+        adqmMppwProperties.setRestLoadConsumerGroup("restConsumerGroup");
+        return adqmMppwProperties;
     }
 }

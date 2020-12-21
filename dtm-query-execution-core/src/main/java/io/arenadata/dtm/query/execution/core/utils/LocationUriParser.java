@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.core.utils;
 
 import io.arenadata.dtm.kafka.core.configuration.kafka.KafkaZookeeperProperties;
+import io.arenadata.dtm.common.exception.DtmException;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +22,7 @@ public class LocationUriParser {
     private static final int DEFAULT_ZOOKEEPER_PORT = 2181;
     private static final String HOST_DELIMITER = ":";
     private static final String HOSTS_DELIMITER = ",";
-    private KafkaZookeeperProperties kafkaZookeeperProperties;
+    private final KafkaZookeeperProperties kafkaZookeeperProperties;
 
     @Autowired
     public LocationUriParser(KafkaZookeeperProperties kafkaZookeeperProperties) {
@@ -35,21 +36,24 @@ public class LocationUriParser {
             val topic = uri.getPath().substring(lastSlashIdx + 1);
             val chroot = uri.getPath().substring(0, lastSlashIdx);
             if (uri.getAuthority().equals("$kafka")) {
-                return new KafkaTopicUri(Collections.singletonList(kafkaZookeeperProperties.getConnectionString() + ":" + DEFAULT_ZOOKEEPER_PORT), kafkaZookeeperProperties.getChroot(), topic);
+                return new KafkaTopicUri(Collections.singletonList(
+                        kafkaZookeeperProperties.getConnectionString() + ":" + DEFAULT_ZOOKEEPER_PORT),
+                        kafkaZookeeperProperties.getChroot(),
+                        topic);
             } else {
                 val hosts = uri.getAuthority().split(HOSTS_DELIMITER);
                 List<String> hostArray = Arrays.stream(hosts).map(hostPort -> {
                     val hostPortArray = hostPort.split(HOST_DELIMITER);
                     val host = hostPortArray[0];
-                    val port = hostPortArray.length > 1 ? Integer.parseInt(hostPortArray[1]) : DEFAULT_ZOOKEEPER_PORT;
+                    val port = hostPortArray.length > 1 ?
+                            Integer.parseInt(hostPortArray[1]) : DEFAULT_ZOOKEEPER_PORT;
                     return host + HOST_DELIMITER + port;
                 }).collect(Collectors.toList());
                 return new KafkaTopicUri(hostArray, chroot, topic);
             }
         } catch (Exception e) {
-            String errMsg = String.format("LocationPath parsing error [%s]: %s", locationPath, e.getMessage());
-            log.error(errMsg, e);
-            throw new RuntimeException(errMsg, e);
+            throw new DtmException(String.format("Error parsing LocationPath [%s]",
+                    locationPath), e);
         }
     }
 

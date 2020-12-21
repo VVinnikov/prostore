@@ -5,7 +5,7 @@ import io.arenadata.dtm.common.reader.SourceType;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-public class InvalidSourceTypeException extends RuntimeException {
+public class InvalidSourceTypeException extends DtmException {
 
     private static final String AVAILABLE_SOURCE_TYPES = Arrays.stream(SourceType.values())
             .filter(SourceType::isAvailable)

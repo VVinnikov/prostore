@@ -8,6 +8,7 @@ import io.arenadata.dtm.query.execution.plugin.adb.configuration.CalciteConfigur
 import io.arenadata.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TruncateHistoryService;
 import io.vertx.core.Future;
 import org.apache.calcite.sql.*;
@@ -47,7 +48,7 @@ public class AdbTruncateHistoryServiceTest {
     @BeforeEach
     void setUp() {
         when(adbQueryExecutor.execute(anyString())).thenReturn(Future.succeededFuture());
-        doNothing().when(adbQueryExecutor).executeInTransaction(any(), any());
+        doNothing().when(adbQueryExecutor).executeInTransaction(any());
     }
 
     @Test
@@ -86,11 +87,11 @@ public class AdbTruncateHistoryServiceTest {
 
     private void test(String conditions, List<String> list) {
         adbTruncateHistoryService.truncateHistory(getParams(null, conditions));
+
         verify(adbQueryExecutor).executeInTransaction(argThat(input -> input.stream()
                         .map(PreparedStatementRequest::getSql)
                         .collect(Collectors.toList())
-                        .equals(list)),
-                any());
+                        .equals(list)));
     }
 
     private void test(Long sysCn, String conditions, String expected) {
@@ -108,7 +109,7 @@ public class AdbTruncateHistoryServiceTest {
                         return ((SqlSelect) planner.parse(String.format("SELECT * from t WHERE %s", conditions)))
                                 .getWhere();
                     } catch (SqlParseException e) {
-                        throw new RuntimeException(e);
+                        throw new DataSourceException("Error", e);
                     }
                 })
                 .orElse(null);

@@ -67,13 +67,12 @@ core:
 
 adb:
   datasource:
-    options:
-      database: ${ADB_DB_NAME:adb}
-      user: ${ADB_USERNAME:gpadmin}
-      password: ${ADB_PASS:gpadmin}
-      host: ${ADB_HOST:10.92.3.61}
-      port: ${ADB_PORT:5432}
-      maxSize: 20
+    user: ${ADB_USERNAME:gpadmin}
+    password: ${ADB_PASS:gpadmin}
+    host: ${ADB_HOST:10.92.3.61}
+    port: ${ADB_PORT:5432}
+    maxSize: 20
+    fetchSize: ${ADB_FETCH_SIZE:1000}
 
   mppw:
     startLoadUrl: ${ADB_START_LOAD_URL:http://adb-emulator:8090/newdata/adb/start}
@@ -82,9 +81,6 @@ adb:
     stopTimeoutMs: ${ADB_MPPW_STOP_TIMEOUT_MS:86400000}
     defaultMessageLimit: ${ADB_MPPW_DEFAULT_MESSAGE_LIMIT:100}
     fdwTimeoutMs: ${ADB_MPPW_FDW_TIMEOUT_MS:1000}
-
-  web-client:
-    max-pool-size: ${ADB_WEB_CLIENT_MAX_POOL_SIZE:100}
 
 adg:
   tarantool:

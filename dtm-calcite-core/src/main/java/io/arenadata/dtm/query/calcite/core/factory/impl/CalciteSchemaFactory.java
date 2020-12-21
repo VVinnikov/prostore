@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.calcite.core.factory.impl;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.query.calcite.core.factory.SchemaFactory;
 import io.arenadata.dtm.query.calcite.core.schema.DtmTable;
@@ -22,7 +23,7 @@ public abstract class CalciteSchemaFactory {
                 DtmTable table = createTable(dtmSchema, it);
                 schemaPlus.add(it.getName(), table);
             } catch (Exception e) {
-                throw new RuntimeException("Table initialization error $metaTable", e);
+                throw new DtmException("Table initialization error $metaTable", e);
             }
         });
         return schemaPlus;

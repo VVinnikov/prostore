@@ -1,13 +1,13 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load;
 
-import io.arenadata.dtm.query.execution.plugin.adqm.common.DdlUtils;
+import io.arenadata.dtm.query.execution.plugin.adqm.utils.DdlUtils;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import lombok.NonNull;
 import org.apache.avro.Schema;
 
 import java.util.stream.Collectors;
 
-import static io.arenadata.dtm.query.execution.plugin.adqm.common.Constants.EXT_SHARD_POSTFIX;
+import static io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants.EXT_SHARD_POSTFIX;
 import static java.lang.String.format;
 
 public class RestExtTableCreator implements ExtTableCreator {

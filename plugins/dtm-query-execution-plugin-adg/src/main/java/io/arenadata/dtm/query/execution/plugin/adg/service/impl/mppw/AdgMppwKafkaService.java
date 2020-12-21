@@ -11,11 +11,10 @@ import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.TtTra
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.MppwKafkaService;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -31,6 +30,7 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
     private final AdgMppwKafkaProperties properties;
     private final AdgCartridgeClient cartridgeClient;
 
+    @Autowired
     public AdgMppwKafkaService(AdgMppwKafkaContextFactory contextFactory,
                                AdgCartridgeClient cartridgeClient,
                                AdgMppwKafkaProperties properties) {
@@ -41,83 +41,80 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
     }
 
     @Override
-    public void execute(MppwRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-        log.debug("mppw start");
-        val mppwKafkaContext = contextFactory.create(context.getRequest());
-        if (context.getRequest().getIsLoadStart()) {
-            initializeLoading(mppwKafkaContext, asyncResultHandler);
-        } else {
-            cancelLoadData(mppwKafkaContext, asyncResultHandler);
-        }
+    public Future<QueryResult> execute(MppwRequestContext context) {
+        return Future.future(promise -> {
+            log.debug("mppw start");
+            val mppwKafkaContext = contextFactory.create(context.getRequest());
+            if (context.getRequest().getIsLoadStart()) {
+                initializeLoading(mppwKafkaContext)
+                        .onComplete(promise);
+            } else {
+                cancelLoadData(mppwKafkaContext)
+                        .onComplete(promise);
+            }
+        });
     }
 
-    private void initializeLoading(AdgMppwKafkaContext ctx, Handler<AsyncResult<QueryResult>> handler) {
+    private Future<QueryResult> initializeLoading(AdgMppwKafkaContext ctx) {
         if (initializedLoadingByTopic.containsKey(ctx.getTopicName())) {
-            transferData(ctx, handler);
+            return transferData(ctx);
         } else {
-            val callbackFunctionParameter = new TtTransferDataScdCallbackParameter(
-                    ctx.getHelperTableNames().getStaging(),
-                    ctx.getHelperTableNames().getStaging(),
-                    ctx.getHelperTableNames().getActual(),
-                    ctx.getHelperTableNames().getHistory(),
-                    ctx.getHotDelta()
-            );
-            val callbackFunction = new TtTransferDataScdCallbackFunction(
-                    properties.getCallbackFunctionName(),
-                    callbackFunctionParameter,
-                    properties.getMaxNumberOfMessagesPerPartition(),
-                    properties.getCallbackFunctionSecIdle()
-            );
+            return Future.future(promise -> {
+                val callbackFunctionParameter = new TtTransferDataScdCallbackParameter(
+                        ctx.getHelperTableNames().getStaging(),
+                        ctx.getHelperTableNames().getStaging(),
+                        ctx.getHelperTableNames().getActual(),
+                        ctx.getHelperTableNames().getHistory(),
+                        ctx.getHotDelta());
 
+                val callbackFunction = new TtTransferDataScdCallbackFunction(
+                        properties.getCallbackFunctionName(),
+                        callbackFunctionParameter,
+                        properties.getMaxNumberOfMessagesPerPartition(),
+                        properties.getCallbackFunctionSecIdle());
 
-            val request = new TtSubscriptionKafkaRequest(
-                    properties.getMaxNumberOfMessagesPerPartition(),
-                    null,
-                    ctx.getTopicName(),
-                    Collections.singletonList(ctx.getHelperTableNames().getStaging()),
-                    callbackFunction
-            );
-            cartridgeClient.subscribe(request, ar -> {
-                if (ar.succeeded()) {
-                    log.debug("Loading initialize completed by [{}]", request);
-                    initializedLoadingByTopic.put(ctx.getTopicName(), ctx.getConsumerTableName());
-                    handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
-                } else {
-                    log.error("Loading initialize error:", ar.cause());
-                    handler.handle(Future.failedFuture(ar.cause()));
-                }
+                val request = new TtSubscriptionKafkaRequest(
+                        properties.getMaxNumberOfMessagesPerPartition(),
+                        null,
+                        ctx.getTopicName(),
+                        Collections.singletonList(ctx.getHelperTableNames().getStaging()),
+                        callbackFunction);
+
+                cartridgeClient.subscribe(request)
+                        .onSuccess(result -> {
+                            log.debug("Loading initialize completed by [{}]", request);
+                            initializedLoadingByTopic.put(ctx.getTopicName(), ctx.getConsumerTableName());
+                            promise.complete(QueryResult.emptyResult());
+                        })
+                        .onFailure(promise::fail);
             });
         }
     }
 
-    private void transferData(AdgMppwKafkaContext ctx, Handler<AsyncResult<QueryResult>> handler) {
-        val request = new TtTransferDataEtlRequest(ctx.getHelperTableNames(), ctx.getHotDelta());
-        cartridgeClient.transferDataToScdTable(
-                request, ar -> {
-                    if (ar.succeeded()) {
-                        log.debug("Transfer Data completed by request [{}]", request);
-                        handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
-                    } else {
-                        log.error("Transfer Data error: ", ar.cause());
-                        handler.handle(Future.failedFuture(ar.cause()));
-                    }
-                }
-        );
+    private Future<QueryResult> cancelLoadData(AdgMppwKafkaContext ctx) {
+        return Future.future(promise -> {
+            val topicName = ctx.getTopicName();
+            transferData(ctx)
+                    .compose(result -> cartridgeClient.cancelSubscription(topicName))
+                    .onSuccess(result -> {
+                        initializedLoadingByTopic.remove(topicName);
+                        log.debug("Cancel Load Data completed by request [{}]", topicName);
+                        promise.complete(QueryResult.emptyResult());
+                    })
+                    .onFailure(promise::fail);
+        });
     }
 
-    private void cancelLoadData(AdgMppwKafkaContext ctx, Handler<AsyncResult<QueryResult>> handler) {
-        val topicName = ctx.getTopicName();
-        transferData(ctx, tr -> {
-            cartridgeClient.cancelSubscription(topicName, ar -> {
-                initializedLoadingByTopic.remove(topicName);
-                if (ar.succeeded()) {
-                    log.debug("Cancel Load Data completed by request [{}]", topicName);
-                    handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
-                } else {
-                    log.error("Cancel Load Data error: ", ar.cause());
-                    handler.handle(Future.failedFuture(ar.cause()));
-                }
-            });
+    private Future<QueryResult> transferData(AdgMppwKafkaContext ctx) {
+        return Future.future(promise -> {
+            val request = new TtTransferDataEtlRequest(ctx.getHelperTableNames(), ctx.getHotDelta());
+            cartridgeClient.transferDataToScdTable(request)
+                    .onSuccess(result -> {
+                                log.debug("Transfer Data completed by request [{}]", request);
+                                promise.complete(QueryResult.emptyResult());
+                            }
+                    )
+                    .onFailure(promise::fail);
         });
     }
 }

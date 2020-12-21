@@ -2,7 +2,7 @@ package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.ddl;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
-import io.arenadata.dtm.query.execution.plugin.adqm.common.Constants;
+import io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
@@ -40,6 +40,7 @@ public class AdqmTruncateHistoryService implements TruncateHistoryService {
 
     @Override
     public Future<Void> truncateHistory(TruncateHistoryParams params) {
+        //TODO it's better to exclude generating sql query in separate factory class
         String sysCnExpression = params.getSysCn()
                 .map(sysCn -> String.format(" AND sys_to < %s", sysCn))
                 .orElse("");

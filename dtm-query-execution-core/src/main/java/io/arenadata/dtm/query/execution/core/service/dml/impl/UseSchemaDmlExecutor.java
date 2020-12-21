@@ -9,14 +9,13 @@ import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlUseSchema;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
+import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsService;
 import io.arenadata.dtm.query.execution.core.utils.ParseQueryUtils;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.api.dml.DmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.dml.DmlExecutor;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,9 +44,8 @@ public class UseSchemaDmlExecutor implements DmlExecutor<QueryResult> {
     }
 
     @Override
-    public void execute(DmlRequestContext context, Handler<AsyncResult<QueryResult>> handler) {
-        sendMetricsAndExecute(context)
-            .onComplete(handler);
+    public Future<QueryResult> execute(DmlRequestContext context) {
+        return sendMetricsAndExecute(context);
     }
 
     private Future<QueryResult> sendMetricsAndExecute(DmlRequestContext context) {
@@ -62,7 +60,7 @@ public class UseSchemaDmlExecutor implements DmlExecutor<QueryResult> {
                             if (ar.result()) {
                                 promise.complete(createQueryResult(context, datamart));
                             } else {
-                                promise.fail(String.format("Datamart [%s] doesn't exist", datamart));
+                                promise.fail(new DatamartNotExistsException(datamart));
                             }
                         } else {
                             promise.fail(ar.cause());

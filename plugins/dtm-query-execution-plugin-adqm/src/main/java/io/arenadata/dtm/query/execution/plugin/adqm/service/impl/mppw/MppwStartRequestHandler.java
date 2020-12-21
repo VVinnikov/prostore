@@ -3,15 +3,18 @@ package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
-import io.arenadata.dtm.query.execution.plugin.adqm.common.DdlUtils;
+import io.arenadata.dtm.query.execution.plugin.adqm.utils.DdlUtils;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
+import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.AdqmMppwProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
-import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.MppwProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
+import io.arenadata.dtm.query.execution.plugin.adqm.dto.mppw.RestMppwKafkaLoadRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.AdqmRestMppwKafkaRequestFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.StatusReporter;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.*;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
+import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
 import io.arenadata.dtm.query.execution.plugin.api.request.MppwRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -27,9 +30,9 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.arenadata.dtm.query.execution.plugin.adqm.common.Constants.*;
-import static io.arenadata.dtm.query.execution.plugin.adqm.common.DdlUtils.avroTypeToNative;
-import static io.arenadata.dtm.query.execution.plugin.adqm.common.DdlUtils.splitQualifiedTableName;
+import static io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants.*;
+import static io.arenadata.dtm.query.execution.plugin.adqm.utils.DdlUtils.avroTypeToNative;
+import static io.arenadata.dtm.query.execution.plugin.adqm.utils.DdlUtils.splitQualifiedTableName;
 import static io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.LoadType.KAFKA;
 import static io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.LoadType.REST;
 import static java.lang.String.format;
@@ -51,7 +54,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     private final DatabaseExecutor databaseExecutor;
     private final DdlProperties ddlProperties;
     private final AppConfiguration appConfiguration;
-    private final MppwProperties mppwProperties;
+    private final AdqmMppwProperties mppwProperties;
     private final StatusReporter statusReporter;
     private final Map<LoadType, ExtTableCreator> extTableCreators = new HashMap<>();
     private final RestLoadClient restLoadClient;
@@ -61,7 +64,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     public MppwStartRequestHandler(DatabaseExecutor databaseExecutor,
                                    DdlProperties ddlProperties,
                                    AppConfiguration appConfiguration,
-                                   MppwProperties mppwProperties,
+                                   AdqmMppwProperties mppwProperties,
                                    StatusReporter statusReporter,
                                    RestLoadClient restLoadClient,
                                    AdqmRestMppwKafkaRequestFactory restMppwKafkaRequestFactory) {
@@ -83,13 +86,13 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
 
         val err = DdlUtils.validateRequest(request);
         if (err.isPresent()) {
-            return Future.failedFuture(err.get());
+            return Future.failedFuture(new DataSourceException(err.get()));
         }
         try {
             mppwExtTableCtx.setSchema(new Schema.Parser()
                     .parse(request.getKafkaParameter().getUploadMetadata().getExternalSchema()));
         } catch (Exception e) {
-            return Future.failedFuture(e);
+            return Future.failedFuture(new DataSourceException("Error in starting mppw request", e));
         }
 
         mppwExtTableCtx.setFullName(DdlUtils.getQualifiedTableName(request, appConfiguration));
@@ -146,7 +149,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
                 .onSuccess(Future::succeededFuture)
                 .onFailure(fail -> {
                     reportError(request.getKafkaParameter().getTopic());
-                    Future.failedFuture(fail);
+                    Future.failedFuture(new DataSourceException(fail));
                 });
     }
 
@@ -159,24 +162,25 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     private Future<String> getTableSetting(@NonNull String table, @NonNull String settingKey, List<ColumnMetadata> metadata) {
         val nameParts = splitQualifiedTableName(table);
         if (!nameParts.isPresent()) {
-            return Future.failedFuture(format("Cannot parse table name %s", table));
+            return Future.failedFuture(new MppwDatasourceException(format("Cannot parse table name %s", table)));
         }
         Promise<String> result = Promise.promise();
         String query = format(QUERY_TABLE_SETTINGS, settingKey, nameParts.get().getLeft(), nameParts.get().getRight());
-        databaseExecutor.execute(query, metadata, ar -> {
-            if (ar.failed()) {
-                result.fail(ar.cause());
-                return;
-            }
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> rows = ar.result();
-            if (rows.isEmpty()) {
-                result.fail(format("Cannot find %s for %s", settingKey, table));
-                return;
-            }
+        databaseExecutor.execute(query, metadata)
+                .onComplete(ar -> {
+                    if (ar.failed()) {
+                        result.fail(ar.cause());
+                        return;
+                    }
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> rows = ar.result();
+                    if (rows.isEmpty()) {
+                        result.fail(new MppwDatasourceException(format("Cannot find %s for %s", settingKey, table)));
+                        return;
+                    }
 
-            result.complete(rows.get(0).get(settingKey).toString());
-        });
+                    result.complete(rows.get(0).get(settingKey).toString());
+                });
         return result.future();
     }
 
@@ -256,7 +260,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
             log.debug("ADQM: Send mppw kafka starting rest request {}", mppwKafkaLoadRequest);
             return restLoadClient.initiateLoading(mppwKafkaLoadRequest);
         } catch (Exception e) {
-            return Future.failedFuture(e);
+            return Future.failedFuture(new MppwDatasourceException("Error generating mppw kafka request", e));
         }
     }
 

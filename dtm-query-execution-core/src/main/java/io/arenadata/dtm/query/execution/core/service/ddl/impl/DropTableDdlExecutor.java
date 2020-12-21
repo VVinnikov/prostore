@@ -1,23 +1,21 @@
 package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
-import io.arenadata.dtm.query.execution.core.dao.exception.entity.EntityNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
-import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
+import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlType;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.PostSqlActionType;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlKind;
@@ -53,8 +51,12 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<QueryResult>> handler) {
-        try {
+    public Future<QueryResult> execute(DdlRequestContext context, String sqlNodeName) {
+        return dropTable(context, sqlNodeName);
+    }
+
+    private Future<QueryResult> dropTable(DdlRequestContext context, String sqlNodeName) {
+        return Future.future(promise -> {
             String schema = getSchemaName(context.getRequest().getQueryRequest(), sqlNodeName);
             String tableName = getTableName(sqlNodeName);
             entityCacheService.remove(schema, tableName);
@@ -63,12 +65,11 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
             context.setDatamartName(schema);
             context.setDdlType(DdlType.DROP_TABLE);
             dropTable(context, containsIfExistsCheck(context.getRequest().getQueryRequest().getSql()))
-                    .onSuccess(r -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
-                    .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
-        } catch (Exception e) {
-            log.error("Error deleting table!", e);
-            handler.handle(Future.failedFuture(e));
-        }
+                    .onSuccess(r -> {
+                        promise.complete(QueryResult.emptyResult());
+                    })
+                    .onFailure(promise::fail);
+        });
     }
 
     private Entity createClassTable(String schema, String tableName) {
@@ -88,27 +89,22 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
 
     private Future<Entity> getEntity(DdlRequestContext context, boolean ifExists) {
         return Future.future(entityPromise -> {
-            val entityName = context.getRequest().getEntity().getName();
             val datamartName = context.getDatamartName();
+            val entityName = context.getRequest().getEntity().getName();
+            val tableWithSchema = datamartName + "." + entityName;
             entityDao.getEntity(datamartName, entityName)
                     .onSuccess(entity -> {
                         if (EntityType.TABLE == entity.getEntityType()) {
                             entityPromise.complete(entity);
                         } else {
-                            val errMsg = String.format("Table [%s] in datamart [%s] doesn't exist!",
-                                    entityName, datamartName);
-                            log.error(errMsg);
-                            entityPromise.fail(errMsg);
+                            entityPromise.fail(new TableNotExistsException(tableWithSchema));
                         }
                     })
                     .onFailure(error -> {
-                        if (error instanceof EntityNotExistsException && ifExists) {
+                        if (error instanceof TableNotExistsException && ifExists) {
                             entityPromise.complete(null);
                         } else {
-                            log.error("Table [{}] in datamart [{}] doesn't exist!",
-                                    entityName,
-                                    datamartName, error);
-                            entityPromise.fail(error);
+                            entityPromise.fail(new TableNotExistsException(tableWithSchema));
                         }
                     });
         });
@@ -136,7 +132,7 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
                 .collect(Collectors.toSet());
         if (!notExistsDestination.isEmpty()) {
             return Future.failedFuture(
-                    new IllegalArgumentException(String.format("Table [%s] doesn't exist in [%s]",
+                    new DtmException(String.format("Table [%s] doesn't exist in [%s]",
                             entity.getName(),
                             notExistsDestination)));
         } else {
@@ -157,7 +153,7 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
                 if (entity.getDestination().isEmpty()) {
                     return dropEntityFromEverywhere(context, entity.getName());
                 } else {
-                    return dropEntityFromPlugins(context)
+                    return metadataExecutor.execute(context)
                             .compose(v -> entityDao.updateEntity(entity));
                 }
             }
@@ -165,26 +161,12 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
     }
 
     private Future<Void> dropEntityFromEverywhere(DdlRequestContext context, String entityName) {
-        return dropEntityFromPlugins(context)
+        return metadataExecutor.execute(context)
                 .compose(v -> {
                     context.getPostActions().add(PostSqlActionType.UPDATE_INFORMATION_SCHEMA);
                     return entityDao.deleteEntity(context.getDatamartName(), entityName);
                 });
     }
-
-    private Future<Void> dropEntityFromPlugins(DdlRequestContext context) {
-        return Future.future((Promise<Void> metaPromise) -> metadataExecutor.execute(context, ar -> {
-            if (ar.succeeded()) {
-                metaPromise.complete();
-            } else {
-                log.error("Error deleting table [{}], datamart [{}] in datasources!",
-                        context.getRequest().getEntity().getName(),
-                        context.getDatamartName(), ar.cause());
-                metaPromise.fail(ar.cause());
-            }
-        }));
-    }
-
 
     @Override
     public SqlKind getSqlKind() {

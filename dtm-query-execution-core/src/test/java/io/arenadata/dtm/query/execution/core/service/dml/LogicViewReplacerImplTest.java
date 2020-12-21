@@ -4,6 +4,7 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
+import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDefinitionService;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacadeImpl;
@@ -11,11 +12,7 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
-import io.arenadata.dtm.query.execution.core.service.dml.impl.DatamartViewWrapLoaderImpl;
 import io.arenadata.dtm.query.execution.core.service.dml.impl.LogicViewReplacerImpl;
-import io.arenadata.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
-import io.arenadata.dtm.query.execution.core.service.dml.impl.SqlSnapshotReplacerImpl;
-import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDefinitionService;
 import io.vertx.core.Future;
 import io.vertx.junit5.VertxTestContext;
 import lombok.extern.slf4j.Slf4j;
@@ -100,20 +97,20 @@ class LogicViewReplacerImplTest {
     void withoutJoin() throws InterruptedException {
         val testContext = new VertxTestContext();
         Mockito
-            .when(entityDao.getEntity(any(), any()))
-            .thenReturn(
-                Future.succeededFuture(Entity.builder()
-                    .entityType(EntityType.VIEW)
-                    .name("view")
-                    .viewQuery("SELECT Col4, Col5 \n" +
-                        "FROM tblX \n" +
-                        "WHERE tblX.Col6 = 0")
-                    .build()),
-                Future.succeededFuture(Entity.builder()
-                    .entityType(EntityType.TABLE)
-                    .name("tblX")
-                    .build())
-            );
+                .when(entityDao.getEntity(any(), any()))
+                .thenReturn(
+                        Future.succeededFuture(Entity.builder()
+                                .entityType(EntityType.VIEW)
+                                .name("view")
+                                .viewQuery("SELECT Col4, Col5 \n" +
+                                        "FROM tblX \n" +
+                                        "WHERE tblX.Col6 = 0")
+                                .build()),
+                        Future.succeededFuture(Entity.builder()
+                                .entityType(EntityType.TABLE)
+                                .name("tblX")
+                                .build())
+                );
         val replacer = new LogicViewReplacerImpl(definitionService, serviceDbDao.getEntityDao());
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
                 "FROM test.view FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' v";
@@ -136,17 +133,17 @@ class LogicViewReplacerImplTest {
 
         Mockito.when(entityDao.getEntity(any(), any()))
                 .thenReturn(Future.succeededFuture(Entity.builder()
-                        .entityType(EntityType.VIEW)
-                        .name("view")
-                        .viewQuery("SELECT Col4, Col5 \n" +
-                                "FROM tblX \n" +
-                                "WHERE tblX.Col6 = 0")
-                        .build()),
-                Future.succeededFuture(Entity.builder()
-                    .entityType(EntityType.TABLE)
-                    .name("tblX")
-                    .build())
-            );
+                                .entityType(EntityType.VIEW)
+                                .name("view")
+                                .viewQuery("SELECT Col4, Col5 \n" +
+                                        "FROM tblX \n" +
+                                        "WHERE tblX.Col6 = 0")
+                                .build()),
+                        Future.succeededFuture(Entity.builder()
+                                .entityType(EntityType.TABLE)
+                                .name("tblX")
+                                .build())
+                );
 
         val replacer = new LogicViewReplacerImpl(definitionService, serviceDbDao.getEntityDao());
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
@@ -170,17 +167,17 @@ class LogicViewReplacerImplTest {
 
         Mockito.when(entityDao.getEntity(any(), any()))
                 .thenReturn(Future.succeededFuture(Entity.builder()
-                        .entityType(EntityType.VIEW)
-                        .name("view")
-                        .viewQuery("SELECT Col4, Col5 \n" +
-                                "FROM tblX \n" +
-                                "WHERE tblX.Col6 = 0")
-                        .build()),
-                Future.succeededFuture(Entity.builder()
-                    .entityType(EntityType.TABLE)
-                    .name("tblX")
-                    .build())
-            );
+                                .entityType(EntityType.VIEW)
+                                .name("view")
+                                .viewQuery("SELECT Col4, Col5 \n" +
+                                        "FROM tblX \n" +
+                                        "WHERE tblX.Col6 = 0")
+                                .build()),
+                        Future.succeededFuture(Entity.builder()
+                                .entityType(EntityType.TABLE)
+                                .name("tblX")
+                                .build())
+                );
 
         val replacer = new LogicViewReplacerImpl(definitionService, serviceDbDao.getEntityDao());
         val sql = "SELECT view.Col1 as c, view.Col2 r\n" +
@@ -203,24 +200,24 @@ class LogicViewReplacerImplTest {
         val testContext = new VertxTestContext();
 
         Mockito
-            .when(entityDao.getEntity(any(), any()))
-            .thenReturn(
-                Future.succeededFuture(Entity.builder()
-                    .entityType(EntityType.TABLE)
-                    .name("tbl")
-                    .build()),
-                Future.succeededFuture(Entity.builder()
-                    .entityType(EntityType.VIEW)
-                    .name("view")
-                    .viewQuery("SELECT Col4, Col5 \n" +
-                        "FROM tblX \n" +
-                        "WHERE tblX.Col6 = 0")
-                    .build()),
-                Future.succeededFuture(Entity.builder()
-                    .entityType(EntityType.TABLE)
-                    .name("tblX")
-                    .build())
-            );
+                .when(entityDao.getEntity(any(), any()))
+                .thenReturn(
+                        Future.succeededFuture(Entity.builder()
+                                .entityType(EntityType.TABLE)
+                                .name("tbl")
+                                .build()),
+                        Future.succeededFuture(Entity.builder()
+                                .entityType(EntityType.VIEW)
+                                .name("view")
+                                .viewQuery("SELECT Col4, Col5 \n" +
+                                        "FROM tblX \n" +
+                                        "WHERE tblX.Col6 = 0")
+                                .build()),
+                        Future.succeededFuture(Entity.builder()
+                                .entityType(EntityType.TABLE)
+                                .name("tblX")
+                                .build())
+                );
         val replacer = new LogicViewReplacerImpl(definitionService, serviceDbDao.getEntityDao());
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
                 "FROM tbl FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' t\n" +
@@ -245,31 +242,31 @@ class LogicViewReplacerImplTest {
 
         Mockito.when(entityDao.getEntity(any(), any()))
                 .thenReturn(Future.succeededFuture(Entity.builder()
-                    .entityType(EntityType.TABLE)
-                    .name("tbl")
-                    .build()),
-                Future.succeededFuture(Entity.builder()
-                    .entityType(EntityType.VIEW)
-                    .name("view")
-                    .viewQuery("SELECT Col4, Col5 \n" +
-                        "FROM tblX \n" +
-                        "WHERE tblX.Col6 = 0")
-                    .build()),
-                Future.succeededFuture(Entity.builder()
-                    .entityType(EntityType.TABLE)
-                    .name("tblX")
-                    .build()),Future.succeededFuture(Entity.builder()
-                        .entityType(EntityType.VIEW)
-                        .name("view")
-                        .viewQuery("SELECT Col4, Col5 \n" +
-                                "FROM tblX \n" +
-                                "WHERE tblX.Col6 = 0")
-                        .build()),
-                Future.succeededFuture(Entity.builder()
-                    .entityType(EntityType.TABLE)
-                    .name("tblX")
-                    .build())
-            );
+                                .entityType(EntityType.TABLE)
+                                .name("tbl")
+                                .build()),
+                        Future.succeededFuture(Entity.builder()
+                                .entityType(EntityType.VIEW)
+                                .name("view")
+                                .viewQuery("SELECT Col4, Col5 \n" +
+                                        "FROM tblX \n" +
+                                        "WHERE tblX.Col6 = 0")
+                                .build()),
+                        Future.succeededFuture(Entity.builder()
+                                .entityType(EntityType.TABLE)
+                                .name("tblX")
+                                .build()), Future.succeededFuture(Entity.builder()
+                                .entityType(EntityType.VIEW)
+                                .name("view")
+                                .viewQuery("SELECT Col4, Col5 \n" +
+                                        "FROM tblX \n" +
+                                        "WHERE tblX.Col6 = 0")
+                                .build()),
+                        Future.succeededFuture(Entity.builder()
+                                .entityType(EntityType.TABLE)
+                                .name("tblX")
+                                .build())
+                );
 
         val replacer = new LogicViewReplacerImpl(definitionService, serviceDbDao.getEntityDao());
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
@@ -294,24 +291,24 @@ class LogicViewReplacerImplTest {
     void withJoinAndSelect() throws InterruptedException {
         val testContext = new VertxTestContext();
         Mockito
-            .when(entityDao.getEntity(any(), any()))
-            .thenReturn(
-                Future.succeededFuture(Entity.builder()
-                    .entityType(EntityType.VIEW)
-                    .name("view")
-                    .viewQuery("SELECT Col4, Col5 \n" +
-                        "FROM tblX \n" +
-                        "WHERE tblX.Col6 = 0")
-                    .build()),
-                Future.succeededFuture(Entity.builder()
-                    .entityType(EntityType.TABLE)
-                    .name("tblt")
-                    .build()),
-                Future.succeededFuture(Entity.builder()
-                    .entityType(EntityType.TABLE)
-                    .name("tblX")
-                    .build())
-            );
+                .when(entityDao.getEntity(any(), any()))
+                .thenReturn(
+                        Future.succeededFuture(Entity.builder()
+                                .entityType(EntityType.VIEW)
+                                .name("view")
+                                .viewQuery("SELECT Col4, Col5 \n" +
+                                        "FROM tblX \n" +
+                                        "WHERE tblX.Col6 = 0")
+                                .build()),
+                        Future.succeededFuture(Entity.builder()
+                                .entityType(EntityType.TABLE)
+                                .name("tblt")
+                                .build()),
+                        Future.succeededFuture(Entity.builder()
+                                .entityType(EntityType.TABLE)
+                                .name("tblX")
+                                .build())
+                );
         val replacer = new LogicViewReplacerImpl(definitionService, serviceDbDao.getEntityDao());
         val sql = "SELECT t.Col1 as c, (select id from view limit 1) r\n" +
                 "FROM tblt t";
@@ -332,26 +329,26 @@ class LogicViewReplacerImplTest {
     void viewInView() throws InterruptedException {
         val testContext = new VertxTestContext();
         Mockito.when(entityDao.getEntity(any(), any()))
-            .thenReturn(
-                Future.succeededFuture(Entity.builder()
-                    .entityType(EntityType.VIEW)
-                    .name("view")
-                    .viewQuery("SELECT Col4, Col5 \n" +
-                        "FROM tblZ \n" +
-                        "WHERE tblZ.Col6 = 0")
-                    .build()),
-                Future.succeededFuture(Entity.builder()
-                    .entityType(EntityType.VIEW)
-                    .name("tblZ")
-                    .viewQuery("SELECT Col4, Col5 \n" +
-                        "FROM tblC \n" +
-                        "WHERE tblC.Col9 = 0")
-                    .build()),
-                Future.succeededFuture(Entity.builder()
-                    .entityType(EntityType.TABLE)
-                    .name("tblC")
-                    .build())
-            );
+                .thenReturn(
+                        Future.succeededFuture(Entity.builder()
+                                .entityType(EntityType.VIEW)
+                                .name("view")
+                                .viewQuery("SELECT Col4, Col5 \n" +
+                                        "FROM tblZ \n" +
+                                        "WHERE tblZ.Col6 = 0")
+                                .build()),
+                        Future.succeededFuture(Entity.builder()
+                                .entityType(EntityType.VIEW)
+                                .name("tblZ")
+                                .viewQuery("SELECT Col4, Col5 \n" +
+                                        "FROM tblC \n" +
+                                        "WHERE tblC.Col9 = 0")
+                                .build()),
+                        Future.succeededFuture(Entity.builder()
+                                .entityType(EntityType.TABLE)
+                                .name("tblC")
+                                .build())
+                );
         val replacer = new LogicViewReplacerImpl(definitionService, serviceDbDao.getEntityDao());
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
                 "FROM view FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' v";

@@ -71,7 +71,7 @@ class EdmlServiceImplTest {
         when(edmlExecutors.get(0).getAction()).thenReturn(EdmlAction.DOWNLOAD);
         when(edmlExecutors.get(1).getAction()).thenReturn(EdmlAction.UPLOAD);
         edmlService = new EdmlServiceImpl(serviceDbFacade, edmlExecutors);
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
 
         queryRequest.setSql("INSERT INTO test.download_table SELECT id, lst_nam FROM test.pso");
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
@@ -99,13 +99,11 @@ class EdmlServiceImplTest {
 
         Mockito.when(entityDao.getEntity(eq("test"), eq("pso"))).thenReturn(Future.succeededFuture(sourceEntity));
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
-            return null;
-        }).when(edmlExecutors.get(0)).execute(any());
+        when(edmlExecutors.get(0).execute(any()))
+                .thenReturn(Future.succeededFuture(QueryResult.emptyResult()));
 
-        edmlService.execute(context);
+        edmlService.execute(context)
+                .onComplete(promise);
 
         assertTrue(promise.future().succeeded());
         assertEquals(context.getSourceEntity(), sourceEntity);
@@ -117,7 +115,7 @@ class EdmlServiceImplTest {
         when(edmlExecutors.get(0).getAction()).thenReturn(EdmlAction.DOWNLOAD);
         when(edmlExecutors.get(1).getAction()).thenReturn(EdmlAction.UPLOAD);
         edmlService = new EdmlServiceImpl(serviceDbFacade, edmlExecutors);
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         queryRequest.setSql("INSERT INTO test.pso SELECT id, name FROM test.upload_table");
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
         DatamartRequest request = new DatamartRequest(queryRequest);
@@ -140,17 +138,17 @@ class EdmlServiceImplTest {
                 .schema("test")
                 .build();
 
-        Mockito.when(entityDao.getEntity(eq("test"), eq("pso"))).thenReturn(Future.succeededFuture(destinationEntity));
+        when(entityDao.getEntity(eq("test"), eq("pso")))
+                .thenReturn(Future.succeededFuture(destinationEntity));
 
-        Mockito.when(entityDao.getEntity(eq("test"), eq("upload_table"))).thenReturn(Future.succeededFuture(sourceEntity));
+        when(entityDao.getEntity(eq("test"), eq("upload_table")))
+                .thenReturn(Future.succeededFuture(sourceEntity));
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
-            return null;
-        }).when(edmlExecutors.get(1)).execute(any());
+        when(edmlExecutors.get(1).execute(any()))
+                .thenReturn(Future.succeededFuture(QueryResult.emptyResult()));
 
-        edmlService.execute(context);
+        edmlService.execute(context)
+                .onComplete(promise);
         assertTrue(promise.future().succeeded());
         assertEquals(context.getSourceEntity(), sourceEntity);
         assertEquals(context.getDestinationEntity(), destinationEntity);
@@ -161,7 +159,7 @@ class EdmlServiceImplTest {
         when(edmlExecutors.get(0).getAction()).thenReturn(EdmlAction.DOWNLOAD);
         when(edmlExecutors.get(1).getAction()).thenReturn(EdmlAction.UPLOAD);
         edmlService = new EdmlServiceImpl(serviceDbFacade, edmlExecutors);
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         queryRequest.setSql("INSERT INTO test.download_table SELECT id, lst_nam FROM test.pso");
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
         DatamartRequest request = new DatamartRequest(queryRequest);
@@ -189,11 +187,14 @@ class EdmlServiceImplTest {
                 .schema("test")
                 .build();
 
-        Mockito.when(entityDao.getEntity(eq("test"), eq("download_table"))).thenReturn(Future.succeededFuture(destinationEntity));
+        Mockito.when(entityDao.getEntity(eq("test"), eq("download_table")))
+                .thenReturn(Future.succeededFuture(destinationEntity));
 
-        Mockito.when(entityDao.getEntity(eq("test"), eq("pso"))).thenReturn(Future.succeededFuture(sourceEntity));
+        Mockito.when(entityDao.getEntity(eq("test"), eq("pso")))
+                .thenReturn(Future.succeededFuture(sourceEntity));
 
-        edmlService.execute(context);
+        edmlService.execute(context)
+                .onComplete(promise);
         assertNotNull(promise.future().cause());
     }
 
@@ -202,7 +203,7 @@ class EdmlServiceImplTest {
         when(edmlExecutors.get(0).getAction()).thenReturn(EdmlAction.DOWNLOAD);
         when(edmlExecutors.get(1).getAction()).thenReturn(EdmlAction.UPLOAD);
         edmlService = new EdmlServiceImpl(serviceDbFacade, edmlExecutors);
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         queryRequest.setSql("INSERT INTO test.download_table SELECT id, lst_nam FROM test.pso");
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
         DatamartRequest request = new DatamartRequest(queryRequest);
@@ -230,11 +231,14 @@ class EdmlServiceImplTest {
                 .schema("test")
                 .build();
 
-        Mockito.when(entityDao.getEntity(eq("test"), eq("download_table"))).thenReturn(Future.succeededFuture(destinationEntity));
+        Mockito.when(entityDao.getEntity(eq("test"), eq("download_table")))
+                .thenReturn(Future.succeededFuture(destinationEntity));
 
-        Mockito.when(entityDao.getEntity(eq("test"), eq("pso"))).thenReturn(Future.succeededFuture(sourceEntity));
+        Mockito.when(entityDao.getEntity(eq("test"), eq("pso")))
+                .thenReturn(Future.succeededFuture(sourceEntity));
 
-        edmlService.execute(context);
+        edmlService.execute(context)
+                .onComplete(promise);
         assertNotNull(promise.future().cause());
     }
 }

@@ -85,15 +85,14 @@ class AlterViewDdlExecutorTest {
                 serviceDbFacade,
                 new SqlDialect(SqlDialect.EMPTY_CONTEXT));
         schema = "shares";
-
+        initEntityList();
+        sqlNodeName = schema + "." + entityList.get(0).getName();
         when(metadataExecutor.execute(any())).thenReturn(Future.succeededFuture());
         when(logicalSchemaProvider.getSchema(any()))
                 .thenReturn(Future.succeededFuture(Collections.singletonList(new Datamart(
                         schema,
                         true,
                         Collections.singletonList(entityList.get(0))))));
-        initEntityList();
-        sqlNodeName = schema + "." + entityList.get(0).getName();
     }
 
     @Test

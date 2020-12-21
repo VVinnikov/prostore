@@ -15,7 +15,7 @@ public class MppwRequestFactoryImpl implements MppwRequestFactory {
     String INSERT_HISTORY_SQL = "INSERT INTO %s.%s_history (%s)\n" +
         "SELECT %s\n" +
         "FROM %s.%s_actual a\n" +
-        "         INNER JOIN %s.%s_staging s ON\n" +
+        "         INNER JOIN (SELECT DISTINCT * FROM %s.%s_staging) s ON\n" +
         "    %s";
 
     String DELETE_ACTUAL_SQL = "DELETE\n" +
@@ -23,7 +23,7 @@ public class MppwRequestFactoryImpl implements MppwRequestFactory {
         "WHERE %s";
 
     String INSERT_ACTUAL_SQL = "INSERT INTO %s.%s_actual (%s)\n" +
-        "SELECT %s\n" +
+        "SELECT DISTINCT %s\n" +
         "FROM %s.%s_staging\n" +
         "WHERE %s.%s_staging.sys_op <> 1";
 

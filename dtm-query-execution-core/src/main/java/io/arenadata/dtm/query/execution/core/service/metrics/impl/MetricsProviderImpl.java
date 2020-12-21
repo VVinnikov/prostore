@@ -11,7 +11,6 @@ import io.arenadata.dtm.query.execution.core.service.metrics.MetricsProvider;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -25,7 +24,6 @@ import java.util.stream.Collectors;
 import static io.arenadata.dtm.query.execution.core.utils.MetricsUtil.*;
 
 @Component
-@Slf4j
 public class MetricsProviderImpl implements MetricsProvider {
 
     private final MeterRegistry meterRegistry;

@@ -4,6 +4,7 @@ import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.delta.DeltaType;
 import io.arenadata.dtm.common.delta.SelectOnInterval;
 import io.arenadata.dtm.common.exception.DeltaRangeInvalidException;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.InformationSchemaView;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.service.DeltaService;
@@ -42,30 +43,24 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
             try {
                 if (request == null || StringUtils.isEmpty(request.getSql())) {
                     log.error("Unspecified request {}", request);
-                    handler.fail(String.format("Undefined request%s", request));
+                    handler.fail(new DtmException(String.format("Undefined request%s", request)));
                 } else {
                     val sqlNode = definitionService.processingQuery(request.getSql());
                     val deltaInfoRes = deltaInformationExtractor.extract(sqlNode);
                     calculateDeltaValues(deltaInfoRes.getDeltaInformations(), ar -> {
                         if (ar.succeeded()) {
-                            try {
-                                QueryRequest copyRequest = request.copy();
-                                copyRequest.setDeltaInformations(deltaInfoRes.getDeltaInformations());
-                                copyRequest.setSql(deltaInfoRes.getSqlWithoutSnapshots());
-                                copyRequest.setDeltaInformations(ar.result());
-                                handler.complete(copyRequest);
-                            } catch (Exception e) {
-                                log.error("Request parsing error", e);
-                                handler.fail(e);
-                            }
+                            QueryRequest copyRequest = request.copy();
+                            copyRequest.setDeltaInformations(deltaInfoRes.getDeltaInformations());
+                            copyRequest.setSql(deltaInfoRes.getSqlWithoutSnapshots());
+                            copyRequest.setDeltaInformations(ar.result());
+                            handler.complete(copyRequest);
                         } else {
                             handler.fail(ar.cause());
                         }
                     });
                 }
             } catch (Exception e) {
-                log.error("Request parsing error", e);
-                handler.fail(e);
+                handler.fail(new DtmException(e));
             }
         });
     }

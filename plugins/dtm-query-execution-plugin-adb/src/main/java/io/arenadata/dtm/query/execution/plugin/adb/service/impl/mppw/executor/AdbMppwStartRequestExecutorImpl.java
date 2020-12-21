@@ -15,6 +15,7 @@ import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwKaf
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwKafkaRequestContext;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwTransferDataRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -65,7 +66,7 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
         return Future.future((Promise<QueryResult> promise) -> {
             val format = context.getRequest().getKafkaParameter().getUploadMetadata().getFormat();
             if (!Format.AVRO.equals(format)) {
-                promise.fail(new RuntimeException(String.format("Format %s not implemented", format)));
+                promise.fail(new MppwDatasourceException(String.format("Format %s not implemented", format)));
             }
             List<KafkaBrokerInfo> brokers = context.getRequest().getKafkaParameter().getBrokers();
             getOrCreateServer(brokers, dbName)
@@ -82,26 +83,35 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
 
     private Future<String> getOrCreateServer(List<KafkaBrokerInfo> brokers, String currentDatabase) {
         return Future.future(promise -> {
-            val columnMetadata = Collections.singletonList(new ColumnMetadata("foreign_server_name", ColumnType.VARCHAR));
-            val brokersList = brokers.stream().map(KafkaBrokerInfo::getAddress).collect(Collectors.joining(","));
-            adbQueryExecutor.execute(metadataSqlFactory.checkServerSqlQuery(currentDatabase, brokersList), columnMetadata, checkServerResult -> {
-                if (checkServerResult.succeeded()) {
-                    val result = checkServerResult.result();
-                    if (result.isEmpty()) {
-                        adbQueryExecutor.execute(metadataSqlFactory.createServerSqlQuery(currentDatabase, brokersList), Collections.emptyList(), createServerResult -> {
-                            if (createServerResult.succeeded()) {
-                                promise.complete(String.format(MetadataSqlFactoryImpl.SERVER_NAME_TEMPLATE, currentDatabase));
-                            } else {
-                                promise.fail(createServerResult.cause());
-                            }
-                        });
-                    } else {
-                        promise.complete(result.get(0).get("foreign_server_name").toString());
-                    }
-                } else {
-                    promise.fail(checkServerResult.cause());
-                }
-            });
+            val columnMetadata = Collections.singletonList(
+                    new ColumnMetadata("foreign_server_name", ColumnType.VARCHAR));
+            val brokersList = brokers.stream()
+                    .map(KafkaBrokerInfo::getAddress)
+                    .collect(Collectors.joining(","));
+            final String serverSqlQuery = metadataSqlFactory.checkServerSqlQuery(currentDatabase, brokersList);
+            log.debug("Created check server for mppw query {}", serverSqlQuery);
+            adbQueryExecutor.execute(serverSqlQuery, columnMetadata)
+                    .compose(result -> {
+                        if (result.isEmpty()) {
+                            return createServer(brokersList, currentDatabase);
+                        } else {
+                            return Future.succeededFuture(result.get(0).get("foreign_server_name").toString());
+                        }
+                    })
+                    .onComplete(promise);
+        });
+    }
+
+    private Future<String> createServer(String brokersList, String currentDatabase) {
+        return Future.future(promise -> {
+            adbQueryExecutor.execute(metadataSqlFactory.createServerSqlQuery(currentDatabase, brokersList), Collections.emptyList())
+                    .onComplete(createServerResult -> {
+                        if (createServerResult.succeeded()) {
+                            promise.complete(String.format(MetadataSqlFactoryImpl.SERVER_NAME_TEMPLATE, currentDatabase));
+                        } else {
+                            promise.fail(createServerResult.cause());
+                        }
+                    });
         });
     }
 
@@ -110,35 +120,41 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
             val sourceEntity = context.getRequest().getKafkaParameter().getSourceEntity();
             val columns = metadataSqlFactory.getColumnsFromEntity(sourceEntity);
             columns.add("sys_op int");
-            adbQueryExecutor.executeUpdate(metadataSqlFactory.createExtTableSqlQuery(server, columns, context, mppwProperties), ar -> {
-                if (ar.succeeded()) {
-                    promise.complete(server);
-                } else {
-                    promise.fail(ar.cause());
-                }
-            });
+            adbQueryExecutor.executeUpdate(metadataSqlFactory.createExtTableSqlQuery(server,
+                    columns,
+                    context,
+                    mppwProperties))
+                    .onComplete(ar -> {
+                        if (ar.succeeded()) {
+                            promise.complete(server);
+                        } else {
+                            promise.fail(ar.cause());
+                        }
+                    });
         });
     }
 
     private Future<MppwKafkaRequestContext> createMppwKafkaRequestContext(MppwRequestContext context,
                                                                           String server) {
         return Future.future((Promise<MppwKafkaRequestContext> promise) -> {
-            final MppwKafkaLoadRequest mppwKafkaLoadRequest = mppwKafkaLoadRequestFactory.create(context, server, mppwProperties);
+            final MppwKafkaLoadRequest mppwKafkaLoadRequest =
+                    mppwKafkaLoadRequestFactory.create(context, server, mppwProperties);
             final String keyColumnsSqlQuery = metadataSqlFactory.createKeyColumnsSqlQuery(
                     context.getRequest().getKafkaParameter().getDatamart(),
                     context.getRequest().getKafkaParameter().getDestinationTableName());
             final List<ColumnMetadata> metadata = metadataSqlFactory.createKeyColumnQueryMetadata();
-            adbQueryExecutor.execute(keyColumnsSqlQuery, metadata, ar -> {
-                if (ar.succeeded()) {
-                    final MppwTransferDataRequest mppwTransferDataRequest =
-                            mppwTransferRequestFactory.create(context, ar.result());
-                    MppwKafkaRequestContext kafkaRequestContext =
-                            new MppwKafkaRequestContext(mppwKafkaLoadRequest, mppwTransferDataRequest);
-                    promise.complete(kafkaRequestContext);
-                } else {
-                    promise.fail(ar.cause());
-                }
-            });
+            adbQueryExecutor.execute(keyColumnsSqlQuery, metadata)
+                    .onComplete(ar -> {
+                        if (ar.succeeded()) {
+                            final MppwTransferDataRequest mppwTransferDataRequest =
+                                    mppwTransferRequestFactory.create(context, ar.result());
+                            MppwKafkaRequestContext kafkaRequestContext =
+                                    new MppwKafkaRequestContext(mppwKafkaLoadRequest, mppwTransferDataRequest);
+                            promise.complete(kafkaRequestContext);
+                        } else {
+                            promise.fail(ar.cause());
+                        }
+                    });
 
         });
     }

@@ -2,9 +2,8 @@ package io.arenadata.dtm.query.execution.plugin.adqm.service.mock;
 
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
-import io.vertx.core.AsyncResult;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.val;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -38,40 +37,46 @@ public class MockDatabaseExecutor implements DatabaseExecutor {
     }
 
     @Override
-    public void execute(String sql, List<ColumnMetadata> metadata, Handler<AsyncResult<List<Map<String, Object>>>> resultHandler) {
-        // if we provide results, this calls are not treated as expected
-        val result = findResult(sql);
-        if (result.isPresent()) {
-            resultHandler.handle(Future.succeededFuture(result.get()));
-            return;
-        }
+    public Future<List<Map<String, Object>>> execute(String sql, List<ColumnMetadata> metadata) {
+        return Future.future(promise -> {
+            // if we provide results, this calls are not treated as expected
+            val result = findResult(sql);
+            if (result.isPresent()) {
+                promise.complete(result.get());
+                return;
+            }
 
-        val r = call(sql);
-        if (r.getLeft()) {
-            resultHandler.handle(Future.succeededFuture());
-        } else {
-            resultHandler.handle(Future.failedFuture(r.getRight()));
-        }
+            val r = call(sql);
+            if (r.getLeft()) {
+                promise.complete();
+            } else {
+                promise.fail(new DataSourceException(r.getRight()));
+            }
+        });
     }
 
     @Override
-    public void executeUpdate(String sql, Handler<AsyncResult<Void>> completionHandler) {
-        val r = call(sql);
-        if (r.getLeft()) {
-            completionHandler.handle(Future.succeededFuture());
-        } else {
-            completionHandler.handle(Future.failedFuture(r.getRight()));
-        }
+    public Future<Void> executeUpdate(String sql) {
+        return Future.future(promise -> {
+            val r = call(sql);
+            if (r.getLeft()) {
+                promise.complete();
+            } else {
+                promise.fail(new DataSourceException(r.getRight()));
+            }
+        });
     }
 
     @Override
-    public void executeWithParams(String sql, List<Object> params, List<ColumnMetadata> metadata, Handler<AsyncResult<?>> resultHandler) {
-        val r = call(sql);
-        if (r.getLeft()) {
-            resultHandler.handle(Future.succeededFuture());
-        } else {
-            resultHandler.handle(Future.failedFuture(r.getRight()));
-        }
+    public Future<?> executeWithParams(String sql, List<Object> params, List<ColumnMetadata> metadata) {
+        return Future.future(promise -> {
+            val r = call(sql);
+            if (r.getLeft()) {
+                promise.complete();
+            } else {
+                promise.fail(new DataSourceException(r.getRight()));
+            }
+        });
     }
 
     public List<Predicate<String>> getExpectedCalls() {

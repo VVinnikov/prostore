@@ -10,8 +10,7 @@ import org.springframework.stereotype.Service;
 public class AdgCalciteDMLQueryParserService extends CalciteDMLQueryParserService {
     public AdgCalciteDMLQueryParserService(
             @Qualifier("adgCalciteContextProvider") CalciteContextProvider contextProvider,
-            @Qualifier("coreVertx") Vertx vertx
-    ) {
+            @Qualifier("coreVertx") Vertx vertx) {
         super(contextProvider, vertx);
     }
 }

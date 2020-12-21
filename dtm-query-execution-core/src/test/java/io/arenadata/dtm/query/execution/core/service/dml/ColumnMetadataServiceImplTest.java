@@ -58,15 +58,17 @@ class ColumnMetadataServiceImplTest {
         List<ColumnMetadata> expectedColumns = Arrays.asList(
                 new ColumnMetadata("account_id", ColumnType.BIGINT),
                 new ColumnMetadata("account_type", ColumnType.VARCHAR));
-        service.getColumnMetadata(new QueryParserRequest(sourceRequest.getQueryRequest(), sourceRequest.getLogicalSchema()), ar -> {
-            if (ar.succeeded()) {
-                log.info("Result columns: {}", ar.result());
-                assertEquals(expectedColumns, ar.result());
-                testContext.completeNow();
-            } else {
-                testContext.failNow(ar.cause());
-            }
-        });
+        service.getColumnMetadata(new QueryParserRequest(sourceRequest.getQueryRequest(),
+                sourceRequest.getLogicalSchema()))
+                .onComplete(ar -> {
+                    if (ar.succeeded()) {
+                        log.info("Result columns: {}", ar.result());
+                        assertEquals(expectedColumns, ar.result());
+                        testContext.completeNow();
+                    } else {
+                        testContext.failNow(ar.cause());
+                    }
+                });
         assertThat(testContext.awaitCompletion(5, TimeUnit.SECONDS)).isTrue();
     }
 

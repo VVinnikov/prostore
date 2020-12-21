@@ -10,18 +10,16 @@ import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.configuration.properties.CoreDtmSettings;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
-import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
+import io.arenadata.dtm.common.exception.DtmException;
+import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.dml.impl.TargetDatabaseDefinitionServiceImpl;
-import io.arenadata.dtm.query.execution.core.service.impl.DataSourcePluginServiceImpl;
+import io.arenadata.dtm.query.execution.core.service.datasource.impl.DataSourcePluginServiceImpl;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.time.ZoneId;
 import java.util.*;
@@ -48,7 +46,7 @@ class TargetDatabaseDefinitionServiceImplTest {
 
     @Test
     void getTargetSourceWithCalcCosts() {
-        Promise promise = Promise.promise();
+        Promise<QuerySourceRequest> promise = Promise.promise();
         QueryRequest request = new QueryRequest();
         request.setSql("select t1.id from table_1 t1 join dtm_1.table_2 t2 " +
                 "ON t2.id = t1.id JOIN dtm_2.table_3 t3 ON t3.id = t2.id");
@@ -75,32 +73,22 @@ class TargetDatabaseDefinitionServiceImplTest {
 
         when(dataSourcePluginService.getSourceTypes()).thenReturn(defaultSourceTypes);
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Integer>> handler = invocation.getArgument(2);
-            handler.handle(Future.succeededFuture(adbQueryCost));
-            return null;
-        }).when(dataSourcePluginService).calcQueryCost(eq(SourceType.ADB), any(), any());
+        when(dataSourcePluginService.calcQueryCost(eq(SourceType.ADB), any()))
+                .thenReturn(Future.succeededFuture(adbQueryCost));
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Integer>> handler = invocation.getArgument(2);
-            handler.handle(Future.succeededFuture(adgQueryCost));
-            return null;
-        }).when(dataSourcePluginService).calcQueryCost(eq(SourceType.ADG), any(), any());
+        when(dataSourcePluginService.calcQueryCost(eq(SourceType.ADG), any()))
+                .thenReturn(Future.succeededFuture(adgQueryCost));
 
-        targetDatabaseDefinitionService.getTargetSource(sourceRequest, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result().getSourceType());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        targetDatabaseDefinitionService.getTargetSource(sourceRequest)
+                .onComplete(promise);
+
         assertTrue(promise.future().succeeded());
-        assertEquals(SourceType.ADG, promise.future().result());
+        assertEquals(SourceType.ADG, promise.future().result().getSourceType());
     }
 
     @Test
     void getTargetSourceWithSettedSourceType() {
-        Promise promise = Promise.promise();
+        Promise<QuerySourceRequest> promise = Promise.promise();
         QueryRequest request = new QueryRequest();
         request.setSql("select t1.id from table_1 t1 join dtm_1.table_2 t2 " +
                 "ON t2.id = t1.id JOIN dtm_2.table_3 t3 ON t3.id = t2.id");
@@ -126,20 +114,15 @@ class TargetDatabaseDefinitionServiceImplTest {
 
         when(dataSourcePluginService.getSourceTypes()).thenReturn(defaultSourceTypes);
 
-        targetDatabaseDefinitionService.getTargetSource(sourceRequest, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result().getSourceType());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        targetDatabaseDefinitionService.getTargetSource(sourceRequest)
+                .onComplete(promise);
         assertTrue(promise.future().succeeded());
-        assertEquals(SourceType.ADB, promise.future().result());
+        assertEquals(SourceType.ADB, promise.future().result().getSourceType());
     }
 
     @Test
     void getTargetSourceWithSingleTableSourceType() {
-        Promise promise = Promise.promise();
+        Promise<QuerySourceRequest> promise = Promise.promise();
         QueryRequest request = new QueryRequest();
         request.setSql("select t1.id from table_1 t1 join dtm_1.table_2 t2 " +
                 "ON t2.id = t1.id JOIN dtm_2.table_3 t3 ON t3.id = t2.id");
@@ -166,20 +149,15 @@ class TargetDatabaseDefinitionServiceImplTest {
 
         when(dataSourcePluginService.getSourceTypes()).thenReturn(defaultSourceTypes);
 
-        targetDatabaseDefinitionService.getTargetSource(sourceRequest, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result().getSourceType());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        targetDatabaseDefinitionService.getTargetSource(sourceRequest)
+                .onComplete(promise);
         assertTrue(promise.future().succeeded());
-        assertEquals(SourceType.ADG, promise.future().result());
+        assertEquals(SourceType.ADG, promise.future().result().getSourceType());
     }
 
     @Test
     void getTargetSourceWithNonExistTableSourceType() {
-        Promise promise = Promise.promise();
+        Promise<QuerySourceRequest> promise = Promise.promise();
         QueryRequest request = new QueryRequest();
         request.setSql("select t1.id from table_1 t1 join dtm_1.table_2 t2 " +
                 "ON t2.id = t1.id JOIN dtm_2.table_3 t3 ON t3.id = t2.id");
@@ -208,19 +186,15 @@ class TargetDatabaseDefinitionServiceImplTest {
 
         when(dataSourcePluginService.getSourceTypes()).thenReturn(defaultSourceTypes);
 
-        targetDatabaseDefinitionService.getTargetSource(sourceRequest, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result().getSourceType());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        targetDatabaseDefinitionService.getTargetSource(sourceRequest)
+                .onComplete(promise);
+
         assertTrue(promise.future().failed());
     }
 
     @Test
     void getTargetSourceWithNonEqualSettedSourceType() {
-        Promise promise = Promise.promise();
+        Promise<QuerySourceRequest> promise = Promise.promise();
         QueryRequest request = new QueryRequest();
         request.setSql("select t1.id from table_1 t1 join dtm_1.table_2 t2 " +
                 "ON t2.id = t1.id JOIN dtm_2.table_3 t3 ON t3.id = t2.id");
@@ -248,19 +222,15 @@ class TargetDatabaseDefinitionServiceImplTest {
 
         when(dataSourcePluginService.getSourceTypes()).thenReturn(defaultSourceTypes);
 
-        targetDatabaseDefinitionService.getTargetSource(sourceRequest, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result().getSourceType());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        targetDatabaseDefinitionService.getTargetSource(sourceRequest)
+                .onComplete(promise);
+
         assertTrue(promise.future().failed());
     }
 
     @Test
     void getTargetSourceWithEqualCalcCosts() {
-        Promise promise = Promise.promise();
+        Promise<QuerySourceRequest> promise = Promise.promise();
         QueryRequest request = new QueryRequest();
         request.setSql("select t1.id from table_1 t1 join dtm_1.table_2 t2 " +
                 "ON t2.id = t1.id JOIN dtm_2.table_3 t3 ON t3.id = t2.id");
@@ -291,38 +261,25 @@ class TargetDatabaseDefinitionServiceImplTest {
 
         when(dataSourcePluginService.getSourceTypes()).thenReturn(defaultSourceTypes);
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Integer>> handler = invocation.getArgument(2);
-            handler.handle(Future.succeededFuture(adbQueryCost));
-            return null;
-        }).when(dataSourcePluginService).calcQueryCost(eq(SourceType.ADB), any(), any());
+        when(dataSourcePluginService.calcQueryCost(eq(SourceType.ADB), any()))
+                .thenReturn(Future.succeededFuture(adbQueryCost));
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Integer>> handler = invocation.getArgument(2);
-            handler.handle(Future.succeededFuture(adgQueryCost));
-            return null;
-        }).when(dataSourcePluginService).calcQueryCost(eq(SourceType.ADG), any(), any());
+        when(dataSourcePluginService.calcQueryCost(eq(SourceType.ADG), any()))
+                .thenReturn(Future.succeededFuture(adgQueryCost));
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Integer>> handler = invocation.getArgument(2);
-            handler.handle(Future.succeededFuture(adqmQueryCost));
-            return null;
-        }).when(dataSourcePluginService).calcQueryCost(eq(SourceType.ADQM), any(), any());
+        when(dataSourcePluginService.calcQueryCost(eq(SourceType.ADQM), any()))
+                .thenReturn(Future.succeededFuture(adqmQueryCost));
 
-        targetDatabaseDefinitionService.getTargetSource(sourceRequest, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result().getSourceType());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        targetDatabaseDefinitionService.getTargetSource(sourceRequest)
+                .onComplete(promise);
+
         assertTrue(promise.future().succeeded());
-        assertEquals(SourceType.ADB, promise.future().result());
+        assertEquals(SourceType.ADB, promise.future().result().getSourceType());
     }
 
     @Test
     void getTargetSourceWithCalcCostsError() {
-        Promise promise = Promise.promise();
+        Promise<QuerySourceRequest> promise = Promise.promise();
         QueryRequest request = new QueryRequest();
         request.setSql("select t1.id from table_1 t1 join dtm_1.table_2 t2 " +
                 "ON t2.id = t1.id JOIN dtm_2.table_3 t3 ON t3.id = t2.id");
@@ -348,25 +305,15 @@ class TargetDatabaseDefinitionServiceImplTest {
 
         when(dataSourcePluginService.getSourceTypes()).thenReturn(defaultSourceTypes);
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Integer>> handler = invocation.getArgument(2);
-            handler.handle(Future.failedFuture(new RuntimeException("")));
-            return null;
-        }).when(dataSourcePluginService).calcQueryCost(eq(SourceType.ADB), any(), any());
+        when(dataSourcePluginService.calcQueryCost(eq(SourceType.ADB), any()))
+                .thenReturn(Future.failedFuture(new DtmException("")));
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Integer>> handler = invocation.getArgument(2);
-            handler.handle(Future.succeededFuture(adgQueryCost));
-            return null;
-        }).when(dataSourcePluginService).calcQueryCost(eq(SourceType.ADG), any(), any());
+        when(dataSourcePluginService.calcQueryCost(eq(SourceType.ADG), any()))
+                .thenReturn(Future.succeededFuture(adgQueryCost));
 
-        targetDatabaseDefinitionService.getTargetSource(sourceRequest, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result().getSourceType());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        targetDatabaseDefinitionService.getTargetSource(sourceRequest)
+                .onComplete(promise);
+
         assertTrue(promise.future().failed());
     }
 

@@ -1,36 +1,32 @@
 package io.arenadata.dtm.query.execution.core.dto.eddl;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
 /**
- * Запрос eddl
+ * Eddl query
  */
 @Data
+@AllArgsConstructor
+@RequiredArgsConstructor
 public abstract class EddlQuery {
 
     /**
-     * Тип запроса
+     * Eddl query type
      */
+    @NonNull
     private EddlAction action;
 
     /**
-     * Наименование схемы
+     * Schema name
      */
     private String schemaName;
 
     /**
-     * Наименование таблицы
+     * table name
      */
     private String tableName;
-
-    public EddlQuery(EddlAction action) {
-        this.action = action;
-    }
-
-    public EddlQuery(EddlAction action, String schemaName, String tableName) {
-        this(action);
-        this.schemaName = schemaName;
-        this.tableName = tableName;
-    }
 
 }

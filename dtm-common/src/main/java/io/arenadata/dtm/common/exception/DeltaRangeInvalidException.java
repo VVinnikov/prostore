@@ -1,6 +1,6 @@
 package io.arenadata.dtm.common.exception;
 
-public class DeltaRangeInvalidException extends RuntimeException{
+public class DeltaRangeInvalidException extends DtmException {
 
     public DeltaRangeInvalidException() {
         super("DeltaRangeInvalid exception");

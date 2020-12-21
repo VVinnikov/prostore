@@ -2,13 +2,15 @@ package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.ddl;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
-import io.arenadata.dtm.query.execution.plugin.adqm.common.Constants;
+import io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TruncateHistoryService;
 import io.vertx.core.Future;
+import org.apache.calcite.sql.SqlDialect;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,22 +26,26 @@ public class AdqmTruncateHistoryService implements TruncateHistoryService {
     private static final String OPTIMIZE_PATTERN = "OPTIMIZE TABLE %s.%s_actual_shard ON CLUSTER %s FINAL";
 
     private final DatabaseExecutor adqmQueryExecutor;
+    private final SqlDialect sqlDialect;
     private final DdlProperties ddlProperties;
 
     @Autowired
     public AdqmTruncateHistoryService(DatabaseExecutor adqmQueryExecutor,
+                                      @Qualifier("adqmSqlDialect") SqlDialect sqlDialect,
                                       DdlProperties ddlProperties) {
         this.adqmQueryExecutor = adqmQueryExecutor;
         this.ddlProperties = ddlProperties;
+        this.sqlDialect = sqlDialect;
     }
 
     @Override
     public Future<Void> truncateHistory(TruncateHistoryParams params) {
+        //TODO it's better to exclude generating sql query in separate factory class
         String sysCnExpression = params.getSysCn()
                 .map(sysCn -> String.format(" AND sys_to < %s", sysCn))
                 .orElse("");
         String whereExpression = params.getConditions()
-                .map(conditions -> String.format(" AND (%s)", conditions))
+                .map(conditions -> String.format(" AND (%s)", conditions.toSqlString(sqlDialect)))
                 .orElse("");
         Entity entity = params.getEntity();
         String dbName = String.format("%s__%s", params.getEnv(), entity.getSchema());

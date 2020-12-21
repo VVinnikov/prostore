@@ -8,7 +8,9 @@ import io.arenadata.dtm.query.calcite.core.extension.check.CheckType;
 import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckData;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
-import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
+import io.arenadata.dtm.common.exception.DtmException;
+import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
+import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.verticle.TaskVerticleExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckException;
@@ -51,8 +53,7 @@ public class CheckDataExecutor implements CheckExecutor {
         return entityDao.getEntity(context.getRequest().getQueryRequest().getDatamartMnemonic(), sqlCheckData.getTable())
                 .compose(entity -> EntityType.TABLE.equals(entity.getEntityType())
                         ? Future.succeededFuture(entity)
-                        : Future.failedFuture(new IllegalArgumentException(
-                        String.format("Table `%s` not exist", sqlCheckData.getTable()))))
+                        : Future.failedFuture(new TableNotExistsException(sqlCheckData.getTable())))
                 .compose(entity -> check(context, entity, sqlCheckData));
     }
 
@@ -67,7 +68,13 @@ public class CheckDataExecutor implements CheckExecutor {
 
         return Future.future(promise -> check(sqlCheckData.getDeltaNum(), entity.getSchema(),
                 getCheckFunc(context, entity, sqlCheckData.getColumns()))
-                .onSuccess(result -> promise.complete(""))
+                .onSuccess(result -> promise.complete(
+                        String.format("Table '%s.%s' (%s) checksum for delta %s is Ok.",
+                                entity.getSchema(), entity.getName(),
+                                entity.getDestination().stream()
+                                        .map(SourceType::name)
+                                        .collect(Collectors.joining(", ")),
+                                sqlCheckData.getDeltaNum())))
                 .onFailure(exception -> {
                     if (exception instanceof CheckException) {
                         promise.complete(String.format("Table '%s.%s' checksum mismatch!\n%s",
@@ -151,7 +158,7 @@ public class CheckDataExecutor implements CheckExecutor {
                 .collect(Collectors.toSet());
 
         if (!notExistColumns.isEmpty()) {
-            throw new IllegalArgumentException(String.format("Columns: `%s` don't exist.",
+            throw new DtmException(String.format("Columns: `%s` don't exist.",
                     String.join(", ", notExistColumns)));
         } else {
             return (type, sysCn) -> dataSourcePluginService.checkDataByHashInt32(

@@ -33,6 +33,7 @@ import io.arenadata.dtm.query.execution.core.verticle.impl.TaskVerticleExecutorI
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.kafka.admin.KafkaAdminClient;
@@ -106,6 +107,7 @@ class StatusEventVerticleTest {
     @Test
     @Disabled
     void publishDeltaOpenEvent(VertxTestContext testContext) throws InterruptedException {
+        Promise<QueryResult> promise = Promise.promise();
         //FIXME
         req.setSql("BEGIN DELTA");
         long deltaNum = 1L;
@@ -139,8 +141,8 @@ class StatusEventVerticleTest {
             }
             return null;
         }).when(kafkaStatusEventPublisher).publish(any(), any());
-        beginDeltaExecutor.execute(deltaQuery, handler -> {
-        });
+        beginDeltaExecutor.execute(deltaQuery)
+                .onComplete(promise);
         assertThat(testContext.awaitCompletion(10, TimeUnit.SECONDS)).isTrue();
     }
 

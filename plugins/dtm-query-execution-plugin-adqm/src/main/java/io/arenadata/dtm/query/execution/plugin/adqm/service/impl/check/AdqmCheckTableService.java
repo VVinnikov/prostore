@@ -113,6 +113,7 @@ public class AdqmCheckTableService implements CheckTableService {
 
 
     private Future<Optional<AdqmTableEntity>> getMetadata(AdqmTableEntity expTableEntity) {
+        //TODO it's better to exclude generating sql query in separate factory class
         String query = String.format(QUERY_PATTERN, expTableEntity.getName(), expTableEntity.getEnv(),
                 expTableEntity.getSchema());
         return adqmQueryExecutor.execute(query)

@@ -4,7 +4,7 @@ import io.arenadata.dtm.common.exception.CrashException;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.factory.RollbackRequestContextFactory;
-import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadFailedExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
@@ -39,18 +39,18 @@ public class UploadFailedExecutorImpl implements EdmlUploadFailedExecutor {
     @Override
     public Future<Void> execute(EdmlRequestContext context) {
         return Future.future(promise -> eraseWriteOp(context)
-            .compose(v -> deltaServiceDao.deleteWriteOperation(context.getSourceEntity().getSchema(),
-                context.getSysCn()))
-            .setHandler(promise));
+                .compose(v -> deltaServiceDao.deleteWriteOperation(context.getSourceEntity().getSchema(),
+                        context.getSysCn()))
+                .setHandler(promise));
     }
 
     private Future<Void> eraseWriteOp(EdmlRequestContext context) {
         return Future.future(rbPromise -> {
             final RollbackRequestContext rollbackRequestContext =
-                rollbackRequestContextFactory.create(context);
+                    rollbackRequestContextFactory.create(context);
             eraseWriteOp(rollbackRequestContext)
-                .onSuccess(rbPromise::complete)
-                .onFailure(rbPromise::fail);
+                    .onSuccess(rbPromise::complete)
+                    .onFailure(rbPromise::fail);
         });
     }
 
@@ -62,36 +62,26 @@ public class UploadFailedExecutorImpl implements EdmlUploadFailedExecutor {
                     .filter(type -> dataSourcePluginService.getSourceTypes().contains(type))
                     .collect(Collectors.toSet());
             destination.forEach(sourceType ->
-                futures.add(Future.future(p -> dataSourcePluginService.rollback(
-                    sourceType,
-                    context,
-                    ar -> {
-                        if (ar.succeeded()) {
-                            log.debug("Rollback data in plugin [{}], datamart [{}], " +
-                                    "table [{}], sysCn [{}] finished successfully",
-                                sourceType,
-                                context.getRequest().getDatamart(),
-                                context.getRequest().getDestinationTable(),
-                                context.getRequest().getSysCn());
-                            p.complete();
-                        } else {
-                            log.error("Error rollback data in plugin [{}], " +
-                                    "datamart [{}], table [{}], sysCn [{}]",
-                                sourceType,
-                                context.getRequest().getDatamart(),
-                                context.getRequest().getDestinationTable(),
-                                context.getRequest().getSysCn(),
-                                ar.cause());
-                            p.fail(ar.cause());
-                        }
-                    }))));
+                    futures.add(Future.future(p -> dataSourcePluginService.rollback(
+                            sourceType,
+                            context)
+                            .onSuccess(result -> {
+                                log.debug("Rollback data in plugin [{}], datamart [{}], " +
+                                                "table [{}], sysCn [{}] finished successfully",
+                                        sourceType,
+                                        context.getRequest().getDatamart(),
+                                        context.getRequest().getDestinationTable(),
+                                        context.getRequest().getSysCn());
+                                p.complete();
+                            })
+                            .onFailure(p::fail))));
             CompositeFuture.join(futures).setHandler(ar -> {
                 if (ar.succeeded()) {
                     rbPromise.complete();
                 } else {
-                    log.error("Error in rolling back data", ar.cause());
                     rbPromise.fail(
-                        new CrashException("Error in rolling back data → Fatal error. Operation failed on execute and failed on undo.", ar.cause())
+                            new CrashException("Error in rolling back data → Fatal error. Operation failed on execute and failed on undo.",
+                                    ar.cause())
                     );
                 }
             });

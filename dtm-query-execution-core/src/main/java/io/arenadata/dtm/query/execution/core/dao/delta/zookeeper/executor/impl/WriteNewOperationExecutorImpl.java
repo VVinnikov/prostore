@@ -3,9 +3,9 @@ package io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.impl;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaDaoExecutor;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaServiceDaoExecutorHelper;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.WriteNewOperationExecutor;
-import io.arenadata.dtm.query.execution.core.dao.exception.delta.DeltaClosedException;
-import io.arenadata.dtm.query.execution.core.dao.exception.delta.DeltaException;
-import io.arenadata.dtm.query.execution.core.dao.exception.delta.TableBlockedException;
+import io.arenadata.dtm.query.execution.core.exception.delta.DeltaClosedException;
+import io.arenadata.dtm.query.execution.core.exception.delta.DeltaException;
+import io.arenadata.dtm.query.execution.core.exception.delta.TableBlockedException;
 import io.arenadata.dtm.query.execution.core.dto.delta.DeltaWriteOp;
 import io.arenadata.dtm.query.execution.core.dto.delta.DeltaWriteOpRequest;
 import io.arenadata.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
@@ -14,6 +14,7 @@ import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.zookeeper.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -26,6 +27,7 @@ public class WriteNewOperationExecutorImpl extends DeltaServiceDaoExecutorHelper
 
     private static final int CREATE_OP_PATH_INDEX = 1;
 
+    @Autowired
     public WriteNewOperationExecutorImpl(ZookeeperExecutor executor,
                                          @Value("${core.env.name}") String envName) {
         super(executor, envName);
@@ -45,13 +47,12 @@ public class WriteNewOperationExecutorImpl extends DeltaServiceDaoExecutorHelper
             .compose(cnFrom -> executor.multi(getWriteNewOps(request, cnFrom))
                 .map(result -> getSysCn(cnFrom, result)))
             .onSuccess(sysCn -> {
-                log.debug("write new delta operation by datamart[{}] completed successfully: sysCn[{}]", request, sysCn);
+                log.debug("Write new delta operation by datamart[{}] completed successfully: sysCn[{}]", request, sysCn);
                 resultPromise.complete(sysCn);
             })
             .onFailure(error -> {
-                val errMsg = String.format("can't write new operation on datamart[%s]",
+                val errMsg = String.format("Can't write new operation on datamart[%s]",
                     request.getDatamart());
-                log.error(errMsg, error);
                 if (error instanceof KeeperException.NodeExistsException) {
                     resultPromise.fail(new TableBlockedException(request.getTableName(), error));
                 } else if (error instanceof DeltaException) {

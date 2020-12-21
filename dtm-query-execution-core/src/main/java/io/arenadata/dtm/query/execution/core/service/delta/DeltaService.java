@@ -7,7 +7,7 @@ import io.vertx.core.AsyncResult;
 
 import static io.arenadata.dtm.common.model.SqlProcessingType.DELTA;
 
-public interface DeltaService<T> extends DatamartExecutionService<DeltaRequestContext, AsyncResult<T>> {
+public interface DeltaService<T> extends DatamartExecutionService<DeltaRequestContext, T> {
 
     default SqlProcessingType getSqlProcessingType() {
         return DELTA;

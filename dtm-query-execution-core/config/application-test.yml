@@ -73,6 +73,7 @@ adb:
       host: ${ADB_HOST:10.92.3.42}
       port: ${ADB_PORT:5432}
       maxSize: 20
+    fetchSize: ${ADB_FETCH_SIZE:1000}
 
   mppw:
     startLoadUrl: ${ADB_START_LOAD_URL:http://localhost:8090/newdata/adb/start}

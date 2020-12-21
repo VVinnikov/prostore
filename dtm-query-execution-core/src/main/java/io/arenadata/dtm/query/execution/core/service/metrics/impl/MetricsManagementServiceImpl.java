@@ -2,6 +2,7 @@ package io.arenadata.dtm.query.execution.core.service.metrics.impl;
 
 import io.arenadata.dtm.query.execution.core.configuration.metrics.MetricsSettings;
 import io.arenadata.dtm.query.execution.core.dto.metrics.MetricsSettingsUpdateResult;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsManagementService;
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsProvider;
 import lombok.extern.slf4j.Slf4j;
@@ -35,9 +36,7 @@ public class MetricsManagementServiceImpl implements MetricsManagementService {
                 return new MetricsSettingsUpdateResult(true, turnedOnMsg);
             }
         } catch (Exception e) {
-            final String error = "Error in turning on metrics";
-            log.error(error, e);
-            throw new RuntimeException(error, e);
+            throw new DtmException("Error in turning on metrics", e);
         }
     }
 
@@ -53,9 +52,7 @@ public class MetricsManagementServiceImpl implements MetricsManagementService {
                 return new MetricsSettingsUpdateResult(false, turnedOffMsg);
             }
         } catch (Exception e) {
-            final String error = "Error in turning off metrics";
-            log.error(error, e);
-            throw new RuntimeException(error, e);
+            throw new DtmException("Error in turning off metrics", e);
         }
     }
 }

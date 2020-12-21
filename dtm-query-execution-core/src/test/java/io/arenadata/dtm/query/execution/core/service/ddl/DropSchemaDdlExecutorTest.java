@@ -1,6 +1,8 @@
 package io.arenadata.dtm.query.execution.core.service.ddl;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.QueryRequest;
+import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
@@ -18,9 +20,7 @@ import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.impl.MetadataExecutorImpl;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
@@ -78,73 +78,49 @@ class DropSchemaDdlExecutorTest {
 
     @Test
     void executeSuccess() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         Mockito.when(datamartDao.existsDatamart(eq(schema)))
-            .thenReturn(Future.succeededFuture(true));
+                .thenReturn(Future.succeededFuture(true));
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture());
-            return null;
-        }).when(metadataExecutor).execute(any(), any());
+        when(metadataExecutor.execute(any()))
+                .thenReturn(Future.succeededFuture());
 
         Mockito.when(datamartDao.deleteDatamart(eq(schema)))
-            .thenReturn(Future.succeededFuture());
+                .thenReturn(Future.succeededFuture());
 
-        dropSchemaDdlExecutor.execute(context, null, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        dropSchemaDdlExecutor.execute(context, null)
+                .onComplete(promise);
         assertTrue(promise.future().succeeded());
     }
 
     @Test
     void executeWithDropSchemaError() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         Mockito.when(datamartDao.existsDatamart(eq(schema)))
-            .thenReturn(Future.succeededFuture(true));
+                .thenReturn(Future.succeededFuture(true));
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new RuntimeException("")));
-            return null;
-        }).when(metadataExecutor).execute(any(), any());
+        when(metadataExecutor.execute(any()))
+                .thenReturn(Future.failedFuture(new DtmException("")));
 
-        dropSchemaDdlExecutor.execute(context, null, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        dropSchemaDdlExecutor.execute(context, null)
+                .onComplete(promise);
         assertTrue(promise.future().failed());
     }
 
     @Test
     void executeWithDropDatamartError() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         Mockito.when(datamartDao.existsDatamart(eq(schema)))
-            .thenReturn(Future.succeededFuture(true));
+                .thenReturn(Future.succeededFuture(true));
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Void>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture());
-            return null;
-        }).when(metadataExecutor).execute(any(), any());
+        when(metadataExecutor.execute(any()))
+                .thenReturn(Future.succeededFuture());
 
         Mockito.when(datamartDao.deleteDatamart(eq(schema)))
-            .thenReturn(Future.failedFuture("delete datamart error"));
+                .thenReturn(Future.failedFuture("delete datamart error"));
 
-        dropSchemaDdlExecutor.execute(context, null, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        dropSchemaDdlExecutor.execute(context, null)
+                .onComplete(promise);
         assertTrue(promise.future().failed());
     }
 }

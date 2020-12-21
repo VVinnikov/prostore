@@ -12,26 +12,23 @@ import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.impl.DeltaServiceDaoImpl;
-import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
+import io.arenadata.dtm.common.exception.DtmException;
+import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadExternalTableExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadFailedExecutorImpl;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadKafkaExecutor;
-import io.arenadata.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
-import io.arenadata.dtm.query.execution.core.service.impl.DataSourcePluginServiceImpl;
+import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDefinitionService;
+import io.arenadata.dtm.query.execution.core.service.datasource.impl.DataSourcePluginServiceImpl;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import io.arenadata.dtm.query.execution.core.service.schema.impl.LogicalSchemaProviderImpl;
-import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.*;
 
@@ -82,16 +79,12 @@ class UploadExternalTableExecutorTest {
                 .destination(sourceTypes)
                 .build();
         when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<List<Datamart>>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(Collections.EMPTY_LIST));
-            return null;
-        }).when(logicalSchemaProvider).getSchema(any(), any());
+        when(logicalSchemaProvider.getSchema(any())).thenReturn(Future.succeededFuture(Collections.EMPTY_LIST));
     }
 
     @Test
     void executeKafkaSuccessWithSysCnExists() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
         uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
                 uploadFailedExecutor, uploadExecutors, pluginService, logicalSchemaProvider);
@@ -111,22 +104,14 @@ class UploadExternalTableExecutorTest {
         when(deltaServiceDao.writeNewOperation(any()))
                 .thenReturn(Future.succeededFuture(sysCn));
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(queryResult));
-            return null;
-        }).when(uploadExecutors.get(0)).execute(any(), any());
+        when(uploadExecutors.get(0).execute(any()))
+                .thenReturn(Future.succeededFuture(queryResult));
 
         when(deltaServiceDao.writeOperationSuccess(eq(queryRequest.getDatamartMnemonic()),
                 eq(sysCn))).thenReturn(Future.succeededFuture());
 
-        uploadExternalTableExecutor.execute(context, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        uploadExternalTableExecutor.execute(context)
+                .onComplete(promise);
 
         assertTrue(promise.future().succeeded());
         assertEquals(queryResult, promise.future().result());
@@ -134,7 +119,7 @@ class UploadExternalTableExecutorTest {
 
     @Test
     void executeKafkaSuccessWithoutSysCn() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
         uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
                 uploadFailedExecutor, uploadExecutors, pluginService, logicalSchemaProvider);
@@ -153,22 +138,15 @@ class UploadExternalTableExecutorTest {
         when(deltaServiceDao.writeNewOperation(any()))
                 .thenReturn(Future.succeededFuture(sysCn));
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(queryResult));
-            return null;
-        }).when(uploadExecutors.get(0)).execute(any(), any());
+        when(uploadExecutors.get(0).execute(any()))
+                .thenReturn(Future.succeededFuture(queryResult));
 
         when(deltaServiceDao.writeOperationSuccess(eq(queryRequest.getDatamartMnemonic()),
                 eq(sysCn))).thenReturn(Future.succeededFuture());
 
-        uploadExternalTableExecutor.execute(context, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        uploadExternalTableExecutor.execute(context)
+                .onComplete(promise);
+
         assertTrue(promise.future().succeeded());
         assertEquals(queryResult, promise.future().result());
         assertEquals(context.getSysCn(), sysCn);
@@ -176,7 +154,7 @@ class UploadExternalTableExecutorTest {
 
     @Test
     void executeWriteNewOpError() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
         uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
                 uploadFailedExecutor, uploadExecutors, pluginService, logicalSchemaProvider);
@@ -191,21 +169,17 @@ class UploadExternalTableExecutorTest {
         context.setSourceEntity(sourceEntity);
 
         when(deltaServiceDao.writeNewOperation(any()))
-                .thenReturn(Future.failedFuture(new RuntimeException("")));
+                .thenReturn(Future.failedFuture(new DtmException("")));
 
-        uploadExternalTableExecutor.execute(context, ar -> {
-            if (ar.succeeded()) {
-                promise.complete();
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        uploadExternalTableExecutor.execute(context)
+                .onComplete(promise);
+
         assertTrue(promise.future().failed());
     }
 
     @Test
     void executeWriteOpSuccessError() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
         uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
                 uploadFailedExecutor, uploadExecutors, pluginService, logicalSchemaProvider);
@@ -225,28 +199,21 @@ class UploadExternalTableExecutorTest {
         when(deltaServiceDao.writeNewOperation(any()))
                 .thenReturn(Future.succeededFuture(sysCn));
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(queryResult));
-            return null;
-        }).when(uploadExecutors.get(0)).execute(any(), any());
+        when(uploadExecutors.get(0).execute(any()))
+                .thenReturn(Future.succeededFuture(queryResult));
 
         when(deltaServiceDao.writeOperationSuccess(eq(queryRequest.getDatamartMnemonic()),
-                eq(sysCn))).thenReturn(Future.failedFuture(new RuntimeException("")));
+                eq(sysCn))).thenReturn(Future.failedFuture(new DtmException("")));
 
-        uploadExternalTableExecutor.execute(context, ar -> {
-            if (ar.succeeded()) {
-                promise.complete();
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        uploadExternalTableExecutor.execute(context)
+                .onComplete(promise);
+
         assertTrue(promise.future().failed());
     }
 
     @Test
     void executeKafkaError() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
         uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
                 uploadFailedExecutor, uploadExecutors, pluginService, logicalSchemaProvider);
@@ -265,11 +232,8 @@ class UploadExternalTableExecutorTest {
         when(deltaServiceDao.writeNewOperation(any()))
                 .thenReturn(Future.succeededFuture(sysCn));
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new RuntimeException("")));
-            return null;
-        }).when(uploadExecutors.get(0)).execute(any(), any());
+        when(uploadExecutors.get(0).execute(any()))
+                .thenReturn(Future.failedFuture(new DtmException("")));
 
         when(uploadFailedExecutor.execute(any())).thenReturn(Future.succeededFuture());
 
@@ -278,19 +242,15 @@ class UploadExternalTableExecutorTest {
 
         when(uploadFailedExecutor.execute(any())).thenReturn(Future.succeededFuture());
 
-        uploadExternalTableExecutor.execute(context, ar -> {
-            if (ar.succeeded()) {
-                promise.complete();
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        uploadExternalTableExecutor.execute(context)
+                .onComplete(promise);
+
         assertTrue(promise.future().failed());
     }
 
     @Test
     void executeWriteOpError() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
         uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
                 uploadFailedExecutor, uploadExecutors, pluginService, logicalSchemaProvider);
@@ -309,28 +269,21 @@ class UploadExternalTableExecutorTest {
         when(deltaServiceDao.writeNewOperation(any()))
                 .thenReturn(Future.succeededFuture(sysCn));
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new RuntimeException("")));
-            return null;
-        }).when(uploadExecutors.get(0)).execute(any(), any());
+        when(uploadExecutors.get(0).execute(any()))
+                .thenReturn(Future.failedFuture(new DtmException("")));
 
         when(deltaServiceDao.writeOperationError(eq("test"), eq(sysCn)))
-                .thenReturn(Future.failedFuture(new RuntimeException("")));
+                .thenReturn(Future.failedFuture(new DtmException("")));
 
-        uploadExternalTableExecutor.execute(context, ar -> {
-            if (ar.succeeded()) {
-                promise.complete();
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        uploadExternalTableExecutor.execute(context)
+                .onComplete(promise);
+
         assertTrue(promise.future().failed());
     }
 
     @Test
     void executeUploadFailedError() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
         uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
                 uploadFailedExecutor, uploadExecutors, pluginService, logicalSchemaProvider);
@@ -348,30 +301,24 @@ class UploadExternalTableExecutorTest {
         when(deltaServiceDao.writeNewOperation(any()))
                 .thenReturn(Future.succeededFuture(sysCn));
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new RuntimeException("")));
-            return null;
-        }).when(uploadExecutors.get(0)).execute(any(), any());
+        when(uploadExecutors.get(0).execute(any()))
+                .thenReturn(Future.failedFuture(new DtmException("")));
 
         when(deltaServiceDao.writeOperationError(eq("test"), eq(sysCn)))
                 .thenReturn(Future.succeededFuture());
 
-        when(uploadFailedExecutor.execute(any())).thenReturn(Future.failedFuture(new RuntimeException("")));
+        when(uploadFailedExecutor.execute(any()))
+                .thenReturn(Future.failedFuture(new DtmException("")));
 
-        uploadExternalTableExecutor.execute(context, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        uploadExternalTableExecutor.execute(context)
+                .onComplete(promise);
+
         assertTrue(promise.future().failed());
     }
 
     @Test
     void executeWithNonexistingDestSource() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
         uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
                 uploadFailedExecutor, uploadExecutors, pluginService, logicalSchemaProvider);
@@ -387,13 +334,9 @@ class UploadExternalTableExecutorTest {
         context.getDestinationEntity().setDestination(new HashSet<>(Arrays.asList(SourceType.ADB,
                 SourceType.ADG, SourceType.ADQM)));
 
-        uploadExternalTableExecutor.execute(context, ar -> {
-            if (ar.succeeded()) {
-                promise.complete(ar.result());
-            } else {
-                promise.fail(ar.cause());
-            }
-        });
+        uploadExternalTableExecutor.execute(context)
+                .onComplete(promise);
+
         assertTrue(promise.future().failed());
     }
 }

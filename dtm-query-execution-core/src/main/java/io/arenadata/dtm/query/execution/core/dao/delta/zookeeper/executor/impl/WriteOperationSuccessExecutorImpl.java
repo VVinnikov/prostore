@@ -4,8 +4,8 @@ import io.arenadata.dtm.common.exception.CrashException;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaDaoExecutor;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaServiceDaoExecutorHelper;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.WriteOperationSuccessExecutor;
-import io.arenadata.dtm.query.execution.core.dao.exception.delta.DeltaException;
-import io.arenadata.dtm.query.execution.core.dao.exception.delta.DeltaNotExistException;
+import io.arenadata.dtm.query.execution.core.exception.delta.DeltaException;
+import io.arenadata.dtm.query.execution.core.exception.delta.DeltaNotExistException;
 import io.arenadata.dtm.query.execution.core.dto.delta.Delta;
 import io.arenadata.dtm.query.execution.core.dto.delta.DeltaWriteOp;
 import io.arenadata.dtm.query.execution.core.dto.delta.HotDelta;
@@ -18,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.zookeeper.Op;
 import org.apache.zookeeper.data.Stat;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -28,6 +29,7 @@ import java.util.stream.Collectors;
 @Component
 public class WriteOperationSuccessExecutorImpl extends DeltaServiceDaoExecutorHelper implements WriteOperationSuccessExecutor {
 
+    @Autowired
     public WriteOperationSuccessExecutorImpl(ZookeeperExecutor executor,
                                              @Value("${core.env.name}") String envName) {
         super(executor, envName);
@@ -68,7 +70,6 @@ public class WriteOperationSuccessExecutorImpl extends DeltaServiceDaoExecutorHe
                     val errMsg = String.format("Can't write operation error by datamart[%s], sysCn[%d]",
                             datamart,
                             sysCn);
-                    log.error(errMsg, error);
                     if (error instanceof DeltaException) {
                         resultPromise.fail(error);
                     } else {

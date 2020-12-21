@@ -4,9 +4,9 @@ import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaDaoExecutor;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaServiceDaoExecutorHelper;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.WriteDeltaHotSuccessExecutor;
-import io.arenadata.dtm.query.execution.core.dao.exception.delta.*;
 import io.arenadata.dtm.query.execution.core.dto.delta.Delta;
 import io.arenadata.dtm.query.execution.core.dto.delta.OkDelta;
+import io.arenadata.dtm.query.execution.core.exception.delta.*;
 import io.arenadata.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -21,6 +21,8 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+
+import static io.arenadata.dtm.query.execution.core.utils.DeltaQueryUtil.DELTA_DATE_TIME_FORMATTER;
 
 @Slf4j
 @Component
@@ -45,7 +47,7 @@ public class WriteDeltaHotSuccessExecutorImpl extends DeltaServiceDaoExecutorHel
             .map(bytes -> bytes == null ? new Delta() : deserializedDelta(bytes))
             .map(delta -> {
                 if (delta.getHot() == null) {
-                    throw new DeltaNotStartedException();
+                    throw new DeltaIsAlreadyCommittedException();
                 }
                 ctx.setDelta(delta);
                 return delta;
@@ -63,16 +65,15 @@ public class WriteDeltaHotSuccessExecutorImpl extends DeltaServiceDaoExecutorHel
                 .build())
             .compose(delta -> executor.multi(getWriteDeltaHotSuccessOps(datamart, delta, deltaStat.getVersion())).map(delta))
             .onSuccess(delta -> {
-                log.debug("write delta hot \"success\" by datamart[{}], deltaHotDate[{}] completed successfully",
+                log.debug("Write delta hot \"success\" by datamart[{}], deltaHotDate[{}] completed successfully",
                     datamart,
                     delta.getOk().getDeltaDate());
                 resultPromise.complete(delta.getOk().getDeltaDate());
             })
             .onFailure(error -> {
-                val errMsg = String.format("can't write delta hot \"success\" by datamart[%s], deltaDate[%s]",
+                val errMsg = String.format("Can't write delta hot \"success\" by datamart[%s], deltaDate[%s]",
                     datamart,
                     deltaHotDate);
-                log.error(errMsg, error);
                 if (error instanceof KeeperException) {
                     if (error instanceof KeeperException.NotEmptyException) {
                         resultPromise.fail(new DeltaNotFinishedException(error));
@@ -93,7 +94,8 @@ public class WriteDeltaHotSuccessExecutorImpl extends DeltaServiceDaoExecutorHel
 
     private Future<Delta> createDeltaPaths(String datamart, LocalDateTime deltaHotDate, Delta delta) {
         if (deltaHotDate != null && deltaHotDate.isBefore(delta.getOk().getDeltaDate())) {
-            return Future.failedFuture(new InvalidDeltaDateException());
+            return Future.failedFuture(
+                    new DeltaUnableSetDateTimeException(DELTA_DATE_TIME_FORMATTER.format(delta.getOk().getDeltaDate())));
         } else {
             return createDeltaDatePath(datamart, delta)
                 .map(delta)

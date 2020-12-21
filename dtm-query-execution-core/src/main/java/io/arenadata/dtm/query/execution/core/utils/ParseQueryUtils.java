@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.utils;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
 import org.springframework.stereotype.Component;
@@ -14,6 +15,6 @@ public class ParseQueryUtils {
                 .filter(t -> t instanceof SqlIdentifier)
                 .findFirst()
                 .map(Objects::toString)
-                .orElseThrow(() -> new RuntimeException("Can't get datamart name."));
+                .orElseThrow(() -> new DtmException("Can't get datamart name"));
     }
 }

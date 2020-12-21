@@ -4,11 +4,10 @@ import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
-import io.arenadata.dtm.query.execution.plugin.adqm.AdqmDtmDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.AdqmHelperTableNamesFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.SchemaExtender;
 import lombok.val;
-import org.springframework.cache.annotation.Cacheable;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -16,7 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static io.arenadata.dtm.query.execution.plugin.adqm.common.Constants.*;
+import static io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants.*;
 
 
 /**
@@ -26,6 +25,7 @@ import static io.arenadata.dtm.query.execution.plugin.adqm.common.Constants.*;
 public class AdqmSchemaExtenderImpl implements SchemaExtender {
     private final AdqmHelperTableNamesFactory helperTableNamesFactory;
 
+    @Autowired
     public AdqmSchemaExtenderImpl(AdqmHelperTableNamesFactory helperTableNamesFactory) {
         this.helperTableNamesFactory = helperTableNamesFactory;
     }
@@ -48,7 +48,6 @@ public class AdqmSchemaExtenderImpl implements SchemaExtender {
     }
 
     @Override
-    @Cacheable(value = AdqmDtmDataSourcePlugin.ADQM_DATAMART_CACHE, key = "#logicalSchema.getMnemonic()")
     public Datamart createPhysicalSchema(Datamart logicalSchema, String systemName) {
         Datamart extendedSchema = new Datamart();
         extendedSchema.setMnemonic(logicalSchema.getMnemonic());

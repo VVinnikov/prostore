@@ -60,7 +60,9 @@ public class RestLoadClientImpl implements RestLoadClient {
                                 response.bodyAsString())));
                     }
                 } else {
-                    promise.fail(ar.cause());
+                    promise.fail(new DataSourceException(
+                            String.format("Error in sending POST request to url: %s", uri),
+                            ar.cause()));
                 }
             });
         });

@@ -51,7 +51,7 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
                                            MppwKafkaLoadRequestFactory mppwKafkaLoadRequestFactory,
                                            @Qualifier("coreVertx") Vertx vertx,
                                            MppwProperties mppwProperties,
-                                           @Value("${adb.datasource.options.database}") String dbName) {
+                                           @Value("${core.env.name}") String dbName) {
         this.adbQueryExecutor = adbQueryExecutor;
         this.metadataSqlFactory = metadataSqlFactory;
         this.mppwTransferRequestFactory = mppwTransferRequestFactory;

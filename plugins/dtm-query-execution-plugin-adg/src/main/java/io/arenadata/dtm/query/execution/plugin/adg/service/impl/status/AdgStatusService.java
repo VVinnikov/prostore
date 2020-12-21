@@ -36,12 +36,11 @@ public class AdgStatusService implements StatusService<StatusQueryResult> {
             String consumerGroup = mppwProperties.getConsumerGroup();
 
             kafkaConsumerMonitor.getAggregateGroupConsumerInfo(consumerGroup, request.getTopic())
-                    .map(kafkaInfo -> {
+                    .onSuccess(kafkaInfoResult -> {
                         StatusQueryResult result = new StatusQueryResult();
-                        result.setPartitionInfo(kafkaInfo);
-                        return result;
+                        result.setPartitionInfo(kafkaInfoResult);
+                        promise.complete(result);
                     })
-                    .onSuccess(promise::complete)
                     .onFailure(promise::fail);
         });
     }

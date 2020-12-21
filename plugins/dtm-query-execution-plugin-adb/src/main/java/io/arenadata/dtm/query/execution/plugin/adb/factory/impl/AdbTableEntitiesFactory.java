@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adb.factory.impl;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityFieldUtils;
@@ -11,6 +12,7 @@ import io.arenadata.dtm.query.execution.plugin.api.factory.TableEntitiesFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -45,16 +47,34 @@ public class AdbTableEntitiesFactory implements TableEntitiesFactory<AdbTables<A
     @Override
     public AdbTables<AdbTableEntity> create(Entity entity, String envName) {
         return new AdbTables<>(
-                createTableEntity(entity, getTableName(entity, AdbTables.ACTUAL_TABLE_POSTFIX), false, true),
-                createTableEntity(entity, getTableName(entity, AdbTables.HISTORY_TABLE_POSTFIX), false, true),
-                createTableEntity(entity, getTableName(entity, AdbTables.STAGING_TABLE_POSTFIX), true, false)
+                createTableEntity(entity, AdbTables.ACTUAL_TABLE_POSTFIX),
+                createTableEntity(entity, AdbTables.HISTORY_TABLE_POSTFIX),
+                createTableEntity(entity, AdbTables.STAGING_TABLE_POSTFIX)
         );
     }
 
-    private AdbTableEntity createTableEntity(Entity entity,
-                                             String tableName,
-                                             boolean addReqId,
-                                             boolean pkWithSystemFields) {
+    private AdbTableEntity createTableEntity(Entity entity, String tablePostfix) {
+        AdbTableEntity tableEntity;
+        List<String> pkTableColumnKeys;
+        switch (tablePostfix) {
+            case AdbTables.ACTUAL_TABLE_POSTFIX:
+            case AdbTables.HISTORY_TABLE_POSTFIX:
+                tableEntity = createEntity(entity, getTableName(entity, tablePostfix));
+                pkTableColumnKeys = createPkKeys(entity.getFields());
+                pkTableColumnKeys.add(SYS_FROM_ATTR);
+                tableEntity.setPrimaryKeys(pkTableColumnKeys);
+                return tableEntity;
+            case AdbTables.STAGING_TABLE_POSTFIX:
+                tableEntity = createEntity(entity, getTableName(entity, tablePostfix));
+                tableEntity.getColumns().add(new AdbTableColumn(REQ_ID_ATTR, "varchar(36)", true));
+                tableEntity.setPrimaryKeys(Collections.emptyList());
+                return tableEntity;
+            default:
+                throw new DtmException(String.format("Incorrect table postfix %s", tablePostfix));
+        }
+    }
+
+    private AdbTableEntity createEntity(Entity entity, String tableName) {
         List<EntityField> entityFields = entity.getFields();
         AdbTableEntity adbTableEntity = new AdbTableEntity();
         adbTableEntity.setSchema(entity.getSchema());
@@ -64,17 +84,7 @@ public class AdbTableEntitiesFactory implements TableEntitiesFactory<AdbTables<A
                 .map(this::transformColumn)
                 .collect(Collectors.toList());
         columns.addAll(SYSTEM_COLUMNS);
-        if (addReqId) {
-            columns.add(new AdbTableColumn(REQ_ID_ATTR, "varchar(36)", true));
-        }
         adbTableEntity.setColumns(columns);
-        List<String> pkList = EntityFieldUtils.getPrimaryKeyList(entityFields).stream()
-                .map(EntityField::getName)
-                .collect(Collectors.toList());
-        if (pkWithSystemFields) {
-            pkList.add(SYS_FROM_ATTR);
-        }
-        adbTableEntity.setPrimaryKeys(pkList);
         adbTableEntity.setShardingKeys(EntityFieldUtils.getShardingKeyList(entityFields).stream()
                 .map(EntityField::getName)
                 .collect(Collectors.toList()));
@@ -84,6 +94,12 @@ public class AdbTableEntitiesFactory implements TableEntitiesFactory<AdbTables<A
     private String getTableName(Entity entity,
                                 String tablePostfix) {
         return entity.getName() + TABLE_POSTFIX_DELIMITER + tablePostfix;
+    }
+
+    private List<String> createPkKeys(List<EntityField> entityFields) {
+        return EntityFieldUtils.getPrimaryKeyList(entityFields).stream()
+                .map(EntityField::getName)
+                .collect(Collectors.toList());
     }
 
     private AdbTableColumn transformColumn(EntityField field) {

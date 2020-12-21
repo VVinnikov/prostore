@@ -13,6 +13,7 @@ import io.arenadata.dtm.query.execution.plugin.adqm.factory.AdqmRestMppwKafkaReq
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.StatusReporter;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.*;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
 import io.arenadata.dtm.query.execution.plugin.api.request.MppwRequest;
 import io.vertx.core.Future;
@@ -85,13 +86,13 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
 
         val err = DdlUtils.validateRequest(request);
         if (err.isPresent()) {
-            return Future.failedFuture(err.get());
+            return Future.failedFuture(new DataSourceException(err.get()));
         }
         try {
             mppwExtTableCtx.setSchema(new Schema.Parser()
                     .parse(request.getKafkaParameter().getUploadMetadata().getExternalSchema()));
         } catch (Exception e) {
-            return Future.failedFuture(e);
+            return Future.failedFuture(new DataSourceException("Error in starting mppw request", e));
         }
 
         mppwExtTableCtx.setFullName(DdlUtils.getQualifiedTableName(request, appConfiguration));
@@ -148,7 +149,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
                 .onSuccess(Future::succeededFuture)
                 .onFailure(fail -> {
                     reportError(request.getKafkaParameter().getTopic());
-                    Future.failedFuture(fail);
+                    Future.failedFuture(new DataSourceException(fail));
                 });
     }
 

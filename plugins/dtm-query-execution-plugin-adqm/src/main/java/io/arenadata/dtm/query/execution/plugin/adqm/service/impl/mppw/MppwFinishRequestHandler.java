@@ -109,7 +109,7 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
                     return Future.succeededFuture(QueryResult.emptyResult());
                 }, f -> {
                     reportError(request.getKafkaParameter().getTopic());
-                    return Future.failedFuture(f.getCause());
+                    return Future.failedFuture(f);
                 });
     }
 

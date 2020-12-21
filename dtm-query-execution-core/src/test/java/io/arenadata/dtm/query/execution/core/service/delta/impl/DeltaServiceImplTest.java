@@ -20,13 +20,13 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
-class DeltaServiceExternalImplTest {
+class DeltaServiceImplTest {
 
     private final DeltaQueryParamExtractor deltaQueryParamExtractor = mock(DeltaQueryParamExtractorImpl.class);
     private final DeltaExecutor beginDeltaExecutor = mock(BeginDeltaExecutor.class);
     private final MetricsService<RequestMetrics> metricsService = mock(MetricsServiceImpl.class);
     private DeltaService<QueryResult> deltaService;
-    private QueryRequest request = new QueryRequest();
+    private final QueryRequest request = new QueryRequest();
 
     @BeforeEach
     void setUp() {
@@ -38,23 +38,25 @@ class DeltaServiceExternalImplTest {
 
     @Test
     void executeWithNullDatamart() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         DatamartRequest datamartRequest = new DatamartRequest(request);
         DeltaRequestContext context = new DeltaRequestContext(new RequestMetrics(), datamartRequest);
 
         request.setDatamartMnemonic(null);
-        deltaService.execute(context);
+        deltaService.execute(context)
+                .onComplete(promise);
         assertTrue(promise.future().failed());
     }
 
     @Test
     void executeWithEmptyDatamart() {
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
 
         DatamartRequest datamartRequest = new DatamartRequest(request);
         DeltaRequestContext context = new DeltaRequestContext(new RequestMetrics(), datamartRequest);
         request.setDatamartMnemonic("");
-        deltaService.execute(context);
+        deltaService.execute(context)
+                .onComplete(promise);
         assertTrue(promise.future().failed());
     }
 }

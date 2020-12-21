@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.service.impl;
+package io.arenadata.dtm.query.execution.core.service.delta.impl;
 
 import io.arenadata.dtm.common.delta.SelectOnInterval;
 import io.arenadata.dtm.common.exception.DeltaRangeInvalidException;
@@ -15,12 +15,12 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 
 @Service
-public class DeltaServiceImpl implements DeltaService {
+public class DeltaServiceExternalImpl implements DeltaService {
 
     private final DeltaServiceDao deltaServiceDao;
 
     @Autowired
-    public DeltaServiceImpl(ServiceDbFacade serviceDbFacade) {
+    public DeltaServiceExternalImpl(ServiceDbFacade serviceDbFacade) {
         this.deltaServiceDao = serviceDbFacade.getDeltaServiceDao();
     }
 

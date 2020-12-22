@@ -6,6 +6,7 @@ import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityTypeUtil;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbTables;
+import io.arenadata.dtm.query.execution.plugin.adb.factory.impl.AdbMetaTableEntityFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.impl.AdbTableEntitiesFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
@@ -45,44 +46,44 @@ public class AdbCheckTableServiceTest {
     @BeforeAll
     static void init() {
         Map<String, Object> sysFromAttr = new HashMap<>();
-        sysFromAttr.put(AdbCheckTableService.CONSTRAINT_TYPE, null);
-        sysFromAttr.put(AdbCheckTableService.DATETIME_PRECISION, null);
-        sysFromAttr.put(AdbCheckTableService.ORDINAL_POSITION, null);
-        sysFromAttr.put(AdbCheckTableService.COLUMN_NAME, AdbTableEntitiesFactory.SYS_FROM_ATTR);
-        sysFromAttr.put(AdbCheckTableService.DATA_TYPE, "int8");
-        sysFromAttr.put(AdbCheckTableService.CHARACTER_MAXIMUM_LENGTH, null);
+        sysFromAttr.put(AdbMetaTableEntityFactory.CONSTRAINT_TYPE, null);
+        sysFromAttr.put(AdbMetaTableEntityFactory.DATETIME_PRECISION, null);
+        sysFromAttr.put(AdbMetaTableEntityFactory.ORDINAL_POSITION, null);
+        sysFromAttr.put(AdbMetaTableEntityFactory.COLUMN_NAME, AdbTableEntitiesFactory.SYS_FROM_ATTR);
+        sysFromAttr.put(AdbMetaTableEntityFactory.DATA_TYPE, "int8");
+        sysFromAttr.put(AdbMetaTableEntityFactory.CHARACTER_MAXIMUM_LENGTH, null);
 
         Map<String, Object> sysToAttr = new HashMap<>();
-        sysToAttr.put(AdbCheckTableService.CONSTRAINT_TYPE, null);
-        sysToAttr.put(AdbCheckTableService.DATETIME_PRECISION, null);
-        sysToAttr.put(AdbCheckTableService.ORDINAL_POSITION, null);
-        sysToAttr.put(AdbCheckTableService.COLUMN_NAME, AdbTableEntitiesFactory.SYS_TO_ATTR);
-        sysToAttr.put(AdbCheckTableService.DATA_TYPE, "int8");
-        sysToAttr.put(AdbCheckTableService.CHARACTER_MAXIMUM_LENGTH, null);
+        sysToAttr.put(AdbMetaTableEntityFactory.CONSTRAINT_TYPE, null);
+        sysToAttr.put(AdbMetaTableEntityFactory.DATETIME_PRECISION, null);
+        sysToAttr.put(AdbMetaTableEntityFactory.ORDINAL_POSITION, null);
+        sysToAttr.put(AdbMetaTableEntityFactory.COLUMN_NAME, AdbTableEntitiesFactory.SYS_TO_ATTR);
+        sysToAttr.put(AdbMetaTableEntityFactory.DATA_TYPE, "int8");
+        sysToAttr.put(AdbMetaTableEntityFactory.CHARACTER_MAXIMUM_LENGTH, null);
 
         Map<String, Object> sysOpAttr = new HashMap<>();
-        sysOpAttr.put(AdbCheckTableService.CONSTRAINT_TYPE, null);
-        sysOpAttr.put(AdbCheckTableService.DATETIME_PRECISION, null);
-        sysOpAttr.put(AdbCheckTableService.ORDINAL_POSITION, null);
-        sysOpAttr.put(AdbCheckTableService.COLUMN_NAME, AdbTableEntitiesFactory.SYS_OP_ATTR);
-        sysOpAttr.put(AdbCheckTableService.DATA_TYPE, "int4");
-        sysOpAttr.put(AdbCheckTableService.CHARACTER_MAXIMUM_LENGTH, null);
+        sysOpAttr.put(AdbMetaTableEntityFactory.CONSTRAINT_TYPE, null);
+        sysOpAttr.put(AdbMetaTableEntityFactory.DATETIME_PRECISION, null);
+        sysOpAttr.put(AdbMetaTableEntityFactory.ORDINAL_POSITION, null);
+        sysOpAttr.put(AdbMetaTableEntityFactory.COLUMN_NAME, AdbTableEntitiesFactory.SYS_OP_ATTR);
+        sysOpAttr.put(AdbMetaTableEntityFactory.DATA_TYPE, "int4");
+        sysOpAttr.put(AdbMetaTableEntityFactory.CHARACTER_MAXIMUM_LENGTH, null);
 
         Map<String, Object> req_id = new HashMap<>();
-        req_id.put(AdbCheckTableService.CONSTRAINT_TYPE, null);
-        req_id.put(AdbCheckTableService.DATETIME_PRECISION, null);
-        req_id.put(AdbCheckTableService.ORDINAL_POSITION, null);
-        req_id.put(AdbCheckTableService.COLUMN_NAME, AdbTableEntitiesFactory.REQ_ID_ATTR);
-        req_id.put(AdbCheckTableService.DATA_TYPE, "varchar(36)");
-        req_id.put(AdbCheckTableService.CHARACTER_MAXIMUM_LENGTH, null);
+        req_id.put(AdbMetaTableEntityFactory.CONSTRAINT_TYPE, null);
+        req_id.put(AdbMetaTableEntityFactory.DATETIME_PRECISION, null);
+        req_id.put(AdbMetaTableEntityFactory.ORDINAL_POSITION, null);
+        req_id.put(AdbMetaTableEntityFactory.COLUMN_NAME, AdbTableEntitiesFactory.REQ_ID_ATTR);
+        req_id.put(AdbMetaTableEntityFactory.DATA_TYPE, "varchar(36)");
+        req_id.put(AdbMetaTableEntityFactory.CHARACTER_MAXIMUM_LENGTH, null);
 
         Map<String, Object> PKSysFromAttr = new HashMap<>();
-        PKSysFromAttr.put(AdbCheckTableService.CONSTRAINT_TYPE, null);
-        PKSysFromAttr.put(AdbCheckTableService.DATETIME_PRECISION, null);
-        PKSysFromAttr.put(AdbCheckTableService.ORDINAL_POSITION, 3);
-        PKSysFromAttr.put(AdbCheckTableService.COLUMN_NAME, AdbTableEntitiesFactory.SYS_FROM_ATTR);
-        PKSysFromAttr.put(AdbCheckTableService.DATA_TYPE, "int8");
-        PKSysFromAttr.put(AdbCheckTableService.CHARACTER_MAXIMUM_LENGTH, null);
+        PKSysFromAttr.put(AdbMetaTableEntityFactory.CONSTRAINT_TYPE, null);
+        PKSysFromAttr.put(AdbMetaTableEntityFactory.DATETIME_PRECISION, null);
+        PKSysFromAttr.put(AdbMetaTableEntityFactory.ORDINAL_POSITION, 3);
+        PKSysFromAttr.put(AdbMetaTableEntityFactory.COLUMN_NAME, AdbTableEntitiesFactory.SYS_FROM_ATTR);
+        PKSysFromAttr.put(AdbMetaTableEntityFactory.DATA_TYPE, "int8");
+        PKSysFromAttr.put(AdbMetaTableEntityFactory.CHARACTER_MAXIMUM_LENGTH, null);
 
         sysColumns = new HashMap<>();
         sysColumns.put(AdbTables.ACTUAL_TABLE_POSTFIX, Arrays.asList(PKSysFromAttr, sysToAttr, sysOpAttr));
@@ -104,22 +105,19 @@ public class AdbCheckTableServiceTest {
                 .nullable(true)
                 .build());
 
-        List<Map<String, Object>> resultSet = entity.getFields().stream()
-                .map(this::fieldToMapTransform)
-                .collect(Collectors.toList());
-
         checkContext = new CheckContext(null, new DatamartRequest(new QueryRequest()), entity);
 
         tablePostFixes.forEach(postFix -> when(adbQueryExecutor.execute(argThat(getPredicate(postFix)::test)))
-                .thenReturn(Future.succeededFuture(getResultSet(resultSet, postFix))));
+                .thenReturn(Future.succeededFuture(getResultSet(postFix))));
 
         List<String> queries = tablePostFixes.stream()
-                .map(postFix -> String.format(AdbCheckTableService.QUERY_PATTERN_WITH_CONDITION,
+                .map(postFix -> String.format(AdbMetaTableEntityFactory.QUERY_PATTERN,
                         entity.getSchema(), String.format("%s_%s", entity.getName(), postFix)))
                 .collect(Collectors.toList());
         when(adbQueryExecutor.execute(argThat(arg -> queries.stream().noneMatch(arg::equals))))
                 .thenReturn(Future.succeededFuture(Collections.emptyList()));
-        adbCheckTableService = new AdbCheckTableService(adbQueryExecutor, new AdbTableEntitiesFactory());
+        adbCheckTableService = new AdbCheckTableService(new AdbTableEntitiesFactory(),
+                new AdbMetaTableEntityFactory(adbQueryExecutor));
     }
 
     @Test
@@ -153,7 +151,7 @@ public class AdbCheckTableServiceTest {
     @Test
     void testDataType() {
         String expectedError = String.format(AdbCheckTableService.FIELD_ERROR_TEMPLATE,
-                AdbCheckTableService.DATA_TYPE, ColumnType.TIME.name().toLowerCase(), "int8");
+                AdbMetaTableEntityFactory.DATA_TYPE, ColumnType.TIME.name().toLowerCase(), "int8");
         testColumns(field -> field.setType(ColumnType.TIME), expectedError);
 
     }
@@ -161,7 +159,7 @@ public class AdbCheckTableServiceTest {
     @Test
     void testPrimaryKey() {
         String expectedError = String.format(AdbCheckTableService.PRIMARY_KEY_ERROR_TEMPLATE,
-                "id, pk2, test_column", "id, pk2");
+                "id, pk2, test_column, sys_from", "id, pk2, sys_from");
         testColumns(field -> field.setPrimaryOrder(4), expectedError);
 
     }
@@ -178,27 +176,34 @@ public class AdbCheckTableServiceTest {
     }
 
     private Predicate<String> getPredicate(String postFix) {
-        String query = String.format(AdbCheckTableService.QUERY_PATTERN_WITH_CONDITION,
+        String query = String.format(AdbMetaTableEntityFactory.QUERY_PATTERN,
                 entity.getSchema(), String.format("%s_%s", entity.getName(), postFix));
         return query::equals;
     }
 
-    private List<Map<String, Object>> getResultSet(List<Map<String, Object>> baseResultSet,
-                                                   String postFix) {
-        List<Map<String, Object>> resultSet = new ArrayList<>(baseResultSet);
+    private List<Map<String, Object>> getResultSet(String postFix) {
+        List<Map<String, Object>> resultSet = entity.getFields().stream()
+                .map(field -> fieldToMapTransform(field, postFix))
+                .collect(Collectors.toList());
         resultSet.addAll(sysColumns.get(postFix));
         return resultSet;
     }
 
-    private Map<String, Object> fieldToMapTransform(EntityField field) {
+    private Map<String, Object> fieldToMapTransform(EntityField field, String postFix) {
         HashMap<String, Object> result = new HashMap<>();
-        result.put(AdbCheckTableService.CONSTRAINT_TYPE, Optional.ofNullable(field.getPrimaryOrder())
-                .map(o -> AdbCheckTableService.PRIMARY_KEY_CS_TYPE).orElse(null));
-        result.put(AdbCheckTableService.DATETIME_PRECISION, field.getAccuracy());
-        result.put(AdbCheckTableService.ORDINAL_POSITION, field.getPrimaryOrder());
-        result.put(AdbCheckTableService.COLUMN_NAME, field.getName());
-        result.put(AdbCheckTableService.DATA_TYPE, EntityTypeUtil.pgFromDtmType(field));
-        result.put(AdbCheckTableService.CHARACTER_MAXIMUM_LENGTH, field.getSize());
+        if ("staging".equals(postFix)) {
+            result.put(AdbMetaTableEntityFactory.CONSTRAINT_TYPE, null);
+            result.put(AdbMetaTableEntityFactory.ORDINAL_POSITION, null);
+
+        } else {
+            result.put(AdbMetaTableEntityFactory.CONSTRAINT_TYPE, Optional.ofNullable(field.getPrimaryOrder())
+                    .map(o -> AdbMetaTableEntityFactory.PRIMARY_KEY_CS_TYPE).orElse(null));
+            result.put(AdbMetaTableEntityFactory.ORDINAL_POSITION, field.getPrimaryOrder());
+        }
+        result.put(AdbMetaTableEntityFactory.DATETIME_PRECISION, field.getAccuracy());
+        result.put(AdbMetaTableEntityFactory.COLUMN_NAME, field.getName());
+        result.put(AdbMetaTableEntityFactory.DATA_TYPE, EntityTypeUtil.pgFromDtmType(field));
+        result.put(AdbMetaTableEntityFactory.CHARACTER_MAXIMUM_LENGTH, field.getSize());
         return result;
     }
 }

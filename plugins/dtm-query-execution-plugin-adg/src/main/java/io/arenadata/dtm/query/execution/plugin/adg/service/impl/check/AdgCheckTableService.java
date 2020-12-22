@@ -6,6 +6,7 @@ import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckException;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.factory.MetaTableEntityFactory;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
 import io.arenadata.dtm.query.execution.plugin.api.factory.CreateTableQueriesFactory;
@@ -81,8 +82,8 @@ public class AdgCheckTableService implements CheckTableService {
                 SpaceAttributeTypes type = optAttr.get().getType();
                 if (!Objects.equals(type, expAttr.getType())) {
                     errors.add(String.format("\tColumn`%s`:", expAttr.getName()));
-                    errors.add(String.format(FIELD_ERROR_TEMPLATE, DATA_TYPE, expAttr.getType().getName(),
-                            type.getName()));
+                    errors.add(String.format(FIELD_ERROR_TEMPLATE, MetaTableEntityFactory.DATA_TYPE,
+                            expAttr.getType().getName(), type.getName()));
                 }
             } else {
                 errors.add(String.format(COLUMN_NOT_EXIST_ERROR_TEMPLATE, expAttr.getName()));

@@ -2,6 +2,7 @@ package io.arenadata.dtm.query.calcite.core.framework;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.UnmodifiableIterator;
+import io.arenadata.dtm.common.exception.DtmException;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
@@ -123,9 +124,8 @@ public class DtmCalcitePlannerImpl implements Planner, RelOptTable.ViewExpander 
     }
 
     private void ready() {
-        switch (this.state) {
-            case STATE_0_CLOSED:
-                this.reset();
+        if (this.state == State.STATE_0_CLOSED) {
+            this.reset();
         }
 
         this.ensure(DtmCalcitePlannerImpl.State.STATE_1_RESET);

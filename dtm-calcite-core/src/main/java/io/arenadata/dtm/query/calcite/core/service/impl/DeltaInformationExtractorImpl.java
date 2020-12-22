@@ -6,7 +6,7 @@ import io.arenadata.dtm.common.delta.DeltaInformationResult;
 import io.arenadata.dtm.common.delta.DeltaType;
 import io.arenadata.dtm.common.delta.SelectOnInterval;
 import io.arenadata.dtm.common.exception.DtmException;
-import io.arenadata.dtm.query.calcite.core.extension.snapshot.SqlSnapshot;
+import io.arenadata.dtm.query.calcite.core.extension.snapshot.SqlDeltaSnapshot;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.calcite.core.node.SqlTreeNode;
 import io.arenadata.dtm.query.calcite.core.service.DeltaInformationExtractor;
@@ -14,7 +14,6 @@ import io.arenadata.dtm.query.calcite.core.util.CalciteUtil;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.*;
-import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
 import java.time.LocalDateTime;
@@ -23,9 +22,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.apache.calcite.sql.SqlDialect.EMPTY_CONTEXT;
+
 @Slf4j
 public class DeltaInformationExtractorImpl implements DeltaInformationExtractor {
-    private static final SqlDialect DIALECT = new SqlDialect(CalciteSqlDialect.EMPTY_CONTEXT);
+    private static final SqlDialect DIALECT = new SqlDialect(EMPTY_CONTEXT);
     private final DtmConfig dtmSettings;
 
     public DeltaInformationExtractorImpl(DtmConfig dtmSettings) {
@@ -54,15 +55,15 @@ public class DeltaInformationExtractorImpl implements DeltaInformationExtractor 
 
     private List<SqlTreeNode> getSnapshots(List<SqlTreeNode> nodes) {
         return nodes.stream()
-                .filter(n -> n.getNode() instanceof SqlSnapshot)
+                .filter(n -> n.getNode() instanceof SqlDeltaSnapshot)
                 .collect(Collectors.toList());
     }
 
     private void replaceSnapshots(List<SqlTreeNode> snapshots) {
         for (int i = snapshots.size() - 1; i >= 0; i--) {
             val snapshot = snapshots.get(i);
-            SqlSnapshot nodeSqlSnapshot = snapshot.getNode();
-            snapshot.getSqlNodeSetter().accept(nodeSqlSnapshot.getTableRef());
+            SqlDeltaSnapshot nodeSqlDeltaSnapshot = snapshot.getNode();
+            snapshot.getSqlNodeSetter().accept(nodeSqlDeltaSnapshot.getTableRef());
         }
     }
 
@@ -113,12 +114,12 @@ public class DeltaInformationExtractorImpl implements DeltaInformationExtractor 
                 SqlNode right = basicCall.operands[1];
                 if (!(right instanceof SqlIdentifier)) {
                     log.warn("Expecting Sql;Identifier as alias, got {}", right);
-                } else if (left instanceof SqlSnapshot) {
+                } else if (left instanceof SqlDeltaSnapshot) {
                     if (replace) {
-                        SqlIdentifier newId = (SqlIdentifier) ((SqlSnapshot) left).getTableRef();
+                        SqlIdentifier newId = (SqlIdentifier) ((SqlDeltaSnapshot) left).getTableRef();
                         basicCall.operands[0] = newId;
                     }
-                    deltaInformation = fromSnapshot((SqlSnapshot) left, (SqlIdentifier) right);
+                    deltaInformation = fromSnapshot((SqlDeltaSnapshot) left, (SqlIdentifier) right);
                 } else if (left instanceof SqlIdentifier) {
                     deltaInformation = fromIdentifier((SqlIdentifier) left, (SqlIdentifier) right, null,
                             false, null, null, null, null);
@@ -128,7 +129,7 @@ public class DeltaInformationExtractorImpl implements DeltaInformationExtractor 
         return deltaInformation;
     }
 
-    private DeltaInformation fromSnapshot(SqlSnapshot snapshot, SqlIdentifier alias) {
+    private DeltaInformation fromSnapshot(SqlDeltaSnapshot snapshot, SqlIdentifier alias) {
         return fromIdentifier((SqlIdentifier) snapshot.getTableRef(), alias, snapshot.getDeltaDateTime(),
                 snapshot.getLatestUncommittedDelta(), snapshot.getDeltaNum(), snapshot.getStartedInterval(),
                 snapshot.getFinishedInterval(), snapshot.getParserPosition());

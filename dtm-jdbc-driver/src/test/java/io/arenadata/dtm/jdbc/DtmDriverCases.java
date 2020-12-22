@@ -10,7 +10,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
-public class DtmDriverTest {
+public class DtmDriverCases {
 
     public static void main(String[] args) throws SQLException {
         String host = "localhost:9090";

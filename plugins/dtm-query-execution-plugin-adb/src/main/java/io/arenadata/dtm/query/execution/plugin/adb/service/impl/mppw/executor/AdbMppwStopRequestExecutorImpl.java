@@ -61,7 +61,7 @@ public class AdbMppwStopRequestExecutorImpl implements AdbMppwRequestExecutor {
             QueryRequest queryRequest = requestContext.getRequest().getQueryRequest();
             val schema = queryRequest.getDatamartMnemonic();
             val table = MetadataSqlFactoryImpl.WRITABLE_EXT_TABLE_PREF +
-                    queryRequest.getRequestId().toString().replaceAll("-", "_");
+                    queryRequest.getRequestId().toString().replace("-", "_");
             adbQueryExecutor.executeUpdate(metadataSqlFactory.dropExtTableSqlQuery(schema, table))
                     .onComplete(promise);
         });

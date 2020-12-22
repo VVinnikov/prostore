@@ -148,7 +148,6 @@ public class AdbCheckTableService implements CheckTableService {
     }
 
     private String getType(Map<String, Object> map) {
-
         String type = map.get(DATA_TYPE).toString();
         String size = Optional.ofNullable(map.get(CHARACTER_MAXIMUM_LENGTH))
                 .map(val -> String.format("(%s)", val))
@@ -165,6 +164,8 @@ public class AdbCheckTableService implements CheckTableService {
             case "timestamp":
                 type = String.format("%s%s", type, precision);
                 break;
+            default:
+                return type;
         }
         return type;
     }

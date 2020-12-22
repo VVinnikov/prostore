@@ -196,27 +196,10 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
 
     @SneakyThrows
     private Future<ResOperation> executePostRequest(ReqOperation reqOperation) {
-        return Future.future(promise -> {
-            circuitBreaker.<ResOperation>execute(future ->
-                    webClient.postAbs(cartridgeProperties.getUrl() + cartridgeProperties.getAdminApiUrl())
-                            .sendJson(reqOperation, ar -> {
-                                if (ar.succeeded()) {
-                                    try {
-                                        ResOperation res = new JsonObject(ar.result().body()).mapTo(ResOperation.class);
-                                        if (CollectionUtils.isEmpty(res.getErrors())) {
-                                            future.complete(res);
-                                        } else {
-                                            future.fail(new DataSourceException(res.getErrors().get(0).getMessage()));
-                                        }
-                                    } catch (Exception e) {
-                                        future.fail(new DataSourceException("Error in decoding response operation", e));
-                                    }
-                                } else {
-                                    future.fail(ar.cause());
-                                }
-                            }))
-                    .onComplete(promise);
-        });
+        final String uri = cartridgeProperties.getUrl() + cartridgeProperties.getAdminApiUrl();
+        return circuitBreaker.execute(promise -> executePostRequest(uri, reqOperation)
+                .compose(this::handleResOperation)
+                .onComplete(promise));
     }
 
     private Future<HttpResponse<Buffer>> executePostRequest(String uri, Object request) {
@@ -270,6 +253,21 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
                     .addQueryParam(HISTORICAL_DATA_TABLE_NAME, tableNames.getHistory())
                     .addQueryParam(DELTA_NUMBER, String.valueOf(request.getDeltaNumber()))
                     .send(promise);
+        });
+    }
+
+    private Future<ResOperation> handleResOperation(HttpResponse<Buffer> response) {
+        return Future.future(promise -> {
+            try {
+                ResOperation res = new JsonObject(response.body()).mapTo(ResOperation.class);
+                if (CollectionUtils.isEmpty(res.getErrors())) {
+                    promise.complete(res);
+                } else {
+                    promise.fail(new DataSourceException(res.getErrors().get(0).getMessage()));
+                }
+            } catch (Exception e) {
+                promise.fail(new DataSourceException("Error in decoding response operation", e));
+            }
         });
     }
 

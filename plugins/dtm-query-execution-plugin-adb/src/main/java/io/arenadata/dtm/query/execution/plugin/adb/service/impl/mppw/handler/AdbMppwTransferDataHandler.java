@@ -40,7 +40,7 @@ public class AdbMppwTransferDataHandler implements AdbMppwHandler {
         return Future.future(promise -> {
             val schema = requestContext.getMppwKafkaLoadRequest().getDatamart();
             val table = MetadataSqlFactoryImpl.WRITABLE_EXT_TABLE_PREF +
-                    requestContext.getMppwKafkaLoadRequest().getRequestId().replaceAll("-", "_");
+                    requestContext.getMppwKafkaLoadRequest().getRequestId().replace("-", "_");
             val commitOffsetsSql = String.format(MetadataSqlFactoryImpl.COMMIT_OFFSETS, schema, table);
             adbQueryExecutor.executeUpdate(commitOffsetsSql)
                     .onComplete(promise);
@@ -51,7 +51,7 @@ public class AdbMppwTransferDataHandler implements AdbMppwHandler {
         return Future.future(promise -> {
             val schema = request.getDatamart();
             val columns = String.join(", ", request.getColumns());
-            val extTable = request.getWritableExtTableName().replaceAll("-", "_");
+            val extTable = request.getWritableExtTableName().replace("-", "_");
             val stagingTable = request.getTableName();
             adbQueryExecutor.executeUpdate(metadataSqlFactory.insertIntoStagingTableSqlQuery(schema,
                     columns,

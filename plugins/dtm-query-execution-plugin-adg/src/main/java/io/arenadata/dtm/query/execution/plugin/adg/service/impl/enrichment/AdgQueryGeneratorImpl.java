@@ -62,7 +62,7 @@ public class AdgQueryGeneratorImpl implements QueryGenerator {
             SqlNode sqlNodeResult = new NullNotCastableRelToSqlConverter(sqlDialect)
                     .visitChild(0, planAfter).asStatement();
             String queryResult = Util.toLinux(sqlNodeResult.toSqlString(sqlDialect).getSql())
-                    .replaceAll("\n", " ");
+                    .replace("\n", " ");
             log.debug("sql = " + queryResult);
             promise.complete(queryResult);
         });

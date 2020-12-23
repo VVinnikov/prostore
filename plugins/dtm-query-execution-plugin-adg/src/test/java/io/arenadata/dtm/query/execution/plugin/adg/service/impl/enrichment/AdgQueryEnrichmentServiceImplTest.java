@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class AdgQueryEnrichmentServiceImplTest {
+class AdgQueryEnrichmentServiceImplTest {
 
     private final QueryEnrichmentService enrichService;
 
@@ -43,8 +43,7 @@ public class AdgQueryEnrichmentServiceImplTest {
         val calciteConfiguration = new AdgCalciteConfiguration();
         calciteConfiguration.init();
         val parserConfig = calciteConfiguration.configDdlParser(
-                calciteConfiguration.ddlParserImplFactory()
-        );
+                calciteConfiguration.ddlParserImplFactory());
         val contextProvider = new AdgCalciteContextProvider(
                 parserConfig,
                 new AdgCalciteSchemaFactory(new AdgSchemaFactory()));
@@ -148,7 +147,7 @@ public class AdgQueryEnrichmentServiceImplTest {
                             sqlResult[0] = "-1";
                         }
                     });
-            async.awaitSuccess();
+            async.awaitSuccess(10000);
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
     }

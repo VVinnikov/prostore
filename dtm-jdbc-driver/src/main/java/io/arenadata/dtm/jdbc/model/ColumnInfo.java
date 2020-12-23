@@ -47,9 +47,6 @@ public class ColumnInfo {
      */
     private Boolean nullable;
 
-    public ColumnInfo() {
-    }
-
     public String getMnemonic() {
         return mnemonic;
     }

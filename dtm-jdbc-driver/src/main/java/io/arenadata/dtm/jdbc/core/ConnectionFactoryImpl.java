@@ -6,6 +6,7 @@ import java.util.Properties;
 public class ConnectionFactoryImpl extends ConnectionFactory {
 
     public ConnectionFactoryImpl() {
+        super();
     }
 
     @Override

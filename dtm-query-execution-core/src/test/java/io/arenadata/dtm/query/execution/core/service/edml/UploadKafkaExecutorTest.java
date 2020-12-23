@@ -37,7 +37,6 @@ import io.vertx.ext.unit.report.ReportOptions;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -54,27 +53,26 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@Disabled
 class UploadKafkaExecutorTest {
-    //FIXME
     private final DataSourcePluginService pluginService = mock(DataSourcePluginServiceImpl.class);
     private final MppwKafkaRequestFactory mppwKafkaRequestFactory = mock(MppwKafkaRequestFactoryImpl.class);
     private final EdmlProperties edmlProperties = mock(EdmlProperties.class);
     private final KafkaProperties kafkaProperties = mock(KafkaProperties.class);
     private final CheckColumnTypesService checkColumnTypesService = mock(CheckColumnTypesServiceImpl.class);
+    private final DtmConfig dtmSettings = mock(CoreDtmSettings.class);
+    private final Vertx vertx = Vertx.vertx();
+    private final Integer inpuStreamTimeoutMs = 2000;
+    private final Integer pluginStatusCheckPeriodMs = 1000;
+    private final Integer firstOffsetTimeoutMs = 15000;
+    private final Integer changeOffsetTimeoutMs = 10000;
+    private final long msgCommitTimeoutMs = 1000L;
+    private final long msgProcessTimeoutMs = 100L;
     private EdmlUploadExecutor uploadKafkaExecutor;
-    private DtmConfig dtmSettings = mock(CoreDtmSettings.class);
-    private Vertx vertx = Vertx.vertx();
     private Set<SourceType> sourceTypes;
     private QueryRequest queryRequest;
     private QueryResult queryResult;
     private Object resultException;
-    private Integer inpuStreamTimeoutMs = 2000;
-    private Integer pluginStatusCheckPeriodMs = 1000;
-    private Integer firstOffsetTimeoutMs = 15000;
-    private Integer changeOffsetTimeoutMs = 10000;
-    private long msgCommitTimeoutMs = 1000L;
-    private long msgProcessTimeoutMs = 100L;
+
     private ZoneId timeZone;
 
     @BeforeEach
@@ -160,7 +158,7 @@ class UploadKafkaExecutorTest {
                         }
                     });
             async.awaitSuccess();
-            queryResult = (QueryResult) promise.future().result();
+            queryResult = promise.future().result();
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
         assertNotNull(queryResult);
@@ -241,7 +239,7 @@ class UploadKafkaExecutorTest {
     @Test
     void executeMppwWithFailedRetrievePluginStatus() {
         TestSuite suite = TestSuite.create("mppwLoadTest");
-        RuntimeException exception = new DtmException("Status receiving error");
+        RuntimeException exception = new DtmException("Error getting plugin status: ADG");
         suite.test("executeMppwWithFailedRetrievePluginStatus", context -> {
             Async async = context.async();
             resultException = null;
@@ -286,7 +284,6 @@ class UploadKafkaExecutorTest {
 
             Mockito.doAnswer(invocation -> {
                 final SourceType ds = invocation.getArgument(0);
-                final MppwRequestContext requestContext = invocation.getArgument(1);
                 if (ds.equals(SourceType.ADB)) {
                     return Future.succeededFuture(new QueryResult());
                 } else if (ds.equals(SourceType.ADG)) {
@@ -309,7 +306,7 @@ class UploadKafkaExecutorTest {
             queryResult = (QueryResult) promise.future().result();
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
-        assertEquals(resultException, exception);
+        assertEquals(resultException.toString(), exception.toString());
     }
 
     @Test
@@ -359,7 +356,6 @@ class UploadKafkaExecutorTest {
 
             Mockito.doAnswer(invocation -> {
                 final SourceType ds = invocation.getArgument(0);
-                final MppwRequestContext requestContext = invocation.getArgument(1);
                 if (ds.equals(SourceType.ADB)) {
                     return Future.succeededFuture(new QueryResult());
                 } else if (ds.equals(SourceType.ADG)) {
@@ -451,7 +447,7 @@ class UploadKafkaExecutorTest {
                         async.complete();
                     });
             async.awaitSuccess();
-            queryResult = (QueryResult) promise.future().result();
+            queryResult = promise.future().result();
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
         assertNotNull(resultException);
@@ -523,7 +519,7 @@ class UploadKafkaExecutorTest {
                         async.complete();
                     });
             async.awaitSuccess();
-            queryResult = (QueryResult) promise.future().result();
+            queryResult = promise.future().result();
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
         assertNotNull(resultException);

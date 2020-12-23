@@ -72,6 +72,7 @@ public class DdlUtils {
             case BIGINT:
             case DATE:
             case TIME:
+            case TIMESTAMP:
                 return "Int64";
             case BOOLEAN:
                 return "UInt8";
@@ -79,8 +80,6 @@ public class DdlUtils {
                 return "Float32";
             case DOUBLE:
                 return "Float64";
-            case TIMESTAMP:
-                return "DateTime64(3)";
             default:
                 return "";
         }

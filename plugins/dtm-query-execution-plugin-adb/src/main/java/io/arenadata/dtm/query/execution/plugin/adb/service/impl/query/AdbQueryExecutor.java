@@ -18,7 +18,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 @Slf4j
@@ -80,7 +79,10 @@ public class AdbQueryExecutor implements DatabaseExecutor {
                         return executePreparedQuery(conn, sql, new ArrayTuple(params));
                     })
                     .map(rowSet -> createResult(metadata, rowSet))
-                    .onSuccess(promise::complete)
+                    .onSuccess(result -> {
+                        tryCloseConnect(connectionCtx.getConnection());
+                        promise.complete(result);
+                    })
                     .onFailure(fail -> {
                         if (connectionCtx.getConnection() != null) {
                             tryCloseConnect(connectionCtx.getConnection());
@@ -102,6 +104,7 @@ public class AdbQueryExecutor implements DatabaseExecutor {
                     })
                     .compose(conn -> executeQueryUpdate(conn, sql))
                     .onSuccess(result -> {
+                        tryCloseConnect(connectionCtx.getConnection());
                         promise.complete();
                     })
                     .onFailure(fail -> {
@@ -279,7 +282,7 @@ public class AdbQueryExecutor implements DatabaseExecutor {
 
     @Data
     @NoArgsConstructor
-    private class AdbConnectionCtx {
+    private static class AdbConnectionCtx {
         private PgConnection connection;
     }
 

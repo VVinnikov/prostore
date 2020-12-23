@@ -14,6 +14,8 @@ import java.util.TreeMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static io.arenadata.dtm.query.calcite.core.util.SqlTreeUtil.*;
+
 @Data
 @Slf4j
 public class SqlSelectTree {
@@ -80,7 +82,7 @@ public class SqlSelectTree {
         } else if (node instanceof SqlJoin) {
             flattenSqlJoin(treeNode, (SqlJoin) node);
         } else if (node instanceof SqlIdentifier) {
-            flattenSqlIdentifier(treeNode, (SqlIdentifier) node);
+            flattenSqlIdentifier(treeNode);
         } else if (node instanceof SqlSnapshot) {
             flattenSqlSnapshot(treeNode, (SqlSnapshot) node);
         } else if (node instanceof SqlBasicCall) {
@@ -99,19 +101,19 @@ public class SqlSelectTree {
     }
 
     private void flattenSqlAlterView(SqlTreeNode parentTree, SqlCall parentNode) {
-        addReflectNode(parentTree, parentNode, "name");
+        addReflectNode(parentTree, parentNode, NAME_FIELD);
         parentTree.resetChildPos();
-        addReflectNode(parentTree, parentNode, "columnList");
+        addReflectNode(parentTree, parentNode, COLUMN_LIST_FIELD);
         parentTree.resetChildPos();
-        addReflectNode(parentTree, parentNode, "query");
+        addReflectNode(parentTree, parentNode, QUERY_FIELD);
     }
 
     private void flattenSqlCreate(SqlTreeNode parentTree, SqlDdl parentNode) {
         flattenSqlDrop(parentTree, parentNode);
         parentTree.resetChildPos();
-        addReflectNode(parentTree, parentNode, "columnList");
+        addReflectNode(parentTree, parentNode, COLUMN_LIST_FIELD);
         parentTree.resetChildPos();
-        addReflectNode(parentTree, parentNode, "query");
+        addReflectNode(parentTree, parentNode, QUERY_FIELD);
     }
 
     private void addReflectNode(SqlTreeNode parentTree, SqlNode parentNode, String fieldName) {
@@ -122,7 +124,7 @@ public class SqlSelectTree {
     }
 
     private void flattenSqlDrop(SqlTreeNode parentTree, SqlDdl parentNode) {
-        addReflectNode(parentTree, parentNode, "name");
+        addReflectNode(parentTree, parentNode, NAME_FIELD);
     }
 
     @SneakyThrows
@@ -150,13 +152,6 @@ public class SqlSelectTree {
         }
     }
 
-    private void flattenSqlUpdate(SqlTreeNode parentTree, SqlNode parentNode) {
-        addReflectNode(parentTree, parentNode, "query");
-        addReflectNode(parentTree, parentNode, "query");
-        addReflectNode(parentTree, parentNode, "query");
-        addReflectNode(parentTree, parentNode, "query");
-    }
-
     private void flattenSqlBasicCall(SqlTreeNode parentTree, SqlBasicCall parentNode) {
         flattenSqlCall(parentTree, parentNode);
     }
@@ -165,7 +160,7 @@ public class SqlSelectTree {
         flattenSqlCall(parent, parentNode);
     }
 
-    private void flattenSqlIdentifier(SqlTreeNode parentTree, SqlIdentifier parentNode) {
+    private void flattenSqlIdentifier(SqlTreeNode parentTree) {
         parentTree.setIdentifier(true);
     }
 

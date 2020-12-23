@@ -155,9 +155,13 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
     }
 
     @Override
-    public String createExtTableSqlQuery(String server, List<String> columnNameTypeList, MppwRequestContext context, MppwProperties mppwProperties) {
+    public String createExtTableSqlQuery(String server,
+                                         List<String> columnNameTypeList,
+                                         MppwRequestContext context,
+                                         MppwProperties mppwProperties) {
         val schema = context.getRequest().getKafkaParameter().getDatamart();
-        val table = MetadataSqlFactoryImpl.WRITABLE_EXT_TABLE_PREF + context.getRequest().getQueryRequest().getRequestId().toString().replaceAll("-", "_");
+        val table = MetadataSqlFactoryImpl.WRITABLE_EXT_TABLE_PREF +
+                context.getRequest().getQueryRequest().getRequestId().toString().replace("-", "_");
         val columns = String.join(DELIMITER, columnNameTypeList);
         val format = context.getRequest().getKafkaParameter().getUploadMetadata().getFormat().getName();
         val topic = context.getRequest().getKafkaParameter().getTopic();
@@ -202,14 +206,21 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
     @Override
     public String createWritableExtTableSqlQuery(MpprRequest request) {
         val schema = request.getQueryRequest().getDatamartMnemonic();
-        val table = MetadataSqlFactoryImpl.WRITABLE_EXTERNAL_TABLE_PREF + request.getQueryRequest().getRequestId().toString().replaceAll("-", "_");
+        val table = MetadataSqlFactoryImpl.WRITABLE_EXTERNAL_TABLE_PREF +
+                request.getQueryRequest().getRequestId().toString().replace("-", "_");
         val columns = request.getDestinationEntity().getFields().stream()
                 .map(field -> field.getName() + " " + EntityTypeUtil.pgFromDtmType(field)).collect(Collectors.toList());
         val topic = request.getKafkaParameter().getTopic();
         val brokers = request.getKafkaParameter().getBrokers().stream()
                 .map(kafkaBrokerInfo -> kafkaBrokerInfo.getAddress()).collect(Collectors.toList());
         val chunkSize = ((DownloadExternalEntityMetadata) request.getKafkaParameter().getDownloadMetadata()).getChunkSize();
-        return String.format(CREAT_WRITABLE_EXT_TABLE_SQL, schema, table, String.join(DELIMITER, columns), topic, String.join(DELIMITER, brokers), chunkSize);
+        return String.format(CREAT_WRITABLE_EXT_TABLE_SQL,
+                schema,
+                table,
+                String.join(DELIMITER, columns),
+                topic,
+                String.join(DELIMITER, brokers),
+                chunkSize);
     }
 
     @Override

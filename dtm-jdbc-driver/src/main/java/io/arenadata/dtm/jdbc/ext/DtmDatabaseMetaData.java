@@ -46,7 +46,9 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                 new Field(SCHEMA_NAME_COLUMN, ""),
                 new Field(CATALOG_NAME_COLUMN, "")
         });
-        return ((DtmStatement) this.connection.createStatement()).createDriverResultSet(result, getMetadata(result));
+        try (DtmStatement dtmStatement = (DtmStatement) this.connection.createStatement()) {
+            return dtmStatement.createDriverResultSet(result, getMetadata(result));
+        }
     }
 
     @Override
@@ -55,7 +57,9 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
             List<Field[]> result = connection.getQueryExecutor().getSchemas().stream()
                     .map(schemaInfo -> new Field[]{new Field(CATALOG_NAME_COLUMN, schemaInfo.getMnemonic())})
                     .collect(Collectors.toList());
-            this.catalogs = ((DtmStatement) this.connection.createStatement()).createDriverResultSet(result, getMetadata(result));
+            try (DtmStatement dtmStatement = (DtmStatement) this.connection.createStatement()) {
+                this.catalogs = dtmStatement.createDriverResultSet(result, getMetadata(result));
+            }
         }
         return catalogs;
     }
@@ -95,7 +99,9 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                         new Field(REF_GENERATION_COLUMN, null),
                         new Field(TABLE_OWNER_COLUMN, getUserName())
                 }).collect(Collectors.toList());
-        return ((DtmStatement) this.connection.createStatement()).createDriverResultSet(result, getMetadata(result));
+        try (DtmStatement dtmStatement = (DtmStatement) this.connection.createStatement()) {
+            return dtmStatement.createDriverResultSet(result, getMetadata(result));
+        }
     }
 
     @Override
@@ -105,7 +111,9 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                 new Field(TABLE_TYPE_COLUMN, SYSTEM_VIEW_TYPE),
                 new Field(TABLE_TYPE_COLUMN, VIEW_TYPE)
         });
-        return ((DtmStatement) this.connection.createStatement()).createDriverResultSet(result, getMetadata(result));
+        try (DtmStatement dtmStatement = (DtmStatement) this.connection.createStatement()) {
+            return dtmStatement.createDriverResultSet(result, getMetadata(result));
+        }
     }
 
     @Override
@@ -158,7 +166,9 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                         new Field(IS_AUTOINCREMENT_COLUMN, "NO"),
                         new Field(IS_GENERATEDCOLUMN_COLUMN, "NO")
                 }).collect(Collectors.toList());
-        return ((DtmStatement) this.connection.createStatement()).createDriverResultSet(result, getMetadata(result));
+        try (DtmStatement dtmStatement = (DtmStatement) this.connection.createStatement()) {
+            return dtmStatement.createDriverResultSet(result, getMetadata(result));
+        }
     }
 
     private boolean isNullable(ColumnInfo columnInfo) {

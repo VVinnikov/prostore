@@ -4,17 +4,17 @@ import java.util.Optional;
 
 public class EntityTypeUtil {
     public static String pgFromDtmType(EntityField field) {
-        return pgFromDtmType(field.getType(), field.getSize(), field.getAccuracy());
+        return pgFromDtmType(field.getType(), field.getSize());
     }
 
-    public static String pgFromDtmType(ColumnType type, Integer size, Integer accuracy) {
+    public static String pgFromDtmType(ColumnType type, Integer size) {
         switch (type) {
             case DATE:
                 return "date";
             case TIME:
-                return "time" + getTimePrecision(accuracy);
+                return "time(6)";
             case TIMESTAMP:
-                return "timestamp" + getTimestamprecision(accuracy);
+                return "timestamp(6)";
             case FLOAT:
                 return "float4";
             case DOUBLE:
@@ -32,16 +32,6 @@ public class EntityTypeUtil {
             default:
                 throw new UnsupportedOperationException(String.format("Unsupported type: %s", type));
         }
-    }
-
-    private static String getTimestamprecision(Integer accuracy) {
-        return getTimePrecision(Optional.ofNullable(accuracy).orElse(6));
-    }
-
-    private static String getTimePrecision(Integer accuracy) {
-        return Optional.ofNullable(accuracy)
-                .map(accuracyVal -> String.format("(%s)", accuracyVal))
-                .orElse("");
     }
 
     private static String getVarcharSize(Integer size) {

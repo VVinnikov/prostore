@@ -69,6 +69,7 @@ class MetadataCalciteGeneratorImplTest {
         EntityField f7 = new EntityField(6,"flvalue", ColumnType.FLOAT, true);
         EntityField f8 = new EntityField(7,"datevalue", ColumnType.DATE, true);
         EntityField f9 = new EntityField(8,"timevalue", ColumnType.TIME, true);
+        f9.setAccuracy(6);
         EntityField f11 = new EntityField(9, "tsvalue", ColumnType.TIMESTAMP, true);
         f11.setAccuracy(10);
         return new ArrayList<>(Arrays.asList(f1, f2, f3, f4, f5, f6, f7, f8, f9, f11));

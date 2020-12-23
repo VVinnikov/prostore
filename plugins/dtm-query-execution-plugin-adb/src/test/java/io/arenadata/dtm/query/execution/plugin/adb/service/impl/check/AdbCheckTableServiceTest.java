@@ -153,7 +153,7 @@ public class AdbCheckTableServiceTest {
     @Test
     void testDataType() {
         String expectedError = String.format(AdbCheckTableService.FIELD_ERROR_TEMPLATE,
-                AdbCheckTableService.DATA_TYPE, ColumnType.TIME.name().toLowerCase(), "int8");
+                AdbCheckTableService.DATA_TYPE, "time(6)", "int8");
         testColumns(field -> field.setType(ColumnType.TIME), expectedError);
 
     }

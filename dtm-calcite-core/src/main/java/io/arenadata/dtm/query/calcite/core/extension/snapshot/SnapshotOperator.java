@@ -24,7 +24,7 @@ public class SnapshotOperator extends SqlOperator {
     public SqlCall createCall(SqlLiteral functionQualifier, SqlParserPos pos, SqlNode tableRef, SqlNode period,
                               SqlOperator started, SqlOperator finished, SqlNode num, SqlLiteral isLatestUncommittedDelta) {
         assert functionQualifier == null;
-        return new SqlSnapshot(pos,
+        return new SqlDeltaSnapshot(pos,
                 tableRef, period, started, finished, num, isLatestUncommittedDelta);
     }
 
@@ -41,8 +41,8 @@ public class SnapshotOperator extends SqlOperator {
     }
 
     public void unparse(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
-        SqlSnapshot snapshot =
-                (SqlSnapshot) call;
+        SqlDeltaSnapshot snapshot =
+                (SqlDeltaSnapshot) call;
         snapshot.getTableRef().unparse(writer, 0, 0);
         writer.keyword("FOR SYSTEM_TIME");
     }

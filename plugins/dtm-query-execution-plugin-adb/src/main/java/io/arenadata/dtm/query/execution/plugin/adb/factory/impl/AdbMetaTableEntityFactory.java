@@ -80,16 +80,19 @@ public class AdbMetaTableEntityFactory implements MetaTableEntityFactory<AdbTabl
         String precision = Optional.ofNullable(map.get(DATETIME_PRECISION))
                 .map(val -> String.format("(%s)", val))
                 .orElse("");
+        String result;
         switch (type) {
             case "varchar":
             case "char":
-                type = String.format("%s%s", type, size);
+                result = String.format("%s%s", type, size);
                 break;
             case "time":
             case "timestamp":
-                type = String.format("%s%s", type, precision);
+                result = String.format("%s%s", type, precision);
                 break;
+            default :
+                result = type;
         }
-        return type;
+        return result;
     }
 }

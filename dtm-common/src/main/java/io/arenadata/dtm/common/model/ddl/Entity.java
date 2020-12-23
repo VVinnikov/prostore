@@ -5,6 +5,8 @@ import io.arenadata.dtm.common.reader.SourceType;
 import lombok.*;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -15,7 +17,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
-public class Entity implements Serializable, Cloneable {
+public class Entity implements Serializable {
 
     private static final String DEFAULT_SCHEMA = "test";
 
@@ -54,10 +56,21 @@ public class Entity implements Serializable, Cloneable {
         return schema + "." + name;
     }
 
-    @Override
-    @SneakyThrows
-    public Entity clone() {
-        return (Entity) super.clone();
+    public Entity copy() {
+        return Entity.builder()
+                .name(this.name)
+                .schema(this.schema)
+                .viewQuery(this.viewQuery)
+                .entityType(this.entityType)
+                .externalTableFormat(this.externalTableFormat)
+                .externalTableSchema(this.externalTableSchema)
+                .externalTableLocationType(this.externalTableLocationType)
+                .externalTableLocationPath(this.externalTableLocationPath)
+                .externalTableDownloadChunkSize(this.externalTableDownloadChunkSize)
+                .externalTableUploadMessageLimit(this.externalTableUploadMessageLimit)
+                .destination(this.destination != null ? new HashSet<>(this.destination) : null)
+                .fields(this.fields != null ? new ArrayList<>(this.fields) : null)
+                .build();
     }
 }
 

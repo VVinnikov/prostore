@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 public class AdqmMetaTableEntityFactory implements MetaTableEntityFactory<AdqmTableEntity> {
 
     public static final String IS_IN_SORTING_KEY = "is_in_sorting_key";
+    public static final String IN_SORTING_KEY = "1";
     public static final String QUERY_PATTERN = String.format("SELECT \n" +
                     "  name as %s, \n" +
                     "  type as %s, \n" +
@@ -49,7 +50,7 @@ public class AdqmMetaTableEntityFactory implements MetaTableEntityFactory<AdqmTa
         List<String> sortedKeys = new ArrayList<>();
         List<AdqmTableColumn> columns = mapList.stream()
                 .peek(map -> {
-                    if ("1".equals(map.get(IS_IN_SORTING_KEY).toString())) {
+                    if (IN_SORTING_KEY.equals(map.get(IS_IN_SORTING_KEY).toString())) {
                         sortedKeys.add(map.get(COLUMN_NAME).toString());
                     }
                 })

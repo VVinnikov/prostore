@@ -48,11 +48,9 @@ public class CheckDatabaseExecutor implements CheckExecutor {
     }
 
     private Future<Boolean> datamartExists(String datamart) {
-        return Future.future(promise -> {
-            datamartDao.getDatamart(datamart)
-                    .onSuccess(success -> promise.complete(true))
-                    .onFailure(error -> promise.complete(false));
-        });
+        return Future.future(promise -> datamartDao.getDatamart(datamart)
+                .onSuccess(success -> promise.complete(true))
+                .onFailure(error -> promise.complete(false)));
     }
 
     private Future<List<Entity>> getEntities(List<String> entityNames, String datamartMnemonic) {

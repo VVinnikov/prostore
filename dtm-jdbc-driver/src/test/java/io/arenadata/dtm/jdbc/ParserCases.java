@@ -7,7 +7,7 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 
-public class ParserTest {
+public class ParserCases {
 
     public static void main(String[] args) throws SQLException {
         final List<String> sqlQueries = Arrays.asList(

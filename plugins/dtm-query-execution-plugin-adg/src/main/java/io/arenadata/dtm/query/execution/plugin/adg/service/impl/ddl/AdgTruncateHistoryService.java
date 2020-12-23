@@ -1,54 +1,38 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl.ddl;
 
+import io.arenadata.dtm.query.execution.plugin.adg.factory.AdgTruncateHistoryConditionFactory;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.adg.utils.AdgUtils;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TruncateHistoryService;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
-import org.apache.calcite.sql.SqlDialect;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import static io.arenadata.dtm.query.execution.plugin.adg.constants.ColumnFields.ACTUAL_POSTFIX;
 import static io.arenadata.dtm.query.execution.plugin.adg.constants.ColumnFields.HISTORY_POSTFIX;
 
 @Service("adgTruncateHistoryService")
 public class AdgTruncateHistoryService implements TruncateHistoryService {
-    private static final String SYS_CN_CONDITION_PATTERN = "\"sys_to\" < %s";
     private final AdgCartridgeClient adgCartridgeClient;
-    private final SqlDialect sqlDialect;
+    private final AdgTruncateHistoryConditionFactory conditionFactory;
 
     @Autowired
     public AdgTruncateHistoryService(AdgCartridgeClient adgCartridgeClient,
-                                     @Qualifier("adgSqlDialect") SqlDialect sqlDialect) {
+                                     AdgTruncateHistoryConditionFactory adgTruncateHistoryConditionFactory) {
         this.adgCartridgeClient = adgCartridgeClient;
-        this.sqlDialect = sqlDialect;
+        this.conditionFactory = adgTruncateHistoryConditionFactory;
     }
 
     @Override
     public Future<Void> truncateHistory(TruncateHistoryParams params) {
-        return getConditions(params)
+        return conditionFactory.create(params)
                 .compose(conditions -> params.getSysCn().isPresent()
                         ? deleteSpaceTuples(params, HISTORY_POSTFIX, conditions)
                         : deleteSpaceTuplesWithoutSysCn(params, conditions));
-    }
-
-    private Future<String> getConditions(TruncateHistoryParams params) {
-        //TODO it's better to exclude generating conditions in separate factory class
-        List<String> conditions = new ArrayList<>();
-        params.getConditions()
-                .map(val -> String.format("(%s)", val.toSqlString(sqlDialect)))
-                .ifPresent(conditions::add);
-        params.getSysCn()
-                .map(sysCn -> String.format(SYS_CN_CONDITION_PATTERN, sysCn))
-                .ifPresent(conditions::add);
-        return Future.succeededFuture(String.join(" AND ", conditions));
     }
 
     private Future<Void> deleteSpaceTuples(TruncateHistoryParams params, String postfix, String conditions) {

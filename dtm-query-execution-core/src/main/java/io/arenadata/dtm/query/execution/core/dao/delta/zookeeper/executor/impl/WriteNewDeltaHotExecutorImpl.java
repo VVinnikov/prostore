@@ -75,7 +75,9 @@ public class WriteNewDeltaHotExecutorImpl extends DeltaServiceDaoExecutorHelper 
                             deltaHotNum);
                     if (error instanceof KeeperException.NodeExistsException
                             || error instanceof KeeperException.BadVersionException) {
-                        resultPromise.fail(new DeltaIsNotCommittedException(deltaHotNum.toString(), error));
+                        resultPromise.fail(deltaHotNum == null ?
+                                new DeltaIsNotCommittedException(error) :
+                                new DeltaIsNotCommittedException(String.valueOf(deltaHotNum), error));
                     } else if (error instanceof DeltaException) {
                         resultPromise.fail(error);
                     } else {

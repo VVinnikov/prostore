@@ -12,6 +12,7 @@ import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.adg.service.impl.AdgCartridgeClientImpl;
 import io.arenadata.dtm.query.execution.plugin.adg.utils.TestUtils;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
+import io.arenadata.dtm.query.execution.plugin.api.factory.MetaTableEntityFactory;
 import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
 import io.vertx.core.Future;
@@ -99,7 +100,7 @@ public class AdgCheckTableServiceTest {
     @Test
     void testDataType() {
         String expectedError = String.format(CheckTableService.FIELD_ERROR_TEMPLATE,
-                CheckTableService.DATA_TYPE, "string", "integer");
+                MetaTableEntityFactory.DATA_TYPE, "string", "integer");
         testColumns(field -> field.setType(ColumnType.VARCHAR), expectedError);
 
     }

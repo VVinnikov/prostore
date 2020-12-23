@@ -1,5 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.ddl;
 
+import io.arenadata.dtm.cache.service.CacheService;
+import io.arenadata.dtm.cache.service.CaffeineCacheService;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
@@ -19,7 +21,7 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.Datama
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
 import io.arenadata.dtm.query.execution.core.exception.view.ViewNotExistsException;
-import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
+import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
 import io.arenadata.dtm.query.execution.core.service.ddl.impl.AlterViewDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.dml.ColumnMetadataService;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
@@ -62,7 +64,7 @@ class AlterViewDdlExecutorTest {
     private final LogicalSchemaProvider logicalSchemaProvider = mock(LogicalSchemaProviderImpl.class);
     private final ColumnMetadataService columnMetadataService = mock(ColumnMetadataService.class);
     private final MetadataExecutor<DdlRequestContext> metadataExecutor = mock(MetadataExecutorImpl.class);
-    private final EntityCacheService entityCacheService = mock(EntityCacheService.class);
+    private final CacheService<EntityKey, Entity> entityCacheService = mock(CaffeineCacheService.class);
     private final CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
     private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private final SqlParser.Config parserConfig = calciteConfiguration

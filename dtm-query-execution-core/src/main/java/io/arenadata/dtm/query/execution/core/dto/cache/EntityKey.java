@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.service.cache.key;
+package io.arenadata.dtm.query.execution.core.dto.cache;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

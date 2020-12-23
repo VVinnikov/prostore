@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.service.cache;
+package io.arenadata.dtm.cache.service;
 
 import io.vertx.core.Future;
 

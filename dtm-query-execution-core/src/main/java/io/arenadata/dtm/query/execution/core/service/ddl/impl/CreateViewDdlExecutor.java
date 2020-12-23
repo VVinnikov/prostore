@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
+import io.arenadata.dtm.cache.service.CacheService;
 import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
@@ -15,7 +16,7 @@ import io.arenadata.dtm.query.execution.core.exception.table.TableAlreadyExistsE
 import io.arenadata.dtm.query.execution.core.exception.view.EntityAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.exception.view.ViewDisalowedOrDirectiveException;
 import io.arenadata.dtm.query.execution.core.exception.view.ViewNotExistsException;
-import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
+import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.dml.ColumnMetadataService;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
@@ -50,12 +51,12 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
     private static final String VIEW_AND_TABLE_PATTERN = "(?i).*(JOIN|SELECT)\\.(|AS\\.)(SNAPSHOT|IDENTIFIER)$";
     protected final SqlDialect sqlDialect;
     protected final EntityDao entityDao;
-    protected final EntityCacheService entityCacheService;
+    protected final CacheService<EntityKey, Entity> entityCacheService;
     private final LogicalSchemaProvider logicalSchemaProvider;
     private final ColumnMetadataService columnMetadataService;
 
     @Autowired
-    public CreateViewDdlExecutor(@Qualifier("entityCacheService") EntityCacheService entityCacheService,
+    public CreateViewDdlExecutor(@Qualifier("entityCacheService") CacheService<EntityKey, Entity> entityCacheService,
                                  MetadataExecutor<DdlRequestContext> metadataExecutor,
                                  LogicalSchemaProvider logicalSchemaProvider,
                                  ColumnMetadataService columnMetadataService,
@@ -106,7 +107,7 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
     private Future<QueryResult> createOrReplaceEntity(CreateViewContext ctx) {
         return Future.future(promise -> {
             val viewEntity = ctx.getViewEntity();
-            entityCacheService.remove(viewEntity.getSchema(), viewEntity.getName());
+            entityCacheService.remove(new EntityKey(viewEntity.getSchema(), viewEntity.getName()));
             entityDao.createEntity(viewEntity)
                     .otherwise(error -> checkCreateOrReplace(ctx, error))
                     .compose(r -> entityDao.getEntity(viewEntity.getSchema(), viewEntity.getName()))
@@ -170,7 +171,7 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
                 throw new DtmException(String.format("Can't extract table name from query %s",
                         context.getQuery().toSqlString(sqlDialect).toString()));
             }
-            entityCacheService.remove(datamartName, tableName);
+            entityCacheService.remove(new EntityKey(datamartName, tableName));
             entityFutures.add(entityDao.getEntity(datamartName, tableName));
         });
         return entityFutures;

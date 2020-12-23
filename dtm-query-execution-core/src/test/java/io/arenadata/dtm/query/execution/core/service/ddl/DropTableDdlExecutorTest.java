@@ -1,5 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.ddl;
 
+import io.arenadata.dtm.cache.service.CacheService;
+import io.arenadata.dtm.cache.service.CaffeineCacheService;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
@@ -20,10 +22,10 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.Datama
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
 import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
+import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
-import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
-import io.arenadata.dtm.query.execution.core.service.ddl.impl.DropTableDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.datasource.impl.DataSourcePluginServiceImpl;
+import io.arenadata.dtm.query.execution.core.service.ddl.impl.DropTableDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.impl.MetadataExecutorImpl;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
@@ -59,7 +61,7 @@ class DropTableDdlExecutorTest {
     private final SqlParser.Config parserConfig = calciteConfiguration.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory());
     private final MetadataExecutor<DdlRequestContext> metadataExecutor = mock(MetadataExecutorImpl.class);
     private final DataSourcePluginService pluginService = mock(DataSourcePluginServiceImpl.class);
-    private final EntityCacheService cacheService = mock(EntityCacheService.class);
+    private final CacheService<EntityKey, Entity> cacheService = mock(CaffeineCacheService.class);
     private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
     private final ServiceDbDao serviceDbDao = mock(ServiceDbDaoImpl.class);
     private final DatamartDao datamartDao = mock(DatamartDaoImpl.class);

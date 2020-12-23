@@ -1,10 +1,12 @@
 package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
+import io.arenadata.dtm.cache.service.CacheService;
 import io.arenadata.dtm.common.exception.DtmException;
+import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
-import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
+import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
 import io.arenadata.dtm.query.execution.core.service.dml.ColumnMetadataService;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
@@ -25,7 +27,7 @@ public class AlterViewDdlExecutor extends CreateViewDdlExecutor {
     public static final String ALTER_VIEW_QUERY_PATH = "ALTER_VIEW.SELECT";
 
     @Autowired
-    public AlterViewDdlExecutor(@Qualifier("entityCacheService") EntityCacheService entityCacheService,
+    public AlterViewDdlExecutor(@Qualifier("entityCacheService") CacheService<EntityKey, Entity> entityCacheService,
                                 MetadataExecutor<DdlRequestContext> metadataExecutor,
                                 LogicalSchemaProvider logicalSchemaProvider,
                                 ColumnMetadataService columnMetadataService,

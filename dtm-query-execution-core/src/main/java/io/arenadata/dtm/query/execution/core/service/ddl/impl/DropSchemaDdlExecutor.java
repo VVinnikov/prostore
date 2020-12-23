@@ -1,22 +1,24 @@
 package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
+import io.arenadata.dtm.cache.service.CacheService;
 import io.arenadata.dtm.common.exception.DtmException;
+import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.DropDatabase;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
+import io.arenadata.dtm.query.execution.core.dto.delta.HotDelta;
+import io.arenadata.dtm.query.execution.core.dto.delta.OkDelta;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
-import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
-import io.arenadata.dtm.query.execution.core.service.cache.impl.HotDeltaCacheService;
-import io.arenadata.dtm.query.execution.core.service.cache.impl.OkDeltaCacheService;
+import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.vertx.core.Future;
-import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import static io.arenadata.dtm.query.execution.plugin.api.ddl.DdlType.DROP_SCHEMA;
@@ -24,16 +26,16 @@ import static io.arenadata.dtm.query.execution.plugin.api.ddl.DdlType.DROP_SCHEM
 @Slf4j
 @Component
 public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
-    private final HotDeltaCacheService hotDeltaCacheService;
-    private final OkDeltaCacheService okDeltaCacheService;
-    private final EntityCacheService entityCacheService;
+    private final CacheService<String, HotDelta> hotDeltaCacheService;
+    private final CacheService<String, OkDelta> okDeltaCacheService;
+    private final CacheService<EntityKey, Entity> entityCacheService;
     private final DatamartDao datamartDao;
 
     @Autowired
     public DropSchemaDdlExecutor(MetadataExecutor<DdlRequestContext> metadataExecutor,
-                                 HotDeltaCacheService hotDeltaCacheService,
-                                 OkDeltaCacheService okDeltaCacheService,
-                                 EntityCacheService entityCacheService,
+                                 @Qualifier("hotDeltaCacheService") CacheService<String, HotDelta> hotDeltaCacheService,
+                                 @Qualifier("okDeltaCacheService") CacheService<String, OkDelta> okDeltaCacheService,
+                                 @Qualifier("entityCacheService") CacheService<EntityKey, Entity> entityCacheService,
                                  ServiceDbFacade serviceDbFacade) {
         super(metadataExecutor, serviceDbFacade);
         this.hotDeltaCacheService = hotDeltaCacheService;

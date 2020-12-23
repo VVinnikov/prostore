@@ -1,34 +1,26 @@
 package io.arenadata.dtm.query.execution.core.service.schema;
 
+import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.dto.schema.DatamartSchemaKey;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.QueryRequest;
-import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
-import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
-import io.arenadata.dtm.query.calcite.core.service.DeltaInformationExtractor;
-import io.arenadata.dtm.query.calcite.core.service.impl.DeltaInformationExtractorImpl;
-import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
-import io.arenadata.dtm.query.execution.core.configuration.properties.CoreDtmSettings;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacadeImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
-import io.arenadata.dtm.common.exception.DtmException;
-import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDefinitionService;
 import io.arenadata.dtm.query.execution.core.service.schema.impl.LogicalSchemaServiceImpl;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import java.time.ZoneId;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,12 +34,6 @@ class LogicalSchemaServiceImplTest {
     public static final String DATAMART = "test_datamart";
     public static final String TABLE_PSO = "pso";
     public static final String TABLE_DOC = "doc";
-    private final CalciteConfiguration config = new CalciteConfiguration();
-    private final DeltaInformationExtractor deltaInformationExtractor =
-            new DeltaInformationExtractorImpl(new CoreDtmSettings(ZoneId.of("UTC")));
-    private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
-    private final DefinitionService<SqlNode> definitionService =
-            new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
     private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
     private final ServiceDbDao serviceDbDao = mock(ServiceDbDaoImpl.class);
     private final EntityDao entityDao = mock(EntityDaoImpl.class);
@@ -58,10 +44,20 @@ class LogicalSchemaServiceImplTest {
     void setUp() {
         when(serviceDbFacade.getServiceDbDao()).thenReturn(serviceDbDao);
         when(serviceDbDao.getEntityDao()).thenReturn(entityDao);
-        logicalSchemaService = new LogicalSchemaServiceImpl(serviceDbFacade, definitionService, deltaInformationExtractor);
+        logicalSchemaService = new LogicalSchemaServiceImpl(serviceDbFacade);
         queryRequest = new QueryRequest();
         queryRequest.setDatamartMnemonic(DATAMART);
         queryRequest.setRequestId(UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"));
+        queryRequest.setDeltaInformations(Arrays.asList(
+                DeltaInformation.builder()
+                        .schemaName(DATAMART)
+                        .tableName("pso")
+                        .build(),
+                DeltaInformation.builder()
+                        .schemaName(DATAMART)
+                        .tableName("doc")
+                        .build()
+        ));
     }
 
     @Test

@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
+import io.arenadata.dtm.cache.service.CacheService;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
@@ -8,8 +9,8 @@ import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
+import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
-import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
@@ -36,11 +37,11 @@ import static com.google.common.collect.Sets.newHashSet;
 public class DropTableDdlExecutor extends QueryResultDdlExecutor {
 
     private final DataSourcePluginService dataSourcePluginService;
-    private final EntityCacheService entityCacheService;
+    private final CacheService<EntityKey, Entity> entityCacheService;
     private final EntityDao entityDao;
 
     @Autowired
-    public DropTableDdlExecutor(@Qualifier("entityCacheService") EntityCacheService entityCacheService,
+    public DropTableDdlExecutor(@Qualifier("entityCacheService") CacheService<EntityKey, Entity> entityCacheService,
                                 MetadataExecutor<DdlRequestContext> metadataExecutor,
                                 ServiceDbFacade serviceDbFacade,
                                 DataSourcePluginService dataSourcePluginService) {
@@ -59,7 +60,7 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
         return Future.future(promise -> {
             String schema = getSchemaName(context.getRequest().getQueryRequest(), sqlNodeName);
             String tableName = getTableName(sqlNodeName);
-            entityCacheService.remove(schema, tableName);
+            entityCacheService.remove(new EntityKey(schema, tableName));
             Entity entity = createClassTable(schema, tableName);
             context.getRequest().setEntity(entity);
             context.setDatamartName(schema);

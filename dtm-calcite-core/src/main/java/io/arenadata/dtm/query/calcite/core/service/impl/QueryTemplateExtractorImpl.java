@@ -1,18 +1,19 @@
 package io.arenadata.dtm.query.calcite.core.service.impl;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.calcite.core.dto.EnrichmentTemplateRequest;
-import io.arenadata.dtm.query.calcite.core.dto.QueryTemplateResult;
+import io.arenadata.dtm.common.reader.QueryTemplateResult;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.calcite.core.node.SqlTreeNode;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.calcite.core.service.QueryTemplateExtractor;
-import org.apache.calcite.sql.SqlDialect;
-import org.apache.calcite.sql.SqlDynamicParam;
-import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class QueryTemplateExtractorImpl implements QueryTemplateExtractor {
@@ -40,13 +41,13 @@ public class QueryTemplateExtractorImpl implements QueryTemplateExtractor {
         for (SqlTreeNode dynamicNode : dynamicNodes) {
             SqlNode param;
             if (!paramIterator.hasNext()) {
-               paramIterator = request.getParams().iterator();
+                paramIterator = request.getParams().iterator();
             }
             param = paramIterator.next();
             dynamicNode.getSqlNodeSetter().accept(param);
         }
         if (paramIterator.hasNext()) {
-            throw new IllegalArgumentException("The number of passed parameters and parameters in the template does not match");
+            throw new DtmException("The number of passed parameters and parameters in the template does not match");
         } else {
             return selectTree.getRoot().getNode();
         }
@@ -54,17 +55,49 @@ public class QueryTemplateExtractorImpl implements QueryTemplateExtractor {
 
     @Override
     public QueryTemplateResult extract(SqlNode sqlNode) {
+        return extractTemplate(sqlNode, Collections.emptyList());
+    }
+
+    @Override
+    public QueryTemplateResult extract(SqlNode sqlNode, List<String> excludeColumns) {
+        return extractTemplate(sqlNode, excludeColumns);
+    }
+
+    private QueryTemplateResult extractTemplate(SqlNode sqlNode, List<String> excludeList) {
         SqlSelectTree selectTree = new SqlSelectTree(sqlNode);
-        List<SqlTreeNode> paramNodes = selectTree.findNodesByPathRegex(REGEX);
+        List<SqlTreeNode> paramNodes = getTreeNodes(excludeList, selectTree);
         paramNodes.forEach(node -> node.getSqlNodeSetter().accept(DYNAMIC_PARAM));
         return new QueryTemplateResult(
-            selectTree.getRoot()
-                .getNode()
-                .toSqlString(sqlDialect).toString(),
-            paramNodes.stream()
-                .map(node -> (SqlNode) node.getNode())
-                .collect(Collectors.toList())
+                selectTree.getRoot()
+                        .getNode()
+                        .toSqlString(sqlDialect).toString(),
+                paramNodes.stream()
+                        .map(node -> (SqlNode) node.getNode())
+                        .collect(Collectors.toList())
         );
+    }
+
+    private List<SqlTreeNode> getTreeNodes(List<String> excludeList, SqlSelectTree selectTree) {
+        if (excludeList.isEmpty()) {
+            return selectTree.findNodesByPathRegex(REGEX);
+        } else {
+            return selectTree.findNodesByPathRegex(REGEX)
+                    .stream()
+                    .filter(n -> {
+                        final String column = getConditionColumnName(selectTree, n);
+                        return excludeList.stream().noneMatch(column::equalsIgnoreCase);
+                    })
+                    .collect(Collectors.toList());
+        }
+    }
+
+    private String getConditionColumnName(SqlSelectTree selectTree, SqlTreeNode n) {
+        final Optional<SqlTreeNode> parentNode = selectTree.getParentByChild(n);
+        if (parentNode.isPresent()) {
+            return ((SqlIdentifier) ((SqlBasicCall) parentNode.get().getNode()).getOperandList().get(0)).names.get(0);
+        } else {
+            throw new DtmException("Can't extract condition column name from sql node");
+        }
     }
 
 }

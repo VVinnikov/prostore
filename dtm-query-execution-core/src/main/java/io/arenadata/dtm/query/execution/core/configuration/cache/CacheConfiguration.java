@@ -1,40 +1,54 @@
 package io.arenadata.dtm.query.execution.core.configuration.cache;
 
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.google.common.collect.Lists;
-import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
+import io.arenadata.dtm.cache.factory.CaffeineCacheServiceFactory;
+import io.arenadata.dtm.cache.service.CacheService;
+import io.arenadata.dtm.common.model.ddl.Entity;
+import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
+import io.arenadata.dtm.query.execution.core.dto.cache.QueryTemplateKey;
+import io.arenadata.dtm.query.execution.core.dto.cache.QueryTemplateValue;
+import io.arenadata.dtm.query.execution.core.dto.delta.HotDelta;
+import io.arenadata.dtm.query.execution.core.dto.delta.OkDelta;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
-import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 @Configuration
 @EnableCaching
 public class CacheConfiguration {
 
+    public static final String CORE_QUERY_TEMPLATE_CACHE = "coreQueryTemplateCache";
     public static final String ENTITY_CACHE = "entity";
     public static final String HOT_DELTA_CACHE = "hotDelta";
     public static final String OK_DELTA_CACHE = "okDelta";
 
-    @Bean("caffeineCacheManager")
-    public CacheManager cacheManager(CacheProperties cacheProperties, DataSourcePluginService dataSourcePluginService) {
-        List<String> caches = Lists.newArrayList(ENTITY_CACHE, HOT_DELTA_CACHE, OK_DELTA_CACHE);
-        caches.addAll(dataSourcePluginService.getActiveCaches());
-        CaffeineCacheManager cacheManager = new CaffeineCacheManager(caches.toArray(new String[0]));
-        cacheManager.setCaffeine(caffeineCacheBuilder(cacheProperties));
-        return cacheManager;
+    @Bean("entityCacheService")
+    public CacheService<EntityKey, Entity> entityCacheService(@Qualifier("coffeineCacheManager")
+                                                                      CacheManager cacheManager) {
+        return new CaffeineCacheServiceFactory<EntityKey, Entity>(cacheManager)
+                .create(ENTITY_CACHE);
     }
 
-    private Caffeine<Object, Object> caffeineCacheBuilder(CacheProperties cacheProperties) {
-        return Caffeine.newBuilder()
-            .initialCapacity(cacheProperties.getInitialCapacity())
-            .maximumSize(cacheProperties.getMaximumSize())
-            .expireAfterAccess(cacheProperties.getExpireAfterAccessMinutes(), TimeUnit.MINUTES)
-            .recordStats();
+    @Bean("hotDeltaCacheService")
+    public CacheService<String, HotDelta> hotDeltaCacheService(@Qualifier("coffeineCacheManager")
+                                                                       CacheManager cacheManager) {
+        return new CaffeineCacheServiceFactory<String, HotDelta>(cacheManager)
+                .create(HOT_DELTA_CACHE);
+    }
+
+    @Bean("okDeltaCacheService")
+    public CacheService<String, OkDelta> okDeltaCacheService(@Qualifier("coffeineCacheManager")
+                                                                     CacheManager cacheManager) {
+        return new CaffeineCacheServiceFactory<String, OkDelta>(cacheManager)
+                .create(OK_DELTA_CACHE);
+    }
+
+    @Bean("coreQueryTemplateCacheService")
+    public CacheService<QueryTemplateKey, QueryTemplateValue> queryCacheService(@Qualifier("coffeineCacheManager")
+                                                                                        CacheManager cacheManager) {
+        return new CaffeineCacheServiceFactory<QueryTemplateKey, QueryTemplateValue>(cacheManager)
+                .create(CORE_QUERY_TEMPLATE_CACHE);
     }
 
 }

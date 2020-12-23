@@ -20,6 +20,7 @@ public class QuerySourceRequest {
     private QueryRequest queryRequest;
     private List<Datamart> logicalSchema;
     private List<ColumnMetadata> metadata;
+    private QueryTemplateResult queryTemplate;
     private SourceType sourceType;
 
     public List<Datamart> getLogicalSchema() {

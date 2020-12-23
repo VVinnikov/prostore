@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
+import io.arenadata.dtm.cache.service.CacheService;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
@@ -8,7 +9,7 @@ import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.exception.view.ViewNotExistsException;
-import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
+import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.utils.SqlPreparer;
@@ -24,11 +25,11 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 public class DropViewDdlExecutor extends QueryResultDdlExecutor {
-    private final EntityCacheService entityCacheService;
+    private final CacheService<EntityKey, Entity> entityCacheService;
     protected final EntityDao entityDao;
 
     @Autowired
-    public DropViewDdlExecutor(@Qualifier("entityCacheService") EntityCacheService entityCacheService,
+    public DropViewDdlExecutor(@Qualifier("entityCacheService") CacheService<EntityKey, Entity> entityCacheService,
                                MetadataExecutor<DdlRequestContext> metadataExecutor,
                                ServiceDbFacade serviceDbFacade) {
         super(metadataExecutor, serviceDbFacade);
@@ -50,7 +51,7 @@ public class DropViewDdlExecutor extends QueryResultDdlExecutor {
             val viewName = viewNameNode.tryGetTableName()
                     .orElseThrow(() -> new DtmException("Unable to get name of view"));
             context.setDatamartName(schemaName);
-            entityCacheService.remove(schemaName, viewName);
+            entityCacheService.remove(new EntityKey(schemaName, viewName));
             entityDao.getEntity(schemaName, viewName)
                     .compose(this::checkEntityType)
                     .compose(v -> entityDao.deleteEntity(schemaName, viewName))

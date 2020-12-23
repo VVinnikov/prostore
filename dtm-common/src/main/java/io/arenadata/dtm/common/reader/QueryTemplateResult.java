@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.calcite.core.dto;
+package io.arenadata.dtm.common.reader;
 
 import lombok.Data;
 import org.apache.calcite.sql.SqlNode;

@@ -1,14 +1,15 @@
 package io.arenadata.dtm.query.execution.core.service.dml.impl;
 
+import io.arenadata.dtm.cache.service.CacheService;
 import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.SqlProcessingType;
-import io.arenadata.dtm.common.reader.QueryRequest;
-import io.arenadata.dtm.common.reader.QueryResult;
-import io.arenadata.dtm.common.reader.QuerySourceRequest;
-import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.common.reader.*;
 import io.arenadata.dtm.query.calcite.core.extension.dml.DmlType;
 import io.arenadata.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
+import io.arenadata.dtm.query.calcite.core.service.QueryTemplateExtractor;
+import io.arenadata.dtm.query.execution.core.dto.cache.QueryTemplateKey;
+import io.arenadata.dtm.query.execution.core.dto.cache.QueryTemplateValue;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.dml.*;
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsService;
@@ -21,6 +22,7 @@ import io.vertx.core.Future;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -35,6 +37,8 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
     private final InformationSchemaDefinitionService informationSchemaDefinitionService;
     private final LogicalSchemaProvider logicalSchemaProvider;
     private final MetricsService<RequestMetrics> metricsService;
+    private final QueryTemplateExtractor templateExtractor;
+    private final CacheService<QueryTemplateKey, QueryTemplateValue> queryCacheService;
 
     @Autowired
     public LlrDmlExecutor(DataSourcePluginService dataSourcePluginService,
@@ -45,7 +49,9 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                           InformationSchemaExecutor informationSchemaExecutor,
                           InformationSchemaDefinitionService informationSchemaDefinitionService,
                           LogicalSchemaProvider logicalSchemaProvider,
-                          MetricsService<RequestMetrics> metricsService) {
+                          MetricsService<RequestMetrics> metricsService,
+                          @Qualifier("coreQueryTmplateExtractor") QueryTemplateExtractor templateExtractor,
+                          @Qualifier("coreQueryTemplateCacheService") CacheService<QueryTemplateKey, QueryTemplateValue> queryCacheService) {
         this.dataSourcePluginService = dataSourcePluginService;
         this.targetDatabaseDefinitionService = targetDatabaseDefinitionService;
         this.deltaQueryPreprocessor = deltaQueryPreprocessor;
@@ -55,6 +61,8 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
         this.informationSchemaDefinitionService = informationSchemaDefinitionService;
         this.logicalSchemaProvider = logicalSchemaProvider;
         this.metricsService = metricsService;
+        this.templateExtractor = templateExtractor;
+        this.queryCacheService = queryCacheService;
     }
 
     @Override
@@ -68,14 +76,53 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                     withoutViewsRequest.setSql(sqlWithoutViews);
                     return withoutViewsRequest;
                 })
-                .compose(deltaQueryPreprocessor::process)
+                .compose(withoutWiqRequest -> getRequestFromCacheOrInit(sourceRequest, withoutWiqRequest))
+                .compose(request -> executeRequest(request, context));
+    }
+
+    private Future<QuerySourceRequest> getRequestFromCacheOrInit(QuerySourceRequest sourceRequest,
+                                                                 QueryRequest withoutViewsRequest) {
+        return Future.future(promise -> {
+            final QueryTemplateResult templateResult = templateExtractor.extract(withoutViewsRequest.getSql());
+            final QueryTemplateValue queryTemplateValue = queryCacheService.get(QueryTemplateKey.builder()
+                    .queryTemplate(templateResult.getTemplate())
+                    .build());
+            sourceRequest.setQueryTemplate(templateResult);
+            if (queryTemplateValue != null) {
+                sourceRequest.setQueryTemplate(templateResult);
+                sourceRequest.setMetadata(queryTemplateValue.getMetadata());
+                sourceRequest.setLogicalSchema(queryTemplateValue.getLogicalSchema());
+                sourceRequest.getQueryRequest().setDeltaInformations(queryTemplateValue.getDeltaInformations());
+                promise.complete(sourceRequest);
+            } else {
+                initRequestAttributes(withoutViewsRequest, sourceRequest)
+                        .compose(request ->
+                            queryCacheService.put(QueryTemplateKey.builder()
+                                    .queryTemplate(templateResult.getTemplate())
+                                    .logicalSchema(sourceRequest.getLogicalSchema())
+                                    .build(),
+                                    QueryTemplateValue.builder()
+                                            .sql(templateResult.getTemplate())
+                                            .deltaInformations(sourceRequest.getQueryRequest().getDeltaInformations())
+                                            .metadata(sourceRequest.getMetadata())
+                                            .logicalSchema(sourceRequest.getLogicalSchema())
+                                            .build())
+                                .map(value -> request)
+                        )
+                        .onComplete(promise);
+            }
+        });
+    }
+
+    private Future<QuerySourceRequest> initRequestAttributes(QueryRequest withoutViewsRequest,
+                                                             QuerySourceRequest sourceRequest) {
+        return deltaQueryPreprocessor.process(withoutViewsRequest)
                 .map(request -> {
                     sourceRequest.setQueryRequest(request);
                     return request;
                 })
                 .compose(v -> initLogicalSchema(sourceRequest))
-                .compose(this::initColumnMetaData)
-                .compose(request -> executeRequest(request, context));
+                .compose(this::initColumnMetaData);
     }
 
     private Future<QuerySourceRequest> initLogicalSchema(QuerySourceRequest sourceRequest) {

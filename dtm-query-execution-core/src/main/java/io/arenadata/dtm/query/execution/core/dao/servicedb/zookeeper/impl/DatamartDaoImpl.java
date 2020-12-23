@@ -12,6 +12,8 @@ import io.vertx.core.Future;
 import io.vertx.core.json.jackson.DatabindCodec;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.zookeeper.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
@@ -28,7 +30,9 @@ public class DatamartDaoImpl implements DatamartDao {
     private final ZookeeperExecutor executor;
     private final String envPath;
 
-    public DatamartDaoImpl(ZookeeperExecutor executor, @Value("${core.env.name}") String systemName) {
+    @Autowired
+    public DatamartDaoImpl(@Qualifier("zookeeperExecutor") ZookeeperExecutor executor,
+                           @Value("${core.env.name}") String systemName) {
         this.executor = executor;
         envPath = "/" + systemName;
     }

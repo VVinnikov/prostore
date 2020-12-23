@@ -2,7 +2,7 @@ package io.arenadata.dtm.query.calcite.core.service.impl;
 
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.dto.EnrichmentTemplateRequest;
-import io.arenadata.dtm.query.calcite.core.dto.QueryTemplateResult;
+import io.arenadata.dtm.common.reader.QueryTemplateResult;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.config.Lex;
@@ -19,9 +19,17 @@ class QueryTemplateExtractorImplTest {
     public static final String EXPECTED_SQL = "SELECT *\n" +
         "FROM \"tbl1\"\n" +
         "WHERE \"x\" = 1 AND \"x\" > 2 AND \"x\" < 3 AND \"x\" <= 4 AND \"x\" >= 5 AND \"x\" <> 6 AND \"z\" = '8'";
+    public static final String EXPECTED_SQL_WITH_SYS_COLUMNS = "SELECT *\n" +
+            "FROM \"tbl1\"\n" +
+            "WHERE \"x\" = 1 AND \"x\" > 2 AND \"x\" < 3 AND \"x\" <= 4 AND \"x\" >= 5 AND \"x\" <> 6 AND \"z\" = '8'" +
+            " AND \"sys_from\" = 1";
     private static final String EXPECTED_TEMPLATE = "SELECT *\n" +
         "FROM \"tbl1\"\n" +
         "WHERE \"x\" = ? AND \"x\" > ? AND \"x\" < ? AND \"x\" <= ? AND \"x\" >= ? AND \"x\" <> ? AND \"z\" = ?";
+    private static final String EXPECTED_TEMPLATE_WITH_SYS_COLUMNS = "SELECT *\n" +
+            "FROM \"tbl1\"\n" +
+            "WHERE \"x\" = ? AND \"x\" > ? AND \"x\" < ? AND \"x\" <= ? AND \"x\" >= ? AND \"x\" <> ? AND \"z\" = ?" +
+            " AND \"sys_from\" = 1";
     private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private QueryTemplateExtractorImpl extractor;
 
@@ -44,6 +52,13 @@ class QueryTemplateExtractorImplTest {
     void extract() {
         QueryTemplateResult templateResult = extractor.extract(EXPECTED_SQL);
         assertEquals(EXPECTED_TEMPLATE, templateResult.getTemplate());
+        assertEquals(7, templateResult.getParams().size());
+    }
+
+    @Test
+    void extractWithSysColumn() {
+        QueryTemplateResult templateResult = extractor.extract(EXPECTED_SQL_WITH_SYS_COLUMNS);
+        assertEquals(EXPECTED_TEMPLATE_WITH_SYS_COLUMNS, templateResult.getTemplate());
         assertEquals(7, templateResult.getParams().size());
     }
 

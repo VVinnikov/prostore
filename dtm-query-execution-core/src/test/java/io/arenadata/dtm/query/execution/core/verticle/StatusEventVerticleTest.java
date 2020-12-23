@@ -62,6 +62,7 @@ class StatusEventVerticleTest {
                 .build();
         BeginDeltaExecutor beginDeltaExecutor =
                 spy(new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, vertx));
+        doNothing().when(beginDeltaExecutor).publishStatus(any(), any(), any());
         beginDeltaExecutor.execute(deltaQuery);
         verify(beginDeltaExecutor, times(1)).publishStatus(eq(StatusEventCode.DELTA_OPEN),
                 eq(deltaQuery.getDatamart()), any());

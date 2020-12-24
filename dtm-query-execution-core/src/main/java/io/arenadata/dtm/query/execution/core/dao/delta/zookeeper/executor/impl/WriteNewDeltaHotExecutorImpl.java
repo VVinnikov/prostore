@@ -22,7 +22,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
-import java.util.Optional;
 
 @Slf4j
 @Component
@@ -76,10 +75,9 @@ public class WriteNewDeltaHotExecutorImpl extends DeltaServiceDaoExecutorHelper 
                             deltaHotNum);
                     if (error instanceof KeeperException.NodeExistsException
                             || error instanceof KeeperException.BadVersionException) {
-                        resultPromise.fail(new DeltaIsNotCommittedException(
-                                Optional.ofNullable(deltaHotNum)
-                                        .map(Object::toString)
-                                        .orElse(""), error));
+                        resultPromise.fail(deltaHotNum == null ?
+                                new DeltaIsNotCommittedException(error) :
+                                new DeltaIsNotCommittedException(String.valueOf(deltaHotNum), error));
                     } else if (error instanceof DeltaException) {
                         resultPromise.fail(error);
                     } else {

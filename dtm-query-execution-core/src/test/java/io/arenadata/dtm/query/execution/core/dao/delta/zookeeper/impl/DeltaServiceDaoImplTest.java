@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
 public class DeltaServiceDaoImplTest {
@@ -92,8 +93,7 @@ public class DeltaServiceDaoImplTest {
     }
 
     @Test
-    public void fullSuccess() throws InterruptedException {
-        val testContext = new VertxTestContext();
+    public void fullSuccess() {
         List<Long> sysCns = new ArrayList<>();
         val expectedTime = LocalDateTime.now(dtmSettings.getTimeZone()).withNano(0);
         val expectedDelta = OkDelta.builder()
@@ -170,19 +170,11 @@ public class DeltaServiceDaoImplTest {
                 .compose(r -> dao.writeNewDeltaHot(DATAMART))
                 .compose(r -> dao.writeDeltaHotSuccess(DATAMART, LocalDateTime.now(dtmSettings.getTimeZone()).plusHours(1)))
                 .compose(r -> dao.getDeltaByDateTime(DATAMART, LocalDateTime.now(dtmSettings.getTimeZone())))
-                .onSuccess(r -> {
-                    actualDeltas[1] = r;
-                    log.info("result: [{}]", r);
-                    testContext.completeNow();
-                })
-                .onFailure(error -> {
-                    log.error("error", error);
-                    testContext.failNow(error);
+                .onComplete(ar -> {
+                    assertTrue(ar.succeeded());
+                    assertEquals(expectedDelta, actualDeltas[0]);
+                    assertEquals(expectedDelta, actualDeltas[1]);
                 });
-        assertThat(testContext.awaitCompletion(120, TimeUnit.SECONDS)).isTrue();
-        assertTrue(testContext.completed());
-        assertEquals(expectedDelta, actualDeltas[0]);
-        assertEquals(expectedDelta, actualDeltas[1]);
     }
 
     @Test
@@ -272,22 +264,12 @@ public class DeltaServiceDaoImplTest {
     }
 
     @Test
-    public void writeManyDeltaHotSuccess() throws InterruptedException {
-        val testContext = new VertxTestContext();
+    public void writeManyDeltaHotSuccess() {
         dao.writeNewDeltaHot(DATAMART)
                 .compose(r -> dao.writeDeltaHotSuccess(DATAMART))
                 .compose(r -> dao.writeNewDeltaHot(DATAMART))
                 .compose(r -> dao.writeDeltaHotSuccess(DATAMART))
-                .onSuccess(r -> {
-                    log.info("result: [{}]", r);
-                    testContext.completeNow();
-                })
-                .onFailure(error -> {
-                    log.error("error", error);
-                    testContext.failNow(error);
-                });
-        assertThat(testContext.awaitCompletion(120, TimeUnit.SECONDS)).isTrue();
-        assertTrue(testContext.completed());
+                .onComplete(ar -> assertTrue(ar.succeeded()));
     }
 
     @Test

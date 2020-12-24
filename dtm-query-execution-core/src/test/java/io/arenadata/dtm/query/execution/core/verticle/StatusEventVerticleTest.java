@@ -14,7 +14,6 @@ import io.arenadata.dtm.query.execution.core.service.delta.impl.BeginDeltaExecut
 import io.arenadata.dtm.query.execution.core.utils.DeltaQueryUtil;
 import io.arenadata.dtm.query.execution.core.utils.QueryResultUtils;
 import io.vertx.core.Future;
-import io.vertx.core.Vertx;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +28,6 @@ class StatusEventVerticleTest {
     private final QueryRequest req = new QueryRequest();
     private final DeltaRecord delta = new DeltaRecord();
     private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
-    private final Vertx vertx = mock(Vertx.class);
     private final DeltaQueryResultFactory deltaQueryResultFactory = mock(BeginDeltaQueryResultFactory.class);
 
     @BeforeEach
@@ -47,7 +45,7 @@ class StatusEventVerticleTest {
     @Test
     void publishDeltaOpenEvent() {
         BeginDeltaExecutor beginDeltaExecutor =
-                spy(new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, vertx));
+                spy(new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, null));
         req.setSql("BEGIN DELTA");
         BeginDeltaQuery deltaQuery = BeginDeltaQuery.builder()
                 .datamart("test")

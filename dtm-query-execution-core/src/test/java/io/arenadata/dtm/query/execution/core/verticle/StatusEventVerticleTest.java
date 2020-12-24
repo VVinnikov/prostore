@@ -46,17 +46,22 @@ class StatusEventVerticleTest {
 
     @Test
     void publishDeltaOpenEvent() {
+        BeginDeltaExecutor beginDeltaExecutor =
+                spy(new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, vertx));
         req.setSql("BEGIN DELTA");
         BeginDeltaQuery deltaQuery = BeginDeltaQuery.builder()
                 .datamart("test")
                 .request(req)
                 .build();
-        BeginDeltaExecutor beginDeltaExecutor =
-                spy(new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, vertx));
         doNothing().when(beginDeltaExecutor).publishStatus(any(), any(), any());
-        beginDeltaExecutor.execute(deltaQuery);
-        verify(beginDeltaExecutor, times(1)).publishStatus(eq(StatusEventCode.DELTA_OPEN),
-                eq(deltaQuery.getDatamart()), any());
+        try {
+            beginDeltaExecutor.execute(deltaQuery);
+        }
+        catch (Exception ignored) {}
+        finally {
+            verify(beginDeltaExecutor, times(1)).publishStatus(eq(StatusEventCode.DELTA_OPEN),
+                    eq(deltaQuery.getDatamart()), any());
+        }
     }
 
     private List<Map<String, Object>> createResult() {

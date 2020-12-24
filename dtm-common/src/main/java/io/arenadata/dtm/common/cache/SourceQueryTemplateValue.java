@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.dto.cache;
+package io.arenadata.dtm.common.cache;
 
 import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
@@ -10,7 +10,7 @@ import java.util.List;
 
 @Data
 @Builder
-public class QueryTemplateValue {
+public class SourceQueryTemplateValue {
     private String sql;
     private List<DeltaInformation> deltaInformations;
     private List<ColumnMetadata> metadata;

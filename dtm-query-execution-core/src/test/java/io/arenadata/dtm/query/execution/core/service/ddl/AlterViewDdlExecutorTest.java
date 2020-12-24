@@ -90,7 +90,7 @@ class AlterViewDdlExecutorTest {
         initEntityList();
         sqlNodeName = schema + "." + entityList.get(0).getName();
         when(metadataExecutor.execute(any())).thenReturn(Future.succeededFuture());
-        when(logicalSchemaProvider.getSchema(any()))
+        when(logicalSchemaProvider.getSchemaFromQuery(any()))
                 .thenReturn(Future.succeededFuture(Collections.singletonList(new Datamart(
                         schema,
                         true,

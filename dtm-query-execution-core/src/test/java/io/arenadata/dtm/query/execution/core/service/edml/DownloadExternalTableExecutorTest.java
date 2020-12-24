@@ -22,16 +22,12 @@ import io.arenadata.dtm.query.execution.core.service.schema.impl.LogicalSchemaPr
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Promise;
-import io.vertx.core.json.JsonObject;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -104,7 +100,7 @@ class DownloadExternalTableExecutorTest {
         QueryRequest copyRequest = context.getRequest().getQueryRequest();
         copyRequest.setDeltaInformations(Collections.emptyList());
 
-        when(logicalSchemaProvider.getSchema(any()))
+        when(logicalSchemaProvider.getSchemaFromQuery(any()))
                 .thenReturn(Future.succeededFuture(schema));
 
         when(deltaQueryPreprocessor.process(any()))
@@ -137,7 +133,7 @@ class DownloadExternalTableExecutorTest {
         QueryRequest copyRequest = context.getRequest().getQueryRequest();
         copyRequest.setDeltaInformations(Collections.emptyList());
 
-        when(logicalSchemaProvider.getSchema(any()))
+        when(logicalSchemaProvider.getSchemaFromQuery(any()))
         .thenReturn(Future.failedFuture(new DtmException("")));
 
         downloadExternalTableExecutor.execute(context)
@@ -163,7 +159,7 @@ class DownloadExternalTableExecutorTest {
         QueryRequest copyRequest = context.getRequest().getQueryRequest();
         copyRequest.setDeltaInformations(Collections.emptyList());
 
-        when(logicalSchemaProvider.getSchema(any()))
+        when(logicalSchemaProvider.getSchemaFromQuery(any()))
                 .thenReturn(Future.succeededFuture(schema));
 
         when(deltaQueryPreprocessor.process(any()))
@@ -192,7 +188,7 @@ class DownloadExternalTableExecutorTest {
         QueryRequest copyRequest = context.getRequest().getQueryRequest();
         copyRequest.setDeltaInformations(Collections.emptyList());
 
-        when(logicalSchemaProvider.getSchema(any()))
+        when(logicalSchemaProvider.getSchemaFromQuery(any()))
                 .thenReturn(Future.succeededFuture(schema));
 
         when(deltaQueryPreprocessor.process(any()))

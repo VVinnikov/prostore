@@ -11,5 +11,7 @@ import java.util.Map;
 
 public interface LogicalSchemaService {
 
-    Future<Map<DatamartSchemaKey, Entity>> createSchema(QueryRequest request);
+    Future<Map<DatamartSchemaKey, Entity>> createSchemaFromQuery(QueryRequest request);
+
+    Future<Map<DatamartSchemaKey, Entity>> createSchemaFromDeltaInformations(QueryRequest request);
 }

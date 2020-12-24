@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.dml.impl;
 
 import io.arenadata.dtm.cache.service.CacheService;
+import io.arenadata.dtm.common.cache.QueryTemplateKey;
 import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.SqlProcessingType;
@@ -8,8 +9,7 @@ import io.arenadata.dtm.common.reader.*;
 import io.arenadata.dtm.query.calcite.core.extension.dml.DmlType;
 import io.arenadata.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
 import io.arenadata.dtm.query.calcite.core.service.QueryTemplateExtractor;
-import io.arenadata.dtm.query.execution.core.dto.cache.QueryTemplateKey;
-import io.arenadata.dtm.query.execution.core.dto.cache.QueryTemplateValue;
+import io.arenadata.dtm.common.cache.SourceQueryTemplateValue;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.dml.*;
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsService;
@@ -38,7 +38,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
     private final LogicalSchemaProvider logicalSchemaProvider;
     private final MetricsService<RequestMetrics> metricsService;
     private final QueryTemplateExtractor templateExtractor;
-    private final CacheService<QueryTemplateKey, QueryTemplateValue> queryCacheService;
+    private final CacheService<QueryTemplateKey, SourceQueryTemplateValue> queryCacheService;
 
     @Autowired
     public LlrDmlExecutor(DataSourcePluginService dataSourcePluginService,
@@ -51,7 +51,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                           LogicalSchemaProvider logicalSchemaProvider,
                           MetricsService<RequestMetrics> metricsService,
                           @Qualifier("coreQueryTmplateExtractor") QueryTemplateExtractor templateExtractor,
-                          @Qualifier("coreQueryTemplateCacheService") CacheService<QueryTemplateKey, QueryTemplateValue> queryCacheService) {
+                          @Qualifier("coreQueryTemplateCacheService") CacheService<QueryTemplateKey, SourceQueryTemplateValue> queryCacheService) {
         this.dataSourcePluginService = dataSourcePluginService;
         this.targetDatabaseDefinitionService = targetDatabaseDefinitionService;
         this.deltaQueryPreprocessor = deltaQueryPreprocessor;
@@ -84,8 +84,8 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                                                                  QueryRequest withoutViewsRequest) {
         return Future.future(promise -> {
             final QueryTemplateResult templateResult = templateExtractor.extract(withoutViewsRequest.getSql());
-            final QueryTemplateValue queryTemplateValue = queryCacheService.get(QueryTemplateKey.builder()
-                    .queryTemplate(templateResult.getTemplate())
+            final SourceQueryTemplateValue queryTemplateValue = queryCacheService.get(QueryTemplateKey.builder()
+                    .sourceQueryTemplate(templateResult.getTemplate())
                     .build());
             sourceRequest.setQueryTemplate(templateResult);
             if (queryTemplateValue != null) {
@@ -98,10 +98,10 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                 initRequestAttributes(withoutViewsRequest, sourceRequest)
                         .compose(request ->
                             queryCacheService.put(QueryTemplateKey.builder()
-                                    .queryTemplate(templateResult.getTemplate())
+                                    .sourceQueryTemplate(templateResult.getTemplate())
                                     .logicalSchema(sourceRequest.getLogicalSchema())
                                     .build(),
-                                    QueryTemplateValue.builder()
+                                    SourceQueryTemplateValue.builder()
                                             .sql(templateResult.getTemplate())
                                             .deltaInformations(sourceRequest.getQueryRequest().getDeltaInformations())
                                             .metadata(sourceRequest.getMetadata())
@@ -126,7 +126,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
     }
 
     private Future<QuerySourceRequest> initLogicalSchema(QuerySourceRequest sourceRequest) {
-        return logicalSchemaProvider.getSchema(sourceRequest.getQueryRequest())
+        return logicalSchemaProvider.getSchemaFromQuery(sourceRequest.getQueryRequest())
                 .map(logicalSchema -> {
                     sourceRequest.setLogicalSchema(logicalSchema);
                     return sourceRequest;
@@ -168,14 +168,17 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
 
     @SneakyThrows
     private Future<QueryResult> pluginExecute(QuerySourceRequest request, RequestMetrics requestMetrics) {
+        //FIXME after checking performance
+        final LlrRequest llrRequest = new LlrRequest(
+                request.getQueryRequest(),
+                request.getLogicalSchema(),
+                request.getMetadata());
+        llrRequest.setSourceQueryTemplateResult(request.getQueryTemplate());
         return dataSourcePluginService.llr(
                 request.getQueryRequest().getSourceType(),
                 new LlrRequestContext(
                         requestMetrics,
-                        new LlrRequest(
-                                request.getQueryRequest(),
-                                request.getLogicalSchema(),
-                                request.getMetadata())
+                        llrRequest
                 ));
     }
 

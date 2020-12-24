@@ -178,7 +178,7 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
     }
 
     private Future<Entity> getEntityFuture(DdlRequestContext ctx, QueryRequest request) {
-        return logicalSchemaProvider.getSchema(request)
+        return logicalSchemaProvider.getSchemaFromQuery(request)
                 .compose(datamarts -> columnMetadataService.getColumnMetadata(new QueryParserRequest(request, datamarts)))
                 .map(columnMetadata -> toViewEntity(ctx, columnMetadata));
     }

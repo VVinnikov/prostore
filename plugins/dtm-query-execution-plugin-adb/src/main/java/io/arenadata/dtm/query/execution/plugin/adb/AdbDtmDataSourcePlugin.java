@@ -15,6 +15,7 @@ import java.util.Set;
 
 public class AdbDtmDataSourcePlugin extends AbstractDtmDataSourcePlugin {
 
+    public static final String ADB_QUERY_TEMPLATE_CACHE = "adbQueryTemplateCache";
     public static final String ADB_DATAMART_CACHE = "adb_datamart";
 
     public AdbDtmDataSourcePlugin(

@@ -79,7 +79,7 @@ class UploadExternalTableExecutorTest {
                 .destination(sourceTypes)
                 .build();
         when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
-        when(logicalSchemaProvider.getSchema(any())).thenReturn(Future.succeededFuture(Collections.EMPTY_LIST));
+        when(logicalSchemaProvider.getSchemaFromQuery(any())).thenReturn(Future.succeededFuture(Collections.EMPTY_LIST));
     }
 
     @Test

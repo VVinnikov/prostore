@@ -1,10 +1,17 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl;
 
+import io.arenadata.dtm.cache.service.CacheService;
+import io.arenadata.dtm.cache.service.CaffeineCacheService;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
+import io.arenadata.dtm.query.calcite.core.dialect.LimitSqlDialect;
+import io.arenadata.dtm.query.calcite.core.service.QueryTemplateExtractor;
+import io.arenadata.dtm.query.calcite.core.service.impl.QueryTemplateExtractorImpl;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
+import io.arenadata.dtm.common.cache.QueryTemplateKey;
+import io.arenadata.dtm.common.cache.QueryTemplateValue;
 import io.arenadata.dtm.query.execution.plugin.adg.model.QueryResultItem;
 import io.arenadata.dtm.query.execution.plugin.adg.service.DtmTestConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adg.service.QueryEnrichmentService;
@@ -17,6 +24,8 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.junit5.VertxExtension;
+import org.apache.calcite.avatica.util.Casing;
+import org.apache.calcite.sql.SqlDialect;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,11 +42,22 @@ import static org.mockito.Mockito.mock;
 @SpringBootTest(classes = DtmTestConfiguration.class)
 @ExtendWith(VertxExtension.class)
 @EnabledIfEnvironmentVariable(named = "skipITs", matches = "false")
-public class AdgLlrServiceTest {
+class AdgLlrServiceTest {
 
     private final QueryEnrichmentService enrichmentService = mock(QueryEnrichmentService.class);
     private final QueryExecutorService executorService = mock(QueryExecutorService.class);
-    private final LlrService<QueryResult> llrService = new AdgLlrService(enrichmentService, executorService);
+    private final CacheService<QueryTemplateKey, QueryTemplateValue> queryCacheService = mock(CaffeineCacheService.class);
+    private final QueryTemplateExtractor queryTemplateExtractor = mock(QueryTemplateExtractorImpl.class);
+    private final LlrService<QueryResult> llrService = new AdgLlrService(enrichmentService,
+            executorService,
+            queryCacheService,
+            queryTemplateExtractor,
+            new LimitSqlDialect(SqlDialect.EMPTY_CONTEXT
+                    .withDatabaseProduct(SqlDialect.DatabaseProduct.UNKNOWN)
+                    .withIdentifierQuoteString("\"")
+                    .withUnquotedCasing(Casing.TO_LOWER)
+                    .withCaseSensitive(false)
+                    .withQuotedCasing(Casing.UNCHANGED)));
 
     @Test
     void testExecuteNotEmptyOk() {

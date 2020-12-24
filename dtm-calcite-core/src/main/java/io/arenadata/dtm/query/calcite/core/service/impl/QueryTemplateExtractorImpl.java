@@ -34,6 +34,11 @@ public class QueryTemplateExtractorImpl implements QueryTemplateExtractor {
     }
 
     @Override
+    public QueryTemplateResult extract(String sql, List<String> excludeColumns) {
+        return extract(definitionService.processingQuery(sql), excludeColumns);
+    }
+
+    @Override
     public SqlNode enrichTemplate(EnrichmentTemplateRequest request) {
         SqlSelectTree selectTree = new SqlSelectTree(definitionService.processingQuery(request.getTemplate()));
         List<SqlTreeNode> dynamicNodes = selectTree.findNodesByPath(DYNAMIC_PARAM_PATH);

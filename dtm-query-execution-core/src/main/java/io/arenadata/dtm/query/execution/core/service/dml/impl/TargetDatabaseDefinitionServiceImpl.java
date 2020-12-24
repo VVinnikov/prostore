@@ -53,6 +53,7 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
                             .queryRequest(queryRequestWithSourceType)
                             .logicalSchema(request.getLogicalSchema())
                             .metadata(request.getMetadata())
+                            .queryTemplate(request.getQueryTemplate())
                             .sourceType(sourceType)
                             .build();
                 });

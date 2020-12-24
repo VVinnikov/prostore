@@ -7,9 +7,7 @@ import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaService;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,8 +30,17 @@ public class LogicalSchemaProviderImpl implements LogicalSchemaProvider {
     }
 
     @Override
-    public Future<List<Datamart>> getSchema(QueryRequest request) {
-        return logicalSchemaService.createSchema(request)
+    public Future<List<Datamart>> getSchemaFromQuery(QueryRequest request) {
+        return logicalSchemaService.createSchemaFromQuery(request)
+                .map(schemaMap -> {
+                    log.trace("Received data schema on request: {}; {}", request, schemaMap);
+                    return getDatamartsSchemas(request.getDatamartMnemonic(), schemaMap);
+                });
+    }
+
+    @Override
+    public Future<List<Datamart>> getSchemaFromDeltaInformations(QueryRequest request) {
+        return logicalSchemaService.createSchemaFromDeltaInformations(request)
                 .map(schemaMap -> {
                     log.trace("Received data schema on request: {}; {}", request, schemaMap);
                     return getDatamartsSchemas(request.getDatamartMnemonic(), schemaMap);

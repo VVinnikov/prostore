@@ -143,18 +143,16 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
     }
 
     private Future<Void> initLogicalSchema(EdmlRequestContext context) {
-        return Future.future(promise -> {
-            logicalSchemaProvider.getSchema(context.getRequest().getQueryRequest())
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            final List<Datamart> logicalSchema = ar.result();
-                            context.setLogicalSchema(logicalSchema);
-                            promise.complete();
-                        } else {
-                            promise.fail(ar.cause());
-                        }
-                    });
-        });
+        return Future.future(promise -> logicalSchemaProvider.getSchemaFromQuery(context.getRequest().getQueryRequest())
+                .onComplete(ar -> {
+                    if (ar.succeeded()) {
+                        final List<Datamart> logicalSchema = ar.result();
+                        context.setLogicalSchema(logicalSchema);
+                        promise.complete();
+                    } else {
+                        promise.fail(ar.cause());
+                    }
+                }));
     }
 
     @Override

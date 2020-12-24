@@ -10,7 +10,6 @@ import io.arenadata.dtm.query.execution.core.service.dml.LogicViewReplacer;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlDownloadExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlExecutor;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
-import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -51,9 +50,16 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
     public Future<QueryResult> execute(EdmlRequestContext context) {
         return initDMLSubquery(context)
                 .compose(v -> replaceView(context))
-                .compose(v -> initLogicalSchema(context))
                 .compose(v -> initDeltaInformation(context))
+                .compose(v -> initLogicalSchema(context))
                 .compose(v -> executeInternal(context));
+    }
+
+    private Future<Void> initDMLSubquery(EdmlRequestContext context) {
+        return Future.future(promise -> {
+            context.setDmlSubquery(context.getSqlNode().getSource().toSqlString(SQL_DIALECT).toString());
+            promise.complete();
+        });
     }
 
     private Future<String> replaceView(EdmlRequestContext context) {
@@ -65,18 +71,11 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
                 });
     }
 
-    private Future<Void> initDMLSubquery(EdmlRequestContext context) {
-        return Future.future(promise -> {
-            context.setDmlSubquery(context.getSqlNode().getSource().toSqlString(SQL_DIALECT).toString());
-            promise.complete();
-        });
-    }
-
     private Future<Void> initLogicalSchema(EdmlRequestContext context) {
         return Future.future(promise -> {
             QueryRequest copy = context.getRequest().getQueryRequest().copy();
             copy.setSql(context.getDmlSubquery());
-            logicalSchemaProvider.getSchema(copy)
+            logicalSchemaProvider.getSchemaFromDeltaInformations(copy)
                     .onSuccess(schema -> {
                         context.setLogicalSchema(schema);
                         promise.complete();

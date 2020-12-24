@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.dto.cache;
+package io.arenadata.dtm.common.cache;
 
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import lombok.Builder;
@@ -10,7 +10,7 @@ import java.util.Objects;
 @Data
 @Builder
 public class QueryTemplateKey {
-    private String queryTemplate;
+    private String sourceQueryTemplate;
     private List<Datamart> logicalSchema;
 
     @Override
@@ -18,11 +18,11 @@ public class QueryTemplateKey {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         QueryTemplateKey that = (QueryTemplateKey) o;
-        return queryTemplate.equals(that.queryTemplate);
+        return sourceQueryTemplate.equals(that.sourceQueryTemplate);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(queryTemplate);
+        return Objects.hash(sourceQueryTemplate);
     }
 }

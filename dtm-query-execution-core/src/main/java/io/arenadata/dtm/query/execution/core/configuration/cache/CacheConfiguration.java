@@ -2,10 +2,10 @@ package io.arenadata.dtm.query.execution.core.configuration.cache;
 
 import io.arenadata.dtm.cache.factory.CaffeineCacheServiceFactory;
 import io.arenadata.dtm.cache.service.CacheService;
+import io.arenadata.dtm.common.cache.QueryTemplateKey;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
-import io.arenadata.dtm.query.execution.core.dto.cache.QueryTemplateKey;
-import io.arenadata.dtm.query.execution.core.dto.cache.QueryTemplateValue;
+import io.arenadata.dtm.common.cache.SourceQueryTemplateValue;
 import io.arenadata.dtm.query.execution.core.dto.delta.HotDelta;
 import io.arenadata.dtm.query.execution.core.dto.delta.OkDelta;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -45,9 +45,9 @@ public class CacheConfiguration {
     }
 
     @Bean("coreQueryTemplateCacheService")
-    public CacheService<QueryTemplateKey, QueryTemplateValue> queryCacheService(@Qualifier("coffeineCacheManager")
+    public CacheService<QueryTemplateKey, SourceQueryTemplateValue> queryCacheService(@Qualifier("coffeineCacheManager")
                                                                                         CacheManager cacheManager) {
-        return new CaffeineCacheServiceFactory<QueryTemplateKey, QueryTemplateValue>(cacheManager)
+        return new CaffeineCacheServiceFactory<QueryTemplateKey, SourceQueryTemplateValue>(cacheManager)
                 .create(CORE_QUERY_TEMPLATE_CACHE);
     }
 

@@ -16,6 +16,7 @@ import java.util.Set;
 public class AdqmDtmDataSourcePlugin extends AbstractDtmDataSourcePlugin {
 
     public static final String ADQM_DATAMART_CACHE = "adqm_datamart";
+    public static final String ADQM_QUERY_TEMPLATE_CACHE = "adqmQueryTemplateCache";
 
     public AdqmDtmDataSourcePlugin(
             DdlService<Void> ddlService,

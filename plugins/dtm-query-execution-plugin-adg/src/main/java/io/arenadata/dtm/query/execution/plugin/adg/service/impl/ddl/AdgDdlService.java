@@ -34,7 +34,7 @@ public class AdgDdlService implements DdlService<Void> {
                 ddlExecutors.get(query.getKind()).execute(context, query.getKind().lowerName)
                         .onComplete(promise);
             } else {
-                promise.fail(new DdlDatasourceException(String.format("Unknown DDL: %s", query)));
+                promise.fail(new DdlDatasourceException(String.format("Unknown DDL: %s", query.getKind())));
             }
         });
     }

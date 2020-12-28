@@ -66,7 +66,6 @@ public class AdbTableEntitiesFactory implements TableEntitiesFactory<AdbTables<A
                 return tableEntity;
             case AdbTables.STAGING_TABLE_POSTFIX:
                 tableEntity = createEntity(entity, getTableName(entity, tablePostfix));
-                tableEntity.getColumns().add(new AdbTableColumn(REQ_ID_ATTR, "varchar(36)", true));
                 tableEntity.setPrimaryKeys(Collections.emptyList());
                 return tableEntity;
             default:

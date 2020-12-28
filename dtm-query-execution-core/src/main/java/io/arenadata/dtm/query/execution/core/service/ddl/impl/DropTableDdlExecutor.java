@@ -24,10 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.google.common.collect.Sets.newHashSet;
@@ -175,6 +172,6 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
     }
 
     public List<PostSqlActionType> getPostActions() {
-        return Collections.singletonList(PostSqlActionType.PUBLISH_STATUS);
+        return Arrays.asList(PostSqlActionType.PUBLISH_STATUS, PostSqlActionType.EVICT_CACHE);
     }
 }

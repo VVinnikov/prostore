@@ -1,5 +1,8 @@
 package io.arenadata.dtm.query.execution.core.service.delta.impl;
 
+import io.arenadata.dtm.cache.service.CacheService;
+import io.arenadata.dtm.common.cache.QueryTemplateKey;
+import io.arenadata.dtm.common.cache.SourceQueryTemplateValue;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QueryResult;
@@ -43,22 +46,32 @@ public class RollbackDeltaExecutor implements DeltaExecutor, StatusEventPublishe
     private final DeltaServiceDao deltaServiceDao;
     private final Vertx vertx;
     private final EntityDao entityDao;
+    private final CacheService<QueryTemplateKey, SourceQueryTemplateValue> queryCacheService;
 
     @Autowired
     public RollbackDeltaExecutor(EdmlUploadFailedExecutor edmlUploadFailedExecutor,
                                  ServiceDbFacade serviceDbFacade,
                                  @Qualifier("beginDeltaQueryResultFactory") DeltaQueryResultFactory deltaQueryResultFactory,
-                                 @Qualifier("coreVertx") Vertx vertx) {
+                                 @Qualifier("coreVertx") Vertx vertx,
+                                 @Qualifier("coreQueryTemplateCacheService")
+                                             CacheService<QueryTemplateKey, SourceQueryTemplateValue>
+                                             queryCacheService) {
         this.entityDao = serviceDbFacade.getServiceDbDao().getEntityDao();
         this.deltaServiceDao = serviceDbFacade.getDeltaServiceDao();
         this.edmlUploadFailedExecutor = edmlUploadFailedExecutor;
         this.deltaQueryResultFactory = deltaQueryResultFactory;
         this.vertx = vertx;
+        this.queryCacheService = queryCacheService;
     }
 
     @Override
     public Future<QueryResult> execute(DeltaQuery deltaQuery) {
-        return executeInternal(deltaQuery);
+        return Future.future(promise -> executeInternal(deltaQuery)
+                .onSuccess(result -> {
+                    evictCache(deltaQuery.getDatamart());
+                    promise.complete(result);
+                })
+                .onFailure(promise::fail));
     }
 
     private Future<QueryResult> executeInternal(DeltaQuery deltaQuery) {
@@ -144,6 +157,12 @@ public class RollbackDeltaExecutor implements DeltaExecutor, StatusEventPublishe
                 .datamart(datamart)
                 .deltaNum(deltaNum)
                 .build();
+    }
+
+    private void evictCache(String datamartName) {
+        queryCacheService.removeIf(queryTemplateKey ->
+                queryTemplateKey.getLogicalSchema().stream()
+                        .anyMatch(datamart -> datamart.getMnemonic().equals(datamartName)));
     }
 
     @Override

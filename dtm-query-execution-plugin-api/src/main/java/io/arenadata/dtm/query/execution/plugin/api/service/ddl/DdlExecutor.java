@@ -16,7 +16,8 @@ public interface DdlExecutor<T> {
     SqlKind getSqlKind();
 
     default List<PostSqlActionType> getPostActions() {
-        return Arrays.asList(PostSqlActionType.PUBLISH_STATUS, PostSqlActionType.UPDATE_INFORMATION_SCHEMA);
+        return Arrays.asList(PostSqlActionType.PUBLISH_STATUS, PostSqlActionType.UPDATE_INFORMATION_SCHEMA,
+                PostSqlActionType.EVICT_CACHE);
     }
 
     @Autowired

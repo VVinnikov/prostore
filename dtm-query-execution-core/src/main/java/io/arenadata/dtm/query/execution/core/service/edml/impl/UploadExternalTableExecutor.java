@@ -1,5 +1,8 @@
 package io.arenadata.dtm.query.execution.core.service.edml.impl;
 
+import io.arenadata.dtm.cache.service.CacheService;
+import io.arenadata.dtm.common.cache.QueryTemplateKey;
+import io.arenadata.dtm.common.cache.SourceQueryTemplateValue;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
@@ -20,6 +23,7 @@ import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlDialect;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -39,29 +43,39 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
     private final EdmlUploadFailedExecutor uploadFailedExecutor;
     private final DataSourcePluginService pluginService;
     private final LogicalSchemaProvider logicalSchemaProvider;
+    private final CacheService<QueryTemplateKey, SourceQueryTemplateValue> queryCacheService;
 
     @Autowired
     public UploadExternalTableExecutor(DeltaServiceDao deltaServiceDao,
                                        EdmlUploadFailedExecutor uploadFailedExecutor,
                                        List<EdmlUploadExecutor> uploadExecutors,
                                        DataSourcePluginService pluginService,
-                                       LogicalSchemaProvider logicalSchemaProvider) {
+                                       LogicalSchemaProvider logicalSchemaProvider,
+                                       @Qualifier("coreQueryTemplateCacheService")
+                                               CacheService<QueryTemplateKey, SourceQueryTemplateValue>
+                                               queryCacheService) {
         this.deltaServiceDao = deltaServiceDao;
         this.uploadFailedExecutor = uploadFailedExecutor;
         this.executors = uploadExecutors.stream()
                 .collect(Collectors.toMap(EdmlUploadExecutor::getUploadType, it -> it));
         this.pluginService = pluginService;
         this.logicalSchemaProvider = logicalSchemaProvider;
+        this.queryCacheService = queryCacheService;
     }
 
     @Override
     public Future<QueryResult> execute(EdmlRequestContext context) {
-        return isEntitySourceTypesExistsInConfiguration(context)
+        return Future.future(promise -> isEntitySourceTypesExistsInConfiguration(context)
                 .compose(v -> writeNewOperationIfNeeded(context, context.getSourceEntity()))
                 .compose(v -> executeAndWriteOp(context))
                 .compose(queryResult -> writeOpSuccess(context.getSourceEntity().getSchema(),
                         context.getSysCn(),
-                        queryResult));
+                        queryResult))
+                .onSuccess(result -> {
+                    evictCache(context.getDestinationEntity());
+                    promise.complete(result);
+                })
+                .onFailure(promise::fail));
     }
 
     private Future<Void> isEntitySourceTypesExistsInConfiguration(EdmlRequestContext context) {
@@ -153,6 +167,15 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
                         promise.fail(ar.cause());
                     }
                 }));
+    }
+
+    private void evictCache(Entity entity) {
+        queryCacheService.removeIf(queryTemplateKey ->
+                queryTemplateKey.getLogicalSchema().stream()
+                        .anyMatch(datamart -> datamart.getMnemonic().equals(entity.getSchema())
+                                && datamart.getEntities().stream()
+                                .anyMatch(dmEntity -> dmEntity.getEntityType().equals(entity.getEntityType())
+                                        && dmEntity.getName().equals(entity.getName()))));
     }
 
     @Override

@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.executor;
 import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.plugin.exload.Format;
+import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adb.configuration.properties.MppwProperties;
@@ -70,14 +71,15 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
             }
             List<KafkaBrokerInfo> brokers = context.getRequest().getKafkaParameter().getBrokers();
             getOrCreateServer(brokers, dbName)
-                    .compose(server -> createWritableExternalTable(server, context))
-                    .compose(server -> createMppwKafkaRequestContext(context, server))
-                    .onSuccess(kafkaContext -> {
-                        vertx.eventBus().send(MppwTopic.KAFKA_START.getValue(), Json.encode(kafkaContext));
-                        log.debug("Mppw started successfully");
-                        promise.complete(QueryResult.emptyResult());
-                    })
-                    .onFailure(promise::fail);
+                .compose(server -> createWritableExternalTable(server, context))
+                .compose(server -> createMppwKafkaRequestContext(context, server))
+                .compose(kafkaContext -> moveOffsetsExtTable(context).map(v -> kafkaContext))
+                .onSuccess(kafkaContext -> {
+                    vertx.eventBus().send(MppwTopic.KAFKA_START.getValue(), Json.encode(kafkaContext));
+                    log.debug("Mppw started successfully");
+                    promise.complete(QueryResult.emptyResult());
+                })
+                .onFailure(promise::fail);
         });
     }
 
@@ -103,16 +105,14 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
     }
 
     private Future<String> createServer(String brokersList, String currentDatabase) {
-        return Future.future(promise -> {
-            adbQueryExecutor.execute(metadataSqlFactory.createServerSqlQuery(currentDatabase, brokersList), Collections.emptyList())
-                    .onComplete(createServerResult -> {
-                        if (createServerResult.succeeded()) {
-                            promise.complete(String.format(MetadataSqlFactoryImpl.SERVER_NAME_TEMPLATE, currentDatabase));
-                        } else {
-                            promise.fail(createServerResult.cause());
-                        }
-                    });
-        });
+        return Future.future(promise -> adbQueryExecutor.execute(metadataSqlFactory.createServerSqlQuery(currentDatabase, brokersList), Collections.emptyList())
+                .onComplete(createServerResult -> {
+                    if (createServerResult.succeeded()) {
+                        promise.complete(String.format(MetadataSqlFactoryImpl.SERVER_NAME_TEMPLATE, currentDatabase));
+                    } else {
+                        promise.fail(createServerResult.cause());
+                    }
+                }));
     }
 
     private Future<String> createWritableExternalTable(String server, MppwRequestContext context) {
@@ -132,6 +132,14 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
                         }
                     });
         });
+    }
+
+    private Future<Void> moveOffsetsExtTable(MppwRequestContext requestContext) {
+        QueryRequest queryRequest = requestContext.getRequest().getQueryRequest();
+        val schema = queryRequest.getDatamartMnemonic();
+        val table = MetadataSqlFactoryImpl.WRITABLE_EXT_TABLE_PREF + queryRequest.getRequestId().toString().replace("-", "_");
+        return adbQueryExecutor.executeUpdate(metadataSqlFactory.insertIntoKadbOffsetsSqlQuery(schema, table))
+            .compose(v -> adbQueryExecutor.executeUpdate(metadataSqlFactory.moveOffsetsExtTableSqlQuery(schema, table)));
     }
 
     private Future<MppwKafkaRequestContext> createMppwKafkaRequestContext(MppwRequestContext context,

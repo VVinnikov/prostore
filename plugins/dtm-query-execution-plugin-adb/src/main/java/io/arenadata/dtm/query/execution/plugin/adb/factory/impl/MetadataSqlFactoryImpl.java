@@ -1,6 +1,10 @@
 package io.arenadata.dtm.query.execution.plugin.adb.factory.impl;
 
-import io.arenadata.dtm.common.model.ddl.*;
+import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
+import io.arenadata.dtm.common.model.ddl.ColumnType;
+import io.arenadata.dtm.common.model.ddl.Entity;
+import io.arenadata.dtm.common.model.ddl.EntityField;
+import io.arenadata.dtm.common.model.ddl.EntityTypeUtil;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adb.configuration.properties.MppwProperties;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
@@ -11,7 +15,10 @@ import io.arenadata.dtm.query.execution.plugin.api.request.MpprRequest;
 import lombok.val;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
@@ -68,6 +75,8 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
     public static final String INSERT_INTO_WRITABLE_EXT_TABLE_SQL = "INSERT INTO %s.%s %s";
     public static final String DROP_WRITABLE_EXT_TABLE_SQL = "DROP EXTERNAL TABLE IF EXISTS %s.%s";
     private static final String DROP_FOREIGN_TABLE_SQL = "DROP FOREIGN TABLE IF EXISTS %s.%s";
+    private static final String INSERT_INTO_KADB_OFFSETS = "insert into kadb.offsets SELECT * from kadb.load_partitions('%s.%s'::regclass::oid)";
+    private static final String MOVE_TO_OFFSETS_FOREIGN_TABLE_SQL = "SELECT kadb.offsets_to_committed('%s.%s'::regclass::oid)";
     private static final String CREATE_FOREIGN_TABLE_SQL =
             "CREATE FOREIGN TABLE %s.%s (%s)\n" +
                     "SERVER %s\n" +
@@ -95,7 +104,7 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
                     "OPTIONS (\n" +
                     "  k_brokers '%s'\n" +
                     ")";
-    private final static String INSERT_INTO_STAGING_TABLE_SQL = "INSERT INTO %s.%s (%s) SELECT %s FROM %s.%s";
+    private static final String INSERT_INTO_STAGING_TABLE_SQL = "INSERT INTO %s.%s (%s) SELECT %s FROM %s.%s";
 
     @Override
     public String createDropTableScript(Entity entity) {
@@ -155,6 +164,16 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
     }
 
     @Override
+    public String moveOffsetsExtTableSqlQuery(String schema, String table) {
+        return String.format(MOVE_TO_OFFSETS_FOREIGN_TABLE_SQL, schema, table);
+    }
+
+    @Override
+    public String insertIntoKadbOffsetsSqlQuery(String schema, String table) {
+        return String.format(INSERT_INTO_KADB_OFFSETS, schema, table);
+    }
+
+    @Override
     public String createExtTableSqlQuery(String server,
                                          List<String> columnNameTypeList,
                                          MppwRequestContext context,
@@ -197,7 +216,7 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
                 .append(" ")
                 .append(EntityTypeUtil.pgFromDtmType(field))
                 .append(" ");
-        if (!field.getNullable()) {
+        if (field.getNullable()) {
             sb.append("NOT NULL");
         }
         return sb.toString();
@@ -212,7 +231,8 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
                 .map(field -> field.getName() + " " + EntityTypeUtil.pgFromDtmType(field)).collect(Collectors.toList());
         val topic = request.getKafkaParameter().getTopic();
         val brokers = request.getKafkaParameter().getBrokers().stream()
-                .map(kafkaBrokerInfo -> kafkaBrokerInfo.getAddress()).collect(Collectors.toList());
+                .map(KafkaBrokerInfo::getAddress)
+                .collect(Collectors.toList());
         val chunkSize = ((DownloadExternalEntityMetadata) request.getKafkaParameter().getDownloadMetadata()).getChunkSize();
         return String.format(CREAT_WRITABLE_EXT_TABLE_SQL,
                 schema,

@@ -32,10 +32,6 @@ public class AdbTableEntitiesFactory implements TableEntitiesFactory<AdbTables<A
      * System field of operation on an object
      */
     public static final String SYS_OP_ATTR = "sys_op";
-    /**
-     * Request ID system field
-     */
-    public static final String REQ_ID_ATTR = "req_id";
     public static final String TABLE_POSTFIX_DELIMITER = "_";
 
     private static final List<AdbTableColumn> SYSTEM_COLUMNS = Arrays.asList(

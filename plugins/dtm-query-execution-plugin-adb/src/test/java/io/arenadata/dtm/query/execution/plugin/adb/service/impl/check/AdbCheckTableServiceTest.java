@@ -69,14 +69,6 @@ public class AdbCheckTableServiceTest {
         sysOpAttr.put(AdbMetaTableEntityFactory.DATA_TYPE, "int4");
         sysOpAttr.put(AdbMetaTableEntityFactory.CHARACTER_MAXIMUM_LENGTH, null);
 
-        Map<String, Object> req_id = new HashMap<>();
-        req_id.put(AdbMetaTableEntityFactory.CONSTRAINT_TYPE, null);
-        req_id.put(AdbMetaTableEntityFactory.DATETIME_PRECISION, null);
-        req_id.put(AdbMetaTableEntityFactory.ORDINAL_POSITION, null);
-        req_id.put(AdbMetaTableEntityFactory.COLUMN_NAME, AdbTableEntitiesFactory.REQ_ID_ATTR);
-        req_id.put(AdbMetaTableEntityFactory.DATA_TYPE, "varchar(36)");
-        req_id.put(AdbMetaTableEntityFactory.CHARACTER_MAXIMUM_LENGTH, null);
-
         Map<String, Object> PKSysFromAttr = new HashMap<>();
         PKSysFromAttr.put(AdbMetaTableEntityFactory.CONSTRAINT_TYPE, null);
         PKSysFromAttr.put(AdbMetaTableEntityFactory.DATETIME_PRECISION, null);
@@ -88,7 +80,7 @@ public class AdbCheckTableServiceTest {
         sysColumns = new HashMap<>();
         sysColumns.put(AdbTables.ACTUAL_TABLE_POSTFIX, Arrays.asList(PKSysFromAttr, sysToAttr, sysOpAttr));
         sysColumns.put(AdbTables.HISTORY_TABLE_POSTFIX, Arrays.asList(PKSysFromAttr, sysToAttr, sysOpAttr));
-        sysColumns.put(AdbTables.STAGING_TABLE_POSTFIX, Arrays.asList(sysFromAttr, sysToAttr, sysOpAttr, req_id));
+        sysColumns.put(AdbTables.STAGING_TABLE_POSTFIX, Arrays.asList(sysFromAttr, sysToAttr, sysOpAttr));
 
     }
 

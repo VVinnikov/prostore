@@ -211,6 +211,7 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
                 .name(cm.getName())
                 .nullable(true)
                 .type(cm.getType())
+                .size(cm.getSize())
                 .ordinalPosition(position)
                 .build();
     }

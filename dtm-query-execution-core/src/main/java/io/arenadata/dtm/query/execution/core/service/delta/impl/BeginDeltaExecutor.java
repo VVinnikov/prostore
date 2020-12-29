@@ -1,8 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.delta.impl;
 
-import io.arenadata.dtm.cache.service.CacheService;
-import io.arenadata.dtm.common.cache.QueryTemplateKey;
-import io.arenadata.dtm.common.cache.SourceQueryTemplateValue;
+import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheService;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.status.StatusEventCode;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
@@ -11,7 +10,6 @@ import io.arenadata.dtm.query.execution.core.dto.delta.DeltaRecord;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.BeginDeltaQuery;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaAction;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaQuery;
-import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaExecutor;
 import io.arenadata.dtm.query.execution.core.service.delta.StatusEventPublisher;
@@ -33,26 +31,24 @@ public class BeginDeltaExecutor implements DeltaExecutor, StatusEventPublisher {
     private final DeltaServiceDao deltaServiceDao;
     private final DeltaQueryResultFactory deltaQueryResultFactory;
     private final Vertx vertx;
-    private final CacheService<QueryTemplateKey, SourceQueryTemplateValue> queryCacheService;
+    private final EvictQueryTemplateCacheService evictQueryTemplateCacheService;
 
     @Autowired
     public BeginDeltaExecutor(ServiceDbFacade serviceDbFacade,
                               @Qualifier("beginDeltaQueryResultFactory") DeltaQueryResultFactory deltaQueryResultFactory,
                               @Qualifier("coreVertx") Vertx vertx,
-                              @Qualifier("coreQueryTemplateCacheService")
-                                      CacheService<QueryTemplateKey, SourceQueryTemplateValue>
-                                      queryCacheService) {
+                              EvictQueryTemplateCacheService evictQueryTemplateCacheService) {
         this.deltaServiceDao = serviceDbFacade.getDeltaServiceDao();
         this.deltaQueryResultFactory = deltaQueryResultFactory;
         this.vertx = vertx;
-        this.queryCacheService = queryCacheService;
+        this.evictQueryTemplateCacheService = evictQueryTemplateCacheService;
     }
 
     @Override
     public Future<QueryResult> execute(DeltaQuery deltaQuery) {
         return Future.future(promise -> beginDelta(deltaQuery)
                 .onSuccess(result -> {
-                    evictCache(deltaQuery.getDatamart());
+                    evictQueryTemplateCacheService.evictByDatamartName(deltaQuery.getDatamart());
                     promise.complete(result);
                 })
                 .onFailure(promise::fail));
@@ -112,12 +108,6 @@ public class BeginDeltaExecutor implements DeltaExecutor, StatusEventPublisher {
                 .deltaNum(deltaNum)
                 .datamart(datamart)
                 .build();
-    }
-
-    private void evictCache(String datamartName) {
-        queryCacheService.removeIf(queryTemplateKey ->
-                queryTemplateKey.getLogicalSchema().stream()
-                        .anyMatch(datamart -> datamart.getMnemonic().equals(datamartName)));
     }
 
     @Override

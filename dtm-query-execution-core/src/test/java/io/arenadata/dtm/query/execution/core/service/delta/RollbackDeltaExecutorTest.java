@@ -1,8 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.delta;
 
-import io.arenadata.dtm.cache.service.CacheService;
-import io.arenadata.dtm.common.cache.QueryTemplateKey;
-import io.arenadata.dtm.common.cache.SourceQueryTemplateValue;
+import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheService;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QueryRequest;
@@ -15,26 +13,24 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDao;
 import io.arenadata.dtm.query.execution.core.dto.delta.DeltaRecord;
 import io.arenadata.dtm.query.execution.core.dto.delta.HotDelta;
-import io.arenadata.dtm.query.execution.core.dto.delta.query.CommitDeltaQuery;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.RollbackDeltaQuery;
 import io.arenadata.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.delta.CommitDeltaQueryResultFactory;
-import io.arenadata.dtm.query.execution.core.service.delta.impl.CommitDeltaExecutor;
 import io.arenadata.dtm.query.execution.core.service.delta.impl.RollbackDeltaExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadFailedExecutor;
 import io.arenadata.dtm.query.execution.core.utils.DeltaQueryUtil;
 import io.arenadata.dtm.query.execution.core.utils.QueryResultUtils;
-import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
 import java.time.LocalDateTime;
-import java.util.*;
-import java.util.function.Predicate;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -48,20 +44,20 @@ class RollbackDeltaExecutorTest {
     private final EntityDao entityDao = mock(EntityDao.class);
     private final DeltaServiceDao deltaServiceDao = mock(DeltaServiceDaoImpl.class);
     private final DeltaQueryResultFactory deltaQueryResultFactory = mock(CommitDeltaQueryResultFactory.class);
-    private final CacheService<QueryTemplateKey, SourceQueryTemplateValue> cacheService = mock(CacheService.class);
+    private final EvictQueryTemplateCacheService evictQueryTemplateCacheService =
+            mock(EvictQueryTemplateCacheService.class);
     private final EdmlUploadFailedExecutor edmlUploadFailedExecutor = mock(EdmlUploadFailedExecutor.class);
     private RollbackDeltaExecutor rollbackDeltaExecutor;
-    private QueryRequest req = new QueryRequest();
-    private DeltaRecord delta = new DeltaRecord();
-    private String datamart = "test_datamart";
-    private Entity entity;
+    private final QueryRequest req = new QueryRequest();
+    private final DeltaRecord delta = new DeltaRecord();
+    private final String datamart = "test_datamart";
 
     @BeforeEach
     void beforeAll() {
         req.setDatamartMnemonic(datamart);
         req.setRequestId(UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"));
         delta.setDatamart(req.getDatamartMnemonic());
-        entity = Entity.builder()
+        Entity entity = Entity.builder()
                 .name("test_entity")
                 .schema(datamart)
                 .fields(Collections.emptyList())
@@ -71,9 +67,10 @@ class RollbackDeltaExecutorTest {
         when(serviceDbDao.getEntityDao()).thenReturn(entityDao);
         when(serviceDbFacade.getServiceDbDao()).thenReturn(serviceDbDao);
         when(edmlUploadFailedExecutor.eraseWriteOp(any())).thenReturn(Future.succeededFuture());
-        doNothing().when(cacheService).removeIf(any());
+        doNothing().when(evictQueryTemplateCacheService).evictByDatamartName(anyString());
+        doNothing().when(evictQueryTemplateCacheService).evictByEntityName(anyString(), anyString(), any());
         rollbackDeltaExecutor = new RollbackDeltaExecutor(edmlUploadFailedExecutor, serviceDbFacade,
-                deltaQueryResultFactory, Vertx.vertx(), cacheService);
+                deltaQueryResultFactory, Vertx.vertx(), evictQueryTemplateCacheService);
         when(deltaServiceDao.writeDeltaError(eq(datamart), eq(null)))
                 .thenReturn(Future.succeededFuture());
         when(deltaServiceDao.deleteDeltaHot(eq(datamart)))
@@ -106,7 +103,7 @@ class RollbackDeltaExecutorTest {
                 .onComplete(promise);
         assertEquals(deltaDate, ((QueryResult) promise.future().result()).getResult()
                 .get(0).get(DeltaQueryUtil.DATE_TIME_FIELD));
-        checkEvictCache();
+        verifyEvictCacheExecuted();
     }
 
     @Test
@@ -129,7 +126,7 @@ class RollbackDeltaExecutorTest {
         rollbackDeltaExecutor.execute(deltaQuery)
                 .onComplete(promise);
         assertTrue(promise.future().failed());
-        verify(cacheService, times(0)).removeIf(any());
+        verifyEvictCacheNotExecuted();
     }
 
     @Test
@@ -152,7 +149,7 @@ class RollbackDeltaExecutorTest {
         rollbackDeltaExecutor.execute(deltaQuery)
                 .onComplete(promise);
         assertTrue(promise.future().failed());
-        verify(cacheService, times(0)).removeIf(any());
+        verifyEvictCacheNotExecuted();
     }
 
     private List<Map<String, Object>> createResult(LocalDateTime deltaDate) {
@@ -160,27 +157,13 @@ class RollbackDeltaExecutorTest {
                 Collections.singletonList(deltaDate));
     }
 
-    private void checkEvictCache() {
-        String testTemplate = "test_template";
-        List<QueryTemplateKey> cacheMap = Arrays.asList(
-                QueryTemplateKey
-                        .builder()
-                        .sourceQueryTemplate(testTemplate)
-                        .logicalSchema(Collections.singletonList(new Datamart(datamart, false,
-                                Collections.emptyList())))
-                        .build(),
-                QueryTemplateKey
-                        .builder()
-                        .sourceQueryTemplate("not_used_template")
-                        .logicalSchema(Collections.singletonList(new Datamart("not_used_datamart", false,
-                                Collections.emptyList())))
-                        .build()
-        );
-        ArgumentCaptor<Predicate<QueryTemplateKey>> captor = ArgumentCaptor.forClass(Predicate.class);
-        verify(cacheService, times(1)).removeIf(captor.capture());
-        assertEquals(1, cacheMap.stream()
-                .filter(captor.getValue())
-                .filter(template -> testTemplate.equals(template.getSourceQueryTemplate()))
-                .count());
+    private void verifyEvictCacheExecuted() {
+        verify(evictQueryTemplateCacheService, times(1)).evictByDatamartName(datamart);
+    }
+
+    private void verifyEvictCacheNotExecuted() {
+        verify(evictQueryTemplateCacheService, times(0)).evictByDatamartName(anyString());
+        verify(evictQueryTemplateCacheService, times(0)).evictByEntityName(anyString(),
+                anyString(), any());
     }
 }

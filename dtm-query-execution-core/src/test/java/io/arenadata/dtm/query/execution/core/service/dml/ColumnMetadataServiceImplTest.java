@@ -57,7 +57,7 @@ class ColumnMetadataServiceImplTest {
         sourceRequest.setLogicalSchema(datamarts);
         List<ColumnMetadata> expectedColumns = Arrays.asList(
                 new ColumnMetadata("account_id", ColumnType.BIGINT),
-                new ColumnMetadata("account_type", ColumnType.VARCHAR));
+                new ColumnMetadata("account_type", ColumnType.VARCHAR, 1));
         service.getColumnMetadata(new QueryParserRequest(sourceRequest.getQueryRequest(),
                 sourceRequest.getLogicalSchema()))
                 .onComplete(ar -> {

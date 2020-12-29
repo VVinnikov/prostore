@@ -105,14 +105,8 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
     }
 
     private Future<String> createServer(String brokersList, String currentDatabase) {
-        return Future.future(promise -> adbQueryExecutor.execute(metadataSqlFactory.createServerSqlQuery(currentDatabase, brokersList), Collections.emptyList())
-                .onComplete(createServerResult -> {
-                    if (createServerResult.succeeded()) {
-                        promise.complete(String.format(MetadataSqlFactoryImpl.SERVER_NAME_TEMPLATE, currentDatabase));
-                    } else {
-                        promise.fail(createServerResult.cause());
-                    }
-                }));
+        return adbQueryExecutor.execute(metadataSqlFactory.createServerSqlQuery(currentDatabase, brokersList), Collections.emptyList())
+            .map(v -> String.format(MetadataSqlFactoryImpl.SERVER_NAME_TEMPLATE, currentDatabase));
     }
 
     private Future<String> createWritableExternalTable(String server, MppwRequestContext context) {

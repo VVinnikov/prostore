@@ -216,7 +216,7 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
                 .append(" ")
                 .append(EntityTypeUtil.pgFromDtmType(field))
                 .append(" ");
-        if (field.getNullable()) {
+        if (!field.getNullable()) {
             sb.append("NOT NULL");
         }
         return sb.toString();

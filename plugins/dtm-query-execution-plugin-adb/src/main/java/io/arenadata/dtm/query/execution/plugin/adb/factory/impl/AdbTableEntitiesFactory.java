@@ -32,10 +32,6 @@ public class AdbTableEntitiesFactory implements TableEntitiesFactory<AdbTables<A
      * System field of operation on an object
      */
     public static final String SYS_OP_ATTR = "sys_op";
-    /**
-     * Request ID system field
-     */
-    public static final String REQ_ID_ATTR = "req_id";
     public static final String TABLE_POSTFIX_DELIMITER = "_";
 
     private static final List<AdbTableColumn> SYSTEM_COLUMNS = Arrays.asList(
@@ -66,7 +62,6 @@ public class AdbTableEntitiesFactory implements TableEntitiesFactory<AdbTables<A
                 return tableEntity;
             case AdbTables.STAGING_TABLE_POSTFIX:
                 tableEntity = createEntity(entity, getTableName(entity, tablePostfix));
-                tableEntity.getColumns().add(new AdbTableColumn(REQ_ID_ATTR, "varchar(36)", true));
                 tableEntity.setPrimaryKeys(Collections.emptyList());
                 return tableEntity;
             default:

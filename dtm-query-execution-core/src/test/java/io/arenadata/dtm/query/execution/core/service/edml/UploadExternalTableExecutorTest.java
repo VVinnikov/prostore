@@ -83,7 +83,7 @@ class UploadExternalTableExecutorTest {
         when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
         when(logicalSchemaProvider.getSchemaFromQuery(any())).thenReturn(Future.succeededFuture(Collections.EMPTY_LIST));
         doNothing().when(evictQueryTemplateCacheService).evictByDatamartName(anyString());
-        doNothing().when(evictQueryTemplateCacheService).evictByEntityName(anyString(), anyString(), any());
+        doNothing().when(evictQueryTemplateCacheService).evictByEntityName(anyString(), anyString());
     }
 
     @Test
@@ -354,12 +354,12 @@ class UploadExternalTableExecutorTest {
 
     private void verifyEvictCacheExecuted() {
         verify(evictQueryTemplateCacheService, times(1)).evictByEntityName(destEntity.getSchema(),
-                destEntity.getName(), destEntity.getEntityType());
+                destEntity.getName());
     }
 
     private void verifyEvictCacheNotExecuted() {
         verify(evictQueryTemplateCacheService, times(0)).evictByDatamartName(anyString());
         verify(evictQueryTemplateCacheService, times(0)).evictByEntityName(anyString(),
-                anyString(), any());
+                anyString());
     }
 }

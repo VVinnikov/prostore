@@ -24,7 +24,7 @@ public class EvictCacheDdlPostExecutorTest {
     @BeforeEach
     void init() {
         doNothing().when(evictQueryTemplateCacheService).evictByDatamartName(anyString());
-        doNothing().when(evictQueryTemplateCacheService).evictByEntityName(anyString(), anyString(), any());
+        doNothing().when(evictQueryTemplateCacheService).evictByEntityName(anyString(), anyString());
     }
 
     @Test
@@ -39,7 +39,7 @@ public class EvictCacheDdlPostExecutorTest {
         evictCacheDdlPostExecutor.execute(context);
         verify(evictQueryTemplateCacheService, times(1)).evictByDatamartName("schema");
         verify(evictQueryTemplateCacheService, times(0)).evictByEntityName(anyString(),
-                anyString(), any());
+                anyString());
     }
 
     @Test
@@ -54,7 +54,7 @@ public class EvictCacheDdlPostExecutorTest {
         evictCacheDdlPostExecutor.execute(context);
         verify(evictQueryTemplateCacheService, times(0)).evictByDatamartName(anyString());
         verify(evictQueryTemplateCacheService, times(1)).evictByEntityName(entity.getSchema(),
-                entity.getName(), entity.getEntityType());
+                entity.getName());
     }
 
     @Test
@@ -69,7 +69,7 @@ public class EvictCacheDdlPostExecutorTest {
         evictCacheDdlPostExecutor.execute(context);
         verify(evictQueryTemplateCacheService, times(0)).evictByDatamartName(anyString());
         verify(evictQueryTemplateCacheService, times(1)).evictByEntityName(entity.getSchema(),
-                entity.getName(), entity.getEntityType());
+                entity.getName());
     }
 
     @Test
@@ -82,7 +82,7 @@ public class EvictCacheDdlPostExecutorTest {
         evictCacheDdlPostExecutor.execute(context);
         verify(evictQueryTemplateCacheService, times(0)).evictByDatamartName(anyString());
         verify(evictQueryTemplateCacheService, times(0)).evictByEntityName(anyString(),
-                anyString(), any());
+                anyString());
     }
 
     private DdlRequestContext getContext(DdlType type, Entity entity) {

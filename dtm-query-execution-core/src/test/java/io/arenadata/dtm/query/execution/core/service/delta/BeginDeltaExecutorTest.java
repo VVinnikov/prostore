@@ -50,7 +50,6 @@ class BeginDeltaExecutorTest {
         req.setRequestId(UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"));
         when(serviceDbFacade.getDeltaServiceDao()).thenReturn(deltaServiceDao);
         doNothing().when(evictQueryTemplateCacheService).evictByDatamartName(anyString());
-        doNothing().when(evictQueryTemplateCacheService).evictByEntityName(anyString(), anyString(), any());
     }
 
     @Test
@@ -203,6 +202,6 @@ class BeginDeltaExecutorTest {
     private void verifyEvictCacheNotExecuted() {
         verify(evictQueryTemplateCacheService, times(0)).evictByDatamartName(anyString());
         verify(evictQueryTemplateCacheService, times(0)).evictByEntityName(anyString(),
-                anyString(), any());
+                anyString());
     }
 }

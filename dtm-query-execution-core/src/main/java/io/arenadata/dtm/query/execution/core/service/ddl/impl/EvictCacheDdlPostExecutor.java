@@ -26,10 +26,8 @@ public class EvictCacheDdlPostExecutor implements DdlPostExecutor {
                     evictQueryTemplateCacheService.evictByDatamartName(context.getDatamartName());
                     break;
                 case DROP_TABLE:
-                case DROP_VIEW:
                     Entity entity = context.getRequest().getEntity();
-                    evictQueryTemplateCacheService.evictByEntityName(entity.getSchema(), entity.getName(),
-                            entity.getEntityType());
+                    evictQueryTemplateCacheService.evictByEntityName(entity.getSchema(), entity.getName());
                     break;
                 default:
             }

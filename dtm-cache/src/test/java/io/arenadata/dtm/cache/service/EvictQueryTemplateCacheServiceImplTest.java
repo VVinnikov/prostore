@@ -74,26 +74,8 @@ public class EvictQueryTemplateCacheServiceImplTest {
 
     @Test
     void testEvictByEntityNameTable() {
-        evictQueryTemplateCacheService.evictByEntityName(USED_SCHEMA, USED_SCHEMA_TABLE, EntityType.TABLE);
+        evictQueryTemplateCacheService.evictByEntityName(USED_SCHEMA, USED_SCHEMA_TABLE);
         validate(Arrays.asList(TEMPLATE_1, TEMPLATE_4));
-    }
-
-    @Test
-    void testEvictByEntityNameView() {
-        evictQueryTemplateCacheService.evictByEntityName(USED_SCHEMA, USED_SCHEMA_VIEW, EntityType.VIEW);
-        validate(Arrays.asList(TEMPLATE_3, TEMPLATE_4));
-    }
-
-    @Test
-    void testEvictByEntityNameWithWrongType() {
-        evictQueryTemplateCacheService.evictByEntityName(USED_SCHEMA, USED_SCHEMA_TABLE, EntityType.VIEW);
-        validate(Collections.emptyList());
-    }
-
-    @Test
-    void testEvictByEntityNameWithWrongName() {
-        evictQueryTemplateCacheService.evictByEntityName(USED_SCHEMA, "wrong_name", EntityType.VIEW);
-        validate(Collections.emptyList());
     }
 
     private void validate(List<String> expectedTemplateList) {

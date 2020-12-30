@@ -68,7 +68,6 @@ class RollbackDeltaExecutorTest {
         when(serviceDbFacade.getServiceDbDao()).thenReturn(serviceDbDao);
         when(edmlUploadFailedExecutor.eraseWriteOp(any())).thenReturn(Future.succeededFuture());
         doNothing().when(evictQueryTemplateCacheService).evictByDatamartName(anyString());
-        doNothing().when(evictQueryTemplateCacheService).evictByEntityName(anyString(), anyString(), any());
         rollbackDeltaExecutor = new RollbackDeltaExecutor(edmlUploadFailedExecutor, serviceDbFacade,
                 deltaQueryResultFactory, Vertx.vertx(), evictQueryTemplateCacheService);
         when(deltaServiceDao.writeDeltaError(eq(datamart), eq(null)))
@@ -164,6 +163,6 @@ class RollbackDeltaExecutorTest {
     private void verifyEvictCacheNotExecuted() {
         verify(evictQueryTemplateCacheService, times(0)).evictByDatamartName(anyString());
         verify(evictQueryTemplateCacheService, times(0)).evictByEntityName(anyString(),
-                anyString(), any());
+                anyString());
     }
 }

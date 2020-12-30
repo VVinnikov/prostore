@@ -52,7 +52,6 @@ class CommitDeltaExecutorTest {
         delta.setDatamart(req.getDatamartMnemonic());
         when(serviceDbFacade.getDeltaServiceDao()).thenReturn(deltaServiceDao);
         doNothing().when(evictQueryTemplateCacheService).evictByDatamartName(anyString());
-        doNothing().when(evictQueryTemplateCacheService).evictByEntityName(anyString(), anyString(), any());
     }
 
     @Test
@@ -213,6 +212,6 @@ class CommitDeltaExecutorTest {
     private void verifyEvictCacheNotExecuted() {
         verify(evictQueryTemplateCacheService, times(0)).evictByDatamartName(anyString());
         verify(evictQueryTemplateCacheService, times(0)).evictByEntityName(anyString(),
-                anyString(), any());
+                anyString());
     }
 }

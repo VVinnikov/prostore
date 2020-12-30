@@ -64,12 +64,7 @@ public class EvictCacheDdlPostExecutorTest {
 
     @Test
     void testDropView() {
-        Entity entity = getEntity(EntityType.VIEW);
-        DdlRequestContext context = getContext(DdlType.DROP_VIEW, entity);
-        evictCacheDdlPostExecutor.execute(context);
-        verify(evictQueryTemplateCacheService, times(0)).evictByDatamartName(anyString());
-        verify(evictQueryTemplateCacheService, times(1)).evictByEntityName(entity.getSchema(),
-                entity.getName());
+        checkNotExecute(DdlType.DROP_VIEW);
     }
 
     @Test

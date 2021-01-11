@@ -93,19 +93,20 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                 sourceRequest.setMetadata(queryTemplateValue.getMetadata());
                 sourceRequest.setLogicalSchema(queryTemplateValue.getLogicalSchema());
                 sourceRequest.getQueryRequest().setDeltaInformations(queryTemplateValue.getDeltaInformations());
+                sourceRequest.getQueryRequest().setSql(queryTemplateValue.getSql());
                 promise.complete(sourceRequest);
             } else {
                 initRequestAttributes(withoutViewsRequest, sourceRequest)
                         .compose(request ->
                             queryCacheService.put(QueryTemplateKey.builder()
                                     .sourceQueryTemplate(templateResult.getTemplate())
-                                    .logicalSchema(sourceRequest.getLogicalSchema())
+                                    .logicalSchema(request.getLogicalSchema())
                                     .build(),
                                     SourceQueryTemplateValue.builder()
-                                            .sql(templateResult.getTemplate())
-                                            .deltaInformations(sourceRequest.getQueryRequest().getDeltaInformations())
-                                            .metadata(sourceRequest.getMetadata())
-                                            .logicalSchema(sourceRequest.getLogicalSchema())
+                                            .sql(request.getQueryRequest().getSql())
+                                            .deltaInformations(request.getQueryRequest().getDeltaInformations())
+                                            .metadata(request.getMetadata())
+                                            .logicalSchema(request.getLogicalSchema())
                                             .build())
                                 .map(value -> request)
                         )

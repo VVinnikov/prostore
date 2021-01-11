@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.core.service.delta.impl;
 
-import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheService;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QueryResult;
@@ -19,6 +18,7 @@ import io.arenadata.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaExecutor;
 import io.arenadata.dtm.query.execution.core.service.delta.StatusEventPublisher;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadFailedExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.ddl.PostSqlActionType;
 import io.arenadata.dtm.query.execution.plugin.api.request.RollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.vertx.core.Future;
@@ -30,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -44,30 +45,22 @@ public class RollbackDeltaExecutor implements DeltaExecutor, StatusEventPublishe
     private final DeltaServiceDao deltaServiceDao;
     private final Vertx vertx;
     private final EntityDao entityDao;
-    private final EvictQueryTemplateCacheService evictQueryTemplateCacheService;
 
     @Autowired
     public RollbackDeltaExecutor(EdmlUploadFailedExecutor edmlUploadFailedExecutor,
                                  ServiceDbFacade serviceDbFacade,
                                  @Qualifier("beginDeltaQueryResultFactory") DeltaQueryResultFactory deltaQueryResultFactory,
-                                 @Qualifier("coreVertx") Vertx vertx,
-                                 EvictQueryTemplateCacheService evictQueryTemplateCacheService) {
+                                 @Qualifier("coreVertx") Vertx vertx) {
         this.entityDao = serviceDbFacade.getServiceDbDao().getEntityDao();
         this.deltaServiceDao = serviceDbFacade.getDeltaServiceDao();
         this.edmlUploadFailedExecutor = edmlUploadFailedExecutor;
         this.deltaQueryResultFactory = deltaQueryResultFactory;
         this.vertx = vertx;
-        this.evictQueryTemplateCacheService = evictQueryTemplateCacheService;
     }
 
     @Override
     public Future<QueryResult> execute(DeltaQuery deltaQuery) {
-        return Future.future(promise -> executeInternal(deltaQuery)
-                .onSuccess(result -> {
-                    evictQueryTemplateCacheService.evictByDatamartName(deltaQuery.getDatamart());
-                    promise.complete(result);
-                })
-                .onFailure(promise::fail));
+        return executeInternal(deltaQuery);
     }
 
     private Future<QueryResult> executeInternal(DeltaQuery deltaQuery) {
@@ -163,5 +156,10 @@ public class RollbackDeltaExecutor implements DeltaExecutor, StatusEventPublishe
     @Override
     public Vertx getVertx() {
         return vertx;
+    }
+
+    @Override
+    public List<PostSqlActionType> getPostActions() {
+        return Collections.singletonList(PostSqlActionType.EVICT_CACHE);
     }
 }

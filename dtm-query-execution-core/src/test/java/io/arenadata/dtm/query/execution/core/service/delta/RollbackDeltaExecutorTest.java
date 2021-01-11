@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.core.service.delta;
 
-import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheService;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QueryRequest;
@@ -36,7 +35,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class RollbackDeltaExecutorTest {
     private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
@@ -44,8 +44,6 @@ class RollbackDeltaExecutorTest {
     private final EntityDao entityDao = mock(EntityDao.class);
     private final DeltaServiceDao deltaServiceDao = mock(DeltaServiceDaoImpl.class);
     private final DeltaQueryResultFactory deltaQueryResultFactory = mock(CommitDeltaQueryResultFactory.class);
-    private final EvictQueryTemplateCacheService evictQueryTemplateCacheService =
-            mock(EvictQueryTemplateCacheService.class);
     private final EdmlUploadFailedExecutor edmlUploadFailedExecutor = mock(EdmlUploadFailedExecutor.class);
     private RollbackDeltaExecutor rollbackDeltaExecutor;
     private final QueryRequest req = new QueryRequest();
@@ -67,9 +65,8 @@ class RollbackDeltaExecutorTest {
         when(serviceDbDao.getEntityDao()).thenReturn(entityDao);
         when(serviceDbFacade.getServiceDbDao()).thenReturn(serviceDbDao);
         when(edmlUploadFailedExecutor.eraseWriteOp(any())).thenReturn(Future.succeededFuture());
-        doNothing().when(evictQueryTemplateCacheService).evictByDatamartName(anyString());
         rollbackDeltaExecutor = new RollbackDeltaExecutor(edmlUploadFailedExecutor, serviceDbFacade,
-                deltaQueryResultFactory, Vertx.vertx(), evictQueryTemplateCacheService);
+                deltaQueryResultFactory, Vertx.vertx());
         when(deltaServiceDao.writeDeltaError(eq(datamart), eq(null)))
                 .thenReturn(Future.succeededFuture());
         when(deltaServiceDao.deleteDeltaHot(eq(datamart)))
@@ -102,7 +99,6 @@ class RollbackDeltaExecutorTest {
                 .onComplete(promise);
         assertEquals(deltaDate, ((QueryResult) promise.future().result()).getResult()
                 .get(0).get(DeltaQueryUtil.DATE_TIME_FIELD));
-        verifyEvictCacheExecuted();
     }
 
     @Test
@@ -125,7 +121,6 @@ class RollbackDeltaExecutorTest {
         rollbackDeltaExecutor.execute(deltaQuery)
                 .onComplete(promise);
         assertTrue(promise.future().failed());
-        verifyEvictCacheNotExecuted();
     }
 
     @Test
@@ -148,21 +143,10 @@ class RollbackDeltaExecutorTest {
         rollbackDeltaExecutor.execute(deltaQuery)
                 .onComplete(promise);
         assertTrue(promise.future().failed());
-        verifyEvictCacheNotExecuted();
     }
 
     private List<Map<String, Object>> createResult(LocalDateTime deltaDate) {
         return QueryResultUtils.createResultWithSingleRow(Collections.singletonList(DeltaQueryUtil.DATE_TIME_FIELD),
                 Collections.singletonList(deltaDate));
-    }
-
-    private void verifyEvictCacheExecuted() {
-        verify(evictQueryTemplateCacheService, times(1)).evictByDatamartName(datamart);
-    }
-
-    private void verifyEvictCacheNotExecuted() {
-        verify(evictQueryTemplateCacheService, times(0)).evictByDatamartName(anyString());
-        verify(evictQueryTemplateCacheService, times(0)).evictByEntityName(anyString(),
-                anyString());
     }
 }

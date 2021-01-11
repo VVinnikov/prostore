@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.core.service.delta.impl;
 
-import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheService;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.status.StatusEventCode;
@@ -13,6 +12,7 @@ import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaQuery;
 import io.arenadata.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaExecutor;
 import io.arenadata.dtm.query.execution.core.service.delta.StatusEventPublisher;
+import io.arenadata.dtm.query.execution.plugin.api.ddl.PostSqlActionType;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +22,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
 
 import static io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaAction.COMMIT_DELTA;
 
@@ -33,26 +35,19 @@ public class CommitDeltaExecutor implements DeltaExecutor, StatusEventPublisher 
     private final Vertx vertx;
     private final DeltaServiceDao deltaServiceDao;
     private final DeltaQueryResultFactory deltaQueryResultFactory;
-    private final EvictQueryTemplateCacheService evictQueryTemplateCacheService;
 
     @Autowired
     public CommitDeltaExecutor(ServiceDbFacade serviceDbFacade,
                                @Qualifier("commitDeltaQueryResultFactory") DeltaQueryResultFactory deltaQueryResultFactory,
-                               @Qualifier("coreVertx") Vertx vertx,
-                               EvictQueryTemplateCacheService evictQueryTemplateCacheService) {
+                               @Qualifier("coreVertx") Vertx vertx) {
         this.deltaServiceDao = serviceDbFacade.getDeltaServiceDao();
         this.vertx = vertx;
         this.deltaQueryResultFactory = deltaQueryResultFactory;
-        this.evictQueryTemplateCacheService = evictQueryTemplateCacheService;
     }
 
     @Override
     public Future<QueryResult> execute(DeltaQuery deltaQuery) {
-        return Future.future(promise -> commitDelta(deltaQuery)
-                .onSuccess(result -> {
-                    evictQueryTemplateCacheService.evictByDatamartName(deltaQuery.getDatamart());
-                    promise.complete(result);
-                }).onFailure(promise::fail));
+        return commitDelta(deltaQuery);
     }
 
     private Future<QueryResult> commitDelta(DeltaQuery deltaQuery) {
@@ -117,5 +112,10 @@ public class CommitDeltaExecutor implements DeltaExecutor, StatusEventPublisher 
     @Override
     public Vertx getVertx() {
         return vertx;
+    }
+
+    @Override
+    public List<PostSqlActionType> getPostActions() {
+        return Collections.singletonList(PostSqlActionType.EVICT_CACHE);
     }
 }

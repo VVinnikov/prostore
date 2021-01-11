@@ -50,7 +50,6 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
                     calculateDeltaValues(deltaInfoRes.getDeltaInformations(), ar -> {
                         if (ar.succeeded()) {
                             QueryRequest copyRequest = request.copy();
-                            copyRequest.setDeltaInformations(deltaInfoRes.getDeltaInformations());
                             copyRequest.setSql(deltaInfoRes.getSqlWithoutSnapshots());
                             copyRequest.setDeltaInformations(ar.result());
                             handler.complete(copyRequest);

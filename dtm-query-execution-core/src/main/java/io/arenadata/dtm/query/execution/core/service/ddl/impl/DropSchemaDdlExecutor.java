@@ -4,6 +4,7 @@ import io.arenadata.dtm.cache.service.CacheService;
 import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheService;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
+import io.arenadata.dtm.common.reader.InformationSchemaView;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.DropDatabase;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
@@ -56,6 +57,9 @@ public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
     private Future<QueryResult> dropSchema(DdlRequestContext context) {
         return Future.future(promise -> {
             String datamartName = ((DropDatabase) context.getSqlNode()).getName().getSimple();
+            if (InformationSchemaView.SCHEMA_NAME.equalsIgnoreCase(datamartName)) {
+                promise.fail(new DtmException("Removing system databases is impossible"));
+            } else {
             clearCacheByDatamartName(datamartName);
             context.getRequest().getQueryRequest().setDatamartMnemonic(datamartName);
             context.setDatamartName(datamartName);
@@ -82,6 +86,7 @@ public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
                         }
                     })
                     .onFailure(promise::fail);
+            }
         });
     }
 

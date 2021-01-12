@@ -154,7 +154,6 @@ public class DtmConnectionImpl implements BaseConnection {
 
     @Override
     public void clearWarnings() throws SQLException {
-        throw new UnsupportedOperationException();
     }
 
     @Override

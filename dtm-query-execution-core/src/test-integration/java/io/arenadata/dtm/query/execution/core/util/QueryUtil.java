@@ -12,4 +12,6 @@ public class QueryUtil {
     public static final String DROP_UPLOAD_EXT_TABLE = "DROP UPLOAD EXTERNAL TABLE %s.%s;";
     public static final String DROP_DOWNLOAD_EXT_TABLE = "DROP DOWNLOAD EXTERNAL TABLE %s.%s;";
     public static final String INSERT_QUERY = "INSERT INTO %s.%s select %s from %s.%s";
+    public static final String GET_DELTA_BY_NUMBER = "GET_DELTA_BY_NUM(%d)";
+    public static final String GET_DELTA_BY_DATETIME = "GET_DELTA_BY_DATETIME('%s')";
 }

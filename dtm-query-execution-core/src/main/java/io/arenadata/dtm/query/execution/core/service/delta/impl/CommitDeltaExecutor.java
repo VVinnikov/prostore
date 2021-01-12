@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.delta.impl;
 
-import io.arenadata.dtm.async.AsyncHandler;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.status.StatusEventCode;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
@@ -9,10 +9,10 @@ import io.arenadata.dtm.query.execution.core.dto.delta.DeltaRecord;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.CommitDeltaQuery;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaAction;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaQuery;
-import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaExecutor;
 import io.arenadata.dtm.query.execution.core.service.delta.StatusEventPublisher;
+import io.arenadata.dtm.query.execution.plugin.api.ddl.PostSqlActionType;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +22,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
 
 import static io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaAction.COMMIT_DELTA;
 
@@ -110,5 +112,10 @@ public class CommitDeltaExecutor implements DeltaExecutor, StatusEventPublisher 
     @Override
     public Vertx getVertx() {
         return vertx;
+    }
+
+    @Override
+    public List<PostSqlActionType> getPostActions() {
+        return Collections.singletonList(PostSqlActionType.EVICT_CACHE);
     }
 }

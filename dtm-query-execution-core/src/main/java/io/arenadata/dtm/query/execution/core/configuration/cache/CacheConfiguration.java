@@ -2,7 +2,10 @@ package io.arenadata.dtm.query.execution.core.configuration.cache;
 
 import io.arenadata.dtm.cache.factory.CaffeineCacheServiceFactory;
 import io.arenadata.dtm.cache.service.CacheService;
+import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheService;
+import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheServiceImpl;
 import io.arenadata.dtm.common.cache.QueryTemplateKey;
+import io.arenadata.dtm.common.cache.QueryTemplateValue;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
 import io.arenadata.dtm.common.cache.SourceQueryTemplateValue;
@@ -13,6 +16,8 @@ import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.List;
 
 @Configuration
 @EnableCaching
@@ -46,9 +51,15 @@ public class CacheConfiguration {
 
     @Bean("coreQueryTemplateCacheService")
     public CacheService<QueryTemplateKey, SourceQueryTemplateValue> queryCacheService(@Qualifier("coffeineCacheManager")
-                                                                                        CacheManager cacheManager) {
+                                                                                              CacheManager cacheManager) {
         return new CaffeineCacheServiceFactory<QueryTemplateKey, SourceQueryTemplateValue>(cacheManager)
                 .create(CORE_QUERY_TEMPLATE_CACHE);
     }
 
+    @Bean("evictQueryTemplateCacheServiceImpl")
+    public EvictQueryTemplateCacheService evictQueryTemplateCacheService(
+            CacheService<QueryTemplateKey, SourceQueryTemplateValue> cacheService,
+            List<CacheService<QueryTemplateKey, QueryTemplateValue>> cacheServiceList) {
+        return new EvictQueryTemplateCacheServiceImpl(cacheService, cacheServiceList);
+    }
 }

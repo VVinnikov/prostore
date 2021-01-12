@@ -71,7 +71,8 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
                         .map(postExecutor -> postExecutor.execute(context))
                         .orElse(Future.failedFuture(new DtmException(String.format("Not supported DDL post executor type [%s]",
                                 postType)))))
-                .collect(Collectors.toList()));
+                .collect(Collectors.toList()))
+                .onFailure(error -> log.error(error.getMessage()));
     }
 
     private SqlCall getSqlCall(SqlNode sqlNode) {

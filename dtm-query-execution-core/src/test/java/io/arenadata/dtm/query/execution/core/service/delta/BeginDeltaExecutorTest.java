@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.delta;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
@@ -7,7 +8,6 @@ import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacadeImpl;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.impl.DeltaServiceDaoImpl;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.BeginDeltaQuery;
-import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.delta.BeginDeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.service.delta.impl.BeginDeltaExecutor;
@@ -47,12 +47,12 @@ class BeginDeltaExecutorTest {
         req.setDatamartMnemonic(datamart);
         req.setRequestId(UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"));
         when(serviceDbFacade.getDeltaServiceDao()).thenReturn(deltaServiceDao);
+        beginDeltaExecutor = new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
     }
 
     @Test
     void executeSuccessWithoutNum() {
         req.setSql("BEGIN DELTA");
-        beginDeltaExecutor = new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
         Promise<QueryResult> promise = Promise.promise();
         long deltaNum = 1L;
         BeginDeltaQuery deltaQuery = BeginDeltaQuery.builder()
@@ -79,7 +79,6 @@ class BeginDeltaExecutorTest {
     @Test
     void executeSuccessWithNum() {
         req.setSql("BEGIN DELTA SET 2");
-        beginDeltaExecutor = new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
         Promise<QueryResult> promise = Promise.promise();
         final long deltaNum = 2L;
         BeginDeltaQuery deltaQuery = BeginDeltaQuery.builder()
@@ -107,7 +106,6 @@ class BeginDeltaExecutorTest {
     @Test
     void executeWriteNewDeltaHotError() {
         req.setSql("BEGIN DELTA");
-        beginDeltaExecutor = new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
         Promise<QueryResult> promise = Promise.promise();
 
         final long deltaNum = 2L;
@@ -133,7 +131,6 @@ class BeginDeltaExecutorTest {
     @Test
     void executeWithNumWriteNewDeltaHotError() {
         req.setSql("BEGIN DELTA");
-        beginDeltaExecutor = new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
         Promise<QueryResult> promise = Promise.promise();
 
         BeginDeltaQuery deltaQuery = BeginDeltaQuery.builder()
@@ -152,7 +149,6 @@ class BeginDeltaExecutorTest {
     @Test
     void executeDeltaQueryResultFactoryError() {
         req.setSql("BEGIN DELTA");
-        beginDeltaExecutor = new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
         Promise<QueryResult> promise = Promise.promise();
 
         final long deltaNum = 2L;

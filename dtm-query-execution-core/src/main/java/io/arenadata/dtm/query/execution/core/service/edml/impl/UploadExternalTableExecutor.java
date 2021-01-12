@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.edml.impl;
 
+import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheService;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
@@ -39,29 +40,38 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
     private final EdmlUploadFailedExecutor uploadFailedExecutor;
     private final DataSourcePluginService pluginService;
     private final LogicalSchemaProvider logicalSchemaProvider;
+    private final EvictQueryTemplateCacheService evictQueryTemplateCacheService;
 
     @Autowired
     public UploadExternalTableExecutor(DeltaServiceDao deltaServiceDao,
                                        EdmlUploadFailedExecutor uploadFailedExecutor,
                                        List<EdmlUploadExecutor> uploadExecutors,
                                        DataSourcePluginService pluginService,
-                                       LogicalSchemaProvider logicalSchemaProvider) {
+                                       LogicalSchemaProvider logicalSchemaProvider,
+                                       EvictQueryTemplateCacheService evictQueryTemplateCacheService) {
         this.deltaServiceDao = deltaServiceDao;
         this.uploadFailedExecutor = uploadFailedExecutor;
         this.executors = uploadExecutors.stream()
                 .collect(Collectors.toMap(EdmlUploadExecutor::getUploadType, it -> it));
         this.pluginService = pluginService;
         this.logicalSchemaProvider = logicalSchemaProvider;
+        this.evictQueryTemplateCacheService = evictQueryTemplateCacheService;
     }
 
     @Override
     public Future<QueryResult> execute(EdmlRequestContext context) {
-        return isEntitySourceTypesExistsInConfiguration(context)
+        return Future.future(promise -> isEntitySourceTypesExistsInConfiguration(context)
                 .compose(v -> writeNewOperationIfNeeded(context, context.getSourceEntity()))
                 .compose(v -> executeAndWriteOp(context))
                 .compose(queryResult -> writeOpSuccess(context.getSourceEntity().getSchema(),
                         context.getSysCn(),
-                        queryResult));
+                        queryResult))
+                .onSuccess(result -> {
+                    Entity entity = context.getDestinationEntity();
+                    evictQueryTemplateCacheService.evictByEntityName(entity.getSchema(), entity.getName());
+                    promise.complete(result);
+                })
+                .onFailure(promise::fail));
     }
 
     private Future<Void> isEntitySourceTypesExistsInConfiguration(EdmlRequestContext context) {

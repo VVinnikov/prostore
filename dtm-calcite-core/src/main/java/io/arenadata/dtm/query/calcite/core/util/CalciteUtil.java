@@ -2,7 +2,6 @@ package io.arenadata.dtm.query.calcite.core.util;
 
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
-import lombok.val;
 import org.apache.calcite.sql.type.SqlTypeName;
 
 import java.time.LocalDateTime;
@@ -10,9 +9,12 @@ import java.time.format.DateTimeFormatter;
 
 import static org.apache.calcite.sql.type.SqlTypeName.*;
 
-public class CalciteUtil {
+public final class CalciteUtil {
     private static final String LOCAL_DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
     public static final DateTimeFormatter LOCAL_DATE_TIME = DateTimeFormatter.ofPattern(LOCAL_DATE_TIME_PATTERN);
+
+    private CalciteUtil() {
+    }
 
     public static LocalDateTime parseLocalDateTime(String localDateTime) {
         try {

@@ -5,23 +5,23 @@ import io.arenadata.dtm.common.plugin.sql.PreparedStatementRequest;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import io.arenadata.dtm.query.execution.plugin.adb.configuration.CalciteConfiguration;
+import io.arenadata.dtm.query.execution.plugin.adb.factory.TruncateHistoryDeleteQueriesFactory;
+import io.arenadata.dtm.query.execution.plugin.adb.factory.impl.TruncateHistoryDeleteQueriesFactoryImpl;
 import io.arenadata.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TruncateHistoryService;
 import io.vertx.core.Future;
-import org.apache.calcite.sql.*;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Planner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
-import javax.swing.text.html.Option;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -41,14 +41,14 @@ public class AdbTruncateHistoryServiceTest {
     private final DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
     private final FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
     private final Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
+    private final TruncateHistoryDeleteQueriesFactory queriesFactory = new TruncateHistoryDeleteQueriesFactoryImpl(calciteConfiguration.adbSqlDialect());
     private final DatabaseExecutor adbQueryExecutor = mock(AdbQueryExecutor.class);
-    private final TruncateHistoryService adbTruncateHistoryService = new AdbTruncateHistoryService(adbQueryExecutor,
-            calciteConfiguration.adbSqlDialect());
+    private final TruncateHistoryService adbTruncateHistoryService = new AdbTruncateHistoryService(adbQueryExecutor, queriesFactory);
 
     @BeforeEach
     void setUp() {
         when(adbQueryExecutor.execute(anyString())).thenReturn(Future.succeededFuture());
-        doNothing().when(adbQueryExecutor).executeInTransaction(any());
+        when(adbQueryExecutor.executeInTransaction(any())).thenReturn(Future.succeededFuture());
     }
 
     @Test

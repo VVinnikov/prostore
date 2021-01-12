@@ -2,6 +2,7 @@ package io.arenadata.dtm.jdbc.core;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -35,14 +36,8 @@ public class SqlParser {
                     --inParen;
                     break;
                 case ';':
-                    if (inParen == 0) {
-                        if (!whitespaceOnly) {
-                            nativeSql.append(aChars, fragmentStart, i - fragmentStart);
-                            whitespaceOnly = true;
-                        }
-                    } else {
-                        throw new SQLException(String.format("Invalid sql query %s", query));
-                    }
+                    whitespaceOnly = appendInParenCharsAndCheckWhitespace(inParen,
+                            aChars, whitespaceOnly, nativeSql, fragmentStart, i);
                     fragmentStart = i + 1;
                     if (nativeQueries == null) {
                         nativeQueries = new ArrayList();
@@ -50,9 +45,35 @@ public class SqlParser {
                     nativeQueries.add(new Query(nativeSql.toString(), false));
                     nativeSql.setLength(0);
                     break;
+                default:
+                    break;
             }
         }
+        return getQueries(aChars, whitespaceOnly, nativeQueries, nativeSql, fragmentStart);
+    }
 
+    private static boolean appendInParenCharsAndCheckWhitespace(int inParen,
+                                                                char[] aChars,
+                                                                boolean whitespaceOnly,
+                                                                StringBuilder nativeSql,
+                                                                int fragmentStart,
+                                                                int i) throws SQLException {
+        if (inParen == 0) {
+            if (!whitespaceOnly) {
+                nativeSql.append(aChars, fragmentStart, i - fragmentStart);
+                return true;
+            }
+        } else {
+            throw new SQLException(String.format("Invalid sql query %s", Arrays.toString(aChars)));
+        }
+        return false;
+    }
+
+    private static List<Query> getQueries(char[] aChars,
+                                          boolean whitespaceOnly,
+                                          List<Query> nativeQueries,
+                                          StringBuilder nativeSql,
+                                          int fragmentStart) {
         if (fragmentStart < aChars.length && !whitespaceOnly) {
             nativeSql.append(aChars, fragmentStart, aChars.length - fragmentStart);
         }
@@ -60,15 +81,21 @@ public class SqlParser {
         if (nativeSql.length() == 0) {
             return nativeQueries != null ? nativeQueries : Collections.emptyList();
         } else {
-            Query lastQuery = new Query(nativeSql.toString(), false);
-            if (nativeQueries == null) {
-                return Collections.singletonList(lastQuery);
-            } else {
-                if (!whitespaceOnly) {
-                    nativeQueries.add(lastQuery);
-                }
-                return nativeQueries;
+            return getQueriesIfNativeSqlNonEmpty(whitespaceOnly, nativeQueries, nativeSql);
+        }
+    }
+
+    private static List<Query> getQueriesIfNativeSqlNonEmpty(boolean whitespaceOnly,
+                                                             List<Query> nativeQueries,
+                                                             StringBuilder nativeSql) {
+        Query lastQuery = new Query(nativeSql.toString(), false);
+        if (nativeQueries == null) {
+            return Collections.singletonList(lastQuery);
+        } else {
+            if (!whitespaceOnly) {
+                nativeQueries.add(lastQuery);
             }
+            return nativeQueries;
         }
     }
 

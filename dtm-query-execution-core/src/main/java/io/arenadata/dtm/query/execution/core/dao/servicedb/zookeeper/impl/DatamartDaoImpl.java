@@ -34,7 +34,7 @@ public class DatamartDaoImpl implements DatamartDao {
     public DatamartDaoImpl(@Qualifier("zookeeperExecutor") ZookeeperExecutor executor,
                            @Value("${core.env.name}") String systemName) {
         this.executor = executor;
-        envPath = "/" + systemName;
+        this.envPath = "/" + systemName;
     }
 
     @Override
@@ -69,7 +69,7 @@ public class DatamartDaoImpl implements DatamartDao {
         try {
             deltaData = DatabindCodec.mapper().writeValueAsBytes(new Delta());
         } catch (Exception ex) {
-            throw new RuntimeException("Can't serialize delta");
+            throw new DtmException("Can't serialize delta", ex);
         }
         return Arrays.asList(
                 Op.create(datamartPath, EMPTY_DATA, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT),
@@ -86,7 +86,7 @@ public class DatamartDaoImpl implements DatamartDao {
 
     private boolean isDatamartExists(KeeperException error) {
         List<OpResult> results = error.getResults() == null ? Collections.emptyList() : error.getResults();
-        return results.size() > 0 && results.get(CREATE_DATAMART_OP_INDEX) instanceof OpResult.ErrorResult;
+        return !results.isEmpty() && results.get(CREATE_DATAMART_OP_INDEX) instanceof OpResult.ErrorResult;
     }
 
     @Override
@@ -113,7 +113,7 @@ public class DatamartDaoImpl implements DatamartDao {
     }
 
     @Override
-    public Future<?> getDatamart(String name) {
+    public Future<byte[]> getDatamart(String name) {
         return executor.getData(getTargetPath(name))
                 .otherwise(error -> {
                     if (error instanceof KeeperException.NoNodeException) {

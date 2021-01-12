@@ -17,14 +17,12 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Component
 @Slf4j
 public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
+    private static final Integer DEFAULT_PRECISION = 6;
 
     @Override
     public Entity generateTableMetadata(SqlCreate sqlCreate) {
@@ -76,7 +74,7 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
         if (columnTypeSpec.getTypeNameSpec() instanceof SqlBasicTypeNameSpec) {
             val basicTypeNameSpec = (SqlBasicTypeNameSpec) columnTypeSpec.getTypeNameSpec();
             if (field.getType() == ColumnType.TIMESTAMP || field.getType() == ColumnType.TIME) {
-                field.setAccuracy(getPrecision(basicTypeNameSpec));
+                field.setAccuracy(Optional.ofNullable(getPrecision(basicTypeNameSpec)).orElse(DEFAULT_PRECISION));
             } else {
                 field.setSize(getPrecision(basicTypeNameSpec));
                 field.setAccuracy(getScale(basicTypeNameSpec));

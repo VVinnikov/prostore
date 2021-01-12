@@ -20,12 +20,12 @@ import io.arenadata.dtm.query.execution.plugin.adg.service.impl.dml.AdgLlrServic
 import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.LlrService;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.junit5.VertxExtension;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.sql.SqlDialect;
+import io.vertx.core.Promise;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,8 +36,8 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest(classes = DtmTestConfiguration.class)
 @ExtendWith(VertxExtension.class)
@@ -61,13 +61,11 @@ class AdgLlrServiceTest {
 
     @Test
     void testExecuteNotEmptyOk() {
+        Promise<QueryResult> promise = Promise.promise();
         QueryRequest queryRequest = new QueryRequest();
         queryRequest.setRequestId(UUID.randomUUID());
         queryRequest.setSql("select name from s");
 
-        QueryResultItem queryResultItem = new QueryResultItem(
-                Collections.singletonList(new ColumnMetadata("name", ColumnType.VARCHAR)),
-                Collections.singletonList(Collections.singletonList("val")));
         List<Map<String, Object>> result = new ArrayList<>();
         Map<String, Object> rowMap = new HashMap<>();
         rowMap.put("name", "val");
@@ -76,42 +74,34 @@ class AdgLlrServiceTest {
                 queryRequest.getRequestId(),
                 result);
 
-        prepare(queryRequest, queryResultItem);
+        prepare(queryRequest, expectedResult);
 
         llrService.execute(new LlrRequestContext(new RequestMetrics(), new LlrRequest(queryRequest, new ArrayList<>(),
-                Collections.singletonList(new ColumnMetadata("name", ColumnType.VARCHAR)))));
+                Collections.singletonList(new ColumnMetadata("name", ColumnType.VARCHAR)))))
+                .onComplete(promise);
+        assertTrue(promise.future().succeeded());
+        assertEquals(expectedResult, promise.future().result());
     }
 
     @Test
     void testExecuteEmptyOk() {
+        Promise<QueryResult> promise = Promise.promise();
         QueryRequest queryRequest = new QueryRequest();
         queryRequest.setRequestId(UUID.randomUUID());
         queryRequest.setSql("select name from s");
-
-        QueryResultItem queryResultItem = new QueryResultItem(
-                Collections.singletonList(new ColumnMetadata("name", ColumnType.VARCHAR)),
-                Collections.emptyList());
         QueryResult expectedResult = new QueryResult(
                 queryRequest.getRequestId(),
                 new ArrayList<>());
-
-        prepare(queryRequest, queryResultItem);
-
+        prepare(queryRequest, expectedResult);
         llrService.execute(new LlrRequestContext(new RequestMetrics(), new LlrRequest(queryRequest, new ArrayList<>(),
-                Collections.singletonList(new ColumnMetadata("name", ColumnType.VARCHAR)))));
+                Collections.singletonList(new ColumnMetadata("name", ColumnType.VARCHAR)))))
+                .onComplete(promise);
+        assertTrue(promise.future().succeeded());
+        assertEquals(expectedResult, promise.future().result());
     }
 
-    private void prepare(QueryRequest queryRequest, QueryResultItem queryResultItem) {
-        doAnswer(invocation -> {
-            Handler<AsyncResult<QueryResultItem>> handler = invocation.getArgument(2);
-            handler.handle(Future.succeededFuture(queryResultItem));
-            return null;
-        }).when(executorService).execute(any(), any());
-
-        doAnswer(invocation -> {
-            Handler<AsyncResult<String>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(queryRequest.getSql()));
-            return null;
-        }).when(enrichmentService).enrich(any());
+    private void prepare(QueryRequest queryRequest, QueryResult expectedResult) {
+        when(executorService.execute(any(), any())).thenReturn(Future.succeededFuture(expectedResult.getResult()));
+        when(enrichmentService.enrich(any())).thenReturn(Future.succeededFuture(queryRequest.getSql()));
     }
 }

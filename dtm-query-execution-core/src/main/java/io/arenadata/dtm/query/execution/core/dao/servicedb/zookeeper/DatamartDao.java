@@ -12,7 +12,7 @@ public interface DatamartDao extends ZookeeperDao<String> {
 
     Future<List<String>> getDatamarts();
 
-    Future<?> getDatamart(String name);
+    Future<byte[]> getDatamart(String name);
 
     Future<Boolean> existsDatamart(String name);
 

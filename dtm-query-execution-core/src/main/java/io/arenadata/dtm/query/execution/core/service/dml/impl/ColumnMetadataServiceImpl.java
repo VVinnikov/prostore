@@ -36,11 +36,23 @@ public class ColumnMetadataServiceImpl implements ColumnMetadataService {
     private List<ColumnMetadata> getColumnMetadata(RelRoot relNode) {
         return relNode.project().getRowType().getFieldList().stream()
                 .sorted(Comparator.comparing(RelDataTypeField::getIndex))
-                .map(f -> new ColumnMetadata(f.getName(), getType(f.getType())))
+                .map(f -> new ColumnMetadata(f.getName(), getType(f.getType()), getSize(f)))
                 .collect(Collectors.toList());
     }
 
     private ColumnType getType(RelDataType type) {
         return CalciteUtil.toColumnType(type.getSqlTypeName());
+    }
+
+    private Integer getSize(RelDataTypeField field) {
+        ColumnType type = getType(field.getType());
+        switch (type) {
+            case VARCHAR:
+            case CHAR:
+            case UUID:
+                return field.getValue().getPrecision();
+            default:
+                return null;
+        }
     }
 }

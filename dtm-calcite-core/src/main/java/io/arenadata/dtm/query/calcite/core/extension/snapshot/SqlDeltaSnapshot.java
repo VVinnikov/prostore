@@ -6,7 +6,7 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 
 import java.util.Objects;
 
-public class SqlSnapshot extends org.apache.calcite.sql.SqlSnapshot {
+public class SqlDeltaSnapshot extends SqlSnapshot {
 
     public static final String AS_OF = "AS OF";
     private final SnapshotOperator snapshotOperator;
@@ -17,13 +17,13 @@ public class SqlSnapshot extends org.apache.calcite.sql.SqlSnapshot {
     private SelectOnInterval startedInterval;
     private SelectOnInterval finishedInterval;
     private Long deltaNum;
-    private SnapshotDeltaIntervalOperator startedOperator;
-    private SnapshotDeltaIntervalOperator finishedOperator;
-    private SnapshotDeltaNumOperator deltaNumOperator;
-    private SnapshotLatestUncommittedDeltaOperator latestUncommittedDeltaOperator;
+    private final SnapshotDeltaIntervalOperator startedOperator;
+    private final SnapshotDeltaIntervalOperator finishedOperator;
+    private final SnapshotDeltaNumOperator deltaNumOperator;
+    private final SnapshotLatestUncommittedDeltaOperator latestUncommittedDeltaOperator;
 
-    public SqlSnapshot(SqlParserPos pos, SqlNode tableRef, SqlNode period, SqlOperator started,
-                       SqlOperator finished, SqlNode num, SqlLiteral isLatestUncommittedDelta) {
+    public SqlDeltaSnapshot(SqlParserPos pos, SqlNode tableRef, SqlNode period, SqlOperator started,
+                            SqlOperator finished, SqlNode num, SqlLiteral isLatestUncommittedDelta) {
         super(pos, tableRef, period);
         this.tableRef = (SqlNode) Objects.requireNonNull(tableRef);
         this.period = (SqlNode) period;

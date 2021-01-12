@@ -5,6 +5,7 @@ import org.apache.calcite.rel.type.RelDataTypeSystemImpl;
 public class DtmRelDataTypeSystemImpl extends RelDataTypeSystemImpl {
 
     public DtmRelDataTypeSystemImpl() {
+        super();
     }
 
     @Override

@@ -4,6 +4,8 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.framework.DtmCalciteFramework;
+import io.arenadata.dtm.query.execution.plugin.adqm.factory.AdqmTruncateHistoryQueriesFactory;
+import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmTruncateHistoryQueriesFactoryImpl;
 import io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.CalciteConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
@@ -44,6 +46,7 @@ public class AdqmTruncateHistoryServiceTest {
     private final FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
     private final Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
     private final DatabaseExecutor adqmQueryExecutor = mock(AdqmQueryExecutor.class);
+    private AdqmTruncateHistoryQueriesFactory queriesFactory;
     private TruncateHistoryService adqmTruncateHistoryService;
     private Entity entity;
     private String orderByColumns;
@@ -58,8 +61,9 @@ public class AdqmTruncateHistoryServiceTest {
         orderByColumns += String.format(", %s", Constants.SYS_FROM_FIELD);
         DdlProperties ddlProperties = new DdlProperties();
         ddlProperties.setCluster(CLUSTER);
+        queriesFactory = new AdqmTruncateHistoryQueriesFactoryImpl(calciteConfiguration.adgSqlDialect(), ddlProperties);
         adqmTruncateHistoryService = new AdqmTruncateHistoryService(adqmQueryExecutor,
-                calciteConfiguration.adgSqlDialect(), ddlProperties);
+                queriesFactory);
         when(adqmQueryExecutor.execute(anyString())).thenReturn(Future.succeededFuture());
     }
 

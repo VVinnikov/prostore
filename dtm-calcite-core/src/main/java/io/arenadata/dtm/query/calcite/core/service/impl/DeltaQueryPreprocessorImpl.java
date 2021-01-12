@@ -88,29 +88,35 @@ public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
                         })
                         .onFailure(deltaInfoPromise::fail);
             } else {
-                if (DeltaType.FINISHED_IN.equals(deltaInformation.getType()) || DeltaType.STARTED_IN.equals(deltaInformation.getType())) {
-                    calculateSelectOnInterval(deltaInformation, ar -> {
-                        if (ar.succeeded()) {
-                            deltaInformation.setSelectOnInterval(ar.result());
-                            deltaInfoPromise.complete(deltaInformation);
-                        } else {
-                            errors.add(ar.cause().getMessage());
-                            deltaInfoPromise.fail(ar.cause());
-                        }
-                    });
-                } else {
-                    calculateSelectOnNum(deltaInformation, ar -> {
-                        if (ar.succeeded()) {
-                            deltaInformation.setSelectOnNum(ar.result());
-                            deltaInfoPromise.complete(deltaInformation);
-                        } else {
-                            errors.add(ar.cause().getMessage());
-                            deltaInfoPromise.fail(ar.cause());
-                        }
-                    });
-                }
+                getDeltaInformationFromIntervalOrNum(errors, deltaInformation, deltaInfoPromise);
             }
         });
+    }
+
+    private void getDeltaInformationFromIntervalOrNum(Set<String> errors,
+                                                      DeltaInformation deltaInformation,
+                                                      Promise<DeltaInformation> deltaInfoPromise) {
+        if (DeltaType.FINISHED_IN.equals(deltaInformation.getType()) || DeltaType.STARTED_IN.equals(deltaInformation.getType())) {
+            calculateSelectOnInterval(deltaInformation, ar -> {
+                if (ar.succeeded()) {
+                    deltaInformation.setSelectOnInterval(ar.result());
+                    deltaInfoPromise.complete(deltaInformation);
+                } else {
+                    errors.add(ar.cause().getMessage());
+                    deltaInfoPromise.fail(ar.cause());
+                }
+            });
+        } else {
+            calculateSelectOnNum(deltaInformation, ar -> {
+                if (ar.succeeded()) {
+                    deltaInformation.setSelectOnNum(ar.result());
+                    deltaInfoPromise.complete(deltaInformation);
+                } else {
+                    errors.add(ar.cause().getMessage());
+                    deltaInfoPromise.fail(ar.cause());
+                }
+            });
+        }
     }
 
     private DeltaRangeInvalidException createDeltaRangeInvalidException(Set<String> errors) {

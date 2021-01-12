@@ -4,12 +4,14 @@ import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.reader.QueryRequest;
+import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmMetaTableEntityFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.utils.DdlUtils;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmCreateTableQueriesFactoryTest;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmTableEntitiesFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.query.AdqmQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
+import io.arenadata.dtm.query.execution.plugin.api.factory.MetaTableEntityFactory;
 import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
 import io.vertx.core.Future;
@@ -80,12 +82,13 @@ public class AdqmCheckTableServiceTest {
                 .thenReturn(Future.succeededFuture(getResultSet(postFix, entity.getFields()))));
 
         List<String> queries = tablePostFixes.stream()
-                .map(postFix -> String.format(AdqmCheckTableService.QUERY_PATTERN,
+                .map(postFix -> String.format(AdqmMetaTableEntityFactory.QUERY_PATTERN,
                         String.format("%s%s", entity.getName(), postFix), ENV, entity.getSchema()))
                 .collect(Collectors.toList());
         when(adqmQueryExecutor.execute(argThat(arg -> queries.stream().noneMatch(arg::equals))))
                 .thenReturn(Future.succeededFuture(Collections.emptyList()));
-        adqmCheckTableService = new AdqmCheckTableService(adqmQueryExecutor, new AdqmTableEntitiesFactory());
+        adqmCheckTableService = new AdqmCheckTableService(new AdqmTableEntitiesFactory(),
+                new AdqmMetaTableEntityFactory(adqmQueryExecutor));
     }
 
     @Test
@@ -119,7 +122,7 @@ public class AdqmCheckTableServiceTest {
     @Test
     void testDataType() {
         String expectedError = String.format(CheckTableService.FIELD_ERROR_TEMPLATE,
-                CheckTableService.DATA_TYPE, "String", "Int64");
+                MetaTableEntityFactory.DATA_TYPE, "String", "Int64");
         testColumns(field -> field.setType(ColumnType.VARCHAR), expectedError);
 
     }
@@ -144,7 +147,7 @@ public class AdqmCheckTableServiceTest {
     }
 
     private Predicate<String> getPredicate(String postFix) {
-        String query = String.format(AdqmCheckTableService.QUERY_PATTERN,
+        String query = String.format(AdqmMetaTableEntityFactory.QUERY_PATTERN,
                 String.format("%s%s", entity.getName(), postFix), ENV, entity.getSchema());
         return query::equals;
     }
@@ -152,19 +155,19 @@ public class AdqmCheckTableServiceTest {
     private Map<String, Object> fieldToMapTransform(EntityField field, String postFix) {
         HashMap<String, Object> result = new HashMap<>();
         Function<Integer, Integer> sortKeyFunc = val -> ACTUAL_SHARD_POSTFIX.equals(postFix) ? 1 : 0;
-        result.put(AdqmCheckTableService.IS_IN_SORTING_KEY, Optional.ofNullable(field.getPrimaryOrder())
+        result.put(AdqmMetaTableEntityFactory.IS_IN_SORTING_KEY, Optional.ofNullable(field.getPrimaryOrder())
                 .map(sortKeyFunc)
                 .orElse(0));
-        result.put(CheckTableService.COLUMN_NAME, field.getName());
-        result.put(CheckTableService.DATA_TYPE, DdlUtils.classTypeToNative(field.getType()));
+        result.put(AdqmMetaTableEntityFactory.COLUMN_NAME, field.getName());
+        result.put(AdqmMetaTableEntityFactory.DATA_TYPE, DdlUtils.classTypeToNative(field.getType()));
         return result;
     }
 
     private static Map<String, Object> getMapColumn(String name, String dataType, boolean isInSortingKeys) {
         Map<String, Object> result = new HashMap<>();
-        result.put(AdqmCheckTableService.COLUMN_NAME, name);
-        result.put(AdqmCheckTableService.DATA_TYPE, dataType);
-        result.put(AdqmCheckTableService.IS_IN_SORTING_KEY, isInSortingKeys ? 1 : 0);
+        result.put(AdqmMetaTableEntityFactory.COLUMN_NAME, name);
+        result.put(AdqmMetaTableEntityFactory.DATA_TYPE, dataType);
+        result.put(AdqmMetaTableEntityFactory.IS_IN_SORTING_KEY, isInSortingKeys ? 1 : 0);
         return result;
     }
 

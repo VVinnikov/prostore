@@ -95,7 +95,7 @@ public class AdqmQueryGeneratorImpl implements QueryGenerator {
                 })
                 .forEach(sqlTreeNode -> {
                     SqlIdentifier identifier = sqlTreeNode.getNode();
-                    val preparedAlias = identifier.getSimple().replaceAll("\\$", "__");
+                    val preparedAlias = identifier.getSimple().replace("$", "__");
                     sqlTreeNode.getSqlNodeSetter().accept(new SqlIdentifier(preparedAlias, identifier.getParserPosition()));
                 });
     }

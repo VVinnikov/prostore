@@ -13,20 +13,37 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ColumnMetadata {
     /**
-     * Название колонки
+     * Column name
      */
     private String name;
     /**
-     * Тип системного столбца
+     * System column type
      */
     private SystemMetadata systemMetadata;
     /**
-     * Тип данных в колонке
+     * Column data type
      */
     private ColumnType type;
+
+    /**
+     * Column size
+     */
+    private Integer size;
 
     public ColumnMetadata(String name, ColumnType type) {
         this.name = name;
         this.type = type;
+    }
+
+    public ColumnMetadata(String name, SystemMetadata systemMetadata, ColumnType type) {
+        this.name = name;
+        this.systemMetadata = systemMetadata;
+        this.type = type;
+    }
+
+    public ColumnMetadata(String name, ColumnType type, Integer size) {
+        this.name = name;
+        this.type = type;
+        this.size = size;
     }
 }

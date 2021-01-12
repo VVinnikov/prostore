@@ -84,7 +84,7 @@ public class DeltaIT extends AbstractCoreDtmIT {
             async.awaitSuccess();
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
-        assertNull(promise.future().cause());
+        assertTrue(promise.future().succeeded());
     }
 
     @Test
@@ -122,7 +122,7 @@ public class DeltaIT extends AbstractCoreDtmIT {
             async.awaitSuccess();
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
-        assertNull(promise.future().cause());
+        assertTrue(promise.future().succeeded());
     }
 
     @Test
@@ -160,7 +160,7 @@ public class DeltaIT extends AbstractCoreDtmIT {
             async.awaitSuccess();
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
-        assertNull(promise.future().cause());
+        assertTrue(promise.future().succeeded());
     }
 
     @Test
@@ -198,7 +198,7 @@ public class DeltaIT extends AbstractCoreDtmIT {
             async.awaitSuccess();
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
-        assertNull(promise.future().cause());
+        assertTrue(promise.future().succeeded());
     }
 
     @Test
@@ -238,7 +238,7 @@ public class DeltaIT extends AbstractCoreDtmIT {
             async.awaitSuccess();
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
-        assertNull(promise.future().cause());
+        assertTrue(promise.future().succeeded());
     }
 
     @Test
@@ -276,7 +276,7 @@ public class DeltaIT extends AbstractCoreDtmIT {
             async.awaitSuccess();
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
-        assertNull(promise.future().cause());
+        assertTrue(promise.future().succeeded());
     }
 
     private Delta deserializeDelta(byte[] bytes) {

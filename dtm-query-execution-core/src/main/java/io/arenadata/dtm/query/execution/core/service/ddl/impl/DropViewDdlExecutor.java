@@ -7,6 +7,7 @@ import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
+import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
 import io.arenadata.dtm.query.execution.core.exception.view.ViewNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
@@ -57,7 +58,13 @@ public class DropViewDdlExecutor extends QueryResultDdlExecutor {
                     .onSuccess(success -> {
                         promise.complete(QueryResult.emptyResult());
                     })
-                    .onFailure(promise::fail);
+                    .onFailure(error -> {
+                        if (error instanceof TableNotExistsException) {
+                            promise.fail(new ViewNotExistsException(schemaName, viewName));
+                        } else {
+                            promise.fail(error);
+                        }
+                    });
         });
     }
 

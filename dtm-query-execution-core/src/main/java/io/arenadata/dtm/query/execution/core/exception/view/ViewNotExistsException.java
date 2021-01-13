@@ -8,6 +8,10 @@ public class ViewNotExistsException extends DtmException {
         super(String.format("View %s does not exist", view));
     }
 
+    public ViewNotExistsException(String schemaName, String tableName) {
+        super(String.format("View %s.%s does not exist", schemaName, tableName));
+    }
+
     public ViewNotExistsException(String message, Throwable cause) {
         super(message, cause);
     }

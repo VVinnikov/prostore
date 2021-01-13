@@ -38,7 +38,6 @@ import static com.google.common.collect.Sets.newHashSet;
 public class DropTableDdlExecutor extends QueryResultDdlExecutor {
 
     private static final int VIEWNAME_COLUMN = 2;
-
     private final DataSourcePluginService dataSourcePluginService;
     private final EntityCacheService entityCacheService;
     private final EntityDao entityDao;
@@ -86,7 +85,7 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
     protected Future<Void> dropTable(DdlRequestContext context, boolean ifExists) {
         return getEntity(context, ifExists)
                 .compose(entity -> Optional.ofNullable(entity)
-                        .map(e -> checkViewsUpdateEntity(context, e))
+                        .map(e -> checkViewsAndUpdateEntity(context, e))
                         .orElse(Future.succeededFuture()));
     }
 
@@ -117,7 +116,7 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
         });
     }
 
-    private Future<Void> checkViewsUpdateEntity(DdlRequestContext context, Entity entity) {
+    private Future<Void> checkViewsAndUpdateEntity(DdlRequestContext context, Entity entity) {
         return checkRelatedViews(entity)
                 .compose(e -> updateEntity(context, e));
     }
@@ -188,7 +187,7 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
                             promise.complete(entity);
                         } else {
                             val viewName = resultSet.getResults().get(0).getString(VIEWNAME_COLUMN);
-                            promise.fail(new RuntimeException(String.format("View ‘%s’ using the '%s' must be dropped first", viewName, entity.getName().toUpperCase())));
+                            promise.fail(new DtmException(String.format("View ‘%s’ using the '%s' must be dropped first", viewName, entity.getName().toUpperCase())));
                         }
                     })
                     .onFailure(err -> promise.fail(err));

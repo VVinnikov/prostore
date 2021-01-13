@@ -63,6 +63,5 @@ public class InformationSchemaUtils {
 
     public static final String DROP_VIEW = "DROP VIEW IF EXISTS %s";
     public static final String CREATE_VIEW = "CREATE VIEW %s AS %s";
-
     public static final String CHECK_VIEW = "SELECT * FROM INFORMATION_SCHEMA.VIEWS WHERE VIEW_DEFINITION like '%%%s%%'";
 }

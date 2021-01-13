@@ -8,10 +8,7 @@ import io.arenadata.dtm.query.calcite.core.rel2sql.NullNotCastableRelToSqlConver
 import io.arenadata.dtm.query.execution.plugin.adg.dto.QueryGeneratorContext;
 import io.arenadata.dtm.query.execution.plugin.adg.service.QueryExtendService;
 import io.arenadata.dtm.query.execution.plugin.adg.service.QueryGenerator;
-import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;

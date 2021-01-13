@@ -72,7 +72,7 @@ class DeltaQueryPreprocessorImplTest {
         DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
         planner = DtmCalciteFramework.getPlanner(frameworkConfig);
-        deltaQueryPreprocessor = new DeltaQueryPreprocessorImpl(definitionService, deltaService, deltaInformationExtractor);
+        deltaQueryPreprocessor = new DeltaQueryPreprocessorImpl(deltaService, deltaInformationExtractor);
     }
 
     @Test

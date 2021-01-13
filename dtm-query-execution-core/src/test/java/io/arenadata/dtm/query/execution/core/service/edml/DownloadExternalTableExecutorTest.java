@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.edml;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
@@ -10,13 +11,12 @@ import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguratio
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
 import io.arenadata.dtm.query.calcite.core.service.impl.DeltaQueryPreprocessorImpl;
+import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDefinitionService;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
-import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.dml.LogicViewReplacer;
 import io.arenadata.dtm.query.execution.core.service.dml.impl.LogicViewReplacerImpl;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.DownloadExternalTableExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.DownloadKafkaExecutor;
-import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDefinitionService;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import io.arenadata.dtm.query.execution.core.service.schema.impl.LogicalSchemaProviderImpl;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
@@ -62,7 +62,7 @@ class DownloadExternalTableExecutorTest {
         queryRequest.setDatamartMnemonic("test");
         queryRequest.setRequestId(UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"));
 
-        when(logicViewReplacer.replace(any(), any())).thenReturn(Future.succeededFuture(SELECT_SQL));
+        when(logicViewReplacer.replace(SELECT_SQL, any())).thenReturn(Future.succeededFuture(SELECT_SQL));
 
         destEntity = Entity.builder()
             .entityType(EntityType.DOWNLOAD_EXTERNAL_TABLE)

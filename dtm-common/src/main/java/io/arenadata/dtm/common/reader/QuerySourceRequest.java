@@ -3,7 +3,6 @@ package io.arenadata.dtm.common.reader;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import lombok.*;
-import org.apache.commons.lang3.SerializationUtils;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,7 +24,7 @@ public class QuerySourceRequest {
 
     public List<Datamart> getLogicalSchema() {
         return logicalSchema.stream()
-                .map(SerializationUtils::clone)
+                .map(Datamart::copy)
                 .collect(Collectors.toList());
     }
 

@@ -9,6 +9,7 @@ import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaService
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.sql.SqlNode;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -30,11 +31,11 @@ public class LogicalSchemaProviderImpl implements LogicalSchemaProvider {
     }
 
     @Override
-    public Future<List<Datamart>> getSchemaFromQuery(QueryRequest request) {
-        return logicalSchemaService.createSchemaFromQuery(request)
+    public Future<List<Datamart>> getSchemaFromQuery(SqlNode query, String datamart) {
+        return logicalSchemaService.createSchemaFromQuery(query)
                 .map(schemaMap -> {
-                    log.trace("Received data schema on request: {}; {}", request, schemaMap);
-                    return getDatamartsSchemas(request.getDatamartMnemonic(), schemaMap);
+                    log.trace("Received data schema on request: {}; {}", query, schemaMap);
+                    return getDatamartsSchemas(datamart, schemaMap);
                 });
     }
 

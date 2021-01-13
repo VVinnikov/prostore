@@ -2,18 +2,23 @@ package io.arenadata.dtm.query.execution.core.service.dml.impl;
 
 import io.arenadata.dtm.cache.service.CacheService;
 import io.arenadata.dtm.common.cache.QueryTemplateKey;
+import io.arenadata.dtm.common.cache.SourceQueryTemplateValue;
 import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.SqlProcessingType;
-import io.arenadata.dtm.common.reader.*;
+import io.arenadata.dtm.common.reader.QueryRequest;
+import io.arenadata.dtm.common.reader.QueryResult;
+import io.arenadata.dtm.common.reader.QuerySourceRequest;
+import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.extension.dml.DmlType;
 import io.arenadata.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
 import io.arenadata.dtm.query.calcite.core.service.QueryTemplateExtractor;
-import io.arenadata.dtm.common.cache.SourceQueryTemplateValue;
+import io.arenadata.dtm.query.calcite.core.util.SqlNodeUtil;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.dml.*;
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsService;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
+import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.api.dml.DmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
@@ -21,9 +26,12 @@ import io.arenadata.dtm.query.execution.plugin.api.service.dml.DmlExecutor;
 import io.vertx.core.Future;
 import lombok.SneakyThrows;
 import lombok.val;
+import org.apache.calcite.sql.SqlNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
@@ -69,22 +77,25 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
     public Future<QueryResult> execute(DmlRequestContext context) {
         val queryRequest = context.getRequest().getQueryRequest();
         val sourceRequest = new QuerySourceRequest(queryRequest, queryRequest.getSourceType());
-        return logicViewReplacer.replace(sourceRequest.getQueryRequest().getSql(),
+        return logicViewReplacer.replace(context.getQuery(),
                 sourceRequest.getQueryRequest().getDatamartMnemonic())
                 .map(sqlWithoutViews -> {
-                    QueryRequest withoutViewsRequest = sourceRequest.getQueryRequest().copy();
-                    withoutViewsRequest.setSql(sqlWithoutViews);
+                    QueryRequest withoutViewsRequest = sourceRequest.getQueryRequest();
+                    withoutViewsRequest.setSql(sqlWithoutViews.toString());
+                    withoutViewsRequest.setSqlNode(sqlWithoutViews);
+                    context.setQuery(sqlWithoutViews);
                     return withoutViewsRequest;
                 })
-                .compose(withoutWiqRequest -> getRequestFromCacheOrInit(sourceRequest, withoutWiqRequest))
+                .compose(v -> getRequestFromCacheOrInit(sourceRequest, context))
                 .compose(request -> executeRequest(request, context));
     }
 
     private Future<QuerySourceRequest> getRequestFromCacheOrInit(QuerySourceRequest sourceRequest,
-                                                                 QueryRequest withoutViewsRequest) {
+                                                                 DmlRequestContext context) {
         return Future.future(promise -> {
-            final QueryTemplateResult templateResult = templateExtractor.extract(withoutViewsRequest.getSql());
-            final SourceQueryTemplateValue queryTemplateValue = queryCacheService.get(QueryTemplateKey.builder()
+            val copySqlNode = SqlNodeUtil.copy(context.getQuery());
+            val templateResult = templateExtractor.extract(copySqlNode);
+            val queryTemplateValue = queryCacheService.get(QueryTemplateKey.builder()
                     .sourceQueryTemplate(templateResult.getTemplate())
                     .build());
             sourceRequest.setQueryTemplate(templateResult);
@@ -96,46 +107,51 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                 sourceRequest.getQueryRequest().setSql(queryTemplateValue.getSql());
                 promise.complete(sourceRequest);
             } else {
-                initRequestAttributes(withoutViewsRequest, sourceRequest)
+                initRequestAttributes(sourceRequest, context)
                         .compose(request ->
-                            queryCacheService.put(QueryTemplateKey.builder()
-                                    .sourceQueryTemplate(templateResult.getTemplate())
-                                    .logicalSchema(request.getLogicalSchema())
-                                    .build(),
-                                    SourceQueryTemplateValue.builder()
-                                            .sql(request.getQueryRequest().getSql())
-                                            .deltaInformations(request.getQueryRequest().getDeltaInformations())
-                                            .metadata(request.getMetadata())
-                                            .logicalSchema(request.getLogicalSchema())
-                                            .build())
-                                .map(value -> request)
+                                queryCacheService.put(QueryTemplateKey.builder()
+                                                .sourceQueryTemplate(templateResult.getTemplate())
+                                                .logicalSchema(request.getLogicalSchema())
+                                                .build(),
+                                        SourceQueryTemplateValue.builder()
+                                                .sql(request.getQueryRequest().getSql())
+                                                .deltaInformations(request.getQueryRequest().getDeltaInformations())
+                                                .metadata(request.getMetadata())
+                                                .logicalSchema(request.getLogicalSchema())
+                                                .build())
+                                        .map(value -> request)
                         )
                         .onComplete(promise);
             }
         });
     }
 
-    private Future<QuerySourceRequest> initRequestAttributes(QueryRequest withoutViewsRequest,
-                                                             QuerySourceRequest sourceRequest) {
-        return deltaQueryPreprocessor.process(withoutViewsRequest)
-                .map(request -> {
-                    sourceRequest.setQueryRequest(request);
-                    return request;
+    private Future<QuerySourceRequest> initRequestAttributes(QuerySourceRequest sourceRequest,
+                                                             DmlRequestContext context) {
+        return deltaQueryPreprocessor.process(context.getQuery())
+                .map(preprocessorResponse -> {
+                    QueryRequest queryRequest = sourceRequest.getQueryRequest();
+                    queryRequest.setDeltaInformations(preprocessorResponse.getDeltaInformations());
+                    context.setQuery(preprocessorResponse.getSqlNode());
+                    return context;
                 })
-                .compose(v -> initLogicalSchema(sourceRequest))
-                .compose(this::initColumnMetaData);
+                .compose(v ->
+                        getLogicalSchema(
+                                context.getQuery(),
+                                context.getRequest().getQueryRequest().getDatamartMnemonic()
+                        ).map(schema -> {
+                            sourceRequest.setLogicalSchema(schema);
+                            return sourceRequest;
+                        }))
+                .compose(request -> initColumnMetaData(request, context.getQuery()));
     }
 
-    private Future<QuerySourceRequest> initLogicalSchema(QuerySourceRequest sourceRequest) {
-        return logicalSchemaProvider.getSchemaFromQuery(sourceRequest.getQueryRequest())
-                .map(logicalSchema -> {
-                    sourceRequest.setLogicalSchema(logicalSchema);
-                    return sourceRequest;
-                });
+    private Future<List<Datamart>> getLogicalSchema(SqlNode query, String datamart) {
+        return logicalSchemaProvider.getSchemaFromQuery(query, datamart);
     }
 
-    private Future<QuerySourceRequest> initColumnMetaData(QuerySourceRequest request) {
-        val parserRequest = new QueryParserRequest(request.getQueryRequest(), request.getLogicalSchema());
+    private Future<QuerySourceRequest> initColumnMetaData(QuerySourceRequest request, SqlNode query) {
+        val parserRequest = new QueryParserRequest(query, request.getLogicalSchema());
         return columnMetadataService.getColumnMetadata(parserRequest)
                 .map(metadata -> {
                     request.setMetadata(metadata);
@@ -146,6 +162,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
     private Future<QueryResult> executeRequest(QuerySourceRequest sourceRequest,
                                                DmlRequestContext context) {
         return Future.future(promise -> {
+            sourceRequest.getQueryRequest().setSqlNode(context.getQuery());
             if (informationSchemaDefinitionService.isInformationSchemaRequest(sourceRequest)) {
                 metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
                         SqlProcessingType.LLR,
@@ -157,7 +174,9 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                                 promise));
             } else {
                 targetDatabaseDefinitionService.getTargetSource(sourceRequest)
-                        .compose(querySourceRequest -> pluginExecute(querySourceRequest, context.getMetrics()))
+                        .compose(querySourceRequest -> pluginExecute(querySourceRequest,
+                                context.getMetrics(),
+                                context.getQuery()))
                         .onComplete(promise);
             }
         });
@@ -168,13 +187,16 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
     }
 
     @SneakyThrows
-    private Future<QueryResult> pluginExecute(QuerySourceRequest request, RequestMetrics requestMetrics) {
+    private Future<QueryResult> pluginExecute(QuerySourceRequest request,
+                                              RequestMetrics requestMetrics,
+                                              SqlNode query) {
         //FIXME after checking performance
         final LlrRequest llrRequest = new LlrRequest(
+                request.getQueryTemplate(),
                 request.getQueryRequest(),
                 request.getLogicalSchema(),
-                request.getMetadata());
-        llrRequest.setSourceQueryTemplateResult(request.getQueryTemplate());
+                request.getMetadata(),
+                query);
         return dataSourcePluginService.llr(
                 request.getQueryRequest().getSourceType(),
                 new LlrRequestContext(

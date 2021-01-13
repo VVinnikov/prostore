@@ -200,7 +200,7 @@ class AdgQueryEnrichmentServiceImplTest {
                         .pos(pos)
                         .build()
         ));
-        LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts, Collections.emptyList());
+        LlrRequest llrRequest = new LlrRequest(sourceQueryTemplateResult, queryRequest, datamarts, Collections.emptyList(), sqlNode);
         return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
     }
 
@@ -238,7 +238,7 @@ class AdgQueryEnrichmentServiceImplTest {
                         .pos(pos)
                         .build()
         ));
-        LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts, Collections.emptyList());
+        LlrRequest llrRequest = new LlrRequest(sourceQueryTemplateResult, queryRequest, datamarts, Collections.emptyList(), sqlNode);
         return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
     }
 
@@ -277,7 +277,7 @@ class AdgQueryEnrichmentServiceImplTest {
                         .pos(pos)
                         .build()
         ));
-        LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts, Collections.emptyList());
+        LlrRequest llrRequest = new LlrRequest(sourceQueryTemplateResult, queryRequest, datamarts, Collections.emptyList(), sqlNode);
         return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
     }
 
@@ -304,7 +304,7 @@ class AdgQueryEnrichmentServiceImplTest {
                         .pos(pos)
                         .build()
         ));
-        LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts, Collections.emptyList());
+        LlrRequest llrRequest = new LlrRequest(sourceQueryTemplateResult, queryRequest, datamarts, Collections.emptyList(), sqlNode);
         return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
     }
 

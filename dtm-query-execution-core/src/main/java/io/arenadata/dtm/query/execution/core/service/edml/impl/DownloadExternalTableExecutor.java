@@ -16,6 +16,7 @@ import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.SqlNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -57,16 +58,16 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
 
     private Future<Void> initDMLSubquery(EdmlRequestContext context) {
         return Future.future(promise -> {
-            context.setDmlSubquery(context.getSqlNode().getSource().toSqlString(SQL_DIALECT).toString());
+            context.setDmlSubQuery(context.getSqlNode().getSource());
             promise.complete();
         });
     }
 
-    private Future<String> replaceView(EdmlRequestContext context) {
-        return logicViewReplacer.replace(context.getDmlSubquery(),
+    private Future<SqlNode> replaceView(EdmlRequestContext context) {
+        return logicViewReplacer.replace(context.getDmlSubQuery(),
                 context.getRequest().getQueryRequest().getDatamartMnemonic())
                 .map(result -> {
-                    context.setDmlSubquery(result);
+                    context.setDmlSubQuery(result);
                     return result;
                 });
     }
@@ -74,7 +75,7 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
     private Future<Void> initLogicalSchema(EdmlRequestContext context) {
         return Future.future(promise -> {
             QueryRequest copy = context.getRequest().getQueryRequest().copy();
-            copy.setSql(context.getDmlSubquery());
+            copy.setSqlNode(context.getDmlSubQuery());
             logicalSchemaProvider.getSchemaFromDeltaInformations(copy)
                     .onSuccess(schema -> {
                         context.setLogicalSchema(schema);
@@ -87,8 +88,8 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
     private Future<QueryRequest> initDeltaInformation(EdmlRequestContext context) {
         return Future.future(promise -> {
             val copyRequest = context.getRequest().getQueryRequest().copy();
-            copyRequest.setSql(context.getDmlSubquery());
-            deltaQueryPreprocessor.process(copyRequest)
+            copyRequest.setSqlNode(context.getDmlSubQuery());
+            deltaQueryPreprocessor.process(context.getDmlSubQuery())
                     .onSuccess(result -> {
                         context.getRequest().setQueryRequest(result);
                         promise.complete(result);
@@ -104,13 +105,13 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
                 executors.get(destination.getExternalTableLocationType()).execute(context)
                         .onSuccess(queryResult -> {
                             log.debug("Mppr into table [{}] for dml query [{}] finished successfully",
-                                    destination.getName(), context.getDmlSubquery());
+                                    destination.getName(), context.getDmlSubQuery());
                             promise.complete(queryResult);
                         })
                         .onFailure(fail -> promise.fail(new DtmException(
                                 String.format("Error executing mppr into table [%s] for dml query [%s]",
                                         destination.getName(),
-                                        context.getDmlSubquery()), fail)));
+                                        context.getDmlSubQuery()), fail)));
             } else {
                 promise.fail(new DtmException("Other types of upload are not yet implemented!"));
             }

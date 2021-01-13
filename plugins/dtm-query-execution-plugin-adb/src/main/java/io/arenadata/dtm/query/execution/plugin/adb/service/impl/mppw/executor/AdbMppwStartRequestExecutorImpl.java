@@ -71,15 +71,15 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
             }
             List<KafkaBrokerInfo> brokers = context.getRequest().getKafkaParameter().getBrokers();
             getOrCreateServer(brokers, dbName)
-                .compose(server -> createWritableExternalTable(server, context))
-                .compose(server -> createMppwKafkaRequestContext(context, server))
-                .compose(kafkaContext -> moveOffsetsExtTable(context).map(v -> kafkaContext))
-                .onSuccess(kafkaContext -> {
-                    vertx.eventBus().send(MppwTopic.KAFKA_START.getValue(), Json.encode(kafkaContext));
-                    log.debug("Mppw started successfully");
-                    promise.complete(QueryResult.emptyResult());
-                })
-                .onFailure(promise::fail);
+                    .compose(server -> createWritableExternalTable(server, context))
+                    .compose(server -> createMppwKafkaRequestContext(context, server))
+                    .compose(kafkaContext -> moveOffsetsExtTable(context).map(v -> kafkaContext))
+                    .onSuccess(kafkaContext -> {
+                        vertx.eventBus().send(MppwTopic.KAFKA_START.getValue(), Json.encode(kafkaContext));
+                        log.debug("Mppw started successfully");
+                        promise.complete(QueryResult.emptyResult());
+                    })
+                    .onFailure(promise::fail);
         });
     }
 
@@ -106,7 +106,7 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
 
     private Future<String> createServer(String brokersList, String currentDatabase) {
         return adbQueryExecutor.execute(metadataSqlFactory.createServerSqlQuery(currentDatabase, brokersList), Collections.emptyList())
-            .map(v -> String.format(MetadataSqlFactoryImpl.SERVER_NAME_TEMPLATE, currentDatabase));
+                .map(v -> String.format(MetadataSqlFactoryImpl.SERVER_NAME_TEMPLATE, currentDatabase));
     }
 
     private Future<String> createWritableExternalTable(String server, MppwRequestContext context) {
@@ -133,7 +133,7 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
         val schema = queryRequest.getDatamartMnemonic();
         val table = MetadataSqlFactoryImpl.WRITABLE_EXT_TABLE_PREF + queryRequest.getRequestId().toString().replace("-", "_");
         return adbQueryExecutor.executeUpdate(metadataSqlFactory.insertIntoKadbOffsetsSqlQuery(schema, table))
-            .compose(v -> adbQueryExecutor.executeUpdate(metadataSqlFactory.moveOffsetsExtTableSqlQuery(schema, table)));
+                .compose(v -> adbQueryExecutor.executeUpdate(metadataSqlFactory.moveOffsetsExtTableSqlQuery(schema, table)));
     }
 
     private Future<MppwKafkaRequestContext> createMppwKafkaRequestContext(MppwRequestContext context,

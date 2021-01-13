@@ -4,43 +4,31 @@ import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryTemplateResult;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
+import lombok.Getter;
+import lombok.Setter;
+import org.apache.calcite.sql.SqlNode;
 
 import java.util.List;
 
+@Getter
+@Setter
 public class LlrRequest extends DatamartRequest {
 
-    private List<Datamart> schema;
-    private List<ColumnMetadata> metadata;
-    private QueryTemplateResult sourceQueryTemplateResult;
+    private final SqlNode sqlNode;
+    private final List<Datamart> schema;
+    private final List<ColumnMetadata> metadata;
+    private final QueryTemplateResult sourceQueryTemplateResult;
 
-    public LlrRequest(QueryRequest queryRequest, List<Datamart> schema, List<ColumnMetadata> metadata) {
+    public LlrRequest(QueryTemplateResult sourceQueryTemplateResult,
+                      QueryRequest queryRequest,
+                      List<Datamart> schema,
+                      List<ColumnMetadata> metadata,
+                      SqlNode sqlNode) {
         super(queryRequest);
-        this.schema = schema;
-        this.metadata = metadata;
-    }
-
-    public List<Datamart> getSchema() {
-        return schema;
-    }
-
-    public void setSchema(List<Datamart> schema) {
-        this.schema = schema;
-    }
-
-    public List<ColumnMetadata> getMetadata() {
-        return metadata;
-    }
-
-    public void setMetadata(List<ColumnMetadata> metadata) {
-        this.metadata = metadata;
-    }
-
-    public QueryTemplateResult getSourceQueryTemplateResult() {
-        return sourceQueryTemplateResult;
-    }
-
-    public void setSourceQueryTemplateResult(QueryTemplateResult sourceQueryTemplateResult) {
         this.sourceQueryTemplateResult = sourceQueryTemplateResult;
+        this.schema = schema;
+        this.metadata = metadata;
+        this.sqlNode = sqlNode;
     }
 
     @Override

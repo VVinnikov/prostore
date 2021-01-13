@@ -1,12 +1,13 @@
 package io.arenadata.dtm.query.calcite.core.service.impl;
 
 import io.arenadata.dtm.common.exception.DtmException;
-import io.arenadata.dtm.query.calcite.core.dto.EnrichmentTemplateRequest;
 import io.arenadata.dtm.common.reader.QueryTemplateResult;
+import io.arenadata.dtm.query.calcite.core.dto.EnrichmentTemplateRequest;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.calcite.core.node.SqlTreeNode;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.calcite.core.service.QueryTemplateExtractor;
+import io.arenadata.dtm.query.calcite.core.util.SqlNodeUtil;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
@@ -40,7 +41,8 @@ public class QueryTemplateExtractorImpl implements QueryTemplateExtractor {
 
     @Override
     public SqlNode enrichTemplate(EnrichmentTemplateRequest request) {
-        SqlSelectTree selectTree = new SqlSelectTree(definitionService.processingQuery(request.getTemplate()));
+
+        SqlSelectTree selectTree = new SqlSelectTree(SqlNodeUtil.copy(request.getTemplateNode()));
         List<SqlTreeNode> dynamicNodes = selectTree.findNodesByPath(DYNAMIC_PARAM_PATH);
         Iterator<SqlNode> paramIterator = request.getParams().iterator();
         for (SqlTreeNode dynamicNode : dynamicNodes) {
@@ -72,10 +74,11 @@ public class QueryTemplateExtractorImpl implements QueryTemplateExtractor {
         SqlSelectTree selectTree = new SqlSelectTree(sqlNode);
         List<SqlTreeNode> paramNodes = getTreeNodes(excludeList, selectTree);
         paramNodes.forEach(node -> node.getSqlNodeSetter().accept(DYNAMIC_PARAM));
+        SqlNode resultTemplateNode = selectTree.getRoot().getNode();
         return new QueryTemplateResult(
-                selectTree.getRoot()
-                        .getNode()
+                resultTemplateNode
                         .toSqlString(sqlDialect).toString(),
+                resultTemplateNode,
                 paramNodes.stream()
                         .map(node -> (SqlNode) node.getNode())
                         .collect(Collectors.toList())

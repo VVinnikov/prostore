@@ -7,6 +7,6 @@ import java.util.List;
 
 @Data
 public class EnrichmentTemplateRequest {
-    private final String template;
+    private final SqlNode templateNode;
     private final List<SqlNode> params;
 }

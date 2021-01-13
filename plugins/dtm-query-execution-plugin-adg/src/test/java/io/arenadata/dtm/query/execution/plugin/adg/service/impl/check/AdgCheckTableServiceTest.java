@@ -7,7 +7,7 @@ import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.TarantoolDatabaseProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.impl.AdgCreateTableQueriesFactory;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.impl.AdgTableEntitiesFactory;
-import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.*;
+import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.Space;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.adg.service.impl.AdgCartridgeClientImpl;
 import io.arenadata.dtm.query.execution.plugin.adg.utils.TestUtils;
@@ -16,17 +16,14 @@ import io.arenadata.dtm.query.execution.plugin.api.factory.MetaTableEntityFactor
 import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
 import io.vertx.core.Future;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.AdditionalMatchers;
 
-import java.util.*;
+import java.util.Map;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
-import static io.arenadata.dtm.query.execution.plugin.adg.constants.ColumnFields.*;
-import static io.arenadata.dtm.query.execution.plugin.adg.factory.impl.AdgTableEntitiesFactory.SEC_INDEX_PREFIX;
+import static io.arenadata.dtm.query.execution.plugin.adg.constants.ColumnFields.ACTUAL_POSTFIX;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertTrue;

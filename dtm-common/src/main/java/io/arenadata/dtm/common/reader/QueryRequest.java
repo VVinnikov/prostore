@@ -15,7 +15,7 @@ import java.util.UUID;
  * Query request for receiving data
  */
 @Data
-@Builder
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class QueryRequest {
@@ -62,19 +62,10 @@ public class QueryRequest {
     }
 
     public QueryRequest copy() {
-        QueryRequest newQueryRequest = new QueryRequest();
-        newQueryRequest.setSql(sql);
-        newQueryRequest.setDatamartMnemonic(datamartMnemonic);
-        newQueryRequest.setRequestId(requestId);
-        if (parameters != null) {
-            newQueryRequest.setParameters(new ArrayList<>(parameters));
-        }
-        if (deltaInformations != null) {
-            newQueryRequest.setDeltaInformations(new ArrayList<>(deltaInformations));
-        }
-        newQueryRequest.setEnvName(envName);
-        newQueryRequest.setSourceType(sourceType);
-        return newQueryRequest;
+        return toBuilder()
+                .deltaInformations(deltaInformations != null ? new ArrayList<>(deltaInformations) : null)
+                .parameters(parameters != null ? new ArrayList<>(parameters) : null)
+                .build();
     }
 
     @Override

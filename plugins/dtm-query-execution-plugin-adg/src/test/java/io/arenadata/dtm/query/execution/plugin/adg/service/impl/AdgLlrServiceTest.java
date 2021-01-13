@@ -2,6 +2,8 @@ package io.arenadata.dtm.query.execution.plugin.adg.service.impl;
 
 import io.arenadata.dtm.cache.service.CacheService;
 import io.arenadata.dtm.cache.service.CaffeineCacheService;
+import io.arenadata.dtm.common.cache.QueryTemplateKey;
+import io.arenadata.dtm.common.cache.QueryTemplateValue;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.reader.QueryRequest;
@@ -10,9 +12,6 @@ import io.arenadata.dtm.query.calcite.core.dialect.LimitSqlDialect;
 import io.arenadata.dtm.query.calcite.core.service.QueryTemplateExtractor;
 import io.arenadata.dtm.query.calcite.core.service.impl.QueryTemplateExtractorImpl;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
-import io.arenadata.dtm.common.cache.QueryTemplateKey;
-import io.arenadata.dtm.common.cache.QueryTemplateValue;
-import io.arenadata.dtm.query.execution.plugin.adg.model.QueryResultItem;
 import io.arenadata.dtm.query.execution.plugin.adg.service.DtmTestConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adg.service.QueryEnrichmentService;
 import io.arenadata.dtm.query.execution.plugin.adg.service.QueryExecutorService;
@@ -21,11 +20,10 @@ import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.LlrService;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.junit5.VertxExtension;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.sql.SqlDialect;
-import io.vertx.core.Promise;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -76,8 +74,8 @@ class AdgLlrServiceTest {
 
         prepare(queryRequest, expectedResult);
 
-        llrService.execute(new LlrRequestContext(new RequestMetrics(), new LlrRequest(queryRequest, new ArrayList<>(),
-                Collections.singletonList(new ColumnMetadata("name", ColumnType.VARCHAR)))))
+        llrService.execute(new LlrRequestContext(new RequestMetrics(), new LlrRequest(sourceQueryTemplateResult, queryRequest, new ArrayList<>(), Collections.singletonList(new ColumnMetadata("name", ColumnType.VARCHAR)),
+                sqlNode)))
                 .onComplete(promise);
         assertTrue(promise.future().succeeded());
         assertEquals(expectedResult, promise.future().result());
@@ -93,8 +91,8 @@ class AdgLlrServiceTest {
                 queryRequest.getRequestId(),
                 new ArrayList<>());
         prepare(queryRequest, expectedResult);
-        llrService.execute(new LlrRequestContext(new RequestMetrics(), new LlrRequest(queryRequest, new ArrayList<>(),
-                Collections.singletonList(new ColumnMetadata("name", ColumnType.VARCHAR)))))
+        llrService.execute(new LlrRequestContext(new RequestMetrics(), new LlrRequest(sourceQueryTemplateResult, queryRequest, new ArrayList<>(), Collections.singletonList(new ColumnMetadata("name", ColumnType.VARCHAR)),
+                sqlNode)))
                 .onComplete(promise);
         assertTrue(promise.future().succeeded());
         assertEquals(expectedResult, promise.future().result());

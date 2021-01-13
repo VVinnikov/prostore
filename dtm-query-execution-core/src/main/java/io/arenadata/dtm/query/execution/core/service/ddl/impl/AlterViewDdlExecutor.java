@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -63,7 +64,7 @@ public class AlterViewDdlExecutor extends CreateViewDdlExecutor {
     }
 
     @Override
-    protected String getViewQuery(SqlSelectTree tree) {
+    protected SqlNode getViewQuery(SqlSelectTree tree) {
         val queryByView = tree.findNodesByPath(ALTER_VIEW_QUERY_PATH);
         if (queryByView.isEmpty()) {
             throw new DtmException("Unable to get view query");

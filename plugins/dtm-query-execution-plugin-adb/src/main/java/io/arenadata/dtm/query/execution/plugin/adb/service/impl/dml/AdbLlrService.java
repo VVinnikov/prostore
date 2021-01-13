@@ -80,7 +80,7 @@ public class AdbLlrService implements LlrService<QueryResult> {
                 queryEnrichmentService.enrich(enrichQueryRequest)
                         .compose(enrichRequest -> Future.future((Promise<String> p) -> {
                             final QueryTemplateResult templateResult = templateExtractor.extract(enrichRequest,
-                                    Arrays.asList(SYS_FROM_ATTR, SYS_TO_ATTR, SYS_OP_ATTR, REQ_ID_ATTR));
+                                    Arrays.asList(SYS_FROM_ATTR, SYS_TO_ATTR, SYS_OP_ATTR));
                             queryCacheService.put(QueryTemplateKey.builder()
                                             .sourceQueryTemplate(context.getRequest().getSourceQueryTemplateResult().getTemplate())
                                             .logicalSchema(context.getRequest().getSchema())

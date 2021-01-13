@@ -98,8 +98,8 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
                         .collect(Collectors.toList()))
                 .onSuccess(success -> {
                     List<Entity> entities = success.list();
-                    val schemaKeyDatamartTableMap = entities.stream()
-                            .map(Entity::clone)
+                    Map<DatamartSchemaKey, Entity> schemaKeyDatamartTableMap = entities.stream()
+                            .map(Entity::copy)
                             .collect(Collectors.toMap(this::createDatamartSchemaKey, Function.identity()));
                     promise.complete(schemaKeyDatamartTableMap);
                 })

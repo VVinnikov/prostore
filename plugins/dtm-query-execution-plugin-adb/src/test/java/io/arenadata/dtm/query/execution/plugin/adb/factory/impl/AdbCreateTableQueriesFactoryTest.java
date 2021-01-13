@@ -4,8 +4,8 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbTables;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.factory.CreateTableQueriesFactory;
+import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import utils.CreateEntityUtils;
@@ -33,7 +33,7 @@ public class AdbCreateTableQueriesFactoryTest {
             "(id int8 NOT NULL, sk_key2 int8 NOT NULL, pk2 int8 NOT NULL, sk_key3 int8 NOT NULL, " +
             "VARCHAR_type varchar(20), CHAR_type varchar(20), BIGINT_type int8, INT_type int8, DOUBLE_type float8, " +
             "FLOAT_type float4, DATE_type date, TIME_type time(6), TIMESTAMP_type timestamp(6), BOOLEAN_type bool, " +
-            "UUID_type varchar(36), sys_from int8, sys_to int8, sys_op int4, req_id varchar(36), " +
+            "UUID_type varchar(36), sys_from int8, sys_to int8, sys_op int4, " +
             "constraint pk_test_schema_test_table_staging primary key (id, pk2)) " +
             "DISTRIBUTED BY (id, sk_key2, sk_key3)";
 

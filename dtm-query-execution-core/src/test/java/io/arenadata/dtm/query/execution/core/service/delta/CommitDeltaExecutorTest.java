@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.delta;
 
+import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheServiceImpl;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
@@ -29,15 +30,18 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.times;
 
 class CommitDeltaExecutorTest {
 
     private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
     private final DeltaServiceDao deltaServiceDao = mock(DeltaServiceDaoImpl.class);
     private final DeltaQueryResultFactory deltaQueryResultFactory = mock(CommitDeltaQueryResultFactory.class);
+    private final EvictQueryTemplateCacheServiceImpl evictQueryTemplateCacheService =
+            mock(EvictQueryTemplateCacheServiceImpl.class);
     private CommitDeltaExecutor commitDeltaExecutor;
     private final QueryRequest req = new QueryRequest();
     private final DeltaRecord delta = new DeltaRecord();
@@ -49,7 +53,9 @@ class CommitDeltaExecutorTest {
         req.setRequestId(UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"));
         delta.setDatamart(req.getDatamartMnemonic());
         when(serviceDbFacade.getDeltaServiceDao()).thenReturn(deltaServiceDao);
-        commitDeltaExecutor = new CommitDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
+        commitDeltaExecutor = new CommitDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx(),
+                evictQueryTemplateCacheService);
+        doNothing().when(evictQueryTemplateCacheService).evictByDatamartName(anyString());
     }
 
     @Test
@@ -77,6 +83,7 @@ class CommitDeltaExecutorTest {
                 .onComplete(promise);
         assertEquals(deltaDate, ((QueryResult) promise.future().result()).getResult()
                 .get(0).get(DeltaQueryUtil.DATE_TIME_FIELD));
+        verifyEvictCacheExecuted();
     }
 
     @Test
@@ -107,6 +114,7 @@ class CommitDeltaExecutorTest {
 
         assertEquals(deltaDate, ((QueryResult) promise.future().result()).getResult()
                 .get(0).get(DeltaQueryUtil.DATE_TIME_FIELD));
+        verifyEvictCacheExecuted();
     }
 
     @Test
@@ -130,6 +138,7 @@ class CommitDeltaExecutorTest {
         commitDeltaExecutor.execute(deltaQuery)
                 .onComplete(promise);
         assertTrue(promise.future().failed());
+        verifyEvictCacheNotExecuted();
     }
 
     @Test
@@ -153,6 +162,7 @@ class CommitDeltaExecutorTest {
         commitDeltaExecutor.execute(deltaQuery)
                 .onComplete(promise);
         assertTrue(promise.future().failed());
+        verifyEvictCacheNotExecuted();
     }
 
     @Test
@@ -181,10 +191,21 @@ class CommitDeltaExecutorTest {
         commitDeltaExecutor.execute(deltaQuery)
                 .onComplete(promise);
         assertTrue(promise.future().failed());
+        verifyEvictCacheNotExecuted();
     }
 
     private List<Map<String, Object>> createResult(LocalDateTime deltaDate) {
         return QueryResultUtils.createResultWithSingleRow(Collections.singletonList(DeltaQueryUtil.DATE_TIME_FIELD),
                 Collections.singletonList(deltaDate));
+    }
+
+    private void verifyEvictCacheExecuted() {
+        verify(evictQueryTemplateCacheService, times(1)).evictByDatamartName(datamart);
+    }
+
+    private void verifyEvictCacheNotExecuted() {
+        verify(evictQueryTemplateCacheService, times(0)).evictByDatamartName(anyString());
+        verify(evictQueryTemplateCacheService, times(0)).evictByEntityName(anyString(),
+                anyString());
     }
 }

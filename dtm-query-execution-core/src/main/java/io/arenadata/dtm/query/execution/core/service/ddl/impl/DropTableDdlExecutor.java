@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
 import io.arenadata.dtm.cache.service.CacheService;
+import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheService;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
@@ -36,16 +37,19 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
     private final DataSourcePluginService dataSourcePluginService;
     private final CacheService<EntityKey, Entity> entityCacheService;
     private final EntityDao entityDao;
+    private final EvictQueryTemplateCacheService evictQueryTemplateCacheService;
 
     @Autowired
     public DropTableDdlExecutor(@Qualifier("entityCacheService") CacheService<EntityKey, Entity> entityCacheService,
                                 MetadataExecutor<DdlRequestContext> metadataExecutor,
                                 ServiceDbFacade serviceDbFacade,
-                                DataSourcePluginService dataSourcePluginService) {
+                                DataSourcePluginService dataSourcePluginService,
+                                EvictQueryTemplateCacheService evictQueryTemplateCacheService) {
         super(metadataExecutor, serviceDbFacade);
         this.entityCacheService = entityCacheService;
         this.entityDao = serviceDbFacade.getServiceDbDao().getEntityDao();
         this.dataSourcePluginService = dataSourcePluginService;
+        this.evictQueryTemplateCacheService = evictQueryTemplateCacheService;
     }
 
     @Override
@@ -64,7 +68,12 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
             context.setDdlType(DdlType.DROP_TABLE);
             dropTable(context, containsIfExistsCheck(context.getRequest().getQueryRequest().getSql()))
                     .onSuccess(r -> {
-                        promise.complete(QueryResult.emptyResult());
+                        try {
+                            evictQueryTemplateCacheService.evictByEntityName(schema, tableName);
+                            promise.complete(QueryResult.emptyResult());
+                        } catch (Exception e) {
+                            promise.fail(new DtmException("Evict cache error"));
+                        }
                     })
                     .onFailure(promise::fail);
         });
@@ -172,6 +181,6 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
     }
 
     public List<PostSqlActionType> getPostActions() {
-        return Arrays.asList(PostSqlActionType.PUBLISH_STATUS, PostSqlActionType.EVICT_CACHE);
+        return Collections.singletonList(PostSqlActionType.PUBLISH_STATUS);
     }
 }

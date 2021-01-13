@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.delta.impl;
 
+import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheService;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.status.StatusEventCode;
@@ -35,19 +36,31 @@ public class CommitDeltaExecutor implements DeltaExecutor, StatusEventPublisher 
     private final Vertx vertx;
     private final DeltaServiceDao deltaServiceDao;
     private final DeltaQueryResultFactory deltaQueryResultFactory;
+    private final EvictQueryTemplateCacheService evictQueryTemplateCacheService;
 
     @Autowired
     public CommitDeltaExecutor(ServiceDbFacade serviceDbFacade,
                                @Qualifier("commitDeltaQueryResultFactory") DeltaQueryResultFactory deltaQueryResultFactory,
-                               @Qualifier("coreVertx") Vertx vertx) {
+                               @Qualifier("coreVertx") Vertx vertx,
+                               EvictQueryTemplateCacheService evictQueryTemplateCacheService) {
         this.deltaServiceDao = serviceDbFacade.getDeltaServiceDao();
         this.vertx = vertx;
         this.deltaQueryResultFactory = deltaQueryResultFactory;
+        this.evictQueryTemplateCacheService = evictQueryTemplateCacheService;
     }
 
     @Override
     public Future<QueryResult> execute(DeltaQuery deltaQuery) {
-        return commitDelta(deltaQuery);
+        return Future.future(promise -> commitDelta(deltaQuery)
+                .onSuccess(result -> {
+                    try {
+                        evictQueryTemplateCacheService.evictByDatamartName(deltaQuery.getDatamart());
+                        promise.complete(result);
+                    } catch (Exception e) {
+                        promise.fail(new DtmException("Evict cache error"));
+                    }
+                })
+                .onFailure(promise::fail));
     }
 
     private Future<QueryResult> commitDelta(DeltaQuery deltaQuery) {
@@ -112,10 +125,5 @@ public class CommitDeltaExecutor implements DeltaExecutor, StatusEventPublisher 
     @Override
     public Vertx getVertx() {
         return vertx;
-    }
-
-    @Override
-    public List<PostSqlActionType> getPostActions() {
-        return Collections.singletonList(PostSqlActionType.EVICT_CACHE);
     }
 }

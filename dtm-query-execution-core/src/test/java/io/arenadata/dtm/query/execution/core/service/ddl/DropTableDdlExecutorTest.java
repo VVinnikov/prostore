@@ -2,6 +2,8 @@ package io.arenadata.dtm.query.execution.core.service.ddl;
 
 import io.arenadata.dtm.cache.service.CacheService;
 import io.arenadata.dtm.cache.service.CaffeineCacheService;
+import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheService;
+import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheServiceImpl;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
@@ -50,9 +52,10 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doNothing;
 
 class DropTableDdlExecutorTest {
 
@@ -66,6 +69,8 @@ class DropTableDdlExecutorTest {
     private final ServiceDbDao serviceDbDao = mock(ServiceDbDaoImpl.class);
     private final DatamartDao datamartDao = mock(DatamartDaoImpl.class);
     private final EntityDao entityDao = mock(EntityDaoImpl.class);
+    private final EvictQueryTemplateCacheService evictQueryTemplateCacheService =
+            mock(EvictQueryTemplateCacheServiceImpl.class);
     private QueryResultDdlExecutor dropTableDdlExecutor;
     private DdlRequestContext context;
     private String schema;
@@ -78,7 +83,9 @@ class DropTableDdlExecutorTest {
         when(serviceDbFacade.getServiceDbDao()).thenReturn(serviceDbDao);
         when(serviceDbDao.getDatamartDao()).thenReturn(datamartDao);
         when(serviceDbDao.getEntityDao()).thenReturn(entityDao);
-        dropTableDdlExecutor = new DropTableDdlExecutor(cacheService, metadataExecutor, serviceDbFacade, pluginService);
+        dropTableDdlExecutor = new DropTableDdlExecutor(cacheService, metadataExecutor, serviceDbFacade, pluginService,
+                evictQueryTemplateCacheService);
+        doNothing().when(evictQueryTemplateCacheService).evictByEntityName(anyString(), anyString());
 
         schema = "shares";
         final QueryRequest queryRequest = new QueryRequest();
@@ -104,84 +111,98 @@ class DropTableDdlExecutorTest {
     @Test
     void executeSuccess() {
         Promise<QueryResult> promise = Promise.promise();
-
+        Entity entity = context.getRequest().getEntity();
         when(pluginService.getSourceTypes()).thenReturn(new HashSet<>(Arrays.asList(SourceType.ADB)));
 
-        when(entityDao.getEntity(eq(schema), eq(context.getRequest().getEntity().getName())))
-                .thenReturn(Future.succeededFuture(context.getRequest().getEntity()));
+        when(entityDao.getEntity(eq(schema), eq(entity.getName())))
+                .thenReturn(Future.succeededFuture(entity));
 
         when(metadataExecutor.execute(any()))
                 .thenReturn(Future.succeededFuture());
 
-        when(entityDao.deleteEntity(eq(schema), eq(context.getRequest().getEntity().getName())))
+        when(entityDao.deleteEntity(eq(schema), eq(entity.getName())))
                 .thenReturn(Future.succeededFuture());
 
-        dropTableDdlExecutor.execute(context, context.getRequest().getEntity().getName())
+        dropTableDdlExecutor.execute(context, entity.getName())
                 .onComplete(promise);
         assertTrue(promise.future().succeeded());
+        verify(evictQueryTemplateCacheService, times(1))
+                .evictByEntityName(entity.getSchema(), entity.getName());
     }
 
     @Test
     void executeWithFindView() {
         Promise<QueryResult> promise = Promise.promise();
+        Entity entity = context.getRequest().getEntity();
         when(pluginService.getSourceTypes()).thenReturn(new HashSet<>(Arrays.asList(SourceType.ADB)));
 
-        when(entityDao.getEntity(eq(schema), eq(context.getRequest().getEntity().getName())))
+        when(entityDao.getEntity(eq(schema), eq(entity.getName())))
                 .thenReturn(Future.succeededFuture(Entity.builder()
                         .schema(schema)
-                        .name(context.getRequest().getEntity().getName())
+                        .name(entity.getName())
                         .entityType(EntityType.VIEW)
                         .build()));
 
-        dropTableDdlExecutor.execute(context, context.getRequest().getEntity().getName())
+        dropTableDdlExecutor.execute(context, entity.getName())
                 .onComplete(promise);
         assertNotNull(promise.future().cause());
+        verify(evictQueryTemplateCacheService, never())
+                .evictByEntityName(entity.getSchema(), entity.getName());
     }
 
     @Test
     void executeWithIfExistsStmtSuccess() {
         Promise<QueryResult> promise = Promise.promise();
+        Entity entity = context.getRequest().getEntity();
         when(pluginService.getSourceTypes()).thenReturn(new HashSet<>(Arrays.asList(SourceType.ADB)));
         context.getRequest().getQueryRequest().setSql("DROP TABLE IF EXISTS accounts");
-        String entityName = context.getRequest().getEntity().getName();
+        String entityName = entity.getName();
         Mockito.when(entityDao.getEntity(eq(schema), eq(entityName)))
                 .thenReturn(Future.failedFuture(new TableNotExistsException(entityName)));
 
         dropTableDdlExecutor.execute(context, entityName)
                 .onComplete(promise);
         assertNotNull(promise.future().result());
+        verify(evictQueryTemplateCacheService, times(1))
+                .evictByEntityName(entity.getSchema(), entity.getName());
     }
 
     @Test
     void executeWithMetadataExecuteError() {
         Promise<QueryResult> promise = Promise.promise();
+        Entity entity = context.getRequest().getEntity();
         when(pluginService.getSourceTypes()).thenReturn(new HashSet<>(Arrays.asList(SourceType.ADB)));
-        Mockito.when(entityDao.getEntity(eq(schema), eq(context.getRequest().getEntity().getName())))
-                .thenReturn(Future.succeededFuture(context.getRequest().getEntity()));
+        Mockito.when(entityDao.getEntity(eq(schema), eq(entity.getName())))
+                .thenReturn(Future.succeededFuture(entity));
 
         when(metadataExecutor.execute(any()))
                 .thenReturn(Future.failedFuture(new DataSourceException("Error drop table in plugin")));
 
-        dropTableDdlExecutor.execute(context, context.getRequest().getEntity().getName())
+        dropTableDdlExecutor.execute(context, entity.getName())
                 .onComplete(promise);
         assertNotNull(promise.future().cause());
+        verify(evictQueryTemplateCacheService, never())
+                .evictByEntityName(entity.getSchema(), entity.getName());
     }
 
     @Test
     void executeWithDropEntityError() {
         Promise<QueryResult> promise = Promise.promise();
+        Entity entity = context.getRequest().getEntity();
         when(pluginService.getSourceTypes()).thenReturn(new HashSet<>(Arrays.asList(SourceType.ADB)));
-        Mockito.when(entityDao.getEntity(eq(schema), eq(context.getRequest().getEntity().getName())))
+        Mockito.when(entityDao.getEntity(eq(schema), eq(entity.getName())))
                 .thenReturn(Future.succeededFuture(context.getRequest().getEntity()));
 
         when(metadataExecutor.execute(any()))
                 .thenReturn(Future.succeededFuture());
 
-        Mockito.when(entityDao.deleteEntity(eq(schema), eq(context.getRequest().getEntity().getName())))
+        Mockito.when(entityDao.deleteEntity(eq(schema), eq(entity.getName())))
                 .thenReturn(Future.failedFuture(new DtmException("delete entity error")));
 
-        dropTableDdlExecutor.execute(context, context.getRequest().getEntity().getName())
+        dropTableDdlExecutor.execute(context, entity.getName())
                 .onComplete(promise);
         assertNotNull(promise.future().cause());
+        verify(evictQueryTemplateCacheService, never())
+                .evictByEntityName(entity.getSchema(), entity.getName());
     }
 }

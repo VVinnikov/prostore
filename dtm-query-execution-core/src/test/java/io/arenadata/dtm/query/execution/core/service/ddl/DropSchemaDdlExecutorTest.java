@@ -2,6 +2,8 @@ package io.arenadata.dtm.query.execution.core.service.ddl;
 
 import io.arenadata.dtm.cache.service.CacheService;
 import io.arenadata.dtm.cache.service.CaffeineCacheService;
+import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheService;
+import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheServiceImpl;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QueryRequest;
@@ -39,8 +41,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class DropSchemaDdlExecutorTest {
 
@@ -54,6 +55,8 @@ class DropSchemaDdlExecutorTest {
     private final ServiceDbDao serviceDbDao = mock(ServiceDbDaoImpl.class);
     private final DatamartDao datamartDao = mock(DatamartDaoImpl.class);
     private final CacheService<EntityKey, Entity> entityCacheService = mock(CaffeineCacheService.class);
+    private final EvictQueryTemplateCacheService evictQueryTemplateCacheService =
+            mock(EvictQueryTemplateCacheServiceImpl.class);
     private DropSchemaDdlExecutor dropSchemaDdlExecutor;
     private DdlRequestContext context;
     private String schema;
@@ -69,7 +72,9 @@ class DropSchemaDdlExecutorTest {
                 hotDeltaCacheService,
                 okDeltaCacheService,
                 entityCacheService,
-                serviceDbFacade);
+                serviceDbFacade,
+                evictQueryTemplateCacheService);
+        doNothing().when(evictQueryTemplateCacheService).evictByDatamartName(anyString());
         schema = "shares";
         final QueryRequest queryRequest = new QueryRequest();
         queryRequest.setRequestId(UUID.randomUUID());
@@ -98,6 +103,7 @@ class DropSchemaDdlExecutorTest {
         dropSchemaDdlExecutor.execute(context, null)
                 .onComplete(promise);
         assertTrue(promise.future().succeeded());
+        verify(evictQueryTemplateCacheService, times(1)).evictByDatamartName(schema);
     }
 
     @Test
@@ -112,6 +118,7 @@ class DropSchemaDdlExecutorTest {
         dropSchemaDdlExecutor.execute(context, null)
                 .onComplete(promise);
         assertTrue(promise.future().failed());
+        verify(evictQueryTemplateCacheService, never()).evictByDatamartName(any());
     }
 
     @Test
@@ -129,5 +136,6 @@ class DropSchemaDdlExecutorTest {
         dropSchemaDdlExecutor.execute(context, null)
                 .onComplete(promise);
         assertTrue(promise.future().failed());
+        verify(evictQueryTemplateCacheService, never()).evictByDatamartName(any());
     }
 }

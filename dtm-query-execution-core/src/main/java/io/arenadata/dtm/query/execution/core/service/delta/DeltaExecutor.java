@@ -28,8 +28,4 @@ public interface DeltaExecutor {
      * @return delta action type
      */
     DeltaAction getAction();
-
-    default List<PostSqlActionType> getPostActions() {
-        return Collections.emptyList();
-    }
 }

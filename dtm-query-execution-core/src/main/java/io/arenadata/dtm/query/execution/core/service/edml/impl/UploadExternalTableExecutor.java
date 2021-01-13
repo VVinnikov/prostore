@@ -67,9 +67,13 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
                         context.getSysCn(),
                         queryResult))
                 .onSuccess(result -> {
-                    Entity entity = context.getDestinationEntity();
-                    evictQueryTemplateCacheService.evictByEntityName(entity.getSchema(), entity.getName());
-                    promise.complete(result);
+                    try {
+                        Entity entity = context.getDestinationEntity();
+                        evictQueryTemplateCacheService.evictByEntityName(entity.getSchema(), entity.getName());
+                        promise.complete(QueryResult.emptyResult());
+                    } catch (Exception e) {
+                        promise.fail(new DtmException("Evict cache error"));
+                    }
                 })
                 .onFailure(promise::fail));
     }

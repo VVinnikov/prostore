@@ -45,7 +45,7 @@ class StatusEventVerticleTest {
     @Test
     void publishDeltaOpenEvent() {
         BeginDeltaExecutor beginDeltaExecutor =
-                spy(new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, null));
+                spy(new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, null, null));
         req.setSql("BEGIN DELTA");
         BeginDeltaQuery deltaQuery = BeginDeltaQuery.builder()
                 .datamart("test")

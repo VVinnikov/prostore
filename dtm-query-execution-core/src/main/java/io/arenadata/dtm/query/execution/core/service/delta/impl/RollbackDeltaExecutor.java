@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.delta.impl;
 
+import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheService;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QueryResult;
@@ -45,22 +46,34 @@ public class RollbackDeltaExecutor implements DeltaExecutor, StatusEventPublishe
     private final DeltaServiceDao deltaServiceDao;
     private final Vertx vertx;
     private final EntityDao entityDao;
+    private final EvictQueryTemplateCacheService evictQueryTemplateCacheService;
 
     @Autowired
     public RollbackDeltaExecutor(EdmlUploadFailedExecutor edmlUploadFailedExecutor,
                                  ServiceDbFacade serviceDbFacade,
                                  @Qualifier("beginDeltaQueryResultFactory") DeltaQueryResultFactory deltaQueryResultFactory,
-                                 @Qualifier("coreVertx") Vertx vertx) {
+                                 @Qualifier("coreVertx") Vertx vertx,
+                                 EvictQueryTemplateCacheService evictQueryTemplateCacheService) {
         this.entityDao = serviceDbFacade.getServiceDbDao().getEntityDao();
         this.deltaServiceDao = serviceDbFacade.getDeltaServiceDao();
         this.edmlUploadFailedExecutor = edmlUploadFailedExecutor;
         this.deltaQueryResultFactory = deltaQueryResultFactory;
         this.vertx = vertx;
+        this.evictQueryTemplateCacheService = evictQueryTemplateCacheService;
     }
 
     @Override
     public Future<QueryResult> execute(DeltaQuery deltaQuery) {
-        return executeInternal(deltaQuery);
+        return Future.future(promise -> executeInternal(deltaQuery)
+                .onSuccess(result -> {
+                    try {
+                        evictQueryTemplateCacheService.evictByDatamartName(deltaQuery.getDatamart());
+                        promise.complete(result);
+                    } catch (Exception e) {
+                        promise.fail(new DtmException("Evict cache error"));
+                    }
+                })
+                .onFailure(promise::fail));
     }
 
     private Future<QueryResult> executeInternal(DeltaQuery deltaQuery) {
@@ -156,10 +169,5 @@ public class RollbackDeltaExecutor implements DeltaExecutor, StatusEventPublishe
     @Override
     public Vertx getVertx() {
         return vertx;
-    }
-
-    @Override
-    public List<PostSqlActionType> getPostActions() {
-        return Collections.singletonList(PostSqlActionType.EVICT_CACHE);
     }
 }

@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
 import io.arenadata.dtm.cache.service.CacheService;
+import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheService;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QueryResult;
@@ -30,18 +31,21 @@ public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
     private final CacheService<String, OkDelta> okDeltaCacheService;
     private final CacheService<EntityKey, Entity> entityCacheService;
     private final DatamartDao datamartDao;
+    private final EvictQueryTemplateCacheService evictQueryTemplateCacheService;
 
     @Autowired
     public DropSchemaDdlExecutor(MetadataExecutor<DdlRequestContext> metadataExecutor,
                                  @Qualifier("hotDeltaCacheService") CacheService<String, HotDelta> hotDeltaCacheService,
                                  @Qualifier("okDeltaCacheService") CacheService<String, OkDelta> okDeltaCacheService,
                                  @Qualifier("entityCacheService") CacheService<EntityKey, Entity> entityCacheService,
-                                 ServiceDbFacade serviceDbFacade) {
+                                 ServiceDbFacade serviceDbFacade,
+                                 EvictQueryTemplateCacheService evictQueryTemplateCacheService) {
         super(metadataExecutor, serviceDbFacade);
         this.hotDeltaCacheService = hotDeltaCacheService;
         this.okDeltaCacheService = okDeltaCacheService;
         this.entityCacheService = entityCacheService;
         datamartDao = serviceDbFacade.getServiceDbDao().getDatamartDao();
+        this.evictQueryTemplateCacheService = evictQueryTemplateCacheService;
     }
 
     @Override
@@ -59,7 +63,12 @@ public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
                     .compose(isExists -> isExists ? dropDatamartInPlugins(context) : getNotExistsDatamartFuture(schemaName))
                     .compose(r -> dropDatamart(context))
                     .onSuccess(success -> {
-                        promise.complete(QueryResult.emptyResult());
+                        try {
+                            evictQueryTemplateCacheService.evictByDatamartName(schemaName);
+                            promise.complete(QueryResult.emptyResult());
+                        } catch (Exception e) {
+                            promise.fail(new DtmException("Evict cache error"));
+                        }
                     })
                     .onFailure(promise::fail);
         });

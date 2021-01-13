@@ -11,6 +11,4 @@ public interface DeltaService<T> extends DatamartExecutionService<DeltaRequestCo
     default SqlProcessingType getSqlProcessingType() {
         return DELTA;
     }
-
-    default void addPostExecutor(DeltaPostExecutor executor) {}
 }

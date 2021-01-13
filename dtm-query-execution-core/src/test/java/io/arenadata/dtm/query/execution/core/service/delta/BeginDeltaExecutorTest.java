@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.delta;
 
+import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheServiceImpl;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
@@ -29,14 +30,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class BeginDeltaExecutorTest {
 
     private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
     private final DeltaServiceDao deltaServiceDao = mock(DeltaServiceDaoImpl.class);
     private final DeltaQueryResultFactory deltaQueryResultFactory = mock(BeginDeltaQueryResultFactory.class);
+    private final EvictQueryTemplateCacheServiceImpl evictQueryTemplateCacheService =
+            mock(EvictQueryTemplateCacheServiceImpl.class);
     private BeginDeltaExecutor beginDeltaExecutor;
     private QueryRequest req = new QueryRequest();
     private String datamart;
@@ -47,7 +49,9 @@ class BeginDeltaExecutorTest {
         req.setDatamartMnemonic(datamart);
         req.setRequestId(UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"));
         when(serviceDbFacade.getDeltaServiceDao()).thenReturn(deltaServiceDao);
-        beginDeltaExecutor = new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx());
+        beginDeltaExecutor = new BeginDeltaExecutor(serviceDbFacade, deltaQueryResultFactory, Vertx.vertx(),
+                evictQueryTemplateCacheService);
+        doNothing().when(evictQueryTemplateCacheService).evictByDatamartName(anyString());
     }
 
     @Test
@@ -74,6 +78,7 @@ class BeginDeltaExecutorTest {
 
         assertEquals(deltaNum, promise.future().result().getResult()
                 .get(0).get(DeltaQueryUtil.NUM_FIELD));
+        verifyEvictCacheExecuted();
     }
 
     @Test
@@ -101,6 +106,7 @@ class BeginDeltaExecutorTest {
 
         assertEquals(deltaNum, promise.future().result().getResult()
                 .get(0).get(DeltaQueryUtil.NUM_FIELD));
+        verifyEvictCacheExecuted();
     }
 
     @Test
@@ -126,6 +132,7 @@ class BeginDeltaExecutorTest {
         beginDeltaExecutor.execute(deltaQuery)
                 .onComplete(promise);
         assertEquals(exception, promise.future().cause());
+        verifyEvictCacheNotExecuted();
     }
 
     @Test
@@ -144,6 +151,7 @@ class BeginDeltaExecutorTest {
         beginDeltaExecutor.execute(deltaQuery)
                 .onComplete(promise);
         assertTrue(promise.future().failed());
+        verifyEvictCacheNotExecuted();
     }
 
     @Test
@@ -171,10 +179,21 @@ class BeginDeltaExecutorTest {
                 .onComplete(promise);
 
         assertTrue(promise.future().failed());
+        verifyEvictCacheNotExecuted();
     }
 
     private List<Map<String, Object>> createResult(Long deltaNum) {
         return QueryResultUtils.createResultWithSingleRow(Collections.singletonList(DeltaQueryUtil.NUM_FIELD),
                 Collections.singletonList(deltaNum));
+    }
+
+    private void verifyEvictCacheExecuted() {
+        verify(evictQueryTemplateCacheService, times(1)).evictByDatamartName(datamart);
+    }
+
+    private void verifyEvictCacheNotExecuted() {
+        verify(evictQueryTemplateCacheService, times(0)).evictByDatamartName(anyString());
+        verify(evictQueryTemplateCacheService, times(0)).evictByEntityName(anyString(),
+                anyString());
     }
 }

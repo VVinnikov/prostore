@@ -1,0 +1,2 @@
+USE %s;
+ROLLBACK DELTA;

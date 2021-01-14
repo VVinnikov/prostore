@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.ddl;
 
 import io.arenadata.dtm.common.exception.DtmException;
+import io.arenadata.dtm.common.reader.InformationSchemaView;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
@@ -122,5 +123,18 @@ class DropSchemaDdlExecutorTest {
         dropSchemaDdlExecutor.execute(context, null)
                 .onComplete(promise);
         assertTrue(promise.future().failed());
+    }
+
+    @Test
+    void executeDropInformationSchema() {
+        schema = InformationSchemaView.SCHEMA_NAME.toLowerCase();
+        Mockito.when(datamartDao.existsDatamart(eq(schema)))
+                .thenReturn(Future.succeededFuture(true));
+        when(metadataExecutor.execute(any()))
+                .thenReturn(Future.succeededFuture());
+        Mockito.when(datamartDao.deleteDatamart(eq(schema)))
+                .thenReturn(Future.succeededFuture());
+        dropSchemaDdlExecutor.execute(context, null)
+                .onComplete(ar -> assertTrue(ar.failed()));
     }
 }

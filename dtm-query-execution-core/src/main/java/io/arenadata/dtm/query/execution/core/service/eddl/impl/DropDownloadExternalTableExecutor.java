@@ -10,6 +10,8 @@ import io.arenadata.dtm.query.execution.core.dto.eddl.DropDownloadExternalTableQ
 import io.arenadata.dtm.query.execution.core.dto.eddl.EddlAction;
 import io.arenadata.dtm.query.execution.core.dto.eddl.EddlQuery;
 import io.arenadata.dtm.query.execution.core.exception.table.ExternalTableNotExistsException;
+import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
+import io.arenadata.dtm.query.execution.core.exception.view.ViewNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.eddl.EddlExecutor;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
@@ -56,7 +58,14 @@ public class DropDownloadExternalTableExecutor implements EddlExecutor {
                             entityPromise.fail(new ExternalTableNotExistsException(tableWithSchema));
                         }
                     })
-                    .onFailure(error -> entityPromise.fail(new DtmException(error)));
+                    .onFailure(error -> {
+                        if (error instanceof TableNotExistsException) {
+                            entityPromise.fail(new ExternalTableNotExistsException(
+                                    String.format("%s.%s", datamartName, entityName)));
+                        } else {
+                            entityPromise.fail(error);
+                        }
+                    });
         });
     }
 

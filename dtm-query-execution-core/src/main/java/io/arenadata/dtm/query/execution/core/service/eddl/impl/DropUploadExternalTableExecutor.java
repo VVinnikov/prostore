@@ -10,6 +10,8 @@ import io.arenadata.dtm.query.execution.core.dto.eddl.EddlAction;
 import io.arenadata.dtm.query.execution.core.dto.eddl.EddlQuery;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.exception.table.ExternalTableNotExistsException;
+import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
+import io.arenadata.dtm.query.execution.core.exception.view.ViewNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.cache.CacheService;
 import io.arenadata.dtm.query.execution.core.service.cache.key.EntityKey;
 import io.arenadata.dtm.query.execution.core.service.eddl.EddlExecutor;
@@ -67,7 +69,13 @@ public class DropUploadExternalTableExecutor implements EddlExecutor {
                             entityPromise.fail(new ExternalTableNotExistsException(tableWithSchema));
                         }
                     })
-                    .onFailure(error -> entityPromise.fail(new DtmException(error)));
+                    .onFailure(error -> {
+                        if (error instanceof TableNotExistsException) {
+                            entityPromise.fail(new ExternalTableNotExistsException(tableWithSchema));
+                        } else {
+                            entityPromise.fail(error);
+                        }
+                    });
         });
     }
 

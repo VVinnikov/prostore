@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
 import io.arenadata.dtm.common.exception.DtmException;
+import io.arenadata.dtm.common.reader.InformationSchemaView;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.DropDatabase;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
@@ -13,7 +14,6 @@ import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.vertx.core.Future;
-import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,16 +50,20 @@ public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
     private Future<QueryResult> dropSchema(DdlRequestContext context, String sqlNodeName) {
         return Future.future(promise -> {
             String schemaName = ((DropDatabase) context.getQuery()).getName().names.get(0);
-            clearCacheByDatamartName(schemaName);
-            context.getRequest().getQueryRequest().setDatamartMnemonic(schemaName);
-            context.setDatamartName(schemaName);
-            datamartDao.existsDatamart(schemaName)
-                    .compose(isExists -> isExists ? dropDatamartInPlugins(context) : getNotExistsDatamartFuture(schemaName))
-                    .compose(r -> dropDatamart(context))
-                    .onSuccess(success -> {
-                        promise.complete(QueryResult.emptyResult());
-                    })
-                    .onFailure(promise::fail);
+            if (InformationSchemaView.SCHEMA_NAME.equalsIgnoreCase(schemaName)) {
+                promise.fail(new DtmException("Removing system databases is impossible"));
+            } else {
+                clearCacheByDatamartName(schemaName);
+                context.getRequest().getQueryRequest().setDatamartMnemonic(schemaName);
+                context.setDatamartName(schemaName);
+                datamartDao.existsDatamart(schemaName)
+                        .compose(isExists -> isExists
+                                ? dropDatamartInPlugins(context)
+                                : getNotExistsDatamartFuture(schemaName))
+                        .compose(r -> dropDatamart(context))
+                        .onSuccess(success -> promise.complete(QueryResult.emptyResult()))
+                        .onFailure(promise::fail);
+            }
         });
     }
 

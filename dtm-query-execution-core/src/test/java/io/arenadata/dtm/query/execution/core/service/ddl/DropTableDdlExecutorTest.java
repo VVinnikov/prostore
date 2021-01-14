@@ -24,9 +24,14 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.Datama
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
 import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
+import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
+import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.datasource.impl.DataSourcePluginServiceImpl;
+import io.arenadata.dtm.query.execution.core.service.ddl.impl.DropTableDdlExecutor;
+import io.arenadata.dtm.query.execution.core.service.hsql.HSQLClient;
+import io.arenadata.dtm.query.execution.core.service.hsql.impl.HSQLClientImpl;
 import io.arenadata.dtm.query.execution.core.service.ddl.impl.DropTableDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.impl.MetadataExecutorImpl;
@@ -35,6 +40,8 @@ import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
+import io.vertx.core.json.JsonArray;
+import io.vertx.ext.sql.ResultSet;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
@@ -49,8 +56,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -71,6 +77,7 @@ class DropTableDdlExecutorTest {
     private final EntityDao entityDao = mock(EntityDaoImpl.class);
     private final EvictQueryTemplateCacheService evictQueryTemplateCacheService =
             mock(EvictQueryTemplateCacheServiceImpl.class);
+    private final HSQLClient hsqlClient = mock(HSQLClientImpl.class);
     private QueryResultDdlExecutor dropTableDdlExecutor;
     private DdlRequestContext context;
     private String schema;
@@ -86,6 +93,7 @@ class DropTableDdlExecutorTest {
         dropTableDdlExecutor = new DropTableDdlExecutor(cacheService, metadataExecutor, serviceDbFacade, pluginService,
                 evictQueryTemplateCacheService);
         doNothing().when(evictQueryTemplateCacheService).evictByEntityName(anyString(), anyString());
+        dropTableDdlExecutor = new DropTableDdlExecutor(cacheService, metadataExecutor, serviceDbFacade, pluginService, hsqlClient);
 
         schema = "shares";
         final QueryRequest queryRequest = new QueryRequest();
@@ -117,6 +125,9 @@ class DropTableDdlExecutorTest {
         when(entityDao.getEntity(eq(schema), eq(entity.getName())))
                 .thenReturn(Future.succeededFuture(entity));
 
+        when(hsqlClient.getQueryResult(any()))
+                .thenReturn(Future.succeededFuture(new ResultSet().setResults(Collections.EMPTY_LIST)));
+
         when(metadataExecutor.execute(any()))
                 .thenReturn(Future.succeededFuture());
 
@@ -124,6 +135,8 @@ class DropTableDdlExecutorTest {
                 .thenReturn(Future.succeededFuture());
 
         dropTableDdlExecutor.execute(context, entity.getName())
+
+        dropTableDdlExecutor.execute(context, context.getRequest().getEntity().getName())
                 .onComplete(promise);
         assertTrue(promise.future().succeeded());
         verify(evictQueryTemplateCacheService, times(1))
@@ -143,6 +156,10 @@ class DropTableDdlExecutorTest {
                         .entityType(EntityType.VIEW)
                         .build()));
 
+        when(hsqlClient.getQueryResult(any()))
+                .thenReturn(Future.succeededFuture(new ResultSet().setResults(Collections.EMPTY_LIST)));
+
+        dropTableDdlExecutor.execute(context, context.getRequest().getEntity().getName())
         dropTableDdlExecutor.execute(context, entity.getName())
                 .onComplete(promise);
         assertNotNull(promise.future().cause());
@@ -160,6 +177,9 @@ class DropTableDdlExecutorTest {
         Mockito.when(entityDao.getEntity(eq(schema), eq(entityName)))
                 .thenReturn(Future.failedFuture(new TableNotExistsException(entityName)));
 
+        when(hsqlClient.getQueryResult(any()))
+                .thenReturn(Future.succeededFuture(new ResultSet().setResults(Collections.EMPTY_LIST)));
+
         dropTableDdlExecutor.execute(context, entityName)
                 .onComplete(promise);
         assertNotNull(promise.future().result());
@@ -174,6 +194,9 @@ class DropTableDdlExecutorTest {
         when(pluginService.getSourceTypes()).thenReturn(new HashSet<>(Arrays.asList(SourceType.ADB)));
         Mockito.when(entityDao.getEntity(eq(schema), eq(entity.getName())))
                 .thenReturn(Future.succeededFuture(entity));
+
+        when(hsqlClient.getQueryResult(any()))
+                .thenReturn(Future.succeededFuture(new ResultSet().setResults(Collections.EMPTY_LIST)));
 
         when(metadataExecutor.execute(any()))
                 .thenReturn(Future.failedFuture(new DataSourceException("Error drop table in plugin")));
@@ -193,6 +216,9 @@ class DropTableDdlExecutorTest {
         Mockito.when(entityDao.getEntity(eq(schema), eq(entity.getName())))
                 .thenReturn(Future.succeededFuture(context.getRequest().getEntity()));
 
+        when(hsqlClient.getQueryResult(any()))
+                .thenReturn(Future.succeededFuture(new ResultSet().setResults(Collections.EMPTY_LIST)));
+
         when(metadataExecutor.execute(any()))
                 .thenReturn(Future.succeededFuture());
 
@@ -204,5 +230,24 @@ class DropTableDdlExecutorTest {
         assertNotNull(promise.future().cause());
         verify(evictQueryTemplateCacheService, never())
                 .evictByEntityName(entity.getSchema(), entity.getName());
+    }
+
+    @Test
+    void executeWithExistedViewError() {
+        Promise<QueryResult> promise = Promise.promise();
+        String viewName = "VIEWNAME";
+        String expectedMessage = String.format("View ‘%s’ using the '%s' must be dropped first", viewName, context.getRequest().getEntity().getName().toUpperCase());
+
+        when(pluginService.getSourceTypes()).thenReturn(new HashSet<>(Arrays.asList(SourceType.ADB)));
+
+        when(entityDao.getEntity(eq(schema), eq(context.getRequest().getEntity().getName())))
+                .thenReturn(Future.succeededFuture(context.getRequest().getEntity()));
+
+        when(hsqlClient.getQueryResult(any()))
+                .thenReturn(Future.succeededFuture(new ResultSet().setResults(Collections.singletonList(new JsonArray().add(viewName)))));
+
+        dropTableDdlExecutor.execute(context, context.getRequest().getEntity().getName())
+                .onComplete(promise);
+        assertEquals(expectedMessage, promise.future().cause().getMessage());
     }
 }

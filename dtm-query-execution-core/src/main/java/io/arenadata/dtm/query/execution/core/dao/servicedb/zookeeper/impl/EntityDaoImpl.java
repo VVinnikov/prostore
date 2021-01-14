@@ -138,6 +138,7 @@ public class EntityDaoImpl implements EntityDao {
                 })
                 .otherwise(error -> {
                     if (error instanceof KeeperException.NoNodeException) {
+                        //TODO change exception
                         throw warn(new TableNotExistsException(nameWithSchema));
                     } else {
                         throw new DtmException(String.format("Can't get entity [%s]", nameWithSchema), error);

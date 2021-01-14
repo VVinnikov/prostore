@@ -4,6 +4,7 @@ import io.arenadata.dtm.cache.service.CacheService;
 import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheService;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
+import io.arenadata.dtm.common.reader.InformationSchemaView;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.DropDatabase;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
@@ -56,21 +57,25 @@ public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
     private Future<QueryResult> dropSchema(DdlRequestContext context, String sqlNodeName) {
         return Future.future(promise -> {
             String schemaName = ((DropDatabase) context.getQuery()).getName().names.get(0);
-            clearCacheByDatamartName(schemaName);
-            context.getRequest().getQueryRequest().setDatamartMnemonic(schemaName);
-            context.setDatamartName(schemaName);
-            datamartDao.existsDatamart(schemaName)
-                    .compose(isExists -> isExists ? dropDatamartInPlugins(context) : getNotExistsDatamartFuture(schemaName))
-                    .compose(r -> dropDatamart(context))
-                    .onSuccess(success -> {
-                        try {
-                            evictQueryTemplateCacheService.evictByDatamartName(schemaName);
-                            promise.complete(QueryResult.emptyResult());
-                        } catch (Exception e) {
-                            promise.fail(new DtmException("Evict cache error"));
-                        }
-                    })
-                    .onFailure(promise::fail);
+            if (InformationSchemaView.SCHEMA_NAME.equalsIgnoreCase(schemaName)) {
+                promise.fail(new DtmException("Removing system databases is impossible"));
+            } else {
+                clearCacheByDatamartName(schemaName);
+                context.getRequest().getQueryRequest().setDatamartMnemonic(schemaName);
+                context.setDatamartName(schemaName);
+                datamartDao.existsDatamart(schemaName)
+                        .compose(isExists -> isExists ? dropDatamartInPlugins(context) : getNotExistsDatamartFuture(schemaName))
+                        .compose(r -> dropDatamart(context))
+                        .onSuccess(success -> {
+                            try {
+                                evictQueryTemplateCacheService.evictByDatamartName(schemaName);
+                                promise.complete(QueryResult.emptyResult());
+                            } catch (Exception e) {
+                                promise.fail(new DtmException("Evict cache error"));
+                            }
+                        })
+                        .onFailure(promise::fail);
+            }
         });
     }
 

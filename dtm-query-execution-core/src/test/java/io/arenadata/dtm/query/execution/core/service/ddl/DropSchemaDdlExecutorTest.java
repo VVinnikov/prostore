@@ -5,6 +5,7 @@ import io.arenadata.dtm.cache.service.CaffeineCacheService;
 import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheService;
 import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheServiceImpl;
 import io.arenadata.dtm.common.exception.DtmException;
+import io.arenadata.dtm.common.reader.InformationSchemaView;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
@@ -137,5 +138,18 @@ class DropSchemaDdlExecutorTest {
                 .onComplete(promise);
         assertTrue(promise.future().failed());
         verify(evictQueryTemplateCacheService, never()).evictByDatamartName(any());
+    }
+
+    @Test
+    void executeDropInformationSchema() {
+        schema = InformationSchemaView.SCHEMA_NAME.toLowerCase();
+        Mockito.when(datamartDao.existsDatamart(eq(schema)))
+                .thenReturn(Future.succeededFuture(true));
+        when(metadataExecutor.execute(any()))
+                .thenReturn(Future.succeededFuture());
+        Mockito.when(datamartDao.deleteDatamart(eq(schema)))
+                .thenReturn(Future.succeededFuture());
+        dropSchemaDdlExecutor.execute(context, null)
+                .onComplete(ar -> assertTrue(ar.failed()));
     }
 }

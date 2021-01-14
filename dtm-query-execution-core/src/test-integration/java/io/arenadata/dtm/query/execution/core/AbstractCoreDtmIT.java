@@ -435,6 +435,12 @@ public abstract class AbstractCoreDtmIT {
                 entityName);
     }
 
+    public static String getDeltaPath(String datamartMnemonic) {
+        return String.format("/%s/%s/delta",
+                Objects.requireNonNull(dtmProperties.getProperty("core.env.name")).toString(),
+                datamartMnemonic);
+    }
+
     @Data
     @AllArgsConstructor
     private static class ContainerInfo {

@@ -10,10 +10,14 @@ import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
+import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
+import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
+import io.arenadata.dtm.query.execution.core.service.hsql.HSQLClient;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
+import io.arenadata.dtm.query.execution.core.utils.InformationSchemaUtils;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlType;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.PostSqlActionType;
@@ -37,6 +41,7 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
     private final DataSourcePluginService dataSourcePluginService;
     private final CacheService<EntityKey, Entity> entityCacheService;
     private final EntityDao entityDao;
+    private final HSQLClient hsqlClient;
     private final EvictQueryTemplateCacheService evictQueryTemplateCacheService;
 
     @Autowired
@@ -44,11 +49,13 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
                                 MetadataExecutor<DdlRequestContext> metadataExecutor,
                                 ServiceDbFacade serviceDbFacade,
                                 DataSourcePluginService dataSourcePluginService,
+                                HSQLClient hsqlClient,
                                 EvictQueryTemplateCacheService evictQueryTemplateCacheService) {
         super(metadataExecutor, serviceDbFacade);
         this.entityCacheService = entityCacheService;
         this.entityDao = serviceDbFacade.getServiceDbDao().getEntityDao();
         this.dataSourcePluginService = dataSourcePluginService;
+        this.hsqlClient = hsqlClient;
         this.evictQueryTemplateCacheService = evictQueryTemplateCacheService;
     }
 
@@ -86,7 +93,7 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
     protected Future<Void> dropTable(DdlRequestContext context, boolean ifExists) {
         return getEntity(context, ifExists)
                 .compose(entity -> Optional.ofNullable(entity)
-                        .map(e -> updateEntity(context, e))
+                        .map(e -> checkViewsAndUpdateEntity(context, e))
                         .orElse(Future.succeededFuture()));
     }
 
@@ -115,6 +122,11 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
                         }
                     });
         });
+    }
+
+    private Future<Void> checkViewsAndUpdateEntity(DdlRequestContext context, Entity entity) {
+        return checkRelatedViews(entity)
+                .compose(e -> updateEntity(context, e));
     }
 
     private Future<Void> updateEntity(DdlRequestContext context, Entity entity) {
@@ -173,6 +185,21 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
                     context.getPostActions().add(PostSqlActionType.UPDATE_INFORMATION_SCHEMA);
                     return entityDao.deleteEntity(context.getDatamartName(), entityName);
                 });
+    }
+
+    private Future<Entity> checkRelatedViews(Entity entity) {
+        return Future.future(promise -> {
+            hsqlClient.getQueryResult(String.format(InformationSchemaUtils.CHECK_VIEW, entity.getSchema().toUpperCase(), entity.getName().toUpperCase()))
+                    .onSuccess(resultSet -> {
+                        if (resultSet.getResults().isEmpty()) {
+                            promise.complete(entity);
+                        } else {
+                            val viewName = resultSet.getResults().get(0).getString(0);
+                            promise.fail(new DtmException(String.format("View ‘%s’ using the '%s' must be dropped first", viewName, entity.getName().toUpperCase())));
+                        }
+                    })
+                    .onFailure(err -> promise.fail(err));
+        });
     }
 
     @Override

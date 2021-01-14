@@ -51,7 +51,7 @@ public class AdgLlrService extends QueryResultCacheableLlrService {
     @Override
     protected Future<String> enrichQuery(LlrRequest llrRequest) {
         val enrichQueryRequest =
-                EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
+                EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema(), llrRequest.getSqlNode());
         return queryEnrichmentService.enrich(enrichQueryRequest);
     }
 

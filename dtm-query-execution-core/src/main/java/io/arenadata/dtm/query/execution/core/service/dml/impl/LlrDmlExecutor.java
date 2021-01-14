@@ -76,13 +76,12 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
     @Override
     public Future<QueryResult> execute(DmlRequestContext context) {
         val queryRequest = context.getRequest().getQueryRequest();
-        val sourceRequest = new QuerySourceRequest(queryRequest, queryRequest.getSourceType());
+        val sourceRequest = new QuerySourceRequest(queryRequest, context.getQuery(), queryRequest.getSourceType());
         return logicViewReplacer.replace(context.getQuery(),
                 sourceRequest.getQueryRequest().getDatamartMnemonic())
                 .map(sqlWithoutViews -> {
                     QueryRequest withoutViewsRequest = sourceRequest.getQueryRequest();
                     withoutViewsRequest.setSql(sqlWithoutViews.toString());
-                    withoutViewsRequest.setSqlNode(sqlWithoutViews);
                     context.setQuery(sqlWithoutViews);
                     return withoutViewsRequest;
                 })
@@ -162,7 +161,6 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
     private Future<QueryResult> executeRequest(QuerySourceRequest sourceRequest,
                                                DmlRequestContext context) {
         return Future.future(promise -> {
-            sourceRequest.getQueryRequest().setSqlNode(context.getQuery());
             if (informationSchemaDefinitionService.isInformationSchemaRequest(sourceRequest)) {
                 metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
                         SqlProcessingType.LLR,
@@ -173,7 +171,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                                 context.getMetrics(),
                                 promise));
             } else {
-                targetDatabaseDefinitionService.getTargetSource(sourceRequest)
+                targetDatabaseDefinitionService.getTargetSource(sourceRequest, context.getQuery())
                         .compose(querySourceRequest -> pluginExecute(querySourceRequest,
                                 context.getMetrics(),
                                 context.getQuery()))

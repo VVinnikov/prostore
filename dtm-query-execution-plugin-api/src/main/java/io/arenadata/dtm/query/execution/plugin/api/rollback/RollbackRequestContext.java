@@ -8,7 +8,7 @@ import io.arenadata.dtm.query.execution.plugin.api.request.RollbackRequest;
 public class RollbackRequestContext extends RequestContext<RollbackRequest> {
 
     public RollbackRequestContext(RequestMetrics metrics, RollbackRequest request) {
-        super(metrics, request);
+        super(request, sqlNode, envName, sourceType, metrics);
     }
 
     @Override

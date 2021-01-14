@@ -2,7 +2,6 @@ package io.arenadata.dtm.query.execution.core.service.edml.impl;
 
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
 import io.arenadata.dtm.query.execution.core.dto.edml.EdmlAction;
@@ -15,7 +14,6 @@ import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -30,7 +28,6 @@ import static io.arenadata.dtm.query.execution.core.dto.edml.EdmlAction.DOWNLOAD
 @Slf4j
 public class DownloadExternalTableExecutor implements EdmlExecutor {
 
-    private static final SqlDialect SQL_DIALECT = new SqlDialect(SqlDialect.EMPTY_CONTEXT);
     private final LogicalSchemaProvider logicalSchemaProvider;
     private final DeltaQueryPreprocessor deltaQueryPreprocessor;
     private final Map<ExternalTableLocationType, EdmlDownloadExecutor> executors;
@@ -64,8 +61,8 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
     }
 
     private Future<SqlNode> replaceView(EdmlRequestContext context) {
-        return logicViewReplacer.replace(context.getDmlSubQuery(),
-                context.getRequest().getQueryRequest().getDatamartMnemonic())
+        val datamartMnemonic = context.getRequest().getQueryRequest().getDatamartMnemonic();
+        return logicViewReplacer.replace(context.getDmlSubQuery(), datamartMnemonic)
                 .map(result -> {
                     context.setDmlSubQuery(result);
                     return result;
@@ -73,29 +70,24 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
     }
 
     private Future<Void> initLogicalSchema(EdmlRequestContext context) {
-        return Future.future(promise -> {
-            QueryRequest copy = context.getRequest().getQueryRequest().copy();
-            copy.setSqlNode(context.getDmlSubQuery());
-            logicalSchemaProvider.getSchemaFromDeltaInformations(copy)
-                    .onSuccess(schema -> {
-                        context.setLogicalSchema(schema);
-                        promise.complete();
-                    })
-                    .onFailure(promise::fail);
-        });
+        return Future.future(promise ->
+                logicalSchemaProvider.getSchemaFromDeltaInformations(context.getRequest().getQueryRequest(), context.getRequest().getQueryRequest().getDeltaInformations())
+                        .onSuccess(schema -> {
+                            context.setLogicalSchema(schema);
+                            promise.complete();
+                        })
+                        .onFailure(promise::fail));
     }
 
-    private Future<QueryRequest> initDeltaInformation(EdmlRequestContext context) {
-        return Future.future(promise -> {
-            val copyRequest = context.getRequest().getQueryRequest().copy();
-            copyRequest.setSqlNode(context.getDmlSubQuery());
-            deltaQueryPreprocessor.process(context.getDmlSubQuery())
-                    .onSuccess(result -> {
-                        context.getRequest().setQueryRequest(result);
-                        promise.complete(result);
-                    })
-                    .onFailure(promise::fail);
-        });
+    private Future<EdmlRequestContext> initDeltaInformation(EdmlRequestContext context) {
+        return Future.future(promise ->
+                deltaQueryPreprocessor.process(context.getDmlSubQuery())
+                        .onSuccess(result -> {
+                            context.getRequest().getQueryRequest().setDeltaInformations(result.getDeltaInformations());
+                            context.setDmlSubQuery(result.getSqlNode());
+                            promise.complete(context);
+                        })
+                        .onFailure(promise::fail));
     }
 
     private Future<QueryResult> executeInternal(EdmlRequestContext context) {

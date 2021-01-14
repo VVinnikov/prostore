@@ -103,7 +103,7 @@ class DownloadExternalTableExecutorTest {
         when(logicalSchemaProvider.getSchemaFromQuery(any()))
                 .thenReturn(Future.succeededFuture(schema));
 
-        when(logicalSchemaProvider.getSchemaFromDeltaInformations(any()))
+        when(logicalSchemaProvider.getSchemaFromDeltaInformations(any(), any().getDeltaInformations()))
                 .thenReturn(Future.succeededFuture(schema));
 
         when(deltaQueryPreprocessor.process(any()))

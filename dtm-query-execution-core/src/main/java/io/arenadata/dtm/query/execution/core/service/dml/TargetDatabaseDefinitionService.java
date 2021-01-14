@@ -2,6 +2,7 @@ package io.arenadata.dtm.query.execution.core.service.dml;
 
 import io.arenadata.dtm.common.reader.QuerySourceRequest;
 import io.vertx.core.Future;
+import org.apache.calcite.sql.SqlNode;
 
 /**
  * Service for target database definition
@@ -14,5 +15,5 @@ public interface TargetDatabaseDefinitionService {
      * @param request request
      * @return future object
      */
-    Future<QuerySourceRequest> getTargetSource(QuerySourceRequest request);
+    Future<QuerySourceRequest> getTargetSource(QuerySourceRequest request, SqlNode query);
 }

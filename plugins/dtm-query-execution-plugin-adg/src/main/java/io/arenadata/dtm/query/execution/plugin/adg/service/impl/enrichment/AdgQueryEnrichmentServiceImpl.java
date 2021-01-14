@@ -40,17 +40,18 @@ public class AdgQueryEnrichmentServiceImpl implements QueryEnrichmentService {
 
     @Override
     public Future<String> enrich(EnrichQueryRequest request) {
-        return queryParserService.parse(new QueryParserRequest(request.getQueryRequest(), request.getSchema()))
+        return queryParserService.parse(new QueryParserRequest(request.getQuery(), request.getSchema()))
                 .compose(parsedQuery -> modifyQuery(parsedQuery, request));
     }
 
-    private Future<String> modifyQuery(QueryParserResponse parsedQuery, EnrichQueryRequest request) {
+    private Future<String> modifyQuery(QueryParserResponse parsedQuery,
+                                       EnrichQueryRequest request) {
         return Future.future(promise -> {
             contextProvider.enrichContext(parsedQuery.getCalciteContext(),
                     generatePhysicalSchema(request.getSchema(), request.getQueryRequest()));
             // form a new sql query
             adgQueryGenerator.mutateQuery(parsedQuery.getRelNode(),
-                    parsedQuery.getQueryRequest().getDeltaInformations(),
+                    request.getQueryRequest().getDeltaInformations(),
                     parsedQuery.getCalciteContext(),
                     request.getQueryRequest())
                     .onSuccess(enrichResult -> {

@@ -6,10 +6,10 @@ import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.core.configuration.properties.EdmlProperties;
 import io.arenadata.dtm.query.execution.core.factory.MpprKafkaRequestFactory;
-import io.arenadata.dtm.query.execution.core.service.query.CheckColumnTypesService;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.dml.ColumnMetadataService;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlDownloadExecutor;
+import io.arenadata.dtm.query.execution.core.service.query.CheckColumnTypesService;
 import io.arenadata.dtm.query.execution.core.service.query.impl.CheckColumnTypesServiceImpl;
 import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
@@ -49,13 +49,11 @@ public class DownloadKafkaExecutor implements EdmlDownloadExecutor {
 
     private Future<QueryResult> executeInternal(EdmlRequestContext context) {
         if (checkDestinationType(context)) {
-            QueryParserRequest queryParserRequest = new QueryParserRequest(context.getRequest().getQueryRequest(),
-                    context.getLogicalSchema());
+            val queryParserRequest = new QueryParserRequest(context.getDmlSubQuery(), context.getLogicalSchema());
             //TODO add checking for column names, and throw new ColumnNotExistsException if will be error
             return checkColumnTypesService.check(context.getDestinationEntity().getFields(), queryParserRequest)
                     .compose(areEqual -> areEqual ? mpprKafkaRequestFactory.create(context)
-                            : Future.failedFuture(new DtmException(String.format(CheckColumnTypesServiceImpl.FAIL_CHECK_COLUMNS_PATTERN,
-                            context.getDestinationEntity().getName()))))
+                            : Future.failedFuture(getFailCheckColumnsException(context)))
                     .compose(mpprRequestContext -> initColumnMetadata(context, mpprRequestContext))
                     .compose(mpprRequestContext ->
                             pluginService.mppr(edmlProperties.getSourceType(), mpprRequestContext));
@@ -63,6 +61,11 @@ public class DownloadKafkaExecutor implements EdmlDownloadExecutor {
             return Future.failedFuture(new DtmException(
                     String.format("Source not exist in [%s]", edmlProperties.getSourceType())));
         }
+    }
+
+    private DtmException getFailCheckColumnsException(EdmlRequestContext context) {
+        return new DtmException(String.format(CheckColumnTypesServiceImpl.FAIL_CHECK_COLUMNS_PATTERN,
+                context.getDestinationEntity().getName()));
     }
 
     private boolean checkDestinationType(EdmlRequestContext context) {
@@ -73,7 +76,7 @@ public class DownloadKafkaExecutor implements EdmlDownloadExecutor {
 
     private Future<MpprRequestContext> initColumnMetadata(EdmlRequestContext context,
                                                           MpprRequestContext mpprRequestContext) {
-        val parserRequest = new QueryParserRequest(context.getRequest().getQueryRequest(), context.getLogicalSchema());
+        val parserRequest = new QueryParserRequest(context.getDmlSubQuery(), context.getLogicalSchema());
         return columnMetadataService.getColumnMetadata(parserRequest)
                 .map(metadata -> {
                     mpprRequestContext.getRequest().setMetadata(metadata);

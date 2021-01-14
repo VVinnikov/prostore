@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.schema.impl;
 
+import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.dto.schema.DatamartSchemaKey;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
@@ -40,8 +41,8 @@ public class LogicalSchemaProviderImpl implements LogicalSchemaProvider {
     }
 
     @Override
-    public Future<List<Datamart>> getSchemaFromDeltaInformations(QueryRequest request) {
-        return logicalSchemaService.createSchemaFromDeltaInformations(request)
+    public Future<List<Datamart>> getSchemaFromDeltaInformations(List<DeltaInformation> deltaInformations) {
+        return logicalSchemaService.createSchemaFromDeltaInformations(deltaInformations)
                 .map(schemaMap -> {
                     log.trace("Received data schema on request: {}; {}", request, schemaMap);
                     return getDatamartsSchemas(request.getDatamartMnemonic(), schemaMap);

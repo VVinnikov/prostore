@@ -8,7 +8,7 @@ import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckCall;
 import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
 
-public class CheckContext extends RequestContext<DatamartRequest> {
+public class CheckContext extends RequestContext<DatamartRequest, SqlCheckCall> {
     private Entity entity;
     private CheckType checkType;
     private SqlCheckCall sqlCheckCall;
@@ -17,13 +17,13 @@ public class CheckContext extends RequestContext<DatamartRequest> {
                         DatamartRequest request,
                         CheckType checkType,
                         SqlCheckCall sqlCheckCall) {
-        super(metrics, request);
+        super(request, sqlNode, envName, sourceType, metrics);
         this.checkType = checkType;
         this.sqlCheckCall = sqlCheckCall;
     }
 
     public CheckContext(RequestMetrics metrics, DatamartRequest request, Entity entity) {
-        super(metrics, request);
+        super(request, sqlNode, envName, sourceType, metrics);
         this.entity = entity;
     }
 

@@ -1,6 +1,5 @@
 package io.arenadata.dtm.common.reader;
 
-import io.arenadata.dtm.common.delta.DeltaInformation;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -36,24 +35,9 @@ public class QueryRequest {
     private String sql;
 
     /**
-     * Name of environment
-     */
-    private String envName;
-
-    /**
      * Parameters (optional)
      */
     private List<String> parameters;
-
-    /**
-     * Delta Information list
-     */
-    private List<DeltaInformation> deltaInformations;
-
-    /**
-     * Data source type
-     */
-    private SourceType sourceType;
 
     public QueryRequest(UUID requestId, String datamartMnemonic, String sql) {
         this.requestId = requestId;
@@ -63,7 +47,6 @@ public class QueryRequest {
 
     public QueryRequest copy() {
         return toBuilder()
-                .deltaInformations(deltaInformations != null ? new ArrayList<>(deltaInformations) : null)
                 .parameters(parameters != null ? new ArrayList<>(parameters) : null)
                 .build();
     }

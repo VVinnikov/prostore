@@ -63,7 +63,8 @@ public class MpprKafkaRequestFactoryImpl implements MpprKafkaRequestFactory {
                                             .brokers(brokers)
                                             .topic(kafkaTopicUri.getTopic())
                                             .build())
-                                    .build()))
+                                    .build(),
+                                    context.getDmlSubQuery(), deltaInformations))
                     .onComplete(promise);
         });
     }

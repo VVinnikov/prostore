@@ -19,14 +19,12 @@ import static io.arenadata.dtm.common.model.SqlProcessingType.DML;
 public class DmlRequestContext extends RequestContext<DatamartRequest> {
 
     private final DmlType type;
-    private SqlNode query;
 
     public DmlRequestContext(RequestMetrics metrics,
                              DatamartRequest request,
-                             SqlNode query) {
-        super(metrics, request);
-        this.query = query;
-        type = query instanceof SqlUseSchema ? DmlType.USE : DmlType.LLR;
+                             SqlNode sqlNode) {
+        super(request, sqlNode, envName, sourceType, metrics);
+        type = sqlNode instanceof SqlUseSchema ? DmlType.USE : DmlType.LLR;
     }
 
     @Override

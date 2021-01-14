@@ -1,10 +1,10 @@
 package io.arenadata.dtm.query.execution.core.service.schema.impl;
 
+import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.dto.DatamartInfo;
 import io.arenadata.dtm.common.dto.schema.DatamartSchemaKey;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.calcite.core.service.DeltaInformationExtractor;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
@@ -46,9 +46,9 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
     }
 
     @Override
-    public Future<Map<DatamartSchemaKey, Entity>> createSchemaFromDeltaInformations(QueryRequest request) {
+    public Future<Map<DatamartSchemaKey, Entity>> createSchemaFromDeltaInformations(List<DeltaInformation> deltaInformations) {
         return Future.future(promise -> {
-            final List<DatamartInfo> datamartInfoList = getDatamartInfoListFromDeltaInformations(request);
+            final List<DatamartInfo> datamartInfoList = getDatamartInfoListFromDeltaInformations(deltaInformations);
             createSchema(promise, datamartInfoList);
         });
     }
@@ -70,9 +70,9 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
         return new ArrayList<>(datamartMap.values());
     }
 
-    private List<DatamartInfo> getDatamartInfoListFromDeltaInformations(QueryRequest request) {
+    private List<DatamartInfo> getDatamartInfoListFromDeltaInformations(List<DeltaInformation> deltaInformations) {
         val datamartMap = new HashMap<String, DatamartInfo>();
-        request.getDeltaInformations()
+        deltaInformations
                 .forEach(d -> {
                     DatamartInfo datamartInfo = datamartMap.getOrDefault(d.getSchemaName(),
                             new DatamartInfo(d.getSchemaName(), new HashSet<>()));

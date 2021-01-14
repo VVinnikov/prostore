@@ -61,7 +61,7 @@ public class InformationSchemaExecutorImpl implements InformationSchemaExecutor 
     private Future<String> getEnrichmentQuerySql(QuerySourceRequest request) {
         return Future.future(p -> {
                     toUpperCase(request);
-                    val parserRequest = new QueryParserRequest(request.getQueryRequest(), request.getLogicalSchema());
+                    val parserRequest = new QueryParserRequest(request.getQuery(), request.getLogicalSchema());
                     parserService.parse(parserRequest)
                             .map(response -> {
                                 val enrichmentNode = response.getSqlNode();

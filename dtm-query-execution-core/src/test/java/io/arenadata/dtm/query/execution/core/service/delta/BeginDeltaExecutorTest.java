@@ -132,7 +132,7 @@ class BeginDeltaExecutorTest {
         beginDeltaExecutor.execute(deltaQuery)
                 .onComplete(promise);
         assertEquals(exception, promise.future().cause());
-        verifyEvictCacheNotExecuted();
+        verifyEvictCacheExecuted();
     }
 
     @Test
@@ -151,7 +151,7 @@ class BeginDeltaExecutorTest {
         beginDeltaExecutor.execute(deltaQuery)
                 .onComplete(promise);
         assertTrue(promise.future().failed());
-        verifyEvictCacheNotExecuted();
+        verifyEvictCacheExecuted();
     }
 
     @Test
@@ -179,7 +179,7 @@ class BeginDeltaExecutorTest {
                 .onComplete(promise);
 
         assertTrue(promise.future().failed());
-        verifyEvictCacheNotExecuted();
+        verifyEvictCacheExecuted();
     }
 
     private List<Map<String, Object>> createResult(Long deltaNum) {
@@ -189,11 +189,5 @@ class BeginDeltaExecutorTest {
 
     private void verifyEvictCacheExecuted() {
         verify(evictQueryTemplateCacheService, times(1)).evictByDatamartName(datamart);
-    }
-
-    private void verifyEvictCacheNotExecuted() {
-        verify(evictQueryTemplateCacheService, times(0)).evictByDatamartName(anyString());
-        verify(evictQueryTemplateCacheService, times(0)).evictByEntityName(anyString(),
-                anyString());
     }
 }

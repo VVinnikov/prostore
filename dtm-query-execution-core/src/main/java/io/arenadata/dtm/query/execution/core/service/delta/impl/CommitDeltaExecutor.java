@@ -51,16 +51,7 @@ public class CommitDeltaExecutor implements DeltaExecutor, StatusEventPublisher 
 
     @Override
     public Future<QueryResult> execute(DeltaQuery deltaQuery) {
-        return Future.future(promise -> commitDelta(deltaQuery)
-                .onSuccess(result -> {
-                    try {
-                        evictQueryTemplateCacheService.evictByDatamartName(deltaQuery.getDatamart());
-                        promise.complete(result);
-                    } catch (Exception e) {
-                        promise.fail(new DtmException("Evict cache error"));
-                    }
-                })
-                .onFailure(promise::fail));
+        return commitDelta(deltaQuery);
     }
 
     private Future<QueryResult> commitDelta(DeltaQuery deltaQuery) {
@@ -76,6 +67,11 @@ public class CommitDeltaExecutor implements DeltaExecutor, StatusEventPublisher 
 
     private Future<QueryResult> writeDeltaHotByDate(CommitDeltaQuery commitDeltaQuery) {
         return Future.future(promise -> {
+            try {
+                evictQueryTemplateCacheService.evictByDatamartName(commitDeltaQuery.getDatamart());
+            } catch (Exception e) {
+                promise.fail(new DtmException("Evict cache error"));
+            }
             deltaServiceDao.writeDeltaHotSuccess(commitDeltaQuery.getDatamart(), commitDeltaQuery.getDeltaDate())
                     .onSuccess(deltaDate -> {
                         try {
@@ -90,6 +86,11 @@ public class CommitDeltaExecutor implements DeltaExecutor, StatusEventPublisher 
 
     private Future<QueryResult> writeDeltaHot(CommitDeltaQuery commitDeltaQuery) {
         return Future.future(promise -> {
+            try {
+                evictQueryTemplateCacheService.evictByDatamartName(commitDeltaQuery.getDatamart());
+            } catch (Exception e) {
+                promise.fail(new DtmException("Evict cache error"));
+            }
             deltaServiceDao.writeDeltaHotSuccess(commitDeltaQuery.getDatamart())
                     .onSuccess(deltaDate -> {
                         try {

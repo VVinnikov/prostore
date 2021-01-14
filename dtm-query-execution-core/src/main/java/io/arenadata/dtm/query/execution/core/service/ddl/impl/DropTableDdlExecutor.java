@@ -74,14 +74,7 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
             context.setDatamartName(schema);
             context.setDdlType(DdlType.DROP_TABLE);
             dropTable(context, containsIfExistsCheck(context.getRequest().getQueryRequest().getSql()))
-                    .onSuccess(r -> {
-                        try {
-                            evictQueryTemplateCacheService.evictByEntityName(schema, tableName);
-                            promise.complete(QueryResult.emptyResult());
-                        } catch (Exception e) {
-                            promise.fail(new DtmException("Evict cache error"));
-                        }
-                    })
+                    .onSuccess(r -> promise.complete(QueryResult.emptyResult()))
                     .onFailure(promise::fail);
         });
     }
@@ -133,6 +126,11 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
         //we have to use source type from queryRequest.sourceType because
         //((SqlDropTable) context.getQuery()).getDestination() is always null,
         // since we cut sourceType from all query in HintExtractor
+        try {
+            evictQueryTemplateCacheService.evictByEntityName(entity.getSchema(), entity.getName());
+        } catch (Exception e) {
+            return Future.failedFuture(new DtmException("Evict cache error"));
+        }
         Optional<SourceType> requestDestination = Optional.ofNullable(context.getRequest().getQueryRequest().getSourceType());
         if (!requestDestination.isPresent()) {
             context.getRequest().getEntity().setDestination(dataSourcePluginService.getSourceTypes());

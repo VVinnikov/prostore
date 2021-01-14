@@ -64,16 +64,7 @@ public class RollbackDeltaExecutor implements DeltaExecutor, StatusEventPublishe
 
     @Override
     public Future<QueryResult> execute(DeltaQuery deltaQuery) {
-        return Future.future(promise -> executeInternal(deltaQuery)
-                .onSuccess(result -> {
-                    try {
-                        evictQueryTemplateCacheService.evictByDatamartName(deltaQuery.getDatamart());
-                        promise.complete(result);
-                    } catch (Exception e) {
-                        promise.fail(new DtmException("Evict cache error"));
-                    }
-                })
-                .onFailure(promise::fail));
+        return executeInternal(deltaQuery);
     }
 
     private Future<QueryResult> executeInternal(DeltaQuery deltaQuery) {
@@ -81,6 +72,14 @@ public class RollbackDeltaExecutor implements DeltaExecutor, StatusEventPublishe
             deltaServiceDao.writeDeltaError(deltaQuery.getDatamart(), null)
                     .otherwise(this::skipDeltaAlreadyIsRollingBackError)
                     .compose(v -> deltaServiceDao.getDeltaHot(deltaQuery.getDatamart()))
+                    .compose(hotDelta -> {
+                        try {
+                            evictQueryTemplateCacheService.evictByDatamartName(deltaQuery.getDatamart());
+                        } catch (Exception e) {
+                            return Future.failedFuture(new DtmException("Evict cache error"));
+                        }
+                        return Future.succeededFuture(hotDelta);
+                    })
                     .compose(hotDelta -> rollbackTables((RollbackDeltaQuery) deltaQuery, hotDelta)
                             .map(v -> hotDelta))
                     .compose(hotDelta -> deltaServiceDao.deleteDeltaHot(deltaQuery.getDatamart())

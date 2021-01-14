@@ -183,7 +183,7 @@ class DropTableDdlExecutorTest {
         dropTableDdlExecutor.execute(context, entityName)
                 .onComplete(promise);
         assertNotNull(promise.future().result());
-        verify(evictQueryTemplateCacheService, times(1))
+        verify(evictQueryTemplateCacheService, never())
                 .evictByEntityName(entity.getSchema(), entity.getName());
     }
 
@@ -204,7 +204,7 @@ class DropTableDdlExecutorTest {
         dropTableDdlExecutor.execute(context, entity.getName())
                 .onComplete(promise);
         assertNotNull(promise.future().cause());
-        verify(evictQueryTemplateCacheService, never())
+        verify(evictQueryTemplateCacheService, times(1))
                 .evictByEntityName(entity.getSchema(), entity.getName());
     }
 
@@ -228,7 +228,7 @@ class DropTableDdlExecutorTest {
         dropTableDdlExecutor.execute(context, entity.getName())
                 .onComplete(promise);
         assertNotNull(promise.future().cause());
-        verify(evictQueryTemplateCacheService, never())
+        verify(evictQueryTemplateCacheService, times(1))
                 .evictByEntityName(entity.getSchema(), entity.getName());
     }
 

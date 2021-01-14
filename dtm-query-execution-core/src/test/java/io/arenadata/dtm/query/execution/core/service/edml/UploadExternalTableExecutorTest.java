@@ -181,7 +181,7 @@ class UploadExternalTableExecutorTest {
                 .onComplete(promise);
 
         assertTrue(promise.future().failed());
-        verifyEvictCacheNotExecuted();
+        verifyEvictCacheExecuted();
     }
 
     @Test
@@ -216,7 +216,7 @@ class UploadExternalTableExecutorTest {
                 .onComplete(promise);
 
         assertTrue(promise.future().failed());
-        verifyEvictCacheNotExecuted();
+        verifyEvictCacheExecuted();
     }
 
     @Test
@@ -254,7 +254,7 @@ class UploadExternalTableExecutorTest {
                 .onComplete(promise);
 
         assertTrue(promise.future().failed());
-        verifyEvictCacheNotExecuted();
+        verifyEvictCacheExecuted();
     }
 
     @Test
@@ -288,7 +288,7 @@ class UploadExternalTableExecutorTest {
                 .onComplete(promise);
 
         assertTrue(promise.future().failed());
-        verifyEvictCacheNotExecuted();
+        verifyEvictCacheExecuted();
     }
 
     @Test
@@ -324,7 +324,7 @@ class UploadExternalTableExecutorTest {
                 .onComplete(promise);
 
         assertTrue(promise.future().failed());
-        verifyEvictCacheNotExecuted();
+        verifyEvictCacheExecuted();
     }
 
     @Test
@@ -349,17 +349,11 @@ class UploadExternalTableExecutorTest {
                 .onComplete(promise);
 
         assertTrue(promise.future().failed());
-        verifyEvictCacheNotExecuted();
+        verify(evictQueryTemplateCacheService, times(0)).evictByDatamartName(anyString());
     }
 
     private void verifyEvictCacheExecuted() {
-        verify(evictQueryTemplateCacheService, times(1)).evictByEntityName(destEntity.getSchema(),
-                destEntity.getName());
-    }
-
-    private void verifyEvictCacheNotExecuted() {
-        verify(evictQueryTemplateCacheService, times(0)).evictByDatamartName(anyString());
-        verify(evictQueryTemplateCacheService, times(0)).evictByEntityName(anyString(),
-                anyString());
+        verify(evictQueryTemplateCacheService, times(1))
+                .evictByDatamartName(destEntity.getSchema());
     }
 }

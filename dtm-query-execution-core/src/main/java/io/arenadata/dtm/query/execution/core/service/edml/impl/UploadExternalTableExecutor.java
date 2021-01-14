@@ -61,20 +61,20 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
     @Override
     public Future<QueryResult> execute(EdmlRequestContext context) {
         return Future.future(promise -> isEntitySourceTypesExistsInConfiguration(context)
+                .compose(v -> {
+                    try {
+                        evictQueryTemplateCacheService.evictByDatamartName(context.getDestinationEntity().getSchema());
+                        return Future.succeededFuture(v);
+                    } catch (Exception e) {
+                        return Future.failedFuture(new DtmException("Evict cache error"));
+                    }
+                })
                 .compose(v -> writeNewOperationIfNeeded(context, context.getSourceEntity()))
                 .compose(v -> executeAndWriteOp(context))
                 .compose(queryResult -> writeOpSuccess(context.getSourceEntity().getSchema(),
                         context.getSysCn(),
                         queryResult))
-                .onSuccess(result -> {
-                    try {
-                        Entity entity = context.getDestinationEntity();
-                        evictQueryTemplateCacheService.evictByEntityName(entity.getSchema(), entity.getName());
-                        promise.complete(QueryResult.emptyResult());
-                    } catch (Exception e) {
-                        promise.fail(new DtmException("Evict cache error"));
-                    }
-                })
+                .onSuccess(result -> promise.complete(QueryResult.emptyResult()))
                 .onFailure(promise::fail));
     }
 

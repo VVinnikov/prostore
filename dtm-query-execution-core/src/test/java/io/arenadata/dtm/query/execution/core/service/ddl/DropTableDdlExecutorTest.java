@@ -215,7 +215,7 @@ class DropTableDdlExecutorTest {
                 .thenReturn(Future.succeededFuture(context.getRequest().getEntity()));
 
         when(hsqlClient.getQueryResult(any()))
-                .thenReturn(Future.succeededFuture(new ResultSet().setResults(Collections.singletonList(new JsonArray().add(0).add(0).add(viewName)))));
+                .thenReturn(Future.succeededFuture(new ResultSet().setResults(Collections.singletonList(new JsonArray().add(viewName)))));
 
         dropTableDdlExecutor.execute(context, context.getRequest().getEntity().getName())
                 .onComplete(promise);

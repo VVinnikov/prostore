@@ -37,7 +37,6 @@ import static com.google.common.collect.Sets.newHashSet;
 @Component
 public class DropTableDdlExecutor extends QueryResultDdlExecutor {
 
-    private static final int VIEWNAME_COLUMN = 2;
     private final DataSourcePluginService dataSourcePluginService;
     private final EntityCacheService entityCacheService;
     private final EntityDao entityDao;
@@ -181,12 +180,12 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
 
     private Future<Entity> checkRelatedViews(Entity entity) {
         return Future.future(promise -> {
-            hsqlClient.getQueryResult(String.format(InformationSchemaUtils.CHECK_VIEW, entity.getNameWithSchema().toUpperCase()))
+            hsqlClient.getQueryResult(String.format(InformationSchemaUtils.CHECK_VIEW, entity.getSchema().toUpperCase(), entity.getName().toUpperCase()))
                     .onSuccess(resultSet -> {
                         if (resultSet.getResults().isEmpty()) {
                             promise.complete(entity);
                         } else {
-                            val viewName = resultSet.getResults().get(0).getString(VIEWNAME_COLUMN);
+                            val viewName = resultSet.getResults().get(0).getString(0);
                             promise.fail(new DtmException(String.format("View ‘%s’ using the '%s' must be dropped first", viewName, entity.getName().toUpperCase())));
                         }
                     })

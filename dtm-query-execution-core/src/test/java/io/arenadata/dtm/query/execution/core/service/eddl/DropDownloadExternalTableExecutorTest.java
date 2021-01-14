@@ -98,13 +98,13 @@ public class DropDownloadExternalTableExecutorTest {
         Promise<QueryResult> promise = Promise.promise();
 
         Mockito.when(entityDao.getEntity(eq(schema), eq(table)))
-                .thenReturn(Future.failedFuture(new ExternalTableNotExistsException("")));
+                .thenReturn(Future.failedFuture(new TableNotExistsException("")));
 
         dropDownloadExternalTableExecutor.execute(query)
                 .onComplete(promise);
 
         assertTrue(promise.future().failed());
-        assertTrue(promise.future().cause().getCause() instanceof ExternalTableNotExistsException);
+        assertTrue(promise.future().cause() instanceof ExternalTableNotExistsException);
     }
 
     @Test

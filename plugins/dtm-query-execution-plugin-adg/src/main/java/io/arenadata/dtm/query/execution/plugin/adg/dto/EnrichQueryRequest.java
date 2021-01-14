@@ -5,6 +5,7 @@ import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.calcite.sql.SqlNode;
 
 import java.util.List;
 
@@ -14,8 +15,9 @@ import java.util.List;
 public class EnrichQueryRequest {
     private QueryRequest queryRequest;
     private List<Datamart> schema;
+    private SqlNode query;
 
-    public static EnrichQueryRequest generate(QueryRequest queryRequest, List<Datamart> schema) {
-        return new EnrichQueryRequest(queryRequest, schema);
+    public static EnrichQueryRequest generate(QueryRequest queryRequest, List<Datamart> schema, SqlNode query) {
+        return new EnrichQueryRequest(queryRequest, schema, query);
     }
 }

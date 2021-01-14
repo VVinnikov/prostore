@@ -65,7 +65,7 @@ class AdbQueryCostServiceTest {
         queryRequest.setRequestId(UUID.randomUUID());
         queryRequest.setDatamartMnemonic("TEST_DATAMART");
         QueryCostRequest costRequest = new QueryCostRequest(queryRequest, schema);
-        return new QueryCostRequestContext(new RequestMetrics(), costRequest);
+        return new QueryCostRequestContext(new RequestMetrics(), costRequest, query);
     }
 
     private void initEnrichmentMocks() {

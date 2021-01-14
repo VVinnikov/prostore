@@ -1,36 +1,54 @@
 package io.arenadata.dtm.query.execution.plugin.api;
 
 import io.arenadata.dtm.common.metrics.RequestMetrics;
-import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
 import io.arenadata.dtm.common.model.SqlProcessingType;
+import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
 import lombok.Data;
+import org.apache.calcite.sql.SqlNode;
 
 @Data
-public abstract class RequestContext<Request extends DatamartRequest> {
-	private RequestMetrics metrics;
-	private Request request;
+public abstract class RequestContext<R extends DatamartRequest, S extends SqlNode> {
 
-	public RequestContext(Request request) {
-		this.request = request;
-	}
+    protected RequestMetrics metrics;
+    protected SourceType sourceType;
+    protected String envName;
+    protected S sqlNode;
+    protected R request;
 
-	public RequestContext(RequestMetrics metrics, Request request) {
-		this.metrics = metrics;
-		this.request = request;
-	}
+    public RequestContext(R request,
+                          S sqlNode,
+                          String envName,
+                          SourceType sourceType) {
+        this.request = request;
+        this.sqlNode = sqlNode;
+        this.envName = envName;
+        this.sourceType = sourceType;
+    }
 
-	public Request getRequest() {
-		return request;
-	}
+    public RequestContext(R request,
+                          S sqlNode,
+                          String envName,
+                          SourceType sourceType,
+                          RequestMetrics metrics) {
+        this.sqlNode = sqlNode;
+        this.envName = envName;
+        this.sourceType = sourceType;
+        this.metrics = metrics;
+        this.request = request;
+    }
 
-	public RequestMetrics getMetrics() {
-		return metrics;
-	}
+    public R getRequest() {
+        return request;
+    }
 
-	public void setMetrics(RequestMetrics metrics) {
-		this.metrics = metrics;
-	}
+    public RequestMetrics getMetrics() {
+        return metrics;
+    }
 
-	public abstract SqlProcessingType getProcessingType();
+    public void setMetrics(RequestMetrics metrics) {
+        this.metrics = metrics;
+    }
 
+    public abstract SqlProcessingType getProcessingType();
 }

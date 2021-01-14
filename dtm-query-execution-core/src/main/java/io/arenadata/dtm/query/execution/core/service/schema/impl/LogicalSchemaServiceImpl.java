@@ -1,12 +1,11 @@
 package io.arenadata.dtm.query.execution.core.service.schema.impl;
 
+import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.dto.DatamartInfo;
 import io.arenadata.dtm.common.dto.schema.DatamartSchemaKey;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
-import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.calcite.core.service.DeltaInformationExtractor;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
@@ -18,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlNode;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -29,38 +27,34 @@ import java.util.stream.Collectors;
 @Slf4j
 public class LogicalSchemaServiceImpl implements LogicalSchemaService {
 
-    private final DefinitionService<SqlNode> definitionService;
     private final EntityDao entityDao;
     private final DeltaInformationExtractor deltaInformationExtractor;
 
     @Autowired
     public LogicalSchemaServiceImpl(ServiceDbFacade serviceDbFacade,
-                                    @Qualifier("coreCalciteDefinitionService") DefinitionService<SqlNode> definitionService,
                                     DeltaInformationExtractor deltaInformationExtractor) {
-        this.definitionService = definitionService;
         this.entityDao = serviceDbFacade.getServiceDbDao().getEntityDao();
         this.deltaInformationExtractor = deltaInformationExtractor;
     }
 
     @Override
-    public Future<Map<DatamartSchemaKey, Entity>> createSchemaFromQuery(QueryRequest request) {
+    public Future<Map<DatamartSchemaKey, Entity>> createSchemaFromQuery(SqlNode query) {
         return Future.future(promise -> {
-            final List<DatamartInfo> datamartInfoList = getDatamartInfoListFromQuery(request.getSql());
+            final List<DatamartInfo> datamartInfoList = getDatamartInfoListFromQuery(query);
             createSchema(promise, datamartInfoList);
         });
     }
 
     @Override
-    public Future<Map<DatamartSchemaKey, Entity>> createSchemaFromDeltaInformations(QueryRequest request) {
+    public Future<Map<DatamartSchemaKey, Entity>> createSchemaFromDeltaInformations(List<DeltaInformation> deltaInformations) {
         return Future.future(promise -> {
-            final List<DatamartInfo> datamartInfoList = getDatamartInfoListFromDeltaInformations(request);
+            final List<DatamartInfo> datamartInfoList = getDatamartInfoListFromDeltaInformations(deltaInformations);
             createSchema(promise, datamartInfoList);
         });
     }
 
-    private List<DatamartInfo> getDatamartInfoListFromQuery(String sql) {
-        val sqlNode = definitionService.processingQuery(sql);
-        val tree = new SqlSelectTree(sqlNode);
+    private List<DatamartInfo> getDatamartInfoListFromQuery(SqlNode query) {
+        val tree = new SqlSelectTree(query);
         val datamartMap = new HashMap<String, DatamartInfo>();
         tree.findAllTableAndSnapshots().stream()
                 .map(node -> deltaInformationExtractor.getDeltaInformation(tree, node))
@@ -76,9 +70,9 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
         return new ArrayList<>(datamartMap.values());
     }
 
-    private List<DatamartInfo> getDatamartInfoListFromDeltaInformations(QueryRequest request) {
+    private List<DatamartInfo> getDatamartInfoListFromDeltaInformations(List<DeltaInformation> deltaInformations) {
         val datamartMap = new HashMap<String, DatamartInfo>();
-        request.getDeltaInformations()
+        deltaInformations
                 .forEach(d -> {
                     DatamartInfo datamartInfo = datamartMap.getOrDefault(d.getSchemaName(),
                             new DatamartInfo(d.getSchemaName(), new HashSet<>()));
@@ -98,7 +92,7 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
                         .collect(Collectors.toList()))
                 .onSuccess(success -> {
                     List<Entity> entities = success.list();
-                    Map<DatamartSchemaKey, Entity> schemaKeyDatamartTableMap = entities.stream()
+                    val schemaKeyDatamartTableMap = entities.stream()
                             .map(Entity::copy)
                             .collect(Collectors.toMap(this::createDatamartSchemaKey, Function.identity()));
                     promise.complete(schemaKeyDatamartTableMap);

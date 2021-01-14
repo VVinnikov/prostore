@@ -21,7 +21,7 @@ public class ConfigRequestContext extends RequestContext<ConfigRequest> {
     public ConfigRequestContext(RequestMetrics metrics,
                                 ConfigRequest request,
                                 SqlConfigCall sqlConfigCall) {
-        super(metrics, request);
+        super(request, sqlNode, envName, sourceType, metrics);
         this.sqlConfigCall = sqlConfigCall;
     }
 

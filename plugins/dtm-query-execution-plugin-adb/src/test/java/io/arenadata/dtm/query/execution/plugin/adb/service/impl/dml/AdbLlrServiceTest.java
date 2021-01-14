@@ -86,7 +86,7 @@ class AdbLlrServiceTest {
         QueryTemplateResult queryTemplateResult = new QueryTemplateResult(template,
                 Collections.emptyList());
 
-        LlrRequest llrRequest = new LlrRequest(queryRequest, schema, Collections.emptyList());
+        LlrRequest llrRequest = new LlrRequest(sourceQueryTemplateResult, queryRequest, schema, Collections.emptyList(), sqlNode);
         llrRequest.setSourceQueryTemplateResult(queryTemplateResult);
         adbLLRService.execute(new LlrRequestContext(new RequestMetrics(), llrRequest))
                 .onComplete(ar -> {

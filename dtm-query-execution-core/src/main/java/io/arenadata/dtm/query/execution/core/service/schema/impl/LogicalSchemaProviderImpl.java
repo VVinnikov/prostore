@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.schema.impl;
 
+import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.dto.schema.DatamartSchemaKey;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
@@ -9,6 +10,7 @@ import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaService
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.sql.SqlNode;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -30,17 +32,17 @@ public class LogicalSchemaProviderImpl implements LogicalSchemaProvider {
     }
 
     @Override
-    public Future<List<Datamart>> getSchemaFromQuery(QueryRequest request) {
-        return logicalSchemaService.createSchemaFromQuery(request)
+    public Future<List<Datamart>> getSchemaFromQuery(SqlNode query, String datamart) {
+        return logicalSchemaService.createSchemaFromQuery(query)
                 .map(schemaMap -> {
-                    log.trace("Received data schema on request: {}; {}", request, schemaMap);
-                    return getDatamartsSchemas(request.getDatamartMnemonic(), schemaMap);
+                    log.trace("Received data schema on request: {}; {}", query, schemaMap);
+                    return getDatamartsSchemas(datamart, schemaMap);
                 });
     }
 
     @Override
-    public Future<List<Datamart>> getSchemaFromDeltaInformations(QueryRequest request) {
-        return logicalSchemaService.createSchemaFromDeltaInformations(request)
+    public Future<List<Datamart>> getSchemaFromDeltaInformations(List<DeltaInformation> deltaInformations) {
+        return logicalSchemaService.createSchemaFromDeltaInformations(deltaInformations)
                 .map(schemaMap -> {
                     log.trace("Received data schema on request: {}; {}", request, schemaMap);
                     return getDatamartsSchemas(request.getDatamartMnemonic(), schemaMap);

@@ -10,7 +10,7 @@ import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 
 @Slf4j
@@ -19,7 +19,7 @@ public class DmlServiceImpl implements DmlService<QueryResult> {
     private final Map<DmlType, DmlExecutor<QueryResult>> executorMap;
 
     public DmlServiceImpl() {
-        this.executorMap = new HashMap<>();
+        this.executorMap = new EnumMap<>(DmlType.class);
     }
 
     @Override

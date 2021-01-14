@@ -136,7 +136,8 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
             val costRequest = new QueryCostRequest(request.getQueryRequest(), request.getLogicalSchema());
             val costRequestContext = new QueryCostRequestContext(
                     createRequestMetrics(request),
-                    costRequest);
+                    costRequest,
+                    request.getQuery());
             pluginService.calcQueryCost(sourceType, costRequestContext)
                     .onComplete(costHandler -> {
                         if (costHandler.succeeded()) {

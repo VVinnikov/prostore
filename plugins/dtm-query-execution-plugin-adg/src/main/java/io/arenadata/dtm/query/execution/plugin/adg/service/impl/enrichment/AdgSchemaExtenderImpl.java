@@ -34,8 +34,8 @@ public class AdgSchemaExtenderImpl implements SchemaExtender {
         List<Entity> extendedDatamartClasses = new ArrayList<>();
         logicalSchema.getEntities().forEach(entity -> {
             val helperTableNames = helperTableNamesFactory.create(systemName,
-                logicalSchema.getMnemonic(),
-                entity.getName());
+                    logicalSchema.getMnemonic(),
+                    entity.getName());
             val extendedEntityFields = new ArrayList<>(entity.getFields());
             extendedEntityFields.addAll(getExtendedColumns());
             entity.setFields(extendedEntityFields);
@@ -51,11 +51,11 @@ public class AdgSchemaExtenderImpl implements SchemaExtender {
 
     private Entity getExtendedSchema(Entity entity, String tableName) {
         return entity.toBuilder()
-            .fields(entity.getFields().stream()
-                .map(ef -> ef.toBuilder().build())
-                .collect(Collectors.toList()))
-            .name(tableName)
-            .build();
+                .fields(entity.getFields().stream()
+                        .map(EntityField::copy)
+                        .collect(Collectors.toList()))
+                .name(tableName)
+                .build();
     }
 
     private List<EntityField> getExtendedColumns() {
@@ -68,9 +68,9 @@ public class AdgSchemaExtenderImpl implements SchemaExtender {
 
     private EntityField generateNewField(String name) {
         return EntityField.builder()
-            .type(ColumnType.INT)
-            .name(name)
-            .build();
+                .type(ColumnType.INT)
+                .name(name)
+                .build();
     }
 
 }

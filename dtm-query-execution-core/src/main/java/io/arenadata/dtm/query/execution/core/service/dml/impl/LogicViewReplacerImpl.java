@@ -5,6 +5,7 @@ import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.calcite.core.node.SqlTreeNode;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
+import io.arenadata.dtm.query.calcite.core.util.SqlNodeUtil;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.service.dml.LogicViewReplacer;
 import io.vertx.core.CompositeFuture;
@@ -54,6 +55,26 @@ public class LogicViewReplacerImpl implements LogicViewReplacer {
                         promise.complete(replacedSql);
                     })
                     .onFailure(promise::fail);
+        });
+    }
+
+    @SneakyThrows
+    @Override
+    public Future<SqlNode> replace(SqlNode sql, String datamart) {
+        return Future.future((Promise<SqlNode> promise) -> {
+            log.debug("before replacing:\n{}", sql);
+            SqlNode rootSqlNode = SqlNodeUtil.copy(sql);
+            replace(rootSqlNode,
+                datamart,
+                null,
+                null,
+                null,
+                null)
+                .onSuccess(v -> {
+                    log.debug("after replacing: [{}]", rootSqlNode);
+                    promise.complete(rootSqlNode);
+                })
+                .onFailure(promise::fail);
         });
     }
 

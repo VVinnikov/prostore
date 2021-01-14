@@ -62,9 +62,7 @@ public class CalciteConfiguration {
             @Qualifier("coreCalciteDefinitionService") DefinitionService<SqlNode> definitionService,
             DeltaService deltaService,
             DeltaInformationExtractor deltaInformationExtractor) {
-        return new DeltaQueryPreprocessorImpl(definitionService,
-                deltaService,
-                deltaInformationExtractor);
+        return new DeltaQueryPreprocessorImpl(deltaService, deltaInformationExtractor);
     }
 
     @Bean("coreSqlDialect")

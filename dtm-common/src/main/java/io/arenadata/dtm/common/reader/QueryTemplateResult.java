@@ -8,5 +8,6 @@ import java.util.List;
 @Data
 public class QueryTemplateResult {
     private final String template;
+    private final SqlNode templateNode;
     private final List<SqlNode> params;
 }

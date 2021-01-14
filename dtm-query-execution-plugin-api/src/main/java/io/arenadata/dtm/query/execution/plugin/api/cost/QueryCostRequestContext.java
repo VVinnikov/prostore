@@ -1,18 +1,22 @@
 package io.arenadata.dtm.query.execution.plugin.api.cost;
 
 import io.arenadata.dtm.common.metrics.RequestMetrics;
+import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.QueryCostRequest;
-import io.arenadata.dtm.common.model.SqlProcessingType;
+import lombok.Getter;
 import lombok.ToString;
+import org.apache.calcite.sql.SqlNode;
 
 import static io.arenadata.dtm.common.model.SqlProcessingType.COST;
 
+@Getter
 @ToString
 public class QueryCostRequestContext extends RequestContext<QueryCostRequest> {
-
-    public QueryCostRequestContext(RequestMetrics metrics, QueryCostRequest request) {
-        super(metrics, request);
+    private final SqlNode query;
+    public QueryCostRequestContext(RequestMetrics metrics, QueryCostRequest request, SqlNode query) {
+        super(request, sqlNode, envName, sourceType, metrics);
+        this.query = query;
     }
 
     @Override

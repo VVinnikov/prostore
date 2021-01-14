@@ -60,16 +60,20 @@ public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
             context.getRequest().getQueryRequest().setDatamartMnemonic(schemaName);
             context.setDatamartName(schemaName);
             datamartDao.existsDatamart(schemaName)
-                    .compose(isExists -> isExists ? dropDatamartInPlugins(context) : getNotExistsDatamartFuture(schemaName))
-                    .compose(r -> dropDatamart(context))
-                    .onSuccess(success -> {
-                        try {
-                            evictQueryTemplateCacheService.evictByDatamartName(schemaName);
-                            promise.complete(QueryResult.emptyResult());
-                        } catch (Exception e) {
-                            promise.fail(new DtmException("Evict cache error"));
+                    .compose(isExists -> {
+                        if (isExists) {
+                            try {
+                                evictQueryTemplateCacheService.evictByDatamartName(schemaName);
+                                return dropDatamartInPlugins(context);
+                            } catch (Exception e) {
+                                return Future.failedFuture(new DtmException("Evict cache error"));
+                            }
+                        } else {
+                            return getNotExistsDatamartFuture(schemaName);
                         }
                     })
+                    .compose(r -> dropDatamart(context))
+                    .onSuccess(success -> promise.complete(QueryResult.emptyResult()))
                     .onFailure(promise::fail);
         });
     }

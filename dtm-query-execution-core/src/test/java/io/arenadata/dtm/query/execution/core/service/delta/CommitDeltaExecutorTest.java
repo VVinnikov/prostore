@@ -138,7 +138,7 @@ class CommitDeltaExecutorTest {
         commitDeltaExecutor.execute(deltaQuery)
                 .onComplete(promise);
         assertTrue(promise.future().failed());
-        verifyEvictCacheNotExecuted();
+        verifyEvictCacheExecuted();
     }
 
     @Test
@@ -162,7 +162,7 @@ class CommitDeltaExecutorTest {
         commitDeltaExecutor.execute(deltaQuery)
                 .onComplete(promise);
         assertTrue(promise.future().failed());
-        verifyEvictCacheNotExecuted();
+        verifyEvictCacheExecuted();
     }
 
     @Test
@@ -191,7 +191,7 @@ class CommitDeltaExecutorTest {
         commitDeltaExecutor.execute(deltaQuery)
                 .onComplete(promise);
         assertTrue(promise.future().failed());
-        verifyEvictCacheNotExecuted();
+        verifyEvictCacheExecuted();
     }
 
     private List<Map<String, Object>> createResult(LocalDateTime deltaDate) {
@@ -201,11 +201,5 @@ class CommitDeltaExecutorTest {
 
     private void verifyEvictCacheExecuted() {
         verify(evictQueryTemplateCacheService, times(1)).evictByDatamartName(datamart);
-    }
-
-    private void verifyEvictCacheNotExecuted() {
-        verify(evictQueryTemplateCacheService, times(0)).evictByDatamartName(anyString());
-        verify(evictQueryTemplateCacheService, times(0)).evictByEntityName(anyString(),
-                anyString());
     }
 }

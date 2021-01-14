@@ -46,16 +46,7 @@ public class BeginDeltaExecutor implements DeltaExecutor, StatusEventPublisher {
 
     @Override
     public Future<QueryResult> execute(DeltaQuery deltaQuery) {
-        return Future.future(promise -> beginDelta(deltaQuery)
-                .onSuccess(result -> {
-                    try {
-                        evictQueryTemplateCacheService.evictByDatamartName(deltaQuery.getDatamart());
-                        promise.complete(result);
-                    } catch (Exception e) {
-                        promise.fail(new DtmException("Evict cache error"));
-                    }
-                })
-                .onFailure(promise::fail));
+        return beginDelta(deltaQuery);
     }
 
     private Future<QueryResult> beginDelta(DeltaQuery deltaQuery) {
@@ -71,6 +62,11 @@ public class BeginDeltaExecutor implements DeltaExecutor, StatusEventPublisher {
 
     private Future<QueryResult> writeDeltaHotByNum(BeginDeltaQuery beginDeltaQuery) {
         return Future.future(promise -> {
+            try {
+                evictQueryTemplateCacheService.evictByDatamartName(beginDeltaQuery.getDatamart());
+            } catch (Exception e) {
+                promise.fail(new DtmException("Evict cache error"));
+            }
             deltaServiceDao.writeNewDeltaHot(beginDeltaQuery.getDatamart(), beginDeltaQuery.getDeltaNum())
                     .onSuccess(newDeltaHotNum -> {
                         try {
@@ -86,6 +82,11 @@ public class BeginDeltaExecutor implements DeltaExecutor, StatusEventPublisher {
 
     private Future<QueryResult> writeDeltaHot(BeginDeltaQuery beginDeltaQuery) {
         return Future.future(promise -> {
+            try {
+                evictQueryTemplateCacheService.evictByDatamartName(beginDeltaQuery.getDatamart());
+            } catch (Exception e) {
+                promise.fail(new DtmException("Evict cache error"));
+            }
             deltaServiceDao.writeNewDeltaHot(beginDeltaQuery.getDatamart())
                     .onSuccess(newDeltaHotNum -> {
                         try {

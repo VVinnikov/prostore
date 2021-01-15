@@ -41,11 +41,11 @@ public class LogicalSchemaProviderImpl implements LogicalSchemaProvider {
     }
 
     @Override
-    public Future<List<Datamart>> getSchemaFromDeltaInformations(List<DeltaInformation> deltaInformations) {
+    public Future<List<Datamart>> getSchemaFromDeltaInformations(List<DeltaInformation> deltaInformations, String datamart) {
         return logicalSchemaService.createSchemaFromDeltaInformations(deltaInformations)
                 .map(schemaMap -> {
-                    log.trace("Received data schema on request: {}; {}", request, schemaMap);
-                    return getDatamartsSchemas(request.getDatamartMnemonic(), schemaMap);
+                    log.trace("Received data schema on delta information: {}; {}", deltaInformations, schemaMap);
+                    return getDatamartsSchemas(datamart, schemaMap);
                 });
     }
 

@@ -15,7 +15,7 @@ import static io.arenadata.dtm.common.model.SqlProcessingType.COST;
 public class QueryCostRequestContext extends RequestContext<QueryCostRequest> {
     private final SqlNode query;
     public QueryCostRequestContext(RequestMetrics metrics, QueryCostRequest request, SqlNode query) {
-        super(request, sqlNode, envName, sourceType, metrics);
+        super(request, sqlNode, envName, metrics);
         this.query = query;
     }
 

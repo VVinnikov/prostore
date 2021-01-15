@@ -12,7 +12,7 @@ import static io.arenadata.dtm.common.model.SqlProcessingType.MPPW;
 public class MppwRequestContext extends RequestContext<MppwRequest> {
 
     public MppwRequestContext(RequestMetrics metrics, MppwRequest request) {
-        super(request, sqlNode, envName, sourceType, metrics);
+        super(request, sqlNode, envName);
     }
 
     @Override

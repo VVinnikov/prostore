@@ -16,9 +16,8 @@ public class EddlRequestContext extends RequestContext<DatamartRequest, SqlNode>
 	public EddlRequestContext(RequestMetrics metrics,
 							  DatamartRequest request,
 							  String envName,
-							  SourceType sourceType,
 							  SqlNode sqlNode) {
-		super(request, sqlNode, envName, sourceType, metrics);
+		super(request, sqlNode, envName, metrics);
 	}
 
 	@Override

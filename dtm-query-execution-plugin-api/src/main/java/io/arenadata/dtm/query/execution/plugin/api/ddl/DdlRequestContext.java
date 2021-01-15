@@ -24,6 +24,7 @@ public class DdlRequestContext extends RequestContext<DdlRequest, SqlNode> {
     private SqlCall sqlCall;
     private String datamartName;
     private String systemName;
+    private SourceType sourceType;
     private List<PostSqlActionType> postActions;
 
     public DdlRequestContext(final DdlRequest request) {
@@ -36,7 +37,6 @@ public class DdlRequestContext extends RequestContext<DdlRequest, SqlNode> {
         this.query = query;
         this.systemName = "local";
         this.postActions = new ArrayList<>();
-        SqlCall sqlCall = getSqlNode();
     }
 
     public DdlRequestContext(RequestMetrics metrics,
@@ -44,9 +44,10 @@ public class DdlRequestContext extends RequestContext<DdlRequest, SqlNode> {
                              SqlNode query,
                              SourceType sourceType,
                              String envName) {
-        super(request, query, envName, sourceType, metrics);
+        super(request, query, envName, metrics);
         this.ddlType = UNKNOWN;
         this.systemName = "local";
+        this.sourceType = sourceType;
         this.postActions = new ArrayList<>();
     }
 

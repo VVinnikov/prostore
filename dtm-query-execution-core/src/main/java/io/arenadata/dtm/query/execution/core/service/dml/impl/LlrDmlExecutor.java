@@ -76,7 +76,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
     @Override
     public Future<QueryResult> execute(DmlRequestContext context) {
         val queryRequest = context.getRequest().getQueryRequest();
-        val sourceRequest = new QuerySourceRequest(queryRequest, context.getQuery(), queryRequest.getSourceType());
+        val sourceRequest = new QuerySourceRequest(queryRequest, context.getQuery(), context.getSourceType());
         return logicViewReplacer.replace(context.getQuery(),
                 sourceRequest.getQueryRequest().getDatamartMnemonic())
                 .map(sqlWithoutViews -> {

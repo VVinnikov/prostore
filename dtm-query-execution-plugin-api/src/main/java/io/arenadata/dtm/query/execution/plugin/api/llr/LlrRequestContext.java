@@ -17,7 +17,7 @@ public class LlrRequestContext extends RequestContext<LlrRequest> {
 	private List<DeltaInformation> deltaInformations;
 
 	public LlrRequestContext(RequestMetrics metrics, LlrRequest request) {
-		super(request, sqlNode, envName, sourceType, metrics);
+		super(request, sqlNode, envName, metrics);
 	}
 
 	@Override

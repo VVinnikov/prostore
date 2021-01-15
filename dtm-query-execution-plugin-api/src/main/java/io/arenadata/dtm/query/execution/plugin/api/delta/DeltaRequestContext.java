@@ -18,7 +18,7 @@ import static io.arenadata.dtm.common.model.SqlProcessingType.DELTA;
 public class DeltaRequestContext extends RequestContext<DatamartRequest> {
     private List<PostSqlActionType> postActions;
     public DeltaRequestContext(RequestMetrics metrics, DatamartRequest request) {
-        super(request, sqlNode, envName, sourceType, metrics);
+        super(request, sqlNode, envName, metrics);
         postActions = new ArrayList<>();
     }
 

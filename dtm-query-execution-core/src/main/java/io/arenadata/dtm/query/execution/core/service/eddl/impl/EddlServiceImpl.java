@@ -41,7 +41,7 @@ public class EddlServiceImpl implements EddlService<QueryResult> {
 
     @Override
     public Future<QueryResult> execute(EddlRequestContext context) {
-        return paramExtractor.extract(context.getRequest().getQueryRequest())
+        return paramExtractor.extract(context)
                 .compose(eddlQuery -> sendMetricsAndExecute(context, eddlQuery));
     }
 

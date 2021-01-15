@@ -4,10 +4,12 @@ import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.RequestStatus;
 import io.arenadata.dtm.common.reader.QueryRequest;
+import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckCall;
 import io.arenadata.dtm.query.calcite.core.extension.config.SqlConfigCall;
-import io.arenadata.dtm.query.calcite.core.extension.delta.SqlDeltaCall;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.truncate.SqlBaseTruncate;
+import io.arenadata.dtm.query.calcite.core.extension.delta.SqlDeltaCall;
+import io.arenadata.dtm.query.execution.core.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.core.factory.RequestContextFactory;
 import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
@@ -31,24 +33,29 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Component
-public class RequestContextFactoryImpl implements RequestContextFactory<RequestContext<? extends DatamartRequest>, QueryRequest> {
+public class RequestContextFactoryImpl implements RequestContextFactory<RequestContext<? extends DatamartRequest, ? extends SqlNode>, QueryRequest> {
     private final SqlDialect sqlDialect;
     private final DtmConfig dtmSettings;
+    private final AppConfiguration coreConfiguration;
 
     @Autowired
     public RequestContextFactoryImpl(@Qualifier("coreSqlDialect") SqlDialect sqlDialect,
-                                     DtmConfig dtmSettings) {
+                                     DtmConfig dtmSettings,
+                                     AppConfiguration coreConfiguration) {
         this.sqlDialect = sqlDialect;
         this.dtmSettings = dtmSettings;
+        this.coreConfiguration = coreConfiguration;
     }
 
     @Override
-    public RequestContext<? extends DatamartRequest> create(QueryRequest request, SqlNode node) {
+    public RequestContext<? extends DatamartRequest, ? extends SqlNode> create(QueryRequest request,
+                                                                               SourceType sourceType,
+                                                                               SqlNode node) {
         val changedQueryRequest = changeSql(request, node);
         if (isConfigRequest(node)) {
             return new ConfigRequestContext(createRequestMetrics(request),
-                new ConfigRequest(request),
-                (SqlConfigCall) node);
+                    new ConfigRequest(request),
+                    (SqlConfigCall) node);
         } else if (isDdlRequest(node)) {
             switch (node.getKind()) {
                 case OTHER_DDL:
@@ -59,7 +66,10 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
                     } else {
                         return new EddlRequestContext(
                                 createRequestMetrics(request),
-                                new DatamartRequest(changedQueryRequest));
+                                new DatamartRequest(changedQueryRequest),
+                                coreConfiguration.getEnvName(),
+                                sourceType,
+                                node);
                     }
                 default:
                     return new DdlRequestContext(
@@ -82,7 +92,10 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
             case INSERT:
                 return new EdmlRequestContext(
                         createRequestMetrics(request),
-                        new DatamartRequest(changedQueryRequest), (SqlInsert) node);
+                        new DatamartRequest(changedQueryRequest),
+                        (SqlInsert) node,
+                        coreConfiguration.getEnvName(),
+                        sourceType);
             default:
                 return new DmlRequestContext(
                         createRequestMetrics(request),

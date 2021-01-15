@@ -1,10 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.query.impl;
 
 import io.arenadata.dtm.common.exception.DtmException;
-import io.arenadata.dtm.common.reader.InputQueryRequest;
-import io.arenadata.dtm.common.reader.QueryRequest;
-import io.arenadata.dtm.common.reader.QueryResult;
-import io.arenadata.dtm.common.reader.QuerySourceRequest;
+import io.arenadata.dtm.common.reader.*;
 import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckCall;
 import io.arenadata.dtm.query.calcite.core.extension.config.function.SqlConfigStorageAdd;
 import io.arenadata.dtm.query.calcite.core.extension.delta.SqlBeginDelta;
@@ -45,7 +42,7 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
     private final DefinitionService<SqlNode> definitionService;
     private final Vertx vertx;
     private final HintExtractor hintExtractor;
-    private final RequestContextFactory<RequestContext<? extends DatamartRequest>, QueryRequest> requestContextFactory;
+    private final RequestContextFactory<RequestContext<? extends DatamartRequest, ? extends SqlNode>, QueryRequest> requestContextFactory;
     private final DatamartMnemonicExtractor datamartMnemonicExtractor;
     private final DefaultDatamartSetter defaultDatamartSetter;
     private final QuerySemicolonRemover querySemicolonRemover;
@@ -54,7 +51,7 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
     @Autowired
     public QueryAnalyzerImpl(QueryDispatcher queryDispatcher,
                              @Qualifier("coreCalciteDefinitionService") DefinitionService<SqlNode> definitionService,
-                             RequestContextFactory<RequestContext<? extends DatamartRequest>, QueryRequest> requestContextFactory,
+                             RequestContextFactory<RequestContext<? extends DatamartRequest, ? extends SqlNode>, QueryRequest> requestContextFactory,
                              @Qualifier("coreVertx") Vertx vertx,
                              HintExtractor hintExtractor,
                              DatamartMnemonicExtractor datamartMnemonicExtractor,
@@ -90,7 +87,9 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
                     sqlNode = defaultDatamartSetter.set(sqlNode, queryRequest.getDatamartMnemonic());
                 }
             }
-            queryDispatcher.dispatch(requestContextFactory.create(queryRequest, sqlNode))
+            queryDispatcher.dispatch(requestContextFactory.create(queryRequest,
+                    parsedQueryResponse.getSourceType(),
+                    sqlNode))
                     .onComplete(promise);
         });
     }
@@ -100,10 +99,9 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
             try {
                 val queryRequest = queryRequestFactory.create(inputQueryRequest);
                 val queryRequestWithoutHint = getQueryRequestWithoutHint(queryRequest);
-                queryRequest.setSourceType(queryRequestWithoutHint.getSourceType());
                 log.debug("Pre-parse request: {}", queryRequestWithoutHint.getQueryRequest().getSql());
                 val node = definitionService.processingQuery(queryRequestWithoutHint.getQueryRequest().getSql());
-                it.complete(new ParsedQueryResponse(queryRequest, node));
+                it.complete(new ParsedQueryResponse(queryRequest, node, queryRequestWithoutHint.getSourceType()));
             } catch (Exception e) {
                 it.fail(new DtmException("Error parsing query", e));
             }
@@ -132,6 +130,7 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
     private final static class ParsedQueryResponse {
         private final QueryRequest queryRequest;
         private final SqlNode sqlNode;
+        private final SourceType sourceType;
     }
 
 }

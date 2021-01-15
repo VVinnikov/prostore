@@ -53,7 +53,7 @@ class QueryAnalyzerImplTest {
     private Vertx vertx = Vertx.vertx();
     final CoreDtmSettings dtmSettings = new CoreDtmSettings(ZoneId.of("UTC"));
     private RequestContextFactory<RequestContext<? extends DatamartRequest>, QueryRequest> requestContextFactory =
-            new RequestContextFactoryImpl(new SqlDialect(SqlDialect.EMPTY_CONTEXT), dtmSettings);
+            new RequestContextFactoryImpl(new SqlDialect(SqlDialect.EMPTY_CONTEXT), dtmSettings, coreConfiguration);
     private QueryDispatcher queryDispatcher = mock(QueryDispatcher.class);
     private QueryAnalyzer queryAnalyzer;
 

@@ -34,7 +34,7 @@ public class ConfigServiceImpl implements ConfigService<QueryResult> {
 
     private Future<ConfigExecutor> getExecutor(ConfigRequestContext context) {
         return Future.future(promise -> {
-            SqlConfigCall configCall = context.getSqlConfigCall();
+            SqlConfigCall configCall = context.getSqlNode();
             ConfigExecutor executor = executorMap.get(configCall.getSqlConfigType());
             if (executor != null) {
                 promise.complete(executor);

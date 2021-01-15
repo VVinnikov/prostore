@@ -55,14 +55,19 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
         if (isConfigRequest(node)) {
             return new ConfigRequestContext(createRequestMetrics(request),
                     new ConfigRequest(request),
-                    (SqlConfigCall) node);
+                    (SqlConfigCall) node,
+                    sourceType,
+                    coreConfiguration.getEnvName());
         } else if (isDdlRequest(node)) {
             switch (node.getKind()) {
                 case OTHER_DDL:
                     if (node instanceof SqlBaseTruncate) {
                         return new DdlRequestContext(
                                 createRequestMetrics(request),
-                                new DdlRequest(changedQueryRequest), node);
+                                new DdlRequest(changedQueryRequest),
+                                node,
+                                sourceType,
+                                coreConfiguration.getEnvName());
                     } else {
                         return new EddlRequestContext(
                                 createRequestMetrics(request),
@@ -74,7 +79,10 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
                 default:
                     return new DdlRequestContext(
                             createRequestMetrics(request),
-                            new DdlRequest(changedQueryRequest), node);
+                            new DdlRequest(changedQueryRequest),
+                            node,
+                            sourceType,
+                            coreConfiguration.getEnvName());
             }
         } else if (node instanceof SqlDeltaCall) {
             return new DeltaRequestContext(

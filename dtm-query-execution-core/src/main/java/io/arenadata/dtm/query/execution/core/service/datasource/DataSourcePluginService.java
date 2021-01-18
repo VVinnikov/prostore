@@ -5,7 +5,6 @@ import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
-import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
@@ -13,10 +12,9 @@ import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
 import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprPluginRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
 import io.vertx.core.Future;
 
 import java.util.Set;
@@ -55,19 +53,19 @@ public interface DataSourcePluginService {
      * <p>execute Massively Parallel Processing Reading</p>
      *
      * @param sourceType Data source type
-     * @param context    MPPR context
+     * @param request    MPPR plugin request
      * @return future object
      */
-    Future<QueryResult> mppr(SourceType sourceType, MpprRequestContext context);
+    Future<QueryResult> mppr(SourceType sourceType, MpprPluginRequest request);
 
     /**
      * <p>execute Massively Parallel Processing Writing</p>
      *
-     * @param sourceType         Data source type
-     * @param mppwRequestContext MPPW context
+     * @param sourceType        Data source type
+     * @param request           MPPW plugin request
      * @return future object
      */
-    Future<QueryResult> mppw(SourceType sourceType, MppwRequestContext mppwRequestContext);
+    Future<QueryResult> mppw(SourceType sourceType, MppwPluginRequest request);
 
     /**
      * <p>Calculate executing query cost</p>
@@ -82,10 +80,10 @@ public interface DataSourcePluginService {
      * <p>Get plugin status information</p>
      *
      * @param sourceType           Data source type
-     * @param statusRequestContext Status request context
+     * @param topic                Topic
      * @return future object
      */
-    Future<StatusQueryResult> status(SourceType sourceType, StatusRequestContext statusRequestContext);
+    Future<StatusQueryResult> status(SourceType sourceType, String topic);
 
     /**
      * @param sourceType Data source type

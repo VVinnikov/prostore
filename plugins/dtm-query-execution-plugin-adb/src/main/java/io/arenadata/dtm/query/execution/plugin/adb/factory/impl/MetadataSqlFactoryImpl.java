@@ -9,9 +9,9 @@ import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adb.configuration.properties.MppwProperties;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.kafka.DownloadExternalEntityMetadata;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
 import io.arenadata.dtm.query.execution.plugin.api.request.MpprRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
 import lombok.val;
 import org.springframework.stereotype.Component;
 
@@ -176,16 +176,16 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
     @Override
     public String createExtTableSqlQuery(String server,
                                          List<String> columnNameTypeList,
-                                         MppwRequestContext context,
+                                         MppwPluginRequest request,
                                          MppwProperties mppwProperties) {
-        val schema = context.getRequest().getKafkaParameter().getDatamart();
+        val schema = request.getKafkaParameter().getDatamart();
         val table = MetadataSqlFactoryImpl.WRITABLE_EXT_TABLE_PREF +
-                context.getRequest().getQueryRequest().getRequestId().toString().replace("-", "_");
+                request.getRequestId().toString().replace("-", "_");
         val columns = String.join(DELIMITER, columnNameTypeList);
-        val format = context.getRequest().getKafkaParameter().getUploadMetadata().getFormat().getName();
-        val topic = context.getRequest().getKafkaParameter().getTopic();
+        val format = request.getKafkaParameter().getUploadMetadata().getFormat().getName();
+        val topic = request.getKafkaParameter().getTopic();
         val consumerGroup = mppwProperties.getConsumerGroup();
-        val uploadMessageLimit = ((UploadExternalEntityMetadata) context.getRequest().getKafkaParameter().getUploadMetadata()).getUploadMessageLimit();
+        val uploadMessageLimit = ((UploadExternalEntityMetadata) request.getKafkaParameter().getUploadMetadata()).getUploadMessageLimit();
         val chunkSize = uploadMessageLimit != null ? uploadMessageLimit : mppwProperties.getDefaultMessageLimit();
         val timeout = mppwProperties.getFdwTimeoutMs();
         return String.format(CREATE_FOREIGN_TABLE_SQL, schema, table, columns, server, format, topic, consumerGroup, chunkSize, timeout);

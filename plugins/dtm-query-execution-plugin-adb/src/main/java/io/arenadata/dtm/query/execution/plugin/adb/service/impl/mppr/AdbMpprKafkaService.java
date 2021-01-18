@@ -7,8 +7,7 @@ import io.arenadata.dtm.query.execution.plugin.adb.factory.impl.MetadataSqlFacto
 import io.arenadata.dtm.query.execution.plugin.adb.service.QueryEnrichmentService;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.exception.MpprDatasourceException;
-import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.request.MpprRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprPluginRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.MpprKafkaService;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +17,7 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service("adbMpprKafkaService")
-public class AdbMpprKafkaService implements MpprKafkaService<QueryResult> {
+public class AdbMpprKafkaService implements MpprKafkaService {
 
     private final QueryEnrichmentService adbQueryEnrichmentService;
     private final MetadataSqlFactory metadataSqlFactory;
@@ -34,14 +33,13 @@ public class AdbMpprKafkaService implements MpprKafkaService<QueryResult> {
     }
 
     @Override
-    public Future<QueryResult> execute(MpprRequestContext context) {
+    public Future<QueryResult> execute(MpprPluginRequest request) {
         return Future.future(promise -> {
-            val request = context.getRequest();
-            val schema = request.getQueryRequest().getDatamartMnemonic();
+            val schema = request.getDatamartMnemonic();
             val table = MetadataSqlFactoryImpl.WRITABLE_EXTERNAL_TABLE_PREF +
-                    request.getQueryRequest().getRequestId().toString().replaceAll("-", "_");
-            adbQueryExecutor.executeUpdate(metadataSqlFactory.createWritableExtTableSqlQuery(request))
-                    .compose(v -> enrichQuery(context, request))
+                    request.getRequestId().toString().replaceAll("-", "_");
+            adbQueryExecutor.executeUpdate(metadataSqlFactory.createWritableExtTableSqlQuery(request.getMpprRequest()))
+                    .compose(v -> enrichQuery(request))
                     .compose(enrichedQuery -> insertIntoWritableExtTableSqlQuery(schema, table, enrichedQuery))
                     .compose(v -> dropWritableExtTableSqlQuery(schema, table))
                     .onSuccess(success -> promise.complete(QueryResult.emptyResult()))
@@ -52,7 +50,7 @@ public class AdbMpprKafkaService implements MpprKafkaService<QueryResult> {
                                 }
                                 promise.fail(new MpprDatasourceException(
                                         String.format("Failed to unload data from datasource by request %s",
-                                                context.getRequest()),
+                                                request.getMpprRequest()),
                                         err));
                             }));
         });
@@ -71,10 +69,9 @@ public class AdbMpprKafkaService implements MpprKafkaService<QueryResult> {
                         sql));
     }
 
-    private Future<String> enrichQuery(MpprRequestContext context, MpprRequest request) {
+    private Future<String> enrichQuery(MpprPluginRequest request) {
         return adbQueryEnrichmentService.enrich(
-                EnrichQueryRequest.generate(request.getQueryRequest(),
-                        request.getLogicalSchema(),
-                        context.getQuery()));
+                EnrichQueryRequest.generate(request.getMpprRequest().getQueryRequest(),
+                        request.getMpprRequest().getLogicalSchema(), request.getSqlNode()));
     }
 }

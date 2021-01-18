@@ -15,12 +15,9 @@ import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
 import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
-import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
 import io.vertx.core.Future;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
@@ -69,7 +66,7 @@ class AdbDtmDataSourcePluginIT {
         }
 
         @Override
-        public Future<QueryResult> mppw(MppwRequestContext mppwRequest) {
+        public Future<QueryResult> mppw(MppwPluginRequest mppwRequest) {
             return null;
         }
 
@@ -79,7 +76,7 @@ class AdbDtmDataSourcePluginIT {
         }
 
         @Override
-        public Future<StatusQueryResult> status(StatusRequestContext context) {
+        public Future<StatusQueryResult> status(StatusPluginRequest context) {
             return null;
         }
 

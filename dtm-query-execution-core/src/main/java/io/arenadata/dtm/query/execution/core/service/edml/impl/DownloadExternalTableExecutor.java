@@ -71,7 +71,7 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
 
     private Future<Void> initLogicalSchema(EdmlRequestContext context) {
         return Future.future(promise ->
-                logicalSchemaProvider.getSchemaFromDeltaInformations(context.getRequest().getQueryRequest(), context.getRequest().getQueryRequest().getDeltaInformations())
+                logicalSchemaProvider.getSchemaFromDeltaInformations(context.getRequest().getQueryRequest(), context.getDeltaInformations())
                         .onSuccess(schema -> {
                             context.setLogicalSchema(schema);
                             promise.complete();
@@ -83,7 +83,7 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
         return Future.future(promise ->
                 deltaQueryPreprocessor.process(context.getDmlSubQuery())
                         .onSuccess(result -> {
-                            context.getRequest().getQueryRequest().setDeltaInformations(result.getDeltaInformations());
+                            context.setDeltaInformations(result.getDeltaInformations());
                             context.setDmlSubQuery(result.getSqlNode());
                             promise.complete(context);
                         })

@@ -21,10 +21,10 @@ public class AdqmDtmDataSourcePlugin extends AbstractDtmDataSourcePlugin {
     public AdqmDtmDataSourcePlugin(
             DdlService<Void> ddlService,
             LlrService<QueryResult> adqmLlrService,
-            MpprKafkaService<QueryResult> adqmMpprKafkaService,
-            MppwKafkaService<QueryResult> mppwKafkaService,
+            MpprKafkaService adqmMpprKafkaService,
+            MppwKafkaService mppwKafkaService,
             QueryCostService<Integer> adqmQueryCostService,
-            StatusService<StatusQueryResult> statusService,
+            StatusService statusService,
             RollbackService<Void> rollbackService,
             CheckTableService checkTableService,
             CheckDataService checkDataService,

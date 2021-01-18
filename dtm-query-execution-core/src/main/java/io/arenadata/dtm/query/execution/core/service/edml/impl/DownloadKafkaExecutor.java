@@ -12,7 +12,7 @@ import io.arenadata.dtm.query.execution.core.service.edml.EdmlDownloadExecutor;
 import io.arenadata.dtm.query.execution.core.service.query.CheckColumnTypesService;
 import io.arenadata.dtm.query.execution.core.service.query.impl.CheckColumnTypesServiceImpl;
 import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprPluginRequest;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -54,9 +54,9 @@ public class DownloadKafkaExecutor implements EdmlDownloadExecutor {
             return checkColumnTypesService.check(context.getDestinationEntity().getFields(), queryParserRequest)
                     .compose(areEqual -> areEqual ? mpprKafkaRequestFactory.create(context)
                             : Future.failedFuture(getFailCheckColumnsException(context)))
-                    .compose(mpprRequestContext -> initColumnMetadata(context, mpprRequestContext))
-                    .compose(mpprRequestContext ->
-                            pluginService.mppr(edmlProperties.getSourceType(), mpprRequestContext));
+                    .compose(mpprPluginRequest -> initColumnMetadata(context, mpprPluginRequest))
+                    .compose(mpprPluginRequest ->
+                            pluginService.mppr(edmlProperties.getSourceType(), mpprPluginRequest));
         } else {
             return Future.failedFuture(new DtmException(
                     String.format("Source not exist in [%s]", edmlProperties.getSourceType())));
@@ -74,13 +74,13 @@ public class DownloadKafkaExecutor implements EdmlDownloadExecutor {
                 .allMatch(entity -> entity.getDestination().contains(edmlProperties.getSourceType()));
     }
 
-    private Future<MpprRequestContext> initColumnMetadata(EdmlRequestContext context,
-                                                          MpprRequestContext mpprRequestContext) {
+    private Future<MpprPluginRequest> initColumnMetadata(EdmlRequestContext context,
+                                                          MpprPluginRequest mpprPluginRequest) {
         val parserRequest = new QueryParserRequest(context.getDmlSubQuery(), context.getLogicalSchema());
         return columnMetadataService.getColumnMetadata(parserRequest)
                 .map(metadata -> {
-                    mpprRequestContext.getRequest().setMetadata(metadata);
-                    return mpprRequestContext;
+                    mpprPluginRequest.getMpprRequest().setMetadata(metadata);
+                    return mpprPluginRequest;
                 });
     }
 

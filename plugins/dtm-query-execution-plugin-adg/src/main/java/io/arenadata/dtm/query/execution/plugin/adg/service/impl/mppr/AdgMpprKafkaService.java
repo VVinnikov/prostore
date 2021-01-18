@@ -6,7 +6,7 @@ import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.TtUpl
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.adg.service.QueryEnrichmentService;
 import io.arenadata.dtm.query.execution.plugin.api.exception.MpprDatasourceException;
-import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprPluginRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.kafka.DownloadExternalEntityMetadata;
 import io.arenadata.dtm.query.execution.plugin.api.request.MpprRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.MpprKafkaService;
@@ -22,18 +22,18 @@ import java.util.UUID;
 @Slf4j
 @RequiredArgsConstructor
 @Service("adgMpprKafkaService")
-public class AdgMpprKafkaService implements MpprKafkaService<QueryResult> {
+public class AdgMpprKafkaService implements MpprKafkaService {
     private final QueryEnrichmentService adbQueryEnrichmentService;
     private final AdgCartridgeClient adgCartridgeClient;
 
     @Override
-    public Future<QueryResult> execute(MpprRequestContext context) {
+    public Future<QueryResult> execute(MpprPluginRequest request) {
         return Future.future(promise -> {
-            MpprRequest request = context.getRequest();
-            EnrichQueryRequest enrichQueryRequest = EnrichQueryRequest.generate(request.getQueryRequest(),
-                    request.getLogicalSchema());
+            MpprRequest mpprRequest = request.getMpprRequest();
+            EnrichQueryRequest enrichQueryRequest = EnrichQueryRequest.generate(mpprRequest.getQueryRequest(),
+                    mpprRequest.getLogicalSchema(), request.getSqlNode());
             adbQueryEnrichmentService.enrich(enrichQueryRequest)
-                    .compose(enrichQuery -> uploadData(request, enrichQuery))
+                    .compose(enrichQuery -> uploadData(mpprRequest, enrichQuery))
                     .onComplete(promise);
         });
     }

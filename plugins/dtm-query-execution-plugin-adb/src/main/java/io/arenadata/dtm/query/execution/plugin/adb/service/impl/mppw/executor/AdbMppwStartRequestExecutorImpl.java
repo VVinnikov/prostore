@@ -3,7 +3,6 @@ package io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.executor;
 import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.plugin.exload.Format;
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adb.configuration.properties.MppwProperties;
@@ -17,7 +16,7 @@ import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwKaf
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwTransferDataRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
@@ -63,17 +62,17 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
     }
 
     @Override
-    public Future<QueryResult> execute(MppwRequestContext context) {
+    public Future<QueryResult> execute(MppwPluginRequest request) {
         return Future.future((Promise<QueryResult> promise) -> {
-            val format = context.getRequest().getKafkaParameter().getUploadMetadata().getFormat();
+            val format = request.getKafkaParameter().getUploadMetadata().getFormat();
             if (!Format.AVRO.equals(format)) {
                 promise.fail(new MppwDatasourceException(String.format("Format %s not implemented", format)));
             }
-            List<KafkaBrokerInfo> brokers = context.getRequest().getKafkaParameter().getBrokers();
+            List<KafkaBrokerInfo> brokers = request.getKafkaParameter().getBrokers();
             getOrCreateServer(brokers, dbName)
-                    .compose(server -> createWritableExternalTable(server, context))
-                    .compose(server -> createMppwKafkaRequestContext(context, server))
-                    .compose(kafkaContext -> moveOffsetsExtTable(context).map(v -> kafkaContext))
+                    .compose(server -> createWritableExternalTable(server, request))
+                    .compose(server -> createMppwKafkaRequestContext(request, server))
+                    .compose(kafkaContext -> moveOffsetsExtTable(request).map(v -> kafkaContext))
                     .onSuccess(kafkaContext -> {
                         vertx.eventBus().send(MppwTopic.KAFKA_START.getValue(), Json.encode(kafkaContext));
                         log.debug("Mppw started successfully");
@@ -109,14 +108,14 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
                 .map(v -> String.format(MetadataSqlFactoryImpl.SERVER_NAME_TEMPLATE, currentDatabase));
     }
 
-    private Future<String> createWritableExternalTable(String server, MppwRequestContext context) {
+    private Future<String> createWritableExternalTable(String server, MppwPluginRequest request) {
         return Future.future(promise -> {
-            val sourceEntity = context.getRequest().getKafkaParameter().getSourceEntity();
+            val sourceEntity = request.getKafkaParameter().getSourceEntity();
             val columns = metadataSqlFactory.getColumnsFromEntity(sourceEntity);
             columns.add("sys_op int");
             adbQueryExecutor.executeUpdate(metadataSqlFactory.createExtTableSqlQuery(server,
                     columns,
-                    context,
+                    request,
                     mppwProperties))
                     .onComplete(ar -> {
                         if (ar.succeeded()) {
@@ -128,28 +127,26 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
         });
     }
 
-    private Future<Void> moveOffsetsExtTable(MppwRequestContext requestContext) {
-        QueryRequest queryRequest = requestContext.getRequest().getQueryRequest();
-        val schema = queryRequest.getDatamartMnemonic();
-        val table = MetadataSqlFactoryImpl.WRITABLE_EXT_TABLE_PREF + queryRequest.getRequestId().toString().replace("-", "_");
+    private Future<Void> moveOffsetsExtTable(MppwPluginRequest request) {
+        val schema = request.getDatamartMnemonic();
+        val table = MetadataSqlFactoryImpl.WRITABLE_EXT_TABLE_PREF + request.getRequestId().toString().replace("-", "_");
         return adbQueryExecutor.executeUpdate(metadataSqlFactory.insertIntoKadbOffsetsSqlQuery(schema, table))
                 .compose(v -> adbQueryExecutor.executeUpdate(metadataSqlFactory.moveOffsetsExtTableSqlQuery(schema, table)));
     }
 
-    private Future<MppwKafkaRequestContext> createMppwKafkaRequestContext(MppwRequestContext context,
-                                                                          String server) {
+    private Future<MppwKafkaRequestContext> createMppwKafkaRequestContext(MppwPluginRequest request, String server) {
         return Future.future((Promise<MppwKafkaRequestContext> promise) -> {
             final MppwKafkaLoadRequest mppwKafkaLoadRequest =
-                    mppwKafkaLoadRequestFactory.create(context, server, mppwProperties);
+                    mppwKafkaLoadRequestFactory.create(request, server, mppwProperties);
             final String keyColumnsSqlQuery = metadataSqlFactory.createKeyColumnsSqlQuery(
-                    context.getRequest().getKafkaParameter().getDatamart(),
-                    context.getRequest().getKafkaParameter().getDestinationTableName());
+                    request.getKafkaParameter().getDatamart(),
+                    request.getKafkaParameter().getDestinationTableName());
             final List<ColumnMetadata> metadata = metadataSqlFactory.createKeyColumnQueryMetadata();
             adbQueryExecutor.execute(keyColumnsSqlQuery, metadata)
                     .onComplete(ar -> {
                         if (ar.succeeded()) {
                             final MppwTransferDataRequest mppwTransferDataRequest =
-                                    mppwTransferRequestFactory.create(context, ar.result());
+                                    mppwTransferRequestFactory.create(request, ar.result());
                             MppwKafkaRequestContext kafkaRequestContext =
                                     new MppwKafkaRequestContext(mppwKafkaLoadRequest, mppwTransferDataRequest);
                             promise.complete(kafkaRequestContext);

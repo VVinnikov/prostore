@@ -21,10 +21,10 @@ public class AdbDtmDataSourcePlugin extends AbstractDtmDataSourcePlugin {
     public AdbDtmDataSourcePlugin(
             DdlService<Void> ddlService,
             LlrService<QueryResult> adbLlrService,
-            MpprKafkaService<QueryResult> adbMpprKafkaService,
-            MppwKafkaService<QueryResult> adbMppwKafkaService,
+            MpprKafkaService adbMpprKafkaService,
+            MppwKafkaService adbMppwKafkaService,
             QueryCostService<Integer> adbQueryCostService,
-            StatusService<StatusQueryResult> statusService,
+            StatusService statusService,
             RollbackService<Void> rollbackService,
             CheckTableService checkTableService,
             CheckDataService checkDataService,

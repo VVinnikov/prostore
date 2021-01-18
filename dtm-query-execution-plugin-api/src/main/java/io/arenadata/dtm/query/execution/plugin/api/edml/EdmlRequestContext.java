@@ -4,6 +4,7 @@ import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.model.ddl.Entity;
+import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.api.CoreRequestContext;
 import lombok.Getter;
@@ -32,7 +33,7 @@ public class EdmlRequestContext extends CoreRequestContext<DatamartRequest, SqlN
                               DatamartRequest request,
                               SqlInsert sqlNode,
                               String envName) {
-        super(request, sqlNode, envName, metrics);
+        super(metrics, envName, request, sqlNode);
         this.sqlNode = sqlNode;
     }
 

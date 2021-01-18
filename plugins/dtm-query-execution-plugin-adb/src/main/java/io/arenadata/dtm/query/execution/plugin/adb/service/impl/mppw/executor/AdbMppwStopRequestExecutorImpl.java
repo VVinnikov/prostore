@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.executor;
 
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adb.configuration.properties.MppwProperties;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
@@ -8,7 +7,7 @@ import io.arenadata.dtm.query.execution.plugin.adb.factory.impl.MetadataSqlFacto
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.MppwTopic;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
@@ -40,11 +39,11 @@ public class AdbMppwStopRequestExecutorImpl implements AdbMppwRequestExecutor {
     }
 
     @Override
-    public Future<QueryResult> execute(MppwRequestContext requestContext) {
-        return dropExtTable(requestContext)
+    public Future<QueryResult> execute(MppwPluginRequest request) {
+        return dropExtTable(request)
                 .compose(v -> Future.future((Promise<QueryResult> promise) -> vertx.eventBus().request(
                         MppwTopic.KAFKA_STOP.getValue(),
-                        requestContext.getRequest().getQueryRequest().getRequestId().toString(),
+                        request.getRequestId().toString(),
                         new DeliveryOptions().setSendTimeout(mppwProperties.getStopTimeoutMs()),
                         ar -> {
                             if (ar.succeeded()) {
@@ -56,13 +55,11 @@ public class AdbMppwStopRequestExecutorImpl implements AdbMppwRequestExecutor {
                         })));
     }
 
-    private Future<Void> dropExtTable(MppwRequestContext requestContext) {
+    private Future<Void> dropExtTable(MppwPluginRequest request) {
         return Future.future(promise -> {
-            QueryRequest queryRequest = requestContext.getRequest().getQueryRequest();
-            val schema = queryRequest.getDatamartMnemonic();
             val table = MetadataSqlFactoryImpl.WRITABLE_EXT_TABLE_PREF +
-                    queryRequest.getRequestId().toString().replace("-", "_");
-            adbQueryExecutor.executeUpdate(metadataSqlFactory.dropExtTableSqlQuery(schema, table))
+                    request.getRequestId().toString().replace("-", "_");
+            adbQueryExecutor.executeUpdate(metadataSqlFactory.dropExtTableSqlQuery(request.getDatamartMnemonic(), table))
                     .onComplete(promise);
         });
     }

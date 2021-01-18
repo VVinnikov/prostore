@@ -30,7 +30,7 @@ public class AdgCartridgeSchemaGeneratorImpl implements AdgCartridgeSchemaGenera
                 yaml.setSpaces(new LinkedHashMap<>());
             }
             val spaces = yaml.getSpaces();
-            AdgTables<AdgSpace> adgCreateTableQueries = createTableQueriesFactory.create(context);
+            AdgTables<AdgSpace> adgCreateTableQueries = createTableQueriesFactory.create(context.getRequest().getEntity(), context.getEnvName());
             Stream.of(adgCreateTableQueries.getActual(), adgCreateTableQueries.getHistory(),
                     adgCreateTableQueries.getStaging())
                     .forEach(space -> spaces.put(space.getName(), space.getSpace()));

@@ -4,6 +4,7 @@ import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
@@ -103,26 +104,26 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
     Set<String> getActiveCaches();
 
     /**
-     * @param context CheckContext
+     * @param request check table request
      * @return error if check failed
      */
-    Future<Void> checkTable(CheckContext context);
+    Future<Void> checkTable(CheckTableRequest request);
 
     /**
-     * @param params CheckDataByCountParams
+     * @param request CheckDataByCountParams
      * @return count of records
      */
-    Future<Long> checkDataByCount(CheckDataByCountRequest params);
+    Future<Long> checkDataByCount(CheckDataByCountRequest request);
 
     /**
-     * @param params CheckDataByHashInt32Params
+     * @param request CheckDataByHashInt32Params
      * @return checksum
      */
-    Future<Long> checkDataByHashInt32(CheckDataByHashInt32Request params);
+    Future<Long> checkDataByHashInt32(CheckDataByHashInt32Request request);
 
     /**
-     * @param params truncate params
+     * @param request truncate params
      * @return future object
      */
-    Future<Void> truncateHistory(TruncateHistoryRequest params);
+    Future<Void> truncateHistory(TruncateHistoryRequest request);
 }

@@ -9,12 +9,11 @@ import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePlugin
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsService;
 import io.arenadata.dtm.query.execution.core.verticle.TaskVerticleExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
-import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
-import io.arenadata.dtm.query.execution.plugin.api.dto.PluginRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
 import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
@@ -134,39 +133,45 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     }
 
     @Override
-    public Future<Void> checkTable(SourceType sourceType, CheckContext context) {
-        return check(new PluginRequest(sourceType, context.getMetrics()),
-                plugin -> plugin.checkTable(context));
+    public Future<Void> checkTable(SourceType sourceType,
+                                   RequestMetrics metrics,
+                                   CheckTableRequest checkTableRequest) {
+        return executeWithMetrics(sourceType,
+                SqlProcessingType.CHECK,
+                metrics,
+                plugin -> plugin.checkTable(checkTableRequest));
     }
 
     @Override
-    public Future<Long> checkDataByCount(CheckDataByCountRequest params) {
-        return check(params, plugin -> plugin.checkDataByCount(params));
+    public Future<Long> checkDataByCount(SourceType sourceType,
+                                         RequestMetrics metrics,
+                                         CheckDataByCountRequest request) {
+        return executeWithMetrics(sourceType,
+                SqlProcessingType.CHECK,
+                metrics,
+                plugin -> plugin.checkDataByCount(request));
     }
 
     @Override
-    public Future<Long> checkDataByHashInt32(CheckDataByHashInt32Request params) {
-        return check(params, plugin -> plugin.checkDataByHashInt32(params));
+    public Future<Long> checkDataByHashInt32(SourceType sourceType,
+                                             RequestMetrics metrics,
+                                             CheckDataByHashInt32Request request) {
+        return executeWithMetrics(
+                sourceType,
+                SqlProcessingType.CHECK,
+                metrics,
+                plugin -> plugin.checkDataByHashInt32(request));
     }
 
     @Override
-    public Future<Void> truncateHistory(TruncateHistoryRequest params) {
-        return executeWithMetrics(SqlProcessingType.TRUNCATE,
-                params,
+    public Future<Void> truncateHistory(SourceType sourceType,
+                                        RequestMetrics metrics,
+                                        TruncateHistoryRequest params) {
+        return executeWithMetrics(
+                sourceType,
+                SqlProcessingType.TRUNCATE,
+                metrics,
                 plugin -> plugin.truncateHistory(params));
-    }
-
-    private <T> Future<T> check(PluginRequest pluginRequest,
-                                Function<DtmDataSourcePlugin, Future<T>> func) {
-        return executeWithMetrics(SqlProcessingType.CHECK, pluginRequest, func);
-    }
-
-    private <T> Future<T> executeWithMetrics(SqlProcessingType sqlProcessingType,
-                                             PluginRequest pluginRequest,
-                                             Function<DtmDataSourcePlugin, Future<T>> func) {
-        SourceType sourceType = pluginRequest.getSourceType();
-        RequestMetrics requestMetrics = pluginRequest.getRequestMetrics();
-        return executeWithMetrics(sourceType, sqlProcessingType, requestMetrics, func);
     }
 
     private <T> Future<T> executeWithMetrics(SourceType sourceType,

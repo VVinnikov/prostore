@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.api;
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
@@ -91,13 +92,13 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
     }
 
     @Override
-    public Future<Void> checkTable(CheckContext context) {
-        return checkTableService.check(context);
+    public Future<Void> checkTable(CheckTableRequest request) {
+        return checkTableService.check(request);
     }
 
     @Override
-    public Future<Long> checkDataByCount(CheckDataByCountRequest params) {
-        return checkDataService.checkDataByCount(params);
+    public Future<Long> checkDataByCount(CheckDataByCountRequest request) {
+        return checkDataService.checkDataByCount(request);
     }
 
     @Override

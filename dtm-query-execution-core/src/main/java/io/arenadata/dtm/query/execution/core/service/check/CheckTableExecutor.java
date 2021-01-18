@@ -1,15 +1,16 @@
 package io.arenadata.dtm.query.execution.core.service.check;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.extension.check.CheckType;
 import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckTable;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
-import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckException;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckExecutor;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
@@ -52,10 +53,7 @@ public class CheckTableExecutor implements CheckExecutor {
     private Future<String> checkEntity(Entity entity, CheckContext context) {
         return Future.future(promise -> CompositeFuture.join(entity.getDestination()
                 .stream()
-                .map(type -> checkEntityByType(new CheckContext(context.getMetrics(),
-                                context.getRequest(),
-                                entity),
-                        type))
+                .map(type -> checkEntityByType(entity, context, type))
                 .collect(Collectors.toList()))
                 .onSuccess(result -> {
                     List<Pair<SourceType, Optional<String>>> list = result.list();
@@ -76,9 +74,14 @@ public class CheckTableExecutor implements CheckExecutor {
                 .onFailure(promise::fail));
     }
 
-    private Future<Pair<SourceType, Optional<String>>> checkEntityByType(CheckContext context, SourceType type) {
+    private Future<Pair<SourceType, Optional<String>>> checkEntityByType(Entity entity, CheckContext context, SourceType type) {
         return Future.future(promise -> dataSourcePluginService
-                .checkTable(type, context)
+                .checkTable(type,
+                        context.getMetrics(),
+                        new CheckTableRequest(context.getRequest().getQueryRequest().getRequestId(),
+                                context.getEnvName(),
+                                context.getRequest().getQueryRequest().getDatamartMnemonic(),
+                                entity))
                 .onSuccess(result -> promise.complete(new Pair<>(type, Optional.empty())))
                 .onFailure(fail -> {
                     if (fail instanceof CheckException) {

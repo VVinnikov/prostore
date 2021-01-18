@@ -1,8 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.api.dto;
 
-import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.ddl.Entity;
-import io.arenadata.dtm.common.reader.SourceType;
 import lombok.Getter;
 
 @Getter
@@ -11,12 +9,9 @@ public class CheckDataByCountRequest extends PluginRequest {
     private final Long sysCn;
     private final String env;
 
-    public CheckDataByCountRequest(SourceType sourceType,
-                                   RequestMetrics requestMetrics,
-                                   Entity entity,
+    public CheckDataByCountRequest(Entity entity,
                                    Long sysCn,
                                    String env) {
-        super(sourceType, requestMetrics);
         this.entity = entity;
         this.sysCn = sysCn;
         this.env = env;

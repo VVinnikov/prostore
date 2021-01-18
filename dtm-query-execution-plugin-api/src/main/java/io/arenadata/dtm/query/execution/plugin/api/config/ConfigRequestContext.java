@@ -20,7 +20,7 @@ public class ConfigRequestContext extends CoreRequestContext<ConfigRequest, SqlC
                                 ConfigRequest request,
                                 SqlConfigCall sqlConfigCall,
                                 String envName) {
-        super(request, sqlConfigCall, envName, metrics);
+        super(metrics, envName, request, sqlConfigCall);
     }
 
     @Override

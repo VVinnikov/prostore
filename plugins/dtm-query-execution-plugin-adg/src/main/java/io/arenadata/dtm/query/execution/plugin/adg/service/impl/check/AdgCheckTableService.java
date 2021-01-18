@@ -3,13 +3,11 @@ package io.arenadata.dtm.query.execution.plugin.adg.service.impl.check;
 import io.arenadata.dtm.query.execution.plugin.adg.dto.AdgTables;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.*;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
-import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckException;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.factory.MetaTableEntityFactory;
-import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
-import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
 import io.arenadata.dtm.query.execution.plugin.api.factory.CreateTableQueriesFactory;
+import io.arenadata.dtm.query.execution.plugin.api.factory.MetaTableEntityFactory;
+import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
 import io.vertx.core.Future;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -32,10 +30,9 @@ public class AdgCheckTableService implements CheckTableService {
     }
 
     @Override
-    public Future<Void> check(CheckContext context) {
+    public Future<Void> check(CheckTableRequest request) {
         AdgTables<AdgSpace> tableEntities = createTableQueriesFactory
-                .create(new DdlRequestContext(new DdlRequest(context.getRequest().getQueryRequest(),
-                        context.getEntity())));
+                .create(request.getEntity(), request.getEnvName());
         Map<String, Space> expSpaces = Stream.of(
                 tableEntities.getActual(),
                 tableEntities.getHistory(),

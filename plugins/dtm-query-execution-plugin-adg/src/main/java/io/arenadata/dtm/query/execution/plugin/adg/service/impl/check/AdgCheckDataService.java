@@ -23,17 +23,17 @@ public class AdgCheckDataService implements CheckDataService {
     }
 
     @Override
-    public Future<Long> checkDataByCount(CheckDataByCountRequest params) {
-        Entity entity = params.getEntity();
-        return getCheckSum(params.getEnv(), entity.getSchema(), entity.getName(), params.getSysCn(),
+    public Future<Long> checkDataByCount(CheckDataByCountRequest request) {
+        Entity entity = request.getEntity();
+        return getCheckSum(request.getEnv(), entity.getSchema(), entity.getName(), request.getSysCn(),
                 null);
     }
 
     @Override
-    public Future<Long> checkDataByHashInt32(CheckDataByHashInt32Request params) {
-        Entity entity = params.getEntity();
-        return getCheckSum(params.getEnv(), entity.getSchema(), entity.getName(), params.getSysCn(),
-                params.getColumns());
+    public Future<Long> checkDataByHashInt32(CheckDataByHashInt32Request request) {
+        Entity entity = request.getEntity();
+        return getCheckSum(request.getEnv(), entity.getSchema(), entity.getName(), request.getSysCn(),
+                request.getColumns());
     }
 
     private Future<Long> getCheckSum(String env,

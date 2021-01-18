@@ -5,6 +5,6 @@ import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Reque
 import io.vertx.core.Future;
 
 public interface CheckDataService {
-    Future<Long> checkDataByCount(CheckDataByCountRequest params);
-    Future<Long> checkDataByHashInt32(CheckDataByHashInt32Request params);
+    Future<Long> checkDataByCount(CheckDataByCountRequest request);
+    Future<Long> checkDataByHashInt32(CheckDataByHashInt32Request request);
 }

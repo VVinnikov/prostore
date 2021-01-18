@@ -8,18 +8,18 @@ import lombok.Getter;
 import java.util.Set;
 
 @Getter
-public class CheckDataByHashInt32Params extends PluginParams {
+public class CheckDataByHashInt32Request extends PluginRequest {
     private final Entity entity;
     private final Long sysCn;
     private final Set<String> columns;
     private final String env;
 
-    public CheckDataByHashInt32Params(SourceType sourceType,
-                                      RequestMetrics requestMetrics,
-                                      Entity entity,
-                                      Long sysCn,
-                                      Set<String> columns,
-                                      String env) {
+    public CheckDataByHashInt32Request(SourceType sourceType,
+                                       RequestMetrics requestMetrics,
+                                       Entity entity,
+                                       Long sysCn,
+                                       Set<String> columns,
+                                       String env) {
         super(sourceType, requestMetrics);
         this.entity = entity;
         this.sysCn = sysCn;

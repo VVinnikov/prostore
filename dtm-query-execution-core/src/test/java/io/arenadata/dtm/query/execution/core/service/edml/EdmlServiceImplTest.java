@@ -21,7 +21,6 @@ import io.arenadata.dtm.query.execution.core.service.edml.impl.DownloadExternalT
 import io.arenadata.dtm.query.execution.core.service.edml.impl.EdmlServiceImpl;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadExternalTableExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.EdmlService;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;

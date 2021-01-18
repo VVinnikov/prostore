@@ -5,7 +5,7 @@ import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.AdqmTruncateHistoryQueriesFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants;
-import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
+import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
 import org.apache.calcite.sql.SqlDialect;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -35,7 +35,7 @@ public class AdqmTruncateHistoryQueriesFactoryImpl implements AdqmTruncateHistor
     }
 
     @Override
-    public String insertIntoActualQuery(TruncateHistoryParams params) {
+    public String insertIntoActualQuery(TruncateHistoryRequest params) {
         String sysCnExpression = params.getSysCn()
                 .map(sysCn -> String.format(" AND sys_to < %s", sysCn))
                 .orElse("");
@@ -55,14 +55,14 @@ public class AdqmTruncateHistoryQueriesFactoryImpl implements AdqmTruncateHistor
     }
 
     @Override
-    public String flushQuery(TruncateHistoryParams params) {
+    public String flushQuery(TruncateHistoryRequest params) {
         Entity entity = params.getEntity();
         String dbName = String.format("%s__%s", params.getEnv(), entity.getSchema());
         return String.format(FLUSH_PATTERN, dbName, entity.getName());
     }
 
     @Override
-    public String optimizeQuery(TruncateHistoryParams params) {
+    public String optimizeQuery(TruncateHistoryRequest params) {
         Entity entity = params.getEntity();
         String dbName = String.format("%s__%s", params.getEnv(), entity.getSchema());
         return String.format(OPTIMIZE_PATTERN, dbName, entity.getName(), ddlProperties.getCluster());

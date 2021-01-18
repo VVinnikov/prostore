@@ -9,7 +9,7 @@ import io.arenadata.dtm.query.execution.plugin.adb.factory.TruncateHistoryDelete
 import io.arenadata.dtm.query.execution.plugin.adb.factory.impl.TruncateHistoryDeleteQueriesFactoryImpl;
 import io.arenadata.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
+import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TruncateHistoryService;
 import io.vertx.core.Future;
@@ -99,7 +99,7 @@ public class AdbTruncateHistoryServiceTest {
         verify(adbQueryExecutor, times(1)).execute(expected);
     }
 
-    private TruncateHistoryParams getParams(Long sysCn, String conditions) {
+    private TruncateHistoryRequest getParams(Long sysCn, String conditions) {
         Entity entity = new Entity();
         entity.setSchema(SCHEMA);
         entity.setName(TABLE);
@@ -113,6 +113,6 @@ public class AdbTruncateHistoryServiceTest {
                     }
                 })
                 .orElse(null);
-        return new TruncateHistoryParams(null, null, sysCn, entity, null, sqlNode);
+        return new TruncateHistoryRequest(null, null, sysCn, entity, null, sqlNode);
     }
 }

@@ -4,10 +4,8 @@ import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.model.ddl.Entity;
-import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
-import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
+import io.arenadata.dtm.query.execution.plugin.api.CoreRequestContext;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -21,7 +19,7 @@ import static io.arenadata.dtm.common.model.SqlProcessingType.EDML;
 @Getter
 @Setter
 @ToString
-public class EdmlRequestContext extends RequestContext<DatamartRequest, SqlNode> {
+public class EdmlRequestContext extends CoreRequestContext<DatamartRequest, SqlNode> {
     private Entity sourceEntity;
     private Entity destinationEntity;
     private Long sysCn;

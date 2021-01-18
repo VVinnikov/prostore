@@ -6,16 +6,16 @@ import io.arenadata.dtm.common.reader.SourceType;
 import lombok.Getter;
 
 @Getter
-public class CheckDataByCountParams extends PluginParams{
+public class CheckDataByCountRequest extends PluginRequest {
     private final Entity entity;
     private final Long sysCn;
     private final String env;
 
-    public CheckDataByCountParams(SourceType sourceType,
-                                  RequestMetrics requestMetrics,
-                                  Entity entity,
-                                  Long sysCn,
-                                  String env) {
+    public CheckDataByCountRequest(SourceType sourceType,
+                                   RequestMetrics requestMetrics,
+                                   Entity entity,
+                                   Long sysCn,
+                                   String env) {
         super(sourceType, requestMetrics);
         this.entity = entity;
         this.sysCn = sysCn;

@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.check;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityType;
@@ -8,14 +9,13 @@ import io.arenadata.dtm.query.calcite.core.extension.check.CheckType;
 import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckData;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
-import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.verticle.TaskVerticleExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckException;
-import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountParams;
-import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Params;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckExecutor;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
@@ -126,7 +126,7 @@ public class CheckDataExecutor implements CheckExecutor {
         BiFunction<SourceType, Long, Future<Long>> checkFunc = Optional.ofNullable(columns)
                 .map(value -> getCheckHashFunc(context, entity, value))
                 .orElse((type, sysCn) -> dataSourcePluginService.checkDataByCount(
-                        new CheckDataByCountParams(type, context.getMetrics(), entity, sysCn,
+                        new CheckDataByCountRequest(type, context.getMetrics(), entity, sysCn,
                                 context.getRequest().getQueryRequest().getEnvName())));
         return sysCn -> Future.future(promise -> CompositeFuture.join(
                 entity.getDestination().stream()
@@ -162,7 +162,7 @@ public class CheckDataExecutor implements CheckExecutor {
                     String.join(", ", notExistColumns)));
         } else {
             return (type, sysCn) -> dataSourcePluginService.checkDataByHashInt32(
-                    new CheckDataByHashInt32Params(type, context.getMetrics(), entity, sysCn, columns,
+                    new CheckDataByHashInt32Request(type, context.getMetrics(), entity, sysCn, columns,
                             context.getRequest().getQueryRequest().getEnvName()));
         }
     }

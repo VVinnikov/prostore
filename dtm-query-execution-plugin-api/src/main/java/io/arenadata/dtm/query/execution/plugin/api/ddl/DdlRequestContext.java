@@ -2,8 +2,9 @@ package io.arenadata.dtm.query.execution.plugin.api.ddl;
 
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.SqlProcessingType;
+import io.arenadata.dtm.common.post.PostSqlActionType;
 import io.arenadata.dtm.common.reader.SourceType;
-import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.CoreRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import lombok.Data;
 import lombok.ToString;
@@ -18,7 +19,7 @@ import static io.arenadata.dtm.query.execution.plugin.api.ddl.DdlType.UNKNOWN;
 
 @Data
 @ToString
-public class DdlRequestContext extends RequestContext<DdlRequest, SqlNode> {
+public class DdlRequestContext extends CoreRequestContext<DdlRequest, SqlNode> {
 
     private DdlType ddlType;
     private SqlCall sqlCall;

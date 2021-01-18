@@ -10,17 +10,16 @@ import io.arenadata.dtm.query.calcite.core.extension.config.SqlConfigCall;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.truncate.SqlBaseTruncate;
 import io.arenadata.dtm.query.calcite.core.extension.delta.SqlDeltaCall;
 import io.arenadata.dtm.query.execution.core.configuration.AppConfiguration;
+import io.arenadata.dtm.query.execution.core.dto.delta.operation.DeltaRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.dml.DmlRequestContext;
 import io.arenadata.dtm.query.execution.core.factory.RequestContextFactory;
-import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.CoreRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.config.ConfigRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.delta.DeltaRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.dml.DmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.eddl.EddlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.ConfigRequest;
-import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.DmlRequest;
 import lombok.val;
@@ -33,7 +32,7 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Component
-public class RequestContextFactoryImpl implements RequestContextFactory<RequestContext<? extends DatamartRequest, ? extends SqlNode>, QueryRequest> {
+public class RequestContextFactoryImpl implements RequestContextFactory<CoreRequestContext<? extends DatamartRequest, ? extends SqlNode>, QueryRequest> {
     private final SqlDialect sqlDialect;
     private final DtmConfig dtmSettings;
     private final AppConfiguration coreConfiguration;
@@ -48,9 +47,9 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
     }
 
     @Override
-    public RequestContext<? extends DatamartRequest, ? extends SqlNode> create(QueryRequest request,
-                                                                               SourceType sourceType,
-                                                                               SqlNode node) {
+    public CoreRequestContext<? extends DatamartRequest, ? extends SqlNode> create(QueryRequest request,
+                                                                                   SourceType sourceType,
+                                                                                   SqlNode node) {
         val changedQueryRequest = changeSql(request, node);
         if (isConfigRequest(node)) {
             return new ConfigRequestContext(createRequestMetrics(request),

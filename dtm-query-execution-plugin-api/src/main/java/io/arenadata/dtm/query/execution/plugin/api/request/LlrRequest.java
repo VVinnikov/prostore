@@ -4,6 +4,7 @@ import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryTemplateResult;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
+import io.arenadata.dtm.query.execution.plugin.api.dto.PluginRequest;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.sql.SqlNode;
@@ -12,7 +13,7 @@ import java.util.List;
 
 @Getter
 @Setter
-public class LlrRequest extends DatamartRequest {
+public class LlrRequest extends PluginRequest {
 
     private final SqlNode sqlNode;
     private final List<Datamart> schema;

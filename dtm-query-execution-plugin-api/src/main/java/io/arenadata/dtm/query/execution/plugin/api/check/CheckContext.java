@@ -5,10 +5,9 @@ import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.query.calcite.core.extension.check.CheckType;
 import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckCall;
-import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
+import io.arenadata.dtm.query.execution.plugin.api.CoreRequestContext;
 
-public class CheckContext extends RequestContext<DatamartRequest, SqlCheckCall> {
+public class CheckContext extends CoreRequestContext<DatamartRequest, SqlCheckCall> {
     private Entity entity;
     private CheckType checkType;
     private SqlCheckCall sqlCheckCall;

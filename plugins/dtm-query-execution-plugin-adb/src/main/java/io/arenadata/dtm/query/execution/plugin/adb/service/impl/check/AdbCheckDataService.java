@@ -4,8 +4,8 @@ import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountParams;
-import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Params;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckDataService;
 import io.vertx.core.Future;
 import lombok.val;
@@ -54,7 +54,7 @@ public class AdbCheckDataService implements CheckDataService {
     }
 
     @Override
-    public Future<Long> checkDataByCount(CheckDataByCountParams params) {
+    public Future<Long> checkDataByCount(CheckDataByCountRequest params) {
         return Future.future(p -> {
             //TODO it's better to exclude generating sql query in separate factory class
             val sql = String.format(CHECK_DATA_BY_COUNT_TEMPLATE,
@@ -72,12 +72,12 @@ public class AdbCheckDataService implements CheckDataService {
     }
 
     @Override
-    public Future<Long> checkDataByHashInt32(CheckDataByHashInt32Params params) {
+    public Future<Long> checkDataByHashInt32(CheckDataByHashInt32Request params) {
         return queryExecutor.executeUpdate(CREATE_OR_REPLACE_FUNC)
                 .compose(v -> checkDataByHash(params));
     }
 
-    private Future<Long> checkDataByHash(CheckDataByHashInt32Params params) {
+    private Future<Long> checkDataByHash(CheckDataByHashInt32Request params) {
         return Future.future(p -> {
             Map<String, EntityField> fields = params.getEntity().getFields().stream()
                     .collect(Collectors.toMap(EntityField::getName, Function.identity()));

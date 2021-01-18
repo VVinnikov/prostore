@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adg.factory.impl;
 
 import io.arenadata.dtm.query.execution.plugin.adg.factory.AdgTruncateHistoryConditionFactory;
-import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
+import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
 import io.vertx.core.Future;
 import org.apache.calcite.sql.SqlDialect;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +24,7 @@ public class AdgTruncateHistoryConditionFactoryImpl implements AdgTruncateHistor
     }
 
     @Override
-    public Future<String> create(TruncateHistoryParams params) {
+    public Future<String> create(TruncateHistoryRequest params) {
         List<String> conditions = new ArrayList<>();
         params.getConditions()
                 .map(val -> String.format("(%s)", val.toSqlString(sqlDialect)))

@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.plugin.api.request;
+package io.arenadata.dtm.common.request;
 
 import io.arenadata.dtm.common.reader.QueryRequest;
 import lombok.AllArgsConstructor;

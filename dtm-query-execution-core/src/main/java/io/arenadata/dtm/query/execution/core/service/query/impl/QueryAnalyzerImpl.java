@@ -19,8 +19,7 @@ import io.arenadata.dtm.query.execution.core.service.query.QuerySemicolonRemover
 import io.arenadata.dtm.query.execution.core.utils.DatamartMnemonicExtractor;
 import io.arenadata.dtm.query.execution.core.utils.DefaultDatamartSetter;
 import io.arenadata.dtm.query.execution.core.utils.HintExtractor;
-import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
+import io.arenadata.dtm.query.execution.plugin.api.CoreRequestContext;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import lombok.Data;
@@ -42,7 +41,7 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
     private final DefinitionService<SqlNode> definitionService;
     private final Vertx vertx;
     private final HintExtractor hintExtractor;
-    private final RequestContextFactory<RequestContext<? extends DatamartRequest, ? extends SqlNode>, QueryRequest> requestContextFactory;
+    private final RequestContextFactory<CoreRequestContext<? extends DatamartRequest, ? extends SqlNode>, QueryRequest> requestContextFactory;
     private final DatamartMnemonicExtractor datamartMnemonicExtractor;
     private final DefaultDatamartSetter defaultDatamartSetter;
     private final QuerySemicolonRemover querySemicolonRemover;
@@ -51,7 +50,7 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
     @Autowired
     public QueryAnalyzerImpl(QueryDispatcher queryDispatcher,
                              @Qualifier("coreCalciteDefinitionService") DefinitionService<SqlNode> definitionService,
-                             RequestContextFactory<RequestContext<? extends DatamartRequest, ? extends SqlNode>, QueryRequest> requestContextFactory,
+                             RequestContextFactory<CoreRequestContext<? extends DatamartRequest, ? extends SqlNode>, QueryRequest> requestContextFactory,
                              @Qualifier("coreVertx") Vertx vertx,
                              HintExtractor hintExtractor,
                              DatamartMnemonicExtractor datamartMnemonicExtractor,

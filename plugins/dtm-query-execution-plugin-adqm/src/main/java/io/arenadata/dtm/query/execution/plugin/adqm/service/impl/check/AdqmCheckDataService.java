@@ -2,8 +2,8 @@ package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.check;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountParams;
-import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Params;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckDataService;
 import io.vertx.core.Future;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +43,7 @@ public class AdqmCheckDataService implements CheckDataService {
     }
 
     @Override
-    public Future<Long> checkDataByCount(CheckDataByCountParams params) {
+    public Future<Long> checkDataByCount(CheckDataByCountRequest params) {
         Entity entity = params.getEntity();
         //TODO it's better to exclude generating sql query in separate factory class
         String query = String.format(COUNT_QUERY_PATTERN, COUNT, params.getEnv(), entity.getSchema(),
@@ -53,7 +53,7 @@ public class AdqmCheckDataService implements CheckDataService {
     }
 
     @Override
-    public Future<Long> checkDataByHashInt32(CheckDataByHashInt32Params params) {
+    public Future<Long> checkDataByHashInt32(CheckDataByHashInt32Request params) {
         Entity entity = params.getEntity();
         List<String> columns = params.getColumns().stream()
                 .map(column -> String.format("ifNull(toString(%s),'')", column))

@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.ddl;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.SystemMetadata;
@@ -14,14 +15,13 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.DatamartDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
-import io.arenadata.dtm.common.exception.DtmException;
+import io.arenadata.dtm.query.execution.core.dto.dml.DmlRequestContext;
 import io.arenadata.dtm.query.execution.core.service.dml.impl.UseSchemaDmlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsService;
 import io.arenadata.dtm.query.execution.core.service.metrics.impl.MetricsServiceImpl;
 import io.arenadata.dtm.query.execution.core.utils.ParseQueryUtils;
 import io.arenadata.dtm.query.execution.core.utils.QueryResultUtils;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
-import io.arenadata.dtm.query.execution.plugin.api.dml.DmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DmlRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -71,7 +71,7 @@ class UseSchemaDmlExecutorTest {
         queryRequest.setDatamartMnemonic(schema);
         queryRequest.setSql("USE shares");
         SqlNode query = planner.parse(queryRequest.getSql());
-        context = new DmlRequestContext(new RequestMetrics(), new DmlRequest(queryRequest), query);
+        context = new DmlRequestContext(new RequestMetrics(), new DmlRequest(queryRequest));
         context.getRequest().setQueryRequest(queryRequest);
     }
 

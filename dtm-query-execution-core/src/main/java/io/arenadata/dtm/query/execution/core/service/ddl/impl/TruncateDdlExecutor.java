@@ -2,6 +2,7 @@ package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
+import io.arenadata.dtm.common.post.PostSqlActionType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.truncate.SqlTruncateHistory;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
@@ -12,8 +13,7 @@ import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePlugin
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.PostSqlActionType;
-import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
+import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
@@ -71,7 +71,7 @@ public class TruncateDdlExecutor extends QueryResultDdlExecutor {
         val env = context.getRequest().getQueryRequest().getEnvName();
         return entity.getDestination().stream()
                 .map(sourceType -> {
-                    val truncateParams = new TruncateHistoryParams(sourceType,
+                    val truncateParams = new TruncateHistoryRequest(sourceType,
                             context.getMetrics(), cnTo, entity, env, sqlTruncateHistory.getConditions());
                     return dataSourcePluginService.truncateHistory(truncateParams);
                 })

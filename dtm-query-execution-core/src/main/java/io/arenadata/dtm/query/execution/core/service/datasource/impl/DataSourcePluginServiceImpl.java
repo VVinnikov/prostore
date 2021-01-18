@@ -12,10 +12,10 @@ import io.arenadata.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountParams;
-import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Params;
-import io.arenadata.dtm.query.execution.plugin.api.dto.PluginParams;
-import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
+import io.arenadata.dtm.query.execution.plugin.api.dto.PluginRequest;
+import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
 import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
@@ -135,37 +135,37 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
 
     @Override
     public Future<Void> checkTable(SourceType sourceType, CheckContext context) {
-        return check(new PluginParams(sourceType, context.getMetrics()),
+        return check(new PluginRequest(sourceType, context.getMetrics()),
                 plugin -> plugin.checkTable(context));
     }
 
     @Override
-    public Future<Long> checkDataByCount(CheckDataByCountParams params) {
+    public Future<Long> checkDataByCount(CheckDataByCountRequest params) {
         return check(params, plugin -> plugin.checkDataByCount(params));
     }
 
     @Override
-    public Future<Long> checkDataByHashInt32(CheckDataByHashInt32Params params) {
+    public Future<Long> checkDataByHashInt32(CheckDataByHashInt32Request params) {
         return check(params, plugin -> plugin.checkDataByHashInt32(params));
     }
 
     @Override
-    public Future<Void> truncateHistory(TruncateHistoryParams params) {
+    public Future<Void> truncateHistory(TruncateHistoryRequest params) {
         return executeWithMetrics(SqlProcessingType.TRUNCATE,
                 params,
                 plugin -> plugin.truncateHistory(params));
     }
 
-    private <T> Future<T> check(PluginParams pluginParams,
+    private <T> Future<T> check(PluginRequest pluginRequest,
                                 Function<DtmDataSourcePlugin, Future<T>> func) {
-        return executeWithMetrics(SqlProcessingType.CHECK, pluginParams, func);
+        return executeWithMetrics(SqlProcessingType.CHECK, pluginRequest, func);
     }
 
     private <T> Future<T> executeWithMetrics(SqlProcessingType sqlProcessingType,
-                                             PluginParams pluginParams,
+                                             PluginRequest pluginRequest,
                                              Function<DtmDataSourcePlugin, Future<T>> func) {
-        SourceType sourceType = pluginParams.getSourceType();
-        RequestMetrics requestMetrics = pluginParams.getRequestMetrics();
+        SourceType sourceType = pluginRequest.getSourceType();
+        RequestMetrics requestMetrics = pluginRequest.getRequestMetrics();
         return executeWithMetrics(sourceType, sqlProcessingType, requestMetrics, func);
     }
 

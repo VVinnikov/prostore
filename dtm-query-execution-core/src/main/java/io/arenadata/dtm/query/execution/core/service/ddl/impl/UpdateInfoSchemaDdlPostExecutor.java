@@ -1,9 +1,9 @@
 package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
+import io.arenadata.dtm.common.post.PostSqlActionType;
 import io.arenadata.dtm.query.execution.core.service.metadata.InformationSchemaService;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.PostSqlActionType;
-import io.arenadata.dtm.query.execution.plugin.api.service.PostExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.service.PostExecutor;
 import io.vertx.core.Future;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

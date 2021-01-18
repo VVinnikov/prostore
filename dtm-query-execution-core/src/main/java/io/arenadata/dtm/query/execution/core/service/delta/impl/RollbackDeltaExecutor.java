@@ -19,7 +19,6 @@ import io.arenadata.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaExecutor;
 import io.arenadata.dtm.query.execution.core.service.delta.StatusEventPublisher;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadFailedExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.PostSqlActionType;
 import io.arenadata.dtm.query.execution.plugin.api.request.RollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.vertx.core.Future;
@@ -31,7 +30,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 

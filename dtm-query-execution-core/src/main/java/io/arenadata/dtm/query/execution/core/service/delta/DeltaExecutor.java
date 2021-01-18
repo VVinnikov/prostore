@@ -3,11 +3,7 @@ package io.arenadata.dtm.query.execution.core.service.delta;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaAction;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaQuery;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.PostSqlActionType;
 import io.vertx.core.Future;
-
-import java.util.Collections;
-import java.util.List;
 
 /**
  * Delta request executor

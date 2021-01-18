@@ -14,15 +14,14 @@ import io.arenadata.dtm.query.execution.core.configuration.properties.CoreDtmSet
 import io.arenadata.dtm.query.execution.core.factory.RequestContextFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.QueryRequestFactoryImpl;
 import io.arenadata.dtm.query.execution.core.factory.impl.RequestContextFactoryImpl;
-import io.arenadata.dtm.query.execution.core.service.query.impl.QuerySemicolonRemoverImpl;
 import io.arenadata.dtm.query.execution.core.service.query.QueryAnalyzer;
 import io.arenadata.dtm.query.execution.core.service.query.QueryDispatcher;
 import io.arenadata.dtm.query.execution.core.service.query.impl.QueryAnalyzerImpl;
+import io.arenadata.dtm.query.execution.core.service.query.impl.QuerySemicolonRemoverImpl;
 import io.arenadata.dtm.query.execution.core.utils.DatamartMnemonicExtractor;
 import io.arenadata.dtm.query.execution.core.utils.DefaultDatamartSetter;
 import io.arenadata.dtm.query.execution.core.utils.HintExtractor;
-import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
+import io.arenadata.dtm.query.execution.plugin.api.CoreRequestContext;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.TestOptions;
@@ -52,7 +51,7 @@ class QueryAnalyzerImplTest {
             new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
     private Vertx vertx = Vertx.vertx();
     final CoreDtmSettings dtmSettings = new CoreDtmSettings(ZoneId.of("UTC"));
-    private RequestContextFactory<RequestContext<? extends DatamartRequest>, QueryRequest> requestContextFactory =
+    private RequestContextFactory<CoreRequestContext<? extends DatamartRequest>, QueryRequest> requestContextFactory =
             new RequestContextFactoryImpl(new SqlDialect(SqlDialect.EMPTY_CONTEXT), dtmSettings, coreConfiguration);
     private QueryDispatcher queryDispatcher = mock(QueryDispatcher.class);
     private QueryAnalyzer queryAnalyzer;
@@ -178,7 +177,7 @@ class QueryAnalyzerImplTest {
     private TestData prepareExecute() {
         TestData testData = new TestData();
         doAnswer(invocation -> {
-            final RequestContext ddlRequest = invocation.getArgument(0);
+            final CoreRequestContext ddlRequest = invocation.getArgument(0);
             testData.setRequest(ddlRequest.getRequest().getQueryRequest());
             testData.setProcessingType(ddlRequest.getProcessingType());
             return Future.succeededFuture(QueryResult.emptyResult());

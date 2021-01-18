@@ -9,18 +9,18 @@ import org.apache.calcite.sql.SqlNode;
 import java.util.Optional;
 
 @Getter
-public class TruncateHistoryParams extends PluginParams {
+public class TruncateHistoryRequest extends PluginRequest {
     private final Optional<Long> sysCn;
     private final Entity entity;
     private final String env;
     private final Optional<SqlNode> conditions;
 
-    public TruncateHistoryParams(SourceType type,
-                                 RequestMetrics requestMetrics,
-                                 Long sysCn,
-                                 Entity entity,
-                                 String env,
-                                 SqlNode conditions) {
+    public TruncateHistoryRequest(SourceType type,
+                                  RequestMetrics requestMetrics,
+                                  Long sysCn,
+                                  Entity entity,
+                                  String env,
+                                  SqlNode conditions) {
         super(type, requestMetrics);
         this.sysCn = Optional.ofNullable(sysCn);
         this.entity = entity;

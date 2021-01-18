@@ -3,7 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.api.mppr;
 import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.SqlProcessingType;
-import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.CoreRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.MpprRequest;
 import lombok.Getter;
 import lombok.ToString;
@@ -15,7 +15,7 @@ import static io.arenadata.dtm.common.model.SqlProcessingType.MPPR;
 
 @Getter
 @ToString
-public class MpprRequestContext extends RequestContext<MpprRequest> {
+public class MpprRequestContext extends CoreRequestContext<MpprRequest> {
     private List<DeltaInformation> deltaInformations;
 
     public MpprRequestContext(RequestMetrics metrics,

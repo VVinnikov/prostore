@@ -6,12 +6,12 @@ import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountParams;
-import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Params;
-import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
-import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
+import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
 import io.vertx.core.Future;
@@ -55,7 +55,7 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
      * @param context LLR context
      * @return query result
      */
-    Future<QueryResult> llr(LlrRequestContext context);
+    Future<QueryResult> llr(LlrRequest request);
 
     /**
      * <p>execute Massively Parallel Processing Reading</p>
@@ -112,17 +112,17 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
      * @param params CheckDataByCountParams
      * @return count of records
      */
-    Future<Long> checkDataByCount(CheckDataByCountParams params);
+    Future<Long> checkDataByCount(CheckDataByCountRequest params);
 
     /**
      * @param params CheckDataByHashInt32Params
      * @return checksum
      */
-    Future<Long> checkDataByHashInt32(CheckDataByHashInt32Params params);
+    Future<Long> checkDataByHashInt32(CheckDataByHashInt32Request params);
 
     /**
      * @param params truncate params
      * @return future object
      */
-    Future<Void> truncateHistory(TruncateHistoryParams params);
+    Future<Void> truncateHistory(TruncateHistoryRequest params);
 }

@@ -3,7 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adb.factory.impl;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbTables;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.TruncateHistoryDeleteQueriesFactory;
-import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
+import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
 import org.apache.calcite.sql.SqlDialect;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -25,7 +25,7 @@ public class TruncateHistoryDeleteQueriesFactoryImpl implements TruncateHistoryD
     }
 
     @Override
-    public List<String> create(TruncateHistoryParams params) {
+    public List<String> create(TruncateHistoryRequest params) {
         String whereExpression = params.getConditions()
                 .map(conditions -> String.format(" WHERE %s", conditions.toSqlString(sqlDialect)))
                 .orElse("");
@@ -37,7 +37,7 @@ public class TruncateHistoryDeleteQueriesFactoryImpl implements TruncateHistoryD
     }
 
     @Override
-    public String createWithSysCn(TruncateHistoryParams params) {
+    public String createWithSysCn(TruncateHistoryRequest params) {
         Entity entity = params.getEntity();
         return String.format(DELETE_RECORDS_PATTERN, entity.getSchema(), entity.getName(),
                 AdbTables.HISTORY_TABLE_POSTFIX, String.format(" WHERE %s%s", params.getConditions()

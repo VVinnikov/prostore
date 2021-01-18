@@ -7,9 +7,9 @@ import io.arenadata.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountParams;
-import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Params;
-import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
+import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
 import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
@@ -118,18 +118,18 @@ public interface DataSourcePluginService {
      * @param params CheckDataByCountParams
      * @return count of records
      */
-    Future<Long> checkDataByCount(CheckDataByCountParams params);
+    Future<Long> checkDataByCount(CheckDataByCountRequest params);
 
     /**
      * @param params CheckDataByHashInt32Params
      * @return checksum
      */
-    Future<Long> checkDataByHashInt32(CheckDataByHashInt32Params params);
+    Future<Long> checkDataByHashInt32(CheckDataByHashInt32Request params);
 
     /**
      *
      * @param params TruncateHistoryParams
      * @return void
      */
-    Future<Void> truncateHistory(TruncateHistoryParams params);
+    Future<Void> truncateHistory(TruncateHistoryRequest params);
 }

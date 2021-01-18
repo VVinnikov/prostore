@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.plugin.api.ddl;
+package io.arenadata.dtm.common.post;
 
 public enum PostSqlActionType {
     UPDATE_INFORMATION_SCHEMA,

@@ -12,7 +12,6 @@ import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.QueryResultCacheableLlrService;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.apache.calcite.sql.SqlDialect;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -51,9 +50,12 @@ public class AdbLlrService extends QueryResultCacheableLlrService {
 
     @Override
     protected Future<String> enrichQuery(LlrRequest llrRequest) {
-        val enrichQueryRequest =
-                EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema(), llrRequest.getSqlNode());
-        return queryEnrichmentService.enrich(enrichQueryRequest);
+        return queryEnrichmentService.enrich(EnrichQueryRequest.builder()
+                .deltaInformations(llrRequest.getDeltaInformations())
+                .envName(llrRequest.getEnvName())
+                .query(llrRequest.getSqlNode())
+                .schema(llrRequest.getSchema())
+                .build());
     }
 
     @Override

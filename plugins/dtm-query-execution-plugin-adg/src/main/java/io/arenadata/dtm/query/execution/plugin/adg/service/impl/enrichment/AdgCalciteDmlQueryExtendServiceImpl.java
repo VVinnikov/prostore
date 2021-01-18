@@ -70,8 +70,8 @@ public class AdgCalciteDmlQueryExtendServiceImpl implements QueryExtendService {
         val qualifiedName = tableScan.getTable().getQualifiedName();
         val tableName = qualifiedName.get(qualifiedName.size() > 1 ? 1 : 0);
         val schemaName = deltaInfo.getSchemaName();
-        val queryRequest = context.getQueryRequest();
-        val tableNames = helperTableNamesFactory.create(queryRequest.getEnvName(),
+        val enrichQueryRequest = context.getEnrichQueryRequest();
+        val tableNames = helperTableNamesFactory.create(enrichQueryRequest.getEnvName(),
             schemaName, tableName);
         RelNode topRelNode;
         RelNode bottomRelNode;

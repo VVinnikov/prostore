@@ -16,7 +16,6 @@ import io.arenadata.dtm.query.execution.plugin.adg.service.DtmTestConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adg.service.QueryEnrichmentService;
 import io.arenadata.dtm.query.execution.plugin.adg.service.QueryExecutorService;
 import io.arenadata.dtm.query.execution.plugin.adg.service.impl.dml.AdgLlrService;
-import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.LlrService;
 import io.vertx.core.Future;

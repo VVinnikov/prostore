@@ -2,7 +2,6 @@ package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.enrichment;
 
 import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.dto.QueryParserResponse;
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.adqm.calcite.AdqmCalciteContextProvider;
@@ -40,20 +39,19 @@ public class AdqmQueryEnrichmentServiceImpl implements QueryEnrichmentService {
 
     @Override
     public Future<String> enrich(EnrichQueryRequest request) {
-        return queryParserService.parse(new QueryParserRequest(request.getQueryRequest(), request.getSchema()))
+        return queryParserService.parse(new QueryParserRequest(request.getQuery(), request.getSchema()))
                 .compose(parserResponse -> modifyQuery(parserResponse, request));
     }
 
     private Future<String> modifyQuery(QueryParserResponse parserResponse, EnrichQueryRequest request) {
         return Future.future(promise -> {
             contextProvider.enrichContext(parserResponse.getCalciteContext(),
-                    generatePhysicalSchema(request.getSchema(), request.getQueryRequest()));
+                    generatePhysicalSchema(request.getSchema(), request.getEnvName()));
             // form a new sql query
             adqmQueryGenerator.mutateQuery(parserResponse.getRelNode(),
-                    parserResponse.getQueryRequest().getDeltaInformations(),
+                    request.getDeltaInformations(),
                     parserResponse.getCalciteContext(),
-                    request.getQueryRequest(),
-                    request.isLocal())
+                    request)
                     .onComplete(enrichedQueryResult -> {
                         if (enrichedQueryResult.succeeded()) {
                             log.debug("Request generated: {}", enrichedQueryResult.result());
@@ -65,9 +63,9 @@ public class AdqmQueryEnrichmentServiceImpl implements QueryEnrichmentService {
         });
     }
 
-    private List<Datamart> generatePhysicalSchema(List<Datamart> logicalSchemas, QueryRequest request) {
+    private List<Datamart> generatePhysicalSchema(List<Datamart> logicalSchemas, String envName) {
         return logicalSchemas.stream()
-                .map(ls -> schemaExtender.createPhysicalSchema(ls, request.getEnvName()))
+                .map(ls -> schemaExtender.createPhysicalSchema(ls, envName))
                 .collect(Collectors.toList());
     }
 }

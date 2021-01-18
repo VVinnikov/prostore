@@ -1,9 +1,10 @@
-package io.arenadata.dtm.query.execution.plugin.api.eddl;
+package io.arenadata.dtm.query.execution.core.dto.eddl;
 
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.request.DatamartRequest;
-import io.arenadata.dtm.query.execution.plugin.api.CoreRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.CoreRequestContext;
+import lombok.Builder;
 import lombok.ToString;
 import org.apache.calcite.sql.SqlNode;
 
@@ -12,6 +13,7 @@ import static io.arenadata.dtm.common.model.SqlProcessingType.EDDL;
 @ToString
 public class EddlRequestContext extends CoreRequestContext<DatamartRequest, SqlNode> {
 
+    @Builder
     public EddlRequestContext(RequestMetrics metrics,
                               DatamartRequest request,
                               String envName,

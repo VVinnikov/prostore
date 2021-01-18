@@ -16,6 +16,7 @@ import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import lombok.val;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -43,17 +44,17 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
     }
 
     @Override
-    public Future<QuerySourceRequest> getTargetSource(QuerySourceRequest request) {
+    public Future<QuerySourceRequest> getTargetSource(QuerySourceRequest request, SqlNode query) {
         return getEntitiesSourceTypes(request)
                 .compose(entities -> defineTargetSourceType(entities, request))
                 .map(sourceType -> {
                     val queryRequestWithSourceType = request.getQueryRequest().copy();
-                    queryRequestWithSourceType.setSourceType(sourceType);
+                    request.setSourceType(sourceType);
                     return QuerySourceRequest.builder()
                             .queryRequest(queryRequestWithSourceType)
                             .logicalSchema(request.getLogicalSchema())
-                            .metadata(request.getMetadata())
                             .queryTemplate(request.getQueryTemplate())
+                            .metadata(request.getMetadata())
                             .sourceType(sourceType)
                             .build();
                 });

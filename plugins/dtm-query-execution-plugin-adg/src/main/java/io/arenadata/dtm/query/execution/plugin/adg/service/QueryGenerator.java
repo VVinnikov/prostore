@@ -2,7 +2,7 @@ package io.arenadata.dtm.query.execution.plugin.adg.service;
 
 import io.arenadata.dtm.common.calcite.CalciteContext;
 import io.arenadata.dtm.common.delta.DeltaInformation;
-import io.arenadata.dtm.common.reader.QueryRequest;
+import io.arenadata.dtm.query.execution.plugin.adg.dto.EnrichQueryRequest;
 import io.vertx.core.Future;
 import org.apache.calcite.rel.RelRoot;
 
@@ -18,5 +18,5 @@ public interface QueryGenerator {
     Future<String> mutateQuery(RelRoot sqlNode,
                                List<DeltaInformation> deltaInformations,
                                CalciteContext calciteContext,
-                               QueryRequest queryRequest);
+                               EnrichQueryRequest enrichQueryRequest);
 }

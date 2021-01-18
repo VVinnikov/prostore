@@ -22,7 +22,7 @@ public class MpprRequestContext extends RequestContext<MpprRequest> {
                               MpprRequest request,
                               SqlNode query,
                               List<DeltaInformation> deltaInformations) {
-        super(request, sqlNode, envName, sourceType, metrics);
+        super(request, sqlNode, envName, metrics);
         this.deltaInformations = deltaInformations;
     }
 

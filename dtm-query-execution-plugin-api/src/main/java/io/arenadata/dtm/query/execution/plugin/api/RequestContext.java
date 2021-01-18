@@ -2,7 +2,6 @@ package io.arenadata.dtm.query.execution.plugin.api;
 
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.SqlProcessingType;
-import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
 import lombok.Data;
 import org.apache.calcite.sql.SqlNode;
@@ -11,29 +10,24 @@ import org.apache.calcite.sql.SqlNode;
 public abstract class RequestContext<R extends DatamartRequest, S extends SqlNode> {
 
     protected RequestMetrics metrics;
-    protected SourceType sourceType;
     protected String envName;
     protected S sqlNode;
     protected R request;
 
     public RequestContext(R request,
                           S sqlNode,
-                          String envName,
-                          SourceType sourceType) {
+                          String envName) {
         this.request = request;
         this.sqlNode = sqlNode;
         this.envName = envName;
-        this.sourceType = sourceType;
     }
 
     public RequestContext(R request,
                           S sqlNode,
                           String envName,
-                          SourceType sourceType,
                           RequestMetrics metrics) {
         this.sqlNode = sqlNode;
         this.envName = envName;
-        this.sourceType = sourceType;
         this.metrics = metrics;
         this.request = request;
     }

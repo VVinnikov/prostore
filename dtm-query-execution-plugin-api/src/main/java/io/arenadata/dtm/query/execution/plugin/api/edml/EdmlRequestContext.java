@@ -33,9 +33,8 @@ public class EdmlRequestContext extends RequestContext<DatamartRequest, SqlNode>
     public EdmlRequestContext(RequestMetrics metrics,
                               DatamartRequest request,
                               SqlInsert sqlNode,
-                              String envName,
-                              SourceType sourceType) {
-        super(request, sqlNode, envName, sourceType, metrics);
+                              String envName) {
+        super(request, sqlNode, envName, metrics);
         this.sqlNode = sqlNode;
     }
 

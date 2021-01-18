@@ -8,7 +8,7 @@ import io.arenadata.dtm.query.execution.plugin.api.request.StatusRequest;
 public class StatusRequestContext extends RequestContext<StatusRequest> {
 
     public StatusRequestContext(RequestMetrics metrics, StatusRequest request) {
-        super(request, sqlNode, envName, sourceType, metrics);
+        super(request, sqlNode, envName, metrics);
     }
 
     @Override

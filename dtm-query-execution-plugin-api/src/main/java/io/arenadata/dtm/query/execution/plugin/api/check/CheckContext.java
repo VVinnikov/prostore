@@ -17,13 +17,13 @@ public class CheckContext extends RequestContext<DatamartRequest, SqlCheckCall> 
                         DatamartRequest request,
                         CheckType checkType,
                         SqlCheckCall sqlCheckCall) {
-        super(request, sqlNode, envName, sourceType, metrics);
+        super(request, sqlNode, envName, metrics);
         this.checkType = checkType;
         this.sqlCheckCall = sqlCheckCall;
     }
 
     public CheckContext(RequestMetrics metrics, DatamartRequest request, Entity entity) {
-        super(request, sqlNode, envName, sourceType, metrics);
+        super(request, sqlNode, envName, metrics);
         this.entity = entity;
     }
 

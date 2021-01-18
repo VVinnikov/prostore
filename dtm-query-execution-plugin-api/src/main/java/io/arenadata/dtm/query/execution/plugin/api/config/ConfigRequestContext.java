@@ -20,9 +20,8 @@ public class ConfigRequestContext extends RequestContext<ConfigRequest, SqlConfi
     public ConfigRequestContext(RequestMetrics metrics,
                                 ConfigRequest request,
                                 SqlConfigCall sqlConfigCall,
-                                SourceType sourceType,
                                 String envName) {
-        super(request, sqlConfigCall, envName, sourceType, metrics);
+        super(request, sqlConfigCall, envName, metrics);
     }
 
     @Override

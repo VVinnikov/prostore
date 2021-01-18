@@ -56,7 +56,6 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
             return new ConfigRequestContext(createRequestMetrics(request),
                     new ConfigRequest(request),
                     (SqlConfigCall) node,
-                    sourceType,
                     coreConfiguration.getEnvName());
         } else if (isDdlRequest(node)) {
             switch (node.getKind()) {
@@ -73,7 +72,6 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
                                 createRequestMetrics(request),
                                 new DatamartRequest(changedQueryRequest),
                                 coreConfiguration.getEnvName(),
-                                sourceType,
                                 node);
                     }
                 default:
@@ -102,12 +100,13 @@ public class RequestContextFactoryImpl implements RequestContextFactory<RequestC
                         createRequestMetrics(request),
                         new DatamartRequest(changedQueryRequest),
                         (SqlInsert) node,
-                        coreConfiguration.getEnvName(),
-                        sourceType);
+                        coreConfiguration.getEnvName());
             default:
                 return new DmlRequestContext(
                         createRequestMetrics(request),
-                        new DmlRequest(changedQueryRequest), node);
+                        new DmlRequest(changedQueryRequest),
+                        sourceType,
+                        node);
         }
     }
 

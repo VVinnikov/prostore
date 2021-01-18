@@ -54,14 +54,14 @@ public class AdbCheckDataService implements CheckDataService {
     }
 
     @Override
-    public Future<Long> checkDataByCount(CheckDataByCountRequest params) {
+    public Future<Long> checkDataByCount(CheckDataByCountRequest request) {
         return Future.future(p -> {
             //TODO it's better to exclude generating sql query in separate factory class
             val sql = String.format(CHECK_DATA_BY_COUNT_TEMPLATE,
-                    params.getEntity().getSchema(), params.getEntity().getName(),
-                    params.getSysCn() - 1, params.getSysCn(),
-                    params.getEntity().getSchema(), params.getEntity().getName(),
-                    params.getSysCn());
+                    request.getEntity().getSchema(), request.getEntity().getName(),
+                    request.getSysCn() - 1, request.getSysCn(),
+                    request.getEntity().getSchema(), request.getEntity().getName(),
+                    request.getSysCn());
             ColumnMetadata metadata = new ColumnMetadata(COLUMN_NAME, ColumnType.BIGINT);
             queryExecutor.execute(sql, Collections.singletonList(metadata))
                     .onSuccess(result -> {
@@ -72,9 +72,9 @@ public class AdbCheckDataService implements CheckDataService {
     }
 
     @Override
-    public Future<Long> checkDataByHashInt32(CheckDataByHashInt32Request params) {
+    public Future<Long> checkDataByHashInt32(CheckDataByHashInt32Request request) {
         return queryExecutor.executeUpdate(CREATE_OR_REPLACE_FUNC)
-                .compose(v -> checkDataByHash(params));
+                .compose(v -> checkDataByHash(request));
     }
 
     private Future<Long> checkDataByHash(CheckDataByHashInt32Request params) {

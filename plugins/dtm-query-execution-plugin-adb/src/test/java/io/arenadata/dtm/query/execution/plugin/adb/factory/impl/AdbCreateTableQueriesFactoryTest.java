@@ -44,7 +44,7 @@ public class AdbCreateTableQueriesFactoryTest {
         Entity entity = CreateEntityUtils.getEntity();
         DdlRequestContext context = new DdlRequestContext(new DdlRequest(new QueryRequest(), entity));
         CreateTableQueriesFactory<AdbTables<String>> adbCreateTableQueriesFactory = new AdbCreateTableQueriesFactory(new AdbTableEntitiesFactory());
-        adbCreateTableQueries = adbCreateTableQueriesFactory.create(context);
+        adbCreateTableQueries = adbCreateTableQueriesFactory.create(context.getRequest().getEntity(), context.getEnvName());
     }
 
     @Test

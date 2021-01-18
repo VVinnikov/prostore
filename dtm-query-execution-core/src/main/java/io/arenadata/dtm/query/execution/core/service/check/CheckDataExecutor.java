@@ -125,9 +125,11 @@ public class CheckDataExecutor implements CheckExecutor {
                                                       Set<String> columns) {
         BiFunction<SourceType, Long, Future<Long>> checkFunc = Optional.ofNullable(columns)
                 .map(value -> getCheckHashFunc(context, entity, value))
-                .orElse((type, sysCn) -> dataSourcePluginService.checkDataByCount(
-                        new CheckDataByCountRequest(type, context.getMetrics(), entity, sysCn,
-                                context.getRequest().getQueryRequest().getEnvName())));
+                .orElse((type, sysCn) -> dataSourcePluginService.checkDataByCount(type,
+                        context.getMetrics(),
+                        new CheckDataByCountRequest(entity,
+                                sysCn,
+                                context.getEnvName())));
         return sysCn -> Future.future(promise -> CompositeFuture.join(
                 entity.getDestination().stream()
                         .map(sourceType -> checkFunc.apply(sourceType, sysCn)
@@ -161,9 +163,11 @@ public class CheckDataExecutor implements CheckExecutor {
             throw new DtmException(String.format("Columns: `%s` don't exist.",
                     String.join(", ", notExistColumns)));
         } else {
-            return (type, sysCn) -> dataSourcePluginService.checkDataByHashInt32(
-                    new CheckDataByHashInt32Request(type, context.getMetrics(), entity, sysCn, columns,
-                            context.getRequest().getQueryRequest().getEnvName()));
+            return (sourceType, sysCn) -> dataSourcePluginService.checkDataByHashInt32(
+                    sourceType,
+                    context.getMetrics(),
+                    new CheckDataByHashInt32Request(entity, sysCn, columns,
+                            context.getEnvName()));
         }
     }
 }

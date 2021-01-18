@@ -61,7 +61,7 @@ class AdgCartridgeSchemaGeneratorImplTest {
         AdgSpace adgSpace = new AdgSpace("test", new Space());
         AdgTables<AdgSpace> adqmCreateTableQueries = new AdgTables<>(adgSpace, adgSpace, adgSpace);
         CreateTableQueriesFactory<AdgTables<AdgSpace>> createTableQueriesFactory = mock(AdgCreateTableQueriesFactory.class);
-        Mockito.when(createTableQueriesFactory.create(any())).thenReturn(adqmCreateTableQueries);
+        Mockito.when(createTableQueriesFactory.create(any(), any())).thenReturn(adqmCreateTableQueries);
         AdgCartridgeSchemaGenerator cartridgeSchemaGenerator = new AdgCartridgeSchemaGeneratorImpl(createTableQueriesFactory);
         cartridgeSchemaGenerator.generate(ddlRequestContext, mapper.readValue("{}", OperationYaml.class))
                 .onComplete(ar -> {

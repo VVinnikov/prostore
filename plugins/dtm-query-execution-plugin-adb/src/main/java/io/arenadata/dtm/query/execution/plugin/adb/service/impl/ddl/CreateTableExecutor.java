@@ -62,7 +62,7 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
 
     private Future<Void> createTableWithIndexes(DdlRequestContext context) {
         return Future.future(promise -> {
-            AdbTables<String> createTableQueries = createTableQueriesFactory.create(context);
+            AdbTables<String> createTableQueries = createTableQueriesFactory.create(context.getRequest().getEntity(), context.getEnvName());
             String createTablesSql = String.join("; ", createTableQueries.getActual(),
                     createTableQueries.getHistory(), createTableQueries.getStaging());
             String createIndexesSql = sqlFactory.createSecondaryIndexSqlQuery(context.getRequest().getEntity().getSchema(),

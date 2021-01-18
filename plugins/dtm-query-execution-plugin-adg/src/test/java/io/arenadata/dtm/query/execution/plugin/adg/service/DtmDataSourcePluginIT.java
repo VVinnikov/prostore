@@ -99,7 +99,7 @@ public class DtmDataSourcePluginIT {
         }
 
         @Override
-        public Future<Long> checkDataByCount(CheckDataByCountRequest params) {
+        public Future<Long> checkDataByCount(CheckDataByCountRequest request) {
             return null;
         }
 

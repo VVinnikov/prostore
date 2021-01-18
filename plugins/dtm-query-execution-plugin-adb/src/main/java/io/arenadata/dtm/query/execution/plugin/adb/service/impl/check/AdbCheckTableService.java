@@ -4,11 +4,11 @@ import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbTableColumn;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbTableEntity;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbTables;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.impl.AdbMetaTableEntityFactory;
-import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckException;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
 import io.arenadata.dtm.query.execution.plugin.api.factory.MetaTableEntityFactory;
-import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
 import io.arenadata.dtm.query.execution.plugin.api.factory.TableEntitiesFactory;
+import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,9 +34,9 @@ public class AdbCheckTableService implements CheckTableService {
     }
 
     @Override
-    public Future<Void> check(CheckContext context) {
+    public Future<Void> check(CheckTableRequest request) {
         AdbTables<AdbTableEntity> adbCreateTableQueries = tableEntitiesFactory
-                .create(context.getEntity(), context.getRequest().getQueryRequest().getEnvName());
+                .create(request.getEntity(), request.getEnvName());
         return Future.future(promise -> CompositeFuture.join(Stream.of(
                 adbCreateTableQueries.getActual(),
                 adbCreateTableQueries.getHistory(),

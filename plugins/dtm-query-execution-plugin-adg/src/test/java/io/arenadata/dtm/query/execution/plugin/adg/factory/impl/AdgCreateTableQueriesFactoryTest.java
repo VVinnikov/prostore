@@ -35,7 +35,7 @@ public class AdgCreateTableQueriesFactoryTest {
 
         CreateTableQueriesFactory<AdgTables<AdgSpace>> adgCreateTableQueriesFactory =
                 new AdgCreateTableQueriesFactory(new AdgTableEntitiesFactory(new TarantoolDatabaseProperties()));
-        adgTables = adgCreateTableQueriesFactory.create(context);
+        adgTables = adgCreateTableQueriesFactory.create(context.getRequest().getEntity(), context.getEnvName());
         spaces = TestUtils.getSpaces(entity);
     }
 

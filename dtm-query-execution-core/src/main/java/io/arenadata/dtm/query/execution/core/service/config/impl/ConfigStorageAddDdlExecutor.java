@@ -51,7 +51,7 @@ public class ConfigStorageAddDdlExecutor implements ConfigExecutor {
             SqlConfigStorageAdd configStorageAdd = (SqlConfigStorageAdd) context.getSqlNode();
             if (configStorageAdd.getSourceType() != null) {
                 val sourceType = configStorageAdd.getSourceType();
-                context.setSourceType(sourceType);//TODO check
+                //context.setSourceType(sourceType);//TODO check
                 if (dataSourcePluginService.getSourceTypes().contains(sourceType)) {
                     datamartDao.getDatamarts()
                             .compose(datamarts -> joinCreateDatamartFutures(sourceType,
@@ -81,14 +81,14 @@ public class ConfigStorageAddDdlExecutor implements ConfigExecutor {
                                               String schemaName,
                                               ConfigRequestContext context) {
         return Future.future(p -> {
-            DdlRequestContext ddlRequestContext = createDdlRequestContext(schemaName, context);
+            DdlRequestContext ddlRequestContext = createDdlRequestContext(schemaName, sourceType, context);
             dataSourcePluginService.ddl(sourceType, ddlRequestContext)
                     .onComplete(p);
         });
     }
 
     @SneakyThrows
-    private DdlRequestContext createDdlRequestContext(String schemaName, ConfigRequestContext context) {
+    private DdlRequestContext createDdlRequestContext(String schemaName, SourceType sourceType, ConfigRequestContext context) {
         val createDataBaseQuery = String.format("CREATE DATABASE IF NOT EXISTS %s", schemaName);
         val createDataBaseQueryNode = calciteDefinitionService.processingQuery(createDataBaseQuery);
         val ddlRequest = new DdlRequest(QueryRequest.builder()
@@ -98,7 +98,7 @@ public class ConfigStorageAddDdlExecutor implements ConfigExecutor {
         return new DdlRequestContext(context.getMetrics(),
                 ddlRequest,
                 createDataBaseQueryNode,
-                context.getSourceType(),
+                sourceType,
                 context.getEnvName());
     }
 

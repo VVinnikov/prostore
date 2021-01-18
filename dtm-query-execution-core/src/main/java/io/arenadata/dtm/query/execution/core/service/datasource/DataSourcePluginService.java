@@ -1,10 +1,12 @@
 package io.arenadata.dtm.query.execution.core.service.datasource;
 
+import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
@@ -108,28 +110,27 @@ public interface DataSourcePluginService {
     Set<String> getActiveCaches();
 
     /**
-     * @param sourceType SourceType
-     * @param context    CheckContext
+     * @param sourceType   SourceType
+     * @param checkTableRequest
      * @return failed future with errors if check failed
      */
-    Future<Void> checkTable(SourceType sourceType, CheckContext context);
+    Future<Void> checkTable(SourceType sourceType, RequestMetrics metrics, CheckTableRequest checkTableRequest);
 
     /**
-     * @param params CheckDataByCountParams
+     * @param request CheckDataByCountParams
      * @return count of records
      */
-    Future<Long> checkDataByCount(CheckDataByCountRequest params);
+    Future<Long> checkDataByCount(SourceType sourceType, RequestMetrics metrics, CheckDataByCountRequest request);
 
     /**
-     * @param params CheckDataByHashInt32Params
+     * @param request CheckDataByHashInt32Params
      * @return checksum
      */
-    Future<Long> checkDataByHashInt32(CheckDataByHashInt32Request params);
+    Future<Long> checkDataByHashInt32(SourceType sourceType, RequestMetrics metrics, CheckDataByHashInt32Request request);
 
     /**
-     *
      * @param params TruncateHistoryParams
      * @return void
      */
-    Future<Void> truncateHistory(TruncateHistoryRequest params);
+    Future<Void> truncateHistory(SourceType sourceType, RequestMetrics metrics, TruncateHistoryRequest params);
 }

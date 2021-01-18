@@ -56,7 +56,9 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
     }
 
     private Future<Void> createTable(DdlRequestContext context) {
-        AdqmTables<String> createTableQueries = createTableQueriesFactory.create(context);
+        AdqmTables<String> createTableQueries =
+                createTableQueriesFactory.create(context.getRequest().getEntity(),
+                        context.getEnvName());
         return databaseExecutor.executeUpdate(createTableQueries.getShard())
                 .compose(v -> databaseExecutor.executeUpdate(createTableQueries.getDistributed()));
     }

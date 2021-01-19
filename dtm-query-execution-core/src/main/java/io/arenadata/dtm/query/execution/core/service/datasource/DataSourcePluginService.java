@@ -129,7 +129,7 @@ public interface DataSourcePluginService {
     Future<Long> checkDataByHashInt32(SourceType sourceType, RequestMetrics metrics, CheckDataByHashInt32Request request);
 
     /**
-     * @param request TruncateHistoryParams
+     * @param request TruncateHistoryRequest
      * @return void
      */
     Future<Void> truncateHistory(SourceType sourceType, RequestMetrics metrics, TruncateHistoryRequest request);

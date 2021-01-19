@@ -29,7 +29,7 @@ public class AdgTruncateHistoryService implements TruncateHistoryService {
 
     @Override
     public Future<Void> truncateHistory(TruncateHistoryRequest request) {
-        return conditionFactory.create(request.getConditions(), request.getSysCn())
+        return conditionFactory.create(request)
                 .compose(conditions -> request.getSysCn().isPresent()
                         ? deleteSpaceTuples(request, HISTORY_POSTFIX, conditions)
                         : deleteSpaceTuplesWithoutSysCn(request, conditions));

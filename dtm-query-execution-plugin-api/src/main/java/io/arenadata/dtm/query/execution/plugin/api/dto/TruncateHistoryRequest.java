@@ -15,7 +15,12 @@ public class TruncateHistoryRequest extends PluginRequest {
     private final Optional<SqlNode> conditions;
 
     @Builder
-    public TruncateHistoryRequest(UUID requestId, String envName, String datamartMnemonic, Long sysCn, Entity entity, SqlNode conditions) {
+    public TruncateHistoryRequest(UUID requestId,
+                                  String envName,
+                                  String datamartMnemonic,
+                                  Long sysCn,
+                                  Entity entity,
+                                  SqlNode conditions) {
         super(requestId, envName, datamartMnemonic);
         this.sysCn = Optional.ofNullable(sysCn);
         this.entity = entity;

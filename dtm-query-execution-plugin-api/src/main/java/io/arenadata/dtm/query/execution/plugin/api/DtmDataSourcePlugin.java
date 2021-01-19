@@ -3,7 +3,6 @@ package io.arenadata.dtm.query.execution.plugin.api;
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
-import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
@@ -53,7 +52,7 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
     /**
      * <p>execute Low Latency Reading</p>
      *
-     * @param context LLR context
+     * @param request LLR context
      * @return query result
      */
     Future<QueryResult> llr(LlrRequest request);

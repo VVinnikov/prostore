@@ -10,7 +10,6 @@ import io.arenadata.dtm.query.execution.core.dto.eddl.*;
 import io.arenadata.dtm.query.execution.core.service.avro.AvroSchemaGenerator;
 import io.arenadata.dtm.query.execution.core.service.eddl.EddlQueryParamExtractor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
-import io.arenadata.dtm.query.execution.plugin.api.eddl.EddlRequestContext;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;

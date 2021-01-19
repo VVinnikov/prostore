@@ -1,8 +1,8 @@
-package io.arenadata.dtm.query.execution.plugin.api.service.dml;
+package io.arenadata.dtm.query.execution.core.service.dml;
 
 import io.arenadata.dtm.common.model.SqlProcessingType;
-import io.arenadata.dtm.query.execution.plugin.api.dml.DmlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.service.DatamartExecutionService;
+import io.arenadata.dtm.query.execution.core.dto.dml.DmlRequestContext;
+import io.arenadata.dtm.query.execution.core.service.DatamartExecutionService;
 
 public interface DmlService<T> extends DatamartExecutionService<DmlRequestContext, T> {
 

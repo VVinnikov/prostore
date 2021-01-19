@@ -4,7 +4,7 @@ import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.extension.config.SqlConfigCall;
 import io.arenadata.dtm.query.calcite.core.extension.config.SqlConfigType;
-import io.arenadata.dtm.query.execution.plugin.api.config.ConfigRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.config.ConfigRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.config.ConfigExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.config.ConfigService;
 import io.vertx.core.Future;

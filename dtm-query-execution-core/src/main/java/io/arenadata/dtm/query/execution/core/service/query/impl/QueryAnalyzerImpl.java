@@ -2,6 +2,7 @@ package io.arenadata.dtm.query.execution.core.service.query.impl;
 
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.*;
+import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckCall;
 import io.arenadata.dtm.query.calcite.core.extension.config.function.SqlConfigStorageAdd;
 import io.arenadata.dtm.query.calcite.core.extension.delta.SqlBeginDelta;
@@ -11,6 +12,7 @@ import io.arenadata.dtm.query.calcite.core.extension.dml.SqlUseSchema;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.DropDatabase;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.SqlCreateDatabase;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
+import io.arenadata.dtm.query.execution.core.dto.CoreRequestContext;
 import io.arenadata.dtm.query.execution.core.factory.QueryRequestFactory;
 import io.arenadata.dtm.query.execution.core.factory.RequestContextFactory;
 import io.arenadata.dtm.query.execution.core.service.query.QueryAnalyzer;
@@ -19,7 +21,6 @@ import io.arenadata.dtm.query.execution.core.service.query.QuerySemicolonRemover
 import io.arenadata.dtm.query.execution.core.utils.DatamartMnemonicExtractor;
 import io.arenadata.dtm.query.execution.core.utils.DefaultDatamartSetter;
 import io.arenadata.dtm.query.execution.core.utils.HintExtractor;
-import io.arenadata.dtm.query.execution.plugin.api.CoreRequestContext;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import lombok.Data;
@@ -86,9 +87,10 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
                     sqlNode = defaultDatamartSetter.set(sqlNode, queryRequest.getDatamartMnemonic());
                 }
             }
-            queryDispatcher.dispatch(requestContextFactory.create(queryRequest,
+            val requestContext = requestContextFactory.create(queryRequest,
                     parsedQueryResponse.getSourceType(),
-                    sqlNode))
+                    sqlNode);
+            queryDispatcher.dispatch(requestContext)
                     .onComplete(promise);
         });
     }

@@ -12,10 +12,10 @@ import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.dto.dml.DmlRequestContext;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
+import io.arenadata.dtm.query.execution.core.service.dml.DmlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsService;
 import io.arenadata.dtm.query.execution.core.utils.ParseQueryUtils;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
-import io.arenadata.dtm.query.execution.plugin.api.service.dml.DmlExecutor;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,22 +50,22 @@ public class UseSchemaDmlExecutor implements DmlExecutor<QueryResult> {
 
     private Future<QueryResult> sendMetricsAndExecute(DmlRequestContext context) {
         return Future.future(promise -> {
-            String datamart = parseQueryUtils.getDatamartName(((SqlUseSchema) context.getQuery()).getOperandList());
+            String datamart = parseQueryUtils.getDatamartName(((SqlUseSchema) context.getSqlNode()).getOperandList());
             datamartDao.existsDatamart(datamart)
-                .onComplete(metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
-                    SqlProcessingType.DML,
-                    context.getMetrics(),
-                    ar -> {
-                        if (ar.succeeded()) {
-                            if (ar.result()) {
-                                promise.complete(createQueryResult(context, datamart));
-                            } else {
-                                promise.fail(new DatamartNotExistsException(datamart));
-                            }
-                        } else {
-                            promise.fail(ar.cause());
-                        }
-                    }));
+                    .onComplete(metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
+                            SqlProcessingType.DML,
+                            context.getMetrics(),
+                            ar -> {
+                                if (ar.succeeded()) {
+                                    if (ar.result()) {
+                                        promise.complete(createQueryResult(context, datamart));
+                                    } else {
+                                        promise.fail(new DatamartNotExistsException(datamart));
+                                    }
+                                } else {
+                                    promise.fail(ar.cause());
+                                }
+                            }));
         });
     }
 
@@ -73,10 +73,10 @@ public class UseSchemaDmlExecutor implements DmlExecutor<QueryResult> {
         Map<String, Object> rowMap = new HashMap<>();
         rowMap.put(SCHEMA_COLUMN_NAME, datamart);
         return QueryResult.builder()
-            .metadata(Collections.singletonList(new ColumnMetadata(SCHEMA_COLUMN_NAME, SystemMetadata.SCHEMA, ColumnType.VARCHAR)))
-            .requestId(context.getRequest().getQueryRequest().getRequestId())
-            .result(Collections.singletonList(rowMap))
-            .build();
+                .metadata(Collections.singletonList(new ColumnMetadata(SCHEMA_COLUMN_NAME, SystemMetadata.SCHEMA, ColumnType.VARCHAR)))
+                .requestId(context.getRequest().getQueryRequest().getRequestId())
+                .result(Collections.singletonList(rowMap))
+                .build();
     }
 
     @Override

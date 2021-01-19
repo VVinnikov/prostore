@@ -5,16 +5,15 @@ import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
-import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
-import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
 import io.vertx.core.Future;
@@ -46,10 +45,11 @@ public interface DataSourcePluginService {
      * <p>execute Low Latency Reading request</p>
      *
      * @param sourceType Data source type
-     * @param context    LLR context
+     * @param metrics    metrics
+     * @param llrRequest    llr request
      * @return future object
      */
-    Future<QueryResult> llr(SourceType sourceType, LlrRequestContext context);
+    Future<QueryResult> llr(SourceType sourceType, RequestMetrics metrics, LlrRequest llrRequest);
 
     /**
      * <p>execute Massively Parallel Processing Reading</p>

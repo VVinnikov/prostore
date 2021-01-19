@@ -15,9 +15,9 @@ import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
-import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
 import io.vertx.core.Future;
@@ -75,11 +75,11 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     }
 
     @Override
-    public Future<QueryResult> llr(SourceType sourceType, LlrRequestContext context) {
+    public Future<QueryResult> llr(SourceType sourceType, RequestMetrics metrics, LlrRequest llrRequest) {
         return executeWithMetrics(sourceType,
                 SqlProcessingType.LLR,
-                context.getMetrics(),
-                plugin -> plugin.llr(context));
+                metrics,
+                plugin -> plugin.llr(llrRequest));
     }
 
     @Override

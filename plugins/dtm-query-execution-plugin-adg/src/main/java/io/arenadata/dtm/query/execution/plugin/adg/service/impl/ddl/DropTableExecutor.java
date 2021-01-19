@@ -3,9 +3,9 @@ package io.arenadata.dtm.query.execution.plugin.adg.service.impl.ddl;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.AdgHelperTableNamesFactory;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.TtDeleteTablesRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
+import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
+import io.arenadata.dtm.query.execution.plugin.api.service.DdlExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.service.DdlService;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -31,19 +31,19 @@ public class DropTableExecutor implements DdlExecutor<Void> {
     }
 
     @Override
-    public Future<Void> execute(DdlRequestContext context, String sqlNodeName) {
+    public Future<Void> execute(DdlRequest request) {
         return Future.future(promise -> {
             val tableNames = adgHelperTableNamesFactory.create(
-                    context.getRequest().getQueryRequest().getEnvName(),
-                    context.getRequest().getQueryRequest().getDatamartMnemonic(),
-                    context.getRequest().getEntity().getName());
+                    request.getEnvName(),
+                    request.getDatamartMnemonic(),
+                    request.getEntity().getName());
 
-            val request = new TtDeleteTablesRequest(Arrays.asList(
+            val catridgeRequest = new TtDeleteTablesRequest(Arrays.asList(
                     tableNames.getStaging(),
                     tableNames.getActual(),
                     tableNames.getHistory()
             ));
-            cartridgeClient.executeDeleteSpacesQueued(request)
+            cartridgeClient.executeDeleteSpacesQueued(catridgeRequest)
                     .onComplete(promise);
         });
     }

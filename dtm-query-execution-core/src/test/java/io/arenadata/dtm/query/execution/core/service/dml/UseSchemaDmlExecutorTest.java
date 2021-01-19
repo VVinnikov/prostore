@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.service.ddl;
+package io.arenadata.dtm.query.execution.core.service.dml;
 
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.metrics.RequestMetrics;

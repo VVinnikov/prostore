@@ -4,7 +4,8 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,14 +30,21 @@ public class MetadataExecutorImpl implements MetadataExecutor<DdlRequestContext>
     public Future<Void> execute(DdlRequestContext context) {
         return Future.future(promise -> {
             List<Future> futures = new ArrayList<>();
-            Set<SourceType> destination = Optional.ofNullable(context.getRequest().getEntity())
+            Set<SourceType> destination = Optional.ofNullable(context.getEntity())
                     .map(Entity::getDestination)
                     .filter(set -> !set.isEmpty())
                     .orElse(dataSourcePluginService.getSourceTypes());
             destination.forEach(sourceType ->
                     futures.add(dataSourcePluginService.ddl(
                             sourceType,
-                            context)
+                            context.getMetrics(),
+                            DdlRequest.builder()
+                                    .datamartMnemonic(context.getDatamartName())
+                                    .entity(context.getEntity())
+                                    .envName(context.getEnvName())
+                                    .requestId(context.getRequest().getQueryRequest().getRequestId())
+                                    .sqlKind(context.getSqlNode().getKind())
+                                    .build())
                     ));
             CompositeFuture.join(futures).setHandler(ar -> {
                 if (ar.succeeded()) {

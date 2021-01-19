@@ -20,8 +20,8 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDa
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.DatamartDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
-import io.arenadata.dtm.query.execution.core.exception.view.ViewNotExistsException;
 import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
+import io.arenadata.dtm.query.execution.core.exception.view.ViewNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.ddl.impl.AlterViewDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.dml.ColumnMetadataService;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
@@ -30,7 +30,7 @@ import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvide
 import io.arenadata.dtm.query.execution.core.service.schema.impl.LogicalSchemaProviderImpl;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -90,7 +90,7 @@ class AlterViewDdlExecutorTest {
         initEntityList();
         sqlNodeName = schema + "." + entityList.get(0).getName();
         when(metadataExecutor.execute(any())).thenReturn(Future.succeededFuture());
-        when(logicalSchemaProvider.getSchemaFromQuery(any()))
+        when(logicalSchemaProvider.getSchemaFromQuery(any(), any()))
                 .thenReturn(Future.succeededFuture(Collections.singletonList(new Datamart(
                         schema,
                         true,
@@ -109,10 +109,8 @@ class AlterViewDdlExecutorTest {
         queryRequest.setDatamartMnemonic(schema);
         queryRequest.setSql(String.format("ALTER VIEW %s.%s AS SELECT * FROM %s.%s",
                 schema, entityList.get(0).getName(), schema, entityList.get(1).getName()));
-        SqlNode query = planner.parse(queryRequest.getSql());
-        DdlRequestContext context = new DdlRequestContext(new DdlRequest(queryRequest));
-        context.getRequest().setQueryRequest(queryRequest);
-        context.setQuery(query);
+        SqlNode sqlNode = planner.parse(queryRequest.getSql());
+        DdlRequestContext context = new DdlRequestContext(null, new DdlRequest(queryRequest), sqlNode, null, null);
 
         when(columnMetadataService.getColumnMetadata(any()))
                 .thenReturn(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()
@@ -150,11 +148,8 @@ class AlterViewDdlExecutorTest {
                 schema, entityList.get(0).getName(), entityList.get(2).getName(),
                 schema, entityList.get(3).getName()));
 
-        SqlNode query = planner.parse(queryRequest.getSql());
-
-        DdlRequestContext context = new DdlRequestContext(new DdlRequest(queryRequest));
-        context.getRequest().setQueryRequest(queryRequest);
-        context.setQuery(query);
+        SqlNode sqlNode = planner.parse(queryRequest.getSql());
+        DdlRequestContext context = new DdlRequestContext(null, new DdlRequest(queryRequest), sqlNode, null, null);
 
         when(columnMetadataService.getColumnMetadata(any()))
                 .thenReturn(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()
@@ -191,11 +186,9 @@ class AlterViewDdlExecutorTest {
         queryRequest.setDatamartMnemonic(schema);
         queryRequest.setSql(String.format("ALTER VIEW %s.%s AS SELECT * FROM %s.%s",
                 schema, entityList.get(0).getName(), schema, entityList.get(1).getName()));
-        SqlNode query = planner.parse(queryRequest.getSql());
+        SqlNode sqlNode = planner.parse(queryRequest.getSql());
+        DdlRequestContext context = new DdlRequestContext(null, new DdlRequest(queryRequest), sqlNode, null, null);
 
-        DdlRequestContext context = new DdlRequestContext(new DdlRequest(queryRequest));
-        context.getRequest().setQueryRequest(queryRequest);
-        context.setQuery(query);
         Mockito.when(entityDao.getEntity(eq(schema), eq(entityList.get(1).getName())))
                 .thenReturn(Future.succeededFuture(entityList.get(1)));
 
@@ -225,11 +218,8 @@ class AlterViewDdlExecutorTest {
         queryRequest.setDatamartMnemonic(schema);
         queryRequest.setSql(String.format("ALTER VIEW %s.%s AS SELECT * FROM %s.%s",
                 schema, entityList.get(0).getName(), schema, entityList.get(1).getName()));
-        SqlNode query = planner.parse(queryRequest.getSql());
-
-        DdlRequestContext context = new DdlRequestContext(new DdlRequest(queryRequest));
-        context.getRequest().setQueryRequest(queryRequest);
-        context.setQuery(query);
+        SqlNode sqlNode = planner.parse(queryRequest.getSql());
+        DdlRequestContext context = new DdlRequestContext(null, new DdlRequest(queryRequest), sqlNode, null, null);
 
         Mockito.when(entityDao.getEntity(eq(schema), eq(entityList.get(1).getName())))
                 .thenReturn(Future.succeededFuture(entityList.get(1)));
@@ -263,11 +253,8 @@ class AlterViewDdlExecutorTest {
         queryRequest.setDatamartMnemonic(schema);
         queryRequest.setSql(String.format("ALTER VIEW %s.%s AS SELECT * FROM %s.%s",
                 schema, entityList.get(0).getName(), schema, entityList.get(0).getName()));
-        SqlNode query = planner.parse(queryRequest.getSql());
-
-        DdlRequestContext context = new DdlRequestContext(new DdlRequest(queryRequest));
-        context.getRequest().setQueryRequest(queryRequest);
-        context.setQuery(query);
+        SqlNode sqlNode = planner.parse(queryRequest.getSql());
+        DdlRequestContext context = new DdlRequestContext(null, new DdlRequest(queryRequest), sqlNode, null, null);
 
         when(columnMetadataService.getColumnMetadata(any()))
                 .thenReturn(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()

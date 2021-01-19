@@ -2,14 +2,12 @@ package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.ddl;
 
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.SqlCreateDatabase;
-import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockDatabaseExecutor;
-import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockEnvironment;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.service.DdlExecutor;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.junit.jupiter.api.BeforeAll;
@@ -21,7 +19,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DatabaseDdlTest {
     private static final DdlProperties ddlProperties = new DdlProperties();
-    private static final AppConfiguration appConfiguration = new AppConfiguration(new MockEnvironment());
 
     @BeforeAll
     public static void setup() {
@@ -38,7 +35,7 @@ class DatabaseDdlTest {
         DatabaseExecutor executor = new MockDatabaseExecutor(
                 Collections.singletonList(t -> t.equalsIgnoreCase("CREATE DATABASE IF NOT EXISTS dev__testdb on cluster test_cluster")));
 
-        DdlExecutor<Void> databaseDdlService = new CreateDatabaseExecutor(executor, ddlProperties, appConfiguration);
+        DdlExecutor<Void> databaseDdlService = new CreateDatabaseExecutor(executor, ddlProperties);
 
         databaseDdlService.execute(context, "CREATE").onComplete(ar -> assertTrue(ar.succeeded()));
     }
@@ -52,7 +49,7 @@ class DatabaseDdlTest {
         DatabaseExecutor executor = new MockDatabaseExecutor(
                 Collections.singletonList(t -> t.equalsIgnoreCase("drop database if exists dev__testdb on cluster test_cluster")));
 
-        DdlExecutor<Void> databaseDdlService = new DropDatabaseExecutor(executor, ddlProperties, appConfiguration);
+        DdlExecutor<Void> databaseDdlService = new DropDatabaseExecutor(executor, ddlProperties);
 
         databaseDdlService.execute(context, "DROP").onComplete(ar -> assertTrue(ar.succeeded()));
     }

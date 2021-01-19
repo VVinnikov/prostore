@@ -13,7 +13,7 @@ import java.util.List;
  */
 public interface MetadataSqlFactory {
 
-    String createDropTableScript(Entity entity);
+    String createDropTableScript(String tableNameWithSchema);
 
     String createSchemaSqlQuery(String schemaName);
 

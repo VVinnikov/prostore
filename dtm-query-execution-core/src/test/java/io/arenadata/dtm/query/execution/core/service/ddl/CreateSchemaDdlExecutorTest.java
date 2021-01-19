@@ -15,7 +15,7 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.Servic
 import io.arenadata.dtm.query.execution.core.service.ddl.impl.CreateSchemaDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.impl.MetadataExecutorImpl;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -64,10 +64,8 @@ class CreateSchemaDdlExecutorTest {
         queryRequest.setRequestId(UUID.randomUUID());
         queryRequest.setDatamartMnemonic(schema);
         queryRequest.setSql("create database shares");
-        SqlNode query = planner.parse(queryRequest.getSql());
-        context = new DdlRequestContext(new DdlRequest(queryRequest));
-        context.getRequest().setQueryRequest(queryRequest);
-        context.setQuery(query);
+        SqlNode sqlNode = planner.parse(queryRequest.getSql());
+        context = new DdlRequestContext(null, new DdlRequest(queryRequest), sqlNode, null, null);
     }
 
     @Test

@@ -1,10 +1,8 @@
-package io.arenadata.dtm.query.execution.plugin.api.service.ddl;
+package io.arenadata.dtm.query.execution.core.service.ddl;
 
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.service.DatamartExecutionService;
 import io.arenadata.dtm.common.model.SqlProcessingType;
-import io.vertx.core.AsyncResult;
-
+import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.core.service.DatamartExecutionService;
 
 public interface DdlService<T> extends DatamartExecutionService<DdlRequestContext, T> {
 

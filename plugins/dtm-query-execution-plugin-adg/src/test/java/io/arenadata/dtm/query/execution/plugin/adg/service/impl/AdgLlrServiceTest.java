@@ -4,10 +4,9 @@ import io.arenadata.dtm.cache.service.CacheService;
 import io.arenadata.dtm.cache.service.CaffeineCacheService;
 import io.arenadata.dtm.common.cache.QueryTemplateKey;
 import io.arenadata.dtm.common.cache.QueryTemplateValue;
-import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
+import io.arenadata.dtm.common.reader.QueryTemplateResult;
 import io.arenadata.dtm.query.calcite.core.dialect.LimitSqlDialect;
 import io.arenadata.dtm.query.calcite.core.service.QueryTemplateExtractor;
 import io.arenadata.dtm.query.calcite.core.service.impl.QueryTemplateExtractorImpl;
@@ -16,6 +15,7 @@ import io.arenadata.dtm.query.execution.plugin.adg.service.DtmTestConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adg.service.QueryEnrichmentService;
 import io.arenadata.dtm.query.execution.plugin.adg.service.QueryExecutorService;
 import io.arenadata.dtm.query.execution.plugin.adg.service.impl.dml.AdgLlrService;
+import io.arenadata.dtm.query.execution.plugin.adg.utils.TestUtils;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.LlrService;
 import io.vertx.core.Future;
@@ -23,6 +23,7 @@ import io.vertx.core.Promise;
 import io.vertx.junit5.VertxExtension;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,47 +59,60 @@ class AdgLlrServiceTest {
 
     @Test
     void testExecuteNotEmptyOk() {
+        String sql = "select name from s";
+        UUID requestId = UUID.randomUUID();
         Promise<QueryResult> promise = Promise.promise();
-        QueryRequest queryRequest = new QueryRequest();
-        queryRequest.setRequestId(UUID.randomUUID());
-        queryRequest.setSql("select name from s");
-
         List<Map<String, Object>> result = new ArrayList<>();
         Map<String, Object> rowMap = new HashMap<>();
         rowMap.put("name", "val");
         result.add(rowMap);
         QueryResult expectedResult = new QueryResult(
-                queryRequest.getRequestId(),
+                requestId,
                 result);
+        prepare(sql, expectedResult);
+        SqlNode sqlNode = TestUtils.DEFINITION_SERVICE.processingQuery(sql);
+        LlrRequest llrRequest = LlrRequest.builder()
+                .metadata(Collections.singletonList(new ColumnMetadata("name", ColumnType.VARCHAR)))
+                .sourceQueryTemplateResult(new QueryTemplateResult(sql, sqlNode, Collections.emptyList()))
+                .schema(new ArrayList<>())
+                .requestId(requestId)
+                .sqlNode(sqlNode)
+                .build();
 
-        prepare(queryRequest, expectedResult);
-
-        llrService.execute(new LlrRequestContext(new RequestMetrics(), new LlrRequest(sourceQueryTemplateResult, queryRequest, new ArrayList<>(), Collections.singletonList(new ColumnMetadata("name", ColumnType.VARCHAR)),
-                sqlNode)))
+        llrService.execute(llrRequest)
                 .onComplete(promise);
+
+
         assertTrue(promise.future().succeeded());
         assertEquals(expectedResult, promise.future().result());
     }
 
     @Test
     void testExecuteEmptyOk() {
+        String sql = "select name from s";
+        UUID requestId = UUID.randomUUID();
         Promise<QueryResult> promise = Promise.promise();
-        QueryRequest queryRequest = new QueryRequest();
-        queryRequest.setRequestId(UUID.randomUUID());
-        queryRequest.setSql("select name from s");
         QueryResult expectedResult = new QueryResult(
-                queryRequest.getRequestId(),
+                requestId,
                 new ArrayList<>());
-        prepare(queryRequest, expectedResult);
-        llrService.execute(new LlrRequestContext(new RequestMetrics(), new LlrRequest(sourceQueryTemplateResult, queryRequest, new ArrayList<>(), Collections.singletonList(new ColumnMetadata("name", ColumnType.VARCHAR)),
-                sqlNode)))
+        prepare(sql, expectedResult);
+        SqlNode sqlNode = TestUtils.DEFINITION_SERVICE.processingQuery(sql);
+        LlrRequest llrRequest = LlrRequest.builder()
+                .metadata(Collections.singletonList(new ColumnMetadata("name", ColumnType.VARCHAR)))
+                .sourceQueryTemplateResult(new QueryTemplateResult(sql, sqlNode, Collections.emptyList()))
+                .requestId(requestId)
+                .schema(new ArrayList<>())
+                .sqlNode(sqlNode)
+                .build();
+
+        llrService.execute(llrRequest)
                 .onComplete(promise);
         assertTrue(promise.future().succeeded());
         assertEquals(expectedResult, promise.future().result());
     }
 
-    private void prepare(QueryRequest queryRequest, QueryResult expectedResult) {
+    private void prepare(String sql, QueryResult expectedResult) {
         when(executorService.execute(any(), any())).thenReturn(Future.succeededFuture(expectedResult.getResult()));
-        when(enrichmentService.enrich(any())).thenReturn(Future.succeededFuture(queryRequest.getSql()));
+        when(enrichmentService.enrich(any())).thenReturn(Future.succeededFuture(sql));
     }
 }

@@ -35,7 +35,7 @@ public class AdbQueryCostService implements QueryCostService<Integer> {
     }
 
     @Override
-    public Future<Integer> execute(QueryCostRequestContext context) {
+    public Future<Integer> execute(QueryCostRequestContext request) {
         return Future.failedFuture(new DataSourceException("Unsupported operation"));
     }
 }

@@ -41,11 +41,11 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
     }
 
     @Override
-    public Future<QueryResult> execute(MppwRequestContext context) {
+    public Future<QueryResult> execute(MppwRequestContext request) {
         return Future.future(promise -> {
             log.debug("mppw start");
-            val mppwKafkaContext = contextFactory.create(context.getRequest());
-            if (context.getRequest().getIsLoadStart()) {
+            val mppwKafkaContext = contextFactory.create(request.getRequest());
+            if (request.getRequest().getIsLoadStart()) {
                 initializeLoading(mppwKafkaContext)
                         .onComplete(promise);
             } else {

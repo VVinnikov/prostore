@@ -31,12 +31,12 @@ public abstract class QueryResultCacheableLlrService implements LlrService<Query
     }
 
     @Override
-    public Future<QueryResult> execute(LlrRequest llrRq) {
-        return Future.future(promise -> getQueryFromCacheOrInit(llrRq)
-                .compose(enrichedQuery -> queryExecute(enrichedQuery, llrRq.getMetadata()))
+    public Future<QueryResult> execute(LlrRequest request) {
+        return Future.future(promise -> getQueryFromCacheOrInit(request)
+                .compose(enrichedQuery -> queryExecute(enrichedQuery, request.getMetadata()))
                 .map(result -> QueryResult.builder()
-                        .requestId(llrRq.getRequestId())
-                        .metadata(llrRq.getMetadata())
+                        .requestId(request.getRequestId())
+                        .metadata(request.getMetadata())
                         .result(result)
                         .build())
                 .onComplete(promise));

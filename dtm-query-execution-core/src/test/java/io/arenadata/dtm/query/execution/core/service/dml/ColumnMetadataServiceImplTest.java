@@ -13,6 +13,7 @@ import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteSchemaFactory;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import io.arenadata.dtm.query.execution.core.factory.impl.CoreSchemaFactory;
 import io.arenadata.dtm.query.execution.core.service.dml.impl.ColumnMetadataServiceImpl;
+import io.arenadata.dtm.query.execution.core.utils.TestUtils;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.vertx.core.Vertx;
@@ -21,6 +22,7 @@ import io.vertx.junit5.VertxTestContext;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
@@ -36,7 +38,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
 class ColumnMetadataServiceImplTest {
-    private final CalciteConfiguration config = new CalciteConfiguration();
     private final CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
     private final SqlParser.Config configParser = calciteConfiguration.configEddlParser(calciteConfiguration.getSqlParserFactory());
     private final CoreCalciteSchemaFactory calciteSchemaFactory = new CoreCalciteSchemaFactory(new CoreSchemaFactory());
@@ -58,7 +59,8 @@ class ColumnMetadataServiceImplTest {
         List<ColumnMetadata> expectedColumns = Arrays.asList(
                 new ColumnMetadata("account_id", ColumnType.BIGINT),
                 new ColumnMetadata("account_type", ColumnType.VARCHAR, 1));
-        service.getColumnMetadata(new QueryParserRequest(sourceRequest.getQueryRequest(),
+        SqlNode sqlNode = TestUtils.DEFINITION_SERVICE.processingQuery(queryRequest.getSql());
+        service.getColumnMetadata(new QueryParserRequest(sqlNode,
                 sourceRequest.getLogicalSchema()))
                 .onComplete(ar -> {
                     if (ar.succeeded()) {

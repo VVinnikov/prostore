@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.core.factory.impl;
 
-import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.RequestStatus;
 import io.arenadata.dtm.common.reader.QueryRequest;
@@ -35,15 +34,12 @@ import java.util.Optional;
 @Component
 public class RequestContextFactoryImpl implements RequestContextFactory<CoreRequestContext<? extends DatamartRequest, ? extends SqlNode>, QueryRequest> {
     private final SqlDialect sqlDialect;
-    private final DtmConfig dtmSettings;
     private final AppConfiguration coreConfiguration;
 
     @Autowired
     public RequestContextFactoryImpl(@Qualifier("coreSqlDialect") SqlDialect sqlDialect,
-                                     DtmConfig dtmSettings,
                                      AppConfiguration coreConfiguration) {
         this.sqlDialect = sqlDialect;
-        this.dtmSettings = dtmSettings;
         this.coreConfiguration = coreConfiguration;
     }
 
@@ -122,7 +118,7 @@ public class RequestContextFactoryImpl implements RequestContextFactory<CoreRequ
 
     private RequestMetrics createRequestMetrics(QueryRequest request) {
         return RequestMetrics.builder()
-                .startTime(LocalDateTime.now(dtmSettings.getTimeZone()))
+                .startTime(LocalDateTime.now(coreConfiguration.dtmSettings().getTimeZone()))
                 .requestId(request.getRequestId())
                 .status(RequestStatus.IN_PROCESS)
                 .isActive(true)

@@ -6,7 +6,7 @@ import io.vertx.core.Future;
 
 public interface DatamartExecutionService<RQ extends PluginRequest, RS> {
 
-    Future<RS> execute(RQ context);
+    Future<RS> execute(RQ request);
 
     SqlProcessingType getSqlProcessingType();
 }

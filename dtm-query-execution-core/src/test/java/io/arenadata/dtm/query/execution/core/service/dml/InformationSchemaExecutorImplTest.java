@@ -44,7 +44,7 @@ class InformationSchemaExecutorImplTest {
         when(sqlString.getSql()).thenReturn("");
         SqlNode sqlNode = mock(SqlNode.class);
         when(sqlNode.toSqlString(any(SqlDialect.class))).thenReturn(sqlString);
-        QueryParserResponse queryParserResponse = new QueryParserResponse(null, null, null, null, sqlNode);
+        QueryParserResponse queryParserResponse = new QueryParserResponse(null, null, null, sqlNode);
         when(parserService.parse(any())).thenReturn(Future.succeededFuture(queryParserResponse));
         ResultSet resultSet = new ResultSet(Collections.emptyList(), Collections.emptyList(), null);
         when(client.getQueryResult(anyString())).thenReturn(Future.succeededFuture(resultSet));

@@ -129,7 +129,9 @@ public class CheckDataExecutor implements CheckExecutor {
                         context.getMetrics(),
                         new CheckDataByCountRequest(entity,
                                 sysCn,
-                                context.getEnvName())));
+                                context.getEnvName(),
+                                context.getRequest().getQueryRequest().getRequestId(),
+                                context.getRequest().getQueryRequest().getDatamartMnemonic())));
         return sysCn -> Future.future(promise -> CompositeFuture.join(
                 entity.getDestination().stream()
                         .map(sourceType -> checkFunc.apply(sourceType, sysCn)
@@ -166,8 +168,12 @@ public class CheckDataExecutor implements CheckExecutor {
             return (sourceType, sysCn) -> dataSourcePluginService.checkDataByHashInt32(
                     sourceType,
                     context.getMetrics(),
-                    new CheckDataByHashInt32Request(entity, sysCn, columns,
-                            context.getEnvName()));
+                    new CheckDataByHashInt32Request(entity,
+                            sysCn,
+                            columns,
+                            context.getEnvName(),
+                            context.getRequest().getQueryRequest().getRequestId(),
+                            context.getRequest().getQueryRequest().getDatamartMnemonic()));
         }
     }
 }

@@ -6,12 +6,13 @@ import io.arenadata.dtm.common.model.RequestStatus;
 import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.query.calcite.core.extension.delta.SqlDeltaCall;
 import io.arenadata.dtm.query.execution.core.dto.delta.operation.DeltaRequestContext;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaAction;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaQuery;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.RollbackDeltaQuery;
+import io.arenadata.dtm.query.execution.core.factory.DeltaQueryFactory;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaExecutor;
-import io.arenadata.dtm.query.execution.core.service.delta.DeltaQueryParamExtractor;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaService;
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsService;
 import io.vertx.core.Future;
@@ -32,18 +33,17 @@ import java.util.stream.Collectors;
 public class DeltaServiceImpl implements DeltaService<QueryResult> {
 
     private final Map<DeltaAction, DeltaExecutor> executors;
-    private final DeltaQueryParamExtractor deltaQueryParamExtractor;
     private final MetricsService<RequestMetrics> metricsService;
+    private final DeltaQueryFactory deltaQueryFactory;
 
     @Autowired
-    public DeltaServiceImpl(DeltaQueryParamExtractor deltaQueryParamExtractor,
-                            List<DeltaExecutor> executors,
-                            @Qualifier("coreMetricsService") MetricsService<RequestMetrics> metricsService) {
-
-        this.deltaQueryParamExtractor = deltaQueryParamExtractor;
+    public DeltaServiceImpl(List<DeltaExecutor> executors,
+                            @Qualifier("coreMetricsService") MetricsService<RequestMetrics> metricsService,
+                            DeltaQueryFactory deltaQueryFactory) {
         this.executors = executors.stream()
                 .collect(Collectors.toMap(DeltaExecutor::getAction, Function.identity()));
         this.metricsService = metricsService;
+        this.deltaQueryFactory = deltaQueryFactory;
     }
 
     @Override
@@ -58,20 +58,22 @@ public class DeltaServiceImpl implements DeltaService<QueryResult> {
     }
 
     private Future<QueryResult> extractDeltaAndExecute(DeltaRequestContext context) {
-        return Future.future(promise -> {
-            deltaQueryParamExtractor.extract(context.getRequest().getQueryRequest())
-                    .compose(deltaQuery -> sendMetricsAndExecute(context, deltaQuery))
-                    .onComplete(deltaExecHandler -> {
-                        if (deltaExecHandler.succeeded()) {
-                            QueryResult queryDeltaResult = deltaExecHandler.result();
-                            log.debug("Query result: {}, queryResult : {}",
-                                    context.getRequest().getQueryRequest(), queryDeltaResult);
-                            promise.complete(queryDeltaResult);
-                        } else {
-                            promise.fail(deltaExecHandler.cause());
-                        }
-                    });
-        });
+        return Future.future(promise -> createDeltaQuery(context)
+                .compose(deltaQuery -> sendMetricsAndExecute(context, deltaQuery))
+                .onComplete(deltaExecHandler -> {
+                    if (deltaExecHandler.succeeded()) {
+                        QueryResult queryDeltaResult = deltaExecHandler.result();
+                        log.debug("Query result: {}, queryResult : {}",
+                                context.getRequest().getQueryRequest(), queryDeltaResult);
+                        promise.complete(queryDeltaResult);
+                    } else {
+                        promise.fail(deltaExecHandler.cause());
+                    }
+                }));
+    }
+
+    private Future<DeltaQuery> createDeltaQuery(DeltaRequestContext context) {
+        return Future.future(promise -> deltaQueryFactory.create(context));
     }
 
     private Future<QueryResult> sendMetricsAndExecute(DeltaRequestContext context, DeltaQuery deltaQuery) {

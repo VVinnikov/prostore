@@ -17,9 +17,9 @@ import io.arenadata.dtm.query.execution.core.dto.delta.operation.DeltaRequestCon
 import io.arenadata.dtm.query.execution.core.dto.dml.DmlRequest;
 import io.arenadata.dtm.query.execution.core.dto.dml.DmlRequestContext;
 import io.arenadata.dtm.query.execution.core.dto.eddl.EddlRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.core.factory.RequestContextFactory;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.ConfigRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import lombok.val;
@@ -85,7 +85,9 @@ public class RequestContextFactoryImpl implements RequestContextFactory<CoreRequ
         } else if (node instanceof SqlDeltaCall) {
             return new DeltaRequestContext(
                     createRequestMetrics(request),
-                    new DatamartRequest(changedQueryRequest));
+                    new DatamartRequest(changedQueryRequest),
+                    envName,
+                    (SqlDeltaCall) node);
         } else if (SqlKind.CHECK.equals(node.getKind())) {
             SqlCheckCall sqlCheckCall = (SqlCheckCall) node;
             Optional.ofNullable(sqlCheckCall.getSchema()).ifPresent(changedQueryRequest::setDatamartMnemonic);

@@ -43,7 +43,7 @@ public class AdqmTruncateHistoryQueriesFactoryImpl implements AdqmTruncateHistor
                 .map(conditions -> String.format(" AND (%s)", conditions.toSqlString(sqlDialect)))
                 .orElse("");
         Entity entity = params.getEntity();
-        String dbName = String.format("%s__%s", params.getEnv(), entity.getSchema());
+        String dbName = String.format("%s__%s", params.getEnvName(), entity.getSchema());
         List<String> orderByColumns = entity.getFields().stream()
                 .filter(field -> field.getPrimaryOrder() != null)
                 .map(EntityField::getName)
@@ -57,14 +57,14 @@ public class AdqmTruncateHistoryQueriesFactoryImpl implements AdqmTruncateHistor
     @Override
     public String flushQuery(TruncateHistoryRequest params) {
         Entity entity = params.getEntity();
-        String dbName = String.format("%s__%s", params.getEnv(), entity.getSchema());
+        String dbName = String.format("%s__%s", params.getEnvName(), entity.getSchema());
         return String.format(FLUSH_PATTERN, dbName, entity.getName());
     }
 
     @Override
     public String optimizeQuery(TruncateHistoryRequest params) {
         Entity entity = params.getEntity();
-        String dbName = String.format("%s__%s", params.getEnv(), entity.getSchema());
+        String dbName = String.format("%s__%s", params.getEnvName(), entity.getSchema());
         return String.format(OPTIMIZE_PATTERN, dbName, entity.getName(), ddlProperties.getCluster());
     }
 }

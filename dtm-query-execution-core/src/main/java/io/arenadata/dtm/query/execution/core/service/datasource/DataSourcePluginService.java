@@ -10,11 +10,11 @@ import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
+import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
-import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
 import io.vertx.core.Future;
 
@@ -46,7 +46,7 @@ public interface DataSourcePluginService {
      *
      * @param sourceType Data source type
      * @param metrics    metrics
-     * @param llrRequest    llr request
+     * @param llrRequest llr request
      * @return future object
      */
     Future<QueryResult> llr(SourceType sourceType, RequestMetrics metrics, LlrRequest llrRequest);
@@ -89,10 +89,10 @@ public interface DataSourcePluginService {
 
     /**
      * @param sourceType Data source type
-     * @param context    Rollback request context
+     * @param request    Rollback request
      * @return future object
      */
-    Future<Void> rollback(SourceType sourceType, RollbackRequestContext context);
+    Future<Void> rollback(SourceType sourceType, RequestMetrics metrics, RollbackRequest request);
 
     /**
      * Get plugin by source type
@@ -110,7 +110,7 @@ public interface DataSourcePluginService {
     Set<String> getActiveCaches();
 
     /**
-     * @param sourceType   SourceType
+     * @param sourceType        SourceType
      * @param checkTableRequest
      * @return failed future with errors if check failed
      */

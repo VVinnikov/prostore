@@ -3,10 +3,12 @@ package io.arenadata.dtm.query.execution.core.service.delta.impl;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
+import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.query.execution.core.dto.delta.operation.DeltaRequestContext;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.*;
+import io.arenadata.dtm.query.execution.core.factory.DeltaQueryFactory;
+import io.arenadata.dtm.query.execution.core.factory.impl.delta.DeltaQueryFactoryImpl;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaExecutor;
-import io.arenadata.dtm.query.execution.core.service.delta.DeltaQueryParamExtractor;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaService;
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsService;
 import io.arenadata.dtm.query.execution.core.service.metrics.impl.MetricsServiceImpl;
@@ -25,10 +27,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class DeltaServiceImplTest {
-    private final DeltaQueryParamExtractor deltaQueryParamExtractor = mock(DeltaQueryParamExtractorImpl.class);
     private final MetricsService<RequestMetrics> metricsService = mock(MetricsServiceImpl.class);
     private DeltaService<QueryResult> deltaService;
-
+    private final DeltaQueryFactory deltaQueryFactory = mock(DeltaQueryFactoryImpl.class);
     private final DeltaExecutor beginDeltaExecutor = mock(BeginDeltaExecutor.class);
     private final DeltaExecutor commitDeltaExecutor = mock(CommitDeltaExecutor.class);
     private final DeltaExecutor rollbackDeltaExecutor = mock(RollbackDeltaExecutor.class);
@@ -36,6 +37,7 @@ class DeltaServiceImplTest {
     private final DeltaExecutor getDeltaByNumExecutor = mock(GetDeltaByNumExecutor.class);
     private final DeltaExecutor getDeltaByHotExecutor = mock(GetDeltaHotExecutor.class);
     private final DeltaExecutor getDeltaByOkExecutor = mock(GetDeltaOkExecutor.class);
+    private final String envName = "test";
 
     @BeforeEach
     void setUp() {
@@ -54,9 +56,8 @@ class DeltaServiceImplTest {
             Handler<AsyncResult<QueryResult>> promise = answer.getArgument(3);
             return (Handler<AsyncResult<QueryResult>>) ar -> promise.handle(Future.succeededFuture(ar.result()));
         });
-        deltaService = new DeltaServiceImpl(deltaQueryParamExtractor,
-                executors,
-                metricsService);
+        deltaService = new DeltaServiceImpl(executors,
+                metricsService, deltaQueryFactory);
     }
 
     void setUpExecutor(DeltaExecutor executor) {
@@ -96,7 +97,7 @@ class DeltaServiceImplTest {
 
     @Test
     void checkRollbackDelta() {
-        DeltaQuery deltaQuery = new RollbackDeltaQuery(new QueryRequest(), null, null, null);
+        DeltaQuery deltaQuery = new RollbackDeltaQuery(new QueryRequest(), null, null, null,  "test", null);
         executeTest(getContext("test"), deltaQuery, ar -> {
             assertTrue(ar.succeeded());
             verify(rollbackDeltaExecutor, times(1)).execute(any());
@@ -133,14 +134,15 @@ class DeltaServiceImplTest {
 
     @Test
     void checkGetDeltaOk() {
-        DeltaQuery deltaQuery = new GetDeltaOkQuery(new QueryRequest(), null, null, null, null ,null);
+        DeltaQuery deltaQuery = new GetDeltaOkQuery(new QueryRequest(), null, null, null, null, null);
         executeTest(getContext("test"), deltaQuery, ar -> {
             assertTrue(ar.succeeded());
             verify(getDeltaByOkExecutor, times(1)).execute(any());
         });
     }
+
     void executeTest(DeltaRequestContext context, DeltaQuery deltaQuery, Consumer<AsyncResult<QueryResult>> validate) {
-        when(deltaQueryParamExtractor.extract(any())).thenReturn(Future.succeededFuture(deltaQuery));
+        when(deltaQueryFactory.create(any())).thenReturn(deltaQuery);
         deltaService.execute(context)
                 .onComplete(validate::accept);
     }
@@ -149,6 +151,6 @@ class DeltaServiceImplTest {
         QueryRequest request = new QueryRequest();
         request.setDatamartMnemonic(datamart);
         DatamartRequest datamartRequest = new DatamartRequest(request);
-        return new DeltaRequestContext(new RequestMetrics(), datamartRequest);
+        return new DeltaRequestContext(new RequestMetrics(), datamartRequest, envName, null);//FIXME
     }
 }

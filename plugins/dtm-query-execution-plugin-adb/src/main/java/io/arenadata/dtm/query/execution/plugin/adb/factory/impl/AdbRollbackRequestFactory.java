@@ -3,8 +3,8 @@ package io.arenadata.dtm.query.execution.plugin.adb.factory.impl;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.plugin.sql.PreparedStatementRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbRollbackRequest;
+import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.api.factory.RollbackRequestFactory;
-import io.arenadata.dtm.query.execution.plugin.api.request.RollbackRequest;
 import org.springframework.stereotype.Component;
 
 import java.util.stream.Collectors;
@@ -23,17 +23,17 @@ public class AdbRollbackRequestFactory implements RollbackRequestFactory<AdbRoll
     @Override
     public AdbRollbackRequest create(RollbackRequest rollbackRequest) {
         String truncateSql = String.format(TRUNCATE_STAGING,
-            rollbackRequest.getDatamart(), rollbackRequest.getDestinationTable());
-        String deleteFromActualSql = String.format(DELETE_FROM_ACTUAL, rollbackRequest.getDatamart(),
+            rollbackRequest.getDatamartMnemonic(), rollbackRequest.getDestinationTable());
+        String deleteFromActualSql = String.format(DELETE_FROM_ACTUAL, rollbackRequest.getDatamartMnemonic(),
             rollbackRequest.getDestinationTable(), rollbackRequest.getSysCn());
         String fields = rollbackRequest.getEntity().getFields().stream()
             .map(EntityField::getName)
             .collect(Collectors.joining(","));
         long sysTo = rollbackRequest.getSysCn() - 1;
-        String insertSql = String.format(INSERT_ACTUAL_SQL, rollbackRequest.getDatamart(),
+        String insertSql = String.format(INSERT_ACTUAL_SQL, rollbackRequest.getDatamartMnemonic(),
             rollbackRequest.getDestinationTable(), fields, fields,
-            rollbackRequest.getDatamart(), rollbackRequest.getDestinationTable(), sysTo);
-        String deleteFromHistory = String.format(DELETE_FROM_HISTORY, rollbackRequest.getDatamart(),
+            rollbackRequest.getDatamartMnemonic(), rollbackRequest.getDestinationTable(), sysTo);
+        String deleteFromHistory = String.format(DELETE_FROM_HISTORY, rollbackRequest.getDatamartMnemonic(),
             rollbackRequest.getDestinationTable(), sysTo);
 
         return new AdbRollbackRequest(

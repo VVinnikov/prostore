@@ -8,11 +8,11 @@ import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
+import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
-import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
 import io.vertx.core.Future;
 import org.springframework.plugin.core.Plugin;
@@ -44,7 +44,7 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
     /**
      * <p>execute DDL operation</p>
      *
-     * @param context            DDL context
+     * @param context DDL context
      * @return void
      */
     Future<Void> ddl(DdlRequestContext context);
@@ -90,10 +90,10 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
     Future<StatusQueryResult> status(StatusRequestContext context);
 
     /**
-     * @param context Rollback request context
+     * @param request Rollback request
      * @return void
      */
-    Future<Void> rollback(RollbackRequestContext context);
+    Future<Void> rollback(RollbackRequest request);
 
     /**
      * <p>Get name set of active caches</p>

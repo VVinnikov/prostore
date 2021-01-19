@@ -6,6 +6,7 @@ import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.RequestStatus;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QueryRequest;
+import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
@@ -15,7 +16,7 @@ import io.arenadata.dtm.query.execution.core.dto.delta.DeltaWriteOp;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadFailedExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadExternalTableExecutor;
 import io.arenadata.dtm.query.execution.core.service.rollback.RestoreStateService;
-import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
@@ -110,7 +111,6 @@ public class RestoreStateServiceImpl implements RestoreStateService {
     private Future<Void> processWriteOperation(Entity dest, Entity source, DeltaWriteOp op) {
         val queryRequest = new QueryRequest();
         queryRequest.setRequestId(UUID.randomUUID());
-        queryRequest.setEnvName(envName);
         queryRequest.setSql(op.getQuery());
         val datamartRequest = new DatamartRequest(queryRequest);
         val sqlNode = definitionService.processingQuery(op.getQuery());
@@ -121,7 +121,9 @@ public class RestoreStateServiceImpl implements RestoreStateService {
                         .status(RequestStatus.IN_PROCESS)
                         .isActive(true)
                         .build(),
-                datamartRequest, (SqlInsert) sqlNode);
+                datamartRequest,
+                (SqlInsert) sqlNode,
+                envName);
         context.setSysCn(op.getSysCn());
         context.setSourceEntity(source);
         context.setDestinationEntity(dest);

@@ -5,5 +5,5 @@ import io.vertx.core.Future;
 
 public interface AdgTruncateHistoryConditionFactory {
 
-    Future<String> create(TruncateHistoryRequest params);
+    Future<String> create(TruncateHistoryRequest request);
 }

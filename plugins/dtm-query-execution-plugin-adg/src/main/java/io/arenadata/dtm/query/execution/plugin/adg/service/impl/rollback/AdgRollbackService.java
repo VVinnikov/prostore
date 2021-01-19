@@ -2,7 +2,7 @@ package io.arenadata.dtm.query.execution.plugin.adg.service.impl.rollback;
 
 import io.arenadata.dtm.query.execution.plugin.adg.factory.ReverseHistoryTransferRequestFactory;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
-import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.RollbackService;
 import io.vertx.core.Future;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +18,7 @@ public class AdgRollbackService implements RollbackService<Void> {
     private final AdgCartridgeClient cartridgeClient;
 
     @Override
-    public Future<Void> execute(RollbackRequestContext request) {
+    public Future<Void> execute(RollbackRequest request) {
         return cartridgeClient.reverseHistoryTransfer(requestFactory.create(request));
     }
 }

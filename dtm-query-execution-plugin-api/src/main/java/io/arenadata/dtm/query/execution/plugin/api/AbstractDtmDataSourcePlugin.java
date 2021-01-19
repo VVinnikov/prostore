@@ -106,7 +106,7 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
     }
 
     @Override
-    public Future<Void> truncateHistory(TruncateHistoryRequest params) {
-        return truncateService.truncateHistory(params);
+    public Future<Void> truncateHistory(TruncateHistoryRequest request) {
+        return truncateService.truncateHistory(request);
     }
 }

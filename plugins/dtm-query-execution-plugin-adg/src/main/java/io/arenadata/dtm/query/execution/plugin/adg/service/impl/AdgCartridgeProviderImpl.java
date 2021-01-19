@@ -6,8 +6,8 @@ import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.ResO
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeProvider;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeSchemaGenerator;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
+import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import lombok.val;
@@ -32,22 +32,20 @@ public class AdgCartridgeProviderImpl implements AdgCartridgeProvider {
     }
 
     @Override
-    public Future<Void> apply(final DdlRequestContext context) {
-        return applySchema(context);
+    public Future<Void> apply(final DdlRequest request) {
+        return applySchema(request);
     }
 
-    public Future<Void> applySchema(final DdlRequestContext context) {
-        return Future.future(promise -> {
-            client.getSchema()
-                    .compose(resOperation -> generateYaml(context, resOperation))
-                    .compose(this::createYamlString)
-                    .compose(ys -> client.setSchema(ys))
-                    .onComplete(success -> promise.complete())
-                    .onFailure(promise::fail);
-        });
+    public Future<Void> applySchema(final DdlRequest context) {
+        return Future.future(promise -> client.getSchema()
+                .compose(resOperation -> generateYaml(context, resOperation))
+                .compose(this::createYamlString)
+                .compose(client::setSchema)
+                .onComplete(success -> promise.complete())
+                .onFailure(promise::fail));
     }
 
-    private Future<OperationYaml> generateYaml(DdlRequestContext context, ResOperation resultOperation) {
+    private Future<OperationYaml> generateYaml(DdlRequest context, ResOperation resultOperation) {
         return Future.future((Promise<OperationYaml> promise) -> {
             try {
                 val yaml = yamlMapper.readValue(

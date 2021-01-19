@@ -51,7 +51,6 @@ public class MpprKafkaRequestFactoryImpl implements MpprKafkaRequestFactory {
                                     .brokers(brokers)
                                     .dmlSubQuery(context.getDmlSubQuery())
                                     .destinationEntity(context.getDestinationEntity())
-                                    .externalTableLocationType(context.getDestinationEntity().getExternalTableLocationType())
                                     .logicalSchema(context.getLogicalSchema())
                                     .deltaInformations(context.getDeltaInformations())
                                     .topic(kafkaTopicUri.getTopic())

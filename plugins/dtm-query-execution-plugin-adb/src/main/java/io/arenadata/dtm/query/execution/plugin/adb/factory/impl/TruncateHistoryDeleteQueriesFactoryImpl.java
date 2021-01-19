@@ -25,11 +25,11 @@ public class TruncateHistoryDeleteQueriesFactoryImpl implements TruncateHistoryD
     }
 
     @Override
-    public List<String> create(TruncateHistoryRequest params) {
-        String whereExpression = params.getConditions()
+    public List<String> create(TruncateHistoryRequest request) {
+        String whereExpression = request.getConditions()
                 .map(conditions -> String.format(" WHERE %s", conditions.toSqlString(sqlDialect)))
                 .orElse("");
-        Entity entity = params.getEntity();
+        Entity entity = request.getEntity();
         return Arrays.asList(String.format(DELETE_RECORDS_PATTERN, entity.getSchema(), entity.getName(),
                 AdbTables.ACTUAL_TABLE_POSTFIX, whereExpression),
                 String.format(DELETE_RECORDS_PATTERN, entity.getSchema(), entity.getName(),
@@ -37,12 +37,12 @@ public class TruncateHistoryDeleteQueriesFactoryImpl implements TruncateHistoryD
     }
 
     @Override
-    public String createWithSysCn(TruncateHistoryRequest params) {
-        Entity entity = params.getEntity();
+    public String createWithSysCn(TruncateHistoryRequest request) {
+        Entity entity = request.getEntity();
         return String.format(DELETE_RECORDS_PATTERN, entity.getSchema(), entity.getName(),
-                AdbTables.HISTORY_TABLE_POSTFIX, String.format(" WHERE %s%s", params.getConditions()
+                AdbTables.HISTORY_TABLE_POSTFIX, String.format(" WHERE %s%s", request.getConditions()
                                 .map(conditions -> String.format("%s AND ", conditions.toSqlString(sqlDialect)))
                                 .orElse(""),
-                        String.format(SYS_CN_CONDITION, params.getSysCn().get())));
+                        String.format(SYS_CN_CONDITION, request.getSysCn().get())));
     }
 }

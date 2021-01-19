@@ -25,19 +25,19 @@ public class AdbTruncateHistoryService implements TruncateHistoryService {
     }
 
     @Override
-    public Future<Void> truncateHistory(TruncateHistoryRequest params) {
-        return params.getSysCn().isPresent() ? executeWithSysCn(params) : execute(params);
+    public Future<Void> truncateHistory(TruncateHistoryRequest request) {
+        return request.getSysCn().isPresent() ? executeWithSysCn(request) : execute(request);
     }
 
-    private Future<Void> execute(TruncateHistoryRequest params) {
-        val queries = queriesFactory.create(params);
+    private Future<Void> execute(TruncateHistoryRequest request) {
+        val queries = queriesFactory.create(request);
         return adbQueryExecutor.executeInTransaction(queries.stream()
                 .map(PreparedStatementRequest::onlySql)
                 .collect(Collectors.toList()));
     }
 
-    private Future<Void> executeWithSysCn(TruncateHistoryRequest params) {
-        return adbQueryExecutor.execute(queriesFactory.createWithSysCn(params))
+    private Future<Void> executeWithSysCn(TruncateHistoryRequest request) {
+        return adbQueryExecutor.execute(queriesFactory.createWithSysCn(request))
                 .compose(result -> Future.succeededFuture());
     }
 }

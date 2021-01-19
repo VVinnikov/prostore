@@ -24,12 +24,12 @@ public class AdgTruncateHistoryConditionFactoryImpl implements AdgTruncateHistor
     }
 
     @Override
-    public Future<String> create(TruncateHistoryRequest params) {
+    public Future<String> create(TruncateHistoryRequest request) {
         List<String> conditions = new ArrayList<>();
-        params.getConditions()
+        request.getConditions()
                 .map(val -> String.format("(%s)", val.toSqlString(sqlDialect)))
                 .ifPresent(conditions::add);
-        params.getSysCn()
+        request.getSysCn()
                 .map(sysCn -> String.format(SYS_CN_CONDITION_PATTERN, sysCn))
                 .ifPresent(conditions::add);
         return Future.succeededFuture(String.join(" AND ", conditions));

@@ -58,7 +58,7 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
 
     private Future<QueryResult> createTable(DdlRequestContext context, String sqlNodeName) {
         return Future.future(promise -> {
-            val datamartName = getSchemaName(context.getRequest().getQueryRequest(), sqlNodeName);
+            val datamartName = getSchemaName(context.getDatamartName(), sqlNodeName);
             context.getRequest().getQueryRequest().setDatamartMnemonic(datamartName);
             context.setDdlType(DdlType.CREATE_TABLE);
             SqlCreateTable sqlCreate = (SqlCreateTable) context.getSqlNode();

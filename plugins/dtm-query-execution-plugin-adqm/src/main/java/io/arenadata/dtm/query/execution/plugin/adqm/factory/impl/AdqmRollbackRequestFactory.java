@@ -5,8 +5,8 @@ import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.plugin.sql.PreparedStatementRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmRollbackRequest;
+import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.api.factory.RollbackRequestFactory;
-import io.arenadata.dtm.query.execution.plugin.api.request.RollbackRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.springframework.stereotype.Component;
@@ -54,7 +54,7 @@ public class AdqmRollbackRequestFactory implements RollbackRequestFactory<AdqmRo
     }
 
     private String getDbName(RollbackRequest rollbackRequest) {
-        return rollbackRequest.getQueryRequest().getEnvName() + "__" + rollbackRequest.getDatamart();
+        return rollbackRequest.getEnvName() + "__" + rollbackRequest.getDatamartMnemonic();
     }
 
     private String gerInsertSql(String datamart, Entity entity, long sysCn) {

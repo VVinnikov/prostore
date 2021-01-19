@@ -3,8 +3,8 @@ package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.rollback;
 import io.arenadata.dtm.common.plugin.sql.PreparedStatementRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmRollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.query.AdqmQueryExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.api.factory.RollbackRequestFactory;
-import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.RollbackService;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
@@ -26,9 +26,9 @@ public class AdqmRollbackService implements RollbackService<Void> {
     }
 
     @Override
-    public Future<Void> execute(RollbackRequestContext request) {
+    public Future<Void> execute(RollbackRequest request) {
         return Future.future(promise -> {
-            val rollbackRequest = rollbackRequestFactory.create(request.getRequest());
+            val rollbackRequest = rollbackRequestFactory.create(request);
             Future<Void> executingFuture = Future.succeededFuture();
             for (PreparedStatementRequest statement : rollbackRequest.getStatements()) {
                 executingFuture = executingFuture.compose(v -> adqmQueryExecutor.executeUpdate(statement.getSql()));

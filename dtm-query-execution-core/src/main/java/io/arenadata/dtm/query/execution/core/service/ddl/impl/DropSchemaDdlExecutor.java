@@ -55,7 +55,7 @@ public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
 
     private Future<QueryResult> dropSchema(DdlRequestContext context) {
         return Future.future(promise -> {
-            String datamartName = ((DropDatabase) context.getSqlNode()).getName().names.get(0);
+            String datamartName = ((DropDatabase) context.getSqlNode()).getName().getSimple();
             clearCacheByDatamartName(datamartName);
             context.getRequest().getQueryRequest().setDatamartMnemonic(datamartName);
             context.setDatamartName(datamartName);

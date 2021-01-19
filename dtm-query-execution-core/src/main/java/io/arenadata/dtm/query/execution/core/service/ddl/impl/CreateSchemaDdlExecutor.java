@@ -36,7 +36,7 @@ public class CreateSchemaDdlExecutor extends QueryResultDdlExecutor {
 
     private Future<QueryResult> createDatamartIfNotExists(DdlRequestContext context) {
         return Future.future(promise -> {
-            String datamartName = ((SqlCreateDatabase) context.getSqlNode()).getName().names.get(0);
+            String datamartName = ((SqlCreateDatabase) context.getSqlNode()).getName().getSimple();
             context.getRequest().setQueryRequest(replaceDatabaseInSql(context.getRequest().getQueryRequest()));
             context.setDdlType(CREATE_SCHEMA);
             context.setDatamartName(datamartName);

@@ -12,7 +12,7 @@ public interface LogicalSchemaProvider {
 
     Future<List<Datamart>> getSchemaFromQuery(SqlNode query, String datamart);
 
-    Future<List<Datamart>> getSchemaFromDeltaInformations(QueryRequest request, List<DeltaInformation> deltaInformations);
+    Future<List<Datamart>> getSchemaFromDeltaInformations(List<DeltaInformation> deltaInformations, String datamart);
 
     Future<List<Datamart>> updateSchema(QueryRequest request);
 }

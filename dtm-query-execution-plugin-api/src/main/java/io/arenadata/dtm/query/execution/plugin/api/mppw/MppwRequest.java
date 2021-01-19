@@ -4,10 +4,7 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.query.execution.plugin.api.dto.PluginRequest;
 import io.arenadata.dtm.query.execution.plugin.api.edml.BaseExternalEntityMetadata;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 
 import java.util.UUID;
 
@@ -19,17 +16,16 @@ import java.util.UUID;
 @EqualsAndHashCode(callSuper = true)
 public class MppwRequest extends PluginRequest {
 
-    private final Entity sourceEntity;
-    private final Long sysCn;
-    private final String destinationTableName;
-    private final BaseExternalEntityMetadata uploadMetadata;
-    private final ExternalTableLocationType externalTableLocationType;
+    protected final Entity sourceEntity;
+    protected final Long sysCn;
+    protected final String destinationTableName;
+    protected final BaseExternalEntityMetadata uploadMetadata;
+    protected final ExternalTableLocationType externalTableLocationType;
     /**
      * Sign of the start of mppw download
      */
-    private Boolean isLoadStart;
+    protected Boolean isLoadStart;
 
-    @Builder
     public MppwRequest(UUID requestId,
                        String envName,
                        String datamartMnemonic,

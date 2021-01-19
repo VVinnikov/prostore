@@ -4,6 +4,7 @@ import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.query.calcite.core.extension.config.SqlConfigType;
 import io.arenadata.dtm.query.calcite.core.extension.config.function.SqlConfigStorageAdd;
 import io.arenadata.dtm.query.calcite.core.service.impl.CalciteDefinitionService;
@@ -18,6 +19,7 @@ import io.vertx.core.Future;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.calcite.sql.SqlKind;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -82,7 +84,12 @@ public class ConfigStorageAddDdlExecutor implements ConfigExecutor {
                                               ConfigRequestContext context) {
         return Future.future(p -> {
             DdlRequestContext ddlRequestContext = createDdlRequestContext(schemaName, sourceType, context);
-            dataSourcePluginService.ddl(sourceType, ddlRequestContext)
+            dataSourcePluginService.ddl(sourceType, context.getMetrics(), DdlRequest.builder()
+                    .requestId(context.getRequest().getQueryRequest().getRequestId())
+                    .datamartMnemonic(ddlRequestContext.getDatamartName())
+                    .envName(context.getEnvName())
+                    .sqlKind(SqlKind.OTHER_DDL)
+                    .build())
                     .onComplete(p);
         });
     }
@@ -91,7 +98,7 @@ public class ConfigStorageAddDdlExecutor implements ConfigExecutor {
     private DdlRequestContext createDdlRequestContext(String schemaName, SourceType sourceType, ConfigRequestContext context) {
         val createDataBaseQuery = String.format("CREATE DATABASE IF NOT EXISTS %s", schemaName);
         val createDataBaseQueryNode = calciteDefinitionService.processingQuery(createDataBaseQuery);
-        val ddlRequest = new DdlRequest(QueryRequest.builder()
+        val ddlRequest = new DatamartRequest(QueryRequest.builder()
                 .datamartMnemonic(schemaName)
                 .sql(createDataBaseQuery)
                 .build());

@@ -5,11 +5,11 @@ import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
 import io.arenadata.dtm.query.execution.core.dto.edml.EdmlAction;
+import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.core.service.dml.LogicViewReplacer;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlDownloadExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlExecutor;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
-import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
@@ -72,8 +72,8 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
 
     private Future<Void> initLogicalSchema(EdmlRequestContext context) {
         return Future.future(promise ->
-                logicalSchemaProvider.getSchemaFromDeltaInformations(context.getRequest().getQueryRequest(),
-                        context.getDeltaInformations())
+                logicalSchemaProvider.getSchemaFromDeltaInformations(context.getDeltaInformations(),
+                        context.getRequest().getQueryRequest().getDatamartMnemonic())
                         .onSuccess(schema -> {
                             context.setLogicalSchema(schema);
                             promise.complete();

@@ -16,7 +16,7 @@ public class MppwKafkaRequest extends MppwRequest {
     private final List<KafkaBrokerInfo> brokers;
     private final String topic;
 
-    @Builder(toBuilder=true)
+    @Builder(toBuilder = true)
     public MppwKafkaRequest(UUID requestId,
                             String envName,
                             String datamartMnemonic,

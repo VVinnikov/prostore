@@ -14,7 +14,7 @@ import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.utils.SqlPreparer;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -45,23 +45,23 @@ public class DropViewDdlExecutor extends QueryResultDdlExecutor {
 
     private Future<QueryResult> dropView(DdlRequestContext context) {
         return Future.future(promise -> {
-            val tree = new SqlSelectTree(context.getQuery());
+            val tree = new SqlSelectTree(context.getSqlNode());
             val viewNameNode = SqlPreparer.getViewNameNode(tree);
-            val schemaName = viewNameNode.tryGetSchemaName()
+            val datamartName = viewNameNode.tryGetSchemaName()
                     .orElseThrow(() -> new DtmException("Unable to get schema of view"));
             val viewName = viewNameNode.tryGetTableName()
                     .orElseThrow(() -> new DtmException("Unable to get name of view"));
-            context.setDatamartName(schemaName);
-            entityCacheService.remove(new EntityKey(schemaName, viewName));
-            entityDao.getEntity(schemaName, viewName)
+            context.setDatamartName(datamartName);
+            entityCacheService.remove(new EntityKey(datamartName, viewName));
+            entityDao.getEntity(datamartName, viewName)
                     .compose(this::checkEntityType)
-                    .compose(v -> entityDao.deleteEntity(schemaName, viewName))
+                    .compose(v -> entityDao.deleteEntity(datamartName, viewName))
                     .onSuccess(success -> {
                         promise.complete(QueryResult.emptyResult());
                     })
                     .onFailure(error -> {
                         if (error instanceof TableNotExistsException) {
-                            promise.fail(new ViewNotExistsException(schemaName, viewName));
+                            promise.fail(new ViewNotExistsException(datamartName, viewName));
                         } else {
                             promise.fail(error);
                         }

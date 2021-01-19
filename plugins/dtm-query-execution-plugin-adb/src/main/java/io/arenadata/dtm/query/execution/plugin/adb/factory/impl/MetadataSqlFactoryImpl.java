@@ -107,15 +107,15 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
     private static final String INSERT_INTO_STAGING_TABLE_SQL = "INSERT INTO %s.%s (%s) SELECT %s FROM %s.%s";
 
     @Override
-    public String createDropTableScript(Entity entity) {
+    public String createDropTableScript(String tableNameWithSchema) {
         return new StringBuilder()
-                .append(DROP_TABLE).append(entity.getNameWithSchema())
+                .append(DROP_TABLE).append(tableNameWithSchema)
                 .append(TABLE_POSTFIX_DELIMITER).append(ACTUAL_TABLE)
                 .append(QUERY_DELIMITER)
-                .append(DROP_TABLE).append(entity.getNameWithSchema())
+                .append(DROP_TABLE).append(tableNameWithSchema)
                 .append(TABLE_POSTFIX_DELIMITER).append(HISTORY_TABLE)
                 .append(QUERY_DELIMITER)
-                .append(DROP_TABLE).append(entity.getNameWithSchema())
+                .append(DROP_TABLE).append(tableNameWithSchema)
                 .append(TABLE_POSTFIX_DELIMITER).append(STAGING_TABLE)
                 .append(QUERY_DELIMITER)
                 .toString();

@@ -5,10 +5,10 @@ import io.arenadata.dtm.common.post.PostSqlActionType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.truncate.SqlBaseTruncate;
 import io.arenadata.dtm.query.execution.core.utils.ParseQueryUtils;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.PostExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
+import io.arenadata.dtm.query.execution.core.service.ddl.DdlExecutor;
+import io.arenadata.dtm.query.execution.core.service.ddl.DdlService;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
@@ -41,29 +41,29 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
     }
 
     @Override
-    public Future<QueryResult> execute(DdlRequestContext request) {
-        return getExecutor(request)
+    public Future<QueryResult> execute(DdlRequestContext context) {
+        return getExecutor(context)
                 .compose(executor -> {
-                    request.getPostActions().addAll(executor.getPostActions());
-                    return executor.execute(request,
-                            parseQueryUtils.getDatamartName(request.getSqlCall().getOperandList()));
+                    context.getPostActions().addAll(executor.getPostActions());
+                    return executor.execute(context,
+                            parseQueryUtils.getDatamartName(context.getSqlCall().getOperandList()));
                 })
                 .map(queryResult -> {
-                    executePostActions(request);//TODO ask about parallel executing of this part
+                    executePostActions(context);//TODO ask about parallel executing of this part
                     return queryResult;
                 });
     }
 
     private Future<DdlExecutor<QueryResult>> getExecutor(DdlRequestContext context) {
         return Future.future(promise -> {
-            SqlCall sqlCall = getSqlCall(context.getQuery());
+            SqlCall sqlCall = getSqlCall(context.getSqlNode());
             context.setSqlCall(sqlCall);
             DdlExecutor<QueryResult> executor = executorMap.get(sqlCall.getKind());
             if (executor != null) {
                 promise.complete(executor);
             } else {
                 promise.fail(new DtmException(String.format("Not supported DDL query type [%s]",
-                        context.getQuery())));
+                        context.getSqlNode())));
             }
         });
     }

@@ -1,10 +1,11 @@
 package io.arenadata.dtm.query.execution.core.factory;
 
-import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.MppwRequest;
 import io.vertx.core.Future;
 
 public interface MppwKafkaRequestFactory {
 
-    Future<MppwRequestContext> create(EdmlRequestContext context);
+    Future<MppwKafkaRequest> create(EdmlRequestContext context);
 }

@@ -14,12 +14,11 @@ import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
-import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
@@ -83,19 +82,19 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     }
 
     @Override
-    public Future<QueryResult> mppr(SourceType sourceType, MpprRequestContext context) {
+    public Future<QueryResult> mppr(SourceType sourceType, RequestMetrics metrics, MpprRequest request) {
         return executeWithMetrics(sourceType,
                 SqlProcessingType.MPPR,
-                context.getMetrics(),
-                plugin -> plugin.mppr(context));
+                metrics,
+                plugin -> plugin.mppr(request));
     }
 
     @Override
-    public Future<QueryResult> mppw(SourceType sourceType, MppwRequestContext context) {
+    public Future<QueryResult> mppw(SourceType sourceType, RequestMetrics metrics, MppwRequest request) {
         return executeWithMetrics(sourceType,
                 SqlProcessingType.MPPW,
-                context.getMetrics(),
-                plugin -> plugin.mppw(context));
+                metrics,
+                plugin -> plugin.mppw(request));
     }
 
     @Override
@@ -107,11 +106,11 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     }
 
     @Override
-    public Future<StatusQueryResult> status(SourceType sourceType, StatusRequestContext context) {
+    public Future<StatusQueryResult> status(SourceType sourceType, RequestMetrics metrics, String topic) {
         return executeWithMetrics(sourceType,
                 SqlProcessingType.STATUS,
-                context.getMetrics(),
-                plugin -> plugin.status(context));
+                metrics,
+                plugin -> plugin.status(topic));
     }
 
     @Override

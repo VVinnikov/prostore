@@ -7,19 +7,17 @@ import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
-import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlType;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
-import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
-import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.service.DdlService;
 import io.vertx.core.Future;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
@@ -35,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 
 @SpringBootTest(classes = DtmTestConfiguration.class)
 @ExtendWith(VertxExtension.class)
-class AdbDtmDataSourcePluginIT {
+public class AdbDtmDataSourcePluginIT {
 
     @Autowired
     private DdlService ddlService;
@@ -53,22 +51,22 @@ class AdbDtmDataSourcePluginIT {
         }
 
         @Override
-        public Future<Void> ddl(DdlRequestContext ddlRequest) {
-            return ddlService.execute(ddlRequest);
-        }
-
-        @Override
-        public Future<QueryResult> llr(LlrRequestContext llrRequest) {
+        public Future<Void> ddl(DdlRequest request) {
             return null;
         }
 
         @Override
-        public Future<QueryResult> mppr(MpprRequestContext mpprRequest) {
+        public Future<QueryResult> llr(LlrRequest llrRequest) {
             return null;
         }
 
         @Override
-        public Future<QueryResult> mppw(MppwRequestContext mppwRequest) {
+        public Future<QueryResult> mppr(MpprRequest request) {
+            return null;
+        }
+
+        @Override
+        public Future<QueryResult> mppw(MppwRequest mppwRequest) {
             return null;
         }
 
@@ -78,7 +76,7 @@ class AdbDtmDataSourcePluginIT {
         }
 
         @Override
-        public Future<StatusQueryResult> status(StatusRequestContext context) {
+        public Future<StatusQueryResult> status(String topic) {
             return null;
         }
 
@@ -93,7 +91,7 @@ class AdbDtmDataSourcePluginIT {
         }
 
         @Override
-        public Future<Void> checkTable(CheckContext context) {
+        public Future<Void> checkTable(CheckTableRequest request) {
             return null;
         }
 

@@ -14,6 +14,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -55,7 +56,7 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
 
     private Future<Void> initDMLSubquery(EdmlRequestContext context) {
         return Future.future(promise -> {
-            context.setDmlSubQuery(context.getSqlNode().getSource());
+            context.setDmlSubQuery(((SqlInsert) context.getSqlNode()).getSource());
             promise.complete();
         });
     }
@@ -71,7 +72,8 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
 
     private Future<Void> initLogicalSchema(EdmlRequestContext context) {
         return Future.future(promise ->
-                logicalSchemaProvider.getSchemaFromDeltaInformations(context.getRequest().getQueryRequest(), context.getDeltaInformations())
+                logicalSchemaProvider.getSchemaFromDeltaInformations(context.getRequest().getQueryRequest(),
+                        context.getDeltaInformations())
                         .onSuccess(schema -> {
                             context.setLogicalSchema(schema);
                             promise.complete();

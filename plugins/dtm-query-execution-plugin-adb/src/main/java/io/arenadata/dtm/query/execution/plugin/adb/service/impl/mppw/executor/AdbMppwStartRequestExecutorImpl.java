@@ -16,7 +16,7 @@ import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwKaf
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwTransferDataRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
-import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
@@ -62,13 +62,13 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
     }
 
     @Override
-    public Future<QueryResult> execute(MppwPluginRequest request) {
+    public Future<QueryResult> execute(MppwKafkaRequest request) {
         return Future.future((Promise<QueryResult> promise) -> {
-            val format = request.getKafkaParameter().getUploadMetadata().getFormat();
+            val format = request.getUploadMetadata().getFormat();
             if (!Format.AVRO.equals(format)) {
                 promise.fail(new MppwDatasourceException(String.format("Format %s not implemented", format)));
             }
-            List<KafkaBrokerInfo> brokers = request.getKafkaParameter().getBrokers();
+            List<KafkaBrokerInfo> brokers = request.getBrokers();
             getOrCreateServer(brokers, dbName)
                     .compose(server -> createWritableExternalTable(server, request))
                     .compose(server -> createMppwKafkaRequestContext(request, server))
@@ -108,9 +108,9 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
                 .map(v -> String.format(MetadataSqlFactoryImpl.SERVER_NAME_TEMPLATE, currentDatabase));
     }
 
-    private Future<String> createWritableExternalTable(String server, MppwPluginRequest request) {
+    private Future<String> createWritableExternalTable(String server, MppwKafkaRequest request) {
         return Future.future(promise -> {
-            val sourceEntity = request.getKafkaParameter().getSourceEntity();
+            val sourceEntity = request.getSourceEntity();
             val columns = metadataSqlFactory.getColumnsFromEntity(sourceEntity);
             columns.add("sys_op int");
             adbQueryExecutor.executeUpdate(metadataSqlFactory.createExtTableSqlQuery(server,
@@ -127,20 +127,20 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
         });
     }
 
-    private Future<Void> moveOffsetsExtTable(MppwPluginRequest request) {
+    private Future<Void> moveOffsetsExtTable(MppwKafkaRequest request) {
         val schema = request.getDatamartMnemonic();
         val table = MetadataSqlFactoryImpl.WRITABLE_EXT_TABLE_PREF + request.getRequestId().toString().replace("-", "_");
         return adbQueryExecutor.executeUpdate(metadataSqlFactory.insertIntoKadbOffsetsSqlQuery(schema, table))
                 .compose(v -> adbQueryExecutor.executeUpdate(metadataSqlFactory.moveOffsetsExtTableSqlQuery(schema, table)));
     }
 
-    private Future<MppwKafkaRequestContext> createMppwKafkaRequestContext(MppwPluginRequest request, String server) {
+    private Future<MppwKafkaRequestContext> createMppwKafkaRequestContext(MppwKafkaRequest request, String server) {
         return Future.future((Promise<MppwKafkaRequestContext> promise) -> {
             final MppwKafkaLoadRequest mppwKafkaLoadRequest =
                     mppwKafkaLoadRequestFactory.create(request, server, mppwProperties);
             final String keyColumnsSqlQuery = metadataSqlFactory.createKeyColumnsSqlQuery(
-                    request.getKafkaParameter().getDatamart(),
-                    request.getKafkaParameter().getDestinationTableName());
+                    request.getDatamartMnemonic(),
+                    request.getDestinationTableName());
             final List<ColumnMetadata> metadata = metadataSqlFactory.createKeyColumnQueryMetadata();
             adbQueryExecutor.execute(keyColumnsSqlQuery, metadata)
                     .onComplete(ar -> {

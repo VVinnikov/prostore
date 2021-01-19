@@ -8,6 +8,7 @@ import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.impl.DeltaServiceDaoImpl;
 import io.arenadata.dtm.query.execution.core.factory.RollbackRequestContextFactory;
@@ -79,7 +80,7 @@ class UploadFailedExecutorImplTest {
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
         context.setSysCn(1L);
@@ -120,7 +121,7 @@ class UploadFailedExecutorImplTest {
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
         context.setSysCn(1L);
@@ -159,7 +160,7 @@ class UploadFailedExecutorImplTest {
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
         context.setSysCn(1L);

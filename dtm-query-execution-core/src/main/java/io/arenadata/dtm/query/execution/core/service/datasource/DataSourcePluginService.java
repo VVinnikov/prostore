@@ -11,6 +11,9 @@ import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Reque
 import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprPluginRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
@@ -57,7 +60,7 @@ public interface DataSourcePluginService {
      * @param request    MPPR plugin request
      * @return future object
      */
-    Future<QueryResult> mppr(SourceType sourceType, MpprPluginRequest request);
+    Future<QueryResult> mppr(SourceType sourceType, RequestMetrics metrics, MpprRequest request);
 
     /**
      * <p>execute Massively Parallel Processing Writing</p>
@@ -66,7 +69,7 @@ public interface DataSourcePluginService {
      * @param request    MPPW plugin request
      * @return future object
      */
-    Future<QueryResult> mppw(SourceType sourceType, MppwPluginRequest request);
+    Future<QueryResult> mppw(SourceType sourceType, RequestMetrics metrics, MppwRequest request);
 
     /**
      * <p>Calculate executing query cost</p>
@@ -84,7 +87,7 @@ public interface DataSourcePluginService {
      * @param topic      Topic
      * @return future object
      */
-    Future<StatusQueryResult> status(SourceType sourceType, String topic);
+    Future<StatusQueryResult> status(SourceType sourceType, RequestMetrics metrics, String topic);
 
     /**
      * @param sourceType Data source type

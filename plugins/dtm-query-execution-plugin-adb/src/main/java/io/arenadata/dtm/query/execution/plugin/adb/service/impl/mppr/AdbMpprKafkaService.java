@@ -1,14 +1,16 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppr;
 
+import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.EnrichQueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.impl.MetadataSqlFactoryImpl;
+import io.arenadata.dtm.query.execution.plugin.adb.service.AdbMpprExecutor;
 import io.arenadata.dtm.query.execution.plugin.adb.service.QueryEnrichmentService;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.exception.MpprDatasourceException;
-import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprPluginRequest;
-import io.arenadata.dtm.query.execution.plugin.api.service.MpprKafkaService;
+import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppr.kafka.MpprKafkaRequest;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -17,7 +19,7 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service("adbMpprKafkaService")
-public class AdbMpprKafkaService implements MpprKafkaService {
+public class AdbMpprKafkaService implements AdbMpprExecutor {
 
     private final QueryEnrichmentService adbQueryEnrichmentService;
     private final MetadataSqlFactory metadataSqlFactory;
@@ -33,12 +35,12 @@ public class AdbMpprKafkaService implements MpprKafkaService {
     }
 
     @Override
-    public Future<QueryResult> execute(MpprPluginRequest request) {
+    public Future<QueryResult> execute(MpprRequest request) {
         return Future.future(promise -> {
             val schema = request.getDatamartMnemonic();
             val table = MetadataSqlFactoryImpl.WRITABLE_EXTERNAL_TABLE_PREF +
                     request.getRequestId().toString().replaceAll("-", "_");
-            adbQueryExecutor.executeUpdate(metadataSqlFactory.createWritableExtTableSqlQuery(request.getMpprRequest()))
+            adbQueryExecutor.executeUpdate(metadataSqlFactory.createWritableExtTableSqlQuery((MpprKafkaRequest) request))
                     .compose(v -> enrichQuery(request))
                     .compose(enrichedQuery -> insertIntoWritableExtTableSqlQuery(schema, table, enrichedQuery))
                     .compose(v -> dropWritableExtTableSqlQuery(schema, table))
@@ -50,7 +52,7 @@ public class AdbMpprKafkaService implements MpprKafkaService {
                                 }
                                 promise.fail(new MpprDatasourceException(
                                         String.format("Failed to unload data from datasource by request %s",
-                                                request.getMpprRequest()),
+                                                request),
                                         err));
                             }));
         });
@@ -69,9 +71,18 @@ public class AdbMpprKafkaService implements MpprKafkaService {
                         sql));
     }
 
-    private Future<String> enrichQuery(MpprPluginRequest request) {
+    private Future<String> enrichQuery(MpprRequest request) {
         return adbQueryEnrichmentService.enrich(
-                EnrichQueryRequest.generate(request.getMpprRequest().getQueryRequest(),
-                        request.getMpprRequest().getLogicalSchema(), request.getSqlNode()));
+                EnrichQueryRequest.builder()
+                .query(request.getSqlNode())
+                .schema(request.getLogicalSchema())
+                .envName(request.getEnvName())
+                .deltaInformations(request.getDeltaInformations())
+                .build());
+    }
+
+    @Override
+    public ExternalTableLocationType getType() {
+        return ExternalTableLocationType.KAFKA;
     }
 }

@@ -13,7 +13,7 @@ import io.arenadata.dtm.query.execution.plugin.adqm.service.StatusReporter;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.RestLoadClient;
 import io.arenadata.dtm.query.execution.plugin.adqm.utils.DdlUtils;
 import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
-import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -74,14 +74,14 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
     }
 
     @Override
-    public Future<QueryResult> execute(final MppwPluginRequest request) {
+    public Future<QueryResult> execute(final MppwKafkaRequest request) {
         val err = DdlUtils.validateRequest(request);
         if (err.isPresent()) {
             return Future.failedFuture(err.get());
         }
 
         String fullName = DdlUtils.getQualifiedTableName(request, appConfiguration);
-        long sysCn = request.getKafkaParameter().getSysCn();
+        long sysCn = request.getSysCn();
 
         return sequenceAll(Arrays.asList(  // 1. drop shard tables
                 fullName + EXT_SHARD_POSTFIX,
@@ -100,15 +100,15 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
                 .compose(v -> {
                     final RestMppwKafkaStopRequest mppwKafkaStopRequest = new RestMppwKafkaStopRequest(
                             request.getRequestId().toString(),
-                            request.getKafkaParameter().getTopic());
+                            request.getTopic());
                     log.debug("ADQM: Send mppw kafka stopping rest request {}", mppwKafkaStopRequest);
                     return restLoadClient.stopLoading(mppwKafkaStopRequest);
                 })
                 .compose(v -> {
-                    reportFinish(request.getKafkaParameter().getTopic());
+                    reportFinish(request.getTopic());
                     return Future.succeededFuture(QueryResult.emptyResult());
                 }, f -> {
-                    reportError(request.getKafkaParameter().getTopic());
+                    reportError(request.getTopic());
                     return Future.failedFuture(f);
                 });
     }

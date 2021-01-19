@@ -15,7 +15,7 @@ import io.arenadata.dtm.query.execution.plugin.adqm.service.StatusReporter;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.*;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
-import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import lombok.Data;
@@ -81,7 +81,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     }
 
     @Override
-    public Future<QueryResult> execute(MppwPluginRequest request) {
+    public Future<QueryResult> execute(MppwKafkaRequest request) {
         MppwExtTableContext mppwExtTableCtx = new MppwExtTableContext();
 
         val err = DdlUtils.validateRequest(request);
@@ -90,13 +90,13 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         }
         try {
             mppwExtTableCtx.setSchema(new Schema.Parser()
-                    .parse(request.getKafkaParameter().getUploadMetadata().getExternalSchema()));
+                    .parse(request.getUploadMetadata().getExternalSchema()));
         } catch (Exception e) {
             return Future.failedFuture(new DataSourceException("Error in starting mppw request", e));
         }
 
         mppwExtTableCtx.setFullName(DdlUtils.getQualifiedTableName(request, appConfiguration));
-        reportStart(request.getKafkaParameter().getTopic(), mppwExtTableCtx.getFullName());
+        reportStart(request.getTopic(), mppwExtTableCtx.getFullName());
 
         // 1. Determine table engine (_actual_shard)
         return getTableSetting(mppwExtTableCtx.getFullName() + ACTUAL_POSTFIX,
@@ -117,7 +117,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
                 })
                 .compose(k ->
                         // 3. Create _ext_shard based on schema from request
-                        createExternalTable(request.getKafkaParameter().getTopic(),
+                        createExternalTable(request.getTopic(),
                                 mppwExtTableCtx.getFullName(),
                                 mppwExtTableCtx.getSchema(),
                                 mppwExtTableCtx.getSortingKeys())
@@ -142,13 +142,13 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
                         // 7. Create _actual_loader_shard
                         createActualLoaderTable(mppwExtTableCtx.getFullName() + ACTUAL_LOADER_SHARD_POSTFIX,
                                 mppwExtTableCtx.getSchema(),
-                                request.getKafkaParameter().getSysCn())
+                                request.getSysCn())
                 )
                 .compose(v -> createRestInitiator(request))
                 .map(v -> QueryResult.emptyResult())
                 .onSuccess(Future::succeededFuture)
                 .onFailure(fail -> {
-                    reportError(request.getKafkaParameter().getTopic());
+                    reportError(request.getTopic());
                     Future.failedFuture(new DataSourceException(fail));
                 });
     }
@@ -249,7 +249,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         return databaseExecutor.executeUpdate(query);
     }
 
-    private Future<Void> createRestInitiator(MppwPluginRequest mppwPluginRequest) {
+    private Future<Void> createRestInitiator(MppwKafkaRequest mppwPluginRequest) {
         LoadType loadType = mppwProperties.getLoadType();
         //it means that if we use KAFKA instead of REST load type of mppw, we shouldn't send rest request
         if (loadType == KAFKA) {
@@ -273,11 +273,6 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     private void reportStart(String topic, String fullName) {
         StatusReportDto start = new StatusReportDto(topic, getConsumerGroupName(fullName));
         statusReporter.onStart(start);
-    }
-
-    private void reportFinish(String topic) {
-        StatusReportDto start = new StatusReportDto(topic);
-        statusReporter.onFinish(start);
     }
 
     private void reportError(String topic) {

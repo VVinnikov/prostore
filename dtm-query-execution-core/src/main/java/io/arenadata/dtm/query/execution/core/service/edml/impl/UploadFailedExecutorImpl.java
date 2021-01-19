@@ -8,7 +8,7 @@ import io.arenadata.dtm.query.execution.core.dto.rollback.RollbackRequestContext
 import io.arenadata.dtm.query.execution.core.factory.RollbackRequestContextFactory;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadFailedExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
+import io.arenadata.dtm.query.execution.core.dto.dto.RollbackRequest;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;

@@ -9,17 +9,16 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.reader.QueryRequest;
-import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.plugin.adg.dto.AdgTables;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.impl.AdgCreateTableQueriesFactory;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.OperationYaml;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.AdgSpace;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.Space;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeSchemaGenerator;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.factory.CreateTableQueriesFactory;
+import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.vertx.core.Promise;
+import org.apache.calcite.sql.SqlKind;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -35,7 +34,7 @@ import static org.mockito.Mockito.mock;
 class AdgCartridgeSchemaGeneratorImplTest {
 
     private ObjectMapper mapper;
-    private DdlRequestContext ddlRequestContext;
+    private DdlRequest ddlRequest;
 
     @BeforeEach
     void setUp() {
@@ -47,12 +46,14 @@ class AdgCartridgeSchemaGeneratorImplTest {
         QueryRequest queryRequest = new QueryRequest();
         queryRequest.setRequestId(UUID.randomUUID());
         queryRequest.setDatamartMnemonic("test");
-        queryRequest.setEnvName("test");
-        queryRequest.setSourceType(SourceType.ADG);
         List<EntityField> fields = Collections.singletonList(new EntityField(0, "test_field", "varchar(1)", false, ""));
         Entity entity = new Entity("test_schema.test_table", fields);
 
-        ddlRequestContext = new DdlRequestContext(new DdlRequest(queryRequest, entity));
+        ddlRequest = new DdlRequest(UUID.randomUUID(),
+                "test",
+                queryRequest.getDatamartMnemonic(),
+                entity,
+                SqlKind.CREATE_TABLE);
     }
 
     @Test
@@ -63,7 +64,7 @@ class AdgCartridgeSchemaGeneratorImplTest {
         CreateTableQueriesFactory<AdgTables<AdgSpace>> createTableQueriesFactory = mock(AdgCreateTableQueriesFactory.class);
         Mockito.when(createTableQueriesFactory.create(any(), any())).thenReturn(adqmCreateTableQueries);
         AdgCartridgeSchemaGenerator cartridgeSchemaGenerator = new AdgCartridgeSchemaGeneratorImpl(createTableQueriesFactory);
-        cartridgeSchemaGenerator.generate(ddlRequestContext, mapper.readValue("{}", OperationYaml.class))
+        cartridgeSchemaGenerator.generate(ddlRequest, mapper.readValue("{}", OperationYaml.class))
                 .onComplete(ar -> {
                     if (ar.succeeded()) {
                         promise.complete(ar.result());

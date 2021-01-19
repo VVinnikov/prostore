@@ -4,7 +4,6 @@ import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
-import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
 import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
@@ -13,6 +12,7 @@ import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprPluginRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.QueryCostRequest;
 import io.vertx.core.Future;
 import org.springframework.plugin.core.Plugin;
 
@@ -75,10 +75,10 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
     /**
      * <p>Calculate executing query cost</p>
      *
-     * @param context Query cost context
+     * @param request Query cost context
      * @return query cost
      */
-    Future<Integer> calcQueryCost(QueryCostRequestContext context);
+    Future<Integer> calcQueryCost(QueryCostRequest request);
 
     /**
      * <p>Get plugin status information</p>

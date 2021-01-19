@@ -3,7 +3,6 @@ package io.arenadata.dtm.query.execution.plugin.api;
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
-import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
 import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
@@ -12,6 +11,7 @@ import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprPluginRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.QueryCostRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.*;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckDataService;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
@@ -74,8 +74,8 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
     }
 
     @Override
-    public Future<Integer> calcQueryCost(QueryCostRequestContext context) {
-        return queryCostService.calc(context);
+    public Future<Integer> calcQueryCost(QueryCostRequest request) {
+        return queryCostService.calc(request);
     }
 
     @Override

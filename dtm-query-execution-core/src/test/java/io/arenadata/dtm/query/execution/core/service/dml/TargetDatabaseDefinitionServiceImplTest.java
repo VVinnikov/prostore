@@ -8,6 +8,7 @@ import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QuerySourceRequest;
 import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.query.execution.core.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.core.configuration.properties.CoreDtmSettings;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
@@ -22,6 +23,7 @@ import io.vertx.core.Promise;
 import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.env.Environment;
 
 import java.time.ZoneId;
 import java.util.*;
@@ -43,7 +45,7 @@ class TargetDatabaseDefinitionServiceImplTest {
     @BeforeEach
     void setUp() {
         targetDatabaseDefinitionService = new TargetDatabaseDefinitionServiceImpl(dataSourcePluginService,
-                entityDao, new CoreDtmSettings(ZoneId.of("UTC")));
+                entityDao, new CoreDtmSettings(ZoneId.of("UTC")), new AppConfiguration(mock(Environment.class)));
     }
 
     @Test
@@ -76,10 +78,10 @@ class TargetDatabaseDefinitionServiceImplTest {
 
         when(dataSourcePluginService.getSourceTypes()).thenReturn(defaultSourceTypes);
 
-        when(dataSourcePluginService.calcQueryCost(eq(SourceType.ADB), any()))
+        when(dataSourcePluginService.calcQueryCost(eq(SourceType.ADB), any(), any()))
                 .thenReturn(Future.succeededFuture(adbQueryCost));
 
-        when(dataSourcePluginService.calcQueryCost(eq(SourceType.ADG), any()))
+        when(dataSourcePluginService.calcQueryCost(eq(SourceType.ADG), any(), any()))
                 .thenReturn(Future.succeededFuture(adgQueryCost));
 
         targetDatabaseDefinitionService.getTargetSource(sourceRequest, sqlNode)
@@ -269,13 +271,13 @@ class TargetDatabaseDefinitionServiceImplTest {
 
         when(dataSourcePluginService.getSourceTypes()).thenReturn(defaultSourceTypes);
 
-        when(dataSourcePluginService.calcQueryCost(eq(SourceType.ADB), any()))
+        when(dataSourcePluginService.calcQueryCost(eq(SourceType.ADB), any(), any()))
                 .thenReturn(Future.succeededFuture(adbQueryCost));
 
-        when(dataSourcePluginService.calcQueryCost(eq(SourceType.ADG), any()))
+        when(dataSourcePluginService.calcQueryCost(eq(SourceType.ADG), any(), any()))
                 .thenReturn(Future.succeededFuture(adgQueryCost));
 
-        when(dataSourcePluginService.calcQueryCost(eq(SourceType.ADQM), any()))
+        when(dataSourcePluginService.calcQueryCost(eq(SourceType.ADQM), any(), any()))
                 .thenReturn(Future.succeededFuture(adqmQueryCost));
 
         targetDatabaseDefinitionService.getTargetSource(sourceRequest, sqlNode)
@@ -314,10 +316,10 @@ class TargetDatabaseDefinitionServiceImplTest {
 
         when(dataSourcePluginService.getSourceTypes()).thenReturn(defaultSourceTypes);
 
-        when(dataSourcePluginService.calcQueryCost(eq(SourceType.ADB), any()))
+        when(dataSourcePluginService.calcQueryCost(eq(SourceType.ADB), any(), any()))
                 .thenReturn(Future.failedFuture(new DtmException("")));
 
-        when(dataSourcePluginService.calcQueryCost(eq(SourceType.ADG), any()))
+        when(dataSourcePluginService.calcQueryCost(eq(SourceType.ADG), any(), any()))
                 .thenReturn(Future.succeededFuture(adgQueryCost));
 
         targetDatabaseDefinitionService.getTargetSource(sourceRequest, sqlNode)

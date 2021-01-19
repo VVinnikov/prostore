@@ -4,9 +4,9 @@ import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
 
 public interface AdqmTruncateHistoryQueriesFactory {
 
-    String insertIntoActualQuery(TruncateHistoryRequest params);
+    String insertIntoActualQuery(TruncateHistoryRequest request);
 
-    String flushQuery(TruncateHistoryRequest params);
+    String flushQuery(TruncateHistoryRequest request);
 
-    String optimizeQuery(TruncateHistoryRequest params);
+    String optimizeQuery(TruncateHistoryRequest request);
 }

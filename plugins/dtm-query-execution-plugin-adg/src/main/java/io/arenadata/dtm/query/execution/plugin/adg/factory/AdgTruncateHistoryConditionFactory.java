@@ -1,9 +1,11 @@
 package io.arenadata.dtm.query.execution.plugin.adg.factory;
 
-import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
 import io.vertx.core.Future;
+import org.apache.calcite.sql.SqlNode;
+
+import java.util.Optional;
 
 public interface AdgTruncateHistoryConditionFactory {
 
-    Future<String> create(TruncateHistoryRequest params);
+    Future<String> create(Optional<SqlNode> reqConditions, Optional<Long> reqSysCn);
 }

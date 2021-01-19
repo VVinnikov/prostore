@@ -166,12 +166,12 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     @Override
     public Future<Void> truncateHistory(SourceType sourceType,
                                         RequestMetrics metrics,
-                                        TruncateHistoryRequest params) {
+                                        TruncateHistoryRequest request) {
         return executeWithMetrics(
                 sourceType,
                 SqlProcessingType.TRUNCATE,
                 metrics,
-                plugin -> plugin.truncateHistory(params));
+                plugin -> plugin.truncateHistory(request));
     }
 
     private <T> Future<T> executeWithMetrics(SourceType sourceType,

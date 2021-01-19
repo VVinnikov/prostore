@@ -22,10 +22,10 @@ public class AdqmTruncateHistoryService implements TruncateHistoryService {
     }
 
     @Override
-    public Future<Void> truncateHistory(TruncateHistoryRequest params) {
-        return adqmQueryExecutor.execute(queriesFactory.insertIntoActualQuery(params))
-                .compose(result -> adqmQueryExecutor.execute(queriesFactory.flushQuery(params)))
-                .compose(result -> adqmQueryExecutor.execute(queriesFactory.optimizeQuery(params)))
+    public Future<Void> truncateHistory(TruncateHistoryRequest request) {
+        return adqmQueryExecutor.execute(queriesFactory.insertIntoActualQuery(request))
+                .compose(result -> adqmQueryExecutor.execute(queriesFactory.flushQuery(request)))
+                .compose(result -> adqmQueryExecutor.execute(queriesFactory.optimizeQuery(request)))
                 .compose(result -> Future.succeededFuture());
     }
 }

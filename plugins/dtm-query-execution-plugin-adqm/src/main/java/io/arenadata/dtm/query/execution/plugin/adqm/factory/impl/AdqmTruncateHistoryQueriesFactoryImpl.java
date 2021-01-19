@@ -35,15 +35,15 @@ public class AdqmTruncateHistoryQueriesFactoryImpl implements AdqmTruncateHistor
     }
 
     @Override
-    public String insertIntoActualQuery(TruncateHistoryRequest params) {
-        String sysCnExpression = params.getSysCn()
+    public String insertIntoActualQuery(TruncateHistoryRequest request) {
+        String sysCnExpression = request.getSysCn()
                 .map(sysCn -> String.format(" AND sys_to < %s", sysCn))
                 .orElse("");
-        String whereExpression = params.getConditions()
+        String whereExpression = request.getConditions()
                 .map(conditions -> String.format(" AND (%s)", conditions.toSqlString(sqlDialect)))
                 .orElse("");
-        Entity entity = params.getEntity();
-        String dbName = String.format("%s__%s", params.getEnv(), entity.getSchema());
+        Entity entity = request.getEntity();
+        String dbName = String.format("%s__%s", request.getEnvName(), entity.getSchema());
         List<String> orderByColumns = entity.getFields().stream()
                 .filter(field -> field.getPrimaryOrder() != null)
                 .map(EntityField::getName)
@@ -55,16 +55,16 @@ public class AdqmTruncateHistoryQueriesFactoryImpl implements AdqmTruncateHistor
     }
 
     @Override
-    public String flushQuery(TruncateHistoryRequest params) {
-        Entity entity = params.getEntity();
-        String dbName = String.format("%s__%s", params.getEnv(), entity.getSchema());
+    public String flushQuery(TruncateHistoryRequest request) {
+        Entity entity = request.getEntity();
+        String dbName = String.format("%s__%s", request.getEnvName(), entity.getSchema());
         return String.format(FLUSH_PATTERN, dbName, entity.getName());
     }
 
     @Override
-    public String optimizeQuery(TruncateHistoryRequest params) {
-        Entity entity = params.getEntity();
-        String dbName = String.format("%s__%s", params.getEnv(), entity.getSchema());
+    public String optimizeQuery(TruncateHistoryRequest request) {
+        Entity entity = request.getEntity();
+        String dbName = String.format("%s__%s", request.getEnvName(), entity.getSchema());
         return String.format(OPTIMIZE_PATTERN, dbName, entity.getName(), ddlProperties.getCluster());
     }
 }

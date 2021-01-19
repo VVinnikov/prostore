@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface TruncateHistoryDeleteQueriesFactory {
 
-    List<String> create(TruncateHistoryRequest params);
+    List<String> create(TruncateHistoryRequest request);
 
-    String createWithSysCn(TruncateHistoryRequest params);
+    String createWithSysCn(TruncateHistoryRequest request);
 }

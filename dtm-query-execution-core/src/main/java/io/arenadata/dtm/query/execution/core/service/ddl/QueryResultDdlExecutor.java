@@ -18,9 +18,9 @@ public abstract class QueryResultDdlExecutor implements DdlExecutor<QueryResult>
         return request;
     }
 
-    protected String getSchemaName(QueryRequest request, String sqlNodeName) {
+    protected String getSchemaName(String requestDatamart, String sqlNodeName) {
         int indexComma = sqlNodeName.indexOf(".");
-        return indexComma == -1 ? request.getDatamartMnemonic() : sqlNodeName.substring(0, indexComma);
+        return indexComma == -1 ? requestDatamart : sqlNodeName.substring(0, indexComma);
     }
 
     protected String getTableName(String sqlNodeName) {

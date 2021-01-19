@@ -67,7 +67,7 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
 
     private Future<QueryResult> dropTable(DdlRequestContext context, String sqlNodeName) {
         return Future.future(promise -> {
-            val datamartName = getSchemaName(context.getRequest().getQueryRequest(), sqlNodeName);
+            val datamartName = getSchemaName(context.getDatamartName(), sqlNodeName);
             val tableName = getTableName(sqlNodeName);
             entityCacheService.remove(new EntityKey(datamartName, tableName));
             Entity entity = createClassTable(datamartName, tableName);

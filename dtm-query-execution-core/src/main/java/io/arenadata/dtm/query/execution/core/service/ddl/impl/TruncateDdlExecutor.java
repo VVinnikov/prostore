@@ -52,7 +52,7 @@ public class TruncateDdlExecutor extends QueryResultDdlExecutor {
 
     private Future<QueryResult> truncateEntity(DdlRequestContext context, String sqlNodeName) {
         return Future.future(promise -> {
-            val schema = getSchemaName(context.getRequest().getQueryRequest(), sqlNodeName);
+            val schema = getSchemaName(context.getDatamartName(), sqlNodeName);
             context.setDatamartName(schema);
             val table = getTableName(sqlNodeName);
             val sqlTruncateHistory = (SqlTruncateHistory) context.getSqlCall();
@@ -68,8 +68,15 @@ public class TruncateDdlExecutor extends QueryResultDdlExecutor {
         val cnTo = (Long) entityCnTo.resultAt(1);
         return entity.getDestination().stream()
                 .map(sourceType -> {
-                    val truncateParams = new TruncateHistoryRequest(cnTo, entity, context.getEnvName(), sqlTruncateHistory.getConditions());
-                    return dataSourcePluginService.truncateHistory(sourceType, context.getMetrics(), truncateParams);
+                    val truncateHistoryRequest = TruncateHistoryRequest.builder()
+                            .datamartMnemonic(context.getDatamartName())
+                            .conditions(sqlTruncateHistory.getConditions())
+                            .entity(entity)
+                            .envName(context.getEnvName())
+                            .requestId(context.getRequest().getQueryRequest().getRequestId())
+                            .sysCn(cnTo)
+                            .build();
+                    return dataSourcePluginService.truncateHistory(sourceType, context.getMetrics(), truncateHistoryRequest);
                 })
                 .collect(Collectors.toList());
     }

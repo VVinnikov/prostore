@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.service.check;
+package io.arenadata.dtm.query.execution.core.service.check.impl;
 
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
@@ -16,7 +16,7 @@ import io.arenadata.dtm.query.execution.core.verticle.TaskVerticleExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckException;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
-import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckExecutor;
+import io.arenadata.dtm.query.execution.core.service.check.CheckExecutor;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import org.apache.calcite.util.Pair;

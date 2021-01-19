@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.plugin.api;
+package io.arenadata.dtm.query.execution.core.dto;
 
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.SqlProcessingType;
@@ -13,7 +13,7 @@ public abstract class CoreRequestContext<R extends DatamartRequest, S extends Sq
     protected final RequestMetrics metrics;
     protected final String envName;
     protected final R request;
-    protected final S sqlNode;
+    protected S sqlNode;
 
     protected CoreRequestContext(RequestMetrics metrics, String envName, R request, S sqlNode) {
         this.metrics = metrics;

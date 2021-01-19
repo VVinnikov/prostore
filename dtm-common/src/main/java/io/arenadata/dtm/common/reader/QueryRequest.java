@@ -39,12 +39,6 @@ public class QueryRequest {
      */
     private List<String> parameters;
 
-    public QueryRequest(UUID requestId, String datamartMnemonic, String sql) {
-        this.requestId = requestId;
-        this.datamartMnemonic = datamartMnemonic;
-        this.sql = sql;
-    }
-
     public QueryRequest copy() {
         return toBuilder()
                 .parameters(parameters != null ? new ArrayList<>(parameters) : null)

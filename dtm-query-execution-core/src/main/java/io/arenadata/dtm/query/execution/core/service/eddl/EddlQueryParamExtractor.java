@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.eddl;
 
 import io.arenadata.dtm.query.execution.core.dto.eddl.EddlQuery;
-import io.arenadata.dtm.query.execution.plugin.api.eddl.EddlRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.eddl.EddlRequestContext;
 import io.vertx.core.Future;
 
 /**

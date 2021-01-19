@@ -21,17 +21,17 @@ public class AdqmDdlService implements DdlService<Void> {
     private final Map<SqlKind, DdlExecutor<Void>> ddlExecutors = new HashMap<>();
 
     @Override
-    @CacheEvict(value = AdqmDtmDataSourcePlugin.ADQM_DATAMART_CACHE, key = "#context.getDatamartName()")
-    public Future<Void> execute(DdlRequestContext context) {
+    @CacheEvict(value = AdqmDtmDataSourcePlugin.ADQM_DATAMART_CACHE, key = "#request.getDatamartName()")
+    public Future<Void> execute(DdlRequestContext request) {
         return Future.future(promise -> {
-            SqlNode query = context.getQuery();
+            SqlNode query = request.getQuery();
             if (query == null) {
                 promise.fail(new DdlDatasourceException("DdlRequestContext.query is null"));
                 return;
             }
             if (ddlExecutors.containsKey(query.getKind())) {
                 ddlExecutors.get(query.getKind())
-                        .execute(context, query.getKind().lowerName)
+                        .execute(request, query.getKind().lowerName)
                         .onComplete(promise);
             } else {
                 promise.fail(new DdlDatasourceException(String.format("Unknown DDL %s", query)));

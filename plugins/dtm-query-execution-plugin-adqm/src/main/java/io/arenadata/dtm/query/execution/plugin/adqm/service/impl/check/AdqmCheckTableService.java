@@ -5,8 +5,6 @@ import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTableEntity;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTables;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmMetaTableEntityFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmTableEntitiesFactory;
-import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckException;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
 import io.arenadata.dtm.query.execution.plugin.api.factory.MetaTableEntityFactory;
@@ -18,8 +16,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 

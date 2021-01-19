@@ -26,9 +26,9 @@ public class AdqmRollbackService implements RollbackService<Void> {
     }
 
     @Override
-    public Future<Void> execute(RollbackRequestContext context) {
+    public Future<Void> execute(RollbackRequestContext request) {
         return Future.future(promise -> {
-            val rollbackRequest = rollbackRequestFactory.create(context.getRequest());
+            val rollbackRequest = rollbackRequestFactory.create(request.getRequest());
             Future<Void> executingFuture = Future.succeededFuture();
             for (PreparedStatementRequest statement : rollbackRequest.getStatements()) {
                 executingFuture = executingFuture.compose(v -> adqmQueryExecutor.executeUpdate(statement.getSql()));

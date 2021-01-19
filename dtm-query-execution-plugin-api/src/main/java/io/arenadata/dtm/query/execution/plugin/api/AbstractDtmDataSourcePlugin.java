@@ -8,7 +8,7 @@ import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
-import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprPluginRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
@@ -60,8 +60,8 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
     }
 
     @Override
-    public Future<QueryResult> llr(LlrRequestContext context) {
-        return llrService.execute(context);
+    public Future<QueryResult> llr(LlrRequest request) {
+        return llrService.execute(request);
     }
 
     @Override

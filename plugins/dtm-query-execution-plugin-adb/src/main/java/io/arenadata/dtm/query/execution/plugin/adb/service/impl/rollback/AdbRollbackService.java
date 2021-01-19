@@ -29,9 +29,9 @@ public class AdbRollbackService implements RollbackService<Void> {
     }
 
     @Override
-    public Future<Void> execute(RollbackRequestContext context) {
+    public Future<Void> execute(RollbackRequestContext request) {
         return Future.future(promise -> {
-            val rollbackRequest = rollbackRequestFactory.create(context.getRequest());
+            val rollbackRequest = rollbackRequestFactory.create(request.getRequest());
             adbQueryExecutor.execute(rollbackRequest.getTruncate().getSql(), Collections.emptyList())
                     .compose(v -> adbQueryExecutor.execute(rollbackRequest.getDeleteFromActual().getSql(),
                             Collections.emptyList()))

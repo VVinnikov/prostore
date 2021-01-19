@@ -40,26 +40,24 @@ public class AdbQueryEnrichmentServiceImpl implements QueryEnrichmentService {
 
     @Override
     public Future<String> enrich(EnrichQueryRequest request) {
-        return queryParserService.parse(new QueryParserRequest(request.getQueryRequest(), request.getSchema()))
+        return queryParserService.parse(new QueryParserRequest(request.getQuery(), request.getSchema()))
                 .map(response -> {
                     contextProvider.enrichContext(response.getCalciteContext(),
                             generatePhysicalSchemas(request.getSchema()));
                     return response;
                 })
-                .compose(this::mutateQuery);
+                .compose(queryParserResponse -> mutateQuery(queryParserResponse, request));
     }
 
-    private Future<String> mutateQuery(QueryParserResponse response) {
-        return Future.future(promise -> {
-            adbQueryGenerator.mutateQuery(response.getRelNode(),
-                    response.getQueryRequest().getDeltaInformations(),
-                    response.getCalciteContext())
-                    .onSuccess(result -> {
-                        log.trace("Request generated: {}", result);
-                        promise.complete(result);
-                    })
-                    .onFailure(promise::fail);
-        });
+    private Future<String> mutateQuery(QueryParserResponse response, EnrichQueryRequest request) {
+        return Future.future(promise -> adbQueryGenerator.mutateQuery(response.getRelNode(),
+                request.getDeltaInformations(),
+                response.getCalciteContext())
+                .onSuccess(result -> {
+                    log.trace("Request generated: {}", result);
+                    promise.complete(result);
+                })
+                .onFailure(promise::fail));
     }
 
     private List<Datamart> generatePhysicalSchemas(List<Datamart> logicalSchemas) {

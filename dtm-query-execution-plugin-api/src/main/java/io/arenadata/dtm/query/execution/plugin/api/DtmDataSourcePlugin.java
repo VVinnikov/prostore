@@ -51,7 +51,7 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
     /**
      * <p>execute Low Latency Reading</p>
      *
-     * @param context LLR context
+     * @param request LLR context
      * @return query result
      */
     Future<QueryResult> llr(LlrRequest request);

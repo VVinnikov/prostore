@@ -41,15 +41,15 @@ public class DdlServiceImpl implements DdlService<QueryResult> {
     }
 
     @Override
-    public Future<QueryResult> execute(DdlRequestContext context) {
-        return getExecutor(context)
+    public Future<QueryResult> execute(DdlRequestContext request) {
+        return getExecutor(request)
                 .compose(executor -> {
-                    context.getPostActions().addAll(executor.getPostActions());
-                    return executor.execute(context,
-                            parseQueryUtils.getDatamartName(context.getSqlCall().getOperandList()));
+                    request.getPostActions().addAll(executor.getPostActions());
+                    return executor.execute(request,
+                            parseQueryUtils.getDatamartName(request.getSqlCall().getOperandList()));
                 })
                 .map(queryResult -> {
-                    executePostActions(context);//TODO ask about parallel executing of this part
+                    executePostActions(request);//TODO ask about parallel executing of this part
                     return queryResult;
                 });
     }

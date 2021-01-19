@@ -2,9 +2,9 @@ package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.enrichment;
 
 import io.arenadata.dtm.common.calcite.CalciteContext;
 import io.arenadata.dtm.common.delta.DeltaInformation;
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.calcite.core.rel2sql.NullNotCastableRelToSqlConverter;
+import io.arenadata.dtm.query.execution.plugin.adqm.dto.EnrichQueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.QueryGeneratorContext;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.QueryExtendService;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.QueryGenerator;
@@ -42,14 +42,12 @@ public class AdqmQueryGeneratorImpl implements QueryGenerator {
     public Future<String> mutateQuery(RelRoot relNode,
                                       List<DeltaInformation> deltaInformations,
                                       CalciteContext calciteContext,
-                                      QueryRequest queryRequest,
-                                      boolean isLocal) {
+                                      EnrichQueryRequest enrichQueryRequest) {
         return Future.future(promise -> {
             val generatorContext = getContext(relNode,
                     deltaInformations,
                     calciteContext,
-                    queryRequest,
-                    isLocal);
+                    enrichQueryRequest);
             val extendedQuery = queryExtendService.extendQuery(generatorContext);
             RelNode planAfter = null;
             try {
@@ -103,14 +101,12 @@ public class AdqmQueryGeneratorImpl implements QueryGenerator {
     private QueryGeneratorContext getContext(RelRoot relNode,
                                              List<DeltaInformation> deltaInformations,
                                              CalciteContext calciteContext,
-                                             QueryRequest queryRequest,
-                                             boolean isLocal) {
+                                             EnrichQueryRequest enrichQueryRequest) {
         return QueryGeneratorContext.builder()
                 .deltaIterator(deltaInformations.iterator())
                 .relBuilder(calciteContext.getRelBuilder())
-                .queryRequest(queryRequest)
+                .enrichQueryRequest(enrichQueryRequest)
                 .relNode(relNode)
-                .isLocal(isLocal)
                 .build();
     }
 }

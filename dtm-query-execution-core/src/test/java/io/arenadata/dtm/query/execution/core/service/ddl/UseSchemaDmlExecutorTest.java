@@ -15,6 +15,7 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.DatamartDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
+import io.arenadata.dtm.query.execution.core.dto.dml.DmlRequest;
 import io.arenadata.dtm.query.execution.core.dto.dml.DmlRequestContext;
 import io.arenadata.dtm.query.execution.core.service.dml.impl.UseSchemaDmlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsService;
@@ -22,7 +23,6 @@ import io.arenadata.dtm.query.execution.core.service.metrics.impl.MetricsService
 import io.arenadata.dtm.query.execution.core.utils.ParseQueryUtils;
 import io.arenadata.dtm.query.execution.core.utils.QueryResultUtils;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
-import io.arenadata.dtm.query.execution.plugin.api.request.DmlRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.apache.calcite.sql.SqlNode;

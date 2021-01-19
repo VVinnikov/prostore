@@ -47,13 +47,13 @@ public class DeltaServiceImpl implements DeltaService<QueryResult> {
     }
 
     @Override
-    public Future<QueryResult> execute(DeltaRequestContext context) {
-        if (StringUtils.isEmpty(context.getRequest().getQueryRequest().getDatamartMnemonic())) {
+    public Future<QueryResult> execute(DeltaRequestContext request) {
+        if (StringUtils.isEmpty(request.getRequest().getQueryRequest().getDatamartMnemonic())) {
             String errMsg = "Datamart must be not empty!\n" +
                     "For setting datamart you can use the following command: \"USE datamartName\"";
             return Future.failedFuture(new DtmException(errMsg));
         } else {
-            return extractDeltaAndExecute(context);
+            return extractDeltaAndExecute(request);
         }
     }
 

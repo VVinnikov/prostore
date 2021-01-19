@@ -18,7 +18,7 @@ public class AdgRollbackService implements RollbackService<Void> {
     private final AdgCartridgeClient cartridgeClient;
 
     @Override
-    public Future<Void> execute(RollbackRequestContext context) {
-        return cartridgeClient.reverseHistoryTransfer(requestFactory.create(context));
+    public Future<Void> execute(RollbackRequestContext request) {
+        return cartridgeClient.reverseHistoryTransfer(requestFactory.create(request));
     }
 }

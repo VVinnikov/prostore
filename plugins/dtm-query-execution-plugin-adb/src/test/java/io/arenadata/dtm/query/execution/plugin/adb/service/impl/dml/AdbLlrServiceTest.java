@@ -4,7 +4,6 @@ import io.arenadata.dtm.cache.service.CacheService;
 import io.arenadata.dtm.cache.service.CaffeineCacheService;
 import io.arenadata.dtm.common.cache.QueryTemplateKey;
 import io.arenadata.dtm.common.cache.QueryTemplateValue;
-import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.QueryTemplateResult;
@@ -14,7 +13,7 @@ import io.arenadata.dtm.query.calcite.core.service.impl.QueryTemplateExtractorIm
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adb.service.QueryEnrichmentService;
-import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
+import io.arenadata.dtm.query.execution.plugin.adb.utils.TestUtils;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.LlrService;
 import io.vertx.core.AsyncResult;
@@ -83,12 +82,19 @@ class AdbLlrServiceTest {
         UUID uuid = UUID.randomUUID();
         queryRequest.setRequestId(uuid);
         queryRequest.setDatamartMnemonic("TEST_DATAMART");
-        QueryTemplateResult queryTemplateResult = new QueryTemplateResult(template,
-                Collections.emptyList());
-
-        LlrRequest llrRequest = new LlrRequest(sourceQueryTemplateResult, queryRequest, schema, Collections.emptyList(), sqlNode);
-        llrRequest.setSourceQueryTemplateResult(queryTemplateResult);
-        adbLLRService.execute(new LlrRequestContext(new RequestMetrics(), llrRequest))
+        SqlNode sqlNode = TestUtils.DEFINITION_SERVICE.processingQuery(template);
+        QueryTemplateResult queryTemplateResult = new QueryTemplateResult(template, sqlNode, Collections.emptyList());
+        LlrRequest llrRequest = LlrRequest.builder()
+                .sourceQueryTemplateResult(queryTemplateResult)
+                .sqlNode(sqlNode)
+                .requestId(uuid)
+                .envName("test")
+                .metadata(Collections.emptyList())
+                .schema(schema)
+                .deltaInformations(Collections.emptyList())
+                .datamartMnemonic("TEST_DATAMART")
+                .build();
+        adbLLRService.execute(llrRequest)
                 .onComplete(ar -> {
                     assertTrue(ar.succeeded());
                     QueryResult result = ar.result();

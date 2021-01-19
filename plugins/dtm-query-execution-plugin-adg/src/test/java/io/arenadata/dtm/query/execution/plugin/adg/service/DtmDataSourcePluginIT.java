@@ -7,15 +7,16 @@ import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
-import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlType;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
-import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprPluginRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
 import io.vertx.core.Future;
@@ -56,17 +57,17 @@ public class DtmDataSourcePluginIT {
         }
 
         @Override
-        public Future<QueryResult> llr(LlrRequestContext context) {
+        public Future<QueryResult> llr(LlrRequest context) {
             return null;
         }
 
         @Override
-        public Future<QueryResult> mppr(MpprRequestContext context) {
+        public Future<QueryResult> mppr(MpprPluginRequest request) {
             return null;
         }
 
         @Override
-        public Future<QueryResult> mppw(MppwPluginRequest context) {
+        public Future<QueryResult> mppw(MppwPluginRequest request) {
             return null;
         }
 
@@ -76,7 +77,7 @@ public class DtmDataSourcePluginIT {
         }
 
         @Override
-        public Future<StatusQueryResult> status(StatusPluginRequest context) {
+        public Future<StatusQueryResult> status(String topic) {
             return null;
         }
 

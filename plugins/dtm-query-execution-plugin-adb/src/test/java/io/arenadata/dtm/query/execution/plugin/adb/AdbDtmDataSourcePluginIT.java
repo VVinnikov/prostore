@@ -7,15 +7,16 @@ import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
-import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlType;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
-import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprPluginRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
 import io.vertx.core.Future;
@@ -33,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 
 @SpringBootTest(classes = DtmTestConfiguration.class)
 @ExtendWith(VertxExtension.class)
-class AdbDtmDataSourcePluginIT {
+public class AdbDtmDataSourcePluginIT {
 
     @Autowired
     private DdlService ddlService;
@@ -56,12 +57,12 @@ class AdbDtmDataSourcePluginIT {
         }
 
         @Override
-        public Future<QueryResult> llr(LlrRequestContext llrRequest) {
+        public Future<QueryResult> llr(LlrRequest llrRequest) {
             return null;
         }
 
         @Override
-        public Future<QueryResult> mppr(MpprRequestContext mpprRequest) {
+        public Future<QueryResult> mppr(MpprPluginRequest request) {
             return null;
         }
 
@@ -76,7 +77,7 @@ class AdbDtmDataSourcePluginIT {
         }
 
         @Override
-        public Future<StatusQueryResult> status(StatusPluginRequest context) {
+        public Future<StatusQueryResult> status(String topic) {
             return null;
         }
 

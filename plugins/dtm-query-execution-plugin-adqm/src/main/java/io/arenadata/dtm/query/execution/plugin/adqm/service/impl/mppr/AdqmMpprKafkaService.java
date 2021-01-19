@@ -5,7 +5,7 @@ import io.arenadata.dtm.query.execution.plugin.adqm.dto.EnrichQueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.MpprKafkaConnectorRequestFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.MpprKafkaConnectorService;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.QueryEnrichmentService;
-import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprPluginRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.MpprRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.MpprKafkaService;
 import io.vertx.core.Future;
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 
 @Service("adqmMpprKafkaService")
 @Slf4j
-public class AdqmMpprKafkaService implements MpprKafkaService<QueryResult> {
+public class AdqmMpprKafkaService implements MpprKafkaService {
 
     private final QueryEnrichmentService adqmQueryEnrichmentService;
     private final MpprKafkaConnectorService mpprKafkaConnectorService;
@@ -32,13 +32,13 @@ public class AdqmMpprKafkaService implements MpprKafkaService<QueryResult> {
     }
 
     @Override
-    public Future<QueryResult> execute(MpprRequestContext context) {
-        MpprRequest request = context.getRequest();
+    public Future<QueryResult> execute(MpprPluginRequest request) {
+        MpprRequest mpprRequest = request.getMpprRequest();
         return adqmQueryEnrichmentService.enrich(EnrichQueryRequest.generate(
-                request.getQueryRequest(),
-                request.getLogicalSchema(),
+                mpprRequest.getQueryRequest(),
+                mpprRequest.getLogicalSchema(),
                 true))
                 .compose(enrichedQuery -> mpprKafkaConnectorService.call(
-                        requestFactory.create(request, enrichedQuery)));
+                        requestFactory.create(mpprRequest, enrichedQuery)));
     }
 }

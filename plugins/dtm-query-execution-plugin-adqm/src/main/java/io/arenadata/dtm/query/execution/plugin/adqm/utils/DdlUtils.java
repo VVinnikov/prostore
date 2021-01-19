@@ -4,7 +4,7 @@ import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaParameter;
-import io.arenadata.dtm.query.execution.plugin.api.request.MppwRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
 import io.vertx.core.Future;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +25,7 @@ public class DdlUtils {
     private DdlUtils() {
     }
 
-    public static Optional<String> validateRequest(MppwRequest request) {
+    public static Optional<String> validateRequest(MppwPluginRequest request) {
         if (request == null) {
             return Optional.of("MppwRequest should not be null");
         }
@@ -42,7 +42,7 @@ public class DdlUtils {
         return Optional.empty();
     }
 
-    public static String getQualifiedTableName(@NonNull MppwRequest request,
+    public static String getQualifiedTableName(@NonNull MppwPluginRequest request,
                                                @NonNull AppConfiguration appConfiguration) {
         final MppwKafkaParameter kafkaParameter = request.getKafkaParameter();
 

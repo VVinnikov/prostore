@@ -3,8 +3,8 @@ package io.arenadata.dtm.query.execution.plugin.adb.factory;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adb.configuration.properties.MppwProperties;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.MpprRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
 
 import java.util.List;
 
@@ -37,7 +37,8 @@ public interface MetadataSqlFactory {
 
     String insertIntoKadbOffsetsSqlQuery(String schema, String table);
 
-    String createExtTableSqlQuery(String server, List<String> columnNameTypeList, MppwRequestContext context, MppwProperties mppwProperties);
+    String createExtTableSqlQuery(String server, List<String> columnNameTypeList, MppwPluginRequest request,
+                                  MppwProperties mppwProperties);
 
     String checkServerSqlQuery(String database, String brokerList);
 

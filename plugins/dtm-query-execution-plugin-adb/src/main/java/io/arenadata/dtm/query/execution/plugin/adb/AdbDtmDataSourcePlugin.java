@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.plugin.adb;
 
-import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.plugin.api.AbstractDtmDataSourcePlugin;
@@ -21,10 +20,10 @@ public class AdbDtmDataSourcePlugin extends AbstractDtmDataSourcePlugin {
     public AdbDtmDataSourcePlugin(
             DdlService<Void> ddlService,
             LlrService<QueryResult> adbLlrService,
-            MpprKafkaService<QueryResult> adbMpprKafkaService,
-            MppwKafkaService<QueryResult> adbMppwKafkaService,
+            MpprKafkaService adbMpprKafkaService,
+            MppwKafkaService adbMppwKafkaService,
             QueryCostService<Integer> adbQueryCostService,
-            StatusService<StatusQueryResult> statusService,
+            StatusService statusService,
             RollbackService<Void> rollbackService,
             CheckTableService checkTableService,
             CheckDataService checkDataService,

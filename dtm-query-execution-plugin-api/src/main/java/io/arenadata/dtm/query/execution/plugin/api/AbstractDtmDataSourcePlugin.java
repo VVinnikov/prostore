@@ -9,25 +9,25 @@ import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
 import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
-import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprPluginRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
+import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.*;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckDataService;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TruncateHistoryService;
-import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
 import io.vertx.core.Future;
 
 public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin {
 
     protected final DdlService<Void> ddlService;
     protected final LlrService<QueryResult> llrService;
-    protected final MpprKafkaService<QueryResult> mpprKafkaService;
-    protected final MppwKafkaService<QueryResult> mppwKafkaService;
+    protected final MpprKafkaService mpprKafkaService;
+    protected final MppwKafkaService mppwKafkaService;
     protected final QueryCostService<Integer> queryCostService;
-    protected final StatusService<StatusQueryResult> statusService;
+    protected final StatusService statusService;
     protected final RollbackService<Void> rollbackService;
     protected final CheckTableService checkTableService;
     protected final CheckDataService checkDataService;
@@ -35,10 +35,10 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
 
     public AbstractDtmDataSourcePlugin(DdlService<Void> ddlService,
                                        LlrService<QueryResult> llrService,
-                                       MpprKafkaService<QueryResult> mpprKafkaService,
-                                       MppwKafkaService<QueryResult> mppwKafkaService,
+                                       MpprKafkaService mpprKafkaService,
+                                       MppwKafkaService mppwKafkaService,
                                        QueryCostService<Integer> queryCostService,
-                                       StatusService<StatusQueryResult> statusService,
+                                       StatusService statusService,
                                        RollbackService<Void> rollbackService,
                                        CheckTableService checkTableService,
                                        CheckDataService checkDataService,
@@ -66,13 +66,13 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
     }
 
     @Override
-    public Future<QueryResult> mppr(MpprRequestContext context) {
-        return mpprKafkaService.execute(context);
+    public Future<QueryResult> mppr(MpprPluginRequest request) {
+        return mpprKafkaService.execute(request);
     }
 
     @Override
-    public Future<QueryResult> mppw(MppwRequestContext context) {
-        return mppwKafkaService.execute(context);
+    public Future<QueryResult> mppw(MppwPluginRequest request) {
+        return mppwKafkaService.execute(request);
     }
 
     @Override
@@ -81,8 +81,8 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
     }
 
     @Override
-    public Future<StatusQueryResult> status(StatusRequestContext context) {
-        return statusService.execute(context);
+    public Future<StatusQueryResult> status(String topic) {
+        return statusService.execute(topic);
     }
 
     @Override

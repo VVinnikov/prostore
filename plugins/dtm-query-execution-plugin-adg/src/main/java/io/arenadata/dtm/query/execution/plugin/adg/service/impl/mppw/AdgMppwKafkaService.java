@@ -9,7 +9,7 @@ import io.arenadata.dtm.query.execution.plugin.adg.model.callback.params.TtTrans
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.TtSubscriptionKafkaRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.TtTransferDataEtlRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.MppwKafkaService;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service("adgMppwKafkaService")
-public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
+public class AdgMppwKafkaService implements MppwKafkaService {
 
     private final AdgMppwKafkaContextFactory contextFactory;
     private final Map<String, String> initializedLoadingByTopic;
@@ -41,11 +41,11 @@ public class AdgMppwKafkaService implements MppwKafkaService<QueryResult> {
     }
 
     @Override
-    public Future<QueryResult> execute(MppwRequestContext request) {
+    public Future<QueryResult> execute(MppwPluginRequest request) {
         return Future.future(promise -> {
             log.debug("mppw start");
-            val mppwKafkaContext = contextFactory.create(request.getRequest());
-            if (request.getRequest().getIsLoadStart()) {
+            val mppwKafkaContext = contextFactory.create(request);
+            if (request.getIsLoadStart()) {
                 initializeLoading(mppwKafkaContext)
                         .onComplete(promise);
             } else {

@@ -16,11 +16,10 @@ import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
 import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
-import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprPluginRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
 import io.arenadata.dtm.query.execution.core.dto.rollback.RollbackRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
@@ -84,19 +83,13 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     }
 
     @Override
-    public Future<QueryResult> mppr(SourceType sourceType, MpprRequestContext context) {
-        return executeWithMetrics(sourceType,
-                SqlProcessingType.MPPR,
-                context.getMetrics(),
-                plugin -> plugin.mppr(context));
+    public Future<QueryResult> mppr(SourceType sourceType, MpprPluginRequest request) {
+        return getPlugin(sourceType).mppr(request);
     }
 
     @Override
-    public Future<QueryResult> mppw(SourceType sourceType, MppwRequestContext context) {
-        return executeWithMetrics(sourceType,
-                SqlProcessingType.MPPW,
-                context.getMetrics(),
-                plugin -> plugin.mppw(context));
+    public Future<QueryResult> mppw(SourceType sourceType, MppwPluginRequest request) {
+        return getPlugin(sourceType).mppw(request);
     }
 
     @Override
@@ -108,11 +101,8 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     }
 
     @Override
-    public Future<StatusQueryResult> status(SourceType sourceType, StatusRequestContext context) {
-        return executeWithMetrics(sourceType,
-                SqlProcessingType.STATUS,
-                context.getMetrics(),
-                plugin -> plugin.status(context));
+    public Future<StatusQueryResult> status(SourceType sourceType, String topic) {
+        return getPlugin(sourceType).status(topic);
     }
 
     @Override

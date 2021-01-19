@@ -4,7 +4,7 @@ import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.Adq
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.AdqmRestMppwKafkaRequestFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.mppw.RestMppwKafkaLoadRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
-import io.arenadata.dtm.query.execution.plugin.api.request.MppwRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
 import lombok.val;
 import org.apache.avro.Schema;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,16 +21,16 @@ public class AdqmRestMppwKafkaRequestFactoryImpl implements AdqmRestMppwKafkaReq
     }
 
     @Override
-    public RestMppwKafkaLoadRequest create(MppwRequest mppwRequest) {
+    public RestMppwKafkaLoadRequest create(MppwPluginRequest mppwPluginRequest) {
         val uploadMeta = (UploadExternalEntityMetadata)
-                mppwRequest.getKafkaParameter().getUploadMetadata();
+                mppwPluginRequest.getKafkaParameter().getUploadMetadata();
         return RestMppwKafkaLoadRequest.builder()
-                .requestId(mppwRequest.getQueryRequest().getRequestId().toString())
-                .datamart(mppwRequest.getKafkaParameter().getDatamart())
-                .tableName(mppwRequest.getKafkaParameter().getDestinationTableName())
-                .kafkaTopic(mppwRequest.getKafkaParameter().getTopic())
-                .kafkaBrokers(mppwRequest.getKafkaParameter().getBrokers())
-                .hotDelta(mppwRequest.getKafkaParameter().getSysCn())
+                .requestId(mppwPluginRequest.getQueryRequest().getRequestId().toString())
+                .datamart(mppwPluginRequest.getKafkaParameter().getDatamart())
+                .tableName(mppwPluginRequest.getKafkaParameter().getDestinationTableName())
+                .kafkaTopic(mppwPluginRequest.getKafkaParameter().getTopic())
+                .kafkaBrokers(mppwPluginRequest.getKafkaParameter().getBrokers())
+                .hotDelta(mppwPluginRequest.getKafkaParameter().getSysCn())
                 .consumerGroup(adqmMppwProperties.getRestLoadConsumerGroup())
                 .format(uploadMeta.getFormat().getName())
                 .schema(new Schema.Parser().parse(uploadMeta.getExternalSchema()))

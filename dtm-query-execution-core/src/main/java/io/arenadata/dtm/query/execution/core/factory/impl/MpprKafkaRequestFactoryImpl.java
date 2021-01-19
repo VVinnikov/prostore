@@ -7,7 +7,7 @@ import io.arenadata.dtm.query.execution.core.exception.UnreachableLocationExcept
 import io.arenadata.dtm.query.execution.core.factory.MpprKafkaRequestFactory;
 import io.arenadata.dtm.query.execution.core.utils.LocationUriParser;
 import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprPluginRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.kafka.DownloadExternalEntityMetadata;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.kafka.MpprKafkaParameter;
 import io.arenadata.dtm.query.execution.plugin.api.request.MpprRequest;
@@ -38,14 +38,17 @@ public class MpprKafkaRequestFactoryImpl implements MpprKafkaRequestFactory {
     }
 
     @Override
-    public Future<MpprRequestContext> create(EdmlRequestContext context) {
+    public Future<MpprPluginRequest> create(EdmlRequestContext context) {
         return Future.future(promise -> {
             LocationUriParser.KafkaTopicUri kafkaTopicUri =
                     locationUriParser.parseKafkaLocationPath(context.getDestinationEntity().getExternalTableLocationPath());
             getBrokers(kafkaTopicUri.getAddress())
                     .map(brokers ->
-                            new MpprRequestContext(
-                                    context.getMetrics(),
+                            new MpprPluginRequest(
+                                    context.getRequest().getQueryRequest().getRequestId(),
+                                    context.getEnvName(),
+                                    context.getRequest().getQueryRequest().getDatamartMnemonic(),
+                                    context.getSqlNode(),
                                     MpprRequest.builder()
                                     .queryRequest(context.getRequest().getQueryRequest())
                                     .logicalSchema(context.getLogicalSchema())
@@ -63,8 +66,7 @@ public class MpprKafkaRequestFactoryImpl implements MpprKafkaRequestFactory {
                                             .brokers(brokers)
                                             .topic(kafkaTopicUri.getTopic())
                                             .build())
-                                    .build(),
-                                    context.getDmlSubQuery(), deltaInformations))
+                                    .build()))
                     .onComplete(promise);
         });
     }

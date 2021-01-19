@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.plugin.adqm;
 
-import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.plugin.api.AbstractDtmDataSourcePlugin;
@@ -21,10 +20,10 @@ public class AdqmDtmDataSourcePlugin extends AbstractDtmDataSourcePlugin {
     public AdqmDtmDataSourcePlugin(
             DdlService<Void> ddlService,
             LlrService<QueryResult> adqmLlrService,
-            MpprKafkaService<QueryResult> adqmMpprKafkaService,
-            MppwKafkaService<QueryResult> mppwKafkaService,
+            MpprKafkaService adqmMpprKafkaService,
+            MppwKafkaService mppwKafkaService,
             QueryCostService<Integer> adqmQueryCostService,
-            StatusService<StatusQueryResult> statusService,
+            StatusService statusService,
             RollbackService<Void> rollbackService,
             CheckTableService checkTableService,
             CheckDataService checkDataService,

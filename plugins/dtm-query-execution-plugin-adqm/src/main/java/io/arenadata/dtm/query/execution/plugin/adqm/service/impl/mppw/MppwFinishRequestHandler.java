@@ -13,7 +13,7 @@ import io.arenadata.dtm.query.execution.plugin.adqm.service.StatusReporter;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.RestLoadClient;
 import io.arenadata.dtm.query.execution.plugin.adqm.utils.DdlUtils;
 import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
-import io.arenadata.dtm.query.execution.plugin.api.request.MppwRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -74,7 +74,7 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
     }
 
     @Override
-    public Future<QueryResult> execute(final MppwRequest request) {
+    public Future<QueryResult> execute(final MppwPluginRequest request) {
         val err = DdlUtils.validateRequest(request);
         if (err.isPresent()) {
             return Future.failedFuture(err.get());
@@ -99,7 +99,7 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
                 .compose(v -> optimizeTable(fullName + ACTUAL_SHARD_POSTFIX))// 6. merge shards
                 .compose(v -> {
                     final RestMppwKafkaStopRequest mppwKafkaStopRequest = new RestMppwKafkaStopRequest(
-                            request.getQueryRequest().getRequestId().toString(),
+                            request.getRequestId().toString(),
                             request.getKafkaParameter().getTopic());
                     log.debug("ADQM: Send mppw kafka stopping rest request {}", mppwKafkaStopRequest);
                     return restLoadClient.stopLoading(mppwKafkaStopRequest);

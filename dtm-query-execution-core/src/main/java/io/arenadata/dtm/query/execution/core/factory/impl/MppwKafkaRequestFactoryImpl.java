@@ -7,10 +7,9 @@ import io.arenadata.dtm.query.execution.core.exception.UnreachableLocationExcept
 import io.arenadata.dtm.query.execution.core.factory.MppwKafkaRequestFactory;
 import io.arenadata.dtm.query.execution.core.utils.LocationUriParser;
 import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaParameter;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
-import io.arenadata.dtm.query.execution.plugin.api.request.MppwRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,17 +35,17 @@ public class MppwKafkaRequestFactoryImpl implements MppwKafkaRequestFactory {
     }
 
     @Override
-    public Future<MppwRequestContext> create(EdmlRequestContext context) {
+    public Future<MppwPluginRequest> create(EdmlRequestContext context) {
         return Future.future(promise -> {
             LocationUriParser.KafkaTopicUri kafkaTopicUri =
                     locationUriParser.parseKafkaLocationPath(context.getSourceEntity().getExternalTableLocationPath());
             getBrokers(kafkaTopicUri.getAddress())
-                    .map(brokers -> new MppwRequestContext(
-                            context.getMetrics(),
-                            MppwRequest.builder()
-                            .queryRequest(context.getRequest().getQueryRequest())
-                            .isLoadStart(true)
-                            .kafkaParameter(MppwKafkaParameter.builder()
+                    .map(brokers -> new MppwPluginRequest(
+                            context.getRequest().getQueryRequest().getRequestId(),
+                            context.getEnvName(),
+                            context.getRequest().getQueryRequest().getDatamartMnemonic(),
+                            true,
+                            MppwKafkaParameter.builder()
                                     .datamart(context.getSourceEntity().getSchema())
                                     .sysCn(context.getSysCn())
                                     .destinationTableName(context.getDestinationEntity().getName())
@@ -60,8 +59,7 @@ public class MppwKafkaRequestFactoryImpl implements MppwKafkaRequestFactory {
                                     .brokers(brokers)
                                     .topic(kafkaTopicUri.getTopic())
                                     .sourceEntity(context.getSourceEntity())
-                                    .build())
-                            .build()))
+                                    .build()))
                     .onComplete(promise);
         });
     }

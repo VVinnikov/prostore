@@ -10,9 +10,10 @@ import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
 import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
-import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprPluginRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
+import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
 import io.vertx.core.Future;
 import org.springframework.plugin.core.Plugin;
@@ -60,18 +61,18 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
     /**
      * <p>execute Massively Parallel Processing Reading</p>
      *
-     * @param context MPPR context
+     * @param request MPPR context
      * @return query result
      */
-    Future<QueryResult> mppr(MpprRequestContext context);
+    Future<QueryResult> mppr(MpprPluginRequest request);
 
     /**
      * <p>execute Massively Parallel Processing Writing</p>
      *
-     * @param context MPPW context
+     * @param request MPPW context
      * @return query result
      */
-    Future<QueryResult> mppw(MppwRequestContext context);
+    Future<QueryResult> mppw(MppwPluginRequest request);
 
     /**
      * <p>Calculate executing query cost</p>
@@ -84,10 +85,10 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
     /**
      * <p>Get plugin status information</p>
      *
-     * @param context Status request context
+     * @param topic Topic
      * @return query status
      */
-    Future<StatusQueryResult> status(StatusRequestContext context);
+    Future<StatusQueryResult> status(String topic);
 
     /**
      * @param request Rollback request

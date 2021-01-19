@@ -15,7 +15,7 @@ import io.arenadata.dtm.query.execution.plugin.adqm.service.StatusReporter;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.*;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
-import io.arenadata.dtm.query.execution.plugin.api.request.MppwRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import lombok.Data;
@@ -81,7 +81,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     }
 
     @Override
-    public Future<QueryResult> execute(MppwRequest request) {
+    public Future<QueryResult> execute(MppwPluginRequest request) {
         MppwExtTableContext mppwExtTableCtx = new MppwExtTableContext();
 
         val err = DdlUtils.validateRequest(request);
@@ -249,14 +249,14 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         return databaseExecutor.executeUpdate(query);
     }
 
-    private Future<Void> createRestInitiator(MppwRequest mppwRequest) {
+    private Future<Void> createRestInitiator(MppwPluginRequest mppwPluginRequest) {
         LoadType loadType = mppwProperties.getLoadType();
         //it means that if we use KAFKA instead of REST load type of mppw, we shouldn't send rest request
         if (loadType == KAFKA) {
             return Future.succeededFuture();
         }
         try {
-            final RestMppwKafkaLoadRequest mppwKafkaLoadRequest = restMppwKafkaRequestFactory.create(mppwRequest);
+            final RestMppwKafkaLoadRequest mppwKafkaLoadRequest = restMppwKafkaRequestFactory.create(mppwPluginRequest);
             log.debug("ADQM: Send mppw kafka starting rest request {}", mppwKafkaLoadRequest);
             return restLoadClient.initiateLoading(mppwKafkaLoadRequest);
         } catch (Exception e) {

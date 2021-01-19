@@ -1,10 +1,8 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.cost;
 
-import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.adb.service.QueryEnrichmentService;
-import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.arenadata.dtm.query.execution.plugin.api.request.QueryCostRequest;
 import io.vertx.core.AsyncResult;
@@ -28,12 +26,12 @@ import static org.mockito.Mockito.when;
 
 class AdbQueryCostServiceTest {
     private final QueryEnrichmentService adbQueryEnrichmentService = mock(QueryEnrichmentService.class);
-    private final AdbQueryCostService costService = new AdbQueryCostService(adbQueryEnrichmentService);
+    private final AdbQueryCostService costService = new AdbQueryCostService();
 
     @Test
     void calc() {
         initEnrichmentMocks();
-        val context = getQueryCostRequestContext();
+        val context = getQueryCostRequest();
         TestSuite suite = TestSuite.create("test_suite");
         suite.test("executeQuery", testContext -> {
             Async async = testContext.async();
@@ -46,7 +44,7 @@ class AdbQueryCostServiceTest {
     @Test
     void calcWithEnrichmentError() {
         initEnrichmentBadMocks();
-        val context = getQueryCostRequestContext();
+        val context = getQueryCostRequest();
         TestSuite suite = TestSuite.create("test_suite");
         suite.test("executeQuery", testContext -> {
             Async async = testContext.async();
@@ -56,7 +54,7 @@ class AdbQueryCostServiceTest {
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
     }
 
-    private QueryCostRequestContext getQueryCostRequestContext() {
+    private QueryCostRequest getQueryCostRequest() {
         JsonObject jsonSchema = JsonUtils.init("meta_data.json", "TEST_DATAMART");
         List<Datamart> schema = new ArrayList<>();
         schema.add(jsonSchema.mapTo(Datamart.class));
@@ -64,8 +62,7 @@ class AdbQueryCostServiceTest {
         queryRequest.setSql("SELECT * from PSO");
         queryRequest.setRequestId(UUID.randomUUID());
         queryRequest.setDatamartMnemonic("TEST_DATAMART");
-        QueryCostRequest costRequest = new QueryCostRequest(queryRequest, schema);
-        return new QueryCostRequestContext(new RequestMetrics(), costRequest, query);
+        return new QueryCostRequest(queryRequest.getRequestId(), "test", queryRequest.getDatamartMnemonic(), schema);
     }
 
     private void initEnrichmentMocks() {

@@ -17,15 +17,14 @@ import static io.arenadata.dtm.common.model.SqlProcessingType.DELTA;
 @Getter
 @Setter
 @ToString
-public class DeltaRequestContext<S extends SqlDeltaCall> extends CoreRequestContext<DatamartRequest, S> {
+public class DeltaRequestContext extends CoreRequestContext<DatamartRequest, SqlDeltaCall> {
     private List<PostSqlActionType> postActions;
 
-    public DeltaRequestContext(DatamartRequest request, String envName, S sqlNode) {
-        super(request, envName, sqlNode, metrics);
-    }
-
-    public DeltaRequestContext(DatamartRequest request, String envName, RequestMetrics metrics, S sqlNode) {
-        super(request, envName, metrics, sqlNode);
+    public DeltaRequestContext(RequestMetrics metrics,
+                               DatamartRequest request,
+                               String envName,
+                               SqlDeltaCall sqlNode) {
+        super(metrics, envName, request, sqlNode);
     }
 
     @Override

@@ -13,7 +13,6 @@ import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.AdgC
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.TtLoadDataKafkaResponse;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaParameter;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
 import io.arenadata.dtm.query.execution.plugin.api.request.MppwRequest;
@@ -176,12 +175,12 @@ class AdgMppwKafkaServiceTest {
         );
     }
 
-    private MppwRequestContext getRequestContext() {
+    private MppwRequest getRequestContext() {
         val queryRequest = new QueryRequest();
         queryRequest.setEnvName("env1");
         queryRequest.setDatamartMnemonic("test");
         val mppwRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
-        return new MppwRequestContext(new RequestMetrics(), mppwRequest);
+        return new MppwRequest(new RequestMetrics(), mppwRequest);
     }
 
     private MppwKafkaParameter createKafkaParameter() {

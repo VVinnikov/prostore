@@ -102,7 +102,7 @@ public class DropUploadExternalTableExecutorTest {
         Promise<QueryResult> promise = Promise.promise();
 
         Mockito.when(entityDao.getEntity(eq(schema), eq(table)))
-                .thenReturn(Future.failedFuture(new TableNotExistsException("")));
+                .thenReturn(Future.failedFuture(new ExternalTableNotExistsException("")));
 
         dropUploadExternalTableExecutor.execute(query)
                 .onComplete(promise);

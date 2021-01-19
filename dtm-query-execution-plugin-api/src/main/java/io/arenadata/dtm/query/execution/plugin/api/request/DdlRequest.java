@@ -11,10 +11,10 @@ import java.util.UUID;
 @Getter
 public class DdlRequest extends PluginRequest {
 
-	private SqlKind sqlKind;
-	private Entity entity;
+	private final SqlKind sqlKind;
+	private final Entity entity;
 
-	@Builder(toBuilder = true)
+	@Builder
 	public DdlRequest(UUID requestId,
 					  String envName,
 					  String datamartMnemonic,

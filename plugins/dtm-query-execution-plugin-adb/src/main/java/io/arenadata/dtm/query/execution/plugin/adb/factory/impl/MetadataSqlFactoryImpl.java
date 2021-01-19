@@ -9,9 +9,9 @@ import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adb.configuration.properties.MppwProperties;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.kafka.DownloadExternalEntityMetadata;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.mppr.kafka.MpprKafkaRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
-import io.arenadata.dtm.query.execution.plugin.api.request.MpprRequest;
 import lombok.val;
 import org.springframework.stereotype.Component;
 
@@ -176,16 +176,16 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
     @Override
     public String createExtTableSqlQuery(String server,
                                          List<String> columnNameTypeList,
-                                         MppwRequestContext context,
+                                         MppwKafkaRequest request,
                                          MppwProperties mppwProperties) {
-        val schema = context.getRequest().getKafkaParameter().getDatamart();
+        val schema = request.getDatamartMnemonic();
         val table = MetadataSqlFactoryImpl.WRITABLE_EXT_TABLE_PREF +
-                context.getRequest().getQueryRequest().getRequestId().toString().replace("-", "_");
+                request.getRequestId().toString().replace("-", "_");
         val columns = String.join(DELIMITER, columnNameTypeList);
-        val format = context.getRequest().getKafkaParameter().getUploadMetadata().getFormat().getName();
-        val topic = context.getRequest().getKafkaParameter().getTopic();
+        val format = request.getUploadMetadata().getFormat().getName();
+        val topic = request.getTopic();
         val consumerGroup = mppwProperties.getConsumerGroup();
-        val uploadMessageLimit = ((UploadExternalEntityMetadata) context.getRequest().getKafkaParameter().getUploadMetadata()).getUploadMessageLimit();
+        val uploadMessageLimit = ((UploadExternalEntityMetadata) request.getUploadMetadata()).getUploadMessageLimit();
         val chunkSize = uploadMessageLimit != null ? uploadMessageLimit : mppwProperties.getDefaultMessageLimit();
         val timeout = mppwProperties.getFdwTimeoutMs();
         return String.format(CREATE_FOREIGN_TABLE_SQL, schema, table, columns, server, format, topic, consumerGroup, chunkSize, timeout);
@@ -223,17 +223,17 @@ public class MetadataSqlFactoryImpl implements MetadataSqlFactory {
     }
 
     @Override
-    public String createWritableExtTableSqlQuery(MpprRequest request) {
-        val schema = request.getQueryRequest().getDatamartMnemonic();
+    public String createWritableExtTableSqlQuery(MpprKafkaRequest request) {
+        val schema =request.getDatamartMnemonic();
         val table = MetadataSqlFactoryImpl.WRITABLE_EXTERNAL_TABLE_PREF +
-                request.getQueryRequest().getRequestId().toString().replace("-", "_");
+                request.getRequestId().toString().replace("-", "_");
         val columns = request.getDestinationEntity().getFields().stream()
                 .map(field -> field.getName() + " " + EntityTypeUtil.pgFromDtmType(field)).collect(Collectors.toList());
-        val topic = request.getKafkaParameter().getTopic();
-        val brokers = request.getKafkaParameter().getBrokers().stream()
+        val topic = request.getTopic();
+        val brokers = request.getBrokers().stream()
                 .map(KafkaBrokerInfo::getAddress)
                 .collect(Collectors.toList());
-        val chunkSize = ((DownloadExternalEntityMetadata) request.getKafkaParameter().getDownloadMetadata()).getChunkSize();
+        val chunkSize = ((DownloadExternalEntityMetadata) request.getDownloadMetadata()).getChunkSize();
         return String.format(CREAT_WRITABLE_EXT_TABLE_SQL,
                 schema,
                 table,

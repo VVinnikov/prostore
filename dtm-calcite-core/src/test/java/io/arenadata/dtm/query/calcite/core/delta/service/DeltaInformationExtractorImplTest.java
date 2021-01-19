@@ -71,8 +71,8 @@ class DeltaInformationExtractorImplTest {
         assertEquals(4, deltaInformationResult.getDeltaInformations().size());
         val sqlWithoutForSystemTime = deltaInformationResult
                 .getSqlWithoutSnapshots();
-        log.info(sqlWithoutForSystemTime);
-        assertFalse(sqlWithoutForSystemTime.contains(FOR_SYSTEM_TIME));
+        log.info(sqlWithoutForSystemTime.toString());
+        assertFalse(sqlWithoutForSystemTime.toString().contains(FOR_SYSTEM_TIME));
     }
 
     @Test
@@ -85,8 +85,8 @@ class DeltaInformationExtractorImplTest {
         assertEquals(1, deltaInformationResult.getDeltaInformations().size());
         val sqlWithoutForSystemTime = deltaInformationResult
                 .getSqlWithoutSnapshots();
-        log.info(sqlWithoutForSystemTime);
-        assertFalse(sqlWithoutForSystemTime.contains(FOR_SYSTEM_TIME));
+        log.info(sqlWithoutForSystemTime.toString());
+        assertFalse(sqlWithoutForSystemTime.toString().contains(FOR_SYSTEM_TIME));
     }
 
 
@@ -99,8 +99,8 @@ class DeltaInformationExtractorImplTest {
         assertEquals(1, deltaInformationResult.getDeltaInformations().size());
         val sqlWithoutForSystemTime = deltaInformationResult
                 .getSqlWithoutSnapshots();
-        log.info(sqlWithoutForSystemTime);
-        assertFalse(sqlWithoutForSystemTime.contains(FOR_SYSTEM_TIME));
+        log.info(sqlWithoutForSystemTime.toString());
+        assertFalse(sqlWithoutForSystemTime.toString().contains(FOR_SYSTEM_TIME));
     }
 
     @Test
@@ -122,8 +122,8 @@ class DeltaInformationExtractorImplTest {
         assertNull(deltaInformationResult.getDeltaInformations().get(2).getDeltaTimestamp());
 
         val sqlWithoutForSystemTime = deltaInformationResult.getSqlWithoutSnapshots();
-        log.info(sqlWithoutForSystemTime);
-        assertFalse(sqlWithoutForSystemTime.contains(FOR_SYSTEM_TIME));
+        log.info(sqlWithoutForSystemTime.toString());
+        assertFalse(sqlWithoutForSystemTime.toString().contains(FOR_SYSTEM_TIME));
     }
 
     @Test
@@ -152,7 +152,7 @@ class DeltaInformationExtractorImplTest {
         assertEquals(DeltaType.FINISHED_IN, deltaInformationResult.getDeltaInformations().get(4).getType());
 
         val sqlWithoutForSystemTime = deltaInformationResult.getSqlWithoutSnapshots();
-        log.info(sqlWithoutForSystemTime);
-        assertFalse(sqlWithoutForSystemTime.contains(FOR_SYSTEM_TIME));
+        log.info(sqlWithoutForSystemTime.toString());
+        assertFalse(sqlWithoutForSystemTime.toString().contains(FOR_SYSTEM_TIME));
     }
 }

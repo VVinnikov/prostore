@@ -11,7 +11,7 @@ import io.arenadata.dtm.query.execution.core.dto.eddl.EddlRequestContext;
 import io.arenadata.dtm.query.execution.core.service.eddl.EddlExecutor;
 import io.arenadata.dtm.query.execution.core.service.eddl.EddlQueryParamExtractor;
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsService;
-import io.arenadata.dtm.query.execution.plugin.api.service.EddlService;
+import io.arenadata.dtm.query.execution.core.service.eddl.EddlService;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

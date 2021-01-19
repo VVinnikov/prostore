@@ -8,19 +8,22 @@ import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
+import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
-import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.request.QueryCostRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.DdlService;
 import io.vertx.core.Future;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
+import org.apache.calcite.sql.SqlKind;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,11 +32,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @SpringBootTest(classes = DtmTestConfiguration.class)
 @ExtendWith(VertxExtension.class)
-public class DtmDataSourcePluginIT {
+class DtmDataSourcePluginIT {
 
     @Autowired
     private DdlService ddlService;
@@ -71,7 +75,7 @@ public class DtmDataSourcePluginIT {
         }
 
         @Override
-        public Future<Integer> calcQueryCost(QueryCostRequestContext context) {
+        public Future<Integer> calcQueryCost(QueryCostRequest request) {
             return null;
         }
 
@@ -81,7 +85,7 @@ public class DtmDataSourcePluginIT {
         }
 
         @Override
-        public Future<Void> rollback(RollbackRequestContext context) {
+        public Future<Void> rollback(RollbackRequest request) {
             return null;
         }
 
@@ -117,10 +121,12 @@ public class DtmDataSourcePluginIT {
                 new EntityField(0, "id", ColumnType.INT.name(), false, 1, 1, null),
                 new EntityField(1, "test", ColumnType.VARCHAR.name(), true, 1, 1, null)
         ));
-        DdlRequest dto = new DdlRequest(null, entity);
-        DdlRequestContext context = new DdlRequestContext(dto);
-        context.setDdlType(DdlType.CREATE_TABLE);
-        plugin.ddl(context)
+        DdlRequest request = new DdlRequest(UUID.randomUUID(),
+                "test",
+                "test",
+                entity,
+                SqlKind.CREATE_TABLE);
+        plugin.ddl(request)
                 .onComplete(ar -> {
                     if (ar.succeeded()) {
                         testContext.completeNow();

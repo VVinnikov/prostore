@@ -46,7 +46,7 @@ public class AdqmCheckDataService implements CheckDataService {
     public Future<Long> checkDataByCount(CheckDataByCountRequest request) {
         Entity entity = request.getEntity();
         //TODO it's better to exclude generating sql query in separate factory class
-        String query = String.format(COUNT_QUERY_PATTERN, COUNT, request.getEnv(), entity.getSchema(),
+        String query = String.format(COUNT_QUERY_PATTERN, COUNT, request.getEnvName(), entity.getSchema(),
                 entity.getName(), request.getSysCn() - 1, request.getSysCn());
         return adqmQueryExecutor.execute(query)
                 .map(result -> Long.parseLong(result.get(0).get(COUNT).toString()));
@@ -62,7 +62,7 @@ public class AdqmCheckDataService implements CheckDataService {
                 ? String.format("concat(%s)", String.join(",';',", columns))
                 : columns.stream().findFirst().get();//TODO refactor this
 
-        String query = String.format(HASH_QUERY_PATTERN, colQuery, SUM, request.getEnv(), entity.getSchema(),
+        String query = String.format(HASH_QUERY_PATTERN, colQuery, SUM, request.getEnvName(), entity.getSchema(),
                 entity.getName(), request.getSysCn() - 1, request.getSysCn());
         return adqmQueryExecutor.execute(query)
                 .map(result -> Long.parseLong(result.get(0).get(SUM).toString()));

@@ -36,7 +36,7 @@ public class AdgTruncateHistoryService implements TruncateHistoryService {
     }
 
     private Future<Void> deleteSpaceTuples(TruncateHistoryRequest params, String postfix, String conditions) {
-        String spaceName = AdgUtils.getSpaceName(params.getEnv(), params.getEntity().getSchema(),
+        String spaceName = AdgUtils.getSpaceName(params.getEnvName(), params.getEntity().getSchema(),
                 params.getEntity().getName(), postfix);
         return adgCartridgeClient.deleteSpaceTuples(spaceName, conditions.isEmpty() ? null : conditions);
     }

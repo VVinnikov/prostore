@@ -2,8 +2,8 @@ package io.arenadata.dtm.query.execution.core.factory.impl;
 
 import io.arenadata.dtm.query.execution.core.factory.RollbackRequestContextFactory;
 import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.request.RollbackRequest;
-import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.request.RollbackRequest;
+import io.arenadata.dtm.query.execution.core.dto.rollback.RollbackRequestContext;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -13,12 +13,14 @@ public class RollbackRequestContextFactoryImpl implements RollbackRequestContext
     public RollbackRequestContext create(EdmlRequestContext context) {
         return new RollbackRequestContext(
                 context.getMetrics(),
+                context.getEnvName(),
                 RollbackRequest.builder()
                 .queryRequest(context.getRequest().getQueryRequest())
                 .datamart(context.getSourceEntity().getSchema())
                 .destinationTable(context.getDestinationEntity().getName())
                 .sysCn(context.getSysCn())
                 .entity(context.getDestinationEntity())
-                .build());
+                .build(),
+                context.getSqlNode());
     }
 }

@@ -121,7 +121,9 @@ public class RestoreStateServiceImpl implements RestoreStateService {
                         .status(RequestStatus.IN_PROCESS)
                         .isActive(true)
                         .build(),
-                datamartRequest, (SqlInsert) sqlNode, envName);
+                datamartRequest,
+                (SqlInsert) sqlNode,
+                envName);
         context.setSysCn(op.getSysCn());
         context.setSourceEntity(source);
         context.setDestinationEntity(dest);

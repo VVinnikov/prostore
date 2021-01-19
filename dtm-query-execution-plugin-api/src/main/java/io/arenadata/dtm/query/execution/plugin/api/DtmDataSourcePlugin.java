@@ -4,15 +4,15 @@ import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
-import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
+import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
-import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.request.QueryCostRequest;
 import io.vertx.core.Future;
 import org.springframework.plugin.core.Plugin;
 
@@ -75,10 +75,10 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
     /**
      * <p>Calculate executing query cost</p>
      *
-     * @param context Query cost context
+     * @param request Query cost context
      * @return query cost
      */
-    Future<Integer> calcQueryCost(QueryCostRequestContext context);
+    Future<Integer> calcQueryCost(QueryCostRequest request);
 
     /**
      * <p>Get plugin status information</p>
@@ -89,10 +89,10 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
     Future<StatusQueryResult> status(String topic);
 
     /**
-     * @param context Rollback request context
+     * @param request Rollback request
      * @return void
      */
-    Future<Void> rollback(RollbackRequestContext context);
+    Future<Void> rollback(RollbackRequest request);
 
     /**
      * <p>Get name set of active caches</p>

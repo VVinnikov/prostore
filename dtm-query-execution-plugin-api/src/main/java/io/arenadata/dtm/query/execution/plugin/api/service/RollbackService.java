@@ -1,9 +1,9 @@
 package io.arenadata.dtm.query.execution.plugin.api.service;
 
 import io.arenadata.dtm.common.model.SqlProcessingType;
-import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
 
-public interface RollbackService<T> extends DatamartExecutionService<RollbackRequestContext, T> {
+public interface RollbackService<T> extends DatamartExecutionService<RollbackRequest, T> {
 
     default SqlProcessingType getSqlProcessingType() {
         return SqlProcessingType.ROLLBACK;

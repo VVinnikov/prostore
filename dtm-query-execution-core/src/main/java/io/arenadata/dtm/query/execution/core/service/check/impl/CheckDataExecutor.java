@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.service.check;
+package io.arenadata.dtm.query.execution.core.service.check.impl;
 
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
@@ -16,7 +16,7 @@ import io.arenadata.dtm.query.execution.core.verticle.TaskVerticleExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckException;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
-import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckExecutor;
+import io.arenadata.dtm.query.execution.core.service.check.CheckExecutor;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import org.apache.calcite.util.Pair;
@@ -129,7 +129,9 @@ public class CheckDataExecutor implements CheckExecutor {
                         context.getMetrics(),
                         new CheckDataByCountRequest(entity,
                                 sysCn,
-                                context.getEnvName())));
+                                context.getEnvName(),
+                                context.getRequest().getQueryRequest().getRequestId(),
+                                context.getRequest().getQueryRequest().getDatamartMnemonic())));
         return sysCn -> Future.future(promise -> CompositeFuture.join(
                 entity.getDestination().stream()
                         .map(sourceType -> checkFunc.apply(sourceType, sysCn)
@@ -166,8 +168,12 @@ public class CheckDataExecutor implements CheckExecutor {
             return (sourceType, sysCn) -> dataSourcePluginService.checkDataByHashInt32(
                     sourceType,
                     context.getMetrics(),
-                    new CheckDataByHashInt32Request(entity, sysCn, columns,
-                            context.getEnvName()));
+                    new CheckDataByHashInt32Request(entity,
+                            sysCn,
+                            columns,
+                            context.getEnvName(),
+                            context.getRequest().getQueryRequest().getRequestId(),
+                            context.getRequest().getQueryRequest().getDatamartMnemonic()));
         }
     }
 }

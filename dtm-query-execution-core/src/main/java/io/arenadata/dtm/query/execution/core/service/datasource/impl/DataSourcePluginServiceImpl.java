@@ -10,15 +10,17 @@ import io.arenadata.dtm.query.execution.core.service.metrics.MetricsService;
 import io.arenadata.dtm.query.execution.core.verticle.TaskVerticleExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
-import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
+import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprPluginRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
-import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
-import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.QueryCostRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
@@ -98,11 +100,11 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     }
 
     @Override
-    public Future<Integer> calcQueryCost(SourceType sourceType, QueryCostRequestContext context) {
+    public Future<Integer> calcQueryCost(SourceType sourceType, RequestMetrics metrics, QueryCostRequest request) {
         return executeWithMetrics(sourceType,
                 SqlProcessingType.COST,
-                context.getMetrics(),
-                plugin -> plugin.calcQueryCost(context));
+                metrics,
+                plugin -> plugin.calcQueryCost(request));
     }
 
     @Override
@@ -114,11 +116,11 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     }
 
     @Override
-    public Future<Void> rollback(SourceType sourceType, RollbackRequestContext context) {
+    public Future<Void> rollback(SourceType sourceType, RequestMetrics metrics, RollbackRequest request) {
         return executeWithMetrics(sourceType,
                 SqlProcessingType.ROLLBACK,
-                context.getMetrics(),
-                plugin -> plugin.rollback(context));
+                metrics,
+                plugin -> plugin.rollback(request));
     }
 
     @Override

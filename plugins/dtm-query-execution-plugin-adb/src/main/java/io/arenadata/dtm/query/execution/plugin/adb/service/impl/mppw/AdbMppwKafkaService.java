@@ -1,10 +1,11 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw;
 
+import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.executor.AdbMppwRequestExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
-import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
-import io.arenadata.dtm.query.execution.plugin.api.service.MppwKafkaService;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +17,7 @@ import java.util.Map;
 
 @Slf4j
 @Component("adbMppwKafkaService")
-public class AdbMppwKafkaService implements MppwKafkaService {
+public class AdbMppwKafkaService implements AdbMppwExecutor {
 
     private static final Map<LoadType, AdbMppwRequestExecutor> mppwExecutors = new HashMap<>();
 
@@ -28,16 +29,21 @@ public class AdbMppwKafkaService implements MppwKafkaService {
     }
 
     @Override
-    public Future<QueryResult> execute(MppwPluginRequest request) {
+    public Future<QueryResult> execute(MppwRequest request) {
         return Future.future(promise -> {
             if (request == null) {
                 promise.fail(new MppwDatasourceException("MppwRequest should not be null"));
                 return;
             }
             final LoadType loadType = LoadType.valueOf(request.getIsLoadStart());
-            mppwExecutors.get(loadType).execute(request)
+            mppwExecutors.get(loadType).execute((MppwKafkaRequest) request)
                     .onComplete(promise);
         });
+    }
+
+    @Override
+    public ExternalTableLocationType getType() {
+        return ExternalTableLocationType.KAFKA;
     }
 
     private enum LoadType {

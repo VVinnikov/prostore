@@ -6,7 +6,7 @@ import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao
 import io.arenadata.dtm.query.execution.core.factory.RollbackRequestContextFactory;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadFailedExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;

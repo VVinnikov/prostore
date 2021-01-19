@@ -19,7 +19,7 @@ import io.arenadata.dtm.query.execution.core.dto.dml.DmlRequestContext;
 import io.arenadata.dtm.query.execution.core.dto.eddl.EddlRequestContext;
 import io.arenadata.dtm.query.execution.core.factory.RequestContextFactory;
 import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.ConfigRequest;
 import lombok.val;
 import org.apache.calcite.sql.*;

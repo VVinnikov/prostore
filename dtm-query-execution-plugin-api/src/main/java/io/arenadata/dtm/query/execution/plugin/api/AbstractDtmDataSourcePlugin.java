@@ -7,23 +7,25 @@ import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
-import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprPluginRequest;
-import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.*;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckDataService;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TruncateHistoryService;
+import io.arenadata.dtm.query.execution.plugin.api.service.mppr.MpprService;
+import io.arenadata.dtm.query.execution.plugin.api.service.mppw.MppwService;
 import io.vertx.core.Future;
 
 public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin {
 
     protected final DdlService<Void> ddlService;
     protected final LlrService<QueryResult> llrService;
-    protected final MpprKafkaService mpprKafkaService;
-    protected final MppwKafkaService mppwKafkaService;
+    protected final MpprService mpprService;
+    protected final MppwService mppwService;
     protected final QueryCostService<Integer> queryCostService;
     protected final StatusService statusService;
     protected final RollbackService<Void> rollbackService;
@@ -33,8 +35,8 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
 
     public AbstractDtmDataSourcePlugin(DdlService<Void> ddlService,
                                        LlrService<QueryResult> llrService,
-                                       MpprKafkaService mpprKafkaService,
-                                       MppwKafkaService mppwKafkaService,
+                                       MpprService mpprService,
+                                       MppwService mppwService,
                                        QueryCostService<Integer> queryCostService,
                                        StatusService statusService,
                                        RollbackService<Void> rollbackService,
@@ -43,8 +45,8 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
                                        TruncateHistoryService truncateService) {
         this.ddlService = ddlService;
         this.llrService = llrService;
-        this.mpprKafkaService = mpprKafkaService;
-        this.mppwKafkaService = mppwKafkaService;
+        this.mpprService = mpprService;
+        this.mppwService = mppwService;
         this.queryCostService = queryCostService;
         this.statusService = statusService;
         this.rollbackService = rollbackService;
@@ -64,13 +66,13 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
     }
 
     @Override
-    public Future<QueryResult> mppr(MpprPluginRequest request) {
-        return mpprKafkaService.execute(request);
+    public Future<QueryResult> mppr(MpprRequest request) {
+        return mpprService.execute(request);
     }
 
     @Override
-    public Future<QueryResult> mppw(MppwPluginRequest request) {
-        return mppwKafkaService.execute(request);
+    public Future<QueryResult> mppw(MppwRequest request) {
+        return mppwService.execute(request);
     }
 
     @Override

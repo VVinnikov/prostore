@@ -8,10 +8,10 @@ import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
-import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprPluginRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
-import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.vertx.core.Future;
 import org.springframework.plugin.core.Plugin;
@@ -62,7 +62,7 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
      * @param request MPPR context
      * @return query result
      */
-    Future<QueryResult> mppr(MpprPluginRequest request);
+    Future<QueryResult> mppr(MpprRequest request);
 
     /**
      * <p>execute Massively Parallel Processing Writing</p>
@@ -70,7 +70,7 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
      * @param request MPPW context
      * @return query result
      */
-    Future<QueryResult> mppw(MppwPluginRequest request);
+    Future<QueryResult> mppw(MppwRequest request);
 
     /**
      * <p>Calculate executing query cost</p>

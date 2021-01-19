@@ -9,6 +9,7 @@ import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDefinitionService;
@@ -22,7 +23,7 @@ import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadFailedExecu
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadKafkaExecutor;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import io.arenadata.dtm.query.execution.core.service.schema.impl.LogicalSchemaProviderImpl;
-import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.apache.calcite.sql.SqlInsert;
@@ -80,7 +81,7 @@ class UploadExternalTableExecutorTest {
                 .destination(sourceTypes)
                 .build();
         when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
-        when(logicalSchemaProvider.getSchemaFromQuery(any())).thenReturn(Future.succeededFuture(Collections.EMPTY_LIST));
+        when(logicalSchemaProvider.getSchemaFromQuery(any(), any())).thenReturn(Future.succeededFuture(Collections.EMPTY_LIST));
         doNothing().when(evictQueryTemplateCacheService).evictByDatamartName(anyString());
         doNothing().when(evictQueryTemplateCacheService).evictByEntityName(anyString(), anyString());
     }
@@ -99,7 +100,7 @@ class UploadExternalTableExecutorTest {
         final QueryResult queryResult = QueryResult.emptyResult();
         final Long sysCn = 1L;
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
         context.setSysCn(sysCn);
@@ -135,7 +136,7 @@ class UploadExternalTableExecutorTest {
         final QueryResult queryResult = QueryResult.emptyResult();
         final Long sysCn = 2L;
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
 
@@ -169,7 +170,7 @@ class UploadExternalTableExecutorTest {
         DatamartRequest request = new DatamartRequest(queryRequest);
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
 
@@ -198,7 +199,7 @@ class UploadExternalTableExecutorTest {
         final QueryResult queryResult = QueryResult.emptyResult();
         final Long sysCn = 1L;
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
 
@@ -232,7 +233,7 @@ class UploadExternalTableExecutorTest {
 
         final Long sysCn = 1L;
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
 
@@ -270,7 +271,7 @@ class UploadExternalTableExecutorTest {
 
         final Long sysCn = 1L;
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
 
@@ -303,7 +304,7 @@ class UploadExternalTableExecutorTest {
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
         final Long sysCn = 1L;
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
 
@@ -338,7 +339,7 @@ class UploadExternalTableExecutorTest {
         DatamartRequest request = new DatamartRequest(queryRequest);
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
         context.getDestinationEntity().setDestination(new HashSet<>(Arrays.asList(SourceType.ADB,

@@ -19,7 +19,7 @@ import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockEnvironment
 import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockStatusReporter;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaParameter;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
-import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.MppwRequest;
 import io.vertx.core.Future;
 import org.apache.avro.Schema;
 import org.junit.jupiter.api.BeforeAll;
@@ -79,7 +79,7 @@ class MppwStartRequestHandlerTest {
                 createMppwProperties(KAFKA),
                 mockReporter, mockInitiator, mppwKafkaRequestFactory);
 
-        MppwPluginRequest request = new MppwPluginRequest(QueryRequest.builder()
+        MppwRequest request = new MppwRequest(QueryRequest.builder()
                 .requestId(UUID.randomUUID())
                 .datamartMnemonic("shares").build(),
                 true, MppwKafkaParameter.builder()
@@ -152,7 +152,7 @@ class MppwStartRequestHandlerTest {
         MppwRequestHandler handler = new MppwStartRequestHandler(executor, ddlProperties, appConfiguration,
                 createMppwProperties(REST),
                 mockReporter, mockInitiator, mppwKafkaRequestFactory);
-        MppwPluginRequest request = new MppwPluginRequest(QueryRequest.builder()
+        MppwRequest request = new MppwRequest(QueryRequest.builder()
                 .requestId(UUID.randomUUID())
                 .sourceType(SourceType.ADQM)
                 .datamartMnemonic("shares").build(),

@@ -3,7 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adg.factory.impl;
 import io.arenadata.dtm.query.execution.plugin.adg.dto.mppw.AdgMppwKafkaContext;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.AdgHelperTableNamesFactory;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.AdgMppwKafkaContextFactory;
-import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 import io.vertx.core.json.JsonObject;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -15,18 +15,18 @@ public class AdgMppwKafkaContextFactoryImpl implements AdgMppwKafkaContextFactor
     private final AdgHelperTableNamesFactory helperTableNamesFactory;
 
     @Override
-    public AdgMppwKafkaContext create(MppwPluginRequest request) {
-        val tableName = request.getKafkaParameter().getDestinationTableName();
+    public AdgMppwKafkaContext create(MppwKafkaRequest request) {
+        val tableName = request.getDestinationTableName();
         val helperTableNames = helperTableNamesFactory.create(
                 request.getEnvName(),
-                request.getKafkaParameter().getDatamart(),
+                request.getDatamartMnemonic(),
                 tableName);
         return new AdgMppwKafkaContext(
-                request.getKafkaParameter().getTopic(),
-                request.getKafkaParameter().getSysCn(),
+                request.getTopic(),
+                request.getSysCn(),
                 tableName,
                 helperTableNames,
-                new JsonObject(request.getKafkaParameter().getUploadMetadata().getExternalSchema())
+                new JsonObject(request.getUploadMetadata().getExternalSchema())
         );
     }
 }

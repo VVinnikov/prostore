@@ -14,8 +14,8 @@ import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
-import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprPluginRequest;
-import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
@@ -82,13 +82,19 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     }
 
     @Override
-    public Future<QueryResult> mppr(SourceType sourceType, MpprPluginRequest request) {
-        return getPlugin(sourceType).mppr(request);
+    public Future<QueryResult> mppr(SourceType sourceType, RequestMetrics metrics, MpprRequest request) {
+        return executeWithMetrics(sourceType,
+                SqlProcessingType.MPPR,
+                metrics,
+                plugin -> plugin.mppr(request));
     }
 
     @Override
-    public Future<QueryResult> mppw(SourceType sourceType, MppwPluginRequest request) {
-        return getPlugin(sourceType).mppw(request);
+    public Future<QueryResult> mppw(SourceType sourceType, RequestMetrics metrics, MppwRequest request) {
+        return executeWithMetrics(sourceType,
+                SqlProcessingType.MPPW,
+                metrics,
+                plugin -> plugin.mppw(request));
     }
 
     @Override
@@ -100,8 +106,11 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     }
 
     @Override
-    public Future<StatusQueryResult> status(SourceType sourceType, String topic) {
-        return getPlugin(sourceType).status(topic);
+    public Future<StatusQueryResult> status(SourceType sourceType, RequestMetrics metrics, String topic) {
+        return executeWithMetrics(sourceType,
+                SqlProcessingType.STATUS,
+                metrics,
+                plugin -> plugin.status(topic));
     }
 
     @Override

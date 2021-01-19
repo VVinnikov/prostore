@@ -24,10 +24,11 @@ import io.arenadata.dtm.query.execution.core.service.datasource.impl.DataSourceP
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadKafkaExecutor;
 import io.arenadata.dtm.query.execution.core.service.query.CheckColumnTypesService;
 import io.arenadata.dtm.query.execution.core.service.query.impl.CheckColumnTypesServiceImpl;
-import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaParameter;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
-import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
@@ -73,9 +74,12 @@ class UploadKafkaExecutorTest {
     private QueryRequest queryRequest;
     private QueryResult queryResult;
     private Object resultException;
-    private final MppwPluginRequest pluginRequest = new MppwPluginRequest(
-            UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"), "env", "test",
-            true, createKafkaParameter());
+    private final MppwKafkaRequest pluginRequest = MppwKafkaRequest.builder()
+            .requestId(UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"))
+            .envName("env")
+            .datamartMnemonic("test")
+            .isLoadStart(true)
+            .build();
 
     private ZoneId timeZone;
 
@@ -107,7 +111,7 @@ class UploadKafkaExecutorTest {
             EdmlRequestContext edmlRequestContext = createEdmlRequestContext();
 
 
-            final Queue<MppwPluginRequest> mppwContextQueue = new BlockingArrayQueue<>();
+            final Queue<MppwKafkaRequest> mppwContextQueue = new BlockingArrayQueue<>();
             mppwContextQueue.add(pluginRequest);
             mppwContextQueue.add(pluginRequest);
 
@@ -123,9 +127,9 @@ class UploadKafkaExecutorTest {
             when(kafkaProperties.getAdmin()).thenReturn(kafkaAdminProperty);
             when(mppwKafkaRequestFactory.create(edmlRequestContext))
                     .thenReturn(Future.succeededFuture(mppwContextQueue.poll()));
-            when(pluginService.mppw(eq(SourceType.ADB), eq(pluginRequest)))
+            when(pluginService.mppw(eq(SourceType.ADB), any(), eq(pluginRequest)))
                     .thenReturn(Future.succeededFuture());
-            when(pluginService.mppw(eq(SourceType.ADG), eq(pluginRequest)))
+            when(pluginService.mppw(eq(SourceType.ADG), any(), eq(pluginRequest)))
                     .thenReturn(Future.succeededFuture());
 
             Mockito.doAnswer(invocation -> {
@@ -136,7 +140,7 @@ class UploadKafkaExecutorTest {
                     return Future.succeededFuture(adgStatusResultQueue.poll());
                 }
                 return null;
-            }).when(pluginService).status(any(), any());
+            }).when(pluginService).status(any(), any(), any());
 
             Mockito.doAnswer(invocation -> {
                 final SourceType ds = invocation.getArgument(0);
@@ -146,7 +150,7 @@ class UploadKafkaExecutorTest {
                     return Future.succeededFuture(new QueryResult());
                 }
                 return null;
-            }).when(pluginService).mppw(any(), any());
+            }).when(pluginService).mppw(any(), any(), any());
 
             uploadKafkaExecutor.execute(edmlRequestContext)
                     .onComplete(ar -> {
@@ -176,7 +180,7 @@ class UploadKafkaExecutorTest {
 
             EdmlRequestContext edmlRequestContext = createEdmlRequestContext();
 
-            final Queue<MppwPluginRequest> mppwContextQueue = new BlockingArrayQueue<>();
+            final Queue<MppwKafkaRequest> mppwContextQueue = new BlockingArrayQueue<>();
             mppwContextQueue.add(pluginRequest);
             mppwContextQueue.add(pluginRequest);
 
@@ -199,11 +203,11 @@ class UploadKafkaExecutorTest {
                     return Future.succeededFuture(adgStatusResultQueue.poll());
                 }
                 return null;
-            }).when(pluginService).status(any(), any());
+            }).when(pluginService).status(any(), any(), any());
 
             Mockito.doAnswer(invocation -> {
                 final SourceType ds = invocation.getArgument(0);
-                final MppwPluginRequest requestContext = invocation.getArgument(1);
+                final MppwRequest requestContext = invocation.getArgument(1);
                 if (ds.equals(SourceType.ADB) && requestContext.getIsLoadStart()) {
                     return Future.failedFuture(new DtmException("Start mppw error"));
                 } else if (ds.equals(SourceType.ADB) && !requestContext.getIsLoadStart()) {
@@ -212,7 +216,7 @@ class UploadKafkaExecutorTest {
                     return Future.succeededFuture(new QueryResult());
                 }
                 return null;
-            }).when(pluginService).mppw(any(), any());
+            }).when(pluginService).mppw(any(), any(), any());
 
             uploadKafkaExecutor.execute(edmlRequestContext)
                     .onComplete(ar -> {
@@ -244,7 +248,7 @@ class UploadKafkaExecutorTest {
 
             EdmlRequestContext edmlRequestContext = createEdmlRequestContext();
 
-            final Queue<MppwPluginRequest> mppwContextQueue = new BlockingArrayQueue<>();
+            final Queue<MppwKafkaRequest> mppwContextQueue = new BlockingArrayQueue<>();
             mppwContextQueue.add(pluginRequest);
             mppwContextQueue.add(pluginRequest);
 
@@ -270,7 +274,7 @@ class UploadKafkaExecutorTest {
                     return Future.failedFuture(exception);
                 }
                 return null;
-            }).when(pluginService).status(any(), any());
+            }).when(pluginService).status(any(), any(), any());
 
             Mockito.doAnswer(invocation -> {
                 final SourceType ds = invocation.getArgument(0);
@@ -280,7 +284,7 @@ class UploadKafkaExecutorTest {
                     return Future.succeededFuture(new QueryResult());
                 }
                 return null;
-            }).when(pluginService).mppw(any(), any());
+            }).when(pluginService).mppw(any(), any(), any());
 
             uploadKafkaExecutor.execute(edmlRequestContext)
                     .onComplete(ar -> {
@@ -311,7 +315,7 @@ class UploadKafkaExecutorTest {
 
             EdmlRequestContext edmlRequestContext = createEdmlRequestContext();
 
-            final Queue<MppwPluginRequest> mppwContextQueue = new BlockingArrayQueue<>();
+            final Queue<MppwKafkaRequest> mppwContextQueue = new BlockingArrayQueue<>();
             mppwContextQueue.add(pluginRequest);
             mppwContextQueue.add(pluginRequest);
 
@@ -337,7 +341,7 @@ class UploadKafkaExecutorTest {
                     return Future.succeededFuture(adgStatusResultQueue.poll());
                 }
                 return null;
-            }).when(pluginService).status(any(), any());
+            }).when(pluginService).status(any(), any(), any());
 
             Mockito.doAnswer(invocation -> {
                 final SourceType ds = invocation.getArgument(0);
@@ -347,7 +351,7 @@ class UploadKafkaExecutorTest {
                     return Future.succeededFuture(new QueryResult());
                 }
                 return null;
-            }).when(pluginService).mppw(any(), any());
+            }).when(pluginService).mppw(any(), any(), any());
 
             uploadKafkaExecutor.execute(edmlRequestContext)
                     .onComplete(ar -> {
@@ -378,7 +382,7 @@ class UploadKafkaExecutorTest {
 
             EdmlRequestContext edmlRequestContext = createEdmlRequestContext();
 
-            final Queue<MppwPluginRequest> mppwContextQueue = new BlockingArrayQueue<>();
+            final Queue<MppwKafkaRequest> mppwContextQueue = new BlockingArrayQueue<>();
             mppwContextQueue.add(pluginRequest);
             mppwContextQueue.add(pluginRequest);
 
@@ -404,7 +408,7 @@ class UploadKafkaExecutorTest {
                     return Future.succeededFuture(adgStatusResultQueue.poll());
                 }
                 return null;
-            }).when(pluginService).status(any(), any());
+            }).when(pluginService).status(any(), any(), any());
 
             Mockito.doAnswer(invocation -> {
                 final SourceType ds = invocation.getArgument(0);
@@ -414,7 +418,7 @@ class UploadKafkaExecutorTest {
                     return Future.succeededFuture(new QueryResult());
                 }
                 return null;
-            }).when(pluginService).mppw(any(), any());
+            }).when(pluginService).mppw(any(), any(), any());
 
             uploadKafkaExecutor.execute(edmlRequestContext)
                     .onComplete(ar -> {
@@ -445,7 +449,7 @@ class UploadKafkaExecutorTest {
 
             EdmlRequestContext edmlRequestContext = createEdmlRequestContext();
 
-            final Queue<MppwPluginRequest> mppwContextQueue = new BlockingArrayQueue<>();
+            final Queue<MppwKafkaRequest> mppwContextQueue = new BlockingArrayQueue<>();
             mppwContextQueue.add(pluginRequest);
             mppwContextQueue.add(pluginRequest);
 
@@ -471,7 +475,7 @@ class UploadKafkaExecutorTest {
                     return Future.succeededFuture(adgStatusResultQueue.poll());
                 }
                 return null;
-            }).when(pluginService).status(any(), any());
+            }).when(pluginService).status(any(), any(), any());
 
             Mockito.doAnswer(invocation -> {
                 final SourceType ds = invocation.getArgument(0);
@@ -481,7 +485,7 @@ class UploadKafkaExecutorTest {
                     return Future.succeededFuture(new QueryResult());
                 }
                 return null;
-            }).when(pluginService).mppw(any(), any());
+            }).when(pluginService).mppw(any(), any(), any());
 
             uploadKafkaExecutor.execute(edmlRequestContext)
                     .onComplete(ar -> {

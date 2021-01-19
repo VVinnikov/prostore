@@ -7,7 +7,9 @@ import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
+import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
+import io.arenadata.dtm.query.calcite.core.dto.delta.DeltaQueryPreprocessorResponse;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
 import io.arenadata.dtm.query.calcite.core.service.impl.DeltaQueryPreprocessorImpl;
@@ -20,7 +22,7 @@ import io.arenadata.dtm.query.execution.core.service.edml.impl.DownloadKafkaExec
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import io.arenadata.dtm.query.execution.core.service.schema.impl.LogicalSchemaProviderImpl;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
-import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.apache.calcite.sql.SqlInsert;
@@ -79,6 +81,10 @@ class DownloadExternalTableExecutorTest {
             .name("pso")
             .entityType(EntityType.TABLE)
             .build();
+
+        DeltaQueryPreprocessorResponse deltaQueryPreprocessorResponse = mock(DeltaQueryPreprocessorResponse.class);
+        when(deltaQueryPreprocessor.process(any()))
+                .thenReturn(Future.succeededFuture(deltaQueryPreprocessorResponse));
     }
 
     @Test
@@ -92,21 +98,20 @@ class DownloadExternalTableExecutorTest {
         DatamartRequest request = new DatamartRequest(queryRequest);
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
 
-        QueryRequest copyRequest = context.getRequest().getQueryRequest();
-        copyRequest.setDeltaInformations(Collections.emptyList());
 
-        when(logicalSchemaProvider.getSchemaFromQuery(any()))
+        when(logicalSchemaProvider.getSchemaFromQuery(any(), any()))
                 .thenReturn(Future.succeededFuture(schema));
 
-        when(logicalSchemaProvider.getSchemaFromDeltaInformations(any(), any().getDeltaInformations()))
+        when(logicalSchemaProvider.getSchemaFromDeltaInformations(any(), any()))
                 .thenReturn(Future.succeededFuture(schema));
 
+        DeltaQueryPreprocessorResponse deltaQueryPreprocessorResponse = mock(DeltaQueryPreprocessorResponse.class);
         when(deltaQueryPreprocessor.process(any()))
-            .thenReturn(Future.succeededFuture(copyRequest));
+            .thenReturn(Future.succeededFuture(deltaQueryPreprocessorResponse));
 
         when(downloadExecutors.get(0).execute(any()))
                 .thenReturn(Future.succeededFuture(QueryResult.emptyResult()));
@@ -114,7 +119,6 @@ class DownloadExternalTableExecutorTest {
         downloadExternalTableExecutor.execute(context)
                 .onComplete(promise);
         assertTrue(promise.future().succeeded());
-        assertNotNull(context.getRequest().getQueryRequest().getDeltaInformations());
     }
 
     @Test
@@ -128,14 +132,11 @@ class DownloadExternalTableExecutorTest {
         DatamartRequest request = new DatamartRequest(queryRequest);
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
 
-        QueryRequest copyRequest = context.getRequest().getQueryRequest();
-        copyRequest.setDeltaInformations(Collections.emptyList());
-
-        when(logicalSchemaProvider.getSchemaFromQuery(any()))
+        when(logicalSchemaProvider.getSchemaFromQuery(any(), any()))
         .thenReturn(Future.failedFuture(new DtmException("")));
 
         downloadExternalTableExecutor.execute(context)
@@ -154,14 +155,11 @@ class DownloadExternalTableExecutorTest {
         DatamartRequest request = new DatamartRequest(queryRequest);
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
 
-        QueryRequest copyRequest = context.getRequest().getQueryRequest();
-        copyRequest.setDeltaInformations(Collections.emptyList());
-
-        when(logicalSchemaProvider.getSchemaFromQuery(any()))
+        when(logicalSchemaProvider.getSchemaFromQuery(any(), any()))
                 .thenReturn(Future.succeededFuture(schema));
 
         when(deltaQueryPreprocessor.process(any()))
@@ -183,18 +181,12 @@ class DownloadExternalTableExecutorTest {
         DatamartRequest request = new DatamartRequest(queryRequest);
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
 
-        QueryRequest copyRequest = context.getRequest().getQueryRequest();
-        copyRequest.setDeltaInformations(Collections.emptyList());
-
-        when(logicalSchemaProvider.getSchemaFromQuery(any()))
+        when(logicalSchemaProvider.getSchemaFromQuery(any(), any()))
                 .thenReturn(Future.succeededFuture(schema));
-
-        when(deltaQueryPreprocessor.process(any()))
-            .thenReturn(Future.succeededFuture(copyRequest));
 
         when(downloadExecutors.get(0).execute(any()))
                 .thenReturn(Future.failedFuture(new DtmException("")));

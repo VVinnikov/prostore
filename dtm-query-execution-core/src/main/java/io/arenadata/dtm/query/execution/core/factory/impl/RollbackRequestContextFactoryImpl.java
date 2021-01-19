@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.core.factory.impl;
 
 import io.arenadata.dtm.query.execution.core.factory.RollbackRequestContextFactory;
-import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.RollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import org.springframework.stereotype.Component;

@@ -7,7 +7,8 @@ import io.arenadata.dtm.query.execution.plugin.adb.factory.impl.MetadataSqlFacto
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.MppwTopic;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
-import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
@@ -39,7 +40,7 @@ public class AdbMppwStopRequestExecutorImpl implements AdbMppwRequestExecutor {
     }
 
     @Override
-    public Future<QueryResult> execute(MppwPluginRequest request) {
+    public Future<QueryResult> execute(MppwKafkaRequest request) {
         return dropExtTable(request)
                 .compose(v -> Future.future((Promise<QueryResult> promise) -> vertx.eventBus().request(
                         MppwTopic.KAFKA_STOP.getValue(),
@@ -55,7 +56,7 @@ public class AdbMppwStopRequestExecutorImpl implements AdbMppwRequestExecutor {
                         })));
     }
 
-    private Future<Void> dropExtTable(MppwPluginRequest request) {
+    private Future<Void> dropExtTable(MppwRequest request) {
         return Future.future(promise -> {
             val table = MetadataSqlFactoryImpl.WRITABLE_EXT_TABLE_PREF +
                     request.getRequestId().toString().replace("-", "_");

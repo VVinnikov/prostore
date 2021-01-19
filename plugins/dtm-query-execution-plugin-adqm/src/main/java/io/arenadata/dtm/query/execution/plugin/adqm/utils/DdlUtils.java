@@ -3,8 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adqm.utils;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaParameter;
-import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
 import io.vertx.core.Future;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -25,29 +24,23 @@ public class DdlUtils {
     private DdlUtils() {
     }
 
-    public static Optional<String> validateRequest(MppwPluginRequest request) {
+    public static Optional<String> validateRequest(MppwRequest request) {
         if (request == null) {
             return Optional.of("MppwRequest should not be null");
         }
 
-        final MppwKafkaParameter kafkaParameter = request.getKafkaParameter();
-        if (kafkaParameter == null) {
-            return Optional.of("MppwRequest.kafkaMppwParameter should not be null");
-        }
-
-        if (request.getKafkaParameter().getUploadMetadata().getExternalSchema() == null) {
+        if (request.getUploadMetadata().getExternalSchema() == null) {
             return Optional.of("MppwRequest.schema should not be null");
         }
 
         return Optional.empty();
     }
 
-    public static String getQualifiedTableName(@NonNull MppwPluginRequest request,
+    public static String getQualifiedTableName(@NonNull MppwRequest request,
                                                @NonNull AppConfiguration appConfiguration) {
-        final MppwKafkaParameter kafkaParameter = request.getKafkaParameter();
 
-        String tableName = kafkaParameter.getDestinationTableName();
-        String schema = kafkaParameter.getDatamart();
+        String tableName = request.getDestinationTableName();
+        String schema = request.getDatamartMnemonic();
         String env = appConfiguration.getSystemName();
         return env + "__" + schema + "." + tableName;
     }

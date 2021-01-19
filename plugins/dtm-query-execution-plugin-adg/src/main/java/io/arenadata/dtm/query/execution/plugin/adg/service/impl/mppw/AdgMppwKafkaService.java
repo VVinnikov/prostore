@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl.mppw;
 
+import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.AdgMppwKafkaProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.dto.mppw.AdgMppwKafkaContext;
@@ -9,8 +10,9 @@ import io.arenadata.dtm.query.execution.plugin.adg.model.callback.params.TtTrans
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.TtSubscriptionKafkaRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.TtTransferDataEtlRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
-import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
-import io.arenadata.dtm.query.execution.plugin.api.service.MppwKafkaService;
+import io.arenadata.dtm.query.execution.plugin.adg.service.AdgMppwExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -23,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service("adgMppwKafkaService")
-public class AdgMppwKafkaService implements MppwKafkaService {
+public class AdgMppwKafkaService implements AdgMppwExecutor {
 
     private final AdgMppwKafkaContextFactory contextFactory;
     private final Map<String, String> initializedLoadingByTopic;
@@ -41,10 +43,10 @@ public class AdgMppwKafkaService implements MppwKafkaService {
     }
 
     @Override
-    public Future<QueryResult> execute(MppwPluginRequest request) {
+    public Future<QueryResult> execute(MppwRequest request) {
         return Future.future(promise -> {
             log.debug("mppw start");
-            val mppwKafkaContext = contextFactory.create(request);
+            val mppwKafkaContext = contextFactory.create((MppwKafkaRequest) request);
             if (request.getIsLoadStart()) {
                 initializeLoading(mppwKafkaContext)
                         .onComplete(promise);
@@ -53,6 +55,11 @@ public class AdgMppwKafkaService implements MppwKafkaService {
                         .onComplete(promise);
             }
         });
+    }
+
+    @Override
+    public ExternalTableLocationType getType() {
+        return ExternalTableLocationType.KAFKA;
     }
 
     private Future<QueryResult> initializeLoading(AdgMppwKafkaContext ctx) {

@@ -3,8 +3,8 @@ package io.arenadata.dtm.query.execution.plugin.adb.factory;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adb.configuration.properties.MppwProperties;
-import io.arenadata.dtm.query.execution.plugin.api.request.MpprRequest;
-import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppr.kafka.MpprKafkaRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 
 import java.util.List;
 
@@ -25,7 +25,7 @@ public interface MetadataSqlFactory {
 
     List<ColumnMetadata> createKeyColumnQueryMetadata();
 
-    String createWritableExtTableSqlQuery(MpprRequest request);
+    String createWritableExtTableSqlQuery(MpprKafkaRequest request);
 
     String insertIntoWritableExtTableSqlQuery(String schema, String table, String enrichedSql);
 
@@ -37,7 +37,7 @@ public interface MetadataSqlFactory {
 
     String insertIntoKadbOffsetsSqlQuery(String schema, String table);
 
-    String createExtTableSqlQuery(String server, List<String> columnNameTypeList, MppwPluginRequest request,
+    String createExtTableSqlQuery(String server, List<String> columnNameTypeList, MppwKafkaRequest request,
                                   MppwProperties mppwProperties);
 
     String checkServerSqlQuery(String database, String brokerList);

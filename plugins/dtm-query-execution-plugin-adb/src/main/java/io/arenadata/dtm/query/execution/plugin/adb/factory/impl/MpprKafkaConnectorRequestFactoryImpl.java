@@ -1,11 +1,10 @@
 package io.arenadata.dtm.query.execution.plugin.adb.factory.impl;
 
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.MpprKafkaConnectorRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.MpprKafkaConnectorRequestFactory;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.kafka.DownloadExternalEntityMetadata;
-import io.arenadata.dtm.query.execution.plugin.api.request.MpprRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppr.kafka.MpprKafkaRequest;
 import lombok.val;
 import org.springframework.stereotype.Component;
 
@@ -13,20 +12,19 @@ import org.springframework.stereotype.Component;
 public class MpprKafkaConnectorRequestFactoryImpl implements MpprKafkaConnectorRequestFactory {
 
     @Override
-    public MpprKafkaConnectorRequest create(MpprRequest mpprRequest,
+    public MpprKafkaConnectorRequest create(MpprKafkaRequest request,
                                             String enrichedQuery) {
-        QueryRequest queryRequest = mpprRequest.getQueryRequest();
         val downloadMetadata =
-                (DownloadExternalEntityMetadata) mpprRequest.getKafkaParameter().getDownloadMetadata();
+                (DownloadExternalEntityMetadata) request.getDownloadMetadata();
         return MpprKafkaConnectorRequest.builder()
                 .table(queryRequest.getSql())
                 .sql(enrichedQuery)
-                .datamart(queryRequest.getDatamartMnemonic())
-                .kafkaBrokers(mpprRequest.getKafkaParameter().getBrokers())
-                .kafkaTopic(mpprRequest.getKafkaParameter().getTopic())
+                .datamart(request.getDatamartMnemonic())
+                .kafkaBrokers(request.getBrokers())
+                .kafkaTopic(request.getTopic())
                 .chunkSize(downloadMetadata.getChunkSize())
                 .avroSchema(downloadMetadata.getExternalSchema())
-                .metadata(mpprRequest.getMetadata())
+                .metadata(request.getMetadata())
                 .sourceType(SourceType.ADB)
                 .build();
     }

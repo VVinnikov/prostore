@@ -2,7 +2,7 @@ package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
 import io.arenadata.dtm.common.post.PostSqlActionType;
 import io.arenadata.dtm.query.execution.core.service.metadata.InformationSchemaService;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.PostExecutor;
 import io.vertx.core.Future;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +20,7 @@ public class UpdateInfoSchemaDdlPostExecutor implements PostExecutor<DdlRequestC
 
     @Override
     public Future<Void> execute(DdlRequestContext context) {
-        return informationSchemaService.update(context.getQuery());
+        return informationSchemaService.update(context.getSqlNode());
     }
 
     @Override

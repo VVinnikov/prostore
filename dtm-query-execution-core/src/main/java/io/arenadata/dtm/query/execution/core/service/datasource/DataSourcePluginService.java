@@ -7,7 +7,6 @@ import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
 import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
@@ -15,6 +14,7 @@ import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprPluginRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.MppwPluginRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
 import io.vertx.core.Future;
@@ -37,10 +37,10 @@ public interface DataSourcePluginService {
      * <p>execute DDL operation</p>
      *
      * @param sourceType Data source type
-     * @param context    DDL context
+     * @param request    DDL context
      * @return future object
      */
-    Future<Void> ddl(SourceType sourceType, DdlRequestContext context);
+    Future<Void> ddl(SourceType sourceType, RequestMetrics metrics, DdlRequest request);
 
     /**
      * <p>execute Low Latency Reading request</p>

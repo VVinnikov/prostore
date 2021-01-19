@@ -19,9 +19,8 @@ import io.arenadata.dtm.query.execution.core.dto.dml.DmlRequestContext;
 import io.arenadata.dtm.query.execution.core.dto.eddl.EddlRequestContext;
 import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.core.factory.RequestContextFactory;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.ConfigRequest;
-import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import lombok.val;
 import org.apache.calcite.sql.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,7 +61,7 @@ public class RequestContextFactoryImpl implements RequestContextFactory<CoreRequ
                     if (node instanceof SqlBaseTruncate) {
                         return new DdlRequestContext(
                                 createRequestMetrics(request),
-                                new DdlRequest(changedQueryRequest),
+                                new DatamartRequest(changedQueryRequest),
                                 node,
                                 sourceType,
                                 envName);
@@ -77,7 +76,7 @@ public class RequestContextFactoryImpl implements RequestContextFactory<CoreRequ
                 default:
                     return new DdlRequestContext(
                             createRequestMetrics(request),
-                            new DdlRequest(changedQueryRequest),
+                            new DatamartRequest(changedQueryRequest),
                             node,
                             sourceType,
                             envName);

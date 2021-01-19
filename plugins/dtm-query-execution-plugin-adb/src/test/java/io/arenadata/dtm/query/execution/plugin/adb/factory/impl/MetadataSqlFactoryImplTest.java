@@ -26,7 +26,7 @@ class MetadataSqlFactoryImplTest {
 
     @Test
     void createDropTableScript() {
-        String tableScript = metadataSqlFactory.createDropTableScript(getClassTable());
+        String tableScript = metadataSqlFactory.createDropTableScript(getClassTable().getNameWithSchema());
         assertEquals(EXPECTED_DROP_SCRIPTS, tableScript);
     }
 

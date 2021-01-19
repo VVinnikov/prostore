@@ -5,8 +5,8 @@ import io.arenadata.dtm.cache.service.CaffeineCacheService;
 import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheService;
 import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheServiceImpl;
 import io.arenadata.dtm.common.exception.DtmException;
-import io.arenadata.dtm.common.reader.InformationSchemaView;
 import io.arenadata.dtm.common.model.ddl.Entity;
+import io.arenadata.dtm.common.reader.InformationSchemaView;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
@@ -18,13 +18,13 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.DatamartDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
+import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
 import io.arenadata.dtm.query.execution.core.dto.delta.HotDelta;
 import io.arenadata.dtm.query.execution.core.dto.delta.OkDelta;
-import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
 import io.arenadata.dtm.query.execution.core.service.ddl.impl.DropSchemaDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.impl.MetadataExecutorImpl;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -82,10 +82,8 @@ class DropSchemaDdlExecutorTest {
         queryRequest.setDatamartMnemonic(schema);
         final String dropSchemaSql = "drop database shares";
         queryRequest.setSql(dropSchemaSql);
-        SqlNode dropSchemaQuery = planner.parse(queryRequest.getSql());
-        context = new DdlRequestContext(new DdlRequest(queryRequest));
-        context.getRequest().setQueryRequest(queryRequest);
-        context.setQuery(dropSchemaQuery);
+        SqlNode sqlNode = planner.parse(queryRequest.getSql());
+        context = new DdlRequestContext(null, new DdlRequest(queryRequest), sqlNode, null, null);
         context.setDatamartName(schema);
     }
 

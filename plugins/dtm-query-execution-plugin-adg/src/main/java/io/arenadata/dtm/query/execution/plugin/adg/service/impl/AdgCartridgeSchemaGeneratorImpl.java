@@ -4,8 +4,8 @@ import io.arenadata.dtm.query.execution.plugin.adg.dto.AdgTables;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.OperationYaml;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.AdgSpace;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeSchemaGenerator;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.factory.CreateTableQueriesFactory;
+import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.vertx.core.Future;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,13 +24,13 @@ public class AdgCartridgeSchemaGeneratorImpl implements AdgCartridgeSchemaGenera
     }
 
     @Override
-    public Future<OperationYaml> generate(DdlRequestContext context, OperationYaml yaml) {
+    public Future<OperationYaml> generate(DdlRequest request, OperationYaml yaml) {
         return Future.future(promise -> {
             if (yaml.getSpaces() == null) {
                 yaml.setSpaces(new LinkedHashMap<>());
             }
             val spaces = yaml.getSpaces();
-            AdgTables<AdgSpace> adgCreateTableQueries = createTableQueriesFactory.create(context.getRequest().getEntity(), context.getEnvName());
+            AdgTables<AdgSpace> adgCreateTableQueries = createTableQueriesFactory.create(request.getEntity(), request.getEnvName());
             Stream.of(adgCreateTableQueries.getActual(), adgCreateTableQueries.getHistory(),
                     adgCreateTableQueries.getStaging())
                     .forEach(space -> spaces.put(space.getName(), space.getSpace()));

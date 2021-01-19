@@ -20,13 +20,13 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.Entity
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
-import io.arenadata.dtm.query.execution.core.service.ddl.impl.CreateTableDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.datasource.impl.DataSourcePluginServiceImpl;
+import io.arenadata.dtm.query.execution.core.service.ddl.impl.CreateTableDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.impl.MetadataCalciteGeneratorImpl;
 import io.arenadata.dtm.query.execution.core.service.metadata.impl.MetadataExecutorImpl;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -89,10 +89,8 @@ class CreateTableDdlExecutorTest {
         queryRequest.setRequestId(UUID.randomUUID());
         queryRequest.setDatamartMnemonic(schema);
         queryRequest.setSql("create table accounts (id integer, name varchar(100))");
-        SqlNode query = planner.parse(queryRequest.getSql());
-        context = new DdlRequestContext(new DdlRequest(queryRequest));
-        context.getRequest().setQueryRequest(queryRequest);
-        context.setQuery(query);
+        SqlNode sqlNode = planner.parse(queryRequest.getSql());
+        context = new DdlRequestContext(null, new DdlRequest(queryRequest), sqlNode, null, null);
         EntityField f1 = new EntityField(0, "id", ColumnType.INT, false);
         f1.setPrimaryOrder(1);
         f1.setShardingOrder(1);

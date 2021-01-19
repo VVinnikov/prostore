@@ -1,14 +1,12 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.ddl;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTables;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.factory.CreateTableQueriesFactory;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
+import io.arenadata.dtm.query.execution.plugin.api.service.DdlExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.service.DdlService;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
@@ -33,13 +31,10 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
     }
 
     @Override
-    public Future<Void> execute(DdlRequestContext context, String sqlNodeName) {
+    public Future<Void> execute(DdlRequest request) {
         return Future.future(promise -> {
-            Entity tbl = context.getRequest().getEntity();
-            DdlRequestContext dropCtx = new DdlRequestContext(new DdlRequest(new QueryRequest(), tbl));
-
-            dropTableExecutor.execute(dropCtx, SqlKind.DROP_TABLE.lowerName)
-                    .compose(v -> createTable(context))
+            dropTableExecutor.execute(request)
+                    .compose(v -> createTable(request.getEntity(), request.getEnvName()))
                     .onComplete(promise);
         });
     }
@@ -55,10 +50,8 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
         service.addExecutor(this);
     }
 
-    private Future<Void> createTable(DdlRequestContext context) {
-        AdqmTables<String> createTableQueries =
-                createTableQueriesFactory.create(context.getRequest().getEntity(),
-                        context.getEnvName());
+    private Future<Void> createTable(Entity entity, String envName) {
+        AdqmTables<String> createTableQueries = createTableQueriesFactory.create(entity, envName);
         return databaseExecutor.executeUpdate(createTableQueries.getShard())
                 .compose(v -> databaseExecutor.executeUpdate(createTableQueries.getDistributed()));
     }

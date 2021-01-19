@@ -8,7 +8,7 @@ import io.arenadata.dtm.common.post.PostSqlActionType;
 import io.arenadata.dtm.common.status.StatusEventCode;
 import io.arenadata.dtm.common.status.ddl.DatamartSchemaChangedEvent;
 import io.arenadata.dtm.query.execution.core.configuration.AppConfiguration;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.PostExecutor;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;

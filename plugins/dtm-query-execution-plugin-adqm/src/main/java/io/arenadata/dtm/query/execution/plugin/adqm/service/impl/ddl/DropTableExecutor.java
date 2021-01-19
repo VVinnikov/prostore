@@ -1,12 +1,11 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.ddl;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
-import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
+import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
+import io.arenadata.dtm.query.execution.plugin.api.service.DdlExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.service.DdlService;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
@@ -24,20 +23,17 @@ public class DropTableExecutor implements DdlExecutor<Void> {
 
     private final DatabaseExecutor databaseExecutor;
     private final DdlProperties ddlProperties;
-    private final AppConfiguration appConfiguration;
 
     @Autowired
     public DropTableExecutor(DatabaseExecutor databaseExecutor,
-                             DdlProperties ddlProperties,
-                             AppConfiguration appConfiguration) {
+                             DdlProperties ddlProperties) {
         this.databaseExecutor = databaseExecutor;
         this.ddlProperties = ddlProperties;
-        this.appConfiguration = appConfiguration;
     }
 
     @Override
-    public Future<Void> execute(DdlRequestContext context, String sqlNodeName) {
-        return dropTable(context.getRequest().getEntity());
+    public Future<Void> execute(DdlRequest request) {
+        return dropTable(request.getEnvName(), request.getEntity());
     }
 
     @Override
@@ -51,15 +47,14 @@ public class DropTableExecutor implements DdlExecutor<Void> {
         service.addExecutor(this);
     }
 
-    private Future<Void> dropTable(Entity entity) {
-        String env = appConfiguration.getSystemName();
+    private Future<Void> dropTable(String envName, Entity entity) {
 
         String cluster = ddlProperties.getCluster();
         String schema = entity.getSchema();
         String table = entity.getName();
 
-        String dropShard = String.format(DROP_TABLE_TEMPLATE, env, schema, table + ACTUAL_SHARD_POSTFIX, cluster);
-        String dropDistributed = String.format(DROP_TABLE_TEMPLATE, env, schema, table + ACTUAL_POSTFIX, cluster);
+        String dropShard = String.format(DROP_TABLE_TEMPLATE, envName, schema, table + ACTUAL_SHARD_POSTFIX, cluster);
+        String dropDistributed = String.format(DROP_TABLE_TEMPLATE, envName, schema, table + ACTUAL_POSTFIX, cluster);
 
         return databaseExecutor.executeUpdate(dropDistributed)
                 .compose(v ->

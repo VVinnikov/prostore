@@ -35,7 +35,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -62,8 +61,6 @@ class DownloadExternalTableExecutorTest {
         queryRequest = new QueryRequest();
         queryRequest.setDatamartMnemonic("test");
         queryRequest.setRequestId(UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"));
-
-        when(logicViewReplacer.replace(SELECT_SQL, any())).thenReturn(Future.succeededFuture(SELECT_SQL));
 
         destEntity = Entity.builder()
             .entityType(EntityType.DOWNLOAD_EXTERNAL_TABLE)
@@ -97,7 +94,7 @@ class DownloadExternalTableExecutorTest {
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
-
+        when(logicViewReplacer.replace(any(SqlNode.class), any())).thenReturn(Future.succeededFuture(sqlNode));
         EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
@@ -131,6 +128,7 @@ class DownloadExternalTableExecutorTest {
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
+        when(logicViewReplacer.replace(any(SqlNode.class), any())).thenReturn(Future.succeededFuture(sqlNode));
 
         EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
         context.setDestinationEntity(destEntity);
@@ -154,6 +152,7 @@ class DownloadExternalTableExecutorTest {
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
+        when(logicViewReplacer.replace(any(SqlNode.class), any())).thenReturn(Future.succeededFuture(sqlNode));
 
         EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
         context.setDestinationEntity(destEntity);
@@ -180,6 +179,7 @@ class DownloadExternalTableExecutorTest {
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
+        when(logicViewReplacer.replace(any(SqlNode.class), any())).thenReturn(Future.succeededFuture(sqlNode));
 
         EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
         context.setDestinationEntity(destEntity);

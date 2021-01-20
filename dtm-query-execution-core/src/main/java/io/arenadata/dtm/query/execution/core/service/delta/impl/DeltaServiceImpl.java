@@ -73,7 +73,7 @@ public class DeltaServiceImpl implements DeltaService<QueryResult> {
     }
 
     private Future<DeltaQuery> createDeltaQuery(DeltaRequestContext context) {
-        return Future.future(promise -> deltaQueryFactory.create(context));
+        return Future.future(promise -> promise.complete(deltaQueryFactory.create(context)));
     }
 
     private Future<QueryResult> sendMetricsAndExecute(DeltaRequestContext context, DeltaQuery deltaQuery) {

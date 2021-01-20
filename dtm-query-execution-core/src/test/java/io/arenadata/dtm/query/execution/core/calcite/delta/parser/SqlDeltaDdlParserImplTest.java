@@ -35,9 +35,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class SqlDeltaDdlParserImplTest {
 
-    private CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
-    private CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
-    private SqlParser.Config parserConfig = calciteConfiguration.configEddlParser(
+    private final CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
+    private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
+    private final SqlParser.Config parserConfig = calciteConfiguration.configEddlParser(
             calciteCoreConfiguration.eddlParserImplFactory());
     private SqlDialect sqlDialect;
 

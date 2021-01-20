@@ -34,7 +34,7 @@ class GetDeltaByNumExecutorTest {
     private final DeltaServiceDao deltaServiceDao = mock(DeltaServiceDaoImpl.class);
     private final DeltaQueryResultFactory deltaQueryResultFactory = mock(BeginDeltaQueryResultFactory.class);
     private DeltaExecutor deltaByNumExecutor;
-    private QueryRequest req = new QueryRequest();
+    private final QueryRequest req = new QueryRequest();
     private String datamart;
 
     @BeforeEach

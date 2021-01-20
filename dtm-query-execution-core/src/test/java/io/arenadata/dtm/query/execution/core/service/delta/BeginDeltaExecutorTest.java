@@ -40,7 +40,7 @@ class BeginDeltaExecutorTest {
     private final EvictQueryTemplateCacheServiceImpl evictQueryTemplateCacheService =
             mock(EvictQueryTemplateCacheServiceImpl.class);
     private BeginDeltaExecutor beginDeltaExecutor;
-    private QueryRequest req = new QueryRequest();
+    private final QueryRequest req = new QueryRequest();
     private String datamart;
 
     @BeforeEach

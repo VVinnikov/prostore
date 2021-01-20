@@ -1,9 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl.mppw;
 
 import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
-import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.plugin.exload.Format;
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.AdgConnectorApiProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.AdgMppwKafkaProperties;
@@ -14,7 +12,6 @@ import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.TtLo
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaParameter;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
 import io.vertx.core.Future;

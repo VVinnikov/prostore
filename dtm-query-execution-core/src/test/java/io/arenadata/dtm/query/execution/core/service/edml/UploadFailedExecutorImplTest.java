@@ -21,6 +21,7 @@ import io.arenadata.dtm.query.execution.core.dto.request.RollbackRequest;
 import io.arenadata.dtm.query.execution.core.dto.rollback.RollbackRequestContext;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
+import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -35,147 +36,151 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-//FixMe Test
 class UploadFailedExecutorImplTest {
-//
-//    private final DeltaServiceDao deltaServiceDao = mock(DeltaServiceDaoImpl.class);
-//    private final RollbackRequestContextFactory rollbackRequestContextFactory = mock(RollbackRequestContextFactoryImpl.class);
-//    private final DataSourcePluginService pluginService = mock(DataSourcePluginServiceImpl.class);
-//    private EdmlUploadFailedExecutor uploadFailedExecutor;
-//    private QueryRequest queryRequest;
-//    private Set<SourceType> sourceTypes = new HashSet<>();
-//    private Entity sourceEntity;
-//    private Entity destEntity;
-//
-//    @BeforeEach
-//    void setUp() {
-//        queryRequest = new QueryRequest();
-//        queryRequest.setDatamartMnemonic("test");
-//        queryRequest.setRequestId(UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"));
-//        sourceTypes.addAll(Arrays.asList(SourceType.ADB, SourceType.ADG));
-//        sourceEntity = Entity.builder()
-//                .entityType(EntityType.UPLOAD_EXTERNAL_TABLE)
-//                .externalTableFormat("avro")
-//                .externalTableLocationPath("kafka://kafka-1.dtm.local:9092/topic")
-//                .externalTableLocationType(ExternalTableLocationType.KAFKA)
-//                .externalTableUploadMessageLimit(1000)
-//                .name("upload_table")
-//                .schema("test")
-//                .externalTableSchema("")
-//                .build();
-//        destEntity = Entity.builder()
-//                .entityType(EntityType.TABLE)
-//                .name("pso")
-//                .schema("test")
-//                .destination(sourceTypes)
-//                .build();
-//    }
-//
-//    @Test
-//    void executeSuccess() {
-//        Promise<Void> promise = Promise.promise();
-//        uploadFailedExecutor = new UploadFailedExecutorImpl(deltaServiceDao,
-//                rollbackRequestContextFactory, pluginService);
-//        String selectSql = "(select id, lst_nam FROM test.upload_table)";
-//        String insertSql = "insert into test.pso " + selectSql;
-//        queryRequest.setSql(insertSql);
-//        DatamartRequest request = new DatamartRequest(queryRequest);
-//
-//        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null, "env");
-//        context.setDestinationEntity(destEntity);
-//        context.setSourceEntity(sourceEntity);
-//        context.setSysCn(1L);
-//
-//        final RollbackRequestContext rollbackRequestContext = new RollbackRequestContext(
-//                new RequestMetrics(),
-//                RollbackRequest.builder()
-//                        .queryRequest(context.getRequest().getQueryRequest())
-//                        .datamart(context.getSourceEntity().getName())
-//                        .destinationTable(context.getDestinationEntity().getName())
-//                        .sysCn(context.getSysCn())
-//                        .entity(context.getDestinationEntity())
-//                        .build());
-//
-//        when(rollbackRequestContextFactory.create(any()))
-//                .thenReturn(rollbackRequestContext);
-//
-//        when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
-//
-//        when(pluginService.rollback(any(), any()))
-//                .thenReturn(Future.succeededFuture());
-//
-//        when(deltaServiceDao.deleteWriteOperation(eq(sourceEntity.getSchema()), eq(context.getSysCn())))
-//                .thenReturn(Future.succeededFuture());
-//
-//        uploadFailedExecutor.execute(context)
-//                .onComplete(promise);
-//        assertTrue(promise.future().succeeded());
-//    }
-//
-//    @Test
-//    void executePluginRollbackError() {
-//        Promise<Void> promise = Promise.promise();
-//        uploadFailedExecutor = new UploadFailedExecutorImpl(deltaServiceDao,
-//                rollbackRequestContextFactory, pluginService);
-//        String selectSql = "(select id, lst_nam FROM test.upload_table)";
-//        String insertSql = "insert into test.pso " + selectSql;
-//        queryRequest.setSql(insertSql);
-//        DatamartRequest request = new DatamartRequest(queryRequest);
-//
-//        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null, "env");
-//        context.setDestinationEntity(destEntity);
-//        context.setSourceEntity(sourceEntity);
-//        context.setSysCn(1L);
-//
-//        final RollbackRequestContext rollbackRequestContext = new RollbackRequestContext(
-//                new RequestMetrics(),
-//                RollbackRequest.builder()
-//                        .queryRequest(context.getRequest().getQueryRequest())
-//                        .datamart(context.getSourceEntity().getName())
-//                        .destinationTable(context.getDestinationEntity().getName())
-//                        .sysCn(context.getSysCn())
-//                        .entity(context.getDestinationEntity())
-//                        .build());
-//
-//        when(rollbackRequestContextFactory.create(any()))
-//                .thenReturn(rollbackRequestContext);
-//
-//        when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
-//
-//        when(pluginService.rollback(any(), any()))
-//                .thenReturn(Future.failedFuture(new DtmException("")));
-//
-//        uploadFailedExecutor.execute(context)
-//                .onComplete(promise);
-//        assertTrue(promise.future().failed());
-//        assertTrue(promise.future().cause() instanceof CrashException);
-//    }
-//
-//    @Test
-//    void executeDeleteOperationError() {
-//        Promise<Void> promise = Promise.promise();
-//        uploadFailedExecutor = new UploadFailedExecutorImpl(deltaServiceDao,
-//                rollbackRequestContextFactory, pluginService);
-//        String selectSql = "(select id, lst_nam FROM test.upload_table)";
-//        String insertSql = "insert into test.pso " + selectSql;
-//        queryRequest.setSql(insertSql);
-//        DatamartRequest request = new DatamartRequest(queryRequest);
-//
-//        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null, "env");
-//        context.setDestinationEntity(destEntity);
-//        context.setSourceEntity(sourceEntity);
-//        context.setSysCn(1L);
-//
-//        when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
-//
-//        when(pluginService.rollback(any(), any()))
-//                .thenReturn(Future.succeededFuture());
-//
-//        when(deltaServiceDao.deleteWriteOperation(eq(sourceEntity.getSchema()), eq(context.getSysCn())))
-//                .thenReturn(Future.failedFuture(new DtmException("")));
-//
-//        uploadFailedExecutor.execute(context)
-//                .onComplete(promise);
-//        assertTrue(promise.future().failed());
-//    }
+
+    private final DeltaServiceDao deltaServiceDao = mock(DeltaServiceDaoImpl.class);
+    private final RollbackRequestContextFactory rollbackRequestContextFactory = mock(RollbackRequestContextFactoryImpl.class);
+    private final DataSourcePluginService pluginService = mock(DataSourcePluginServiceImpl.class);
+    private EdmlUploadFailedExecutor uploadFailedExecutor;
+    private QueryRequest queryRequest;
+    private Set<SourceType> sourceTypes = new HashSet<>();
+    private Entity sourceEntity;
+    private Entity destEntity;
+
+    @BeforeEach
+    void setUp() {
+        queryRequest = new QueryRequest();
+        queryRequest.setDatamartMnemonic("test");
+        queryRequest.setRequestId(UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"));
+        sourceTypes.addAll(Arrays.asList(SourceType.ADB, SourceType.ADG));
+        sourceEntity = Entity.builder()
+                .entityType(EntityType.UPLOAD_EXTERNAL_TABLE)
+                .externalTableFormat("avro")
+                .externalTableLocationPath("kafka://kafka-1.dtm.local:9092/topic")
+                .externalTableLocationType(ExternalTableLocationType.KAFKA)
+                .externalTableUploadMessageLimit(1000)
+                .name("upload_table")
+                .schema("test")
+                .externalTableSchema("")
+                .build();
+        destEntity = Entity.builder()
+                .entityType(EntityType.TABLE)
+                .name("pso")
+                .schema("test")
+                .destination(sourceTypes)
+                .build();
+    }
+
+    @Test
+    void executeSuccess() {
+        Promise<Void> promise = Promise.promise();
+        uploadFailedExecutor = new UploadFailedExecutorImpl(deltaServiceDao,
+                rollbackRequestContextFactory, pluginService);
+        String selectSql = "(select id, lst_nam FROM test.upload_table)";
+        String insertSql = "insert into test.pso " + selectSql;
+        queryRequest.setSql(insertSql);
+        DatamartRequest request = new DatamartRequest(queryRequest);
+
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null, "env");
+        context.setDestinationEntity(destEntity);
+        context.setSourceEntity(sourceEntity);
+        context.setSysCn(1L);
+
+        final RollbackRequestContext rollbackRequestContext = new RollbackRequestContext(
+                new RequestMetrics(),
+                "test",
+                RollbackRequest.builder()
+                        .queryRequest(context.getRequest().getQueryRequest())
+                        .datamart(context.getSourceEntity().getName())
+                        .destinationTable(context.getDestinationEntity().getName())
+                        .sysCn(context.getSysCn())
+                        .entity(context.getDestinationEntity())
+                        .build(),
+                mock(SqlNode.class)
+        );
+
+        when(rollbackRequestContextFactory.create(any()))
+                .thenReturn(rollbackRequestContext);
+
+        when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
+
+        when(pluginService.rollback(any(), any(), any()))
+                .thenReturn(Future.succeededFuture());
+
+        when(deltaServiceDao.deleteWriteOperation(eq(sourceEntity.getSchema()), eq(context.getSysCn())))
+                .thenReturn(Future.succeededFuture());
+
+        uploadFailedExecutor.execute(context)
+                .onComplete(promise);
+        assertTrue(promise.future().succeeded());
+    }
+
+    @Test
+    void executePluginRollbackError() {
+        Promise<Void> promise = Promise.promise();
+        uploadFailedExecutor = new UploadFailedExecutorImpl(deltaServiceDao,
+                rollbackRequestContextFactory, pluginService);
+        String selectSql = "(select id, lst_nam FROM test.upload_table)";
+        String insertSql = "insert into test.pso " + selectSql;
+        queryRequest.setSql(insertSql);
+        DatamartRequest request = new DatamartRequest(queryRequest);
+
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null, "env");
+        context.setDestinationEntity(destEntity);
+        context.setSourceEntity(sourceEntity);
+        context.setSysCn(1L);
+        final RollbackRequestContext rollbackRequestContext = new RollbackRequestContext(
+                new RequestMetrics(),
+                "test",
+                RollbackRequest.builder()
+                        .queryRequest(context.getRequest().getQueryRequest())
+                        .datamart(context.getSourceEntity().getName())
+                        .destinationTable(context.getDestinationEntity().getName())
+                        .sysCn(context.getSysCn())
+                        .entity(context.getDestinationEntity())
+                        .build(),
+                mock(SqlNode.class)
+                );
+
+        when(rollbackRequestContextFactory.create(any()))
+                .thenReturn(rollbackRequestContext);
+
+        when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
+
+        when(pluginService.rollback(any(), any(), any()))
+                .thenReturn(Future.failedFuture(new DtmException("")));
+
+        uploadFailedExecutor.execute(context)
+                .onComplete(promise);
+        assertTrue(promise.future().failed());
+        assertTrue(promise.future().cause() instanceof CrashException);
+    }
+
+    @Test
+    void executeDeleteOperationError() {
+        Promise<Void> promise = Promise.promise();
+        uploadFailedExecutor = new UploadFailedExecutorImpl(deltaServiceDao,
+                rollbackRequestContextFactory, pluginService);
+        String selectSql = "(select id, lst_nam FROM test.upload_table)";
+        String insertSql = "insert into test.pso " + selectSql;
+        queryRequest.setSql(insertSql);
+        DatamartRequest request = new DatamartRequest(queryRequest);
+
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null, "env");
+        context.setDestinationEntity(destEntity);
+        context.setSourceEntity(sourceEntity);
+        context.setSysCn(1L);
+
+        when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
+
+        when(pluginService.rollback(any(), any(), any()))
+                .thenReturn(Future.succeededFuture());
+
+        when(deltaServiceDao.deleteWriteOperation(eq(sourceEntity.getSchema()), eq(context.getSysCn())))
+                .thenReturn(Future.failedFuture(new DtmException("")));
+
+        uploadFailedExecutor.execute(context)
+                .onComplete(promise);
+        assertTrue(promise.future().failed());
+    }
 }

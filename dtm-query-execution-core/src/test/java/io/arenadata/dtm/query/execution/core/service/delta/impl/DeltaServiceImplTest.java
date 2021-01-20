@@ -151,6 +151,6 @@ class DeltaServiceImplTest {
         QueryRequest request = new QueryRequest();
         request.setDatamartMnemonic(datamart);
         DatamartRequest datamartRequest = new DatamartRequest(request);
-        return new DeltaRequestContext(new RequestMetrics(), datamartRequest, envName, null);//FIXME
+        return new DeltaRequestContext(new RequestMetrics(), datamartRequest, envName, null);
     }
 }

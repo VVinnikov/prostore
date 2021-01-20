@@ -3,7 +3,6 @@ package io.arenadata.dtm.query.execution.plugin.adg.service.impl.check;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.TarantoolDatabaseProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.impl.AdgCreateTableQueriesFactory;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.impl.AdgTableEntitiesFactory;
@@ -11,6 +10,7 @@ import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.Space;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.adg.service.impl.AdgCartridgeClientImpl;
 import io.arenadata.dtm.query.execution.plugin.adg.utils.TestUtils;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
 import io.arenadata.dtm.query.execution.plugin.api.factory.MetaTableEntityFactory;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
 import io.vertx.core.Future;
@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.AdditionalMatchers;
 
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 import static io.arenadata.dtm.query.execution.plugin.adg.constants.ColumnFields.ACTUAL_POSTFIX;
@@ -29,86 +30,81 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-// FixMe Test
 public class AdgCheckTableServiceTest {
-//    private static final String TEST_COLUMN_NAME = "test_column";
-//    private static final String NOT_TABLE_EXIST = "not_exist_table";
-//    private static final String ENV = "env";
-//    private Entity entity;
-//    private CheckContext checkContext;
-//    private CheckTableService adgCheckTableService;
-//
-//    @BeforeEach
-//    void setUp() {
-//
-//        AdgCartridgeClient adgClient = mock(AdgCartridgeClientImpl.class);
-//        entity = TestUtils.getEntity();
-//        int fieldsCount = entity.getFields().size();
-//        entity.getFields().add(EntityField.builder()
-//                .name(TEST_COLUMN_NAME)
-//                .ordinalPosition(fieldsCount + 1)
-//                .type(ColumnType.BIGINT)
-//                .nullable(true)
-//                .build());
-//
-//        QueryRequest queryRequest = new QueryRequest();
-//        queryRequest.setEnvName(ENV);
-//        queryRequest.setDatamartMnemonic(entity.getSchema());
-//        checkContext = new CheckContext(null, new DatamartRequest(queryRequest), entity);
-//
-//        Map<String, Space> spaces = TestUtils.getSpaces(entity);
-//        when(adgClient.getSpaceDescriptions(eq(spaces.keySet())))
-//                .thenReturn(Future.succeededFuture(spaces));
-//        when(adgClient.getSpaceDescriptions(AdditionalMatchers.not(eq(spaces.keySet()))))
-//                .thenReturn(Future.failedFuture(String.format(CheckTableService.TABLE_NOT_EXIST_ERROR_TEMPLATE,
-//                        NOT_TABLE_EXIST + ACTUAL_POSTFIX)));
-//
-//        adgCheckTableService = new AdgCheckTableService(adgClient,
-//                new AdgCreateTableQueriesFactory(new AdgTableEntitiesFactory(new TarantoolDatabaseProperties())));
-//    }
-//
-//    @Test
-//    void testSuccess() {
-//        assertTrue(adgCheckTableService.check(checkContext).succeeded());
-//    }
-//
-//    @Test
-//    void testTableNotExist() {
-//        entity.setName("not_exist_table");
-//        assertThat(adgCheckTableService.check(checkContext).cause().getMessage(),
-//                containsString(String.format(CheckTableService.TABLE_NOT_EXIST_ERROR_TEMPLATE,
-//                        NOT_TABLE_EXIST + ACTUAL_POSTFIX)));
-//    }
-//
-//    @Test
-//    void testColumnNotExist() {
-//        entity.getFields().add(EntityField.builder()
-//                .name("not_exist_column")
-//                .size(1)
-//                .type(ColumnType.VARCHAR)
-//                .build());
-//        String expectedError = String.format(AdgCheckTableService.COLUMN_NOT_EXIST_ERROR_TEMPLATE,
-//                "not_exist_column");
-//        assertThat(adgCheckTableService.check(checkContext).cause().getMessage(),
-//                containsString(expectedError));
-//    }
-//
-//    @Test
-//    void testDataType() {
-//        String expectedError = String.format(CheckTableService.FIELD_ERROR_TEMPLATE,
-//                MetaTableEntityFactory.DATA_TYPE, "string", "integer");
-//        testColumns(field -> field.setType(ColumnType.VARCHAR), expectedError);
-//
-//    }
-//
-//    private void testColumns(Consumer<EntityField> consumer,
-//                             String expectedError) {
-//        EntityField testColumn = entity.getFields().stream()
-//                .filter(field -> TEST_COLUMN_NAME.equals(field.getName()))
-//                .findAny()
-//                .orElseThrow(RuntimeException::new);
-//        consumer.accept(testColumn);
-//        assertThat(adgCheckTableService.check(checkContext).cause().getMessage(),
-//                containsString(expectedError));
-//    }
+    private static final String TEST_COLUMN_NAME = "test_column";
+    private static final String NOT_TABLE_EXIST = "not_exist_table";
+    private static final String ENV = "env";
+    private Entity entity;
+    private CheckTableRequest checkTableRequest;
+    private CheckTableService adgCheckTableService;
+
+    @BeforeEach
+    void setUp() {
+
+        AdgCartridgeClient adgClient = mock(AdgCartridgeClientImpl.class);
+        entity = TestUtils.getEntity();
+        int fieldsCount = entity.getFields().size();
+        entity.getFields().add(EntityField.builder()
+                .name(TEST_COLUMN_NAME)
+                .ordinalPosition(fieldsCount + 1)
+                .type(ColumnType.BIGINT)
+                .nullable(true)
+                .build());
+        checkTableRequest = new CheckTableRequest(UUID.randomUUID(), ENV, entity.getSchema(), entity);
+
+        Map<String, Space> spaces = TestUtils.getSpaces(entity);
+        when(adgClient.getSpaceDescriptions(eq(spaces.keySet())))
+                .thenReturn(Future.succeededFuture(spaces));
+        when(adgClient.getSpaceDescriptions(AdditionalMatchers.not(eq(spaces.keySet()))))
+                .thenReturn(Future.failedFuture(String.format(CheckTableService.TABLE_NOT_EXIST_ERROR_TEMPLATE,
+                        NOT_TABLE_EXIST + ACTUAL_POSTFIX)));
+
+        adgCheckTableService = new AdgCheckTableService(adgClient,
+                new AdgCreateTableQueriesFactory(new AdgTableEntitiesFactory(new TarantoolDatabaseProperties())));
+    }
+
+    @Test
+    void testSuccess() {
+        assertTrue(adgCheckTableService.check(checkTableRequest).succeeded());
+    }
+
+    @Test
+    void testTableNotExist() {
+        entity.setName("not_exist_table");
+        assertThat(adgCheckTableService.check(checkTableRequest).cause().getMessage(),
+                containsString(String.format(CheckTableService.TABLE_NOT_EXIST_ERROR_TEMPLATE,
+                        NOT_TABLE_EXIST + ACTUAL_POSTFIX)));
+    }
+
+    @Test
+    void testColumnNotExist() {
+        entity.getFields().add(EntityField.builder()
+                .name("not_exist_column")
+                .size(1)
+                .type(ColumnType.VARCHAR)
+                .build());
+        String expectedError = String.format(AdgCheckTableService.COLUMN_NOT_EXIST_ERROR_TEMPLATE,
+                "not_exist_column");
+        assertThat(adgCheckTableService.check(checkTableRequest).cause().getMessage(),
+                containsString(expectedError));
+    }
+
+    @Test
+    void testDataType() {
+        String expectedError = String.format(CheckTableService.FIELD_ERROR_TEMPLATE,
+                MetaTableEntityFactory.DATA_TYPE, "string", "integer");
+        testColumns(field -> field.setType(ColumnType.VARCHAR), expectedError);
+
+    }
+
+    private void testColumns(Consumer<EntityField> consumer,
+                             String expectedError) {
+        EntityField testColumn = entity.getFields().stream()
+                .filter(field -> TEST_COLUMN_NAME.equals(field.getName()))
+                .findAny()
+                .orElseThrow(RuntimeException::new);
+        consumer.accept(testColumn);
+        assertThat(adgCheckTableService.check(checkTableRequest).cause().getMessage(),
+                containsString(expectedError));
+    }
 }

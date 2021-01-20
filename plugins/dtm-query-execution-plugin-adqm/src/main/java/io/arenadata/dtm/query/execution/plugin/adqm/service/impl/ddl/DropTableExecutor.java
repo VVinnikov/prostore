@@ -53,12 +53,11 @@ public class DropTableExecutor implements DdlExecutor<Void> {
         String schema = entity.getSchema();
         String table = entity.getName();
 
-        String dropShard = String.format(DROP_TABLE_TEMPLATE, envName, schema, table + ACTUAL_SHARD_POSTFIX, cluster);
         String dropDistributed = String.format(DROP_TABLE_TEMPLATE, envName, schema, table + ACTUAL_POSTFIX, cluster);
+        String dropShard = String.format(DROP_TABLE_TEMPLATE, envName, schema, table + ACTUAL_SHARD_POSTFIX, cluster);
 
         return databaseExecutor.executeUpdate(dropDistributed)
-                .compose(v ->
-                        databaseExecutor.executeUpdate(dropShard));
+                .compose(v -> databaseExecutor.executeUpdate(dropShard));
     }
 
 }

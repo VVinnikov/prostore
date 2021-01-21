@@ -23,15 +23,15 @@ public class AdbCheckDataServiceTest {
     @BeforeEach
     void setUp() {
         when(adbQueryExecutor.executeUpdate(any())).thenReturn(Future.succeededFuture());
-        HashMap<String, Object> result = new HashMap<>();
-        result.put("sum", RESULT);
-        result.put("count(1)", RESULT);
-        when(adbQueryExecutor.execute(any(), any()))
-                .thenReturn(Future.succeededFuture(Collections.singletonList(result)));
     }
 
     @Test
     void testCheckByHash() {
+        HashMap<String, Object> result = new HashMap<>();
+        result.put("sum", RESULT);
+        when(adbQueryExecutor.execute(any(), any()))
+                .thenReturn(Future.succeededFuture(Collections.singletonList(result)));
+
         CheckDataByHashInt32Request request = CheckDataByHashInt32Request.builder()
                 .sysCn(1L)
                 .columns(Collections.emptySet())
@@ -50,6 +50,11 @@ public class AdbCheckDataServiceTest {
 
     @Test
     void testCheckByCount() {
+        HashMap<String, Object> result = new HashMap<>();
+        result.put("count(1)", RESULT);
+        when(adbQueryExecutor.execute(any(), any()))
+                .thenReturn(Future.succeededFuture(Collections.singletonList(result)));
+
         CheckDataByCountRequest request = CheckDataByCountRequest.builder()
                 .sysCn(1L)
                 .entity(Entity.builder().build())

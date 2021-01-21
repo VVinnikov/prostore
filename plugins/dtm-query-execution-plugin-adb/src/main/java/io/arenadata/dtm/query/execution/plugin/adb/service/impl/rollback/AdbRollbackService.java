@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
-import java.util.Collections;
 
 @Slf4j
 @Service("adbRollbackService")
@@ -32,9 +31,8 @@ public class AdbRollbackService implements RollbackService<Void> {
     public Future<Void> execute(RollbackRequest request) {
         return Future.future(promise -> {
             val rollbackRequest = rollbackRequestFactory.create(request);
-            adbQueryExecutor.execute(rollbackRequest.getTruncate().getSql(), Collections.emptyList())
-                    .compose(v -> adbQueryExecutor.execute(rollbackRequest.getDeleteFromActual().getSql(),
-                            Collections.emptyList()))
+            adbQueryExecutor.executeUpdate(rollbackRequest.getTruncate().getSql())
+                    .compose(v -> adbQueryExecutor.executeUpdate(rollbackRequest.getDeleteFromActual().getSql()))
                     .compose(v -> adbQueryExecutor.executeInTransaction(
                             Arrays.asList(rollbackRequest.getInsert(), rollbackRequest.getDeleteFromHistory())
                     ))

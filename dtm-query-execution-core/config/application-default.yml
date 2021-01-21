@@ -41,16 +41,7 @@ core:
       session-timeout-ms: ${ZOOKEEPER_DS_SESSION_TIMEOUT_MS:86400000}
       chroot: ${ZOOKEEPER_DS_CHROOT:/adtm}
 
-  vertx:
-    pool:
-      task-pool: 10
-      task-timeout: 86400000
-
   kafka:
-    producer:
-      property:
-        key.serializer: org.apache.kafka.common.serialization.StringSerializer
-        value.serializer: org.apache.kafka.common.serialization.StringSerializer
     cluster:
       zookeeper:
         connection-string: ${ZOOKEEPER_KAFKA_ADDRESS:10.92.3.31}
@@ -61,7 +52,6 @@ core:
       inputStreamTimeoutMs: ${KAFKA_INPUT_STREAM_TIMEOUT_MS:2000}
     status.event.publish:
       enabled: false
-      topic: status.event
     statusMonitorUrl: ${STATUS_MONITOR_URL:http://127.0.0.1:9095/status}
 
   cache:
@@ -104,8 +94,6 @@ adg:
       maxNumberOfMessagesPerPartition: ${ADG_MAX_MSG_PER_PARTITION:200}
       callbackFunctionSecIdle: ${ADG_CB_FUNC_IDLE:100}
 
-  rollback:
-    eraseOperationBatchSize: 300
 
   circuitbreaker:
     maxFailures: 5
@@ -113,8 +101,6 @@ adg:
     fallbackOnFailure: false
     resetTimeout: 10000
 
-  web-client:
-    max-pool-size: ${ADG_WEB_CLIENT_MAX_POOL_SIZE:100}
 
 adqm:
   datasource:

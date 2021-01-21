@@ -5,7 +5,6 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-@ConfigurationProperties(prefix = "kafka")
 @Component("coreKafkaProperties")
 @Data
 public class KafkaProperties implements KafkaConfig {

@@ -6,7 +6,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
-@ConfigurationProperties("liquibase")
 @Component
 @Data
 public class LiquibaseProperties {

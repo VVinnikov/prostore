@@ -107,6 +107,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                 sourceRequest.setMetadata(queryTemplateValue.getMetadata());
                 sourceRequest.setLogicalSchema(queryTemplateValue.getLogicalSchema());
                 sourceRequest.getQueryRequest().setSql(queryTemplateValue.getSql());
+                llrContext.setDeltaInformations(queryTemplateValue.getDeltaInformations());
                 promise.complete();
             } else {
                 initRequestAttributes(llrContext)

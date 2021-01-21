@@ -19,7 +19,6 @@ import java.util.UUID;
 
 @Service("coreCheckService")
 public class CheckServiceImpl implements CheckService {
-    private static final String CHECK_RESULT_COLUMN_NAME = "check_result";
     private final Map<CheckType, CheckExecutor> executorMap;
 
     public CheckServiceImpl() {

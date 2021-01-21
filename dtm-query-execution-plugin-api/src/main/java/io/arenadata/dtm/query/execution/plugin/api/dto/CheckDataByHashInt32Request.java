@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.api.dto;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
+import lombok.Builder;
 import lombok.Getter;
 
 import java.util.Set;
@@ -12,6 +13,7 @@ public class CheckDataByHashInt32Request extends PluginRequest {
     private final Long sysCn;
     private final Set<String> columns;
 
+    @Builder
     public CheckDataByHashInt32Request(Entity entity,
                                        Long sysCn,
                                        Set<String> columns,

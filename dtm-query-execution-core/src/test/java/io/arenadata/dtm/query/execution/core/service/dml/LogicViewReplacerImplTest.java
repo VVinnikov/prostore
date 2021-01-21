@@ -20,7 +20,6 @@ import lombok.val;
 import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.concurrent.TimeUnit;
 
@@ -96,8 +95,7 @@ class LogicViewReplacerImplTest {
     @SuppressWarnings("unchecked")
     void withoutJoin() throws InterruptedException {
         val testContext = new VertxTestContext();
-        Mockito
-                .when(entityDao.getEntity(any(), any()))
+        when(entityDao.getEntity(any(), any()))
                 .thenReturn(
                         Future.succeededFuture(Entity.builder()
                                 .entityType(EntityType.VIEW)
@@ -131,7 +129,7 @@ class LogicViewReplacerImplTest {
     void withDatamart() throws InterruptedException {
         val testContext = new VertxTestContext();
 
-        Mockito.when(entityDao.getEntity(any(), any()))
+        when(entityDao.getEntity(any(), any()))
                 .thenReturn(Future.succeededFuture(Entity.builder()
                                 .entityType(EntityType.VIEW)
                                 .name("view")
@@ -165,7 +163,7 @@ class LogicViewReplacerImplTest {
     void withoutJoin_withoutAlias() throws InterruptedException {
         val testContext = new VertxTestContext();
 
-        Mockito.when(entityDao.getEntity(any(), any()))
+        when(entityDao.getEntity(any(), any()))
                 .thenReturn(Future.succeededFuture(Entity.builder()
                                 .entityType(EntityType.VIEW)
                                 .name("view")
@@ -199,8 +197,7 @@ class LogicViewReplacerImplTest {
     void withJoin() throws InterruptedException {
         val testContext = new VertxTestContext();
 
-        Mockito
-                .when(entityDao.getEntity(any(), any()))
+        when(entityDao.getEntity(any(), any()))
                 .thenReturn(
                         Future.succeededFuture(Entity.builder()
                                 .entityType(EntityType.TABLE)
@@ -240,7 +237,7 @@ class LogicViewReplacerImplTest {
     void withJoinAndWhere() throws InterruptedException {
         val testContext = new VertxTestContext();
 
-        Mockito.when(entityDao.getEntity(any(), any()))
+        when(entityDao.getEntity(any(), any()))
                 .thenReturn(Future.succeededFuture(Entity.builder()
                                 .entityType(EntityType.TABLE)
                                 .name("tbl")
@@ -290,8 +287,8 @@ class LogicViewReplacerImplTest {
     @SuppressWarnings("unchecked")
     void withJoinAndSelect() throws InterruptedException {
         val testContext = new VertxTestContext();
-        Mockito
-                .when(entityDao.getEntity(any(), any()))
+
+        when(entityDao.getEntity(any(), any()))
                 .thenReturn(
                         Future.succeededFuture(Entity.builder()
                                 .entityType(EntityType.VIEW)
@@ -328,7 +325,7 @@ class LogicViewReplacerImplTest {
     @SuppressWarnings("unchecked")
     void viewInView() throws InterruptedException {
         val testContext = new VertxTestContext();
-        Mockito.when(entityDao.getEntity(any(), any()))
+        when(entityDao.getEntity(any(), any()))
                 .thenReturn(
                         Future.succeededFuture(Entity.builder()
                                 .entityType(EntityType.VIEW)

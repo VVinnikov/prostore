@@ -236,62 +236,55 @@ class UploadKafkaExecutorTest {
 
     @Test
     void executeMppwWithFailedRetrievePluginStatus() {
-        TestSuite suite = TestSuite.create("mppwLoadTest");
         RuntimeException exception = new DtmException("Error getting plugin status: ADB");
-        suite.test("executeMppwWithFailedRetrievePluginStatus", context -> {
-            Async async = context.async();
-            resultException = null;
-            Promise promise = Promise.promise();
-            KafkaAdminProperty kafkaAdminProperty = new KafkaAdminProperty();
-            kafkaAdminProperty.setInputStreamTimeoutMs(inpuStreamTimeoutMs);
+        KafkaAdminProperty kafkaAdminProperty = new KafkaAdminProperty();
+        kafkaAdminProperty.setInputStreamTimeoutMs(inpuStreamTimeoutMs);
 
-            EdmlRequestContext edmlRequestContext = createEdmlRequestContext();
+        EdmlRequestContext edmlRequestContext = createEdmlRequestContext();
 
-            final Queue<MppwKafkaRequest> mppwContextQueue = new BlockingArrayQueue<>();
-            mppwContextQueue.add(pluginRequest);
-            mppwContextQueue.add(pluginRequest);
+        final Queue<MppwKafkaRequest> mppwContextQueue = new BlockingArrayQueue<>();
+        mppwContextQueue.add(pluginRequest);
+        mppwContextQueue.add(pluginRequest);
 
-            final Queue<StatusQueryResult> adbStatusResultQueue = new BlockingArrayQueue<>();
-            final Queue<StatusQueryResult> adgStatusResultQueue = new BlockingArrayQueue<>();
-            initStatusResultQueue(adbStatusResultQueue, 10, 5);
-            initStatusResultQueue(adgStatusResultQueue, 10, 5);
+        final Queue<StatusQueryResult> adbStatusResultQueue = new BlockingArrayQueue<>();
+        final Queue<StatusQueryResult> adgStatusResultQueue = new BlockingArrayQueue<>();
+        initStatusResultQueue(adbStatusResultQueue, 10, 5);
+        initStatusResultQueue(adgStatusResultQueue, 10, 5);
 
-            when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
-            when(edmlProperties.getPluginStatusCheckPeriodMs()).thenReturn(pluginStatusCheckPeriodMs);
-            when(edmlProperties.getFirstOffsetTimeoutMs()).thenReturn(firstOffsetTimeoutMs);
-            when(edmlProperties.getChangeOffsetTimeoutMs()).thenReturn(changeOffsetTimeoutMs);
-            when(kafkaProperties.getAdmin()).thenReturn(kafkaAdminProperty);
+        when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
+        when(edmlProperties.getPluginStatusCheckPeriodMs()).thenReturn(pluginStatusCheckPeriodMs);
+        when(edmlProperties.getFirstOffsetTimeoutMs()).thenReturn(firstOffsetTimeoutMs);
+        when(edmlProperties.getChangeOffsetTimeoutMs()).thenReturn(changeOffsetTimeoutMs);
+        when(kafkaProperties.getAdmin()).thenReturn(kafkaAdminProperty);
 
-            when(mppwKafkaRequestFactory.create(edmlRequestContext))
-                    .thenReturn(Future.succeededFuture(mppwContextQueue.poll()));
+        when(mppwKafkaRequestFactory.create(edmlRequestContext))
+                .thenReturn(Future.succeededFuture(mppwContextQueue.poll()));
 
-            Mockito.doAnswer(invocation -> {
-                final SourceType ds = invocation.getArgument(0);
-                if (ds.equals(SourceType.ADB)) {
-                    return Future.failedFuture(exception);
-                } else if (ds.equals(SourceType.ADG)) {
-                    return Future.failedFuture(exception);
-                }
-                return null;
-            }).when(pluginService).status(any(), any(), any());
+        Mockito.doAnswer(invocation -> {
+            final SourceType ds = invocation.getArgument(0);
+            if (ds.equals(SourceType.ADB)) {
+                return Future.failedFuture(exception);
+            } else if (ds.equals(SourceType.ADG)) {
+                return Future.failedFuture(exception);
+            }
+            return null;
+        }).when(pluginService).status(any(), any(), any());
 
-            Mockito.doAnswer(invocation -> {
-                final SourceType ds = invocation.getArgument(0);
-                if (ds.equals(SourceType.ADB)) {
-                    return Future.succeededFuture(new QueryResult());
-                } else if (ds.equals(SourceType.ADG)) {
-                    return Future.succeededFuture(new QueryResult());
-                }
-                return null;
-            }).when(pluginService).mppw(any(), any(), any());
+        Mockito.doAnswer(invocation -> {
+            final SourceType ds = invocation.getArgument(0);
+            if (ds.equals(SourceType.ADB)) {
+                return Future.succeededFuture(new QueryResult());
+            } else if (ds.equals(SourceType.ADG)) {
+                return Future.succeededFuture(new QueryResult());
+            }
+            return null;
+        }).when(pluginService).mppw(any(), any(), any());
 
-            uploadKafkaExecutor.execute(edmlRequestContext)
-                    .onComplete(ar -> {
-                        assertTrue(ar.failed());
-                        assertEquals(exception.getMessage(), ar.cause().getMessage());
-                    });
-        });
-
+        uploadKafkaExecutor.execute(edmlRequestContext)
+                .onComplete(ar -> {
+                    assertTrue(ar.failed());
+                    assertEquals(exception.getMessage(), ar.cause().getMessage());
+                });
     }
 
     @Test

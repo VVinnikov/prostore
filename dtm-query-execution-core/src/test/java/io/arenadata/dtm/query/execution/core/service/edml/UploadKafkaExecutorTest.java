@@ -48,8 +48,7 @@ import java.time.temporal.ChronoField;
 import java.util.*;
 import java.util.stream.LongStream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -288,19 +287,11 @@ class UploadKafkaExecutorTest {
 
             uploadKafkaExecutor.execute(edmlRequestContext)
                     .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            promise.complete(ar.result());
-                        } else {
-                            resultException = ar.cause();
-                            promise.fail(ar.cause());
-                        }
-                        async.complete();
+                        assertTrue(ar.failed());
+                        assertEquals(exception.getMessage(), ar.cause().getMessage());
                     });
-            async.awaitSuccess();
-            queryResult = (QueryResult) promise.future().result();
         });
-        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
-        assertEquals(exception.toString(), resultException.toString());
+
     }
 
     @Test

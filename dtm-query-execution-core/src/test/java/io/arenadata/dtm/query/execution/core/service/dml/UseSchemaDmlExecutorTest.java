@@ -43,102 +43,104 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-//FixMe Test
 class UseSchemaDmlExecutorTest {
-//
-//    private final CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
-//    private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
-//    private final SqlParser.Config parserConfig = calciteConfiguration.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory());
-//    private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
-//    private final ServiceDbDao serviceDbDao = mock(ServiceDbDaoImpl.class);
-//    private final DatamartDao datamartDao = mock(DatamartDaoImpl.class);
-//    private final ParseQueryUtils parseQueryUtils = mock(ParseQueryUtils.class);
-//    private final MetricsService<RequestMetrics> metricsService = mock(MetricsServiceImpl.class);
-//    private UseSchemaDmlExecutor useSchemaDdlExecutor;
-//    private DmlRequestContext context;
-//    private String schema = "shares";
-//
-//    @BeforeEach
-//    void setUp() throws SqlParseException {
-//        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
-//        FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-//        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
-//        when(serviceDbFacade.getServiceDbDao()).thenReturn(serviceDbDao);
-//        when(serviceDbDao.getDatamartDao()).thenReturn(datamartDao);
-//        when(parseQueryUtils.getDatamartName(anyList())).thenReturn(schema);
-//        useSchemaDdlExecutor = new UseSchemaDmlExecutor(serviceDbFacade, parseQueryUtils, metricsService);
-//        final QueryRequest queryRequest = new QueryRequest();
-//        queryRequest.setRequestId(UUID.randomUUID());
-//        queryRequest.setDatamartMnemonic(schema);
-//        queryRequest.setSql("USE shares");
-//        SqlNode query = planner.parse(queryRequest.getSql());
-//        context = new DmlRequestContext(new RequestMetrics(), new DmlRequest(queryRequest));
-//        context.getRequest().setQueryRequest(queryRequest);
-//    }
-//
-//    @Test
-//    void executeSuccess() {
-//        Promise promise = Promise.promise();
-//        QueryResult result = new QueryResult();
-//        result.setMetadata(Collections.singletonList(
-//                ColumnMetadata.builder()
-//                        .name("schema")
-//                        .systemMetadata(SystemMetadata.SCHEMA)
-//                        .type(ColumnType.VARCHAR).build()));
-//
-//        result.setRequestId(context.getRequest().getQueryRequest().getRequestId());
-//        result.setResult(QueryResultUtils.createResultWithSingleRow(Collections.singletonList("schema"),
-//                Collections.singletonList(schema)));
-//
-//        Mockito.when(datamartDao.existsDatamart(eq(schema)))
-//                .thenReturn(Future.succeededFuture(true));
-//
-//        when(metricsService.sendMetrics(any(), any(), any(), any()))
-//                .thenReturn(ar -> {
-//                    if (ar.succeeded()) {
-//                        promise.complete(result);
-//                    } else {
-//                        promise.fail(ar.cause());
-//                    }
-//                });
-//
-//        useSchemaDdlExecutor.execute(context);
-//        assertEquals(result, promise.future().result());
-//        assertEquals(schema, ((QueryResult) promise.future().result()).getResult().get(0).get("schema"));
-//    }
-//
-//    @Test
-//    void executeDatamartIsNotExists() {
-//        Promise promise = Promise.promise();
-//
-//        Mockito.when(datamartDao.existsDatamart(eq(schema)))
-//                .thenReturn(Future.succeededFuture(false));
-//
-//        when(metricsService.sendMetrics(any(), any(), any(), any()))
-//                .thenReturn(ar -> {
-//                    promise.fail(ar.cause());
-//                });
-//
-//        useSchemaDdlExecutor.execute(context);
-//        assertTrue(promise.future().failed());
-//    }
-//
-//    @Test
-//    void executeIncorrectQuery() {
-//        Promise promise = Promise.promise();
-//
-//        Mockito.when(datamartDao.existsDatamart(eq(schema)))
-//                .thenReturn(Future.failedFuture(new DtmException("")));
-//
-//        when(metricsService.sendMetrics(any(), any(), any(), any())).thenReturn(ar -> {
-//            if (ar.succeeded()) {
-//                promise.complete(null);
-//            } else {
-//                promise.fail(ar.cause());
-//            }
-//        });
-//
-//        useSchemaDdlExecutor.execute(context);
-//        assertTrue(promise.future().failed());
-//    }
+
+    private final CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
+    private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
+    private final SqlParser.Config parserConfig = calciteConfiguration.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory());
+    private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
+    private final ServiceDbDao serviceDbDao = mock(ServiceDbDaoImpl.class);
+    private final DatamartDao datamartDao = mock(DatamartDaoImpl.class);
+    private final ParseQueryUtils parseQueryUtils = mock(ParseQueryUtils.class);
+    private final MetricsService<RequestMetrics> metricsService = mock(MetricsServiceImpl.class);
+    private UseSchemaDmlExecutor useSchemaDdlExecutor;
+    private DmlRequestContext context;
+    private String schema = "shares";
+
+    @BeforeEach
+    void setUp() throws SqlParseException {
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
+        FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
+        when(serviceDbFacade.getServiceDbDao()).thenReturn(serviceDbDao);
+        when(serviceDbDao.getDatamartDao()).thenReturn(datamartDao);
+        when(parseQueryUtils.getDatamartName(anyList())).thenReturn(schema);
+        useSchemaDdlExecutor = new UseSchemaDmlExecutor(serviceDbFacade, parseQueryUtils, metricsService);
+        final QueryRequest queryRequest = new QueryRequest();
+        queryRequest.setRequestId(UUID.randomUUID());
+        queryRequest.setDatamartMnemonic(schema);
+        queryRequest.setSql("USE shares");
+        SqlNode query = planner.parse(queryRequest.getSql());
+        context =  DmlRequestContext.builder()
+                .sqlNode(query)
+                .request(new DmlRequest(queryRequest))
+                .build();
+    }
+
+    @Test
+    void executeSuccess() {
+        Promise promise = Promise.promise();
+        QueryResult result = new QueryResult();
+        result.setMetadata(Collections.singletonList(
+                ColumnMetadata.builder()
+                        .name("schema")
+                        .systemMetadata(SystemMetadata.SCHEMA)
+                        .type(ColumnType.VARCHAR).build()));
+
+        result.setRequestId(context.getRequest().getQueryRequest().getRequestId());
+        result.setResult(QueryResultUtils.createResultWithSingleRow(Collections.singletonList("schema"),
+                Collections.singletonList(schema)));
+
+        Mockito.when(datamartDao.existsDatamart(eq(schema)))
+                .thenReturn(Future.succeededFuture(true));
+
+        when(metricsService.sendMetrics(any(), any(), any(), any()))
+                .thenReturn(ar -> {
+                    if (ar.succeeded()) {
+                        promise.complete(result);
+                    } else {
+                        promise.fail(ar.cause());
+                    }
+                });
+
+        useSchemaDdlExecutor.execute(context)
+                .onComplete(promise);
+        assertEquals(result, promise.future().result());
+        assertEquals(schema, ((QueryResult) promise.future().result()).getResult().get(0).get("schema"));
+    }
+
+    @Test
+    void executeDatamartIsNotExists() {
+        Promise promise = Promise.promise();
+
+        Mockito.when(datamartDao.existsDatamart(eq(schema)))
+                .thenReturn(Future.succeededFuture(false));
+
+        when(metricsService.sendMetrics(any(), any(), any(), any()))
+                .thenReturn(ar -> {
+                    promise.fail(ar.cause());
+                });
+
+        useSchemaDdlExecutor.execute(context);
+        assertTrue(promise.future().failed());
+    }
+
+    @Test
+    void executeIncorrectQuery() {
+        Promise promise = Promise.promise();
+
+        Mockito.when(datamartDao.existsDatamart(eq(schema)))
+                .thenReturn(Future.failedFuture(new DtmException("")));
+
+        when(metricsService.sendMetrics(any(), any(), any(), any())).thenReturn(ar -> {
+            if (ar.succeeded()) {
+                promise.complete(null);
+            } else {
+                promise.fail(ar.cause());
+            }
+        });
+
+        useSchemaDdlExecutor.execute(context);
+        assertTrue(promise.future().failed());
+    }
 }

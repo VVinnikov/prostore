@@ -72,7 +72,7 @@ class InformationSchemaExecutorImplTest {
         entity.setName("test");
         entity.setFields(Collections.emptyList());
         entity.setEntityType(EntityType.TABLE);
-        Datamart datamart = new Datamart("test_datamart", false, Collections.singletonList(new Entity()));
+        Datamart datamart = new Datamart("test_datamart", false, Collections.singletonList(entity));
         sourceRequest.setLogicalSchema(Collections.singletonList(datamart));
 
         informationSchemaExecutor.execute(sourceRequest)

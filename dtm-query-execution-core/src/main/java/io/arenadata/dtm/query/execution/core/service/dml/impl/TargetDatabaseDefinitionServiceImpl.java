@@ -58,6 +58,7 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
                             .queryTemplate(request.getQueryTemplate())
                             .metadata(request.getMetadata())
                             .sourceType(sourceType)
+                            .query(query)
                             .build();
                 });
     }

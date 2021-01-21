@@ -238,7 +238,7 @@ class UploadKafkaExecutorTest {
     @Test
     void executeMppwWithFailedRetrievePluginStatus() {
         TestSuite suite = TestSuite.create("mppwLoadTest");
-        RuntimeException exception = new DtmException("Error getting plugin status: ADG");
+        RuntimeException exception = new DtmException("Error getting plugin status: ADB");
         suite.test("executeMppwWithFailedRetrievePluginStatus", context -> {
             Async async = context.async();
             resultException = null;
@@ -300,7 +300,7 @@ class UploadKafkaExecutorTest {
             queryResult = (QueryResult) promise.future().result();
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
-        assertEquals(resultException.toString(), exception.toString());
+        assertEquals(exception.toString(), resultException.toString());
     }
 
     @Test

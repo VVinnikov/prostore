@@ -7,21 +7,10 @@ import org.springframework.stereotype.Component;
 
 @Component("coreKafkaProperties")
 @Data
-public class KafkaProperties implements KafkaConfig {
-    KafkaConsumerProperty consumer = new KafkaConsumerProperty();
+public class KafkaProperties {
     KafkaProducerProperty producer = new KafkaProducerProperty();
-    KafkaClusterProperty cluster = new KafkaClusterProperty();
     KafkaAdminProperty admin = new KafkaAdminProperty();
 
     private String statusMonitorUrl;
 
-    @Override
-    public KafkaAdminProperty getKafkaAdminProperty() {
-        return admin;
-    }
-
-    @Override
-    public KafkaClusterProperty getKafkaClusterProperty() {
-        return cluster;
-    }
 }

@@ -43,6 +43,10 @@ core:
       chroot: ${ZOOKEEPER_DS_CHROOT:/adtm}
 
   kafka:
+    producer:
+      property:
+        key.serializer: org.apache.kafka.common.serialization.StringSerializer
+        value.serializer: org.apache.kafka.common.serialization.StringSerializer
     cluster:
       zookeeper:
         connection-string: ${ZOOKEEPER_KAFKA_ADDRESS:zk-1.dtm.local}
@@ -53,6 +57,7 @@ core:
       inputStreamTimeoutMs: ${KAFKA_INPUT_STREAM_TIMEOUT_MS:2000}
     status.event.publish:
       enabled: false
+      topic: status.event
     statusMonitorUrl: ${STATUS_MONITOR_URL:http://127.0.0.1:9095/status}
 
   cache:
@@ -95,6 +100,8 @@ adg:
       maxNumberOfMessagesPerPartition: 200
       callbackFunctionSecIdle: 100
 
+  rollback:
+    eraseOperationBatchSize: 300
 
   circuitbreaker:
     maxFailures: 5
@@ -102,6 +109,8 @@ adg:
     fallbackOnFailure: false
     resetTimeout: 10000
 
+  web-client:
+    max-pool-size: ${ADG_WEB_CLIENT_MAX_POOL_SIZE:100}
 
 adqm:
   datasource:
@@ -109,7 +118,8 @@ adqm:
     user: ${ADQM_USERNAME:}
     password: ${ADQM_PASS:}
     hosts: ${ADQM_HOSTS:adqm:8123}
-
+    socketTimeout: ${ADQM_SOCKET_TIMEOUT:30000}
+    dataTransferTimeout: ${ADQM_DATA_TRANSFER_TIMEOUT:10000}
 
   ddl:
     cluster: ${ADQM_CLUSTER:default_cluster}
@@ -129,4 +139,5 @@ adqm:
     restStopLoadUrl: ${ADQM_REST_STOP_LOAD_URL:http://adb-emulator:8090/newdata/adqm/stop}
     restLoadConsumerGroup: ${ADQM_REST_LOAD_GROUP:adb-emulator-load-adqm}
 
-
+  web-client:
+    max-pool-size: ${ADQM_WEB_CLIENT_MAX_POOL_SIZE:100}

@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 
 @Data
 @Component("adgRollbackProperties")
+@ConfigurationProperties(prefix = "adg.rollback")
 public class AdgRollbackProperties {
     private int eraseOperationBatchSize = 300;
 }

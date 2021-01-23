@@ -6,6 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 @Component("coreKafkaProperties")
+@ConfigurationProperties(prefix = "core.kafka")
 @Data
 public class KafkaProperties {
     KafkaProducerProperty producer = new KafkaProducerProperty();

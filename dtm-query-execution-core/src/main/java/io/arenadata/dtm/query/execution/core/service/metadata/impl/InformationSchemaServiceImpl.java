@@ -335,16 +335,11 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
         entities.forEach(entity -> {
             if (EntityType.VIEW.equals(entity.getEntityType())) {
                 viewEntities.add(ddlQueryGenerator.generateCreateViewQuery(entity));
+                commentQueries.addAll(getCommentQueries(entity));
             }
             if (EntityType.TABLE.equals(entity.getEntityType())) {
                 tableEntities.add(ddlQueryGenerator.generateCreateTableQuery(entity));
-                entity.getFields()
-                        .forEach(field -> {
-                            val type = field.getType();
-                            if (needComment(type)) {
-                                commentQueries.add(commentOnColumn(entity.getNameWithSchema(), field.getName(), type.toString()));
-                            }
-                        });
+                commentQueries.addAll(getCommentQueries(entity));
                 val shardingKeyColumns = entity.getFields().stream()
                         .filter(field -> field.getShardingOrder() != null)
                         .map(EntityField::getName)
@@ -355,6 +350,18 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
         return Stream.of(tableEntities, viewEntities, commentQueries, createShardingKeys)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
+    }
+
+    private List<String> getCommentQueries(Entity entity) {
+        List<String> result = new ArrayList<>();
+        entity.getFields()
+                .forEach(field -> {
+                    val type = field.getType();
+                    if (needComment(type)) {
+                        result.add(commentOnColumn(entity.getNameWithSchema(), field.getName(), type.toString()));
+                    }
+                });
+        return result;
     }
 
     private boolean needComment(ColumnType type) {

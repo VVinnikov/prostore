@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.ddl;
 
-import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
+import io.arenadata.dtm.query.execution.plugin.adb.factory.DdlSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.DdlExecutor;
@@ -17,11 +17,11 @@ import org.springframework.stereotype.Component;
 public class CreateSchemaExecutor implements DdlExecutor<Void> {
 
     private final AdbQueryExecutor adbQueryExecutor;
-    private final MetadataSqlFactory sqlFactory;
+    private final DdlSqlFactory sqlFactory;
 
     @Autowired
     public CreateSchemaExecutor(AdbQueryExecutor adbQueryExecutor,
-                                MetadataSqlFactory sqlFactory) {
+                                DdlSqlFactory sqlFactory) {
         this.adbQueryExecutor = adbQueryExecutor;
         this.sqlFactory = sqlFactory;
     }

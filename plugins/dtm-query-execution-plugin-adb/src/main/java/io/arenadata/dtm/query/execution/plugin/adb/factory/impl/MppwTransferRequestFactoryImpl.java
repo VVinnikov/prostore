@@ -11,6 +11,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static io.arenadata.dtm.query.execution.plugin.adb.factory.Constants.SYS_FROM_ATTR;
+import static io.arenadata.dtm.query.execution.plugin.adb.factory.Constants.SYS_TO_ATTR;
+
 @Component
 public class MppwTransferRequestFactoryImpl implements MppwTransferRequestFactory {
 
@@ -32,8 +35,8 @@ public class MppwTransferRequestFactoryImpl implements MppwTransferRequestFactor
     private List<String> getColumnList(MppwRequest request) {
         final List<String> columns = new Schema.Parser().parse(request.getUploadMetadata().getExternalSchema())
                 .getFields().stream().map(Schema.Field::name).collect(Collectors.toList());
-        columns.add(MetadataSqlFactoryImpl.SYS_FROM_ATTR);
-        columns.add(MetadataSqlFactoryImpl.SYS_TO_ATTR);
+        columns.add(SYS_FROM_ATTR);
+        columns.add(SYS_TO_ATTR);
         return columns;
     }
 }

@@ -21,8 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import static io.arenadata.dtm.query.execution.plugin.adb.factory.impl.AdbTableEntitiesFactory.*;
-
+import static io.arenadata.dtm.query.execution.plugin.adb.factory.Constants.*;
 @Slf4j
 @Service("adbLlrService")
 public class AdbLlrService extends QueryResultCacheableLlrService {

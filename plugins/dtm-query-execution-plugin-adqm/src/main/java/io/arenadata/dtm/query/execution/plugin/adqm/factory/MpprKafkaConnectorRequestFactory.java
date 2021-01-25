@@ -4,7 +4,7 @@ import io.arenadata.dtm.query.execution.plugin.adqm.dto.MpprKafkaConnectorReques
 import io.arenadata.dtm.query.execution.plugin.api.mppr.kafka.MpprKafkaRequest;
 
 /**
- * Фабрика создания запросов к mpprConnector
+ * Factory for making requests to  mpprConnector
  */
 public interface MpprKafkaConnectorRequestFactory {
 

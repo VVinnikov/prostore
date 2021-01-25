@@ -2,23 +2,33 @@ package io.arenadata.dtm.query.execution.plugin.adb.factory.impl;
 
 import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
 import io.arenadata.dtm.query.execution.plugin.adb.configuration.properties.MppwProperties;
+import io.arenadata.dtm.query.execution.plugin.adb.factory.KafkaMppwSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.MppwKafkaLoadRequestFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwKafkaLoadRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
 import lombok.val;
 import org.apache.avro.Schema;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static io.arenadata.dtm.query.execution.plugin.adb.factory.Constants.SYS_FROM_ATTR;
+import static io.arenadata.dtm.query.execution.plugin.adb.factory.Constants.SYS_TO_ATTR;
+
 @Component
 public class MppwKafkaLoadRequestFactoryImpl implements MppwKafkaLoadRequestFactory {
 
-    private final List<String> excludeSystemFields = Arrays.asList(MetadataSqlFactoryImpl.SYS_FROM_ATTR,
-            MetadataSqlFactoryImpl.SYS_TO_ATTR);
+    private final List<String> excludeSystemFields = Arrays.asList(SYS_FROM_ATTR, SYS_TO_ATTR);
+    private final KafkaMppwSqlFactory kafkaMppwSqlFactory;
+
+    @Autowired
+    public MppwKafkaLoadRequestFactoryImpl(KafkaMppwSqlFactory kafkaMppwSqlFactory) {
+        this.kafkaMppwSqlFactory = kafkaMppwSqlFactory;
+    }
 
     @Override
     public MppwKafkaLoadRequest create(MppwKafkaRequest request, String server, MppwProperties mppwProperties) {
@@ -29,7 +39,7 @@ public class MppwKafkaLoadRequestFactoryImpl implements MppwKafkaLoadRequestFact
             .requestId(reqId)
             .datamart(request.getDatamartMnemonic())
             .tableName(request.getDestinationTableName())
-            .writableExtTableName(MetadataSqlFactoryImpl.WRITABLE_EXT_TABLE_PREF + reqId)
+            .writableExtTableName(kafkaMppwSqlFactory.getTableName(reqId))
             .columns(getColumns(schema))
             .schema(schema)
             .brokers(request.getBrokers().stream()

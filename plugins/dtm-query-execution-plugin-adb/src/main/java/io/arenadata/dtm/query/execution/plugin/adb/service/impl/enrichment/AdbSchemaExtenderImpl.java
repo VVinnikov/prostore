@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static io.arenadata.dtm.query.execution.plugin.adb.factory.impl.MetadataSqlFactoryImpl.*;
+import static io.arenadata.dtm.query.execution.plugin.adb.factory.Constants.*;
 
 /**
  * Implementing a Logic to Physical Conversion

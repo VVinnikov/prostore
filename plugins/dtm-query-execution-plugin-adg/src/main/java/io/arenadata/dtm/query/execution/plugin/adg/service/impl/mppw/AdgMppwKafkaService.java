@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -48,7 +49,7 @@ public class AdgMppwKafkaService implements AdgMppwExecutor {
             log.debug("mppw start");
             val mppwKafkaContext = contextFactory.create((MppwKafkaRequest) request);
             if (request.getIsLoadStart()) {
-                initializeLoading(mppwKafkaContext)
+                initializeLoading(mppwKafkaContext, request.getSourceEntity().getExternalTableUploadMessageLimit())
                         .onComplete(promise);
             } else {
                 cancelLoadData(mppwKafkaContext)
@@ -62,10 +63,13 @@ public class AdgMppwKafkaService implements AdgMppwExecutor {
         return ExternalTableLocationType.KAFKA;
     }
 
-    private Future<QueryResult> initializeLoading(AdgMppwKafkaContext ctx) {
+    private Future<QueryResult> initializeLoading(AdgMppwKafkaContext ctx, Integer externalTableUploadMessageLimit) {
         if (initializedLoadingByTopic.containsKey(ctx.getTopicName())) {
             return transferData(ctx);
         } else {
+            Long maxNumberOfMessages = Optional.ofNullable(externalTableUploadMessageLimit)
+                    .map(Integer::longValue)
+                    .orElse(properties.getMaxNumberOfMessagesPerPartition());
             return Future.future(promise -> {
                 val callbackFunctionParameter = new TtTransferDataScdCallbackParameter(
                         ctx.getHelperTableNames().getStaging(),
@@ -77,11 +81,11 @@ public class AdgMppwKafkaService implements AdgMppwExecutor {
                 val callbackFunction = new TtTransferDataScdCallbackFunction(
                         properties.getCallbackFunctionName(),
                         callbackFunctionParameter,
-                        properties.getMaxNumberOfMessagesPerPartition(),
+                        maxNumberOfMessages,
                         properties.getCallbackFunctionSecIdle());
 
                 val request = new TtSubscriptionKafkaRequest(
-                        properties.getMaxNumberOfMessagesPerPartition(),
+                        maxNumberOfMessages,
                         null,
                         ctx.getTopicName(),
                         Collections.singletonList(ctx.getHelperTableNames().getStaging()),

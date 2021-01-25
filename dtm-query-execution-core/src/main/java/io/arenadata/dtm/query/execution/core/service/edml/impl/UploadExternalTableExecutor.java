@@ -20,7 +20,6 @@ import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlDialect;
-import org.apache.calcite.sql.SqlNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -160,8 +159,7 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
     private Future<Void> initLogicalSchema(EdmlRequestContext context) {
         return Future.future(promise -> {
             String datamartMnemonic = context.getRequest().getQueryRequest().getDatamartMnemonic();
-            SqlNode dmlSubQuery = context.getDmlSubQuery();
-            logicalSchemaProvider.getSchemaFromQuery(dmlSubQuery, datamartMnemonic)
+            logicalSchemaProvider.getSchemaFromQuery(context.getSqlNode(), datamartMnemonic)
                     .onComplete(ar -> {
                         if (ar.succeeded()) {
                             final List<Datamart> logicalSchema = ar.result();

@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl.mppw;
 
 import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
+import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.plugin.exload.Format;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.AdgConnectorApiProperties;
@@ -46,6 +47,32 @@ class AdgMppwKafkaServiceTest {
                     assertTrue(ar.succeeded());
                     verify(client, VerificationModeFactory.times(1)).subscribe(any());
                     verify(client, VerificationModeFactory.times(0)).cancelSubscription(any());
+                });
+    }
+
+    @Test
+    void testMaxNumberOfMessagesFromEntity() {
+        val context = getRequestContext();
+        long maxNumberOfMessages = 300L;
+        context.getSourceEntity().setExternalTableUploadMessageLimit((int) maxNumberOfMessages);
+        allGoodApiMock();
+        service.execute(context)
+                .onComplete(ar -> {
+                    assertTrue(ar.succeeded());
+                    verify(client, VerificationModeFactory.times(1)).subscribe(
+                            argThat(request -> maxNumberOfMessages == request.getMaxNumberOfMessagesPerPartition()));
+                });
+    }
+
+    @Test
+    void testMaxNumberOfMessagesFromProperties() {
+        val context = getRequestContext();
+        allGoodApiMock();
+        service.execute(context)
+                .onComplete(ar -> {
+                    assertTrue(ar.succeeded());
+                    verify(client, VerificationModeFactory.times(1)).subscribe(
+                            argThat(request -> 200L == request.getMaxNumberOfMessagesPerPartition()));
                 });
     }
 
@@ -179,6 +206,8 @@ class AdgMppwKafkaServiceTest {
                 .datamartMnemonic("test")
                 .isLoadStart(true)
                 .sysCn(1L)
+                .sourceEntity(Entity.builder()
+                        .build())
                 .destinationTableName("tbl1")
                 .uploadMetadata(UploadExternalEntityMetadata.builder()
                         .name("ext_tab")

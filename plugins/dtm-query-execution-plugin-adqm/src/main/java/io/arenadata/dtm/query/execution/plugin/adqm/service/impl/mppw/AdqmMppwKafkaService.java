@@ -2,10 +2,10 @@ package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw;
 
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.reader.QueryResult;
+import io.arenadata.dtm.query.execution.plugin.adqm.service.AdqmMppwExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
-import io.arenadata.dtm.query.execution.plugin.api.service.mppw.MppwExecutor;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +17,7 @@ import java.util.Map;
 
 @Slf4j
 @Service("adqmMppwKafkaService")
-public class AdqmMppwKafkaService implements MppwExecutor {
+public class AdqmMppwKafkaService implements AdqmMppwExecutor {
     private enum LoadType {
         START(true),
         FINISH(false);

@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.core.configuration.vertx;
 
-import io.arenadata.dtm.query.execution.core.service.calcite.CalcitePreloadService;
 import io.arenadata.dtm.query.execution.core.service.metadata.InformationSchemaService;
 import io.arenadata.dtm.query.execution.core.service.rollback.RestoreStateService;
 import io.arenadata.dtm.query.execution.core.verticle.starter.QueryWorkerStarter;
@@ -42,9 +41,7 @@ public class VertxConfiguration implements ApplicationListener<ApplicationReadyE
         val vertx = event.getApplicationContext().getBean("coreVertx", Vertx.class);
         val verticles = event.getApplicationContext().getBeansOfType(Verticle.class);
         val queryWorkerStarter = event.getApplicationContext().getBean(QueryWorkerStarter.class);
-        val calcitePreloadService = event.getApplicationContext().getBean(CalcitePreloadService.class);
         informationSchemaService.createInformationSchemaViews()
-                .compose(v -> calcitePreloadService.preload())
                 .compose(v -> deployVerticle(vertx, verticles.values()))
                 .compose(v -> {
                     restoreStateService.restoreState()

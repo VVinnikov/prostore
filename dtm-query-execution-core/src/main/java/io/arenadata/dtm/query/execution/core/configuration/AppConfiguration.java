@@ -30,10 +30,6 @@ public class AppConfiguration {
         this.environment = environment;
     }
 
-    public Integer httpPort() {
-        return environment.getProperty("core.http.port", Integer.class);
-    }
-
     public String getEnvName() {
         return environment.getProperty("core.env.name", String.class);
     }

@@ -3,8 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppr;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.EnrichQueryRequest;
-import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
-import io.arenadata.dtm.query.execution.plugin.adb.factory.impl.MetadataSqlFactoryImpl;
+import io.arenadata.dtm.query.execution.plugin.adb.factory.KafkaMpprSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.service.AdbMpprExecutor;
 import io.arenadata.dtm.query.execution.plugin.adb.service.QueryEnrichmentService;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
@@ -22,15 +21,15 @@ import org.springframework.stereotype.Service;
 public class AdbMpprKafkaService implements AdbMpprExecutor {
 
     private final QueryEnrichmentService adbQueryEnrichmentService;
-    private final MetadataSqlFactory metadataSqlFactory;
+    private final KafkaMpprSqlFactory kafkampprSqlFactory;
     private final AdbQueryExecutor adbQueryExecutor;
 
     @Autowired
     public AdbMpprKafkaService(QueryEnrichmentService adbQueryEnrichmentService,
-                               MetadataSqlFactory metadataSqlFactory,
+                               KafkaMpprSqlFactory kafkampprSqlFactory,
                                AdbQueryExecutor adbQueryExecutor) {
         this.adbQueryEnrichmentService = adbQueryEnrichmentService;
-        this.metadataSqlFactory = metadataSqlFactory;
+        this.kafkampprSqlFactory = kafkampprSqlFactory;
         this.adbQueryExecutor = adbQueryExecutor;
     }
 
@@ -38,9 +37,8 @@ public class AdbMpprKafkaService implements AdbMpprExecutor {
     public Future<QueryResult> execute(MpprRequest request) {
         return Future.future(promise -> {
             val schema = request.getDatamartMnemonic();
-            val table = MetadataSqlFactoryImpl.WRITABLE_EXTERNAL_TABLE_PREF +
-                    request.getRequestId().toString().replaceAll("-", "_");
-            adbQueryExecutor.executeUpdate(metadataSqlFactory.createWritableExtTableSqlQuery((MpprKafkaRequest) request))
+            val table = kafkampprSqlFactory.getTableName(request.getRequestId().toString());
+            adbQueryExecutor.executeUpdate(kafkampprSqlFactory.createWritableExtTableSqlQuery((MpprKafkaRequest) request))
                     .compose(v -> enrichQuery(request))
                     .compose(enrichedQuery -> insertIntoWritableExtTableSqlQuery(schema, table, enrichedQuery))
                     .compose(v -> dropWritableExtTableSqlQuery(schema, table))
@@ -60,13 +58,13 @@ public class AdbMpprKafkaService implements AdbMpprExecutor {
 
     private Future<Void> dropWritableExtTableSqlQuery(String schema, String table) {
         return adbQueryExecutor.executeUpdate(
-                metadataSqlFactory.dropWritableExtTableSqlQuery(schema,
+                kafkampprSqlFactory.dropWritableExtTableSqlQuery(schema,
                         table));
     }
 
     private Future<Void> insertIntoWritableExtTableSqlQuery(String schema, String table, String sql) {
         return adbQueryExecutor.executeUpdate(
-                metadataSqlFactory.insertIntoWritableExtTableSqlQuery(schema,
+                kafkampprSqlFactory.insertIntoWritableExtTableSqlQuery(schema,
                         table,
                         sql));
     }

@@ -6,10 +6,9 @@ import io.arenadata.dtm.common.plugin.exload.Format;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adb.configuration.properties.MppwProperties;
-import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
+import io.arenadata.dtm.query.execution.plugin.adb.factory.KafkaMppwSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.MppwKafkaLoadRequestFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.MppwTransferRequestFactory;
-import io.arenadata.dtm.query.execution.plugin.adb.factory.impl.MetadataSqlFactoryImpl;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.MppwTopic;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwKafkaLoadRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwKafkaRequestContext;
@@ -32,12 +31,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static io.arenadata.dtm.query.execution.plugin.adb.factory.KafkaMppwSqlFactory.SERVER_NAME_TEMPLATE;
+
 @Component("adbMppwStartRequestExecutor")
 @Slf4j
 public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
 
     private final AdbQueryExecutor adbQueryExecutor;
-    private final MetadataSqlFactory metadataSqlFactory;
+    private final KafkaMppwSqlFactory kafkamppwSqlFactory;
     private final MppwTransferRequestFactory mppwTransferRequestFactory;
     private final MppwKafkaLoadRequestFactory mppwKafkaLoadRequestFactory;
     private final Vertx vertx;
@@ -46,14 +47,14 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
 
     @Autowired
     public AdbMppwStartRequestExecutorImpl(AdbQueryExecutor adbQueryExecutor,
-                                           MetadataSqlFactory metadataSqlFactory,
+                                           KafkaMppwSqlFactory kafkamppwSqlFactory,
                                            MppwTransferRequestFactory mppwTransferRequestFactory,
                                            MppwKafkaLoadRequestFactory mppwKafkaLoadRequestFactory,
                                            @Qualifier("coreVertx") Vertx vertx,
                                            MppwProperties mppwProperties,
                                            @Value("${core.env.name}") String dbName) {
         this.adbQueryExecutor = adbQueryExecutor;
-        this.metadataSqlFactory = metadataSqlFactory;
+        this.kafkamppwSqlFactory = kafkamppwSqlFactory;
         this.mppwTransferRequestFactory = mppwTransferRequestFactory;
         this.mppwKafkaLoadRequestFactory = mppwKafkaLoadRequestFactory;
         this.vertx = vertx;
@@ -89,7 +90,7 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
             val brokersList = brokers.stream()
                     .map(KafkaBrokerInfo::getAddress)
                     .collect(Collectors.joining(","));
-            final String serverSqlQuery = metadataSqlFactory.checkServerSqlQuery(currentDatabase, brokersList);
+            final String serverSqlQuery = kafkamppwSqlFactory.checkServerSqlQuery(currentDatabase, brokersList);
             log.debug("Created check server for mppw query {}", serverSqlQuery);
             adbQueryExecutor.execute(serverSqlQuery, columnMetadata)
                     .compose(result -> {
@@ -104,16 +105,16 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
     }
 
     private Future<String> createServer(String brokersList, String currentDatabase) {
-        return adbQueryExecutor.execute(metadataSqlFactory.createServerSqlQuery(currentDatabase, brokersList), Collections.emptyList())
-                .map(v -> String.format(MetadataSqlFactoryImpl.SERVER_NAME_TEMPLATE, currentDatabase));
+        return adbQueryExecutor.execute(kafkamppwSqlFactory.createServerSqlQuery(currentDatabase, brokersList), Collections.emptyList())
+                .map(v -> String.format(SERVER_NAME_TEMPLATE, currentDatabase));
     }
 
     private Future<String> createWritableExternalTable(String server, MppwKafkaRequest request) {
         return Future.future(promise -> {
             val sourceEntity = request.getSourceEntity();
-            val columns = metadataSqlFactory.getColumnsFromEntity(sourceEntity);
+            val columns = kafkamppwSqlFactory.getColumnsFromEntity(sourceEntity);
             columns.add("sys_op int");
-            adbQueryExecutor.executeUpdate(metadataSqlFactory.createExtTableSqlQuery(server,
+            adbQueryExecutor.executeUpdate(kafkamppwSqlFactory.createExtTableSqlQuery(server,
                     columns,
                     request,
                     mppwProperties))
@@ -129,19 +130,19 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
 
     private Future<Void> moveOffsetsExtTable(MppwKafkaRequest request) {
         val schema = request.getDatamartMnemonic();
-        val table = MetadataSqlFactoryImpl.WRITABLE_EXT_TABLE_PREF + request.getRequestId().toString().replace("-", "_");
-        return adbQueryExecutor.executeUpdate(metadataSqlFactory.insertIntoKadbOffsetsSqlQuery(schema, table))
-                .compose(v -> adbQueryExecutor.executeUpdate(metadataSqlFactory.moveOffsetsExtTableSqlQuery(schema, table)));
+        val table = kafkamppwSqlFactory.getTableName(request.getRequestId().toString());
+        return adbQueryExecutor.executeUpdate(kafkamppwSqlFactory.insertIntoKadbOffsetsSqlQuery(schema, table))
+                .compose(v -> adbQueryExecutor.executeUpdate(kafkamppwSqlFactory.moveOffsetsExtTableSqlQuery(schema, table)));
     }
 
     private Future<MppwKafkaRequestContext> createMppwKafkaRequestContext(MppwKafkaRequest request, String server) {
         return Future.future((Promise<MppwKafkaRequestContext> promise) -> {
             final MppwKafkaLoadRequest mppwKafkaLoadRequest =
                     mppwKafkaLoadRequestFactory.create(request, server, mppwProperties);
-            final String keyColumnsSqlQuery = metadataSqlFactory.createKeyColumnsSqlQuery(
+            final String keyColumnsSqlQuery = kafkamppwSqlFactory.createKeyColumnsSqlQuery(
                     request.getDatamartMnemonic(),
                     request.getDestinationTableName());
-            final List<ColumnMetadata> metadata = metadataSqlFactory.createKeyColumnQueryMetadata();
+            final List<ColumnMetadata> metadata = kafkamppwSqlFactory.createKeyColumnQueryMetadata();
             adbQueryExecutor.execute(keyColumnsSqlQuery, metadata)
                     .onComplete(ar -> {
                         if (ar.succeeded()) {

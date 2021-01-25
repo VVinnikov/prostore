@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.ddl;
 
 import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbTables;
-import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
+import io.arenadata.dtm.query.execution.plugin.adb.factory.DdlSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.factory.CreateTableQueriesFactory;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
@@ -19,13 +19,13 @@ import org.springframework.stereotype.Component;
 public class CreateTableExecutor implements DdlExecutor<Void> {
 
     private final AdbQueryExecutor adbQueryExecutor;
-    private final MetadataSqlFactory sqlFactory;
+    private final DdlSqlFactory sqlFactory;
     private final DropTableExecutor dropTableExecutor;
     private final CreateTableQueriesFactory<AdbTables<String>> createTableQueriesFactory;
 
     @Autowired
     public CreateTableExecutor(AdbQueryExecutor adbQueryExecutor,
-                               MetadataSqlFactory sqlFactory,
+                               DdlSqlFactory sqlFactory,
                                DropTableExecutor dropTableExecutor,
                                CreateTableQueriesFactory<AdbTables<String>> createTableQueriesFactory) {
         this.adbQueryExecutor = adbQueryExecutor;

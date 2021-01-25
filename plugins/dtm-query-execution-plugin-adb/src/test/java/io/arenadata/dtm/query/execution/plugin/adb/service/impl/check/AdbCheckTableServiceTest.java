@@ -22,6 +22,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static io.arenadata.dtm.query.execution.plugin.adb.factory.Constants.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -47,7 +48,7 @@ public class AdbCheckTableServiceTest {
         sysFromAttr.put(AdbMetaTableEntityFactory.CONSTRAINT_TYPE, null);
         sysFromAttr.put(AdbMetaTableEntityFactory.DATETIME_PRECISION, null);
         sysFromAttr.put(AdbMetaTableEntityFactory.ORDINAL_POSITION, null);
-        sysFromAttr.put(AdbMetaTableEntityFactory.COLUMN_NAME, AdbTableEntitiesFactory.SYS_FROM_ATTR);
+        sysFromAttr.put(AdbMetaTableEntityFactory.COLUMN_NAME, SYS_FROM_ATTR);
         sysFromAttr.put(AdbMetaTableEntityFactory.DATA_TYPE, "int8");
         sysFromAttr.put(AdbMetaTableEntityFactory.CHARACTER_MAXIMUM_LENGTH, null);
 
@@ -55,7 +56,7 @@ public class AdbCheckTableServiceTest {
         sysToAttr.put(AdbMetaTableEntityFactory.CONSTRAINT_TYPE, null);
         sysToAttr.put(AdbMetaTableEntityFactory.DATETIME_PRECISION, null);
         sysToAttr.put(AdbMetaTableEntityFactory.ORDINAL_POSITION, null);
-        sysToAttr.put(AdbMetaTableEntityFactory.COLUMN_NAME, AdbTableEntitiesFactory.SYS_TO_ATTR);
+        sysToAttr.put(AdbMetaTableEntityFactory.COLUMN_NAME, SYS_TO_ATTR);
         sysToAttr.put(AdbMetaTableEntityFactory.DATA_TYPE, "int8");
         sysToAttr.put(AdbMetaTableEntityFactory.CHARACTER_MAXIMUM_LENGTH, null);
 
@@ -63,7 +64,7 @@ public class AdbCheckTableServiceTest {
         sysOpAttr.put(AdbMetaTableEntityFactory.CONSTRAINT_TYPE, null);
         sysOpAttr.put(AdbMetaTableEntityFactory.DATETIME_PRECISION, null);
         sysOpAttr.put(AdbMetaTableEntityFactory.ORDINAL_POSITION, null);
-        sysOpAttr.put(AdbMetaTableEntityFactory.COLUMN_NAME, AdbTableEntitiesFactory.SYS_OP_ATTR);
+        sysOpAttr.put(AdbMetaTableEntityFactory.COLUMN_NAME, SYS_OP_ATTR);
         sysOpAttr.put(AdbMetaTableEntityFactory.DATA_TYPE, "int4");
         sysOpAttr.put(AdbMetaTableEntityFactory.CHARACTER_MAXIMUM_LENGTH, null);
 
@@ -71,7 +72,7 @@ public class AdbCheckTableServiceTest {
         PKSysFromAttr.put(AdbMetaTableEntityFactory.CONSTRAINT_TYPE, null);
         PKSysFromAttr.put(AdbMetaTableEntityFactory.DATETIME_PRECISION, null);
         PKSysFromAttr.put(AdbMetaTableEntityFactory.ORDINAL_POSITION, 3);
-        PKSysFromAttr.put(AdbMetaTableEntityFactory.COLUMN_NAME, AdbTableEntitiesFactory.SYS_FROM_ATTR);
+        PKSysFromAttr.put(AdbMetaTableEntityFactory.COLUMN_NAME, SYS_FROM_ATTR);
         PKSysFromAttr.put(AdbMetaTableEntityFactory.DATA_TYPE, "int8");
         PKSysFromAttr.put(AdbMetaTableEntityFactory.CHARACTER_MAXIMUM_LENGTH, null);
 

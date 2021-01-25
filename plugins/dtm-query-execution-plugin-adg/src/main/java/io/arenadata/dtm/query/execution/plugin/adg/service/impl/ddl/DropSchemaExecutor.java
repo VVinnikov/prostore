@@ -31,10 +31,7 @@ public class DropSchemaExecutor implements DdlExecutor<Void> {
     public Future<Void> execute(DdlRequest request) {
         return Future.future(promise -> {
             val prefix = adgHelperTableNamesFactory.getTablePrefix(request.getEnvName(), request.getDatamartMnemonic());
-
-            val catridgeRequest = new TtDeleteTablesWithPrefixRequest(prefix);
-
-            cartridgeClient.executeDeleteSpacesWithPrefixQueued(catridgeRequest)
+            cartridgeClient.executeDeleteSpacesWithPrefixQueued(new TtDeleteTablesWithPrefixRequest(prefix))
                     .onComplete(promise);
         });
     }

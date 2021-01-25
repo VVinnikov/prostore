@@ -1,16 +1,19 @@
 package io.arenadata.dtm.query.execution.core.service.dml.impl;
 
 import io.arenadata.dtm.common.dto.QueryParserRequest;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.InformationSchemaView;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.QuerySourceRequest;
 import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
 import io.arenadata.dtm.query.execution.core.service.dml.InformationSchemaExecutor;
 import io.arenadata.dtm.query.execution.core.service.hsql.HSQLClient;
+import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import lombok.val;
 import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.SqlNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -20,22 +23,37 @@ import java.util.stream.Collectors;
 @Service
 public class InformationSchemaExecutorImpl implements InformationSchemaExecutor {
 
+    private static final String INFORMATION_SCHEMA = "information_schema";
+    private static final String LOGIC_PREFIX = "logic_";
     private final SqlDialect coreSqlDialect;
     private final QueryParserService parserService;
     private final HSQLClient client;
+    private final LogicalSchemaProvider logicalSchemaProvider;
 
     @Autowired
     public InformationSchemaExecutorImpl(HSQLClient client,
                                          @Qualifier("coreSqlDialect") SqlDialect coreSqlDialect,
-                                         @Qualifier("coreCalciteDMLQueryParserService") QueryParserService parserService) {
+                                         @Qualifier("coreCalciteDMLQueryParserService") QueryParserService parserService,
+                                         LogicalSchemaProvider logicalSchemaProvider) {
         this.client = client;
         this.coreSqlDialect = coreSqlDialect;
         this.parserService = parserService;
+        this.logicalSchemaProvider = logicalSchemaProvider;
     }
 
     @Override
     public Future<QueryResult> execute(QuerySourceRequest request) {
-        return executeInternal(request);
+        return isLogicalTableRequest(request.getQuery())
+                .compose(isLogical -> isLogical ? Future.failedFuture(new DtmException("Access to system logical tables is forbidden")) :
+                        executeInternal(request));
+    }
+
+    private Future<Boolean> isLogicalTableRequest(SqlNode query) {
+        return logicalSchemaProvider.getSchemaFromQuery(query, "")
+                .map(datamarts -> datamarts.stream()
+                        .filter(datamart -> INFORMATION_SCHEMA.equals(datamart.getMnemonic().toLowerCase()))
+                        .flatMap(datamart -> datamart.getEntities().stream())
+                        .anyMatch(entity -> entity.getName().toLowerCase().contains(LOGIC_PREFIX)));
     }
 
     private Future<QueryResult> executeInternal(QuerySourceRequest request) {

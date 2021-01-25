@@ -5,7 +5,6 @@ import io.arenadata.dtm.common.cache.QueryTemplateKey;
 import io.arenadata.dtm.common.cache.SourceQueryTemplateValue;
 import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.dto.QueryParserRequest;
-import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.reader.QueryRequest;
@@ -37,8 +36,6 @@ import java.util.List;
 @Component
 public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
 
-    private static final String INFORMATION_SCHEMA = "information_schema";
-    private static final String LOGIC_PREFIX = "logic_";
     private final DataSourcePluginService dataSourcePluginService;
     private final TargetDatabaseDefinitionService targetDatabaseDefinitionService;
     private final DeltaQueryPreprocessor deltaQueryPreprocessor;
@@ -84,25 +81,16 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                 .sourceRequest(sourceRequest)
                 .dmlRequestContext(context)
                 .build();
-        return isLogicalTableRequest(context.getSqlNode())
-                .compose(isLogical -> isLogical ? Future.failedFuture(new DtmException("Access to system logical tables is forbidden")) :
-                        logicViewReplacer.replace(context.getSqlNode(), sourceRequest.getQueryRequest().getDatamartMnemonic())
-                                .map(sqlWithoutViews -> {
-                                    QueryRequest withoutViewsRequest = sourceRequest.getQueryRequest();
-                                    withoutViewsRequest.setSql(sqlWithoutViews.toString());
-                                    context.setSqlNode(sqlWithoutViews);
-                                    return withoutViewsRequest;
-                                }))
-                                .compose(v -> getRequestFromCacheOrInit(llrContext))
-                                .compose(v -> executeRequest(llrContext));
-    }
-
-    private Future<Boolean> isLogicalTableRequest(SqlNode query) {
-        return logicalSchemaProvider.getSchemaFromQuery(query, "")
-                    .map(datamarts -> datamarts.stream()
-                            .filter(datamart -> INFORMATION_SCHEMA.equals(datamart.getMnemonic()))
-                            .flatMap(datamart -> datamart.getEntities().stream())
-                            .anyMatch(entity -> entity.getName().contains(LOGIC_PREFIX)));
+        return logicViewReplacer.replace(context.getSqlNode(),
+                sourceRequest.getQueryRequest().getDatamartMnemonic())
+                .map(sqlWithoutViews -> {
+                    QueryRequest withoutViewsRequest = sourceRequest.getQueryRequest();
+                    withoutViewsRequest.setSql(sqlWithoutViews.toString());
+                    context.setSqlNode(sqlWithoutViews);
+                    return withoutViewsRequest;
+                })
+                .compose(v -> getRequestFromCacheOrInit(llrContext))
+                .compose(v -> executeRequest(llrContext));
     }
 
     private Future<LlrRequestContext> getRequestFromCacheOrInit(LlrRequestContext llrContext) {
@@ -144,6 +132,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
     private Future<LlrRequestContext> initRequestAttributes(LlrRequestContext llrContext) {
         return deltaQueryPreprocessor.process(llrContext.getDmlRequestContext().getSqlNode())
                 .map(preprocessorResponse -> {
+                    QueryRequest queryRequest = llrContext.getSourceRequest().getQueryRequest();
                     llrContext.setDeltaInformations(preprocessorResponse.getDeltaInformations());
                     llrContext.getDmlRequestContext().setSqlNode(preprocessorResponse.getSqlNode());
                     return llrContext;

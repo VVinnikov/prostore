@@ -34,14 +34,9 @@ core:
 
   vertx:
     pool:
-      task-pool: 10
       task-timeout: 86400000
 
   kafka:
-    producer:
-      property:
-        key.serializer: org.apache.kafka.common.serialization.StringSerializer
-        value.serializer: org.apache.kafka.common.serialization.StringSerializer
     cluster:
       zookeeper:
         connection-string: ${ZOOKEEPER_KAFKA_ADDRESS:10.92.3.31}

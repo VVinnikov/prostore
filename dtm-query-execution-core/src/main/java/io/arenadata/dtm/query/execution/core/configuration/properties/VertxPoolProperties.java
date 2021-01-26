@@ -9,6 +9,5 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties("core.vertx.pool")
 @Data
 public class VertxPoolProperties {
-    private Integer taskPool = 10;
     private Long taskTimeout = 864_00_000L;
 }

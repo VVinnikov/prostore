@@ -35,11 +35,6 @@ core:
       chroot: ${ZOOKEEPER_DS_CHROOT:/adtm}
 
   kafka:
-    producer:
-      property:
-        bootstrap.servers: *kafkaUrl
-        key.serializer: org.apache.kafka.common.serialization.StringSerializer
-        value.serializer: org.apache.kafka.common.serialization.StringSerializer
     cluster:
       zookeeper:
         connection-string: ${ZOOKEEPER_KAFKA_ADDRESS:127.0.0.1}

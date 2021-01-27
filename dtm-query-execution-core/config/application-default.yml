@@ -1,6 +1,15 @@
+logging:
+  level:
+    io.arenadata.dtm.query.execution: TRACE
+
 management:
   server:
     port: ${DTM_METRICS_PORT:8080}
+  endpoints:
+    enabled-by-default: true
+    web:
+      exposure:
+        include: info, health, requests
 
 core:
   plugins:
@@ -34,9 +43,14 @@ core:
 
   vertx:
     pool:
+      task-pool: 10
       task-timeout: 86400000
 
   kafka:
+    producer:
+      property:
+        key.serializer: org.apache.kafka.common.serialization.StringSerializer
+        value.serializer: org.apache.kafka.common.serialization.StringSerializer
     cluster:
       zookeeper:
         connection-string: ${ZOOKEEPER_KAFKA_ADDRESS:10.92.3.31}

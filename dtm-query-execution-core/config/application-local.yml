@@ -1,6 +1,16 @@
+logging:
+  level:
+    io.arenadata.dtm.query.execution: ${WRITER_LOG_LEVEL:INFO}
+    org.apache.kafka.clients: ERROR
+
 management:
   server:
     port: ${DTM_METRICS_PORT:8080}
+  endpoints:
+    enabled-by-default: true
+    web:
+      exposure:
+        include: info, health, requests
 
 core:
   plugins:
@@ -33,6 +43,10 @@ core:
       chroot: ${ZOOKEEPER_DS_CHROOT:/adtm}
 
   kafka:
+    producer:
+      property:
+        key.serializer: org.apache.kafka.common.serialization.StringSerializer
+        value.serializer: org.apache.kafka.common.serialization.StringSerializer
     cluster:
       zookeeper:
         connection-string: ${ZOOKEEPER_KAFKA_ADDRESS:zk-1.dtm.local}

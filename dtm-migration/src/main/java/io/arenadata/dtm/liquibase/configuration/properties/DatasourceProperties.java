@@ -5,6 +5,7 @@ import lombok.ToString;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+@ConfigurationProperties("")
 @Component
 @Data
 @ToString

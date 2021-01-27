@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class MppwProperties {
     private String consumerGroup;
+    private String startLoadUrl;
+    private Integer poolSize;
     private long stopTimeoutMs = 864_00_000L;
     private long fdwTimeoutMs = 1000L;
     private long defaultMessageLimit = 100L;

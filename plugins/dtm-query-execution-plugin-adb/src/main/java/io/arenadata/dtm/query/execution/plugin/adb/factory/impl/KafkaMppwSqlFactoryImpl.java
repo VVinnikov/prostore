@@ -21,6 +21,8 @@ import static io.arenadata.dtm.query.execution.plugin.adb.factory.Constants.STAG
 
 @Service("kafkaMppwSqlFactoryImpl")
 public class KafkaMppwSqlFactoryImpl implements KafkaMppwSqlFactory {
+    private static final String COMMIT_OFFSETS = "SELECT kadb.commit_offsets('%s.%s'::regclass::oid)";
+    private static final String SERVER_NAME_TEMPLATE = "FDW_KAFKA_%s";
     private static final String TABLE_POSTFIX_DELIMITER = "_";
     private static final String WRITABLE_EXT_TABLE_PREF = "FDW_EXT_";
     private static final String DELIMITER = ", ";
@@ -79,6 +81,11 @@ public class KafkaMppwSqlFactoryImpl implements KafkaMppwSqlFactory {
     @Override
     public String moveOffsetsExtTableSqlQuery(String schema, String table) {
         return String.format(MOVE_TO_OFFSETS_FOREIGN_TABLE_SQL, schema, table);
+    }
+
+    @Override
+    public String commitOffsetsSqlQuery(String schema, String table) {
+        return String.format(COMMIT_OFFSETS, schema, table);
     }
 
     @Override
@@ -151,5 +158,10 @@ public class KafkaMppwSqlFactoryImpl implements KafkaMppwSqlFactory {
     @Override
     public String getTableName(String requestId) {
         return WRITABLE_EXT_TABLE_PREF + requestId.replace("-", "_");
+    }
+
+    @Override
+    public String getServerName(String database) {
+        return String.format(SERVER_NAME_TEMPLATE, database);
     }
 }

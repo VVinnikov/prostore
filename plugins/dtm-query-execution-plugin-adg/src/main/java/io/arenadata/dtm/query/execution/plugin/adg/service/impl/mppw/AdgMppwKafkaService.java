@@ -7,8 +7,8 @@ import io.arenadata.dtm.query.execution.plugin.adg.dto.mppw.AdgMppwKafkaContext;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.AdgMppwKafkaContextFactory;
 import io.arenadata.dtm.query.execution.plugin.adg.model.callback.function.TtTransferDataScdCallbackFunction;
 import io.arenadata.dtm.query.execution.plugin.adg.model.callback.params.TtTransferDataScdCallbackParameter;
-import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.TtSubscriptionKafkaRequest;
-import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.TtTransferDataEtlRequest;
+import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.AdgSubscriptionKafkaRequest;
+import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.AdgTransferDataEtlRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgMppwExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
@@ -84,7 +84,7 @@ public class AdgMppwKafkaService implements AdgMppwExecutor {
                         maxNumberOfMessages,
                         properties.getCallbackFunctionSecIdle());
 
-                val request = new TtSubscriptionKafkaRequest(
+                val request = new AdgSubscriptionKafkaRequest(
                         maxNumberOfMessages,
                         null,
                         ctx.getTopicName(),
@@ -118,7 +118,7 @@ public class AdgMppwKafkaService implements AdgMppwExecutor {
 
     private Future<QueryResult> transferData(AdgMppwKafkaContext ctx) {
         return Future.future(promise -> {
-            val request = new TtTransferDataEtlRequest(ctx.getHelperTableNames(), ctx.getHotDelta());
+            val request = new AdgTransferDataEtlRequest(ctx.getHelperTableNames(), ctx.getHotDelta());
             cartridgeClient.transferDataToScdTable(request)
                     .onSuccess(result -> {
                                 log.debug("Transfer Data completed by request [{}]", request);

@@ -12,6 +12,7 @@ import io.arenadata.dtm.query.calcite.core.node.SqlTreeNode;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
+import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.exception.table.TableAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.exception.view.EntityAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.exception.view.ViewDisalowedOrDirectiveException;
@@ -77,7 +78,7 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
     }
 
     protected Future<Void> checkViewQuery(DdlRequestContext context) {
-        val datamartName = context.getRequest().getQueryRequest().getDatamartMnemonic();
+        val datamartName = context.getDatamartName();
         val sqlNode = context.getSqlNode();
         return checkSnapshotNotExist(sqlNode)
                 .compose(v -> checkEntitiesType(datamartName, sqlNode));
@@ -136,14 +137,11 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
             final List<Future> entityFutures = getEntitiesFutures(contextDatamartName, sqlNode, nodes);
             CompositeFuture.join(entityFutures)
                     .onSuccess(result -> {
-                        final List<Object> entities = result.list();
-                        entities.forEach(e -> {
-                            final Entity entity = (Entity) e;
-                            if (entity.getEntityType() != EntityType.TABLE) {
-                                promise.fail(new ViewDisalowedOrDirectiveException(
-                                        sqlNode.toSqlString(sqlDialect).getSql()));
-                            }
-                        });
+                        final List<Entity> entities = result.list();
+                        if (entities.stream().anyMatch(entity -> entity.getEntityType() != EntityType.TABLE)) {
+                            promise.fail(new ViewDisalowedOrDirectiveException(
+                                    sqlNode.toSqlString(sqlDialect).getSql()));
+                        }
                         promise.complete();
                     })
                     .onFailure(promise::fail);
@@ -229,6 +227,8 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
             // if there is an exception <entity already exists> and <orReplace> is true
             // then continue
             return null;
+        } else if (error instanceof DatamartNotExistsException) {
+            throw new DatamartNotExistsException(ctx.getViewEntity().getSchema());
         } else {
             throw new EntityAlreadyExistsException(ctx.getViewEntity().getNameWithSchema());
         }

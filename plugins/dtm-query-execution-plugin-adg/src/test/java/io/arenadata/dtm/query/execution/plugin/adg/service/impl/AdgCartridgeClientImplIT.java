@@ -2,7 +2,7 @@ package io.arenadata.dtm.query.execution.plugin.adg.service.impl;
 
 import io.arenadata.dtm.common.service.DeltaService;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.OperationFile;
-import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.TtUploadDataKafkaRequest;
+import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.AdgUploadDataKafkaRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.ResConfig;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.vertx.core.json.JsonObject;
@@ -103,7 +103,7 @@ class AdgCartridgeClientImplIT {
     @Test
     @SneakyThrows
     void uploadData(VertxTestContext testContext) {
-        val request = new TtUploadDataKafkaRequest("select count(*) from employees",
+        val request = new AdgUploadDataKafkaRequest("select count(*) from employees",
                 "test", 1000, new JsonObject(""));
 
         client.uploadData(request)
@@ -120,7 +120,7 @@ class AdgCartridgeClientImplIT {
     @Test
     @SneakyThrows
     void badUploadData(VertxTestContext testContext) {
-        val request = new TtUploadDataKafkaRequest("count(*) from employees",
+        val request = new AdgUploadDataKafkaRequest("count(*) from employees",
                 "test", 1000, new JsonObject(""));
         client.uploadData(request)
                 .onComplete(ar -> {

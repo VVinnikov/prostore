@@ -39,7 +39,7 @@ public class AdbMppwTransferDataHandler implements AdbMppwHandler {
         return Future.future(promise -> {
             val schema = requestContext.getMppwKafkaLoadRequest().getDatamart();
             val table = kafkaMppwSqlFactory.getTableName(requestContext.getMppwKafkaLoadRequest().getRequestId());
-            val commitOffsetsSql = String.format(KafkaMppwSqlFactory.COMMIT_OFFSETS, schema, table);
+            val commitOffsetsSql = kafkaMppwSqlFactory.commitOffsetsSqlQuery(schema, table);
             adbQueryExecutor.executeUpdate(commitOffsetsSql)
                     .onComplete(promise);
         });

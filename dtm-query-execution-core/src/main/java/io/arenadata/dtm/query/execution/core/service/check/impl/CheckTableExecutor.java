@@ -35,7 +35,7 @@ public class CheckTableExecutor implements CheckExecutor {
 
     @Override
     public Future<String> execute(CheckContext context) {
-        String tableName = ((SqlCheckTable) context.getSqlCheckCall()).getTable();
+        String tableName = ((SqlCheckTable) context.getSqlNode()).getTable();
         String datamartMnemonic = context.getRequest().getQueryRequest().getDatamartMnemonic();
         return entityDao.getEntity(datamartMnemonic, tableName)
                 .compose(entity -> {

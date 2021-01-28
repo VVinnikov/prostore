@@ -7,6 +7,6 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class TtDeleteTablesWithPrefixRequest {
-    private String tablePrefix;
+public class AdgDeleteTablesQueueRequest {
+    String batchId;
 }

@@ -149,6 +149,7 @@ class AlterViewDdlExecutorTest {
 
         SqlNode sqlNode = planner.parse(queryRequest.getSql());
         DdlRequestContext context = new DdlRequestContext(null, new DatamartRequest(queryRequest), sqlNode, null, null);
+        context.setDatamartName(schema);
 
         when(columnMetadataService.getColumnMetadata(any()))
                 .thenReturn(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()

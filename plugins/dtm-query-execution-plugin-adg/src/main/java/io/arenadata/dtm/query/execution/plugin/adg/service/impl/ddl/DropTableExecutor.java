@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl.ddl;
 
 import io.arenadata.dtm.query.execution.plugin.adg.factory.AdgHelperTableNamesFactory;
-import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.TtDeleteTablesRequest;
+import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.AdgDeleteTablesRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.DdlExecutor;
@@ -38,7 +38,7 @@ public class DropTableExecutor implements DdlExecutor<Void> {
                     request.getDatamartMnemonic(),
                     request.getEntity().getName());
 
-            val catridgeRequest = new TtDeleteTablesRequest(Arrays.asList(
+            val catridgeRequest = new AdgDeleteTablesRequest(Arrays.asList(
                     tableNames.getStaging(),
                     tableNames.getActual(),
                     tableNames.getHistory()

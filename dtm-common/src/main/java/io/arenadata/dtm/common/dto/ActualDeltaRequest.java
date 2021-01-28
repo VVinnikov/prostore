@@ -18,7 +18,7 @@ public class ActualDeltaRequest {
      */
     private String dateTime;
     /**
-     * Is last uncommited delta
+     * Is last uncommitted delta
      */
-    private boolean isLatestUncommitedDelta;
+    private boolean isLatestUncommittedDelta;
 }

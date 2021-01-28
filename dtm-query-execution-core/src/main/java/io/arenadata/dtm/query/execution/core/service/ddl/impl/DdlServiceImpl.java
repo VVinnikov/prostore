@@ -1,112 +1,85 @@
 package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.QueryResult;
-import io.arenadata.dtm.common.status.StatusEventCode;
-import io.arenadata.dtm.common.status.ddl.DatamartSchemaChangedEvent;
-import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlUseSchema;
-import io.arenadata.dtm.query.execution.core.service.delta.StatusEventPublisher;
-import io.arenadata.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
+import io.arenadata.dtm.query.calcite.core.extension.ddl.truncate.SqlBaseTruncate;
+import io.arenadata.dtm.query.execution.core.utils.ParseQueryUtils;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.ddl.PostSqlActionType;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlPostExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
-import io.vertx.core.AsyncResult;
+import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service("coreDdlService")
-public class DdlServiceImpl implements DdlService<QueryResult>, StatusEventPublisher {
+public class DdlServiceImpl implements DdlService<QueryResult> {
 
-    private final CoreCalciteDefinitionService coreCalciteDefinitionService;
     private final Map<SqlKind, DdlExecutor<QueryResult>> executorMap;
-    private final Vertx vertx;
+    private final Map<PostSqlActionType, DdlPostExecutor> postExecutorMap;
+    private final ParseQueryUtils parseQueryUtils;
 
     @Autowired
-    public DdlServiceImpl(CoreCalciteDefinitionService coreCalciteDefinitionService,
-                          @Qualifier("coreVertx") Vertx vertx) {
-        this.coreCalciteDefinitionService = coreCalciteDefinitionService;
-        this.vertx = vertx;
+    public DdlServiceImpl(ParseQueryUtils parseQueryUtils) {
+        this.parseQueryUtils = parseQueryUtils;
         this.executorMap = new HashMap<>();
+        this.postExecutorMap = new HashMap<>();
     }
 
     @Override
-    public void execute(DdlRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler) {
-        vertx.executeBlocking(it -> {
-            try {
-                SqlNode node = coreCalciteDefinitionService.processingQuery(context.getRequest().getQueryRequest().getSql());
-                it.complete(node);
-            } catch (Exception e) {
-                log.error("Request parsing error", e);
-                it.fail(e);
-            }
-        }, ar -> {
-            if (ar.succeeded()) {
-                execute(context, asyncResultHandler, ar);
+    public Future<QueryResult> execute(DdlRequestContext context) {
+        return getExecutor(context)
+                .compose(executor -> {
+                    context.getPostActions().addAll(executor.getPostActions());
+                    return executor.execute(context,
+                            parseQueryUtils.getDatamartName(context.getSqlCall().getOperandList()));
+                })
+                .map(queryResult -> {
+                    executePostActions(context);//TODO ask about parallel executing of this part
+                    return queryResult;
+                });
+    }
+
+    private Future<DdlExecutor<QueryResult>> getExecutor(DdlRequestContext context) {
+        return Future.future(promise -> {
+            SqlCall sqlCall = getSqlCall(context.getQuery());
+            context.setSqlCall(sqlCall);
+            DdlExecutor<QueryResult> executor = executorMap.get(sqlCall.getKind());
+            if (executor != null) {
+                promise.complete(executor);
             } else {
-                log.debug("Execution error", ar.cause());
-                asyncResultHandler.handle(Future.failedFuture(ar.cause()));
+                promise.fail(new DtmException(String.format("Not supported DDL query type [%s]",
+                        context.getQuery())));
             }
         });
     }
 
-    private void execute(DdlRequestContext context,
-                         Handler<AsyncResult<QueryResult>> handler,
-                         AsyncResult<Object> ar) {
-        try {
-            final SqlCall sqlCall = getSqlCall(ar);
-            if (executorMap.containsKey(sqlCall.getKind())) {
-                executorMap.get(sqlCall.getKind())
-                    .execute(context, getSqlNodeName(sqlCall.getOperandList()), ddlAr -> {
-                        if (ddlAr.succeeded()) {
-                            handler.handle(Future.succeededFuture(ddlAr.result()));
-                            publishStatus(
-                                StatusEventCode.DATAMART_SCHEMA_CHANGED,
-                                context.getDatamartName(),
-                                DatamartSchemaChangedEvent.builder()
-                                    .datamart(context.getDatamartName())
-                                    .changeDateTime(LocalDateTime.now(ZoneOffset.UTC))
-                                    .build()
-                            );
-                        } else {
-                            handler.handle(Future.failedFuture(ddlAr.cause()));
-                        }
-                    });
-            } else {
-                log.error("Not supported DDL query type");
-                handler.handle(Future.failedFuture(String.format("Not supported DDL query type [%s]", context)));
-            }
-        } catch (Exception e) {
-            log.error(e.getMessage());
-            handler.handle(Future.failedFuture(String.format("Not supported request type [%s]", context)));
-        }
+    private void executePostActions(DdlRequestContext context) {
+        CompositeFuture.join(context.getPostActions().stream()
+                .distinct()
+                .map(postType -> Optional.ofNullable(postExecutorMap.get(postType))
+                        .map(postExecutor -> postExecutor.execute(context))
+                        .orElse(Future.failedFuture(new DtmException(String.format("Not supported DDL post executor type [%s]",
+                                postType)))))
+                .collect(Collectors.toList()));
     }
 
-    private SqlCall getSqlCall(AsyncResult<Object> ar) {
-        if (ar.result() instanceof SqlAlter) {
-            return (SqlCall) ar.result();
-        } else if (ar.result() instanceof SqlDdl) {
-            return (SqlCall) ar.result();
-        } else if (ar.result() instanceof SqlUseSchema) {
-            return (SqlCall) ar.result();
+    private SqlCall getSqlCall(SqlNode sqlNode) {
+        if (sqlNode instanceof SqlAlter || sqlNode instanceof SqlDdl || sqlNode instanceof SqlBaseTruncate) {
+            return (SqlCall) sqlNode;
         } else {
-            throw new RuntimeException("Not supported request type");
+            throw new DtmException("Not supported request type");
         }
-    }
-
-    private String getSqlNodeName(List<SqlNode> operandList) {
-        return operandList.stream().filter(t -> t instanceof SqlIdentifier).findFirst().get().toString();
     }
 
     @Override
@@ -115,7 +88,7 @@ public class DdlServiceImpl implements DdlService<QueryResult>, StatusEventPubli
     }
 
     @Override
-    public Vertx getVertx() {
-        return vertx;
+    public void addPostExecutor(DdlPostExecutor executor) {
+        postExecutorMap.put(executor.getPostActionType(), executor);
     }
 }

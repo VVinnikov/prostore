@@ -4,9 +4,11 @@ import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.delta.DeltaInformationResult;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
-import io.arenadata.dtm.query.calcite.core.util.DeltaInformationExtractor;
+import io.arenadata.dtm.query.calcite.core.service.DeltaInformationExtractor;
+import io.arenadata.dtm.query.calcite.core.service.impl.DeltaInformationExtractorImpl;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
-import io.arenadata.dtm.query.execution.core.service.impl.CoreCalciteDefinitionService;
+import io.arenadata.dtm.query.execution.core.configuration.properties.CoreDtmSettings;
+import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDefinitionService;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlDialect;
@@ -14,6 +16,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.junit.jupiter.api.Test;
 
+import java.time.ZoneId;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,6 +30,8 @@ class DefaultDatamartSetterTest {
     private final DefinitionService<SqlNode> definitionService =
             new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
     private final DefaultDatamartSetter datamartSetter = new DefaultDatamartSetter();
+    private final DeltaInformationExtractor deltaInformationExtractor =
+            new DeltaInformationExtractorImpl(new CoreDtmSettings(ZoneId.of("UTC")));
 
     @Test
     void setToSelect() {
@@ -40,7 +45,7 @@ class DefaultDatamartSetterTest {
                 "   group by a.account_id, account_type\n" +
                 ")x";
         String withDatamart = datamartSetter.set(definitionService.processingQuery(sql), "demo").toSqlString(DIALECT).getSql();
-        DeltaInformationResult result = DeltaInformationExtractor.extract(definitionService.processingQuery(withDatamart));
+        DeltaInformationResult result = deltaInformationExtractor.extract(definitionService.processingQuery(withDatamart));
         List<DeltaInformation> deltaInformations = result.getDeltaInformations();
         long countByExpectedSchema = deltaInformations.stream()
                 .filter(d -> d.getSchemaName().equals(EXPECTED_SCHEMA))
@@ -53,7 +58,7 @@ class DefaultDatamartSetterTest {
     void setToSelectWithBetween() {
         val sql = "select * from accounts FOR SYSTEM_TIME AS OF '2020-06-30 16:18:58'";
         String withDatamart = datamartSetter.set(definitionService.processingQuery(sql), "demo").toSqlString(DIALECT).getSql();
-        DeltaInformationResult result = DeltaInformationExtractor.extract(definitionService.processingQuery(withDatamart));
+        DeltaInformationResult result = deltaInformationExtractor.extract(definitionService.processingQuery(withDatamart));
         List<DeltaInformation> deltaInformations = result.getDeltaInformations();
         long countByExpectedSchema = deltaInformations.stream()
                 .filter(d -> d.getSchemaName().equals(EXPECTED_SCHEMA))
@@ -66,7 +71,7 @@ class DefaultDatamartSetterTest {
     void setToInsert() {
         val sql = "INSERT INTO PSO1 SELECT * FROM PSO2 P2 WHERE EXISTS (SELECT * FROM tbl2 t2 WHERE t2.id = P2.id)";
         String withDatamart = datamartSetter.set(definitionService.processingQuery(sql), "demo").toSqlString(DIALECT).getSql();
-        DeltaInformationResult result = DeltaInformationExtractor.extract(definitionService.processingQuery(withDatamart));
+        DeltaInformationResult result = deltaInformationExtractor.extract(definitionService.processingQuery(withDatamart));
         List<DeltaInformation> deltaInformations = result.getDeltaInformations();
         long countByExpectedSchema = deltaInformations.stream()
                 .filter(d -> d.getSchemaName().equals(EXPECTED_SCHEMA))
@@ -79,7 +84,7 @@ class DefaultDatamartSetterTest {
     void setToUpdate() {
         val sql = "UPDATE tbl1 t1 SET A=1, B=2, C=3 WHERE EXISTS (SELECT * FROM tbl2 t2 WHERE t1.id = t2.id)";
         String withDatamart = datamartSetter.set(definitionService.processingQuery(sql), "demo").toSqlString(DIALECT).getSql();
-        DeltaInformationResult result = DeltaInformationExtractor.extract(definitionService.processingQuery(withDatamart));
+        DeltaInformationResult result = deltaInformationExtractor.extract(definitionService.processingQuery(withDatamart));
         List<DeltaInformation> deltaInformations = result.getDeltaInformations();
         long countByExpectedSchema = deltaInformations.stream()
                 .filter(d -> d.getSchemaName().equals(EXPECTED_SCHEMA))
@@ -92,7 +97,7 @@ class DefaultDatamartSetterTest {
     void setToCREATE_VIEW() {
         val sql = "CREATE VIEW view1 as select * from test2.tbl1 JOIN view2 FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59'";
         String withDatamart = datamartSetter.set(definitionService.processingQuery(sql), "demo").toSqlString(DIALECT).getSql();
-        DeltaInformationResult result = DeltaInformationExtractor.extract(definitionService.processingQuery(withDatamart));
+        DeltaInformationResult result = deltaInformationExtractor.extract(definitionService.processingQuery(withDatamart));
         List<DeltaInformation> deltaInformations = result.getDeltaInformations();
         long countByExpectedSchema = deltaInformations.stream()
                 .filter(d -> d.getSchemaName().equals(EXPECTED_SCHEMA))
@@ -105,7 +110,7 @@ class DefaultDatamartSetterTest {
     void setToDROP_VIEW() {
         val sql = "DROP VIEW view1";
         String withDatamart = datamartSetter.set(definitionService.processingQuery(sql), "demo").toSqlString(DIALECT).getSql();
-        DeltaInformationResult result = DeltaInformationExtractor.extract(definitionService.processingQuery(withDatamart));
+        DeltaInformationResult result = deltaInformationExtractor.extract(definitionService.processingQuery(withDatamart));
         List<DeltaInformation> deltaInformations = result.getDeltaInformations();
         long countByExpectedSchema = deltaInformations.stream()
                 .filter(d -> d.getSchemaName().equals(EXPECTED_SCHEMA))
@@ -118,7 +123,7 @@ class DefaultDatamartSetterTest {
     void setToDROP_TABLE() {
         val sql = "DROP TABLE tbl1";
         String withDatamart = datamartSetter.set(definitionService.processingQuery(sql), "demo").toSqlString(DIALECT).getSql();
-        DeltaInformationResult result = DeltaInformationExtractor.extract(definitionService.processingQuery(withDatamart));
+        DeltaInformationResult result = deltaInformationExtractor.extract(definitionService.processingQuery(withDatamart));
         List<DeltaInformation> deltaInformations = result.getDeltaInformations();
         long countByExpectedSchema = deltaInformations.stream()
                 .filter(d -> d.getSchemaName().equals(EXPECTED_SCHEMA))
@@ -132,7 +137,7 @@ class DefaultDatamartSetterTest {
         val sql = "BEGIN DELTA";
         String withDatamart = datamartSetter.set(definitionService.processingQuery(sql), "demo").toSqlString(DIALECT).getSql();
         log.info(withDatamart);
-        DeltaInformationResult result = DeltaInformationExtractor.extract(definitionService.processingQuery(withDatamart));
+        DeltaInformationResult result = deltaInformationExtractor.extract(definitionService.processingQuery(withDatamart));
         List<DeltaInformation> deltaInformations = result.getDeltaInformations();
         long countByExpectedSchema = deltaInformations.stream()
                 .filter(d -> d.getSchemaName().equals(EXPECTED_SCHEMA))
@@ -145,7 +150,7 @@ class DefaultDatamartSetterTest {
         val sql = "COMMIT DELTA";
         String withDatamart = datamartSetter.set(definitionService.processingQuery(sql), "demo").toSqlString(DIALECT).getSql();
         log.info(withDatamart);
-        DeltaInformationResult result = DeltaInformationExtractor.extract(definitionService.processingQuery(withDatamart));
+        DeltaInformationResult result = deltaInformationExtractor.extract(definitionService.processingQuery(withDatamart));
         List<DeltaInformation> deltaInformations = result.getDeltaInformations();
         long countByExpectedSchema = deltaInformations.stream()
                 .filter(d -> d.getSchemaName().equals(EXPECTED_SCHEMA))
@@ -158,7 +163,7 @@ class DefaultDatamartSetterTest {
         val sql = "CREATE UPLOAD EXTERNAL TABLE accounts_ext (account_id bigint, account_type varchar(1)) LOCATION 'kafka://10.92.6.44:9092/accounts1' FORMAT 'AVRO'";
         String withDatamart = datamartSetter.set(definitionService.processingQuery(sql), "demo").toSqlString(DIALECT).getSql();
         log.info(withDatamart);
-        DeltaInformationResult result = DeltaInformationExtractor.extract(definitionService.processingQuery(withDatamart));
+        DeltaInformationResult result = deltaInformationExtractor.extract(definitionService.processingQuery(withDatamart));
         List<DeltaInformation> deltaInformations = result.getDeltaInformations();
         long countByExpectedSchema = deltaInformations.stream()
                 .filter(d -> d.getSchemaName().equals(EXPECTED_SCHEMA))
@@ -171,7 +176,7 @@ class DefaultDatamartSetterTest {
         val sql = "CREATE TABLE table_name (col1 datatype1, col2 datatype2, PRIMARY KEY (col1, col2) )";
         String withDatamart = datamartSetter.set(definitionService.processingQuery(sql), "demo").toSqlString(DIALECT).getSql();
         log.info(withDatamart);
-        DeltaInformationResult result = DeltaInformationExtractor.extract(definitionService.processingQuery(withDatamart));
+        DeltaInformationResult result = deltaInformationExtractor.extract(definitionService.processingQuery(withDatamart));
         List<DeltaInformation> deltaInformations = result.getDeltaInformations();
         long countByExpectedSchema = deltaInformations.stream()
                 .filter(d -> d.getSchemaName().equals(EXPECTED_SCHEMA))

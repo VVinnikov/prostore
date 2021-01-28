@@ -4,8 +4,9 @@ import io.arenadata.dtm.common.converter.SqlTypeConverter;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adg.model.metadata.ColumnTypeUtil;
 import io.arenadata.dtm.query.execution.plugin.adg.service.QueryExecutorService;
-import io.arenadata.dtm.query.execution.plugin.adg.service.TtClient;
-import io.arenadata.dtm.query.execution.plugin.adg.service.TtPool;
+import io.arenadata.dtm.query.execution.plugin.adg.service.AdgClient;
+import io.arenadata.dtm.query.execution.plugin.adg.service.AdgClientPool;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -26,51 +27,53 @@ import java.util.stream.Collectors;
 @Service("adgQueryExecutor")
 public class AdgQueryExecutorServiceImpl implements QueryExecutorService {
 
-    private TtPool ttPool;
+    private final AdgClientPool adgClientPool;
     private final SqlTypeConverter typeConverter;
 
     @Autowired
-    public AdgQueryExecutorServiceImpl(@Qualifier("adgTtPool") TtPool ttPool,
+    public AdgQueryExecutorServiceImpl(@Qualifier("adgTtPool") AdgClientPool adgClientPool,
                                        @Qualifier("adgTypeToSqlTypeConverter") SqlTypeConverter typeConverter) {
-        this.ttPool = ttPool;
+        this.adgClientPool = adgClientPool;
         this.typeConverter = typeConverter;
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public void execute(String sql, List<ColumnMetadata> queryMetadata, Handler<AsyncResult<List<Map<String, Object>>>> handler) {
-        TtClient cl = null;
-        try {
-            cl = ttPool.borrowObject();
-            cl.callQuery(ar -> {
-                if (ar.succeeded() && ar.result() != null && !ar.result().isEmpty()) {
-                    log.debug("ADG. execute query {}", sql);
-                    val map = (Map<?, ?>) ar.result().get(0);
-                    val metadata = getMetadata((List<Map<String, String>>) map.get("metadata"));
-                    val dataSet = (List<List<?>>) map.get("rows");
-                    final List<Map<String, Object>> result = new ArrayList<>();
-                    try {
-                        dataSet.forEach(row -> {
-                            val rowMap = createRowMap(metadata, row);
-                            result.add(rowMap);
+    public Future<List<Map<String, Object>>> execute(String sql, List<ColumnMetadata> queryMetadata) {
+        return Future.future(promise -> {
+            AdgClient cl = null;
+            try {
+                cl = adgClientPool.borrowObject();
+                cl.callQuery(sql, null)
+                        .onComplete(ar -> {
+                            if (ar.succeeded() && ar.result() != null && !ar.result().isEmpty()) {
+                                log.debug("ADG. execute query {}", sql);
+                                val map = (Map<?, ?>) ar.result().get(0);
+                                val dataSet = (List<List<?>>) map.get("rows");
+                                final List<Map<String, Object>> result = new ArrayList<>();
+                                try {
+                                    dataSet.forEach(row -> {
+                                        val rowMap = createRowMap(queryMetadata, row);
+                                        result.add(rowMap);
+                                    });
+                                } catch (Exception e) {
+                                    promise.fail(
+                                            new DataSourceException("Error converting value to jdbc type", e));
+                                    return;
+                                }
+                                promise.complete(result);
+                            } else {
+                                promise.fail(ar.cause());
+                            }
                         });
-                    } catch (Exception e) {
-                        log.error("Error converting ADG values to jdbc types!", e);
-                        handler.handle(Future.failedFuture(e));
-                        return;
-                    }
-                    handler.handle(Future.succeededFuture(result));
-                } else {
-                    handler.handle(Future.failedFuture(ar.cause()));
+            } catch (Exception ex) {
+                promise.fail(ex);
+            } finally {
+                if (cl != null) {
+                    adgClientPool.returnObject(cl);
                 }
-            }, sql, null);
-        } catch (Exception ex) {
-            handler.handle(Future.failedFuture(ex));
-        } finally {
-            if (cl != null) {
-                ttPool.returnObject(cl);
             }
-        }
+        });
     }
 
     private Map<String, Object> createRowMap(List<ColumnMetadata> metadata, List<?> row) {
@@ -85,24 +88,26 @@ public class AdgQueryExecutorServiceImpl implements QueryExecutorService {
     @Override
     public Future<Object> executeProcedure(String procedure, Object... args) {
         return Future.future((Promise<Object> promise) -> {
-            TtClient cl = null;
+            AdgClient cl = null;
             try {
-                cl = ttPool.borrowObject();
+                cl = adgClientPool.borrowObject();
             } catch (Exception e) {
-                log.error("Error creating Tarantool client", e);
-                promise.fail(e);
+                promise.fail(new DataSourceException("Error creating Tarantool client", e));
             }
             try {
-                cl.call(ar -> {
-                    if (ar.succeeded()) {
-                        promise.complete(ar.result());
-                    } else {
-                        promise.fail(ar.cause());
-                    }
-                }, procedure, args);
+                cl.call(procedure, args)
+                        .onComplete(ar -> {
+                            if (ar.succeeded()) {
+                                promise.complete(ar.result());
+                            } else {
+                                promise.fail(ar.cause());
+                            }
+                        });
             } finally {
                 log.debug("ADG. execute procedure {} {}", procedure, args);
-                ttPool.returnObject(cl);
+                if (cl != null) {
+                    adgClientPool.returnObject(cl);
+                }
             }
         });
     }
@@ -110,10 +115,10 @@ public class AdgQueryExecutorServiceImpl implements QueryExecutorService {
     private List<ColumnMetadata> getMetadata(List<Map<String, String>> columns) {
         return columns.stream().map(it -> {
             if (!it.containsKey("name")) {
-                throw new IllegalStateException("name is not specified");
+                throw new DataSourceException("name is not specified");
             }
             if (!it.containsKey("type")) {
-                throw new IllegalStateException("type is not specified");
+                throw new DataSourceException("type is not specified");
             }
             return new ColumnMetadata(it.get("name"), ColumnTypeUtil.columnTypeFromTtColumnType(it.get("type")));
         }).collect(Collectors.toList());

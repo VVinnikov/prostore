@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.hsql;
 
 import io.vertx.core.Future;
+import io.vertx.ext.sql.ResultSet;
 
 import java.util.List;
 
@@ -10,4 +11,5 @@ public interface HSQLClient {
 
     Future<Void> executeBatch(List<String> queries);
 
+    Future<ResultSet> getQueryResult(String query);
 }

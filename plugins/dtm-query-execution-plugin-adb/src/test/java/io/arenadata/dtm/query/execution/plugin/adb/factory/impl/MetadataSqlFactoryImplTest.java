@@ -16,18 +16,6 @@ class MetadataSqlFactoryImplTest {
     private static final String EXPECTED_DROP_SCRIPTS = "DROP TABLE IF EXISTS test.test_ts3222_actual;" +
             " DROP TABLE IF EXISTS test.test_ts3222_history; " +
             "DROP TABLE IF EXISTS test.test_ts3222_staging; ";
-    private static final String EXPECTED_CREATE_SCRIPTS = "CREATE TABLE test.test_ts3222_actual " +
-            "(id integer NOT NULL, name varchar , dt timestamp ," +
-            " sys_from bigint, sys_to bigint, sys_op int, constraint" +
-            " pk_test_test_ts3222_actual primary key (id)) DISTRIBUTED BY (id, dt);" +
-            " CREATE TABLE test.test_ts3222_history " +
-            "(id integer NOT NULL, name varchar , dt timestamp , " +
-            "sys_from bigint, sys_to bigint, sys_op int," +
-            " constraint pk_test_test_ts3222_history primary key (id)) DISTRIBUTED BY (id, dt); " +
-            "CREATE TABLE test.test_ts3222_staging " +
-            "(id integer NOT NULL, name varchar , dt timestamp , sys_from bigint," +
-            " sys_to bigint, sys_op int, req_id varchar(36)," +
-            " constraint pk_test_test_ts3222_staging primary key (id)) DISTRIBUTED BY (id, dt); ";
     private static final String INDEXES_QUERY_EXPECTED = "CREATE INDEX test_actual_sys_from_idx ON shares.test_actual (sys_from);" +
             " CREATE INDEX test_history_sys_to_idx ON shares.test_history (sys_to, sys_op)";
 
@@ -40,12 +28,6 @@ class MetadataSqlFactoryImplTest {
     void createDropTableScript() {
         String tableScript = metadataSqlFactory.createDropTableScript(getClassTable());
         assertEquals(EXPECTED_DROP_SCRIPTS, tableScript);
-    }
-
-    @Test
-    void createTableScripts() {
-        String tableScript = metadataSqlFactory.createTableScripts(getClassTable());
-        assertEquals(EXPECTED_CREATE_SCRIPTS, tableScript);
     }
 
     @Test

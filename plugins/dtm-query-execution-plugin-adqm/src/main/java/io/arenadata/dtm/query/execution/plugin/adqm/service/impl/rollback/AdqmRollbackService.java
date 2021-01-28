@@ -6,15 +6,11 @@ import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.query.AdqmQuery
 import io.arenadata.dtm.query.execution.plugin.api.factory.RollbackRequestFactory;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.RollbackService;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.util.Collections;
 
 @Slf4j
 @Service("adqmRollbackService")
@@ -30,29 +26,15 @@ public class AdqmRollbackService implements RollbackService<Void> {
     }
 
     @Override
-    public void execute(RollbackRequestContext context, Handler<AsyncResult<Void>> handler) {
-        try {
+    public Future<Void> execute(RollbackRequestContext context) {
+        return Future.future(promise -> {
             val rollbackRequest = rollbackRequestFactory.create(context.getRequest());
             Future<Void> executingFuture = Future.succeededFuture();
             for (PreparedStatementRequest statement : rollbackRequest.getStatements()) {
-               executingFuture = executingFuture.compose(v -> executeSql(statement.getSql()));
+                executingFuture = executingFuture.compose(v -> adqmQueryExecutor.executeUpdate(statement.getSql()));
             }
-            executingFuture.onSuccess(success -> handler.handle(Future.succeededFuture()))
-                .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
-        } catch (Exception e) {
-            log.error("Rollback error while executing context: [{}]: {}", context, e);
-            handler.handle(Future.failedFuture(e));
-        }
-    }
-
-    private Future<Void> executeSql(String sql) {
-        return Future.future(p -> adqmQueryExecutor.execute(sql, Collections.emptyList(), ar -> {
-            if (ar.succeeded()) {
-                p.complete();
-            } else {
-                log.error("Rollback error while executing sql: [{}]: {}", sql, ar.cause());
-                p.fail(ar.cause());
-            }
-        }));
+            executingFuture.onSuccess(success -> promise.complete())
+                    .onFailure(promise::fail);
+        });
     }
 }

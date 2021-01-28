@@ -11,15 +11,15 @@ import lombok.EqualsAndHashCode;
 public class RollbackRequest extends DatamartRequest {
 
     private String datamart;
-    private String targetTable;
+    private String destinationTable;
     private long sysCn;
     private Entity entity;
 
     @Builder
-    public RollbackRequest(QueryRequest queryRequest, String datamart, String targetTable, long sysCn, Entity entity) {
+    public RollbackRequest(QueryRequest queryRequest, String datamart, String destinationTable, long sysCn, Entity entity) {
         super(queryRequest);
         this.datamart = datamart;
-        this.targetTable = targetTable;
+        this.destinationTable = destinationTable;
         this.sysCn = sysCn;
         this.entity = entity;
     }

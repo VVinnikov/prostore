@@ -1,26 +1,29 @@
 package io.arenadata.dtm.query.execution.core.service.impl;
 
+import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.reader.InputQueryRequest;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
+import io.arenadata.dtm.query.calcite.core.service.impl.DeltaInformationExtractorImpl;
+import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDefinitionService;
 import io.arenadata.dtm.query.execution.core.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
+import io.arenadata.dtm.query.execution.core.configuration.properties.CoreDtmSettings;
 import io.arenadata.dtm.query.execution.core.factory.RequestContextFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.QueryRequestFactoryImpl;
 import io.arenadata.dtm.query.execution.core.factory.impl.RequestContextFactoryImpl;
-import io.arenadata.dtm.query.execution.core.service.QueryAnalyzer;
-import io.arenadata.dtm.query.execution.core.service.QueryDispatcher;
+import io.arenadata.dtm.query.execution.core.service.query.impl.QuerySemicolonRemoverImpl;
+import io.arenadata.dtm.query.execution.core.service.query.QueryAnalyzer;
+import io.arenadata.dtm.query.execution.core.service.query.QueryDispatcher;
+import io.arenadata.dtm.query.execution.core.service.query.impl.QueryAnalyzerImpl;
 import io.arenadata.dtm.query.execution.core.utils.DatamartMnemonicExtractor;
 import io.arenadata.dtm.query.execution.core.utils.DefaultDatamartSetter;
 import io.arenadata.dtm.query.execution.core.utils.HintExtractor;
 import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
-import io.arenadata.dtm.query.execution.plugin.api.service.SqlProcessingType;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.TestOptions;
 import io.vertx.ext.unit.report.ReportOptions;
@@ -29,8 +32,11 @@ import io.vertx.reactivex.ext.unit.TestSuite;
 import lombok.Data;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlNode;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.env.Environment;
+
+import java.time.ZoneId;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,16 +51,23 @@ class QueryAnalyzerImplTest {
     private DefinitionService<SqlNode> definitionService =
             new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
     private Vertx vertx = Vertx.vertx();
-    private RequestContextFactory<RequestContext<? extends DatamartRequest>, QueryRequest> requestContextFactory = new RequestContextFactoryImpl(new SqlDialect(SqlDialect.EMPTY_CONTEXT));
+    final CoreDtmSettings dtmSettings = new CoreDtmSettings(ZoneId.of("UTC"));
+    private RequestContextFactory<RequestContext<? extends DatamartRequest>, QueryRequest> requestContextFactory =
+            new RequestContextFactoryImpl(new SqlDialect(SqlDialect.EMPTY_CONTEXT), dtmSettings);
     private QueryDispatcher queryDispatcher = mock(QueryDispatcher.class);
-    private QueryAnalyzer queryAnalyzer = new QueryAnalyzerImpl(queryDispatcher,
-            definitionService,
-            requestContextFactory,
-            vertx,
-            new HintExtractor(),
-            new DatamartMnemonicExtractor(),
-            new DefaultDatamartSetter(),
-            new SemicolonRemoverImpl(), new QueryRequestFactoryImpl(new AppConfiguration(mock(Environment.class))));
+    private QueryAnalyzer queryAnalyzer;
+
+    @BeforeEach
+    void setUp() {
+        queryAnalyzer = new QueryAnalyzerImpl(queryDispatcher,
+                definitionService,
+                requestContextFactory,
+                vertx,
+                new HintExtractor(),
+                new DatamartMnemonicExtractor(new DeltaInformationExtractorImpl(dtmSettings)),
+                new DefaultDatamartSetter(),
+                new QuerySemicolonRemoverImpl(), new QueryRequestFactoryImpl(new AppConfiguration(mock(Environment.class))));
+    }
 
     @Test
     void parsedSelect() {
@@ -152,10 +165,11 @@ class QueryAnalyzerImplTest {
         TestSuite suite = TestSuite.create("parse");
         suite.test("parse", context -> {
             Async async = context.async();
-            queryAnalyzer.analyzeAndExecute(queryRequest, res -> {
-                testData.setResult("complete");
-                async.complete();
-            });
+            queryAnalyzer.analyzeAndExecute(queryRequest)
+                    .onComplete(res -> {
+                        testData.setResult("complete");
+                        async.complete();
+                    });
             async.awaitSuccess();
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
@@ -167,10 +181,8 @@ class QueryAnalyzerImplTest {
             final RequestContext ddlRequest = invocation.getArgument(0);
             testData.setRequest(ddlRequest.getRequest().getQueryRequest());
             testData.setProcessingType(ddlRequest.getProcessingType());
-            Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
-            return null;
-        }).when(queryDispatcher).dispatch(any(), any());
+            return Future.succeededFuture(QueryResult.emptyResult());
+        }).when(queryDispatcher).dispatch(any());
         return testData;
     }
 

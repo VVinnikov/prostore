@@ -2,15 +2,15 @@ package io.arenadata.dtm.query.execution.plugin.adqm.configuration;
 
 import io.arenadata.dtm.common.converter.SqlTypeConverter;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.ClickhouseProperties;
-import io.arenadata.dtm.query.execution.plugin.adqm.datasource.AdqmBalancedClickhouseDataSource;
+import io.arenadata.dtm.query.execution.plugin.adqm.configuration.datasource.AdqmBalancedClickhouseDataSource;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.query.AdqmQueryExecutor;
 import io.vertx.core.Vertx;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import ru.yandex.clickhouse.settings.ClickHouseProperties;
 
 import javax.sql.DataSource;
-import java.util.Properties;
 
 @Configuration
 public class QueryConfiguration {
@@ -20,11 +20,13 @@ public class QueryConfiguration {
                                         ClickhouseProperties clickhouseProperties,
                                         @Qualifier("adqmTypeToSqlTypeConverter") SqlTypeConverter typeConverter) {
         String url = String.format("jdbc:clickhouse://%s/%s", clickhouseProperties.getHosts(),
-                clickhouseProperties.getDatabase());
-        Properties props = new Properties();
-        props.put("user", clickhouseProperties.getUser());
-        props.put("password", clickhouseProperties.getPassword());
-        DataSource dataSource = new AdqmBalancedClickhouseDataSource(url, props);
+            clickhouseProperties.getDatabase());
+        ClickHouseProperties properties = new ClickHouseProperties();
+        properties.setUser(clickhouseProperties.getUser());
+        properties.setPassword(clickhouseProperties.getPassword());
+        properties.setSocketTimeout(clickhouseProperties.getSocketTimeout());
+        properties.setDataTransferTimeout(clickhouseProperties.getDataTransferTimeout());
+        DataSource dataSource = new AdqmBalancedClickhouseDataSource(url, properties);
         return new AdqmQueryExecutor(vertx, dataSource, typeConverter);
     }
 }

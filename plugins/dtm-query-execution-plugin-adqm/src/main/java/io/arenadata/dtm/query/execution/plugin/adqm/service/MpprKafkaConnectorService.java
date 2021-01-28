@@ -2,13 +2,12 @@ package io.arenadata.dtm.query.execution.plugin.adqm.service;
 
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.MpprKafkaConnectorRequest;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
+import io.vertx.core.Future;
 
 /**
- * Сервис выполнения вызова обращения MpprKafkaConnector
+ * Service for connecting with mppr kafka connector component
  */
 public interface MpprKafkaConnectorService {
 
-    void call(MpprKafkaConnectorRequest request, Handler<AsyncResult<QueryResult>> handler);
+    Future<QueryResult> call(MpprKafkaConnectorRequest request);
 }

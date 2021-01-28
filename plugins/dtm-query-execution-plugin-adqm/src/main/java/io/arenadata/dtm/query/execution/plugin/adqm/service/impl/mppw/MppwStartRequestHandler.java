@@ -3,31 +3,36 @@ package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
-import io.arenadata.dtm.query.execution.plugin.adqm.common.DdlUtils;
+import io.arenadata.dtm.query.execution.plugin.adqm.utils.DdlUtils;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
+import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.AdqmMppwProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
-import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.MppwProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
+import io.arenadata.dtm.query.execution.plugin.adqm.dto.mppw.RestMppwKafkaLoadRequest;
+import io.arenadata.dtm.query.execution.plugin.adqm.factory.AdqmRestMppwKafkaRequestFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.StatusReporter;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.*;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
+import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
 import io.arenadata.dtm.query.execution.plugin.api.request.MppwRequest;
-import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.avro.Schema;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.arenadata.dtm.query.execution.plugin.adqm.common.Constants.*;
-import static io.arenadata.dtm.query.execution.plugin.adqm.common.DdlUtils.avroTypeToNative;
-import static io.arenadata.dtm.query.execution.plugin.adqm.common.DdlUtils.splitQualifiedTableName;
+import static io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants.*;
+import static io.arenadata.dtm.query.execution.plugin.adqm.utils.DdlUtils.avroTypeToNative;
+import static io.arenadata.dtm.query.execution.plugin.adqm.utils.DdlUtils.splitQualifiedTableName;
 import static io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.LoadType.KAFKA;
 import static io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.LoadType.REST;
 import static java.lang.String.format;
@@ -49,23 +54,27 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     private final DatabaseExecutor databaseExecutor;
     private final DdlProperties ddlProperties;
     private final AppConfiguration appConfiguration;
-    private final MppwProperties mppwProperties;
+    private final AdqmMppwProperties mppwProperties;
     private final StatusReporter statusReporter;
     private final Map<LoadType, ExtTableCreator> extTableCreators = new HashMap<>();
-    private final RestLoadInitiator restLoadInitiator;
+    private final RestLoadClient restLoadClient;
+    private final AdqmRestMppwKafkaRequestFactory restMppwKafkaRequestFactory;
 
-    public MppwStartRequestHandler(final DatabaseExecutor databaseExecutor,
-                                   final DdlProperties ddlProperties,
-                                   final AppConfiguration appConfiguration,
-                                   final MppwProperties mppwProperties,
-                                   final StatusReporter statusReporter,
-                                   final RestLoadInitiator restLoadInitiator) {
+    @Autowired
+    public MppwStartRequestHandler(DatabaseExecutor databaseExecutor,
+                                   DdlProperties ddlProperties,
+                                   AppConfiguration appConfiguration,
+                                   AdqmMppwProperties mppwProperties,
+                                   StatusReporter statusReporter,
+                                   RestLoadClient restLoadClient,
+                                   AdqmRestMppwKafkaRequestFactory restMppwKafkaRequestFactory) {
         this.databaseExecutor = databaseExecutor;
         this.ddlProperties = ddlProperties;
         this.appConfiguration = appConfiguration;
         this.mppwProperties = mppwProperties;
         this.statusReporter = statusReporter;
-        this.restLoadInitiator = restLoadInitiator;
+        this.restLoadClient = restLoadClient;
+        this.restMppwKafkaRequestFactory = restMppwKafkaRequestFactory;
 
         extTableCreators.put(KAFKA, new KafkaExtTableCreator(ddlProperties, mppwProperties));
         extTableCreators.put(REST, new RestExtTableCreator(ddlProperties));
@@ -73,52 +82,74 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
 
     @Override
     public Future<QueryResult> execute(MppwRequest request) {
+        MppwExtTableContext mppwExtTableCtx = new MppwExtTableContext();
+
         val err = DdlUtils.validateRequest(request);
         if (err.isPresent()) {
-            return Future.failedFuture(err.get());
+            return Future.failedFuture(new DataSourceException(err.get()));
         }
-
-        String fullName = DdlUtils.getQualifiedTableName(request, appConfiguration);
-        reportStart(request.getKafkaParameter().getTopic(), fullName);
-        // 1. Determine table engine (_actual_shard)
-        final String engineFullColumn = "engine_full";
-        Future<String> engineFull = getTableSetting(fullName + ACTUAL_POSTFIX, engineFullColumn, createVarcharColumnMetadata(engineFullColumn));
-        // 2. Get sorting order (_actual)
-        final String sortingKeyColumn = "sorting_key";
-        Future<String> sortingKey = getTableSetting(fullName + ACTUAL_SHARD_POSTFIX, sortingKeyColumn, createVarcharColumnMetadata(sortingKeyColumn));
-        val uploadMeta = (UploadExternalEntityMetadata) request.getKafkaParameter().getUploadMetadata();
-        // 3. Create _ext_shard based on schema from request
-        final Schema schema;
         try {
-            schema = new Schema.Parser().parse(uploadMeta.getExternalSchema());
+            mppwExtTableCtx.setSchema(new Schema.Parser()
+                    .parse(request.getKafkaParameter().getUploadMetadata().getExternalSchema()));
         } catch (Exception e) {
-            return Future.failedFuture(e);
+            return Future.failedFuture(new DataSourceException("Error in starting mppw request", e));
         }
 
-        Future<Void> extTableF = sortingKey.compose(keys ->
-                createExternalTable(request.getKafkaParameter().getTopic(), fullName, schema, keys));
+        mppwExtTableCtx.setFullName(DdlUtils.getQualifiedTableName(request, appConfiguration));
+        reportStart(request.getKafkaParameter().getTopic(), mppwExtTableCtx.getFullName());
 
-        // 4. Create _buffer_shard
-        Future<Void> buffShardF = sortingKey.compose(keys ->
-                createBufferShardTable(fullName + BUFFER_SHARD_POSTFIX, keys, schema));
-
-        // 5. Create _buffer
-        Future<Void> buffF = CompositeFuture.all(engineFull, buffShardF).compose(r ->
-                createBufferTable(fullName + BUFFER_POSTFIX, r.resultAt(0)));
-
-        // 6. Create _buffer_loader_shard
-        Future<Void> buffLoaderF = CompositeFuture.all(sortingKey, extTableF, buffF).compose(r ->
-                createBufferLoaderTable(fullName + BUFFER_LOADER_SHARD_POSTFIX, r.resultAt(0)));
-
-        // 7. Create _actual_loader_shard
-        Future<Void> actualLoaderF = extTableF.compose(v ->
-                createActualLoaderTable(fullName + ACTUAL_LOADER_SHARD_POSTFIX, schema, request.getKafkaParameter().getSysCn()));
-
-        return CompositeFuture.all(extTableF, buffShardF, buffF, buffLoaderF, actualLoaderF)
+        // 1. Determine table engine (_actual_shard)
+        return getTableSetting(mppwExtTableCtx.getFullName() + ACTUAL_POSTFIX,
+                "engine_full",
+                createVarcharColumnMetadata("engine_full"))
+                .map(engineFull -> {
+                    mppwExtTableCtx.setEngineFull(engineFull);
+                    return engineFull;
+                })
+                .compose(engineFull ->
+                        //2. Get sorting order (_actual)
+                        getTableSetting(mppwExtTableCtx.getFullName() + ACTUAL_SHARD_POSTFIX,
+                                "sorting_key",
+                                createVarcharColumnMetadata("sorting_key")))
+                .map(keys -> {
+                    mppwExtTableCtx.setSortingKeys(keys);
+                    return keys;
+                })
+                .compose(k ->
+                        // 3. Create _ext_shard based on schema from request
+                        createExternalTable(request.getKafkaParameter().getTopic(),
+                                mppwExtTableCtx.getFullName(),
+                                mppwExtTableCtx.getSchema(),
+                                mppwExtTableCtx.getSortingKeys())
+                )
+                .compose(v ->
+                        // 4. Create _buffer_shard
+                        createBufferShardTable(mppwExtTableCtx.getFullName() + BUFFER_SHARD_POSTFIX,
+                                mppwExtTableCtx.getSortingKeys(),
+                                mppwExtTableCtx.getSchema())
+                )
+                .compose(v ->
+                        // 5. Create _buffer
+                        createBufferTable(mppwExtTableCtx.getFullName() + BUFFER_POSTFIX,
+                                mppwExtTableCtx.getEngineFull())
+                )
+                .compose(v ->
+                        // 6. Create _buffer_loader_shard
+                        createBufferLoaderTable(mppwExtTableCtx.getFullName() + BUFFER_LOADER_SHARD_POSTFIX,
+                                mppwExtTableCtx.getSortingKeys())
+                )
+                .compose(v ->
+                        // 7. Create _actual_loader_shard
+                        createActualLoaderTable(mppwExtTableCtx.getFullName() + ACTUAL_LOADER_SHARD_POSTFIX,
+                                mppwExtTableCtx.getSchema(),
+                                request.getKafkaParameter().getSysCn())
+                )
                 .compose(v -> createRestInitiator(request))
-                .compose(v -> Future.succeededFuture(QueryResult.emptyResult()), f -> {
+                .map(v -> QueryResult.emptyResult())
+                .onSuccess(Future::succeededFuture)
+                .onFailure(fail -> {
                     reportError(request.getKafkaParameter().getTopic());
-                    return Future.failedFuture(f.getCause());
+                    Future.failedFuture(new DataSourceException(fail));
                 });
     }
 
@@ -131,24 +162,25 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     private Future<String> getTableSetting(@NonNull String table, @NonNull String settingKey, List<ColumnMetadata> metadata) {
         val nameParts = splitQualifiedTableName(table);
         if (!nameParts.isPresent()) {
-            return Future.failedFuture(format("Cannot parse table name %s", table));
+            return Future.failedFuture(new MppwDatasourceException(format("Cannot parse table name %s", table)));
         }
         Promise<String> result = Promise.promise();
         String query = format(QUERY_TABLE_SETTINGS, settingKey, nameParts.get().getLeft(), nameParts.get().getRight());
-        databaseExecutor.execute(query, metadata, ar -> {
-            if (ar.failed()) {
-                result.fail(ar.cause());
-                return;
-            }
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> rows = ar.result();
-            if (rows.isEmpty()) {
-                result.fail(format("Cannot find %s for %s", settingKey, table));
-                return;
-            }
+        databaseExecutor.execute(query, metadata)
+                .onComplete(ar -> {
+                    if (ar.failed()) {
+                        result.fail(ar.cause());
+                        return;
+                    }
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> rows = ar.result();
+                    if (rows.isEmpty()) {
+                        result.fail(new MppwDatasourceException(format("Cannot find %s for %s", settingKey, table)));
+                        return;
+                    }
 
-            result.complete(rows.get(0).get(settingKey).toString());
-        });
+                    result.complete(rows.get(0).get(settingKey).toString());
+                });
         return result.future();
     }
 
@@ -219,28 +251,16 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
 
     private Future<Void> createRestInitiator(MppwRequest mppwRequest) {
         LoadType loadType = mppwProperties.getLoadType();
+        //it means that if we use KAFKA instead of REST load type of mppw, we shouldn't send rest request
         if (loadType == KAFKA) {
             return Future.succeededFuture();
         }
-        val uploadMeta = (UploadExternalEntityMetadata) mppwRequest.getKafkaParameter().getUploadMetadata();
-        RestLoadRequest request = new RestLoadRequest();
-        request.setRequestId(mppwRequest.getQueryRequest().getRequestId().toString());
-        request.setHotDelta(mppwRequest.getKafkaParameter().getSysCn());
-        request.setDatamart(mppwRequest.getKafkaParameter().getDatamart());
-        request.setTableName(mppwRequest.getKafkaParameter().getTargetTableName());
-        request.setZookeeperHost(mppwRequest.getKafkaParameter().getZookeeperHost());
-        request.setZookeeperPort(mppwRequest.getKafkaParameter().getZookeeperPort());
-        request.setKafkaTopic(mppwRequest.getKafkaParameter().getTopic());
-        request.setConsumerGroup(mppwProperties.getRestLoadConsumerGroup());
-        request.setFormat(uploadMeta.getFormat().getName());
-        request.setMessageProcessingLimit(uploadMeta.getUploadMessageLimit() == null ? 0 : uploadMeta.getUploadMessageLimit());
-
         try {
-            val schema = new Schema.Parser().parse(uploadMeta.getExternalSchema());
-            request.setSchema(schema);
-            return restLoadInitiator.initiateLoading(request);
+            final RestMppwKafkaLoadRequest mppwKafkaLoadRequest = restMppwKafkaRequestFactory.create(mppwRequest);
+            log.debug("ADQM: Send mppw kafka starting rest request {}", mppwKafkaLoadRequest);
+            return restLoadClient.initiateLoading(mppwKafkaLoadRequest);
         } catch (Exception e) {
-            return Future.failedFuture(e);
+            return Future.failedFuture(new MppwDatasourceException("Error generating mppw kafka request", e));
         }
     }
 
@@ -263,5 +283,14 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     private void reportError(String topic) {
         StatusReportDto start = new StatusReportDto(topic);
         statusReporter.onError(start);
+    }
+
+    @Data
+    @NoArgsConstructor
+    private static class MppwExtTableContext {
+        private String fullName;
+        private String engineFull;
+        private String sortingKeys;
+        private Schema schema;
     }
 }

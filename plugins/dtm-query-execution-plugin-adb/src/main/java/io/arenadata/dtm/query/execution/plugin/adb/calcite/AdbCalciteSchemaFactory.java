@@ -6,11 +6,14 @@ import io.arenadata.dtm.query.calcite.core.factory.impl.CalciteSchemaFactory;
 import io.arenadata.dtm.query.calcite.core.schema.DtmTable;
 import io.arenadata.dtm.query.calcite.core.schema.QueryableSchema;
 import io.arenadata.dtm.query.execution.plugin.adb.calcite.schema.AdbDtmTable;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 @Service("adbCalciteSchemaFactory")
 public class AdbCalciteSchemaFactory extends CalciteSchemaFactory {
+
+    @Autowired
     public AdbCalciteSchemaFactory(@Qualifier("adbSchemaFactory") SchemaFactory schemaFactory) {
         super(schemaFactory);
     }

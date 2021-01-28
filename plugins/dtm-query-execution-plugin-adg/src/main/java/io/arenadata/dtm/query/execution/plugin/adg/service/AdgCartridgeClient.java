@@ -2,46 +2,64 @@ package io.arenadata.dtm.query.execution.plugin.adg.service;
 
 import io.arenadata.dtm.query.execution.plugin.adg.dto.rollback.ReverseHistoryTransferRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.OperationFile;
+import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.OperationYaml;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.*;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.ResOperation;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.TtDeleteBatchResponse;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.TtDeleteQueueResponse;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.TtLoadDataKafkaResponse;
+import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.Space;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
- * REST-клиент общения с Tarantool Cartridge
+ * REST-client for connecting with Tarantool Cartridge
  */
 public interface AdgCartridgeClient {
-  void getFiles(Handler<AsyncResult<ResOperation>> handler);
 
-  void setFiles(List<OperationFile> files, Handler<AsyncResult<ResOperation>> handler);
+  Future<ResOperation> getFiles();
 
-  void getSchema(Handler<AsyncResult<ResOperation>> handler);
+  Future<ResOperation> setFiles(List<OperationFile> files);
 
-  void setSchema(String yaml, Handler<AsyncResult<ResOperation>> handler);
+  Future<ResOperation> getSchema();
 
-  void uploadData(TtUploadDataKafkaRequest request, Handler<AsyncResult<Void>> handler);
+  Future<ResOperation> setSchema(String yaml);
 
-  void subscribe(TtSubscriptionKafkaRequest request, Handler<AsyncResult<Void>> handler);
+  Future<Void> uploadData(TtUploadDataKafkaRequest request);
 
-  void loadData(TtLoadDataKafkaRequest request,
-                Handler<AsyncResult<TtLoadDataKafkaResponse>> handler);
+  Future<Void> subscribe(TtSubscriptionKafkaRequest request);
 
-  void transferDataToScdTable(TtTransferDataEtlRequest request,
-                              Handler<AsyncResult<Void>> handler);
+  Future<TtLoadDataKafkaResponse> loadData(TtLoadDataKafkaRequest request);
 
-  void cancelSubscription(String topicName, Handler<AsyncResult<Void>> handler);
+  Future<Void> transferDataToScdTable(TtTransferDataEtlRequest request);
 
-  void addSpacesToDeleteQueue(TtDeleteTablesRequest request, Handler<AsyncResult<TtDeleteBatchResponse>> handler);
+  Future<Void> cancelSubscription(String topicName);
 
-  void executeDeleteQueue(TtDeleteTablesQueueRequest request, Handler<AsyncResult<TtDeleteQueueResponse>> handler);
+  Future<TtDeleteBatchResponse> addSpacesToDeleteQueue(TtDeleteTablesRequest request);
 
-  void executeDeleteSpacesWithPrefix(TtDeleteTablesWithPrefixRequest request,
-                                    Handler<AsyncResult<TtDeleteQueueResponse>> handler);
+  Future<TtDeleteQueueResponse> executeDeleteQueue(TtDeleteTablesQueueRequest request);
 
-    void reverseHistoryTransfer(ReverseHistoryTransferRequest request, Handler<AsyncResult<Void>> handler);
+  Future<TtDeleteQueueResponse> executeDeleteSpacesWithPrefix(TtDeleteTablesWithPrefixRequest request);
+
+  Future<Void> reverseHistoryTransfer(ReverseHistoryTransferRequest request);
+
+  Future<Void> executeCreateSpacesQueued(OperationYaml request);
+
+  Future<Void> executeDeleteSpacesQueued(TtDeleteTablesRequest request);
+
+  Future<Void> executeDeleteSpacesWithPrefixQueued(TtDeleteTablesWithPrefixRequest request);
+
+  Future<Map<String, Space>> getSpaceDescriptions(Set<String> spaceNames);
+
+  Future<Long> getCheckSumByInt32Hash(String actualDataTableName,
+                                        String historicalDataTableName,
+                                        Long sysCn,
+                                        Set<String> columnList);
+
+  Future<Void> deleteSpaceTuples(String spaceName, String whereCondition);
 }

@@ -1,15 +1,19 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw;
 
+import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
 import io.arenadata.dtm.common.plugin.exload.Format;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
-import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.MppwProperties;
+import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.AdqmMppwProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
+import io.arenadata.dtm.query.execution.plugin.adqm.factory.AdqmRestMppwKafkaRequestFactory;
+import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmRestMppwKafkaRequestFactoryImpl;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.LoadType;
-import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.RestLoadInitiator;
+import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.RestLoadClient;
+import io.arenadata.dtm.query.execution.plugin.adqm.dto.mppw.RestMppwKafkaLoadRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockDatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockEnvironment;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockStatusReporter;
@@ -17,6 +21,7 @@ import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaParameter
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
 import io.arenadata.dtm.query.execution.plugin.api.request.MppwRequest;
 import io.vertx.core.Future;
+import org.apache.avro.Schema;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -36,6 +41,8 @@ class MppwStartRequestHandlerTest {
 
     private static final String TEST_TOPIC = "adqm_topic";
     private static final String TEST_CONSUMER_GROUP = "adqm_group";
+    private final AdqmRestMppwKafkaRequestFactory mppwKafkaRequestFactory = mock(AdqmRestMppwKafkaRequestFactoryImpl.class);
+    private final List<KafkaBrokerInfo> kafkaBrokers = Collections.singletonList(new KafkaBrokerInfo("kafka.host", 9092));
 
     @BeforeAll
     public static void setup() {
@@ -56,7 +63,7 @@ class MppwStartRequestHandlerTest {
 
         DatabaseExecutor executor = new MockDatabaseExecutor(Arrays.asList(
                 t -> t.contains("CREATE TABLE IF NOT EXISTS dev__shares.accounts_ext_shard ON CLUSTER test_arenadata") &&
-                        t.contains("column1 Nullable(Int64), column2 Nullable(Int64), column3 Nullable(String), sys_op Nullable(Int32)") &&
+                        t.contains("column1 Nullable(Int64), column2 Nullable(Int64), column3 Nullable(String), sys_op Nullable(Int64)") &&
                         t.contains("ENGINE = Kafka()"),
                 t -> t.equalsIgnoreCase("CREATE TABLE IF NOT EXISTS dev__shares.accounts_buffer_shard ON CLUSTER test_arenadata (column1 Int64, column2 Int64, sys_op_buffer Nullable(Int8)) ENGINE = Join(ANY, INNER, column1, column2)"),
                 t -> t.equalsIgnoreCase("CREATE TABLE IF NOT EXISTS dev__shares.accounts_buffer ON CLUSTER test_arenadata AS dev__shares.accounts_buffer_shard ENGINE=Distributed('test_arenadata', 'shares', 'accounts_buffer_shard', column1)"),
@@ -67,31 +74,50 @@ class MppwStartRequestHandlerTest {
         ), mockData, false);
 
         MockStatusReporter mockReporter = createMockReporter(TEST_CONSUMER_GROUP + "dev__shares.accounts");
-        RestLoadInitiator mockInitiator = Mockito.mock(RestLoadInitiator.class);
+        RestLoadClient mockInitiator = Mockito.mock(RestLoadClient.class);
         MppwRequestHandler handler = new MppwStartRequestHandler(executor, ddlProperties, appConfiguration,
                 createMppwProperties(KAFKA),
-                mockReporter, mockInitiator);
+                mockReporter, mockInitiator, mppwKafkaRequestFactory);
+
         MppwRequest request = new MppwRequest(QueryRequest.builder()
                 .requestId(UUID.randomUUID())
                 .datamartMnemonic("shares").build(),
                 true, MppwKafkaParameter.builder()
                 .datamart("shares")
                 .sysCn(101L)
-                .targetTableName("accounts")
+                .destinationTableName("accounts")
                 .uploadMetadata(UploadExternalEntityMetadata.builder()
                         .externalSchema(getSchema())
                         .format(Format.AVRO)
                         .uploadMessageLimit(1000)
                         .build())
                 .topic(TEST_TOPIC)
-                .zookeeperHost("zkhost")
+                .brokers(kafkaBrokers)
                 .build());
 
-        handler.execute(request).onComplete(ar -> {
-            assertTrue(ar.succeeded(), ar.cause() != null ? ar.cause().getMessage() : "");
-            assertTrue(mockReporter.wasCalled("start"));
-            verify(mockInitiator, never()).initiateLoading(any());
-        });
+        RestMppwKafkaLoadRequest restRequest = RestMppwKafkaLoadRequest.builder()
+                .requestId(request.getQueryRequest().getRequestId().toString())
+                .datamart(request.getKafkaParameter().getDatamart())
+                .tableName(request.getKafkaParameter().getDestinationTableName())
+                .kafkaTopic(request.getKafkaParameter().getTopic())
+                .kafkaBrokers(request.getKafkaParameter().getBrokers())
+                .hotDelta(request.getKafkaParameter().getSysCn())
+                .consumerGroup("mppwProperties.getRestLoadConsumerGroup()")
+                .format(request.getKafkaParameter().getUploadMetadata().getFormat().getName())
+                .schema(new Schema.Parser().parse(request.getKafkaParameter().getUploadMetadata().getExternalSchema()))
+                .messageProcessingLimit(((UploadExternalEntityMetadata)request.getKafkaParameter().getUploadMetadata())
+                        .getUploadMessageLimit() == null ? 0 :
+                        ((UploadExternalEntityMetadata)request.getKafkaParameter().getUploadMetadata()).getUploadMessageLimit())
+                .build();
+
+        when(mppwKafkaRequestFactory.create(request)).thenReturn(restRequest);
+
+        handler.execute(request)
+                .onComplete(ar -> {
+                    assertTrue(ar.succeeded(), ar.cause() != null ? ar.cause().getMessage() : "");
+                    assertTrue(mockReporter.wasCalled("start"));
+                    verify(mockInitiator, never()).initiateLoading(any());
+                });
     }
 
     @Test
@@ -108,7 +134,7 @@ class MppwStartRequestHandlerTest {
 
         DatabaseExecutor executor = new MockDatabaseExecutor(Arrays.asList(
                 t -> t.contains("CREATE TABLE IF NOT EXISTS dev__shares.accounts_ext_shard ON CLUSTER test_arenadata") &&
-                        t.contains("column1 Int64, column2 Int64, column3 Nullable(String), sys_op Nullable(Int32)") &&
+                        t.contains("column1 Int64, column2 Int64, column3 Nullable(String), sys_op Nullable(Int64)") &&
                         t.contains("ENGINE = MergeTree()") &&
                         t.contains("ORDER BY (column1, column2)"),
                 t -> t.equalsIgnoreCase("CREATE TABLE IF NOT EXISTS dev__shares.accounts_buffer_shard ON CLUSTER test_arenadata (column1 Int64, column2 Int64, sys_op_buffer Nullable(Int8)) ENGINE = Join(ANY, INNER, column1, column2)"),
@@ -120,12 +146,12 @@ class MppwStartRequestHandlerTest {
         ), mockData, false);
 
         MockStatusReporter mockReporter = createMockReporter("restConsumerGroup");
-        RestLoadInitiator mockInitiator = Mockito.mock(RestLoadInitiator.class);
+        RestLoadClient mockInitiator = Mockito.mock(RestLoadClient.class);
         when(mockInitiator.initiateLoading(any())).thenReturn(Future.succeededFuture());
 
         MppwRequestHandler handler = new MppwStartRequestHandler(executor, ddlProperties, appConfiguration,
                 createMppwProperties(REST),
-                mockReporter, mockInitiator);
+                mockReporter, mockInitiator, mppwKafkaRequestFactory);
         MppwRequest request = new MppwRequest(QueryRequest.builder()
                 .requestId(UUID.randomUUID())
                 .sourceType(SourceType.ADQM)
@@ -133,15 +159,33 @@ class MppwStartRequestHandlerTest {
                 true, MppwKafkaParameter.builder()
                 .datamart("shares")
                 .sysCn(101L)
-                .targetTableName("accounts")
+                .destinationTableName("accounts")
                 .uploadMetadata(UploadExternalEntityMetadata.builder()
                         .externalSchema(getSchema())
                         .format(Format.AVRO)
                         .uploadMessageLimit(1000)
                         .build())
                 .topic(TEST_TOPIC)
-                .zookeeperHost("zkhost")
+                .brokers(kafkaBrokers)
                 .build());
+
+        RestMppwKafkaLoadRequest restRequest = RestMppwKafkaLoadRequest.builder()
+                .requestId(request.getQueryRequest().getRequestId().toString())
+                .datamart(request.getKafkaParameter().getDatamart())
+                .tableName(request.getKafkaParameter().getDestinationTableName())
+                .kafkaTopic(request.getKafkaParameter().getTopic())
+                .kafkaBrokers(request.getKafkaParameter().getBrokers())
+                .hotDelta(request.getKafkaParameter().getSysCn())
+                .consumerGroup("mppwProperties.getRestLoadConsumerGroup()")
+                .format(request.getKafkaParameter().getUploadMetadata().getFormat().getName())
+                .schema(new Schema.Parser().parse(request.getKafkaParameter().getUploadMetadata().getExternalSchema()))
+                .messageProcessingLimit(((UploadExternalEntityMetadata)request.getKafkaParameter().getUploadMetadata())
+                        .getUploadMessageLimit() == null ? 0 :
+                        ((UploadExternalEntityMetadata)request.getKafkaParameter().getUploadMetadata()).getUploadMessageLimit())
+                .build();
+
+        when(mppwKafkaRequestFactory.create(request)).thenReturn(restRequest);
+
         handler.execute(request).onComplete(ar -> {
             assertTrue(ar.succeeded(), ar.cause() != null ? ar.cause().getMessage() : "");
             assertTrue(mockReporter.wasCalled("start"));
@@ -162,15 +206,15 @@ class MppwStartRequestHandlerTest {
     }
 
     private String getSchema() {
-        return  "{\"type\":\"record\",\"name\":\"accounts\",\"namespace\":\"dm2\",\"fields\":[{\"name\":\"column1\",\"type\":[\"null\",\"long\"],\"default\":null,\"defaultValue\":\"null\"},{\"name\":\"column2\",\"type\":[\"null\",\"long\"],\"default\":null,\"defaultValue\":\"null\"},{\"name\":\"column3\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}],\"default\":null,\"defaultValue\":\"null\"},{\"name\":\"sys_op\",\"type\":\"int\",\"default\":0}]}";
+        return "{\"type\":\"record\",\"name\":\"accounts\",\"namespace\":\"dm2\",\"fields\":[{\"name\":\"column1\",\"type\":[\"null\",\"long\"],\"default\":null,\"defaultValue\":\"null\"},{\"name\":\"column2\",\"type\":[\"null\",\"long\"],\"default\":null,\"defaultValue\":\"null\"},{\"name\":\"column3\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}],\"default\":null,\"defaultValue\":\"null\"},{\"name\":\"sys_op\",\"type\":\"int\",\"default\":0}]}";
     }
 
-    private MppwProperties createMppwProperties(LoadType loadType) {
-        MppwProperties mppwProperties = new MppwProperties();
-        mppwProperties.setConsumerGroup(TEST_CONSUMER_GROUP);
-        mppwProperties.setKafkaBrokers("localhost:9092");
-        mppwProperties.setLoadType(loadType);
-        mppwProperties.setRestLoadConsumerGroup("restConsumerGroup");
-        return mppwProperties;
+    private AdqmMppwProperties createMppwProperties(LoadType loadType) {
+        AdqmMppwProperties adqmMppwProperties = new AdqmMppwProperties();
+        adqmMppwProperties.setConsumerGroup(TEST_CONSUMER_GROUP);
+        adqmMppwProperties.setKafkaBrokers("localhost:9092");
+        adqmMppwProperties.setLoadType(loadType);
+        adqmMppwProperties.setRestLoadConsumerGroup("restConsumerGroup");
+        return adqmMppwProperties;
     }
 }

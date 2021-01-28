@@ -12,11 +12,14 @@ import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.impl.SqlParserImpl;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
+
 @Slf4j
 class SqlSelectTreeTest {
 
     @Test
-    public void test() throws SqlParseException {
+    void test() throws SqlParseException {
         val sql = "SELECT v.col1 AS c\n" +
                 "FROM test.tbl FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' v";
         SqlParser.Config config = SqlParser.configBuilder()
@@ -31,11 +34,12 @@ class SqlSelectTreeTest {
         SqlParser parser = SqlParser.create(sql, config);
         SqlNode sqlNode = parser.parseQuery();
         SqlSelectTree selectTree = new SqlSelectTree((SqlSelect) sqlNode);
+        assertNotNull(selectTree);
         log.info(selectTree.toString());
     }
 
     @Test
-    public void test2() throws SqlParseException {
+    void test2() throws SqlParseException {
         val sql = "SELECT v.col1 AS c, (SELECT col4 FROM tblc FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59' t3 WHERE tblx.col6 = 0 ) AS r\n" +
                 "FROM test.tbl FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' AS t\n" +
                 "INNER JOIN (SELECT col4, col5\n" +
@@ -55,11 +59,13 @@ class SqlSelectTreeTest {
         SqlParser parser = SqlParser.create(sql, config);
         SqlNode sqlNode = parser.parseQuery();
         SqlSelectTree selectTree = new SqlSelectTree(sqlNode);
+        assertNotNull(selectTree);
+        assertFalse(selectTree.findSnapshots().isEmpty());
         log.info(selectTree.findSnapshots().toString());
     }
 
     @Test
-    public void test3() throws SqlParseException {
+    void test3() throws SqlParseException {
         val sql = "select *, CASE WHEN (account_type = 'D' AND  amount >= 0) OR (account_type = 'C' AND  amount <= 0) THEN 'OK' ELSE 'NOT OK' END\n" +
                 "  from (\n" +
                 "    select a.account_id, coalesce(sum(amount),0) amount, account_type\n" +
@@ -81,6 +87,8 @@ class SqlSelectTreeTest {
         SqlParser parser = SqlParser.create(sql, config);
         SqlNode sqlNode = parser.parseQuery();
         SqlSelectTree selectTree = new SqlSelectTree(sqlNode);
+        assertNotNull(selectTree);
+        assertFalse(selectTree.findAllTableAndSnapshots().isEmpty());
         log.info(selectTree.findAllTableAndSnapshots().toString());
     }
 

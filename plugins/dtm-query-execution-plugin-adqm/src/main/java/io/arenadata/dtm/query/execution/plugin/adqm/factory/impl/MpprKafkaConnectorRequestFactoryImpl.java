@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.factory.impl;
 
 import io.arenadata.dtm.common.reader.QueryRequest;
+import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.MpprKafkaConnectorRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.MpprKafkaConnectorRequestFactory;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.kafka.DownloadExternalEntityMetadata;
@@ -22,10 +23,12 @@ public class MpprKafkaConnectorRequestFactoryImpl implements MpprKafkaConnectorR
                 .table(queryRequest.getSql())
                 .sql(enrichedQuery)
                 .datamart(queryRequest.getDatamartMnemonic())
-                .zookeeperHost(kafkaParam.getZookeeperHost())
-                .zookeeperPort(String.valueOf(kafkaParam.getZookeeperPort()))
+                .kafkaBrokers(mpprRequest.getKafkaParameter().getBrokers())
                 .kafkaTopic(kafkaParam.getTopic())
                 .chunkSize(downloadMetadata.getChunkSize())
+                .avroSchema(downloadMetadata.getExternalSchema())
+                .metadata(mpprRequest.getMetadata())
+                .sourceType(SourceType.ADQM)
                 .build();
     }
 }

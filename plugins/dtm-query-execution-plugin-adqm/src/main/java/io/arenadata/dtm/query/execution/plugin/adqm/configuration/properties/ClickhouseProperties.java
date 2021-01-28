@@ -1,43 +1,15 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties;
 
+import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+@Data
 @ConfigurationProperties("adqm.datasource")
 public class ClickhouseProperties {
     private String database;
     private String hosts;
     private String user;
     private String password;
-
-    public String getDatabase() {
-        return database;
-    }
-
-    public void setDatabase(String database) {
-        this.database = database;
-    }
-
-    public String getHosts() {
-        return hosts;
-    }
-
-    public void setHosts(String hosts) {
-        this.hosts = hosts;
-    }
-
-    public String getUser() {
-        return user;
-    }
-
-    public void setUser(String user) {
-        this.user = user;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
+    private int socketTimeout = 30_000;
+    private int dataTransferTimeout = 10_000;
 }

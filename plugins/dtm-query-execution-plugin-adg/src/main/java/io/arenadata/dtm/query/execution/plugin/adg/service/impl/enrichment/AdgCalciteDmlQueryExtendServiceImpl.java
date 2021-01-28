@@ -5,6 +5,7 @@ import io.arenadata.dtm.common.delta.DeltaType;
 import io.arenadata.dtm.query.execution.plugin.adg.dto.QueryGeneratorContext;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.AdgHelperTableNamesFactory;
 import io.arenadata.dtm.query.execution.plugin.adg.service.QueryExtendService;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.prepare.CalciteCatalogReader;
@@ -56,14 +57,14 @@ public class AdgCalciteDmlQueryExtendServiceImpl implements QueryExtendService {
 
     RelNode insertModifiedTableScan(QueryGeneratorContext context, RelNode tableScan, DeltaInformation deltaInfo) {
         val relBuilder = RelBuilder.proto(tableScan.getCluster().getPlanner().getContext())
-                .create(tableScan.getCluster(),
-                        ((CalciteCatalogReader) context.getRelBuilder().getRelOptSchema())
-                                .withSchemaPath(Collections.singletonList(deltaInfo.getSchemaName())));
+            .create(tableScan.getCluster(),
+                ((CalciteCatalogReader) context.getRelBuilder().getRelOptSchema())
+                    .withSchemaPath(Collections.singletonList(deltaInfo.getSchemaName())));
 
         val rexBuilder = relBuilder.getCluster().getRexBuilder();
         List<RexNode> rexNodes = new ArrayList<>();
         IntStream.range(0, tableScan.getTable().getRowType().getFieldList().size()).forEach(index ->
-                rexNodes.add(rexBuilder.makeInputRef(tableScan, index))
+            rexNodes.add(rexBuilder.makeInputRef(tableScan, index))
         );
 
         val qualifiedName = tableScan.getTable().getQualifiedName();
@@ -71,7 +72,7 @@ public class AdgCalciteDmlQueryExtendServiceImpl implements QueryExtendService {
         val schemaName = deltaInfo.getSchemaName();
         val queryRequest = context.getQueryRequest();
         val tableNames = helperTableNamesFactory.create(queryRequest.getEnvName(),
-                schemaName, tableName);
+            schemaName, tableName);
         RelNode topRelNode;
         RelNode bottomRelNode;
 
@@ -82,72 +83,79 @@ public class AdgCalciteDmlQueryExtendServiceImpl implements QueryExtendService {
                 break;
             case FINISHED_IN:
                 topRelNode = createRelNodeDeltaFinishedIn(deltaInfo, relBuilder, rexNodes, tableNames.getHistory());
-                bottomRelNode = createRelNodeDeltaFinishedIn(deltaInfo, relBuilder, rexNodes, tableNames.getActual());
-                break;
+                return relBuilder.push(topRelNode).build();
             case DATETIME:
             case NUM:
                 topRelNode = createTopRelNodeDeltaNum(deltaInfo, relBuilder, rexNodes, tableNames.getHistory());
                 bottomRelNode = createBottomRelNodeDeltaNum(deltaInfo, relBuilder, rexNodes, tableNames.getActual());
                 break;
             default:
-                throw new RuntimeException(String.format("Incorrect delta type %s, expected values: %s!",
-                        deltaInfo.getType(), DeltaType.values()));
+                throw new DataSourceException(String.format("Incorrect delta type %s, expected values: %s!",
+                    deltaInfo.getType(), DeltaType.values()));
         }
 
         return relBuilder.push(topRelNode).push(bottomRelNode).union(true).build();
     }
 
-    private RelNode createRelNodeDeltaStartedIn(DeltaInformation deltaInfo, RelBuilder relBuilder,
-                                                List<RexNode> rexNodes, String tableName) {
+    private RelNode createRelNodeDeltaStartedIn(DeltaInformation deltaInfo,
+                                                RelBuilder relBuilder,
+                                                List<RexNode> rexNodes,
+                                                String tableName) {
         return relBuilder.scan(tableName).filter(
-                relBuilder.call(SqlStdOperatorTable.AND,
-                        relBuilder.call(SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
-                                relBuilder.field(SYS_FROM_FIELD),
-                                relBuilder.literal(deltaInfo.getSelectOnInterval().getSelectOnFrom())),
-                        relBuilder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
-                                relBuilder.field(SYS_FROM_FIELD),
-                                relBuilder.literal(deltaInfo.getSelectOnInterval().getSelectOnTo()))
-                )
-        ).project(rexNodes).build();
-    }
-
-    private RelNode createRelNodeDeltaFinishedIn(DeltaInformation deltaInfo, RelBuilder relBuilder,
-                                                 List<RexNode> rexNodes, String tableName) {
-        return relBuilder.scan(tableName).filter(
-                relBuilder.call(SqlStdOperatorTable.AND,
-                        relBuilder.call(SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
-                                relBuilder.field(SYS_TO_FIELD),
-                                relBuilder.literal(deltaInfo.getSelectOnInterval().getSelectOnFrom() - 1)),
-                        relBuilder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
-                                relBuilder.field(SYS_TO_FIELD),
-                                relBuilder.literal(deltaInfo.getSelectOnInterval().getSelectOnTo() - 1)),
-                        relBuilder.call(SqlStdOperatorTable.EQUALS,
-                                relBuilder.field(SYS_OP_FIELD),
-                                relBuilder.literal(1))
-                )
-        ).project(rexNodes).build();
-    }
-
-    private RelNode createTopRelNodeDeltaNum(DeltaInformation deltaInfo, RelBuilder relBuilder,
-                                             List<RexNode> rexNodes, String tableName) {
-        return relBuilder.scan(tableName).filter(
-                relBuilder.call(SqlStdOperatorTable.AND,
-                        relBuilder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
-                                relBuilder.field(SYS_FROM_FIELD),
-                                relBuilder.literal(deltaInfo.getSelectOnNum())),
-                        relBuilder.call(SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
-                                relBuilder.field(SYS_TO_FIELD),
-                                relBuilder.literal(deltaInfo.getSelectOnNum()))
-                )
-        ).project(rexNodes).build();
-    }
-
-    private RelNode createBottomRelNodeDeltaNum(DeltaInformation deltaInfo, RelBuilder relBuilder,
-                                                List<RexNode> rexNodes, String tableName) {
-        return relBuilder.scan(tableName).filter(
+            relBuilder.call(SqlStdOperatorTable.AND,
+                relBuilder.call(SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
+                    relBuilder.field(SYS_FROM_FIELD),
+                    relBuilder.literal(deltaInfo.getSelectOnInterval().getSelectOnFrom())),
                 relBuilder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
-                        relBuilder.field(SYS_FROM_FIELD),
-                        relBuilder.literal(deltaInfo.getSelectOnNum()))).project(rexNodes).build();
+                    relBuilder.field(SYS_FROM_FIELD),
+                    relBuilder.literal(deltaInfo.getSelectOnInterval().getSelectOnTo()))
+            )
+        ).project(rexNodes).build();
+    }
+
+    private RelNode createRelNodeDeltaFinishedIn(DeltaInformation deltaInfo,
+                                                 RelBuilder relBuilder,
+                                                 List<RexNode> rexNodes,
+                                                 String tableName) {
+        return relBuilder.scan(tableName).filter(
+            relBuilder.call(SqlStdOperatorTable.AND,
+                relBuilder.call(SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
+                    relBuilder.field(SYS_TO_FIELD),
+                    relBuilder.literal(deltaInfo.getSelectOnInterval().getSelectOnFrom() - 1)),
+                relBuilder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
+                    relBuilder.field(SYS_TO_FIELD),
+                    relBuilder.literal(deltaInfo.getSelectOnInterval().getSelectOnTo() - 1)),
+                relBuilder.call(SqlStdOperatorTable.EQUALS,
+                    relBuilder.field(SYS_OP_FIELD),
+                    relBuilder.literal(1))
+            )
+        ).project(rexNodes).build();
+    }
+
+    private RelNode createTopRelNodeDeltaNum(DeltaInformation deltaInfo,
+                                             RelBuilder relBuilder,
+                                             List<RexNode> rexNodes,
+                                             String tableName) {
+        return relBuilder.scan(tableName).filter(
+            relBuilder.call(SqlStdOperatorTable.AND,
+                relBuilder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
+                    relBuilder.field(SYS_FROM_FIELD),
+                    relBuilder.literal(deltaInfo.getSelectOnNum())),
+                relBuilder.call(SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
+                    relBuilder.field(SYS_TO_FIELD),
+                    relBuilder.literal(deltaInfo.getSelectOnNum()))
+            )
+        ).project(rexNodes).build();
+    }
+
+    private RelNode createBottomRelNodeDeltaNum(DeltaInformation deltaInfo,
+                                                RelBuilder relBuilder,
+                                                List<RexNode> rexNodes,
+                                                String tableName) {
+        return relBuilder.scan(tableName).filter(
+            relBuilder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
+                relBuilder.field(SYS_FROM_FIELD),
+                relBuilder.literal(deltaInfo.getSelectOnNum()))).project(rexNodes).build();
     }
 
 }

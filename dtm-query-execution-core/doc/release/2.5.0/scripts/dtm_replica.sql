@@ -16,7 +16,7 @@ select count(*) from transactions DATASOURCE_TYPE = 'ADQM';
 
 -- commit delta;
 
-select count(*) from transactions for system_time as of latest_uncommited_delta DATASOURCE_TYPE = 'ADB';
+select count(*) from transactions for system_time as of latest_uncommitted_delta DATASOURCE_TYPE = 'ADB';
 
 select count(*) from transactions;
 

@@ -23,22 +23,22 @@ public class AdbRollbackRequestFactory implements RollbackRequestFactory<AdbRoll
     @Override
     public AdbRollbackRequest create(RollbackRequest rollbackRequest) {
         String truncateSql = String.format(TRUNCATE_STAGING,
-            rollbackRequest.getDatamart(), rollbackRequest.getTargetTable());
+            rollbackRequest.getDatamart(), rollbackRequest.getDestinationTable());
         String deleteFromActualSql = String.format(DELETE_FROM_ACTUAL, rollbackRequest.getDatamart(),
-            rollbackRequest.getTargetTable(), rollbackRequest.getSysCn());
+            rollbackRequest.getDestinationTable(), rollbackRequest.getSysCn());
         String fields = rollbackRequest.getEntity().getFields().stream()
             .map(EntityField::getName)
             .collect(Collectors.joining(","));
         long sysTo = rollbackRequest.getSysCn() - 1;
         String insertSql = String.format(INSERT_ACTUAL_SQL, rollbackRequest.getDatamart(),
-            rollbackRequest.getTargetTable(), fields, fields,
-            rollbackRequest.getDatamart(), rollbackRequest.getTargetTable(), sysTo);
+            rollbackRequest.getDestinationTable(), fields, fields,
+            rollbackRequest.getDatamart(), rollbackRequest.getDestinationTable(), sysTo);
         String deleteFromHistory = String.format(DELETE_FROM_HISTORY, rollbackRequest.getDatamart(),
-            rollbackRequest.getTargetTable(), sysTo);
+            rollbackRequest.getDestinationTable(), sysTo);
 
         return new AdbRollbackRequest(
-            PreparedStatementRequest.onlySql(deleteFromActualSql),
             PreparedStatementRequest.onlySql(deleteFromHistory),
+            PreparedStatementRequest.onlySql(deleteFromActualSql),
             PreparedStatementRequest.onlySql(truncateSql),
             PreparedStatementRequest.onlySql(insertSql)
         );

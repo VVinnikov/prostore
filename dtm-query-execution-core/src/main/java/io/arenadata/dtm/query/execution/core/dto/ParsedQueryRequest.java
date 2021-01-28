@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.core.dto;
 
 import io.arenadata.dtm.common.reader.QueryRequest;
-import io.arenadata.dtm.query.execution.plugin.api.service.SqlProcessingType;
+import io.arenadata.dtm.common.model.SqlProcessingType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

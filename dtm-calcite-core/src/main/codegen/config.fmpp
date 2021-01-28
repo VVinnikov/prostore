@@ -49,8 +49,18 @@ data: {
       "STARTED",
       "FINISHED",
       "DELTA_NUM",
-      "LATEST_UNCOMMITED_DELTA"
+      "LATEST_UNCOMMITTED_DELTA"
       "USE"
+      "GET_DELTA_OK"
+      "GET_DELTA_HOT"
+      "GET_DELTA_BY_DATETIME"
+      "GET_DELTA_BY_NUM"
+      "CONFIG_STORAGE_ADD"
+      "DATASOURCE_TYPE"
+      "CHECK_DATABASE"
+      "CHECK_TABLE"
+      "CHECK_DATA"
+      "HISTORY"
     ]
 
     # List of keywords from "keywords" section that are not reserved.
@@ -398,7 +408,17 @@ data: {
     statementParserMethods: [
         "SqlBeginDelta()"
         "SqlCommitDelta()"
+        "SqlRollbackDelta()"
         "SqlUseSchema()"
+        "SqlGetDeltaOk()"
+        "SqlGetDeltaHot()"
+        "SqlGetDeltaByDateTime()"
+        "SqlGetDeltaByNum()"
+        "SqlConfigStorageAdd()"
+        "SqlCheckDatabase()"
+        "SqlCheckTable()"
+        "SqlCheckData()"
+        "SqlTruncateHistory()"
     ]
 
     # List of methods for parsing custom literals.

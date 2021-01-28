@@ -4,9 +4,9 @@ import io.arenadata.dtm.common.exception.CrashException;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaDaoExecutor;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaServiceDaoExecutorHelper;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.WriteOperationErrorExecutor;
-import io.arenadata.dtm.query.execution.core.dao.exception.delta.DeltaException;
-import io.arenadata.dtm.query.execution.core.dao.exception.delta.DeltaNotExistException;
-import io.arenadata.dtm.query.execution.core.dao.exception.delta.DeltaWriteOpNotFoundException;
+import io.arenadata.dtm.query.execution.core.exception.delta.DeltaException;
+import io.arenadata.dtm.query.execution.core.exception.delta.DeltaNotExistException;
+import io.arenadata.dtm.query.execution.core.exception.delta.DeltaWriteOpNotFoundException;
 import io.arenadata.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -47,14 +47,13 @@ public class WriteOperationErrorExecutorImpl extends DeltaServiceDaoExecutorHelp
             .map(this::serializeDeltaWriteOp)
             .compose(deltaWriteOpData -> executor.setData(getWriteOpPath(datamart, opNumCnCtx[0]), deltaWriteOpData, -1))
             .onSuccess(delta -> {
-                log.debug("write delta operation \"error\" by datamart[{}], sysCn[{}] completed successfully", datamart, sysCn);
+                log.debug("Write delta operation \"error\" by datamart[{}], sysCn[{}] completed successfully", datamart, sysCn);
                 resultPromise.complete();
             })
             .onFailure(error -> {
-                val errMsg = String.format("can't write operation \"error\" on datamart[%s], sysCn[%d]",
+                val errMsg = String.format("Can't write operation \"error\" on datamart[%s], sysCn[%d]",
                     datamart,
                     sysCn);
-                log.error(errMsg, error);
                 if (error instanceof KeeperException.NoNodeException) {
                     resultPromise.fail(new DeltaWriteOpNotFoundException(error));
                 } else if (error instanceof DeltaException) {

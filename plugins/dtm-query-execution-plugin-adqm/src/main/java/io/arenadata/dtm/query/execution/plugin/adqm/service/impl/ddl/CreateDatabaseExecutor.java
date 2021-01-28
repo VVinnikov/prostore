@@ -1,12 +1,12 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.ddl;
 
-import io.arenadata.dtm.common.reader.QueryRequest;
+import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.SqlCreateDatabase;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DdlDatasourceException;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
 import io.vertx.core.AsyncResult;
@@ -22,46 +22,35 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class CreateDatabaseExecutor implements DdlExecutor<Void> {
-    private static final String CREATE_TEMPLATE = "CREATE DATABASE %s__%s ON CLUSTER %s";
+    private static final String CREATE_TEMPLATE = "CREATE DATABASE IF NOT EXISTS %s__%s ON CLUSTER %s";
 
-    private final DatabaseExecutor databaseExecutor;
-    private final DropDatabaseExecutor dropDatabaseExecutor;
-    private final DdlProperties ddlProperties;
     private final AppConfiguration appConfiguration;
+    private final DatabaseExecutor databaseExecutor;
+    private final DdlProperties ddlProperties;
 
     public CreateDatabaseExecutor(DatabaseExecutor databaseExecutor,
                                   DdlProperties ddlProperties,
-                                  AppConfiguration appConfiguration, DropDatabaseExecutor dropDatabaseExecutor) {
+                                  AppConfiguration appConfiguration) {
         this.databaseExecutor = databaseExecutor;
         this.ddlProperties = ddlProperties;
         this.appConfiguration = appConfiguration;
-        this.dropDatabaseExecutor = dropDatabaseExecutor;
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<Void>> handler) {
-        SqlNode query = context.getQuery();
-        if (!(query instanceof SqlCreateDatabase)) {
-            handler.handle(Future.failedFuture(String.format("Expecting SqlCreateDatabase in context, receiving: %s", context)));
-            return;
-        }
-
-        String name = ((SqlCreateDatabase) query).getName().names.get(0);
-
-        DdlRequestContext dropCtx = createDropRequestContext(name);
-        dropDatabaseExecutor.execute(dropCtx, SqlKind.DROP_SCHEMA.lowerName, ar -> {
-            if (ar.succeeded()) {
-                createDatabase(name).onComplete(handler);
-            } else {
-                handler.handle(Future.failedFuture(ar.cause()));
+    public Future<Void> execute(DdlRequestContext context, String sqlNodeName) {
+        return Future.future(promise -> {
+            SqlNode query = context.getQuery();
+            if (!(query instanceof SqlCreateDatabase)) {
+                promise.fail(new DdlDatasourceException(
+                        String.format("Expecting SqlCreateDatabase in context, receiving: %s",
+                                context)));
+                return;
             }
-        });
-    }
 
-    private DdlRequestContext createDropRequestContext(String schemaName) {
-        DdlRequestContext dropCtx = new DdlRequestContext(new DdlRequest(new QueryRequest()));
-        dropCtx.setDatamartName(schemaName);
-        return dropCtx;
+            String name = ((SqlCreateDatabase) query).getName().names.get(0);
+            createDatabase(name)
+                    .onComplete(promise);
+        });
     }
 
     @Override

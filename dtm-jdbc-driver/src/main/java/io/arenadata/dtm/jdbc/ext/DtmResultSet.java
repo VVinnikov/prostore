@@ -1,8 +1,8 @@
 package io.arenadata.dtm.jdbc.ext;
 
+import io.arenadata.dtm.jdbc.core.BaseConnection;
 import io.arenadata.dtm.jdbc.core.Field;
-import io.arenadata.dtm.jdbc.model.ColumnInfo;
-import io.arenadata.dtm.jdbc.util.DtmException;
+import io.arenadata.dtm.jdbc.util.DtmSqlException;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import lombok.SneakyThrows;
 import lombok.val;
@@ -12,51 +12,47 @@ import java.io.Reader;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URL;
-import java.sql.Date;
 import java.sql.*;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.util.*;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 public class DtmResultSet implements ResultSet {
-
-    private final SimpleDateFormat dateTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-    private final TimeZone defaultDateTimeTimeZone = TimeZone.getDefault();
     private final List<ColumnMetadata> metadata;
     private List<Field[]> fields;
     private int currentRow = -1;
     private Field[] thisRow;
-    private Connection connection;
+    private final BaseConnection connection;
     private ResultSetMetaData rsMetaData;
-    private List<ColumnInfo> columns;
+    private final ZoneId zoneId;
 
-    public DtmResultSet(Connection connection, List<Field[]> fields, List<ColumnMetadata> metadata, List<ColumnInfo> columns) {
+    public DtmResultSet(BaseConnection connection, List<Field[]> fields, List<ColumnMetadata> metadata, ZoneId timeZone) {
         this.connection = connection;
         this.fields = fields;
-        thisRow = (fields == null || fields.isEmpty()) ?
+        this.thisRow = (fields == null || fields.isEmpty()) ?
                 new Field[0] : fields.get(0);
         this.metadata = metadata;
-        this.columns = columns;
+        this.zoneId = timeZone;
     }
 
     public static DtmResultSet createEmptyResultSet() {
         return new DtmResultSet(null,
                 Collections.singletonList(new Field[]{new Field("insert_id", "")}),
-                Collections.emptyList(), Collections.emptyList());
-    }
-
-    public List<ColumnInfo> getColumns() {
-        return columns;
+                Collections.emptyList(),
+                DtmConnectionImpl.DEFAULT_TIME_ZONE);
     }
 
     @Override
     public boolean next() {
-        if (currentRow + 1 >= fields.size()) {
+        if (this.currentRow + 1 >= this.fields.size()) {
             return false;
         } else {
-            currentRow++;
+            this.currentRow++;
         }
         initRowBuffer();
         return true;
@@ -64,18 +60,18 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public boolean first() throws SQLException {
-        if (fields.size() <= 0) {
+        if (this.fields.isEmpty()) {
             return false;
         }
 
-        currentRow = 0;
+        this.currentRow = 0;
         initRowBuffer();
 
         return true;
     }
 
     private void initRowBuffer() {
-        thisRow = fields.get(currentRow);
+        this.thisRow = this.fields.get(this.currentRow);
     }
 
     @Override
@@ -95,14 +91,14 @@ public class DtmResultSet implements ResultSet {
     public int findColumn(String columnLabel) {
         int col = findColumnIndex(columnLabel);
         if (col == 0) {
-            throw new DtmException("Column not found" + columnLabel);
+            throw new DtmSqlException("Column not found" + columnLabel);
         }
         return col;
     }
 
     private int findColumnIndex(String columnName) {
-        for (int i = 1; i <= thisRow.length; i++) {
-            if (thisRow[i - 1].getColumnLabel().equals(columnName)) {
+        for (int i = 1; i <= this.thisRow.length; i++) {
+            if (this.thisRow[i - 1].getColumnLabel().equals(columnName)) {
                 return i;
             }
         }
@@ -111,15 +107,42 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public ResultSetMetaData getMetaData() {
-        if (rsMetaData == null) {
-            rsMetaData = new DtmResultSetMetaData(connection, metadata, this);
+        if (this.rsMetaData == null) {
+            this.rsMetaData = new DtmResultSetMetaData(this.connection, this.metadata);
         }
-        return rsMetaData;
+        return this.rsMetaData;
     }
 
     @Override
     public Object getObject(int columnIndex) throws SQLException {
-        return this.getValue(columnIndex);
+        final ColumnMetadata columnMetadata = this.metadata.get(columnIndex - 1);
+        switch (columnMetadata.getType()) {
+            case INT:
+                return this.getInt(columnIndex);
+            case BIGINT:
+                return this.getLong(columnIndex);
+            case VARCHAR:
+            case ANY:
+            case CHAR:
+            case UUID:
+            case BLOB:
+                return this.getString(columnIndex);
+            case FLOAT:
+                return this.getFloat(columnIndex);
+            case DOUBLE:
+                return this.getDouble(columnIndex);
+            case BOOLEAN:
+                return this.getBoolean(columnIndex);
+            case DATE:
+                return this.getDate(columnIndex);
+            case TIME:
+                return this.getTime(columnIndex);
+            case TIMESTAMP:
+                return this.getTimestamp(columnIndex);
+            default:
+                throw new SQLException(String.format("Column type %s for index %s not found!",
+                        columnMetadata.getType(), columnIndex));
+        }
     }
 
     @Override
@@ -128,7 +151,7 @@ public class DtmResultSet implements ResultSet {
     }
 
     private Object getValue(int columnIndex) throws SQLException {
-        Field field = thisRow[columnIndex - 1];
+        Field field = this.thisRow[columnIndex - 1];
         if (field == null) {
             throw new SQLException(String.format("Field for index %s not found!", columnIndex));
         }
@@ -137,7 +160,7 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public void close() throws SQLException {
-
+        //FIXME implement this
     }
 
     @Override
@@ -183,7 +206,7 @@ public class DtmResultSet implements ResultSet {
     @Override
     public float getFloat(int columnIndex) throws SQLException {
         final Object value = this.getValue(columnIndex);
-        return value == null ? 0 : (Float) value;
+        return value == null ? 0 : ((Double) value).floatValue();
     }
 
     @Override
@@ -216,12 +239,9 @@ public class DtmResultSet implements ResultSet {
     @Override
     public Date getDate(int columnIndex) throws SQLException {
         final Object value = this.getValue(columnIndex);
-        if (value != null && !value.toString().equals("0000-00-00")) {
-            try {
-                return new Date(this.dateFormat.parse(value.toString()).getTime());
-            } catch (ParseException e) {
-                throw new SQLException("Incorrect date value", e);
-            }
+        if (value != null) {
+            return Date.valueOf(LocalDateTime.ofInstant(Instant.ofEpochMilli((Long) value),
+                    this.zoneId).toLocalDate());
         } else {
             return null;
         }
@@ -235,25 +255,12 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public Timestamp getTimestamp(int columnIndex) throws SQLException {
-        final Long value = getTimestampAsLong(columnIndex);
-        return value == null ? null : new Timestamp(value);
-    }
-
-    private Long getTimestampAsLong(int columnIndex) throws SQLException {
         final Object value = this.getValue(columnIndex);
-        return this.toTimestamp(value, this.defaultDateTimeTimeZone);
-    }
-
-    private Long toTimestamp(Object value, TimeZone timeZone) {
-        if (value != null && !value.toString().equals("0000-00-00 00:00:00")) {
-            try {
-                this.dateTimeFormat.setTimeZone(timeZone);
-                return this.dateTimeFormat.parse(value.toString()).getTime();
-            } catch (ParseException var4) {
-                throw new RuntimeException(var4);
-            }
-        } else {
+        if (value == null) {
             return null;
+        } else {
+            Number numberValue = (Number) value;
+            return Timestamp.from(Instant.ofEpochMilli(numberValue.longValue()));
         }
     }
 
@@ -354,7 +361,7 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public void clearWarnings() throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -405,12 +412,12 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public void beforeFirst() throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void afterLast() throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -445,7 +452,7 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public void setFetchDirection(int direction) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -455,7 +462,7 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public void setFetchSize(int rows) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -485,227 +492,227 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public void updateNull(int columnIndex) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateBoolean(int columnIndex, boolean x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateByte(int columnIndex, byte x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateShort(int columnIndex, short x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateInt(int columnIndex, int x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateLong(int columnIndex, long x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateFloat(int columnIndex, float x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateDouble(int columnIndex, double x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateBigDecimal(int columnIndex, BigDecimal x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateString(int columnIndex, String x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateBytes(int columnIndex, byte[] x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateDate(int columnIndex, Date x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateTime(int columnIndex, Time x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateTimestamp(int columnIndex, Timestamp x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateAsciiStream(int columnIndex, InputStream x, int length) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateBinaryStream(int columnIndex, InputStream x, int length) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateCharacterStream(int columnIndex, Reader x, int length) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateObject(int columnIndex, Object x, int scaleOrLength) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateObject(int columnIndex, Object x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateNull(String columnLabel) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateBoolean(String columnLabel, boolean x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateByte(String columnLabel, byte x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateShort(String columnLabel, short x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateInt(String columnLabel, int x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateLong(String columnLabel, long x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateFloat(String columnLabel, float x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateDouble(String columnLabel, double x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateBigDecimal(String columnLabel, BigDecimal x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateString(String columnLabel, String x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateBytes(String columnLabel, byte[] x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateDate(String columnLabel, Date x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateTime(String columnLabel, Time x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateTimestamp(String columnLabel, Timestamp x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateAsciiStream(String columnLabel, InputStream x, int length) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateBinaryStream(String columnLabel, InputStream x, int length) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateCharacterStream(String columnLabel, Reader reader, int length) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateObject(String columnLabel, Object x, int scaleOrLength) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateObject(String columnLabel, Object x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void insertRow() throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateRow() throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void deleteRow() throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void refreshRow() throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void cancelRowUpdates() throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void moveToInsertRow() throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void moveToCurrentRow() throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -765,7 +772,7 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public Date getDate(int columnIndex, Calendar cal) throws SQLException {
-        val value = (LocalDate) thisRow[columnIndex - 1].getValue();
+        val value = (LocalDate) this.thisRow[columnIndex - 1].getValue();
         return Date.valueOf(value);
     }
 
@@ -806,42 +813,42 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public void updateRef(int columnIndex, Ref x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateRef(String columnLabel, Ref x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateBlob(int columnIndex, Blob x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateBlob(String columnLabel, Blob x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateClob(int columnIndex, Clob x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateClob(String columnLabel, Clob x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateArray(int columnIndex, Array x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateArray(String columnLabel, Array x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -856,12 +863,12 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public void updateRowId(int columnIndex, RowId x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateRowId(String columnLabel, RowId x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -876,22 +883,22 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public void updateNString(int columnIndex, String nString) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateNString(String columnLabel, String nString) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateNClob(int columnIndex, NClob nClob) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateNClob(String columnLabel, NClob nClob) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -916,12 +923,12 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public void updateSQLXML(int columnIndex, SQLXML xmlObject) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateSQLXML(String columnLabel, SQLXML xmlObject) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -946,142 +953,142 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public void updateNCharacterStream(int columnIndex, Reader x, long length) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateNCharacterStream(String columnLabel, Reader reader, long length) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateAsciiStream(int columnIndex, InputStream x, long length) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateBinaryStream(int columnIndex, InputStream x, long length) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateCharacterStream(int columnIndex, Reader x, long length) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateAsciiStream(String columnLabel, InputStream x, long length) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateBinaryStream(String columnLabel, InputStream x, long length) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateCharacterStream(String columnLabel, Reader reader, long length) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateBlob(int columnIndex, InputStream inputStream, long length) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateBlob(String columnLabel, InputStream inputStream, long length) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateClob(int columnIndex, Reader reader, long length) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateClob(String columnLabel, Reader reader, long length) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateNClob(int columnIndex, Reader reader, long length) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateNClob(String columnLabel, Reader reader, long length) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateNCharacterStream(int columnIndex, Reader x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateNCharacterStream(String columnLabel, Reader reader) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateAsciiStream(int columnIndex, InputStream x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateBinaryStream(int columnIndex, InputStream x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateCharacterStream(int columnIndex, Reader x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateAsciiStream(String columnLabel, InputStream x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateBinaryStream(String columnLabel, InputStream x) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateCharacterStream(String columnLabel, Reader reader) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateBlob(int columnIndex, InputStream inputStream) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateBlob(String columnLabel, InputStream inputStream) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateClob(int columnIndex, Reader reader) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateClob(String columnLabel, Reader reader) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateNClob(int columnIndex, Reader reader) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateNClob(String columnLabel, Reader reader) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override

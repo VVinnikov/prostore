@@ -10,6 +10,5 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CloseDeltaEvent {
-    private long deltaNum;
     private LocalDateTime deltaDateTime;
 }

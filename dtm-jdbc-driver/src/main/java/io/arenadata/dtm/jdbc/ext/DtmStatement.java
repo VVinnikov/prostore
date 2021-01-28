@@ -1,57 +1,58 @@
 package io.arenadata.dtm.jdbc.ext;
 
-import io.arenadata.dtm.jdbc.core.Field;
-import io.arenadata.dtm.jdbc.core.QueryResult;
+import io.arenadata.dtm.jdbc.core.*;
+import io.arenadata.dtm.jdbc.util.DtmSqlException;
+import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.*;
-import java.util.ArrayList;
+import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.IntStream;
 
 @Slf4j
-public class DtmStatement implements Statement {
-
+public class DtmStatement implements BaseStatement {
     /**
-     * Текущее подключение
+     * DTM connection
      */
-    protected DtmConnection connection;
+    protected final BaseConnection connection;
     /**
-     * Тип возвращаемого resultSet'a (ResultSet.TYPE_xxx)
+     * ResultSet type (ResultSet.TYPE_xxx)
      */
     protected final int resultSetScrollType;
     /**
-     * Является ли обновляемым (ResultSet.CONCUR_xxx)
+     * Is result set updatable (ResultSet.CONCUR_xxx)
      */
     protected final int concurrency;
-
     /**
-     * Максимальное количество строк в ответе
+     * Max rows count
      */
     protected long maxRows;
-
     /**
-     * Количество строк в блоке
+     * Return rows count
      */
     protected int fetchSize;
-
     /**
-     * Текущий ResultSet
+     * Result set wrapper
      */
-    protected DtmResultSet resultSet;
+    protected ResultSetWrapper result;
+    /**
+     * Is connection closed
+     */
+    private boolean isClosed;
 
-    public DtmStatement(DtmConnection c, int rsType, int rsConcurrency) {
+    public DtmStatement(BaseConnection c, int rsType, int rsConcurrency) {
         this.connection = c;
-        resultSetScrollType = rsType;
-        concurrency = rsConcurrency;
+        this.resultSetScrollType = rsType;
+        this.concurrency = rsConcurrency;
+        this.isClosed = false;
+        this.result = null;
     }
 
     @Override
     public ResultSet executeQuery(String sql) throws SQLException {
         if (executeInternal(sql, fetchSize, Statement.NO_GENERATED_KEYS)) {
-            return resultSet;
+            return this.getSingleResultSet();
         }
         return DtmResultSet.createEmptyResultSet();
     }
@@ -64,23 +65,31 @@ public class DtmStatement implements Statement {
 
     private boolean executeInternal(String sql, int fetchSize, int noGeneratedKeys) throws SQLException {
         log.debug("executeInternal: {}", sql);
-        QueryResult queryResult = connection.protocol.executeQuery(sql);
-        if (queryResult.getResult() != null) {
-            List<Field[]> result = new ArrayList<>();
-            List<Map<String, Object>> rows = queryResult.getResult();
-
-            rows.forEach(row -> {
-                Field[] resultFields = new Field[row.size()];
-                IntStream.range(0, queryResult.getMetadata().size()).forEach(key -> {
-                    String columnName = queryResult.getMetadata().get(key).getName();
-                    resultFields[key] = new Field(columnName, row.get(columnName));
-                });
-                result.add(resultFields);
-            });
-            resultSet = new DtmResultSet(connection, result, queryResult.getMetadata(), Collections.emptyList());
+        List<Query> queries = this.connection.getQueryExecutor().createQuery(sql);
+        DtmResultHandler resultHandler = new DtmResultHandler();
+        if (queries.size() == 1) {
+            this.connection.getQueryExecutor().execute(queries.get(0), Collections.emptyList(), resultHandler);
+        } else {
+            this.connection.getQueryExecutor().execute(queries, Collections.emptyList(), resultHandler);
         }
+        if (resultHandler.getException() == null) {
+            this.result = resultHandler.getResult();
+            return result != null;
+        } else {
+            throw new SQLException(resultHandler.getException());
+        }
+    }
 
-        return resultSet != null;
+    protected ResultSet getSingleResultSet() throws SQLException {
+        synchronized (this) {
+            this.checkClosed();
+            ResultSetWrapper result = this.result;
+            if (result.getNext() != null) {
+                throw new DtmSqlException("Multiple ResultSets were returned by the query.");
+            } else {
+                return result.getResultSet();
+            }
+        }
     }
 
     @Override
@@ -92,7 +101,7 @@ public class DtmStatement implements Statement {
 
     @Override
     public void close() throws SQLException {
-
+        this.isClosed = true;
     }
 
     @Override
@@ -102,7 +111,7 @@ public class DtmStatement implements Statement {
 
     @Override
     public void setMaxFieldSize(int max) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -117,7 +126,7 @@ public class DtmStatement implements Statement {
 
     @Override
     public void setEscapeProcessing(boolean enable) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -127,12 +136,12 @@ public class DtmStatement implements Statement {
 
     @Override
     public void setQueryTimeout(int seconds) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void cancel() throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -142,17 +151,18 @@ public class DtmStatement implements Statement {
 
     @Override
     public void clearWarnings() throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void setCursorName(String name) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public ResultSet getResultSet() throws SQLException {
-        return resultSet;
+        this.checkClosed();
+        return this.result == null ? null : this.result.getResultSet();
     }
 
     @Override
@@ -162,12 +172,20 @@ public class DtmStatement implements Statement {
 
     @Override
     public boolean getMoreResults() throws SQLException {
-        return false;
+        this.checkClosed();
+        if (this.result != null && this.result.getResultSet() != null) {
+            this.result.getResultSet().close();
+        }
+
+        if (this.result != null) {
+            this.result = this.result.getNext();
+        }
+        return this.result != null && this.result.getResultSet() != null;
     }
 
     @Override
     public void setFetchDirection(int direction) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -204,12 +222,12 @@ public class DtmStatement implements Statement {
 
     @Override
     public void addBatch(String sql) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void clearBatch() throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -269,12 +287,18 @@ public class DtmStatement implements Statement {
 
     @Override
     public boolean isClosed() throws SQLException {
-        return false;
+        return this.isClosed;
+    }
+
+    protected void checkClosed() throws SQLException {
+        if (this.isClosed()) {
+            throw new DtmSqlException("This statement has been closed.");
+        }
     }
 
     @Override
     public void setPoolable(boolean poolable) throws SQLException {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -300,5 +324,41 @@ public class DtmStatement implements Statement {
     @Override
     public boolean isWrapperFor(Class<?> iface) throws SQLException {
         return false;
+    }
+
+    @Override
+    public ResultSet createDriverResultSet(List<Field[]> fields, List<ColumnMetadata> metadata) {
+        return createResultSet(fields, metadata, DtmConnectionImpl.DEFAULT_TIME_ZONE);
+    }
+
+    private DtmResultSet createResultSet(List<Field[]> fields, List<ColumnMetadata> metadata, ZoneId timeZone) {
+        return new DtmResultSet(this.connection, fields, metadata, timeZone);
+    }
+
+    public class DtmResultHandler extends ResultHandlerBase {
+        private ResultSetWrapper results;
+        private ResultSetWrapper lastResult;
+
+        ResultSetWrapper getResult() {
+            return this.results;
+        }
+
+        private void append(ResultSetWrapper newResult) {
+            if (this.results == null) {
+                this.lastResult = this.results = newResult;
+            } else {
+                this.lastResult.append(newResult);
+            }
+        }
+
+        @Override
+        public void handleResultRows(Query query, List<Field[]> fields, List<ColumnMetadata> metadata, ZoneId timeZone) {
+            try {
+                ResultSet rs = createResultSet(fields, metadata, timeZone);
+                this.append(new ResultSetWrapper((DtmResultSet) rs));
+            } catch (Exception e) {
+                this.handleError(new SQLException(e));
+            }
+        }
     }
 }

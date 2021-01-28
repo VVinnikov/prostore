@@ -2771,7 +2771,7 @@ SqlNode Snapshot(SqlNode tableRef) :
 {
     SqlOperator startedInOp = null;
     SqlOperator finishedInOp = null;
-    SqlLiteral isLatestUncommitedDelta = null;
+    SqlLiteral isLatestUncommittedDelta = null;
     Span deltaSpan = null;
     SqlNode num = null;
     final SqlParserPos pos;
@@ -2792,7 +2792,7 @@ SqlNode Snapshot(SqlNode tableRef) :
                 (
                  <DELTA_NUM> { num = NumericLiteral(); }
                  |
-                 <LATEST_UNCOMMITED_DELTA> { isLatestUncommitedDelta = SqlLiteral.createBoolean(true, getPos());}
+                 <LATEST_UNCOMMITTED_DELTA> { isLatestUncommittedDelta = SqlLiteral.createBoolean(true, getPos());}
                  |
                  period = Expression(ExprContext.ACCEPT_NON_QUERY)
                 )
@@ -2803,8 +2803,8 @@ SqlNode Snapshot(SqlNode tableRef) :
             period = SqlLiteral.createNull(getPos());
         }
 
-        return new io.arenadata.dtm.query.calcite.core.extension.snapshot.SqlSnapshot(getPos(),
-        tableRef, period, startedInOp, finishedInOp, num, isLatestUncommitedDelta);
+        return new io.arenadata.dtm.query.calcite.core.extension.snapshot.SqlDeltaSnapshot(getPos(),
+        tableRef, period, startedInOp, finishedInOp, num, isLatestUncommittedDelta);
     }
 }
 

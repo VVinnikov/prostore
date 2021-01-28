@@ -7,9 +7,13 @@ import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlType;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountParams;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Params;
+import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
 import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
@@ -17,8 +21,7 @@ import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
 import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
+import io.vertx.core.Future;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import org.junit.jupiter.api.Test;
@@ -27,6 +30,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @SpringBootTest(classes = DtmTestConfiguration.class)
@@ -49,38 +54,63 @@ class AdbDtmDataSourcePluginIT {
         }
 
         @Override
-        public void ddl(DdlRequestContext ddlRequest, Handler<AsyncResult<Void>> handler) {
-            ddlService.execute(ddlRequest, handler);
+        public Future<Void> ddl(DdlRequestContext ddlRequest) {
+            return ddlService.execute(ddlRequest);
         }
 
         @Override
-        public void llr(LlrRequestContext llrRequest, Handler<AsyncResult<QueryResult>> handler) {
-
+        public Future<QueryResult> llr(LlrRequestContext llrRequest) {
+            return null;
         }
 
         @Override
-        public void mppr(MpprRequestContext mpprRequest, Handler<AsyncResult<QueryResult>> handler) {
-
+        public Future<QueryResult> mppr(MpprRequestContext mpprRequest) {
+            return null;
         }
 
         @Override
-        public void mppw(MppwRequestContext mppwRequest, Handler<AsyncResult<QueryResult>> handler) {
-
+        public Future<QueryResult> mppw(MppwRequestContext mppwRequest) {
+            return null;
         }
 
         @Override
-        public void calcQueryCost(QueryCostRequestContext queryCostRequest, Handler<AsyncResult<Integer>> handler) {
-
+        public Future<Integer> calcQueryCost(QueryCostRequestContext queryCostRequest) {
+            return null;
         }
 
         @Override
-        public void status(StatusRequestContext context, Handler<AsyncResult<StatusQueryResult>> asyncResultHandler) {
-
+        public Future<StatusQueryResult> status(StatusRequestContext context) {
+            return null;
         }
 
         @Override
-        public void rollback(RollbackRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler) {
+        public Future<Void> rollback(RollbackRequestContext context) {
+            return null;
+        }
 
+        @Override
+        public Set<String> getActiveCaches() {
+            return Collections.singleton("adb_datamart");
+        }
+
+        @Override
+        public Future<Void> checkTable(CheckContext context) {
+            return null;
+        }
+
+        @Override
+        public Future<Long> checkDataByCount(CheckDataByCountParams params) {
+            return null;
+        }
+
+        @Override
+        public Future<Long> checkDataByHashInt32(CheckDataByHashInt32Params params) {
+            return null;
+        }
+
+        @Override
+        public Future<Void> truncateHistory(TruncateHistoryParams params) {
+            return null;
         }
     };
 
@@ -94,13 +124,14 @@ class AdbDtmDataSourcePluginIT {
         DdlRequest dto = new DdlRequest(null, entity);
         DdlRequestContext context = new DdlRequestContext(dto);
         context.setDdlType(DdlType.CREATE_TABLE);
-        plugin.ddl(context, ar -> {
-            if (ar.succeeded()) {
-                testContext.completeNow();
-            } else {
-                testContext.failNow(ar.cause());
-            }
-        });
+        plugin.ddl(context)
+                .onComplete(ar -> {
+                    if (ar.succeeded()) {
+                        testContext.completeNow();
+                    } else {
+                        testContext.failNow(ar.cause());
+                    }
+                });
         testContext.awaitCompletion(5, TimeUnit.SECONDS);
     }
 }

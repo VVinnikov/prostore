@@ -3,10 +3,10 @@ package io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.impl;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaDaoExecutor;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaServiceDaoExecutorHelper;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.GetDeltaByDateTimeExecutor;
-import io.arenadata.dtm.query.execution.core.dao.exception.datamart.DatamartNotExistsException;
-import io.arenadata.dtm.query.execution.core.dao.exception.delta.DeltaException;
-import io.arenadata.dtm.query.execution.core.dao.exception.delta.DeltaNotExistException;
-import io.arenadata.dtm.query.execution.core.dao.exception.delta.DeltaNotFoundException;
+import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
+import io.arenadata.dtm.query.execution.core.exception.delta.DeltaException;
+import io.arenadata.dtm.query.execution.core.exception.delta.DeltaNotExistException;
+import io.arenadata.dtm.query.execution.core.exception.delta.DeltaNotFoundException;
 import io.arenadata.dtm.query.execution.core.dto.delta.OkDelta;
 import io.arenadata.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
 import io.vertx.core.Future;
@@ -14,6 +14,7 @@ import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.zookeeper.KeeperException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -29,8 +30,9 @@ import java.util.stream.Collectors;
 @Component
 public class GetDeltaByDateTimeExecutorImpl extends DeltaServiceDaoExecutorHelper implements GetDeltaByDateTimeExecutor {
 
+    @Autowired
     public GetDeltaByDateTimeExecutorImpl(ZookeeperExecutor executor,
-                                             @Value("${core.env.name}") String envName) {
+                                          @Value("${core.env.name}") String envName) {
         super(executor, envName);
     }
 
@@ -41,9 +43,13 @@ public class GetDeltaByDateTimeExecutorImpl extends DeltaServiceDaoExecutorHelpe
         executor.getData(getDeltaPath(datamart))
             .map(bytes -> {
                 val delta = deserializedDelta(bytes);
-                ctx.setDelta(delta);
-                val deltaDateTime = delta.getOk().getDeltaDate();
-                return deltaDateTime.isBefore(dateTime) || deltaDateTime.isEqual(dateTime);
+                if (delta.getOk() != null) {
+                    ctx.setDelta(delta);
+                    val deltaDateTime = delta.getOk().getDeltaDate();
+                    return deltaDateTime.isBefore(dateTime) || deltaDateTime.isEqual(dateTime);
+                } else {
+                    throw new DeltaNotExistException();
+                }
             })
             .compose(isDeltaOk -> isDeltaOk ?
                 Future.succeededFuture(ctx.getDelta().getOk())
@@ -56,7 +62,6 @@ public class GetDeltaByDateTimeExecutorImpl extends DeltaServiceDaoExecutorHelpe
                 val errMsg = String.format("can't get delta ok on datamart[%s], dateTime[%s]",
                     datamart,
                     dateTime);
-                log.error(errMsg, error);
                 if (error instanceof KeeperException.NoNodeException) {
                     resultPromise.fail(new DatamartNotExistsException(datamart));
                 } else if (error instanceof DeltaException) {
@@ -68,14 +73,17 @@ public class GetDeltaByDateTimeExecutorImpl extends DeltaServiceDaoExecutorHelpe
         return resultPromise.future();
     }
 
-    private Future<OkDelta> findByDays(String datamart, LocalDateTime dateTime) {
-        val date = dateTime.toLocalDate();
+    private Future<OkDelta> findByDays(String datamart, LocalDateTime targetDateTime) {
+        val date = targetDateTime.toLocalDate();
         Promise<OkDelta> resultPromise = Promise.promise();
         getDatamartDeltaDays(datamart, date)
             .onSuccess(days -> {
                 if (days.size() > 0) {
                     val dayIterator = days.iterator();
-                    findByDay(datamart, dayIterator, resultPromise);
+                    findByDay(datamart,
+                        dayIterator,
+                        targetDateTime,
+                        resultPromise);
                 } else {
                     resultPromise.fail(new DeltaNotFoundException());
                 }
@@ -89,20 +97,21 @@ public class GetDeltaByDateTimeExecutorImpl extends DeltaServiceDaoExecutorHelpe
             .map(daysStr -> daysStr.stream()
                 .map(LocalDate::parse)
                 .filter(day -> date.isAfter(day) || date.isEqual(day))
-                .sorted(Comparator.naturalOrder())
+                .sorted(Comparator.reverseOrder())
                 .collect(Collectors.toList()));
     }
 
     private void findByDay(String datamart,
                            Iterator<LocalDate> dayIterator,
+                           LocalDateTime targetDateTime,
                            Promise<OkDelta> resultPromise) {
         val day = dayIterator.next();
-        getDeltaOkByMaxDeltaDateTime(datamart, day)
+        getDeltaOkByMaxDeltaDateTime(datamart, day, targetDateTime)
             .onSuccess(okDelta -> {
                 if (okDelta != null) {
                     resultPromise.complete(okDelta);
                 } else if (dayIterator.hasNext()) {
-                    findByDay(datamart, dayIterator, resultPromise);
+                    findByDay(datamart, dayIterator, targetDateTime, resultPromise);
                 } else {
                     resultPromise.fail(new DeltaNotExistException());
                 }
@@ -110,10 +119,14 @@ public class GetDeltaByDateTimeExecutorImpl extends DeltaServiceDaoExecutorHelpe
             .onFailure(resultPromise::fail);
     }
 
-    private Future<OkDelta> getDeltaOkByMaxDeltaDateTime(String datamart, LocalDate day) {
+    private Future<OkDelta> getDeltaOkByMaxDeltaDateTime(String datamart,
+                                                         LocalDate day,
+                                                         LocalDateTime targetDateTime) {
+        val targetTime = targetDateTime.toLocalTime();
         return executor.getChildren(getDeltaDatePath(datamart, day))
             .map(times -> times.stream()
                 .map(LocalTime::parse)
+                .filter(time -> targetTime.isAfter(time) || targetTime.equals(time))
                 .max(Comparator.naturalOrder()))
             .compose(timeOpt -> timeOpt
                 .map(localTime -> {

@@ -7,17 +7,15 @@ import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import static io.arenadata.dtm.query.execution.plugin.adqm.common.Constants.ACTUAL_POSTFIX;
-import static io.arenadata.dtm.query.execution.plugin.adqm.common.Constants.ACTUAL_SHARD_POSTFIX;
+import static io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants.ACTUAL_POSTFIX;
+import static io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants.ACTUAL_SHARD_POSTFIX;
 
 @Component
 @Slf4j
@@ -28,6 +26,7 @@ public class DropTableExecutor implements DdlExecutor<Void> {
     private final DdlProperties ddlProperties;
     private final AppConfiguration appConfiguration;
 
+    @Autowired
     public DropTableExecutor(DatabaseExecutor databaseExecutor,
                              DdlProperties ddlProperties,
                              AppConfiguration appConfiguration) {
@@ -36,10 +35,9 @@ public class DropTableExecutor implements DdlExecutor<Void> {
         this.appConfiguration = appConfiguration;
     }
 
-
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<Void>> handler) {
-        dropTable(context.getRequest().getEntity()).onComplete(handler);
+    public Future<Void> execute(DdlRequestContext context, String sqlNodeName) {
+        return dropTable(context.getRequest().getEntity());
     }
 
     @Override

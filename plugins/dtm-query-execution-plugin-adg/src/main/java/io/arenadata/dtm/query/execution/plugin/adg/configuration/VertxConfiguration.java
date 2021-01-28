@@ -1,5 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adg.configuration;
 
+import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.AdgWebClientProperties;
+import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.CircuitBreakerProperties;
 import io.vertx.circuitbreaker.CircuitBreaker;
 import io.vertx.circuitbreaker.CircuitBreakerOptions;
 import io.vertx.core.Vertx;
@@ -14,8 +16,8 @@ import org.springframework.context.annotation.Configuration;
 public class VertxConfiguration {
 
     @Bean("adgWebClient")
-    public WebClient webClient(@Qualifier("coreVertx") Vertx vertx) {
-        return WebClient.create(vertx);
+    public WebClient webClient(@Qualifier("coreVertx") Vertx vertx, AdgWebClientProperties properties) {
+        return WebClient.create(vertx, properties);
     }
 
     @Bean("adgCircuitBreaker")

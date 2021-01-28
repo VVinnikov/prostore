@@ -5,6 +5,7 @@ import io.arenadata.dtm.common.delta.DeltaType;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.QueryGeneratorContext;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.AdqmHelperTableNamesFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.QueryExtendService;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -23,20 +24,21 @@ import org.apache.calcite.sql.SqlBinaryOperator;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.arenadata.dtm.query.execution.plugin.adqm.common.Constants.*;
+import static io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants.*;
 
 
 @Slf4j
 @Service("adqmCalciteDmlQueryExtendService")
 public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService {
     private final static List<String> SYSTEM_FIELDS_PATTERNS = SYSTEM_FIELDS.stream()
-        .map(sf -> sf + "(\\d+|)")
-        .collect(Collectors.toList());
+            .map(sf -> sf + "(\\d+|)")
+            .collect(Collectors.toList());
     private static final int SCHEMA_INDEX = 0;
     private static final int TABLE_NAME_INDEX = 1;
     private static final int ONE_LITERAL = 1;
@@ -45,14 +47,15 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
     private static final int LIMIT_1 = 1;
     private final AdqmHelperTableNamesFactory helperTableNamesFactory;
 
+    @Autowired
     public AdqmCalciteDmlQueryExtendServiceImpl(AdqmHelperTableNamesFactory helperTableNamesFactory) {
         this.helperTableNamesFactory = helperTableNamesFactory;
     }
 
+    @Override
     public RelNode extendQuery(QueryGeneratorContext ctx) {
-
         val rawRelationNode = ctx.getRelNode().rel;
-        val physicalTableNames = iterateReplacingTableName(ctx, rawRelationNode, false);
+        val physicalTableNames = iterateReplacingTableName(ctx, rawRelationNode, ctx.isLocal());
         val withoutSystemFields = filterSystemFields(ctx, physicalTableNames);
         val allRelNodeCtxs = getRelNodeContexts(ctx, withoutSystemFields);
         val groupByDepth = allRelNodeCtxs.stream()
@@ -81,8 +84,13 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
                     if (nodeContext.child instanceof Join) {
                         processJoin(builderCtx, nodeContext);
                     } else if (nodeContext.child instanceof Filter) {
-                        processFilter(builderCtx, nodeContext);
-                        builderCtx.getDeltaInformations().clear();
+                            processFilter(builderCtx, nodeContext);
+//                        if (depth == 0) {
+//                        } else {
+//                            val byLastUnion = new ArrayList<>(builderCtx.getDeltaInformations());
+//                            processFilter(builderCtx, nodeContext);
+//                            builderCtx.getDeltaInformations().addAll(byLastUnion);
+//                        }
                     } else if (nodeContext.child instanceof Project) {
                         processProject(builderCtx, nodeContext);
                     } else if (nodeContext.child instanceof Aggregate) {
@@ -175,7 +183,6 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
             val allDeltaConditions = deltaConditions.size() == 1 ?
                 deltaConditions.get(0) : builderCtx.getBuilder().call(SqlStdOperatorTable.AND, deltaConditions);
             builderCtx.getBuilder().filter(allDeltaConditions);
-            builderCtx.getDeltaInformations().clear();
         }
         builderCtx.getBuilder()
             .project(project.getChildExps());
@@ -191,7 +198,6 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
         val deltaConditions = getDeltaConditions(ctx.getDeltaInformations(), ctx.getBuilder());
         deltaConditions.add(condition);
         ctx.getBuilder().filter(ctx.getBuilder().call(SqlStdOperatorTable.AND, deltaConditions));
-        ctx.getDeltaInformations().clear();
     }
 
     private void addSignConditions(BuilderCondext ctx, RelNode relNode) {
@@ -232,17 +238,17 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
 
     }
 
-    private RelNode iterateReplacingTableName(QueryGeneratorContext context, RelNode node, boolean isShard) {
+    private RelNode iterateReplacingTableName(QueryGeneratorContext context, RelNode node, boolean isLocal) {
         List<RelNode> newInput = new ArrayList<>();
         if (node.getInputs() == null || node.getInputs().isEmpty()) {
             if (node instanceof TableScan) {
-                context.getRelBuilder().push(insertRenameTableScan(context, node, isShard));
+                context.getRelBuilder().push(insertRenameTableScan(context, node, isLocal));
             }
             return context.getRelBuilder().build();
         }
         for (int i = 0; i < node.getInputs().size(); i++) {
             RelNode input = node.getInput(i);
-            newInput.add(iterateReplacingTableName(context, input, isShard(node, input, i)));
+            newInput.add(iterateReplacingTableName(context, input, isLocal || isShard(node, input, i)));
         }
         context.getRelBuilder().push(node.copy(node.getTraitSet(), newInput));
         return context.getRelBuilder().build();
@@ -251,7 +257,6 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
     private boolean isShard(RelNode parentNode, RelNode node, int i) {
         return node instanceof TableScan && parentNode instanceof Join && i > 0;
     }
-
 
     RelNode insertRenameTableScan(QueryGeneratorContext ctx,
                                   RelNode tableScan,
@@ -333,7 +338,7 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
             val queryNode = buildCtx.getBuilder()
                 .build();
             addSignConditions(buildCtx, queryNode);
-        } else if (buildCtx.getTableScans().size() > 1) {
+        } else if (buildCtx.getTableScans().size() > 0) {
             addSignConditions(buildCtx, buildCtx.getBuilder().project(lastParent.getChildExps()).build());
         }
 
@@ -401,28 +406,31 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
 
     private List<RexNode> getDeltaConditions(List<DeltaInformation> deltaInformations,
                                              RelBuilder builder) {
-        return deltaInformations.stream()
-            .flatMap(deltaInfo -> {
-                val conditionContext = DeltaConditionContext.builder()
-                    .tableCount(deltaInformations.size())
-                    .deltaInfo(deltaInfo)
-                    .builder(builder)
-                    .finalize(false)
-                    .build();
+        List<RexNode> conditions = deltaInformations.stream()
+                .flatMap(deltaInfo -> {
+                    val conditionContext = DeltaConditionContext.builder()
+                            .tableCount(deltaInformations.size())
+                            .deltaInfo(deltaInfo)
+                            .builder(builder)
+                            .finalize(false)
+                            .build();
 
-                switch (deltaInfo.getType()) {
-                    case STARTED_IN:
-                        return createRelNodeDeltaStartedIn(conditionContext).stream();
-                    case FINISHED_IN:
-                        return createRelNodeDeltaFinishedIn(conditionContext).stream();
-                    case DATETIME:
-                    case NUM:
-                        return createRelNodeDeltaNum(conditionContext).stream();
-                    default:
-                        throw new RuntimeException(String.format("Incorrect delta type %s, expected values: %s!",
-                            deltaInfo.getType(), Arrays.toString(DeltaType.values())));
-                }
-            }).collect(Collectors.toList());
+                    switch (deltaInfo.getType()) {
+                        case STARTED_IN:
+                            return createRelNodeDeltaStartedIn(conditionContext).stream();
+                        case FINISHED_IN:
+                            return createRelNodeDeltaFinishedIn(conditionContext).stream();
+                        case DATETIME:
+                        case NUM:
+                            return createRelNodeDeltaNum(conditionContext).stream();
+                        default:
+                            throw new DataSourceException(String.format("Incorrect delta type %s, expected values: %s!",
+                                    deltaInfo.getType(),
+                                    Arrays.toString(DeltaType.values())));
+                    }
+                }).collect(Collectors.toList());
+        deltaInformations.clear();
+        return conditions;
     }
 
     private List<RexNode> createRelNodeDeltaStartedIn(DeltaConditionContext ctx) {

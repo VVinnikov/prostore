@@ -249,15 +249,17 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     SqlNodeList tableElementList = null;
     SqlNode query = null;
     SqlNodeList distributedBy = null;
+    SqlNodeList destination = null;
 }
 {
     <TABLE> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
     [ tableElementList = TableElementList() ]
     [ <DISTRIBUTED> <BY> distributedBy = ParenthesizedSimpleIdentifierList() ]
     [ <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) ]
+    [ <DATASOURCE_TYPE> destination = ParenthesizedSimpleIdentifierList() ]
     {
         return new SqlCreateTable(s.end(this), replace, ifNotExists, id,
-            tableElementList, query, distributedBy);
+            tableElementList, query, distributedBy, destination);
     }
 }
 SqlCreate SqlCreateDownloadExternalTable(Span s, boolean replace) :
@@ -383,6 +385,19 @@ SqlNode SqlCommitDelta() :
     return new SqlCommitDelta(commitPos, dateTime);
 }
 }
+SqlNode SqlRollbackDelta() :
+{
+    SqlParserPos rollbackPos;
+}
+{
+    <ROLLBACK> <DELTA>
+    {
+            rollbackPos = getPos();
+    }
+{
+return new SqlRollbackDelta(rollbackPos);
+}
+}
 private void FunctionJarDef(SqlNodeList usingList) :
 {
     final SqlDdlNodes.FileType fileType;
@@ -462,10 +477,13 @@ SqlDrop SqlDropTable(Span s, boolean replace) :
 {
     final boolean ifExists;
     final SqlIdentifier id;
+    SqlNodeList destination = null;
 }
 {
-    <TABLE> ifExists = IfExistsOpt() id = CompoundIdentifier() {
-        return SqlDdlNodes.dropTable(s.end(this), ifExists, id);
+    <TABLE> ifExists = IfExistsOpt() id = CompoundIdentifier()
+    [ <DATASOURCE_TYPE> destination = ParenthesizedSimpleIdentifierList() ]
+    {
+        return new SqlDropTable(s.end(this), ifExists, id, destination);
     }
 }
 SqlDrop DropDatabase(Span s, boolean replace) :
@@ -542,6 +560,159 @@ SqlNode SqlUseSchema() :
         pos = getPos();
 }
     {
-        return new io.arenadata.dtm.query.calcite.core.extension.ddl.SqlUseSchema(pos, id);
+        return new io.arenadata.dtm.query.calcite.core.extension.dml.SqlUseSchema(pos, id);
+    }
+}
+SqlNode SqlGetDeltaOk() :
+{
+    SqlParserPos pos;
+}
+{
+    <GET_DELTA_OK>
+    {
+        pos = getPos();
+    }
+    <LPAREN> <RPAREN>
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaOk(pos);
+    }
+}
+SqlNode SqlGetDeltaHot() :
+{
+    SqlParserPos pos;
+}
+{
+    <GET_DELTA_HOT>
+    {
+        pos = getPos();
+    }
+    <LPAREN> <RPAREN>
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaHot(pos);
+    }
+}
+SqlNode SqlGetDeltaByDateTime() :
+{
+    Span s;
+    SqlNode deltaDateTime = null;
+}
+{
+    <GET_DELTA_BY_DATETIME>
+    {
+        s = span();
+    }
+    <LPAREN>
+        deltaDateTime = StringLiteral()
+    <RPAREN>
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaByDateTime(s.end(this), deltaDateTime);
+    }
+}
+SqlNode SqlGetDeltaByNum() :
+{
+    Span s;
+    SqlNode deltaNum = null;
+}
+{
+    <GET_DELTA_BY_NUM>
+    {
+        s = span();
+    }
+    <LPAREN>
+        deltaNum = NumericLiteral()
+    <RPAREN>
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaByNum(s.end(this), deltaNum);
+    }
+}
+SqlNode SqlConfigStorageAdd() :
+{
+    Span s;
+    SqlNode sourceType = null;
+}
+{
+    <CONFIG_STORAGE_ADD>
+    {
+        s = span();
+    }
+    <LPAREN>
+        sourceType = StringLiteral()
+    <RPAREN>
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.config.function.SqlConfigStorageAdd(s.end(this), sourceType);
+    }
+}
+SqlNode SqlCheckDatabase() :
+{
+    Span s;
+    SqlIdentifier id = null;
+}
+{
+    <CHECK_DATABASE>
+    {
+        s = span();
+    }
+    (
+        <LPAREN> [id = CompoundIdentifier()] <RPAREN>
+        |
+        {id = null;}
+    )
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckDatabase(s.end(this), id);
+    }
+}
+SqlNode SqlCheckTable() :
+{
+    Span s;
+    final SqlIdentifier id;
+}
+{
+    <CHECK_TABLE>
+    {
+        s = span();
+    }
+    <LPAREN> id = CompoundIdentifier() <RPAREN>
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckTable(s.end(this), id);
+    }
+}
+SqlNode SqlCheckData() :
+{
+    Span s;
+    final SqlIdentifier id;
+    SqlLiteral deltaNum = null;
+    List<SqlNode> tableElementList = null;
+}
+{
+    <CHECK_DATA>
+    {
+        s = span();
+    }
+    <LPAREN> id = CompoundIdentifier()
+    <COMMA>
+        deltaNum = NumericLiteral()
+    [ <COMMA> <LBRACKET> tableElementList = SelectList() <RBRACKET> ]
+    <RPAREN>
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckData(s.end(this), id, deltaNum, tableElementList);
+    }
+}
+SqlNode SqlTruncateHistory() :
+{
+    final Span s;
+    final SqlIdentifier id;
+    final SqlNode datetime;
+    SqlNode conditions = null;
+}
+{
+    <TRUNCATE> <HISTORY>
+    {
+            s = span();
+    }
+    id = CompoundIdentifier()
+    <FOR> <SYSTEM_TIME> <AS> <OF> datetime = StringLiteral()
+    [<WHERE> conditions = SqlExpressionEof()]
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.ddl.truncate.SqlTruncateHistory(s.end(this), id, datetime, conditions);
     }
 }

@@ -15,6 +15,7 @@ import java.util.Iterator;
 @AllArgsConstructor
 public class QueryGeneratorContext {
     private final Iterator<DeltaInformation> deltaIterator;
+    private final boolean isLocal;
     private final QueryRequest queryRequest;
     private final RelBuilder relBuilder;
     private final RelRoot relNode;

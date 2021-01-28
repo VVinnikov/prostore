@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.zookeeper.impl;
 
-import io.arenadata.dtm.query.execution.core.configuration.properties.ZookeeperProperties;
+import io.arenadata.dtm.query.execution.core.configuration.properties.ServiceDbZookeeperProperties;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.zookeeper.ZookeeperConnectionProvider;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -12,17 +13,16 @@ import org.apache.zookeeper.ZooKeeper;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import static org.apache.zookeeper.Watcher.Event.KeeperState.SyncConnected;
 
 @Slf4j
 public class ZookeeperConnectionProviderImpl implements ZookeeperConnectionProvider {
-    private final ZookeeperProperties properties;
+    private final ServiceDbZookeeperProperties properties;
     private ZooKeeper connection;
     private boolean synConnected;
 
-    public ZookeeperConnectionProviderImpl(ZookeeperProperties properties, String envName) {
+    public ZookeeperConnectionProviderImpl(ServiceDbZookeeperProperties properties, String envName) {
         this.properties = properties;
         initializeChroot(envName);
     }
@@ -38,7 +38,7 @@ public class ZookeeperConnectionProviderImpl implements ZookeeperConnectionProvi
             initializeEnv(envName);
         } catch (Exception e) {
             String errMsg = String.format("Can't create chroot node [%s] for zk datasource", properties.getChroot());
-            throw new RuntimeException(errMsg, e);
+            throw new DtmException(errMsg, e);
         } finally {
             close();
         }
@@ -54,7 +54,7 @@ public class ZookeeperConnectionProviderImpl implements ZookeeperConnectionProvi
             log.debug("Env node [{}] is exists", envNodePath);
         } catch (Exception e) {
             String errMsg = String.format("Can't create env node [%s] for zk datasource", envNodePath);
-            throw new RuntimeException(errMsg, e);
+            throw new DtmException(errMsg, e);
         }
     }
 
@@ -90,9 +90,9 @@ public class ZookeeperConnectionProviderImpl implements ZookeeperConnectionProvi
             });
         connectionLatch.await(properties.getConnectionTimeoutMs(), TimeUnit.MILLISECONDS);
         if (!synConnected) {
-            val errMsg = String.format("Zookeeper connection timed out: [%d] ms", properties.getConnectionTimeoutMs());
-            log.error(errMsg);
-            throw new TimeoutException(errMsg);
+            val errMsg = String.format("Zookeeper connection timed out: [%d] ms",
+                    properties.getConnectionTimeoutMs());
+            throw new DtmException(errMsg);
         }
         return connection;
     }

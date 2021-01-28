@@ -3,9 +3,9 @@ package io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.impl;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaDaoExecutor;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaServiceDaoExecutorHelper;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.WriteNewDeltaHotExecutor;
-import io.arenadata.dtm.query.execution.core.dao.exception.delta.DeltaAlreadyStartedException;
-import io.arenadata.dtm.query.execution.core.dao.exception.delta.DeltaException;
-import io.arenadata.dtm.query.execution.core.dao.exception.delta.InvalidDeltaNumException;
+import io.arenadata.dtm.query.execution.core.exception.delta.DeltaIsNotCommittedException;
+import io.arenadata.dtm.query.execution.core.exception.delta.DeltaException;
+import io.arenadata.dtm.query.execution.core.exception.delta.DeltaNumIsNotNextToActualException;
 import io.arenadata.dtm.query.execution.core.dto.delta.Delta;
 import io.arenadata.dtm.query.execution.core.dto.delta.HotDelta;
 import io.arenadata.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
@@ -17,6 +17,7 @@ import lombok.var;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
 import org.apache.zookeeper.data.Stat;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -26,6 +27,7 @@ import java.util.Arrays;
 @Component
 public class WriteNewDeltaHotExecutorImpl extends DeltaServiceDaoExecutorHelper implements WriteNewDeltaHotExecutor {
 
+    @Autowired
     public WriteNewDeltaHotExecutorImpl(ZookeeperExecutor executor,
                                         @Value("${core.env.name}") String envName) {
         super(executor, envName);
@@ -39,7 +41,7 @@ public class WriteNewDeltaHotExecutorImpl extends DeltaServiceDaoExecutorHelper 
                 .map(bytes -> bytes == null ? new Delta() : deserializedDelta(bytes))
                 .map(delta -> {
                     if (delta.getOk() != null && delta.getHot() != null) {
-                        throw new DeltaAlreadyStartedException();
+                        throw new DeltaIsNotCommittedException(delta.getHot().toString());
                     }
                     var deltaNum = 0L;
                     var cnFrom = 0L;
@@ -48,7 +50,7 @@ public class WriteNewDeltaHotExecutorImpl extends DeltaServiceDaoExecutorHelper 
                         cnFrom = delta.getOk().getCnTo() + 1;
                     }
                     if (deltaHotNum != null && deltaHotNum != deltaNum) {
-                        throw new InvalidDeltaNumException();
+                        throw new DeltaNumIsNotNextToActualException(deltaHotNum.toString());
                     }
                     val hotDelta = HotDelta.builder()
                             .deltaNum(deltaNum)
@@ -71,10 +73,11 @@ public class WriteNewDeltaHotExecutorImpl extends DeltaServiceDaoExecutorHelper 
                     val errMsg = String.format("Can't write new delta hot on datamart[%s], deltaHotNumber[%d]",
                             datamart,
                             deltaHotNum);
-                    log.error(errMsg, error);
                     if (error instanceof KeeperException.NodeExistsException
                             || error instanceof KeeperException.BadVersionException) {
-                        resultPromise.fail(new DeltaAlreadyStartedException(error));
+                        resultPromise.fail(deltaHotNum == null ?
+                                new DeltaIsNotCommittedException(error) :
+                                new DeltaIsNotCommittedException(String.valueOf(deltaHotNum), error));
                     } else if (error instanceof DeltaException) {
                         resultPromise.fail(error);
                     } else {

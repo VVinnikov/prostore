@@ -14,7 +14,6 @@ import java.util.stream.Collectors;
 
 import static io.arenadata.dtm.query.execution.plugin.adb.factory.impl.MetadataSqlFactoryImpl.*;
 
-
 /**
  * Implementing a Logic to Physical Conversion
  */
@@ -22,11 +21,7 @@ import static io.arenadata.dtm.query.execution.plugin.adb.factory.impl.MetadataS
 public class AdbSchemaExtenderImpl implements SchemaExtender {
 
     @Override
-    public List<Datamart> generatePhysicalSchemas(List<Datamart> logicalSchemas) {
-        return logicalSchemas.stream().map(this::createPhysicalSchema).collect(Collectors.toList());
-    }
-
-    private Datamart createPhysicalSchema(Datamart schema) {
+    public Datamart createPhysicalSchema(Datamart schema) {
         Datamart extendedSchema = new Datamart();
         extendedSchema.setMnemonic(schema.getMnemonic());
         List<Entity> extendedEntities = new ArrayList<>();

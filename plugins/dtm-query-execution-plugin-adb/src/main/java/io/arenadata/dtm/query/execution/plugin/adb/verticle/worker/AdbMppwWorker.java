@@ -3,7 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adb.verticle.worker;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.MppwTopic;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwKafkaRequestContext;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwTransferDataRequest;
-import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.RestLoadRequest;
+import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwKafkaLoadRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.handler.AdbMppwHandler;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
@@ -37,26 +37,30 @@ public class AdbMppwWorker extends AbstractVerticle {
     }
 
     private void handleStartMppwKafka(Message<String> requestMessage) {
-        final RestLoadRequest restLoadRequest =
+        final MppwKafkaLoadRequest loadRequest =
                 Json.decodeValue(((JsonObject) Json.decodeValue(requestMessage.body()))
-                        .getJsonObject("restLoadRequest").toString(), RestLoadRequest.class);
+                        .getJsonObject("mppwKafkaLoadRequest").toString(), MppwKafkaLoadRequest.class);
         final MppwTransferDataRequest transferDataRequest =
                 Json.decodeValue(((JsonObject) Json.decodeValue(requestMessage.body()))
                         .getJsonObject("mppwTransferDataRequest").toString(), MppwTransferDataRequest.class);
-        MppwKafkaRequestContext kafkaRequestContext = new MppwKafkaRequestContext(restLoadRequest, transferDataRequest);
+        MppwKafkaRequestContext kafkaRequestContext = new MppwKafkaRequestContext(loadRequest, transferDataRequest);
         log.debug("Received request for starting mppw kafka loading: {}", kafkaRequestContext);
-        requestMap.put(kafkaRequestContext.getRestLoadRequest().getRequestId(), kafkaRequestContext);
+        requestMap.put(kafkaRequestContext.getMppwKafkaLoadRequest().getRequestId(), kafkaRequestContext);
         vertx.eventBus().send(MppwTopic.KAFKA_TRANSFER_DATA.getValue(),
-                kafkaRequestContext.getRestLoadRequest().getRequestId());
+                kafkaRequestContext.getMppwKafkaLoadRequest().getRequestId());
     }
 
     private void handleStopMppwKafka(Message<String> requestMessage) {
         String requestId = requestMessage.body();
-        Future transferPromise = resultMap.remove(requestId);
-        transferPromise.onComplete(ar -> {
-            requestMap.remove(requestId);
+        Future<?> transferPromise = resultMap.remove(requestId);
+        if (transferPromise != null) {
+            transferPromise.onComplete(ar -> {
+                requestMap.remove(requestId);
+                requestMessage.reply(requestId);
+            });
+        } else {
             requestMessage.reply(requestId);
-        });
+        }
     }
 
     private void handleStartTransferData(Message<String> requestMessage) {
@@ -64,19 +68,16 @@ public class AdbMppwWorker extends AbstractVerticle {
         final MppwKafkaRequestContext requestContext = requestMap.get(requestId);
         if (requestContext != null) {
             log.debug("Received requestId: {}, found requestContext in map: {}", requestId, requestContext);
-            Promise promise = Promise.promise();
+            Promise<?> promise = Promise.promise();
             resultMap.put(requestId, promise.future());
             mppwTransferDataHandler.handle(requestContext)
                     .onSuccess(s -> {
-                        log.debug("Request executed successfully: {}", requestContext.getRestLoadRequest());
+                        log.debug("Request executed successfully: {}", requestContext.getMppwKafkaLoadRequest());
                         vertx.eventBus().send(MppwTopic.KAFKA_TRANSFER_DATA.getValue(),
-                                requestContext.getRestLoadRequest().getRequestId());
+                                requestContext.getMppwKafkaLoadRequest().getRequestId());
                         promise.complete();
                     })
-                    .onFailure(fail -> {
-                        log.error("Error executing request: {}", requestContext.getRestLoadRequest(), fail);
-                        promise.fail(fail);
-                    });
+                    .onFailure(promise::fail);
         }
     }
 }

@@ -1,27 +1,40 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw;
 
+import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
+import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.RestLoadClient;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockDatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockEnvironment;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockStatusReporter;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaParameter;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
 import io.arenadata.dtm.query.execution.plugin.api.request.MppwRequest;
+import io.vertx.core.Future;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.time.ZoneId;
 import java.util.*;
 import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class MppwFinishRequestHandlerTest {
     private static final DdlProperties ddlProperties = new DdlProperties();
     private static final AppConfiguration appConfiguration = new AppConfiguration(new MockEnvironment());
+    private final DtmConfig dtmConfig = new DtmConfig() {
+        @Override
+        public ZoneId getTimeZone() {
+            return ZoneId.of("UTC");
+        }
+    };
     private static final String TEST_TOPIC = "adqm_topic";
 
     @BeforeAll
@@ -56,7 +69,7 @@ class MppwFinishRequestHandlerTest {
                 t -> t.equalsIgnoreCase("DROP TABLE IF EXISTS dev__shares.accounts_buffer_loader_shard ON CLUSTER test_arenadata"),
                 t -> t.equalsIgnoreCase("SYSTEM FLUSH DISTRIBUTED dev__shares.accounts_buffer"),
                 t -> t.equalsIgnoreCase("SYSTEM FLUSH DISTRIBUTED dev__shares.accounts_actual"),
-                t -> t.contains("a.column1, a.column2, a.column3, a.sys_from, 101") && t.contains("dev__shares.accounts_actual") &&
+                t -> t.contains("a.column1, a.column2, a.column3, a.sys_from, 100") && t.contains("dev__shares.accounts_actual") &&
                         t.contains("ANY INNER JOIN dev__shares.accounts_buffer_shard b USING(column1, column2)") &&
                         t.contains("sys_from < 101"),
                 t -> t.contains("SYSTEM FLUSH DISTRIBUTED dev__shares.accounts_actual"),
@@ -66,7 +79,13 @@ class MppwFinishRequestHandlerTest {
         ), mockData);
 
         MockStatusReporter mockReporter = getMockReporter();
-        MppwRequestHandler handler = new MppwFinishRequestHandler(executor, ddlProperties, appConfiguration, mockReporter);
+        RestLoadClient restLoadClient = mock(RestLoadClient.class);
+        when(restLoadClient.stopLoading(any())).thenReturn(Future.succeededFuture());
+        MppwRequestHandler handler = new MppwFinishRequestHandler(restLoadClient, executor,
+                ddlProperties,
+                appConfiguration,
+                mockReporter,
+                dtmConfig);
 
         MppwRequest request = new MppwRequest(QueryRequest.builder()
                 .requestId(UUID.randomUUID())
@@ -74,7 +93,7 @@ class MppwFinishRequestHandlerTest {
                 true, MppwKafkaParameter.builder()
                 .datamart("shares")
                 .sysCn(101L)
-                .targetTableName("accounts")
+                .destinationTableName("accounts")
                 .uploadMetadata(UploadExternalEntityMetadata.builder()
                         .externalSchema("")
                         .build())

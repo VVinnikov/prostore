@@ -2,49 +2,67 @@ package io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppr;
 
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.EnrichQueryRequest;
-import io.arenadata.dtm.query.execution.plugin.adb.factory.MpprKafkaConnectorRequestFactory;
-import io.arenadata.dtm.query.execution.plugin.adb.service.MpprKafkaConnectorService;
+import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
+import io.arenadata.dtm.query.execution.plugin.adb.factory.impl.MetadataSqlFactoryImpl;
 import io.arenadata.dtm.query.execution.plugin.adb.service.QueryEnrichmentService;
+import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.exception.MpprDatasourceException;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.request.MpprRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.MpprKafkaService;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service("adbMpprKafkaService")
 public class AdbMpprKafkaService implements MpprKafkaService<QueryResult> {
-	private static final Logger LOG = LoggerFactory.getLogger(AdbMpprKafkaService.class);
 
-	private final QueryEnrichmentService adbQueryEnrichmentService;
-	private final MpprKafkaConnectorService mpprKafkaConnectorService;
-	private final MpprKafkaConnectorRequestFactory requestFactory;
+    private final QueryEnrichmentService adbQueryEnrichmentService;
+    private final MetadataSqlFactory metadataSqlFactory;
+    private final AdbQueryExecutor adbQueryExecutor;
 
-	public AdbMpprKafkaService(QueryEnrichmentService queryEnrichmentService,
-							   MpprKafkaConnectorService mpprKafkaConnectorService,
-							   MpprKafkaConnectorRequestFactory requestFactory) {
-		this.adbQueryEnrichmentService = queryEnrichmentService;
-		this.mpprKafkaConnectorService = mpprKafkaConnectorService;
-		this.requestFactory = requestFactory;
-	}
+    @Autowired
+    public AdbMpprKafkaService(QueryEnrichmentService adbQueryEnrichmentService,
+                               MetadataSqlFactory metadataSqlFactory,
+                               AdbQueryExecutor adbQueryExecutor) {
+        this.adbQueryEnrichmentService = adbQueryEnrichmentService;
+        this.metadataSqlFactory = metadataSqlFactory;
+        this.adbQueryExecutor = adbQueryExecutor;
+    }
 
-	@Override
-	public void execute(MpprRequestContext context, Handler<AsyncResult<QueryResult>> asyncHandler) {
-		MpprRequest request = context.getRequest();
-		adbQueryEnrichmentService.enrich(
-				EnrichQueryRequest.generate(request.getQueryRequest(), request.getLogicalSchema()),
-				sqlResult -> {
-					if (sqlResult.succeeded()) {
-						mpprKafkaConnectorService.call(
-								requestFactory.create(request, sqlResult.result()),
-								asyncHandler);
-					} else {
-						LOG.error("Error while enriching request");
-						asyncHandler.handle(Future.failedFuture(sqlResult.cause()));
-					}
-				});
-	}
+    @Override
+    public Future<QueryResult> execute(MpprRequestContext context) {
+        return Future.future(promise -> {
+            val request = context.getRequest();
+            val schema = request.getQueryRequest().getDatamartMnemonic();
+            val table = MetadataSqlFactoryImpl.WRITABLE_EXTERNAL_TABLE_PREF +
+                    request.getQueryRequest().getRequestId().toString().replaceAll("-", "_");
+            adbQueryExecutor.executeUpdate(metadataSqlFactory.createWritableExtTableSqlQuery(request))
+                    .compose(v -> adbQueryEnrichmentService.enrich(
+                            EnrichQueryRequest.generate(request.getQueryRequest(),
+                                    request.getLogicalSchema())))
+                    .compose(sql -> adbQueryExecutor.executeUpdate(
+                            metadataSqlFactory.insertIntoWritableExtTableSqlQuery(schema,
+                                    table,
+                                    sql)))
+                    .compose(v -> adbQueryExecutor.executeUpdate(
+                            metadataSqlFactory.dropWritableExtTableSqlQuery(schema,
+                                    table)))
+                    .onSuccess(success -> promise.complete(QueryResult.emptyResult()))
+                    .onFailure(err -> {
+                        adbQueryExecutor.executeUpdate(metadataSqlFactory.dropWritableExtTableSqlQuery(schema, table))
+                                .onComplete(dropResult -> {
+                                    if (dropResult.failed()) {
+                                        log.error("Failed to drop writable external table {}.{}", schema, table);
+                                    }
+                                    promise.fail(new MpprDatasourceException(
+                                            String.format("Failed to unload data from datasource by request %s",
+                                                    context.getRequest()),
+                                            err));
+                                });
+                    });
+        });
+    }
 }

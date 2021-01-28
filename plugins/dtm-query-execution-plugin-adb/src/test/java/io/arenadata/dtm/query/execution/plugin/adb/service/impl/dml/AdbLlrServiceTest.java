@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.dml;
 
+import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
@@ -8,6 +9,7 @@ import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.LlrService;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
@@ -42,15 +44,10 @@ public class AdbLlrServiceTest {
 		AsyncResult<List<List<?>>> asyncResult = mock(AsyncResult.class);
 		when(asyncResult.succeeded()).thenReturn(true);
 		when(asyncResult.result()).thenReturn(new ArrayList<>());
-		doAnswer((Answer<AsyncResult<Void>>) arg0 -> {
-			((Handler<AsyncResult<Void>>) arg0.getArgument(1)).handle(asyncResultEmpty);
-			return null;
-		}).when(adbQueryEnrichmentService).enrich(any(), any());
-		doAnswer((Answer<AsyncResult<List<List<?>>>>) arg0 -> {
-			((Handler<AsyncResult<List<List<?>>>>) arg0.getArgument(2)).handle(asyncResult);
-			return null;
-		}).when(adbDatabaseExecutor).execute(any(), any(), any());
-
+		when(adbQueryEnrichmentService.enrich(any()))
+				.thenReturn(Future.succeededFuture());
+		when(adbDatabaseExecutor.execute(any(), any()))
+				.thenReturn(Future.succeededFuture(new ArrayList<>()));
 		adbLLRService = new AdbLlrService(adbQueryEnrichmentService, adbDatabaseExecutor);
 	}
 
@@ -68,11 +65,7 @@ public class AdbLlrServiceTest {
 			queryRequest.setRequestId(UUID.randomUUID());
 			queryRequest.setDatamartMnemonic("TEST_DATAMART");
 			LlrRequest llrRequest = new LlrRequest(queryRequest, schema, Collections.emptyList());
-			adbLLRService.execute(new LlrRequestContext(llrRequest), ar -> {
-				log.debug(ar.toString());
-				result.add("OK");
-				async.complete();
-			});
+			adbLLRService.execute(new LlrRequestContext(new RequestMetrics(), llrRequest));
 			async.awaitSuccess(7000);
 		});
 		suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));

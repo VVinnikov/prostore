@@ -4,7 +4,7 @@ import io.arenadata.dtm.query.execution.plugin.adg.dto.QueryGeneratorContext;
 import org.apache.calcite.rel.RelNode;
 
 /**
- * Интерфейс сервиса для обогащения запроса
+ * Query extending service
  */
 public interface QueryExtendService {
 

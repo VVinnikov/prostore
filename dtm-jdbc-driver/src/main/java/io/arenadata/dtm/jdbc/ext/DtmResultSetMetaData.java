@@ -1,52 +1,44 @@
 package io.arenadata.dtm.jdbc.ext;
 
 import io.arenadata.dtm.common.model.ddl.ColumnType;
+import io.arenadata.dtm.jdbc.core.BaseConnection;
 import io.arenadata.dtm.jdbc.model.ColumnInfo;
-import io.arenadata.dtm.jdbc.util.DtmException;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import lombok.SneakyThrows;
 
-import java.sql.Connection;
 import java.sql.JDBCType;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.Collections;
 import java.util.List;
 
 public class DtmResultSetMetaData implements ResultSetMetaData {
-    protected final Connection connection;
-    protected final List<ColumnMetadata> fields;
-    protected final DtmResultSet resultSet;
+    protected final BaseConnection connection;
+    protected final List<ColumnMetadata> columnMetadata;
 
-    public DtmResultSetMetaData(Connection connection, List<ColumnMetadata> fields, DtmResultSet resultSet) {
+    public DtmResultSetMetaData(BaseConnection connection, List<ColumnMetadata> columnMetadata) {
         this.connection = connection;
-        this.fields = fields == null ? Collections.emptyList() : fields;
-        this.resultSet = resultSet;
+        this.columnMetadata = columnMetadata;
     }
 
     @Override
     public int getColumnCount() {
-        return fields.size();
+        return this.columnMetadata.size();
     }
 
     @SneakyThrows
     @Override
     public String getColumnLabel(int column) {
-        try {
-            return fields.get(column - 1).getName();
-        } catch (Exception e) {
-            throw new DtmException("Fields size = " + fields.size() + ": " + fields.toString());
-        }
+        return this.columnMetadata.get(column - 1).getName();
     }
 
     @Override
     public String getColumnName(int column) {
-        return getColumnLabel(column);
+        return this.getColumnLabel(column);
     }
 
     @Override
-    public String getSchemaName(int column) {
-        return this.getCol(column).getDatamartMnemonic();
+    public String getSchemaName(int column) throws SQLException {
+        return this.getFieldMetadata(column).getDatamartMnemonic();
     }
 
     @Override
@@ -71,7 +63,7 @@ public class DtmResultSetMetaData implements ResultSetMetaData {
 
     @Override
     public int isNullable(int column) throws SQLException {
-        return this.getCol(column).getNullable() ? 1 : 0;
+        return this.getFieldMetadata(column).getNullable() ? 1 : 0;
     }
 
     @Override
@@ -86,41 +78,42 @@ public class DtmResultSetMetaData implements ResultSetMetaData {
 
     @Override
     public int getPrecision(int column) throws SQLException {
-        return this.getCol(column).getLength();
+        return this.getFieldMetadata(column).getLength();
     }
 
     @Override
     public int getScale(int column) throws SQLException {
-        return this.getCol(column).getAccuracy();
+        return this.getFieldMetadata(column).getAccuracy();
     }
 
     @Override
     public String getTableName(int column) throws SQLException {
-        return this.getCol(column).getEntityMnemonic();
+        return this.getFieldMetadata(column).getEntityMnemonic();
     }
 
     @Override
     public String getCatalogName(int column) throws SQLException {
-        return null;
+        return this.getFieldMetadata(column).getDatamartMnemonic();
     }
 
     @Override
     public int getColumnType(int column) throws SQLException {
-        ColumnType type = fields.get(column - 1).getType();
+        ColumnType type = this.columnMetadata.get(column - 1).getType();
         if (type == ColumnType.INT) {
             return JDBCType.INTEGER.getVendorTypeNumber();
-        } if (type == ColumnType.ANY) {
+        }
+        if (type == ColumnType.ANY) {
             return JDBCType.VARCHAR.getVendorTypeNumber();
         } else {
             return JDBCType
-                .valueOf(type.name())
-                .getVendorTypeNumber();
+                    .valueOf(type.name())
+                    .getVendorTypeNumber();
         }
     }
 
     @Override
     public String getColumnTypeName(int column) throws SQLException {
-        return fields.get(column - 1).getType().name();
+        return this.columnMetadata.get(column - 1).getType().name();
     }
 
     @Override
@@ -153,7 +146,11 @@ public class DtmResultSetMetaData implements ResultSetMetaData {
         return false;
     }
 
-    private ColumnInfo getCol(int column) {
-        return (ColumnInfo)this.resultSet.getColumns().get(column - 1);
+    private ColumnInfo getFieldMetadata(int column) throws SQLException {
+        final List<ColumnInfo> cachedFieldMetadata = this.connection.getCachedFieldMetadata();
+        if (cachedFieldMetadata.isEmpty()) {
+            throw new SQLException("Field metadata list is empty");
+        }
+        return cachedFieldMetadata.get(column);
     }
 }

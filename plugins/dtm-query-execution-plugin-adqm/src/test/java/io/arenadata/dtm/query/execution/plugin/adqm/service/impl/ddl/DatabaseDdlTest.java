@@ -36,17 +36,11 @@ class DatabaseDdlTest {
         DdlRequestContext context = new DdlRequestContext(null, createDatabase);
 
         DatabaseExecutor executor = new MockDatabaseExecutor(
-                Collections.singletonList(t -> t.equalsIgnoreCase("create database dev__testdb on cluster test_cluster")));
+                Collections.singletonList(t -> t.equalsIgnoreCase("CREATE DATABASE IF NOT EXISTS dev__testdb on cluster test_cluster")));
 
-        DropDatabaseExecutor dropDatabaseExecutor = new DropDatabaseExecutor(
-                new MockDatabaseExecutor(
-                        Collections.singletonList(
-                                t -> t.equalsIgnoreCase("drop database if exists dev__testdb on cluster test_cluster"))),
-                ddlProperties, appConfiguration);
+        DdlExecutor<Void> databaseDdlService = new CreateDatabaseExecutor(executor, ddlProperties, appConfiguration);
 
-        DdlExecutor<Void> databaseDdlService = new CreateDatabaseExecutor(executor, ddlProperties, appConfiguration, dropDatabaseExecutor);
-
-        databaseDdlService.execute(context, "CREATE", ar -> assertTrue(ar.succeeded()));
+        databaseDdlService.execute(context, "CREATE").onComplete(ar -> assertTrue(ar.succeeded()));
     }
 
     @Test
@@ -60,6 +54,6 @@ class DatabaseDdlTest {
 
         DdlExecutor<Void> databaseDdlService = new DropDatabaseExecutor(executor, ddlProperties, appConfiguration);
 
-        databaseDdlService.execute(context, "DROP", ar -> assertTrue(ar.succeeded()));
+        databaseDdlService.execute(context, "DROP").onComplete(ar -> assertTrue(ar.succeeded()));
     }
 }

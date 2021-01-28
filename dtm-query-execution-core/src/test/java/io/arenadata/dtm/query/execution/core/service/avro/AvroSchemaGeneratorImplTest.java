@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.core.service.avro;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
+import io.arenadata.dtm.query.execution.core.service.avro.impl.AvroSchemaGeneratorImpl;
 import org.apache.avro.Schema;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,28 +44,26 @@ class AvroSchemaGeneratorImplTest {
     @Test
     void generateSchemaFields() {
         String avroResult = "{\"type\":\"record\",\"name\":\"uplexttab\",\"namespace\":\"test_datamart\"," +
-            "\"fields\":[{\"name\":\"id\",\"type\":\"int\"}," +
-            "{\"name\":\"name\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}]," +
-            "\"default\":null,\"defaultValue\":\"null\"},{\"name\":\"booleanvalue\",\"type\":[\"null\",\"boolean\"]," +
-            "\"default\":null,\"defaultValue\":\"null\"},{\"name\":\"charvalue\",\"type\":[\"null\"," +
-            "{\"type\":\"string\",\"avro.java.string\":\"String\"}],\"default\":null,\"defaultValue\":\"null\"}," +
-            "{\"name\":\"bgintvalue\",\"type\":[\"null\",\"long\"],\"default\":null,\"defaultValue\":\"null\"}," +
-            "{\"name\":\"dbvalue\",\"type\":[\"null\",\"double\"],\"default\":null,\"defaultValue\":\"null\"}," +
-            "{\"name\":\"flvalue\",\"type\":[\"null\",\"float\"],\"default\":null,\"defaultValue\":\"null\"}," +
-            "{\"name\":\"datevalue\",\"type\":[\"null\",{\"type\":\"long\",\"logicalType\":\"LocalDate\"}]," +
-            "\"default\":null,\"defaultValue\":\"null\"}," +
-            "{\"name\":\"datetimevalue\",\"type\":[\"null\",{\"type\":\"string\",\"logicalType\":\"LocalDateTime\"}],\"default\":null,\"defaultValue\":\"null\"}," +
-            "{\"name\":\"sys_op\",\"type\":\"int\",\"default\":0}]}";
+                "\"fields\":[{\"name\":\"id\",\"type\":\"long\"},{\"name\":\"name\"," +
+                "\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}],\"default\":null,\"defaultValue\":\"null\"}," +
+                "{\"name\":\"booleanvalue\",\"type\":[\"null\",\"boolean\"],\"default\":null,\"defaultValue\":\"null\"}," +
+                "{\"name\":\"charvalue\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}],\"default\":null,\"defaultValue\":\"null\"}," +
+                "{\"name\":\"bgintvalue\",\"type\":[\"null\",\"long\"],\"default\":null,\"defaultValue\":\"null\"}," +
+                "{\"name\":\"dbvalue\",\"type\":[\"null\",\"double\"],\"default\":null,\"defaultValue\":\"null\"}," +
+                "{\"name\":\"flvalue\",\"type\":[\"null\",\"float\"],\"default\":null,\"defaultValue\":\"null\"}," +
+                "{\"name\":\"datevalue\",\"type\":[\"null\",{\"type\":\"int\",\"logicalType\":\"date\"}],\"default\":null,\"defaultValue\":\"null\"}," +
+                "{\"name\":\"datetimevalue\",\"type\":[\"null\",{\"type\":\"long\",\"logicalType\":\"timestamp-micros\"}],\"default\":null,\"defaultValue\":\"null\"}," +
+                "{\"name\":\"sys_op\",\"type\":\"int\",\"default\":0}]}";
         Schema tableSchema = avroSchemaGenerator.generateTableSchema(table);
         assertEquals(avroResult, tableSchema.toString());
     }
 
     @Test
     void generateTableSchemaUnsupportedType() {
-        table.getFields().add(new EntityField(0, "uuid", ColumnType.UUID, true));
+        table.getFields().add(new EntityField(0, "uuid", ColumnType.ANY, true));
         Executable executable = () -> avroSchemaGenerator.generateTableSchema(table);
         assertThrows(IllegalArgumentException.class,
-            executable, "Unsupported data type: UUID");
+            executable, "Unsupported data type: " + ColumnType.ANY);
     }
 
     @Test

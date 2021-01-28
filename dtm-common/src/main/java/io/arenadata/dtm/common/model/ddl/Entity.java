@@ -1,13 +1,14 @@
 package io.arenadata.dtm.common.model.ddl;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import io.arenadata.dtm.common.reader.SourceType;
+import lombok.*;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Physical model of the service database table
@@ -30,7 +31,7 @@ public class Entity implements Serializable {
     private String externalTableLocationPath;
     private Integer externalTableDownloadChunkSize;
     private Integer externalTableUploadMessageLimit;
-    private List<String> destination;
+    private Set<SourceType> destination;
     private List<EntityField> fields;
 
     public Entity(String nameWithSchema, List<EntityField> fields) {
@@ -55,5 +56,21 @@ public class Entity implements Serializable {
         return schema + "." + name;
     }
 
+    public Entity copy() {
+        return Entity.builder()
+                .name(this.name)
+                .schema(this.schema)
+                .viewQuery(this.viewQuery)
+                .entityType(this.entityType)
+                .externalTableFormat(this.externalTableFormat)
+                .externalTableSchema(this.externalTableSchema)
+                .externalTableLocationType(this.externalTableLocationType)
+                .externalTableLocationPath(this.externalTableLocationPath)
+                .externalTableDownloadChunkSize(this.externalTableDownloadChunkSize)
+                .externalTableUploadMessageLimit(this.externalTableUploadMessageLimit)
+                .destination(this.destination != null ? new HashSet<>(this.destination) : null)
+                .fields(this.fields != null ? new ArrayList<>(this.fields) : null)
+                .build();
+    }
 }
 

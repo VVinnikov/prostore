@@ -15,29 +15,30 @@ import java.util.LinkedHashMap;
 @Service
 public class ContentWriterImpl implements ContentWriter {
 
-  private ObjectMapper yamlMapper;
+    private ObjectMapper yamlMapper;
 
-  @Autowired
-  public ContentWriterImpl(@Qualifier("yamlMapper") ObjectMapper yamlMapper) {
-    this.yamlMapper = yamlMapper;
-  }
+    @Autowired
+    public ContentWriterImpl(@Qualifier("yamlMapper") ObjectMapper yamlMapper) {
+        this.yamlMapper = yamlMapper;
+    }
 
-  @SneakyThrows
-  @Override
-  public String toContent(Object config) {
-    return yamlMapper.writeValueAsString(config);
-  }
+    @SneakyThrows
+    @Override
+    public String toContent(Object config) {
+        return yamlMapper.writeValueAsString(config);
+    }
 
-  @SneakyThrows
-  @Override
-  public ConsumerConfig toConsumerConfig(String content) {
-    return yamlMapper.readValue(content, new TypeReference<ConsumerConfig>() {});
-  }
+    @SneakyThrows
+    @Override
+    public ConsumerConfig toConsumerConfig(String content) {
+        return yamlMapper.readValue(content, new TypeReference<ConsumerConfig>() {
+        });
+    }
 
-  @SneakyThrows
-  @Override
-  public LinkedHashMap<String, TopicsConfig> toTopicsConfig(String content) {
-    return yamlMapper.readValue(content, new TypeReference<LinkedHashMap<String, TopicsConfig>>() {
-    });
-  }
+    @SneakyThrows
+    @Override
+    public LinkedHashMap<String, TopicsConfig> toTopicsConfig(String content) {
+        return yamlMapper.readValue(content, new TypeReference<LinkedHashMap<String, TopicsConfig>>() {
+        });
+    }
 }

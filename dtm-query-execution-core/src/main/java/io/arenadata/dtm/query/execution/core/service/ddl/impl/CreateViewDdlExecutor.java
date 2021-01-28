@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
 import io.arenadata.dtm.common.dto.QueryParserRequest;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityType;
@@ -9,21 +10,21 @@ import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.calcite.core.node.SqlTreeNode;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
-import io.arenadata.dtm.query.execution.core.dao.exception.entity.EntityAlreadyExistsException;
-import io.arenadata.dtm.query.execution.core.dao.exception.entity.ViewNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
+import io.arenadata.dtm.query.execution.core.exception.table.TableAlreadyExistsException;
+import io.arenadata.dtm.query.execution.core.exception.view.EntityAlreadyExistsException;
+import io.arenadata.dtm.query.execution.core.exception.view.ViewDisalowedOrDirectiveException;
+import io.arenadata.dtm.query.execution.core.exception.view.ViewNotExistsException;
+import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.dml.ColumnMetadataService;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import io.arenadata.dtm.query.execution.core.utils.SqlPreparer;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
-import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -49,16 +50,19 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
     private static final String VIEW_AND_TABLE_PATTERN = "(?i).*(JOIN|SELECT)\\.(|AS\\.)(SNAPSHOT|IDENTIFIER)$";
     protected final SqlDialect sqlDialect;
     protected final EntityDao entityDao;
+    protected final EntityCacheService entityCacheService;
     private final LogicalSchemaProvider logicalSchemaProvider;
     private final ColumnMetadataService columnMetadataService;
 
     @Autowired
-    public CreateViewDdlExecutor(MetadataExecutor<DdlRequestContext> metadataExecutor,
+    public CreateViewDdlExecutor(@Qualifier("entityCacheService") EntityCacheService entityCacheService,
+                                 MetadataExecutor<DdlRequestContext> metadataExecutor,
                                  LogicalSchemaProvider logicalSchemaProvider,
                                  ColumnMetadataService columnMetadataService,
                                  ServiceDbFacade serviceDbFacade,
                                  @Qualifier("coreSqlDialect") SqlDialect sqlDialect) {
         super(metadataExecutor, serviceDbFacade);
+        this.entityCacheService = entityCacheService;
         this.logicalSchemaProvider = logicalSchemaProvider;
         this.columnMetadataService = columnMetadataService;
         this.sqlDialect = sqlDialect;
@@ -66,72 +70,15 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<QueryResult>> handler) {
-        checkViewQuery(context)
+    public Future<QueryResult> execute(DdlRequestContext context, String sqlNodeName) {
+        return checkViewQuery(context)
                 .compose(v -> getCreateViewContext(context))
-                .onFailure(error -> handler.handle(Future.failedFuture(error)))
-                .onSuccess(ctx -> createOrReplaceEntity(ctx, handler));
+                .compose(this::createOrReplaceEntity);
     }
 
     protected Future<Void> checkViewQuery(DdlRequestContext context) {
         return checkSnapshotNotExist(context)
                 .compose(v -> checkEntitiesType(context));
-    }
-
-    private Future<Void> checkSnapshotNotExist(DdlRequestContext context) {
-        return Future.future(p -> {
-            List<SqlTreeNode> bySnapshot = new SqlSelectTree(context.getQuery())
-                    .findNodesByPath(SqlSelectTree.SELECT_AS_SNAPSHOT);
-            if (bySnapshot.isEmpty()) {
-                p.complete();
-            } else {
-                p.fail("View system_time not allowed");
-            }
-        });
-    }
-
-    private Future<Void> checkEntitiesType(DdlRequestContext context) {
-        return Future.future(promise -> {
-            final List<SqlTreeNode> nodes = new SqlSelectTree(context.getQuery())
-                    .findNodesByPathRegex(VIEW_AND_TABLE_PATTERN);
-            final List<Future> entityFutures = getEntitiesFutures(context, nodes);
-            CompositeFuture.join(entityFutures)
-                    .onSuccess(result -> {
-                        final List<Object> entities = result.list();
-                        entities.forEach(e -> {
-                            final Entity entity = (Entity) e;
-                            if (entity.getEntityType() != EntityType.TABLE) {
-                                promise.fail(new RuntimeException(
-                                        String.format("View query supports only %s type, but actual %s",
-                                                EntityType.TABLE, entity.getEntityType())));
-                            }
-                        });
-                        promise.complete();
-                    })
-                    .onFailure(promise::fail);
-        });
-    }
-
-    @NotNull
-    private List<Future> getEntitiesFutures(DdlRequestContext context, List<SqlTreeNode> nodes) {
-        final List<Future> entityFutures = new ArrayList<>();
-        nodes.forEach(node -> {
-            String datamart = context.getRequest().getQueryRequest().getDatamartMnemonic();
-            String tableName;
-            final Optional<String> schema = node.tryGetSchemaName();
-            final Optional<String> table = node.tryGetTableName();
-            if (schema.isPresent()) {
-                datamart = schema.get();
-            }
-            if (table.isPresent()) {
-                tableName = table.get();
-            } else {
-                throw new RuntimeException(String.format("Can't extract table name from query %s",
-                        context.getQuery().toSqlString(sqlDialect).toString()));
-            }
-            entityFutures.add(entityDao.getEntity(datamart, tableName));
-        });
-        return entityFutures;
     }
 
     protected Future<CreateViewContext> getCreateViewContext(DdlRequestContext context) {
@@ -156,28 +103,93 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
         });
     }
 
+    private Future<QueryResult> createOrReplaceEntity(CreateViewContext ctx) {
+        return Future.future(promise -> {
+            val viewEntity = ctx.getViewEntity();
+            entityCacheService.remove(viewEntity.getSchema(), viewEntity.getName());
+            entityDao.createEntity(viewEntity)
+                    .otherwise(error -> checkCreateOrReplace(ctx, error))
+                    .compose(r -> entityDao.getEntity(viewEntity.getSchema(), viewEntity.getName()))
+                    .map(this::checkEntityType)
+                    .compose(r -> entityDao.updateEntity(viewEntity))
+                    .onSuccess(success -> {
+                        promise.complete(QueryResult.emptyResult());
+                    })
+                    .onFailure(promise::fail);
+        });
+
+    }
+
+    private Future<Void> checkSnapshotNotExist(DdlRequestContext context) {
+        return Future.future(p -> {
+            List<SqlTreeNode> bySnapshot = new SqlSelectTree(context.getQuery())
+                    .findNodesByPath(SqlSelectTree.SELECT_AS_SNAPSHOT);
+            if (bySnapshot.isEmpty()) {
+                p.complete();
+            } else {
+                p.fail(new ViewDisalowedOrDirectiveException(context.getQuery().toSqlString(sqlDialect).getSql()));
+            }
+        });
+    }
+
+    private Future<Void> checkEntitiesType(DdlRequestContext context) {
+        return Future.future(promise -> {
+            final List<SqlTreeNode> nodes = new SqlSelectTree(context.getQuery())
+                    .findNodesByPathRegex(VIEW_AND_TABLE_PATTERN);
+            final List<Future> entityFutures = getEntitiesFutures(context, nodes);
+            CompositeFuture.join(entityFutures)
+                    .onSuccess(result -> {
+                        final List<Object> entities = result.list();
+                        entities.forEach(e -> {
+                            final Entity entity = (Entity) e;
+                            if (entity.getEntityType() != EntityType.TABLE) {
+                                promise.fail(new ViewDisalowedOrDirectiveException(
+                                        context.getQuery().toSqlString(sqlDialect).getSql()));
+                            }
+                        });
+                        promise.complete();
+                    })
+                    .onFailure(promise::fail);
+        });
+    }
+
+    @NotNull
+    private List<Future> getEntitiesFutures(DdlRequestContext context, List<SqlTreeNode> nodes) {
+        final List<Future> entityFutures = new ArrayList<>();
+        nodes.forEach(node -> {
+            String datamartName = context.getRequest().getQueryRequest().getDatamartMnemonic();
+            String tableName;
+            final Optional<String> schema = node.tryGetSchemaName();
+            final Optional<String> table = node.tryGetTableName();
+            if (schema.isPresent()) {
+                datamartName = schema.get();
+            }
+            if (table.isPresent()) {
+                tableName = table.get();
+            } else {
+                throw new DtmException(String.format("Can't extract table name from query %s",
+                        context.getQuery().toSqlString(sqlDialect).toString()));
+            }
+            entityCacheService.remove(datamartName, tableName);
+            entityFutures.add(entityDao.getEntity(datamartName, tableName));
+        });
+        return entityFutures;
+    }
+
     private Future<Entity> getEntityFuture(DdlRequestContext ctx, QueryRequest request) {
-        return getLogicalSchema(request)
-                .compose(datamarts -> getColumnMetadata(request, datamarts))
+        return logicalSchemaProvider.getSchema(request)
+                .compose(datamarts -> columnMetadataService.getColumnMetadata(new QueryParserRequest(request, datamarts)))
                 .map(columnMetadata -> toViewEntity(ctx, columnMetadata));
-    }
-
-    private Future<List<Datamart>> getLogicalSchema(QueryRequest request) {
-        return Future.future(p -> logicalSchemaProvider.getSchema(request, p));
-    }
-
-    private Future<List<ColumnMetadata>> getColumnMetadata(QueryRequest request, List<Datamart> datamarts) {
-        return Future.future(p -> columnMetadataService.getColumnMetadata(new QueryParserRequest(request, datamarts), p));
     }
 
     private Entity toViewEntity(DdlRequestContext ctx, List<ColumnMetadata> columnMetadata) {
         val tree = new SqlSelectTree(ctx.getQuery());
         val viewNameNode = SqlPreparer.getViewNameNode(tree);
         val schemaName = viewNameNode.tryGetSchemaName()
-                .orElseThrow(() -> new RuntimeException("Unable to get schema of view"));
+                .orElseThrow(() -> new DtmException("Unable to get schema of view"));
         val viewName = viewNameNode.tryGetTableName()
-                .orElseThrow(() -> new RuntimeException("Unable to get name of view"));
-        val viewQuery = getViewQuery(tree);
+                .orElseThrow(() -> new DtmException("Unable to get name of view"));
+        val viewQuery = getViewQuery(tree).replace("\n", " ").replace("\r", "");
         ctx.setDatamartName(schemaName);
         return Entity.builder()
                 .name(viewName)
@@ -199,6 +211,7 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
                 .name(cm.getName())
                 .nullable(true)
                 .type(cm.getType())
+                .size(cm.getSize())
                 .ordinalPosition(position)
                 .build();
     }
@@ -206,30 +219,19 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
     protected String getViewQuery(SqlSelectTree tree) {
         val queryByView = tree.findNodesByPath(VIEW_QUERY_PATH);
         if (queryByView.isEmpty()) {
-            throw new IllegalArgumentException("Unable to get view query");
+            throw new DtmException("Unable to get view query");
         } else {
             return queryByView.get(0).getNode().toSqlString(sqlDialect).toString();
         }
     }
 
-    private void createOrReplaceEntity(CreateViewContext ctx, Handler<AsyncResult<QueryResult>> handler) {
-        val viewEntity = ctx.getViewEntity();
-        entityDao.createEntity(viewEntity)
-                .otherwise(error -> checkCreateOrReplace(ctx, error))
-                .compose(r -> entityDao.getEntity(viewEntity.getSchema(), viewEntity.getName()))
-                .map(this::checkEntityType)
-                .compose(r -> entityDao.updateEntity(viewEntity))
-                .onSuccess(success -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
-                .onFailure(error -> handler.handle(Future.failedFuture(error)));
-    }
-
     private Void checkCreateOrReplace(CreateViewContext ctx, Throwable error) {
-        if (error instanceof EntityAlreadyExistsException && ctx.isCreateOrReplace()) {
+        if (error instanceof TableAlreadyExistsException && ctx.isCreateOrReplace()) {
             // if there is an exception <entity already exists> and <orReplace> is true
             // then continue
             return null;
         } else {
-            throw new RuntimeException(error);
+            throw new EntityAlreadyExistsException(ctx.getViewEntity().getNameWithSchema());
         }
     }
 

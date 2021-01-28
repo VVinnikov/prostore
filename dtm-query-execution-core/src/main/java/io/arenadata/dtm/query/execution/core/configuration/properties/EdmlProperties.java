@@ -10,10 +10,10 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties("core.datasource.edml")
 @Data
 public class EdmlProperties {
-  private SourceType sourceType;
-  private Integer defaultChunkSize;
-  private Integer defaultMessageLimit;
-  private Integer pluginStatusCheckPeriodMs;
-  private Integer firstOffsetTimeoutMs;
-  private Integer changeOffsetTimeoutMs;
+    private SourceType sourceType;
+    private Integer defaultChunkSize;
+    private Integer defaultMessageLimit;
+    private Integer pluginStatusCheckPeriodMs;
+    private Integer firstOffsetTimeoutMs;
+    private Integer changeOffsetTimeoutMs;
 }

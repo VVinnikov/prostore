@@ -18,16 +18,16 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AdqmRollbackRequestFactory implements RollbackRequestFactory<AdqmRollbackRequest> {
 
-    private static final String DROP_TABLE_TEMPLATE = "DROP TABLE %s.%s_%s ON CLUSTER %s";
+    private static final String DROP_TABLE_TEMPLATE = "DROP TABLE IF EXISTS %s.%s_%s ON CLUSTER %s";
     private static final String SYSTEM_FLUSH_TEMPLATE = "SYSTEM FLUSH DISTRIBUTED %s.%s_actual";
     private static final String INSERT_INTO_TEMPLATE = "INSERT INTO <dbname>.<tablename>_actual\n" +
-        "  SELECT <fields>, sys_from, sys_to, sys_op, close_date, -1 AS sign\n" +
-        "  FROM <dbname>.<tablename>_actual\n" +
+        "  SELECT <fields>, sys_from, sys_to, sys_op, close_date, -1\n" +
+        "  FROM <dbname>.<tablename>_actual FINAL\n" +
         "  WHERE sys_from = <sys_cn> AND sign = 1\n" +
         "  UNION ALL\n" +
-        "  SELECT <fields>, sys_from, <maxLong> AS sys_to, 0 AS sys_op, <maxLong> AS close_date, arrayJoin(-1, 1) AS sign\n" +
-        "  FROM <dbname>.<tablename>_actual\n" +
-        "  WHERE sys_to = <sys_cn> - 1 AND sign = 1";
+        "  SELECT <fields>, sys_from, toInt64(<maxLong>) AS sys_to, 0 AS sys_op, toDateTime('9999-12-31 00:00:00') AS close_date, arrayJoin([-1, 1])\n" +
+        "  FROM <dbname>.<tablename>_actual FINAL\n" +
+        "  WHERE sys_to = <prev_sys_cn> AND sign = 1";
     private static final String OPTIMIZE_TABLE_TEMPLATE = "OPTIMIZE TABLE %s.%s_actual_shard ON CLUSTER %s FINAL";
 
     private final DdlProperties ddlProperties;
@@ -66,7 +66,8 @@ public class AdqmRollbackRequestFactory implements RollbackRequestFactory<AdqmRo
             .replaceAll("<tablename>", entity.getName())
             .replaceAll("<fields>", fields)
             .replaceAll("<maxLong>", String.valueOf(Long.MAX_VALUE))
-            .replaceAll("<sys_cn>", String.valueOf(sysCn));
+            .replaceAll("<sys_cn>", String.valueOf(sysCn))
+            .replaceAll("<prev_sys_cn>", String.valueOf(sysCn - 1));
     }
 
     private String getDropTableSql(String datamart, String entity, String tableSuffix, String cluster) {

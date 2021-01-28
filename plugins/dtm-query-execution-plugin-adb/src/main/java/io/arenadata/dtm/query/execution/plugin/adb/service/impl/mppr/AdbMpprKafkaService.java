@@ -36,10 +36,11 @@ public class AdbMpprKafkaService implements AdbMpprExecutor {
     @Override
     public Future<QueryResult> execute(MpprRequest request) {
         return Future.future(promise -> {
+            val mpprKafkaRequest = (MpprKafkaRequest) request;
             val schema = request.getDatamartMnemonic();
             val table = kafkampprSqlFactory.getTableName(request.getRequestId().toString());
-            adbQueryExecutor.executeUpdate(kafkampprSqlFactory.createWritableExtTableSqlQuery((MpprKafkaRequest) request))
-                    .compose(v -> enrichQuery(request))
+            adbQueryExecutor.executeUpdate(kafkampprSqlFactory.createWritableExtTableSqlQuery(mpprKafkaRequest))
+                    .compose(v -> enrichQuery(mpprKafkaRequest))
                     .compose(enrichedQuery -> insertIntoWritableExtTableSqlQuery(schema, table, enrichedQuery))
                     .compose(v -> dropWritableExtTableSqlQuery(schema, table))
                     .onSuccess(success -> promise.complete(QueryResult.emptyResult()))
@@ -69,10 +70,10 @@ public class AdbMpprKafkaService implements AdbMpprExecutor {
                         sql));
     }
 
-    private Future<String> enrichQuery(MpprRequest request) {
+    private Future<String> enrichQuery(MpprKafkaRequest request) {
         return adbQueryEnrichmentService.enrich(
                 EnrichQueryRequest.builder()
-                .query(request.getSqlNode())
+                .query(request.getDmlSubQuery())
                 .schema(request.getLogicalSchema())
                 .envName(request.getEnvName())
                 .deltaInformations(request.getDeltaInformations())

@@ -8,15 +8,14 @@ import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 import java.util.List;
 
 public interface KafkaMppwSqlFactory extends MppwSqlFactory {
-    String COMMIT_OFFSETS = "SELECT kadb.commit_offsets('%s.%s'::regclass::oid)";
-    String SERVER_NAME_TEMPLATE = "FDW_KAFKA_%s";
-
 
     String createKeyColumnsSqlQuery(String schema, String tableName);
 
     List<ColumnMetadata> createKeyColumnQueryMetadata();
 
     String moveOffsetsExtTableSqlQuery(String schema, String table);
+
+    String commitOffsetsSqlQuery(String schema, String table);
 
     String insertIntoKadbOffsetsSqlQuery(String schema, String table);
 
@@ -34,4 +33,6 @@ public interface KafkaMppwSqlFactory extends MppwSqlFactory {
     String insertIntoStagingTableSqlQuery(String schema, String columns, String table, String extTable);
 
     String getTableName(String requestId);
+
+    String getServerName(String database);
 }

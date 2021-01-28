@@ -12,7 +12,6 @@ import lombok.Builder;
 public class CheckContext extends CoreRequestContext<DatamartRequest, SqlCheckCall> {
     private Entity entity;
     private CheckType checkType;
-    private SqlCheckCall sqlCheckCall;
 
     @Builder
     public CheckContext(RequestMetrics metrics,
@@ -22,7 +21,6 @@ public class CheckContext extends CoreRequestContext<DatamartRequest, SqlCheckCa
                         SqlCheckCall sqlCheckCall) {
         super(metrics, envName, request, sqlCheckCall);
         this.checkType = checkType;
-        this.sqlCheckCall = sqlCheckCall;
     }
 
     @Override
@@ -36,9 +34,5 @@ public class CheckContext extends CoreRequestContext<DatamartRequest, SqlCheckCa
 
     public CheckType getCheckType() {
         return checkType;
-    }
-
-    public SqlCheckCall getSqlCheckCall() {
-        return sqlCheckCall;
     }
 }

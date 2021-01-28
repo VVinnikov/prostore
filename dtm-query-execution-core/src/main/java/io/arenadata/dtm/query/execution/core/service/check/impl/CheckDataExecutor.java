@@ -49,7 +49,7 @@ public class CheckDataExecutor implements CheckExecutor {
 
     @Override
     public Future<String> execute(CheckContext context) {
-        SqlCheckData sqlCheckData = (SqlCheckData) context.getSqlCheckCall();
+        SqlCheckData sqlCheckData = (SqlCheckData) context.getSqlNode();
         return entityDao.getEntity(context.getRequest().getQueryRequest().getDatamartMnemonic(), sqlCheckData.getTable())
                 .compose(entity -> EntityType.TABLE.equals(entity.getEntityType())
                         ? Future.succeededFuture(entity)

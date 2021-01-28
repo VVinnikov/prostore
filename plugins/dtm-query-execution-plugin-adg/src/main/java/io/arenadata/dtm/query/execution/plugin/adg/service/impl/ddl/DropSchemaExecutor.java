@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl.ddl;
 
 import io.arenadata.dtm.query.execution.plugin.adg.factory.AdgHelperTableNamesFactory;
-import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.TtDeleteTablesWithPrefixRequest;
+import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.AdgDeleteTablesWithPrefixRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.DdlExecutor;
@@ -31,7 +31,7 @@ public class DropSchemaExecutor implements DdlExecutor<Void> {
     public Future<Void> execute(DdlRequest request) {
         return Future.future(promise -> {
             val prefix = adgHelperTableNamesFactory.getTablePrefix(request.getEnvName(), request.getDatamartMnemonic());
-            cartridgeClient.executeDeleteSpacesWithPrefixQueued(new TtDeleteTablesWithPrefixRequest(prefix))
+            cartridgeClient.executeDeleteSpacesWithPrefixQueued(new AdgDeleteTablesWithPrefixRequest(prefix))
                     .onComplete(promise);
         });
     }

@@ -3,7 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adg.service.impl.mppr;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adg.dto.EnrichQueryRequest;
-import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.TtUploadDataKafkaRequest;
+import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.AdgUploadDataKafkaRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgMpprExecutor;
 import io.arenadata.dtm.query.execution.plugin.adg.service.QueryEnrichmentService;
@@ -49,7 +49,7 @@ public class AdgMpprKafkaService implements AdgMpprExecutor {
         return Future.future(promise -> {
             val downloadMetadata =
                     (DownloadExternalEntityMetadata) kafkaRequest.getDownloadMetadata();
-            val request = new TtUploadDataKafkaRequest(
+            val request = new AdgUploadDataKafkaRequest(
                     sql,
                     kafkaRequest.getTopic(),
                     downloadMetadata.getChunkSize(),

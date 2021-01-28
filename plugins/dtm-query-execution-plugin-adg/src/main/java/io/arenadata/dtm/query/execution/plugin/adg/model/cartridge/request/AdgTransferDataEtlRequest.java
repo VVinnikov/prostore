@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class TtTransferDataEtlRequest {
+public class AdgTransferDataEtlRequest {
     private AdgHelperTableNames helperTableNames;
     private long deltaNumber;
 }

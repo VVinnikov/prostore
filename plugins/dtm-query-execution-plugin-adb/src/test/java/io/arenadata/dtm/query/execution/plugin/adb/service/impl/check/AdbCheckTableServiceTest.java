@@ -4,14 +4,12 @@ import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityTypeUtil;
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbTables;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.impl.AdbMetaTableEntityFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.impl.AdbTableEntitiesFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
-import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
 import io.vertx.core.Future;
 import org.junit.jupiter.api.BeforeAll;
@@ -24,10 +22,11 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static io.arenadata.dtm.query.execution.plugin.adb.factory.Constants.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -40,7 +39,7 @@ public class AdbCheckTableServiceTest {
             AdbTables.HISTORY_TABLE_POSTFIX,
             AdbTables.STAGING_TABLE_POSTFIX);
     private Entity entity;
-    private CheckContext checkContext;
+    private CheckTableRequest checkTableRequest;
     private static final String TEST_COLUMN_NAME = "test_column";
 
     @BeforeAll
@@ -49,7 +48,7 @@ public class AdbCheckTableServiceTest {
         sysFromAttr.put(AdbMetaTableEntityFactory.CONSTRAINT_TYPE, null);
         sysFromAttr.put(AdbMetaTableEntityFactory.DATETIME_PRECISION, null);
         sysFromAttr.put(AdbMetaTableEntityFactory.ORDINAL_POSITION, null);
-        sysFromAttr.put(AdbMetaTableEntityFactory.COLUMN_NAME, AdbTableEntitiesFactory.SYS_FROM_ATTR);
+        sysFromAttr.put(AdbMetaTableEntityFactory.COLUMN_NAME, SYS_FROM_ATTR);
         sysFromAttr.put(AdbMetaTableEntityFactory.DATA_TYPE, "int8");
         sysFromAttr.put(AdbMetaTableEntityFactory.CHARACTER_MAXIMUM_LENGTH, null);
 
@@ -57,7 +56,7 @@ public class AdbCheckTableServiceTest {
         sysToAttr.put(AdbMetaTableEntityFactory.CONSTRAINT_TYPE, null);
         sysToAttr.put(AdbMetaTableEntityFactory.DATETIME_PRECISION, null);
         sysToAttr.put(AdbMetaTableEntityFactory.ORDINAL_POSITION, null);
-        sysToAttr.put(AdbMetaTableEntityFactory.COLUMN_NAME, AdbTableEntitiesFactory.SYS_TO_ATTR);
+        sysToAttr.put(AdbMetaTableEntityFactory.COLUMN_NAME, SYS_TO_ATTR);
         sysToAttr.put(AdbMetaTableEntityFactory.DATA_TYPE, "int8");
         sysToAttr.put(AdbMetaTableEntityFactory.CHARACTER_MAXIMUM_LENGTH, null);
 
@@ -65,7 +64,7 @@ public class AdbCheckTableServiceTest {
         sysOpAttr.put(AdbMetaTableEntityFactory.CONSTRAINT_TYPE, null);
         sysOpAttr.put(AdbMetaTableEntityFactory.DATETIME_PRECISION, null);
         sysOpAttr.put(AdbMetaTableEntityFactory.ORDINAL_POSITION, null);
-        sysOpAttr.put(AdbMetaTableEntityFactory.COLUMN_NAME, AdbTableEntitiesFactory.SYS_OP_ATTR);
+        sysOpAttr.put(AdbMetaTableEntityFactory.COLUMN_NAME, SYS_OP_ATTR);
         sysOpAttr.put(AdbMetaTableEntityFactory.DATA_TYPE, "int4");
         sysOpAttr.put(AdbMetaTableEntityFactory.CHARACTER_MAXIMUM_LENGTH, null);
 
@@ -73,7 +72,7 @@ public class AdbCheckTableServiceTest {
         PKSysFromAttr.put(AdbMetaTableEntityFactory.CONSTRAINT_TYPE, null);
         PKSysFromAttr.put(AdbMetaTableEntityFactory.DATETIME_PRECISION, null);
         PKSysFromAttr.put(AdbMetaTableEntityFactory.ORDINAL_POSITION, 3);
-        PKSysFromAttr.put(AdbMetaTableEntityFactory.COLUMN_NAME, AdbTableEntitiesFactory.SYS_FROM_ATTR);
+        PKSysFromAttr.put(AdbMetaTableEntityFactory.COLUMN_NAME, SYS_FROM_ATTR);
         PKSysFromAttr.put(AdbMetaTableEntityFactory.DATA_TYPE, "int8");
         PKSysFromAttr.put(AdbMetaTableEntityFactory.CHARACTER_MAXIMUM_LENGTH, null);
 
@@ -97,7 +96,7 @@ public class AdbCheckTableServiceTest {
                 .nullable(true)
                 .build());
 
-        checkContext = new CheckContext(null, new DatamartRequest(new QueryRequest()), entity);
+        checkTableRequest = new CheckTableRequest(UUID.randomUUID(), "env", entity.getSchema(), entity);
 
         tablePostFixes.forEach(postFix -> when(adbQueryExecutor.execute(argThat(getPredicate(postFix)::test)))
                 .thenReturn(Future.succeededFuture(getResultSet(postFix))));
@@ -114,13 +113,13 @@ public class AdbCheckTableServiceTest {
 
     @Test
     void testSuccess() {
-        assertTrue(adbCheckTableService.check(checkContext).succeeded());
+        assertTrue(adbCheckTableService.check(checkTableRequest).succeeded());
     }
 
     @Test
     void testTableNotExist() {
         entity.setName("not_exist_table");
-        Future<Void> result = adbCheckTableService.check(checkContext);
+        Future<Void> result = adbCheckTableService.check(checkTableRequest);
         tablePostFixes.forEach(postFix ->
                 assertThat(result.cause().getMessage(),
                         containsString(String.format(AdbCheckTableService.TABLE_NOT_EXIST_ERROR_TEMPLATE,
@@ -136,7 +135,7 @@ public class AdbCheckTableServiceTest {
                 .build());
         String expectedError = String.format(AdbCheckTableService.COLUMN_NOT_EXIST_ERROR_TEMPLATE,
                 "not_exist_column");
-        assertThat(adbCheckTableService.check(checkContext).cause().getMessage(),
+        assertThat(adbCheckTableService.check(checkTableRequest).cause().getMessage(),
                 containsString(expectedError));
     }
 
@@ -163,7 +162,7 @@ public class AdbCheckTableServiceTest {
                 .findAny()
                 .orElseThrow(RuntimeException::new);
         consumer.accept(testColumn);
-        assertThat(adbCheckTableService.check(checkContext).cause().getMessage(),
+        assertThat(adbCheckTableService.check(checkTableRequest).cause().getMessage(),
                 containsString(expectedError));
     }
 

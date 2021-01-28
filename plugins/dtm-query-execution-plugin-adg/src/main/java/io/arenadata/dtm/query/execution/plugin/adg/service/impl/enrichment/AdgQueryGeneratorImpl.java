@@ -3,15 +3,12 @@ package io.arenadata.dtm.query.execution.plugin.adg.service.impl.enrichment;
 import io.arenadata.dtm.common.calcite.CalciteContext;
 import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.exception.DtmException;
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.calcite.core.rel2sql.NullNotCastableRelToSqlConverter;
+import io.arenadata.dtm.query.execution.plugin.adg.dto.EnrichQueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.dto.QueryGeneratorContext;
 import io.arenadata.dtm.query.execution.plugin.adg.service.QueryExtendService;
 import io.arenadata.dtm.query.execution.plugin.adg.service.QueryGenerator;
-import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
@@ -44,12 +41,12 @@ public class AdgQueryGeneratorImpl implements QueryGenerator {
     public Future<String> mutateQuery(RelRoot relNode,
                                       List<DeltaInformation> deltaInformations,
                                       CalciteContext calciteContext,
-                                      QueryRequest queryRequest) {
+                                      EnrichQueryRequest enrichQueryRequest) {
         return Future.future(promise -> {
             val generatorContext = getContext(relNode,
                     deltaInformations,
                     calciteContext,
-                    queryRequest);
+                    enrichQueryRequest);
             val extendedQuery = queryExtendService.extendQuery(generatorContext);
             RelNode planAfter = null;
             try {
@@ -71,10 +68,10 @@ public class AdgQueryGeneratorImpl implements QueryGenerator {
     private QueryGeneratorContext getContext(RelRoot relNode,
                                              List<DeltaInformation> deltaInformations,
                                              CalciteContext calciteContext,
-                                             QueryRequest queryRequest) {
+                                             EnrichQueryRequest enrichQueryRequest) {
         return new QueryGeneratorContext(
                 deltaInformations.iterator(),
-                queryRequest,
+                enrichQueryRequest,
                 calciteContext.getRelBuilder(),
                 true,
                 relNode);

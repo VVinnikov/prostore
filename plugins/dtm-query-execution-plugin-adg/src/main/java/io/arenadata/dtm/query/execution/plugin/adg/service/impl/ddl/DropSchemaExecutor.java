@@ -3,9 +3,9 @@ package io.arenadata.dtm.query.execution.plugin.adg.service.impl.ddl;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.AdgHelperTableNamesFactory;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.TtDeleteTablesWithPrefixRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
+import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
+import io.arenadata.dtm.query.execution.plugin.api.service.DdlExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.service.DdlService;
 import io.vertx.core.Future;
 import lombok.val;
 import org.apache.calcite.sql.SqlKind;
@@ -28,16 +28,10 @@ public class DropSchemaExecutor implements DdlExecutor<Void> {
     }
 
     @Override
-    public Future<Void> execute(DdlRequestContext context, String sqlNodeName) {
+    public Future<Void> execute(DdlRequest request) {
         return Future.future(promise -> {
-            val tableNames = adgHelperTableNamesFactory.create(
-                    context.getRequest().getQueryRequest().getEnvName(),
-                    context.getRequest().getQueryRequest().getDatamartMnemonic(),
-                    "table");
-
-            val request = new TtDeleteTablesWithPrefixRequest(tableNames.getPrefix());
-
-            cartridgeClient.executeDeleteSpacesWithPrefixQueued(request)
+            val prefix = adgHelperTableNamesFactory.getTablePrefix(request.getEnvName(), request.getDatamartMnemonic());
+            cartridgeClient.executeDeleteSpacesWithPrefixQueued(new TtDeleteTablesWithPrefixRequest(prefix))
                     .onComplete(promise);
         });
     }

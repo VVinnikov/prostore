@@ -5,10 +5,6 @@
 
     <artifactId>dtm-query-execution-core</artifactId>
     <version>3.3.0-SNAPSHOT</version>
-    <properties>
-        <curator-test.version>2.12.0</curator-test.version>
-        <caffeine.version>2.8.5</caffeine.version>
-    </properties>
     <packaging>jar</packaging>
     <name>DTM Core</name>
 
@@ -17,6 +13,11 @@
         <artifactId>parent</artifactId>
         <version>3.3.0-SNAPSHOT</version>
     </parent>
+
+    <properties>
+        <curator-test.version>2.12.0</curator-test.version>
+        <netty-transport-native-epoll.version>4.1.19.Final</netty-transport-native-epoll.version>
+    </properties>
 
     <dependencies>
         <!-- DTM -->
@@ -102,6 +103,17 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>io.arenadata.dtm</groupId>
+            <artifactId>dtm-cache</artifactId>
+            <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.arenadata</groupId>
+                    <artifactId>dtm-common</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
         <!--Spring-->
         <dependency>
@@ -139,13 +151,6 @@
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-core</artifactId>
-        </dependency>
-
-
-        <dependency>
-            <groupId>com.github.ben-manes.caffeine</groupId>
-            <artifactId>caffeine</artifactId>
-            <version>${caffeine.version}</version>
         </dependency>
 
         <!--Vertx-->
@@ -249,6 +254,11 @@
             <artifactId>vertx-junit5</artifactId>
             <version>${vertx.version}</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-transport-native-epoll</artifactId>
+            <version>${netty-transport-native-epoll.version}</version>
         </dependency>
         <dependency>
             <groupId>io.vertx</groupId>

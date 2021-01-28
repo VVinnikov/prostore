@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.core.service.eddl.impl;
 
-import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.QueryResult;
@@ -11,7 +10,6 @@ import io.arenadata.dtm.query.execution.core.dto.eddl.EddlAction;
 import io.arenadata.dtm.query.execution.core.dto.eddl.EddlQuery;
 import io.arenadata.dtm.query.execution.core.exception.table.ExternalTableNotExistsException;
 import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
-import io.arenadata.dtm.query.execution.core.exception.view.ViewNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.eddl.EddlExecutor;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;

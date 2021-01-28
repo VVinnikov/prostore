@@ -111,7 +111,7 @@ public class DtmStatement implements BaseStatement {
 
     @Override
     public void setMaxFieldSize(int max) throws SQLException {
-        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -126,7 +126,7 @@ public class DtmStatement implements BaseStatement {
 
     @Override
     public void setEscapeProcessing(boolean enable) throws SQLException {
-        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -136,12 +136,12 @@ public class DtmStatement implements BaseStatement {
 
     @Override
     public void setQueryTimeout(int seconds) throws SQLException {
-        throw new UnsupportedOperationException();
+
     }
 
     @Override
     public void cancel() throws SQLException {
-        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -151,12 +151,12 @@ public class DtmStatement implements BaseStatement {
 
     @Override
     public void clearWarnings() throws SQLException {
-        throw new UnsupportedOperationException();
+
     }
 
     @Override
     public void setCursorName(String name) throws SQLException {
-        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -185,7 +185,7 @@ public class DtmStatement implements BaseStatement {
 
     @Override
     public void setFetchDirection(int direction) throws SQLException {
-        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -222,12 +222,12 @@ public class DtmStatement implements BaseStatement {
 
     @Override
     public void addBatch(String sql) throws SQLException {
-        throw new UnsupportedOperationException();
+
     }
 
     @Override
     public void clearBatch() throws SQLException {
-        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -298,7 +298,7 @@ public class DtmStatement implements BaseStatement {
 
     @Override
     public void setPoolable(boolean poolable) throws SQLException {
-        throw new UnsupportedOperationException();
+
     }
 
     @Override

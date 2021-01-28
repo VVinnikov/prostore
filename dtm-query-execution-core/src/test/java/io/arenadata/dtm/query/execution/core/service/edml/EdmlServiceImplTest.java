@@ -6,8 +6,10 @@ import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
+import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
+import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDefinitionService;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacadeImpl;
@@ -19,13 +21,8 @@ import io.arenadata.dtm.query.execution.core.dto.edml.EdmlAction;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.DownloadExternalTableExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.EdmlServiceImpl;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadExternalTableExecutor;
-import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDefinitionService;
-import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
-import io.arenadata.dtm.query.execution.plugin.api.service.EdmlService;
-import io.vertx.core.AsyncResult;
+import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlNode;
@@ -76,7 +73,7 @@ class EdmlServiceImplTest {
         queryRequest.setSql("INSERT INTO test.download_table SELECT id, lst_nam FROM test.pso");
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
         DatamartRequest request = new DatamartRequest(queryRequest);
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
 
         Entity destinationEntity = Entity.builder()
                 .entityType(EntityType.DOWNLOAD_EXTERNAL_TABLE)
@@ -119,7 +116,7 @@ class EdmlServiceImplTest {
         queryRequest.setSql("INSERT INTO test.pso SELECT id, name FROM test.upload_table");
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
         DatamartRequest request = new DatamartRequest(queryRequest);
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
 
         Entity destinationEntity = Entity.builder()
                 .entityType(EntityType.TABLE)
@@ -163,7 +160,7 @@ class EdmlServiceImplTest {
         queryRequest.setSql("INSERT INTO test.download_table SELECT id, lst_nam FROM test.pso");
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
         DatamartRequest request = new DatamartRequest(queryRequest);
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
 
         Entity destinationEntity = Entity.builder()
                 .entityType(EntityType.DOWNLOAD_EXTERNAL_TABLE)
@@ -207,7 +204,7 @@ class EdmlServiceImplTest {
         queryRequest.setSql("INSERT INTO test.download_table SELECT id, lst_nam FROM test.pso");
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
         DatamartRequest request = new DatamartRequest(queryRequest);
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
 
         Entity destinationEntity = Entity.builder()
                 .entityType(EntityType.UPLOAD_EXTERNAL_TABLE)

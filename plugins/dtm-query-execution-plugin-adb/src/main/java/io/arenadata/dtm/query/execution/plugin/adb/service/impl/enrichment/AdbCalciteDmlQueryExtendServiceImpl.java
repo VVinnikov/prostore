@@ -19,7 +19,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.IntStream;
 
-import static io.arenadata.dtm.query.execution.plugin.adb.factory.impl.MetadataSqlFactoryImpl.*;
+import static io.arenadata.dtm.query.execution.plugin.adb.factory.Constants.*;
 
 @Service
 @Slf4j

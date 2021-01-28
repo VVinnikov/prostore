@@ -49,7 +49,7 @@ public class EntityDaoImpl implements EntityDao {
     @Override
     @CacheEvict(
             value = CacheConfiguration.ENTITY_CACHE,
-            key = "new io.arenadata.dtm.query.execution.core.service.cache.key.EntityKey(#entity.getSchema(), #entity.getName())"
+            key = "new io.arenadata.dtm.query.execution.core.dto.cache.EntityKey(#entity.getSchema(), #entity.getName())"
     )
     public Future<Void> createEntity(Entity entity) {
         try {
@@ -74,7 +74,7 @@ public class EntityDaoImpl implements EntityDao {
     @Override
     @CacheEvict(
             value = CacheConfiguration.ENTITY_CACHE,
-            key = "new io.arenadata.dtm.query.execution.core.service.cache.key.EntityKey(#entity.getSchema(), #entity.getName())"
+            key = "new io.arenadata.dtm.query.execution.core.dto.cache.EntityKey(#entity.getSchema(), #entity.getName())"
     )
     public Future<Void> updateEntity(Entity entity) {
         try {
@@ -104,7 +104,7 @@ public class EntityDaoImpl implements EntityDao {
     @Override
     @CacheEvict(
             value = CacheConfiguration.ENTITY_CACHE,
-            key = "new io.arenadata.dtm.query.execution.core.service.cache.key.EntityKey(#datamartMnemonic, #entityName)"
+            key = "new io.arenadata.dtm.query.execution.core.dto.cache.EntityKey(#datamartMnemonic, #entityName)"
     )
     public Future<Void> deleteEntity(String datamartMnemonic, String entityName) {
         val nameWithSchema = getNameWithSchema(datamartMnemonic, entityName);
@@ -122,7 +122,7 @@ public class EntityDaoImpl implements EntityDao {
     @Override
     @Cacheable(
             value = CacheConfiguration.ENTITY_CACHE,
-            key = "new io.arenadata.dtm.query.execution.core.service.cache.key.EntityKey(#datamartMnemonic, #entityName)"
+            key = "new io.arenadata.dtm.query.execution.core.dto.cache.EntityKey(#datamartMnemonic, #entityName)"
     )
     public Future<Entity> getEntity(String datamartMnemonic, String entityName) {
         val nameWithSchema = getNameWithSchema(datamartMnemonic, entityName);

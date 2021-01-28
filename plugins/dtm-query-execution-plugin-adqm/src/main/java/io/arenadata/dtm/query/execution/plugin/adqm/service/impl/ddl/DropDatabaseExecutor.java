@@ -1,11 +1,10 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.ddl;
 
-import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
+import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
+import io.arenadata.dtm.query.execution.plugin.api.service.DdlExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.service.DdlService;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
@@ -20,21 +19,17 @@ public class DropDatabaseExecutor implements DdlExecutor<Void> {
 
     private final DatabaseExecutor databaseExecutor;
     private final DdlProperties ddlProperties;
-    private final AppConfiguration appConfiguration;
 
     @Autowired
     public DropDatabaseExecutor(DatabaseExecutor databaseExecutor,
-                                DdlProperties ddlProperties,
-                                AppConfiguration appConfiguration) {
+                                DdlProperties ddlProperties) {
         this.databaseExecutor = databaseExecutor;
         this.ddlProperties = ddlProperties;
-        this.appConfiguration = appConfiguration;
     }
 
     @Override
-    public Future<Void> execute(DdlRequestContext context, String sqlNodeName) {
-        String name = context.getDatamartName();
-        return dropDatabase(name);
+    public Future<Void> execute(DdlRequest request) {
+        return dropDatabase(request.getEnvName(), request.getDatamartMnemonic());
     }
 
     @Override
@@ -48,9 +43,9 @@ public class DropDatabaseExecutor implements DdlExecutor<Void> {
         service.addExecutor(this);
     }
 
-    private Future<Void> dropDatabase(String dbname) {
+    private Future<Void> dropDatabase(String envName, String dbname) {
         String cluster = ddlProperties.getCluster();
-        String dropCmd = String.format(DROP_TEMPLATE, appConfiguration.getSystemName(), dbname, cluster);
+        String dropCmd = String.format(DROP_TEMPLATE, envName, dbname, cluster);
         return databaseExecutor.executeUpdate(dropCmd);
     }
 }

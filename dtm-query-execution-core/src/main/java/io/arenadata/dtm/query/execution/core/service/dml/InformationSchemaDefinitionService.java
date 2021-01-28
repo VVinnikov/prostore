@@ -1,11 +1,10 @@
 package io.arenadata.dtm.query.execution.core.service.dml;
 
-import io.arenadata.dtm.common.reader.QuerySourceRequest;
-import io.vertx.core.Future;
+import io.arenadata.dtm.common.delta.DeltaInformation;
 
-import java.util.Optional;
+import java.util.List;
 
 public interface InformationSchemaDefinitionService {
 
-    boolean isInformationSchemaRequest(QuerySourceRequest request);
+    boolean isInformationSchemaRequest(List<DeltaInformation> deltaInformations);
 }

@@ -1,11 +1,8 @@
 package io.arenadata.dtm.query.execution.plugin.api.service;
 
-import io.arenadata.dtm.common.model.SqlProcessingType;
-import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
+import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
+import io.vertx.core.Future;
 
-public interface StatusService<T> extends DatamartExecutionService<StatusRequestContext, T> {
-
-    default SqlProcessingType getSqlProcessingType() {
-        return SqlProcessingType.STATUS;
-    }
+public interface StatusService {
+    Future<StatusQueryResult> execute(String topic);
 }

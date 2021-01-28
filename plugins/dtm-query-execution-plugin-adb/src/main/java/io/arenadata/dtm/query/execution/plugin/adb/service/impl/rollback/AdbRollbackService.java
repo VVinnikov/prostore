@@ -2,8 +2,8 @@ package io.arenadata.dtm.query.execution.plugin.adb.service.impl.rollback;
 
 import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbRollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.api.factory.RollbackRequestFactory;
-import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.RollbackService;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
-import java.util.Collections;
 
 @Slf4j
 @Service("adbRollbackService")
@@ -29,12 +28,11 @@ public class AdbRollbackService implements RollbackService<Void> {
     }
 
     @Override
-    public Future<Void> execute(RollbackRequestContext context) {
+    public Future<Void> execute(RollbackRequest request) {
         return Future.future(promise -> {
-            val rollbackRequest = rollbackRequestFactory.create(context.getRequest());
-            adbQueryExecutor.execute(rollbackRequest.getTruncate().getSql(), Collections.emptyList())
-                    .compose(v -> adbQueryExecutor.execute(rollbackRequest.getDeleteFromActual().getSql(),
-                            Collections.emptyList()))
+            val rollbackRequest = rollbackRequestFactory.create(request);
+            adbQueryExecutor.executeUpdate(rollbackRequest.getTruncate().getSql())
+                    .compose(v -> adbQueryExecutor.executeUpdate(rollbackRequest.getDeleteFromActual().getSql()))
                     .compose(v -> adbQueryExecutor.executeInTransaction(
                             Arrays.asList(rollbackRequest.getInsert(), rollbackRequest.getDeleteFromHistory())
                     ))

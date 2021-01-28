@@ -1,9 +1,8 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl.mppw;
 
 import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
-import io.arenadata.dtm.common.metrics.RequestMetrics;
+import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.plugin.exload.Format;
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.AdgConnectorApiProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.AdgMppwKafkaProperties;
@@ -13,10 +12,9 @@ import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.AdgC
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.TtLoadDataKafkaResponse;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaParameter;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
-import io.arenadata.dtm.query.execution.plugin.api.request.MppwRequest;
 import io.vertx.core.Future;
 import lombok.val;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,9 +51,35 @@ class AdgMppwKafkaServiceTest {
     }
 
     @Test
+    void testMaxNumberOfMessagesFromEntity() {
+        val context = getRequestContext();
+        long maxNumberOfMessages = 300L;
+        context.getSourceEntity().setExternalTableUploadMessageLimit((int) maxNumberOfMessages);
+        allGoodApiMock();
+        service.execute(context)
+                .onComplete(ar -> {
+                    assertTrue(ar.succeeded());
+                    verify(client, VerificationModeFactory.times(1)).subscribe(
+                            argThat(request -> maxNumberOfMessages == request.getMaxNumberOfMessagesPerPartition()));
+                });
+    }
+
+    @Test
+    void testMaxNumberOfMessagesFromProperties() {
+        val context = getRequestContext();
+        allGoodApiMock();
+        service.execute(context)
+                .onComplete(ar -> {
+                    assertTrue(ar.succeeded());
+                    verify(client, VerificationModeFactory.times(1)).subscribe(
+                            argThat(request -> 200L == request.getMaxNumberOfMessagesPerPartition()));
+                });
+    }
+
+    @Test
     void allGoodCancelTest() {
         val context = getRequestContext();
-        context.getRequest().setIsLoadStart(false);
+        context.setIsLoadStart(false);
         allGoodApiMock();
         service.execute(context)
                 .onComplete(ar -> {
@@ -121,7 +145,7 @@ class AdgMppwKafkaServiceTest {
     @Test
     void badCancelTest() {
         val context = getRequestContext();
-        context.getRequest().setIsLoadStart(false);
+        context.setIsLoadStart(false);
         badCancelApiMock();
         service.execute(context)
                 .onComplete(ar -> {
@@ -176,18 +200,14 @@ class AdgMppwKafkaServiceTest {
         );
     }
 
-    private MppwRequestContext getRequestContext() {
-        val queryRequest = new QueryRequest();
-        queryRequest.setEnvName("env1");
-        queryRequest.setDatamartMnemonic("test");
-        val mppwRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
-        return new MppwRequestContext(new RequestMetrics(), mppwRequest);
-    }
-
-    private MppwKafkaParameter createKafkaParameter() {
-        return MppwKafkaParameter.builder()
+    private MppwRequest getRequestContext() {
+        return MppwKafkaRequest.builder()
+                .envName("env1")
+                .datamartMnemonic("test")
+                .isLoadStart(true)
                 .sysCn(1L)
-                .datamart("test")
+                .sourceEntity(Entity.builder()
+                        .build())
                 .destinationTableName("tbl1")
                 .uploadMetadata(UploadExternalEntityMetadata.builder()
                         .name("ext_tab")

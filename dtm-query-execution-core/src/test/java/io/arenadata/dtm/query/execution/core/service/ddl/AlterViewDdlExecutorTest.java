@@ -1,5 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.ddl;
 
+import io.arenadata.dtm.cache.service.CacheService;
+import io.arenadata.dtm.cache.service.CaffeineCacheService;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
@@ -7,6 +9,7 @@ import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
+import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
@@ -18,8 +21,9 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDa
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.DatamartDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
+import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
+import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.core.exception.view.ViewNotExistsException;
-import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
 import io.arenadata.dtm.query.execution.core.service.ddl.impl.AlterViewDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.dml.ColumnMetadataService;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
@@ -28,8 +32,6 @@ import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvide
 import io.arenadata.dtm.query.execution.core.service.schema.impl.LogicalSchemaProviderImpl;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.apache.calcite.sql.SqlDialect;
@@ -40,7 +42,6 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Planner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -62,7 +63,7 @@ class AlterViewDdlExecutorTest {
     private final LogicalSchemaProvider logicalSchemaProvider = mock(LogicalSchemaProviderImpl.class);
     private final ColumnMetadataService columnMetadataService = mock(ColumnMetadataService.class);
     private final MetadataExecutor<DdlRequestContext> metadataExecutor = mock(MetadataExecutorImpl.class);
-    private final EntityCacheService entityCacheService = mock(EntityCacheService.class);
+    private final CacheService<EntityKey, Entity> entityCacheService = mock(CaffeineCacheService.class);
     private final CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
     private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private final SqlParser.Config parserConfig = calciteConfiguration
@@ -88,7 +89,7 @@ class AlterViewDdlExecutorTest {
         initEntityList();
         sqlNodeName = schema + "." + entityList.get(0).getName();
         when(metadataExecutor.execute(any())).thenReturn(Future.succeededFuture());
-        when(logicalSchemaProvider.getSchema(any()))
+        when(logicalSchemaProvider.getSchemaFromQuery(any(), any()))
                 .thenReturn(Future.succeededFuture(Collections.singletonList(new Datamart(
                         schema,
                         true,
@@ -107,10 +108,8 @@ class AlterViewDdlExecutorTest {
         queryRequest.setDatamartMnemonic(schema);
         queryRequest.setSql(String.format("ALTER VIEW %s.%s AS SELECT * FROM %s.%s",
                 schema, entityList.get(0).getName(), schema, entityList.get(1).getName()));
-        SqlNode query = planner.parse(queryRequest.getSql());
-        DdlRequestContext context = new DdlRequestContext(new DdlRequest(queryRequest));
-        context.getRequest().setQueryRequest(queryRequest);
-        context.setQuery(query);
+        SqlNode sqlNode = planner.parse(queryRequest.getSql());
+        DdlRequestContext context = new DdlRequestContext(null, new DatamartRequest(queryRequest), sqlNode, null, null);
 
         when(columnMetadataService.getColumnMetadata(any()))
                 .thenReturn(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()
@@ -118,13 +117,13 @@ class AlterViewDdlExecutorTest {
                         .type(ColumnType.BIGINT)
                         .build())));
 
-        Mockito.when(entityDao.getEntity(eq(schema), eq(entityList.get(1).getName())))
+        when(entityDao.getEntity(eq(schema), eq(entityList.get(1).getName())))
                 .thenReturn(Future.succeededFuture(entityList.get(1)));
 
-        Mockito.when(entityDao.getEntity(eq(schema), eq(entityList.get(0).getName())))
+        when(entityDao.getEntity(eq(schema), eq(entityList.get(0).getName())))
                 .thenReturn(Future.succeededFuture(entityList.get(0)));
 
-        Mockito.when(entityDao.updateEntity(any()))
+        when(entityDao.updateEntity(any()))
                 .thenReturn(Future.succeededFuture());
 
         alterViewDdlExecutor.execute(context, sqlNodeName)
@@ -148,11 +147,8 @@ class AlterViewDdlExecutorTest {
                 schema, entityList.get(0).getName(), entityList.get(2).getName(),
                 schema, entityList.get(3).getName()));
 
-        SqlNode query = planner.parse(queryRequest.getSql());
-
-        DdlRequestContext context = new DdlRequestContext(new DdlRequest(queryRequest));
-        context.getRequest().setQueryRequest(queryRequest);
-        context.setQuery(query);
+        SqlNode sqlNode = planner.parse(queryRequest.getSql());
+        DdlRequestContext context = new DdlRequestContext(null, new DatamartRequest(queryRequest), sqlNode, null, null);
 
         when(columnMetadataService.getColumnMetadata(any()))
                 .thenReturn(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()
@@ -160,16 +156,16 @@ class AlterViewDdlExecutorTest {
                         .type(ColumnType.BIGINT)
                         .build())));
 
-        Mockito.when(entityDao.getEntity(eq(schema), eq(entityList.get(2).getName())))
+        when(entityDao.getEntity(eq(schema), eq(entityList.get(2).getName())))
                 .thenReturn(Future.succeededFuture(entityList.get(2)));
 
-        Mockito.when(entityDao.getEntity(eq(schema), eq(entityList.get(3).getName())))
+        when(entityDao.getEntity(eq(schema), eq(entityList.get(3).getName())))
                 .thenReturn(Future.succeededFuture(entityList.get(3)));
 
-        Mockito.when(entityDao.getEntity(eq(schema), eq(entityList.get(0).getName())))
+        when(entityDao.getEntity(eq(schema), eq(entityList.get(0).getName())))
                 .thenReturn(Future.succeededFuture(entityList.get(0)));
 
-        Mockito.when(entityDao.updateEntity(any()))
+        when(entityDao.updateEntity(any()))
                 .thenReturn(Future.succeededFuture());
 
         alterViewDdlExecutor.execute(context, sqlNodeName)
@@ -189,12 +185,10 @@ class AlterViewDdlExecutorTest {
         queryRequest.setDatamartMnemonic(schema);
         queryRequest.setSql(String.format("ALTER VIEW %s.%s AS SELECT * FROM %s.%s",
                 schema, entityList.get(0).getName(), schema, entityList.get(1).getName()));
-        SqlNode query = planner.parse(queryRequest.getSql());
+        SqlNode sqlNode = planner.parse(queryRequest.getSql());
+        DdlRequestContext context = new DdlRequestContext(null, new DatamartRequest(queryRequest), sqlNode, null, null);
 
-        DdlRequestContext context = new DdlRequestContext(new DdlRequest(queryRequest));
-        context.getRequest().setQueryRequest(queryRequest);
-        context.setQuery(query);
-        Mockito.when(entityDao.getEntity(eq(schema), eq(entityList.get(1).getName())))
+        when(entityDao.getEntity(eq(schema), eq(entityList.get(1).getName())))
                 .thenReturn(Future.succeededFuture(entityList.get(1)));
 
         when(columnMetadataService.getColumnMetadata(any()))
@@ -203,7 +197,7 @@ class AlterViewDdlExecutorTest {
                         .type(ColumnType.BIGINT)
                         .build())));
 
-        Mockito.when(entityDao.getEntity(eq(schema), eq(entityList.get(0).getName())))
+        when(entityDao.getEntity(eq(schema), eq(entityList.get(0).getName())))
                 .thenReturn(Future.failedFuture(new ViewNotExistsException(entityList.get(0).getName())));
 
         alterViewDdlExecutor.execute(context, sqlNodeName)
@@ -223,13 +217,10 @@ class AlterViewDdlExecutorTest {
         queryRequest.setDatamartMnemonic(schema);
         queryRequest.setSql(String.format("ALTER VIEW %s.%s AS SELECT * FROM %s.%s",
                 schema, entityList.get(0).getName(), schema, entityList.get(1).getName()));
-        SqlNode query = planner.parse(queryRequest.getSql());
+        SqlNode sqlNode = planner.parse(queryRequest.getSql());
+        DdlRequestContext context = new DdlRequestContext(null, new DatamartRequest(queryRequest), sqlNode, null, null);
 
-        DdlRequestContext context = new DdlRequestContext(new DdlRequest(queryRequest));
-        context.getRequest().setQueryRequest(queryRequest);
-        context.setQuery(query);
-
-        Mockito.when(entityDao.getEntity(eq(schema), eq(entityList.get(1).getName())))
+        when(entityDao.getEntity(eq(schema), eq(entityList.get(1).getName())))
                 .thenReturn(Future.succeededFuture(entityList.get(1)));
 
         when(columnMetadataService.getColumnMetadata(any()))
@@ -238,10 +229,10 @@ class AlterViewDdlExecutorTest {
                         .type(ColumnType.BIGINT)
                         .build())));
 
-        Mockito.when(entityDao.getEntity(eq(schema), eq(entityList.get(0).getName())))
+        when(entityDao.getEntity(eq(schema), eq(entityList.get(0).getName())))
                 .thenReturn(Future.succeededFuture(entityList.get(0)));
 
-        Mockito.when(entityDao.updateEntity(any()))
+        when(entityDao.updateEntity(any()))
                 .thenReturn(Future.failedFuture(new DtmException("Update error")));
 
         alterViewDdlExecutor.execute(context, sqlNodeName)
@@ -261,11 +252,8 @@ class AlterViewDdlExecutorTest {
         queryRequest.setDatamartMnemonic(schema);
         queryRequest.setSql(String.format("ALTER VIEW %s.%s AS SELECT * FROM %s.%s",
                 schema, entityList.get(0).getName(), schema, entityList.get(0).getName()));
-        SqlNode query = planner.parse(queryRequest.getSql());
-
-        DdlRequestContext context = new DdlRequestContext(new DdlRequest(queryRequest));
-        context.getRequest().setQueryRequest(queryRequest);
-        context.setQuery(query);
+        SqlNode sqlNode = planner.parse(queryRequest.getSql());
+        DdlRequestContext context = new DdlRequestContext(null, new DatamartRequest(queryRequest), sqlNode, null, null);
 
         when(columnMetadataService.getColumnMetadata(any()))
                 .thenReturn(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()
@@ -273,10 +261,10 @@ class AlterViewDdlExecutorTest {
                         .type(ColumnType.BIGINT)
                         .build())));
 
-        Mockito.when(entityDao.getEntity(eq(schema), eq(entityList.get(1).getName())))
+        when(entityDao.getEntity(eq(schema), eq(entityList.get(1).getName())))
                 .thenReturn(Future.succeededFuture(entityList.get(1)));
 
-        Mockito.when(entityDao.getEntity(eq(schema), eq(entityList.get(1).getName())))
+        when(entityDao.getEntity(eq(schema), eq(entityList.get(1).getName())))
                 .thenReturn(Future.succeededFuture(entityList.get(1)));
 
         alterViewDdlExecutor.execute(context, sqlNodeName)

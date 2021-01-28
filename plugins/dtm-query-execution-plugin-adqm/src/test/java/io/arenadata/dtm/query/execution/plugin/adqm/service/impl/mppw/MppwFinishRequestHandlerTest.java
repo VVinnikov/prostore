@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw;
 
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
-import io.arenadata.dtm.common.reader.QueryRequest;
+import io.arenadata.dtm.common.plugin.exload.Format;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
@@ -10,9 +10,8 @@ import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.RestL
 import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockDatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockEnvironment;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockStatusReporter;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaParameter;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
-import io.arenadata.dtm.query.execution.plugin.api.request.MppwRequest;
+import io.arenadata.dtm.query.execution.plugin.api.edml.BaseExternalEntityMetadata;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 import io.vertx.core.Future;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -29,12 +28,7 @@ import static org.mockito.Mockito.when;
 class MppwFinishRequestHandlerTest {
     private static final DdlProperties ddlProperties = new DdlProperties();
     private static final AppConfiguration appConfiguration = new AppConfiguration(new MockEnvironment());
-    private final DtmConfig dtmConfig = new DtmConfig() {
-        @Override
-        public ZoneId getTimeZone() {
-            return ZoneId.of("UTC");
-        }
-    };
+    private final DtmConfig dtmConfig = () -> ZoneId.of("UTC");
     private static final String TEST_TOPIC = "adqm_topic";
 
     @BeforeAll
@@ -87,19 +81,16 @@ class MppwFinishRequestHandlerTest {
                 mockReporter,
                 dtmConfig);
 
-        MppwRequest request = new MppwRequest(QueryRequest.builder()
+        MppwKafkaRequest request = MppwKafkaRequest.builder()
                 .requestId(UUID.randomUUID())
-                .datamartMnemonic("shares").build(),
-                true, MppwKafkaParameter.builder()
-                .datamart("shares")
+                .datamartMnemonic("shares")
+                .envName("env")
+                .isLoadStart(true)
                 .sysCn(101L)
                 .destinationTableName("accounts")
-                .uploadMetadata(UploadExternalEntityMetadata.builder()
-                        .externalSchema("")
-                        .build())
                 .topic(TEST_TOPIC)
-                .build());
-
+                .uploadMetadata(new BaseExternalEntityMetadata("", "", Format.AVRO, ""))
+                .build();
         handler.execute(request).onComplete(ar -> {
             assertTrue(ar.succeeded(), ar.cause() != null ? ar.cause().getMessage() : "");
             assertTrue(mockReporter.wasCalled("finish"));

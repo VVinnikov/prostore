@@ -6,9 +6,8 @@ import io.arenadata.dtm.common.delta.SelectOnInterval;
 import io.arenadata.dtm.common.exception.DeltaRangeInvalidException;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.InformationSchemaView;
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.service.DeltaService;
-import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
+import io.arenadata.dtm.query.calcite.core.dto.delta.DeltaQueryPreprocessorResponse;
 import io.arenadata.dtm.query.calcite.core.service.DeltaInformationExtractor;
 import io.arenadata.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
 import io.arenadata.dtm.query.calcite.core.util.CalciteUtil;
@@ -16,7 +15,6 @@ import io.vertx.core.*;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.HashSet;
 import java.util.List;
@@ -26,34 +24,26 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DeltaQueryPreprocessorImpl implements DeltaQueryPreprocessor {
     private final DeltaInformationExtractor deltaInformationExtractor;
-    private final DefinitionService<SqlNode> definitionService;
     private final DeltaService deltaService;
 
-    public DeltaQueryPreprocessorImpl(DefinitionService<SqlNode> definitionService,
-                                      DeltaService deltaService,
+    public DeltaQueryPreprocessorImpl(DeltaService deltaService,
                                       DeltaInformationExtractor deltaInformationExtractor) {
-        this.definitionService = definitionService;
         this.deltaService = deltaService;
         this.deltaInformationExtractor = deltaInformationExtractor;
     }
 
     @Override
-    public Future<QueryRequest> process(QueryRequest request) {
+    public Future<DeltaQueryPreprocessorResponse> process(SqlNode request) {
         return Future.future(handler -> {
             try {
-                if (request == null || StringUtils.isEmpty(request.getSql())) {
-                    log.error("Unspecified request {}", request);
-                    handler.fail(new DtmException(String.format("Undefined request%s", request)));
+                if (request == null) {
+                    log.error("Request is empty");
+                    handler.fail(new DtmException("Undefined request"));
                 } else {
-                    val sqlNode = definitionService.processingQuery(request.getSql());
-                    val deltaInfoRes = deltaInformationExtractor.extract(sqlNode);
+                    val deltaInfoRes = deltaInformationExtractor.extract(request);
                     calculateDeltaValues(deltaInfoRes.getDeltaInformations(), ar -> {
                         if (ar.succeeded()) {
-                            QueryRequest copyRequest = request.copy();
-                            copyRequest.setDeltaInformations(deltaInfoRes.getDeltaInformations());
-                            copyRequest.setSql(deltaInfoRes.getSqlWithoutSnapshots());
-                            copyRequest.setDeltaInformations(ar.result());
-                            handler.complete(copyRequest);
+                            handler.complete(new DeltaQueryPreprocessorResponse(ar.result(), deltaInfoRes.getSqlWithoutSnapshots()));
                         } else {
                             handler.fail(ar.cause());
                         }

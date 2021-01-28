@@ -1,11 +1,11 @@
 package io.arenadata.dtm.query.execution.core.dto.delta.query;
 
 import io.arenadata.dtm.common.reader.QueryRequest;
+import io.arenadata.dtm.query.calcite.core.extension.delta.SqlDeltaCall;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @AllArgsConstructor
 @Data

@@ -23,4 +23,8 @@ public final class Constants {
             SYS_FROM_FIELD, SYS_TO_FIELD, SYS_OP_FIELD, CLOSE_DATE_FIELD, SIGN_FIELD
     ));
 
+    public static String getDbName(String envName, String datamartMnemonic) {
+        return String.format("%s__%s", envName, datamartMnemonic);
+    }
+
 }

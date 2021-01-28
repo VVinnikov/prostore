@@ -1,12 +1,12 @@
 package io.arenadata.dtm.query.execution.core.service.dml.impl;
 
 import io.arenadata.dtm.common.delta.DeltaInformation;
-import io.arenadata.dtm.common.reader.InformationSchemaView;
-import io.arenadata.dtm.common.reader.QuerySourceRequest;
 import io.arenadata.dtm.common.exception.DtmException;
+import io.arenadata.dtm.common.reader.InformationSchemaView;
 import io.arenadata.dtm.query.execution.core.service.dml.InformationSchemaDefinitionService;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -14,8 +14,8 @@ import java.util.stream.Collectors;
 public class InformationSchemaDefinitionServiceImpl implements InformationSchemaDefinitionService {
 
     @Override
-    public boolean isInformationSchemaRequest(QuerySourceRequest request) {
-        Set<String> unicSchemes = request.getQueryRequest().getDeltaInformations().stream()
+    public boolean isInformationSchemaRequest(List<DeltaInformation> deltaInformations) {
+        Set<String> unicSchemes = deltaInformations.stream()
                 .map(DeltaInformation::getSchemaName)
                 .map(String::toUpperCase)
                 .collect(Collectors.toSet());

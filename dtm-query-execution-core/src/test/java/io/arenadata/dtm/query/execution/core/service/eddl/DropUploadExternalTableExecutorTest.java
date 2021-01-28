@@ -1,5 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.eddl;
 
+import io.arenadata.dtm.cache.service.CacheService;
+import io.arenadata.dtm.cache.service.CaffeineCacheService;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
@@ -15,9 +17,7 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.Entity
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
 import io.arenadata.dtm.query.execution.core.dto.eddl.DropUploadExternalTableQuery;
 import io.arenadata.dtm.query.execution.core.exception.table.ExternalTableNotExistsException;
-import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
-import io.arenadata.dtm.query.execution.core.service.cache.CacheService;
-import io.arenadata.dtm.query.execution.core.service.cache.key.EntityKey;
+import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
 import io.arenadata.dtm.query.execution.core.service.eddl.impl.DropUploadExternalTableExecutor;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -35,7 +35,7 @@ import static org.mockito.Mockito.when;
 
 public class DropUploadExternalTableExecutorTest {
 
-    private final CacheService<EntityKey, Entity> cacheService = mock(CacheService.class);
+    private final CacheService<EntityKey, Entity> cacheService = mock(CaffeineCacheService.class);
     private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
     private final ServiceDbDao serviceDbDao = mock(ServiceDbDaoImpl.class);
     private final DatamartDao datamartDao = mock(DatamartDaoImpl.class);
@@ -102,7 +102,7 @@ public class DropUploadExternalTableExecutorTest {
         Promise<QueryResult> promise = Promise.promise();
 
         Mockito.when(entityDao.getEntity(eq(schema), eq(table)))
-                .thenReturn(Future.failedFuture(new TableNotExistsException("")));
+                .thenReturn(Future.failedFuture(new ExternalTableNotExistsException("")));
 
         dropUploadExternalTableExecutor.execute(query)
                 .onComplete(promise);

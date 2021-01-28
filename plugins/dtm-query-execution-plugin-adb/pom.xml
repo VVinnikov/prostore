@@ -63,6 +63,17 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>io.arenadata.dtm</groupId>
+            <artifactId>dtm-cache</artifactId>
+            <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.arenadata</groupId>
+                    <artifactId>dtm-common</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
         <!--Spring-->
         <dependency>

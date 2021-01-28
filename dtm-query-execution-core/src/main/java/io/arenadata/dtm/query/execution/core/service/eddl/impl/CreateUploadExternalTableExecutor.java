@@ -64,11 +64,9 @@ public class CreateUploadExternalTableExecutor implements EddlExecutor {
 
     private Future<Void> createTable(Entity entity) {
         return entityDao.createEntity(entity)
-                .onSuccess(ar2 -> {
-                    log.debug("Table [{}] in datamart [{}] successfully created",
-                            entity.getName(),
-                            entity.getSchema());
-                });
+                .onSuccess(ar2 -> log.debug("Table [{}] in datamart [{}] successfully created",
+                        entity.getName(),
+                        entity.getSchema()));
     }
 
     @Override

@@ -5,8 +5,9 @@ import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.plugin.sql.PreparedStatementRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmRollbackRequest;
+import io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants;
+import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.api.factory.RollbackRequestFactory;
-import io.arenadata.dtm.query.execution.plugin.api.request.RollbackRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.springframework.stereotype.Component;
@@ -37,7 +38,7 @@ public class AdqmRollbackRequestFactory implements RollbackRequestFactory<AdqmRo
         val cluster = ddlProperties.getCluster();
         Entity entity = rollbackRequest.getEntity();
         val entityName = entity.getName();
-        val dbName = getDbName(rollbackRequest);
+        val dbName = Constants.getDbName(rollbackRequest.getEnvName(), rollbackRequest.getDatamartMnemonic());
         val sysCn = rollbackRequest.getSysCn();
         return new AdqmRollbackRequest(
             Arrays.asList(
@@ -51,10 +52,6 @@ public class AdqmRollbackRequestFactory implements RollbackRequestFactory<AdqmRo
                 PreparedStatementRequest.onlySql(String.format(OPTIMIZE_TABLE_TEMPLATE, dbName, entityName, cluster))
             )
         );
-    }
-
-    private String getDbName(RollbackRequest rollbackRequest) {
-        return rollbackRequest.getQueryRequest().getEnvName() + "__" + rollbackRequest.getDatamart();
     }
 
     private String gerInsertSql(String datamart, Entity entity, long sysCn) {

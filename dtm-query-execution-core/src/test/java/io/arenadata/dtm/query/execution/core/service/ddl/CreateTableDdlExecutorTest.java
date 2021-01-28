@@ -7,6 +7,7 @@ import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
@@ -18,16 +19,15 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.ServiceDbDa
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.DatamartDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
+import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
-import io.arenadata.dtm.query.execution.core.service.ddl.impl.CreateTableDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.datasource.impl.DataSourcePluginServiceImpl;
+import io.arenadata.dtm.query.execution.core.service.ddl.impl.CreateTableDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.impl.MetadataCalciteGeneratorImpl;
 import io.arenadata.dtm.query.execution.core.service.metadata.impl.MetadataExecutorImpl;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.apache.calcite.sql.SqlNode;
@@ -37,7 +37,6 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Planner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -89,10 +88,9 @@ class CreateTableDdlExecutorTest {
         queryRequest.setRequestId(UUID.randomUUID());
         queryRequest.setDatamartMnemonic(schema);
         queryRequest.setSql("create table accounts (id integer, name varchar(100))");
-        SqlNode query = planner.parse(queryRequest.getSql());
-        context = new DdlRequestContext(new DdlRequest(queryRequest));
-        context.getRequest().setQueryRequest(queryRequest);
-        context.setQuery(query);
+        SqlNode sqlNode = planner.parse(queryRequest.getSql());
+        context = new DdlRequestContext(null, new DatamartRequest(queryRequest), sqlNode, null, null);
+        context.setDatamartName(schema);
         EntityField f1 = new EntityField(0, "id", ColumnType.INT, false);
         f1.setPrimaryOrder(1);
         f1.setShardingOrder(1);
@@ -107,15 +105,15 @@ class CreateTableDdlExecutorTest {
         Promise<QueryResult> promise = Promise.promise();
         when(metadataCalciteGenerator.generateTableMetadata(any())).thenReturn(entity);
 
-        Mockito.when(datamartDao.existsDatamart(eq(schema)))
+        when(datamartDao.existsDatamart(eq(schema)))
                 .thenReturn(Future.succeededFuture(true));
 
-        Mockito.when(entityDao.existsEntity(eq(schema), eq(entity.getName())))
+        when(entityDao.existsEntity(eq(schema), eq(entity.getName())))
                 .thenReturn(Future.succeededFuture(false));
 
         when(metadataExecutor.execute(any())).thenReturn(Future.succeededFuture());
 
-        Mockito.when(entityDao.createEntity(any()))
+        when(entityDao.createEntity(any()))
                 .thenReturn(Future.succeededFuture());
 
         createTableDdlExecutor.execute(context, entity.getName())
@@ -129,7 +127,7 @@ class CreateTableDdlExecutorTest {
 
         when(metadataCalciteGenerator.generateTableMetadata(any())).thenReturn(entity);
 
-        Mockito.when(datamartDao.existsDatamart(eq(schema)))
+        when(datamartDao.existsDatamart(eq(schema)))
                 .thenReturn(Future.failedFuture(new DatamartNotExistsException(schema)));
 
         createTableDdlExecutor.execute(context, entity.getName())
@@ -143,7 +141,7 @@ class CreateTableDdlExecutorTest {
 
         when(metadataCalciteGenerator.generateTableMetadata(any())).thenReturn(entity);
 
-        Mockito.when(datamartDao.existsDatamart(eq(schema)))
+        when(datamartDao.existsDatamart(eq(schema)))
                 .thenReturn(Future.succeededFuture(false));
 
         createTableDdlExecutor.execute(context, entity.getName())
@@ -156,10 +154,10 @@ class CreateTableDdlExecutorTest {
         Promise<QueryResult> promise = Promise.promise();
         when(metadataCalciteGenerator.generateTableMetadata(any())).thenReturn(entity);
 
-        Mockito.when(datamartDao.existsDatamart(eq(schema)))
+        when(datamartDao.existsDatamart(eq(schema)))
                 .thenReturn(Future.succeededFuture(true));
 
-        Mockito.when(entityDao.existsEntity(eq(schema), eq(entity.getName())))
+        when(entityDao.existsEntity(eq(schema), eq(entity.getName())))
                 .thenReturn(Future.succeededFuture(true));
 
         createTableDdlExecutor.execute(context, entity.getName())
@@ -172,10 +170,10 @@ class CreateTableDdlExecutorTest {
         Promise<QueryResult> promise = Promise.promise();
         when(metadataCalciteGenerator.generateTableMetadata(any())).thenReturn(entity);
 
-        Mockito.when(datamartDao.existsDatamart(eq(schema)))
+        when(datamartDao.existsDatamart(eq(schema)))
                 .thenReturn(Future.succeededFuture(true));
 
-        Mockito.when(entityDao.existsEntity(eq(schema), eq(entity.getName())))
+        when(entityDao.existsEntity(eq(schema), eq(entity.getName())))
                 .thenReturn(Future.failedFuture(new DtmException("exists entity error")));
 
         createTableDdlExecutor.execute(context, entity.getName())
@@ -188,10 +186,10 @@ class CreateTableDdlExecutorTest {
         Promise<QueryResult> promise = Promise.promise();
         when(metadataCalciteGenerator.generateTableMetadata(any())).thenReturn(entity);
 
-        Mockito.when(datamartDao.existsDatamart(eq(schema)))
+        when(datamartDao.existsDatamart(eq(schema)))
                 .thenReturn(Future.succeededFuture(true));
 
-        Mockito.when(entityDao.existsEntity(eq(schema), eq(entity.getName())))
+        when(entityDao.existsEntity(eq(schema), eq(entity.getName())))
                 .thenReturn(Future.succeededFuture(false));
 
         when(metadataExecutor.execute(any())).thenReturn(Future.failedFuture(new DtmException("")));
@@ -206,15 +204,15 @@ class CreateTableDdlExecutorTest {
         Promise<QueryResult> promise = Promise.promise();
         when(metadataCalciteGenerator.generateTableMetadata(any())).thenReturn(entity);
 
-        Mockito.when(datamartDao.existsDatamart(eq(schema)))
+        when(datamartDao.existsDatamart(eq(schema)))
                 .thenReturn(Future.succeededFuture(true));
 
-        Mockito.when(entityDao.existsEntity(eq(schema), eq(entity.getName())))
+        when(entityDao.existsEntity(eq(schema), eq(entity.getName())))
                 .thenReturn(Future.succeededFuture(false));
 
         when(metadataExecutor.execute(any())).thenReturn(Future.succeededFuture());
 
-        Mockito.when(entityDao.createEntity(any()))
+        when(entityDao.createEntity(any()))
                 .thenReturn(Future.failedFuture(new DtmException("create entity error")));
 
         createTableDdlExecutor.execute(context, entity.getName())

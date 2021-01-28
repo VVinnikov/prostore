@@ -1,20 +1,20 @@
 package io.arenadata.dtm.query.execution.core.service.datasource;
 
+import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
-import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
-import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountParams;
-import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Params;
-import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
-import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
+import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
+import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.QueryCostRequest;
 import io.vertx.core.Future;
 
 import java.util.Set;
@@ -35,37 +35,38 @@ public interface DataSourcePluginService {
      * <p>execute DDL operation</p>
      *
      * @param sourceType Data source type
-     * @param context    DDL context
+     * @param request    DDL context
      * @return future object
      */
-    Future<Void> ddl(SourceType sourceType, DdlRequestContext context);
+    Future<Void> ddl(SourceType sourceType, RequestMetrics metrics, DdlRequest request);
 
     /**
      * <p>execute Low Latency Reading request</p>
      *
      * @param sourceType Data source type
-     * @param context    LLR context
+     * @param metrics    metrics
+     * @param llrRequest llr request
      * @return future object
      */
-    Future<QueryResult> llr(SourceType sourceType, LlrRequestContext context);
+    Future<QueryResult> llr(SourceType sourceType, RequestMetrics metrics, LlrRequest llrRequest);
 
     /**
      * <p>execute Massively Parallel Processing Reading</p>
      *
      * @param sourceType Data source type
-     * @param context    MPPR context
+     * @param request    MPPR plugin request
      * @return future object
      */
-    Future<QueryResult> mppr(SourceType sourceType, MpprRequestContext context);
+    Future<QueryResult> mppr(SourceType sourceType, RequestMetrics metrics, MpprRequest request);
 
     /**
      * <p>execute Massively Parallel Processing Writing</p>
      *
-     * @param sourceType         Data source type
-     * @param mppwRequestContext MPPW context
+     * @param sourceType Data source type
+     * @param request    MPPW plugin request
      * @return future object
      */
-    Future<QueryResult> mppw(SourceType sourceType, MppwRequestContext mppwRequestContext);
+    Future<QueryResult> mppw(SourceType sourceType, RequestMetrics metrics, MppwRequest request);
 
     /**
      * <p>Calculate executing query cost</p>
@@ -74,23 +75,23 @@ public interface DataSourcePluginService {
      * @param context    Query cost context
      * @return future object
      */
-    Future<Integer> calcQueryCost(SourceType sourceType, QueryCostRequestContext context);
+    Future<Integer> calcQueryCost(SourceType sourceType, RequestMetrics metrics, QueryCostRequest context);
 
     /**
      * <p>Get plugin status information</p>
      *
-     * @param sourceType           Data source type
-     * @param statusRequestContext Status request context
+     * @param sourceType Data source type
+     * @param topic      Topic
      * @return future object
      */
-    Future<StatusQueryResult> status(SourceType sourceType, StatusRequestContext statusRequestContext);
+    Future<StatusQueryResult> status(SourceType sourceType, RequestMetrics metrics, String topic);
 
     /**
      * @param sourceType Data source type
-     * @param context    Rollback request context
+     * @param request    Rollback request
      * @return future object
      */
-    Future<Void> rollback(SourceType sourceType, RollbackRequestContext context);
+    Future<Void> rollback(SourceType sourceType, RequestMetrics metrics, RollbackRequest request);
 
     /**
      * Get plugin by source type
@@ -108,28 +109,27 @@ public interface DataSourcePluginService {
     Set<String> getActiveCaches();
 
     /**
-     * @param sourceType SourceType
-     * @param context    CheckContext
+     * @param sourceType        SourceType
+     * @param checkTableRequest
      * @return failed future with errors if check failed
      */
-    Future<Void> checkTable(SourceType sourceType, CheckContext context);
+    Future<Void> checkTable(SourceType sourceType, RequestMetrics metrics, CheckTableRequest checkTableRequest);
 
     /**
-     * @param params CheckDataByCountParams
+     * @param request CheckDataByCountParams
      * @return count of records
      */
-    Future<Long> checkDataByCount(CheckDataByCountParams params);
+    Future<Long> checkDataByCount(SourceType sourceType, RequestMetrics metrics, CheckDataByCountRequest request);
 
     /**
-     * @param params CheckDataByHashInt32Params
+     * @param request CheckDataByHashInt32Params
      * @return checksum
      */
-    Future<Long> checkDataByHashInt32(CheckDataByHashInt32Params params);
+    Future<Long> checkDataByHashInt32(SourceType sourceType, RequestMetrics metrics, CheckDataByHashInt32Request request);
 
     /**
-     *
-     * @param params TruncateHistoryParams
+     * @param request TruncateHistoryRequest
      * @return void
      */
-    Future<Void> truncateHistory(TruncateHistoryParams params);
+    Future<Void> truncateHistory(SourceType sourceType, RequestMetrics metrics, TruncateHistoryRequest request);
 }

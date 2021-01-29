@@ -40,12 +40,6 @@ public interface AdgCartridgeClient {
 
   Future<Void> cancelSubscription(String topicName);
 
-  Future<TtDeleteBatchResponse> addSpacesToDeleteQueue(TtDeleteTablesRequest request);
-
-  Future<TtDeleteQueueResponse> executeDeleteQueue(TtDeleteTablesQueueRequest request);
-
-  Future<TtDeleteQueueResponse> executeDeleteSpacesWithPrefix(TtDeleteTablesWithPrefixRequest request);
-
   Future<Void> reverseHistoryTransfer(ReverseHistoryTransferRequest request);
 
   Future<Void> executeCreateSpacesQueued(OperationYaml request);

@@ -1,6 +1,15 @@
+logging:
+  level:
+    io.arenadata.dtm.query.execution: TRACE
+
 management:
   server:
     port: ${DTM_METRICS_PORT:8080}
+  endpoints:
+    enabled-by-default: true
+    web:
+      exposure:
+        include: info, health, requests
 
 core:
   plugins:

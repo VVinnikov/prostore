@@ -275,7 +275,6 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         statusReporter.onStart(start);
     }
 
-
     private void reportError(String topic) {
         StatusReportDto start = new StatusReportDto(topic);
         statusReporter.onError(start);

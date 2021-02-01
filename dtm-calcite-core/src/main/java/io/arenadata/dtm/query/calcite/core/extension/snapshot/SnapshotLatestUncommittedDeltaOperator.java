@@ -1,21 +1,24 @@
 package io.arenadata.dtm.query.calcite.core.extension.snapshot;
 
+import lombok.Getter;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.ImmutableNullableList;
 
 import java.util.List;
 
+@Getter
 public class SnapshotLatestUncommittedDeltaOperator extends SqlCall {
-
-    private final Boolean isLatestUncommittedDelta;
 
     private static final SqlOperator LATEST_UNCOMMITTED_DELTA_OPERATOR =
             new SqlSpecialOperator("LATEST_UNCOMMITTED_DELTA", SqlKind.OTHER_DDL);
+    private final Boolean isLatestUncommittedDelta;
+    private final SqlLiteral isLatestNode;
 
     public SnapshotLatestUncommittedDeltaOperator(SqlParserPos pos, SqlLiteral isLatest) {
         super(pos);
-        this.isLatestUncommittedDelta = isLatest != null && isLatest.booleanValue();
+        isLatestNode = isLatest;
+        this.isLatestUncommittedDelta = isLatest != null && isLatestNode.booleanValue();
     }
 
     @Override

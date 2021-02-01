@@ -78,6 +78,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
         val queryRequest = context.getRequest().getQueryRequest();
         val sourceRequest = new QuerySourceRequest(queryRequest, context.getSqlNode(), context.getSourceType());
         LlrRequestContext llrContext = LlrRequestContext.builder()
+                .originalQuery(context.getSqlNode())
                 .sourceRequest(sourceRequest)
                 .dmlRequestContext(context)
                 .build();
@@ -102,12 +103,13 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                     .build());
             QuerySourceRequest sourceRequest = llrContext.getSourceRequest();
             sourceRequest.setQueryTemplate(templateResult);
+            sourceRequest.setQuery(SqlNodeUtil.copy(llrContext.getDmlRequestContext().getSqlNode()));
             if (queryTemplateValue != null) {
-                sourceRequest.setQueryTemplate(templateResult);
                 sourceRequest.setMetadata(queryTemplateValue.getMetadata());
-                sourceRequest.setLogicalSchema(queryTemplateValue.getLogicalSchema());
                 sourceRequest.getQueryRequest().setSql(queryTemplateValue.getSql());
+                sourceRequest.setLogicalSchema(queryTemplateValue.getLogicalSchema());
                 llrContext.setDeltaInformations(queryTemplateValue.getDeltaInformations());
+                llrContext.getDmlRequestContext().setSqlNode(queryTemplateValue.getSqlNode());
                 promise.complete();
             } else {
                 initRequestAttributes(llrContext)
@@ -117,6 +119,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                                                 .logicalSchema(sourceRequest.getLogicalSchema())
                                                 .build(),
                                         SourceQueryTemplateValue.builder()
+                                                .sqlNode(llrContext.getDmlRequestContext().getSqlNode())
                                                 .deltaInformations(llrContext.getDeltaInformations())
                                                 .logicalSchema(sourceRequest.getLogicalSchema())
                                                 .sql(sourceRequest.getQueryRequest().getSql())
@@ -132,7 +135,6 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
     private Future<LlrRequestContext> initRequestAttributes(LlrRequestContext llrContext) {
         return deltaQueryPreprocessor.process(llrContext.getDmlRequestContext().getSqlNode())
                 .map(preprocessorResponse -> {
-                    QueryRequest queryRequest = llrContext.getSourceRequest().getQueryRequest();
                     llrContext.setDeltaInformations(preprocessorResponse.getDeltaInformations());
                     llrContext.getDmlRequestContext().setSqlNode(preprocessorResponse.getSqlNode());
                     return llrContext;
@@ -170,6 +172,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                 metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
                         SqlProcessingType.LLR,
                         dmlRequestContext.getMetrics())
+                        .compose(v -> informationSchemaDefinitionService.checkAccessToSystemLogicalTables(llrContext.getOriginalQuery()))
                         .compose(v -> informationSchemaExecute(sourceRequest))
                         .onComplete(metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
                                 SqlProcessingType.LLR,

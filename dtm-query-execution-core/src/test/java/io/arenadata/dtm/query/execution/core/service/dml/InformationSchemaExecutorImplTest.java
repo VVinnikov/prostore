@@ -49,7 +49,7 @@ class InformationSchemaExecutorImplTest {
         ResultSet resultSet = new ResultSet(Collections.emptyList(), Collections.emptyList(), null);
         when(client.getQueryResult(anyString())).thenReturn(Future.succeededFuture(resultSet));
         informationSchemaExecutor = new InformationSchemaExecutorImpl(client,
-                new SqlDialect(SqlDialect.EMPTY_CONTEXT), parserService, logicalSchemaProvider);
+                new SqlDialect(SqlDialect.EMPTY_CONTEXT), parserService);
     }
 
     @Test

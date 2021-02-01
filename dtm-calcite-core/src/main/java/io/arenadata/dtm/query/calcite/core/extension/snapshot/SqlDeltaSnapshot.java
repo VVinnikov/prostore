@@ -10,6 +10,12 @@ public class SqlDeltaSnapshot extends SqlSnapshot {
 
     public static final String AS_OF = "AS OF";
     private final SnapshotOperator snapshotOperator;
+    private final SnapshotDeltaIntervalOperator startedOperator;
+    private final SnapshotDeltaIntervalOperator finishedOperator;
+    private final SnapshotDeltaNumOperator deltaNumOperator;
+    private final SnapshotLatestUncommittedDeltaOperator latestUncommittedDeltaOperator;
+    private final SqlOperator started;
+    private final SqlOperator finished;
     private SqlNode tableRef;
     private SqlNode period;
     private String deltaDateTime;
@@ -17,19 +23,17 @@ public class SqlDeltaSnapshot extends SqlSnapshot {
     private SelectOnInterval startedInterval;
     private SelectOnInterval finishedInterval;
     private Long deltaNum;
-    private final SnapshotDeltaIntervalOperator startedOperator;
-    private final SnapshotDeltaIntervalOperator finishedOperator;
-    private final SnapshotDeltaNumOperator deltaNumOperator;
-    private final SnapshotLatestUncommittedDeltaOperator latestUncommittedDeltaOperator;
 
     public SqlDeltaSnapshot(SqlParserPos pos, SqlNode tableRef, SqlNode period, SqlOperator started,
                             SqlOperator finished, SqlNode num, SqlLiteral isLatestUncommittedDelta) {
         super(pos, tableRef, period);
-        this.tableRef = (SqlNode) Objects.requireNonNull(tableRef);
-        this.period = (SqlNode) period;
+        this.tableRef = Objects.requireNonNull(tableRef);
+        this.period = period;
         this.snapshotOperator = new SnapshotOperator();
-        this.startedOperator = new SnapshotStartedOperator(pos, this.period, started);
-        this.finishedOperator = new SnapshotFinishedOperator(pos, this.period, finished);
+        this.started = started;
+        this.startedOperator = new SnapshotStartedOperator(pos, this.period, this.started);
+        this.finished = finished;
+        this.finishedOperator = new SnapshotFinishedOperator(pos, this.period, this.finished);
         this.deltaNumOperator = new SnapshotDeltaNumOperator(pos, (SqlNumericLiteral) num);
         this.latestUncommittedDeltaOperator = new SnapshotLatestUncommittedDeltaOperator(pos, isLatestUncommittedDelta);
         initSnapshotAttributes();
@@ -43,10 +47,10 @@ public class SqlDeltaSnapshot extends SqlSnapshot {
     public void setOperand(int i, SqlNode operand) {
         switch (i) {
             case 0:
-                this.tableRef = (SqlNode) Objects.requireNonNull(operand);
+                this.tableRef = Objects.requireNonNull(operand);
                 break;
             case 1:
-                this.period = (SqlNode) Objects.requireNonNull(operand);
+                this.period = Objects.requireNonNull(operand);
                 initSnapshotAttributes();
                 break;
             default:
@@ -107,5 +111,18 @@ public class SqlDeltaSnapshot extends SqlSnapshot {
 
     public Long getDeltaNum() {
         return deltaNum;
+    }
+
+    @Override
+    public SqlNode clone(SqlParserPos pos) {
+        return new SqlDeltaSnapshot(
+                pos,
+                tableRef,
+                period,
+                started,
+                finished,
+                deltaNumOperator.getDeltaNumNode(),
+                latestUncommittedDeltaOperator.getIsLatestNode()
+        );
     }
 }

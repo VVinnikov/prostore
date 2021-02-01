@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.calcite.core.node;
 
+import io.arenadata.dtm.query.calcite.core.extension.dml.LimitableSqlOrderBy;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -84,6 +85,8 @@ public class SqlSelectTree {
             flattenSqlJoin(treeNode, (SqlJoin) node);
         } else if (node instanceof SqlIdentifier) {
             flattenSqlIdentifier(treeNode);
+        } else if (node instanceof LimitableSqlOrderBy) {
+            flattenLimitableSqlOrderBy(treeNode, (LimitableSqlOrderBy) node);
         } else if (node instanceof SqlSnapshot) {
             flattenSqlSnapshot(treeNode, (SqlSnapshot) node);
         } else if (node instanceof SqlBasicCall) {
@@ -99,6 +102,10 @@ public class SqlSelectTree {
         } else if (node instanceof SqlCall) {
             flattenSqlCall(treeNode, (SqlCall) node);
         }
+    }
+
+    private void flattenLimitableSqlOrderBy(SqlTreeNode treeNode, LimitableSqlOrderBy node) {
+        flattenSqlCall(treeNode, node);
     }
 
     private void flattenSqlAlterView(SqlTreeNode parentTree, SqlCall parentNode) {

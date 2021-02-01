@@ -5,6 +5,7 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.InformationSchemaView;
+import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlAlterView;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateView;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
@@ -78,6 +79,7 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
             case CREATE_VIEW:
                 return createOrReplaceView((SqlCreateView) sql);
             case ALTER_VIEW:
+                return alterView((SqlAlterView) sql);
             case DROP_VIEW:
             case DROP_TABLE:
                 return client.executeQuery(sql.toString().replace(SINGLE_BACK_QUOTE, EMPTY_CHAR))
@@ -92,16 +94,30 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
         System.exit(exitCode);
     }
 
+    private Future<Void> alterView(SqlAlterView sqlAlterView) {
+        return client.executeQuery(sqlAlterView.toString().replace(SINGLE_BACK_QUOTE, EMPTY_CHAR))
+                .compose(v -> entityDao.getEntity(sqlAlterView.getName().names.get(0), sqlAlterView.getName().names.get(1))
+                        .compose(entity -> client.executeBatch(getCommentQueries(entity))))
+                .onFailure(this::shutdown);
+    }
+
+
     private Future<Void> createOrReplaceView(SqlCreateView sqlCreateView) {
-        if (sqlCreateView.getReplace()) {
-            return client.executeQuery(String.format(InformationSchemaUtils.DROP_VIEW, sqlCreateView.getName()))
-                    .compose(v -> client.executeQuery(String.format(InformationSchemaUtils.CREATE_VIEW,
-                            sqlCreateView.getName(),
-                            sqlCreateView.getQuery().toString().replace(SINGLE_BACK_QUOTE, EMPTY_CHAR))));
-        } else {
-            return client.executeQuery(sqlCreateView.toString().replace(SINGLE_BACK_QUOTE, EMPTY_CHAR))
-                    .onFailure(this::shutdown);
-        }
+        return entityDao.getEntity(sqlCreateView.getName().names.get(0), sqlCreateView.getName().names.get(1))
+                .compose(entity -> {
+                    List<String> commentQueries = getCommentQueries(entity);
+                    if (sqlCreateView.getReplace()) {
+                        return client.executeQuery(String.format(InformationSchemaUtils.DROP_VIEW, sqlCreateView.getName()))
+                                .compose(v -> client.executeQuery(String.format(InformationSchemaUtils.CREATE_VIEW,
+                                        sqlCreateView.getName(),
+                                        sqlCreateView.getQuery().toString().replace(SINGLE_BACK_QUOTE, EMPTY_CHAR))))
+                                .compose(r -> client.executeBatch(commentQueries));
+                    } else {
+                        return client.executeQuery(sqlCreateView.toString().replace(SINGLE_BACK_QUOTE, EMPTY_CHAR))
+                                .compose(r -> client.executeBatch(commentQueries))
+                                .onFailure(this::shutdown);
+                    }
+                });
     }
 
     private Future<Void> createOrDropSchema(SqlNode sql) {

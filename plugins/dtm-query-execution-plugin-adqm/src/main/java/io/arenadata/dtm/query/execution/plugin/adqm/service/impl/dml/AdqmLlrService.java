@@ -21,7 +21,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -54,11 +53,15 @@ public class AdqmLlrService extends QueryResultCacheableLlrService {
 
     private QueryParameters getExtendedQueryParameters(QueryParameters queryParameters) {
         //For adqm enrichment query we have to create x2 params values and their types
-        List<Object> values = new ArrayList<>(queryParameters.getValues());
-        List<ColumnType> types = new ArrayList<>(queryParameters.getTypes());
-        values.addAll(queryParameters.getValues());
-        types.addAll(queryParameters.getTypes());
-        return new QueryParameters(values, types);
+        if (queryParameters != null) {
+            List<Object> values = new ArrayList<>(queryParameters.getValues());
+            List<ColumnType> types = new ArrayList<>(queryParameters.getTypes());
+            values.addAll(queryParameters.getValues());
+            types.addAll(queryParameters.getTypes());
+            return new QueryParameters(values, types);
+        } else {
+            return null;
+        }
     }
 
     @Override

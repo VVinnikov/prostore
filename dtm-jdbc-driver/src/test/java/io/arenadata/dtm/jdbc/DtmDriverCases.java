@@ -20,12 +20,11 @@ public class DtmDriverCases {
         String url = String.format("jdbc:adtm://%s/", host);
 
         BaseConnection conn = new DtmConnectionImpl(host, user, schema, null, url);
-        final String sql = "select * from dtm_902.all_types_table where id = ? and double_col = ? and boolean_col = ? " +
-                "and float_col = ? and bigint_col = ? and varchar_col = ? and date_col = ? and time_col = ? and timestamp_col = ? datasource_type='adqm'";
+        final String sql = "select * from dtm_902.all_types_table where id = ? datasource_type='adqm'";
 
         DtmPreparedStatement stmnt = (DtmPreparedStatement) conn.prepareStatement(sql);
         stmnt.setInt(0, 1);
-        stmnt.setDouble(1, 2d);
+       /* stmnt.setDouble(1, 2d);
         stmnt.setBoolean(3, true);
         stmnt.setFloat(4, 1.0f);
         stmnt.setLong(5, 4L);
@@ -35,7 +34,7 @@ public class DtmDriverCases {
                 .parse("14:14:00", DateTimeFormatter.ISO_LOCAL_TIME)));
         stmnt.setTimestamp(9, Timestamp.from(LocalDateTime
                 .parse("2021-01-14T14:14:00", DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-                .atZone(ZoneId.of("UTC")).toInstant()));
+                .atZone(ZoneId.of("UTC")).toInstant()));*/
         final ResultSet resultSet = stmnt.executeQuery();
     }
 }

@@ -158,10 +158,13 @@ public class LimitableSqlOrderBy extends SqlOrderBy {
             final SqlWriter.Frame frame =
                     writer.startList(SqlWriter.FrameTypeEnum.ORDER_BY);
             orderBy.query.unparse(writer, getLeftPrec(), getRightPrec());
-            if (!orderBy.orderList.equalsDeep(SqlNodeList.EMPTY, Litmus.IGNORE)) {
+            if (orderBy.orderList != SqlNodeList.EMPTY && !orderBy.orderList.getList().isEmpty()) {
+                final SqlWriter.Frame frame0 =
+                        writer.startList(SqlWriter.FrameTypeEnum.ORDER_BY);
                 writer.sep(getName());
                 writer.list(SqlWriter.FrameTypeEnum.ORDER_BY_LIST, SqlWriter.COMMA,
                         orderBy.orderList);
+                writer.endList(frame0);
             }
             if (orderBy.offset != null) {
                 final SqlWriter.Frame frame2 =

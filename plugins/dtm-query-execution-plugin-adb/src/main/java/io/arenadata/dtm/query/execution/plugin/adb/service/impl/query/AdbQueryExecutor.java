@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adb.service.impl.query;
 import io.arenadata.dtm.common.converter.SqlTypeConverter;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.plugin.sql.PreparedStatementRequest;
+import io.arenadata.dtm.common.reader.QueryParameters;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.exception.LlrDatasourceException;
@@ -42,7 +43,7 @@ public class AdbQueryExecutor implements DatabaseExecutor {
 
     @Override
     public Future<List<Map<String, Object>>> execute(String sql, List<ColumnMetadata> metadata) {
-        return executeWithParams(sql, Collections.emptyList(), metadata);
+        return executeWithParams(sql, null, metadata);
     }
 
     @Override
@@ -73,7 +74,9 @@ public class AdbQueryExecutor implements DatabaseExecutor {
     }
 
     @Override
-    public Future<List<Map<String, Object>>> executeWithParams(String sql, List<Object> params, List<ColumnMetadata> metadata) {
+    public Future<List<Map<String, Object>>> executeWithParams(String sql,
+                                                               QueryParameters params,
+                                                               List<ColumnMetadata> metadata) {
         return Future.future(promise -> {
             final AdbConnectionCtx connectionCtx = new AdbConnectionCtx();
             getConnection()
@@ -83,7 +86,7 @@ public class AdbQueryExecutor implements DatabaseExecutor {
                     })
                     .compose(conn -> {
                         log.debug("ADB.Execute query: {} with params: {}", sql, params);
-                        return executePreparedQuery(conn, sql, new ArrayTuple(params));
+                        return executePreparedQuery(conn, sql, createParamsArray(params));
                     })
                     .map(rowSet -> createResult(metadata, rowSet))
                     .onSuccess(result -> {

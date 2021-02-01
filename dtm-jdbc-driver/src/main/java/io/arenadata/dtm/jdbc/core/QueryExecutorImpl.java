@@ -59,15 +59,15 @@ public class QueryExecutorImpl implements QueryExecutor {
     }
 
     @Override
-    public void execute(Query query, List<Object> parameters, ResultHandler resultHandler) {
+    public void execute(Query query, QueryParameters parameters, ResultHandler resultHandler) {
         executeInternal(query, parameters, resultHandler);
     }
 
     @Override
-    public void execute(List<Query> queries, List<List<Object>> parametersList, ResultHandler resultHandler) {
+    public void execute(List<Query> queries, List<QueryParameters> parametersList, ResultHandler resultHandler) {
         try {
             for (int i = 0; i < queries.size(); i++) {
-                List<Object> parameters = parametersList.isEmpty() ? Collections.emptyList() : parametersList.get(i);
+                QueryParameters parameters = parametersList.isEmpty() ? null : parametersList.get(i);
                 executeInternal(queries.get(i), parameters, resultHandler);
             }
         } catch (Exception e) {
@@ -75,10 +75,21 @@ public class QueryExecutorImpl implements QueryExecutor {
         }
     }
 
-    private void executeInternal(Query query, List<Object> parameters, ResultHandler resultHandler) {
+    @Override
+    public void prepareQuery(Query query, ResultHandler resultHandler) {
+        try {
+            QueryRequest queryRequest = prepareQueryRequest(query.getNativeSql(), null);
+            this.protocol.prepareQuery(queryRequest);
+        } catch (SQLException e) {
+            resultHandler.handleError(e);
+        }
+    }
+
+    private void executeInternal(Query query, QueryParameters parameters, ResultHandler resultHandler) {
         try {
             final QueryResult queryResult;
-            queryResult = this.protocol.executeQuery(query.getNativeSql());
+            QueryRequest queryRequest = prepareQueryRequest(query.getNativeSql(), parameters);
+            queryResult = this.protocol.executeQuery(queryRequest);
             if (queryResult.getResult() != null) {
                 setUsedSchemaIfExists(queryResult);
                 List<Field[]> result = new ArrayList<>();
@@ -180,5 +191,9 @@ public class QueryExecutorImpl implements QueryExecutor {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private QueryRequest prepareQueryRequest(String sql, QueryParameters parameters) {
+        return new QueryRequest(UUID.randomUUID(), this.schema, sql, parameters);
     }
 }

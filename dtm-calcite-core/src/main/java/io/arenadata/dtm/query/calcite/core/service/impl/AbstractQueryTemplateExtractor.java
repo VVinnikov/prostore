@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.calcite.core.service.impl;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.QueryTemplateResult;
 import io.arenadata.dtm.query.calcite.core.dto.EnrichmentTemplateRequest;
+import io.arenadata.dtm.query.calcite.core.extension.dml.SqlDynamicLiteral;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.calcite.core.node.SqlTreeNode;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
@@ -10,6 +11,7 @@ import io.arenadata.dtm.query.calcite.core.service.QueryTemplateExtractor;
 import io.arenadata.dtm.query.calcite.core.util.SqlNodeUtil;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.type.SqlTypeName;
 
 import java.util.Collections;
 import java.util.Iterator;

@@ -110,26 +110,40 @@ public class HttpReaderService implements Protocol {
     }
 
     @Override
-    public QueryResult executeQuery(String sql) throws SQLException {
+    public QueryResult executeQuery(QueryRequest queryRequest) throws SQLException {
         try {
             HttpPost httpPost = new HttpPost(backendHostUrl + "/query/execute");
-            QueryRequest queryRequest = prepareQueryRequest(sql);
-            String queryRequestJson = MAPPER.writeValueAsString(queryRequest);
-            log.debug("Preparing the query query [{}]", queryRequestJson);
-            httpPost.setEntity(new StringEntity(queryRequestJson, ContentType.APPLICATION_JSON));
-            try (CloseableHttpResponse response = client.execute(httpPost)) {
-                checkResponseStatus(response);
-                InputStream content = response.getEntity().getContent();
-                QueryResult result = MAPPER.readValue(content, new TypeReference<QueryResult>() {
-                });
-                setUsedSchemaIfExists(result);
-                log.info("Request received response {}", result);
-                return result;
-            }
+            return executeRequest(queryRequest, httpPost);
         } catch (Exception e) {
-            String errMsg = String.format("Error executing query [%s]: %s", sql, e.getMessage());
+            String errMsg = String.format("Error executing query [%s]: %s", queryRequest.getSql(), e.getMessage());
             log.error(errMsg, e);
             throw new SQLException(errMsg, e);
+        }
+    }
+
+    @Override
+    public QueryResult prepareQuery(QueryRequest request) throws SQLException {
+        try {
+            HttpPost httpPost = new HttpPost(backendHostUrl + "/query/prepare");
+            return executeRequest(request, httpPost);
+        } catch (Exception e) {
+            String errMsg = String.format("Error executing query [%s]: %s", request.getSql(), e.getMessage());
+            log.error(errMsg, e);
+            throw new SQLException(errMsg, e);
+        }
+    }
+
+    private QueryResult executeRequest(QueryRequest queryRequest, HttpPost httpPost) throws IOException, DtmSqlException {
+        String queryRequestJson = MAPPER.writeValueAsString(queryRequest);
+        log.debug("Preparing the query [{}]", queryRequestJson);
+        httpPost.setEntity(new StringEntity(queryRequestJson, ContentType.APPLICATION_JSON));
+        try (CloseableHttpResponse response = client.execute(httpPost)) {
+            checkResponseStatus(response);
+            InputStream content = response.getEntity().getContent();
+            QueryResult result = MAPPER.readValue(content, new TypeReference<QueryResult>() {
+            });
+            log.info("Request received response {}", result);
+            return result;
         }
     }
 

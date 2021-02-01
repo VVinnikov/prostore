@@ -42,11 +42,11 @@ public class QueryRequest {
     /**
      * Parameters (optional)
      */
-    private List<String> parameters;
+    private QueryParameters parameters;
 
     public QueryRequest copy() {
         return toBuilder()
-                .parameters(parameters != null ? new ArrayList<>(parameters) : null)
+                .parameters(parameters != null ? parameters.copy() : null)
                 .build();
     }
 

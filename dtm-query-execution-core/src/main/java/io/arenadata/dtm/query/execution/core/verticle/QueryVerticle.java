@@ -66,7 +66,8 @@ public class QueryVerticle extends AbstractVerticle {
         router.get(String.format("/meta/:%s/entity/:%s/attributes",
                 RequestParam.DATAMART_MNEMONIC, RequestParam.ENTITY_MNEMONIC))
                 .handler(datamartMetaController::getEntityAttributesMeta);
-        router.post("/query/execute").handler(queryController::executeQueryWithoutParams);
+        router.post("/query/execute").handler(queryController::executeQuery);
+        router.post("/query/prepare").handler(queryController::prepareQuery);
         router.put("/metrics/turn/on").handler(metricsController::turnOn);
         router.put("/metrics/turn/off").handler(metricsController::turnOff);
         return router;

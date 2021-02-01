@@ -2,13 +2,14 @@ package io.arenadata.dtm.jdbc;
 
 import io.arenadata.dtm.jdbc.core.BaseConnection;
 import io.arenadata.dtm.jdbc.ext.DtmConnectionImpl;
-import io.arenadata.dtm.jdbc.ext.DtmDatabaseMetaData;
-import io.arenadata.dtm.jdbc.ext.DtmStatement;
-import io.arenadata.dtm.jdbc.model.TableInfo;
+import io.arenadata.dtm.jdbc.ext.DtmPreparedStatement;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.List;
+import java.sql.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 
 public class DtmDriverCases {
 
@@ -19,15 +20,22 @@ public class DtmDriverCases {
         String url = String.format("jdbc:adtm://%s/", host);
 
         BaseConnection conn = new DtmConnectionImpl(host, user, schema, null, url);
-        DtmStatement stmnt = (DtmStatement) conn.createStatement();
-        DtmStatement stmnt2 = (DtmStatement) conn.createStatement();
-        final List<TableInfo> tables = conn.getQueryExecutor().getTables("dtm_714");
-        final ResultSet createDb = stmnt.executeQuery("CREATE DATABASE dtm_test_sql;");
-        final ResultSet dropDb = stmnt.executeQuery("DROP DATABASE dtm_test_sql;");
-        //final ResultSet resultSet1 = stmnt.executeQuery("USE dtm_714");
-        //final ResultSet resultSet2 = stmnt.executeQuery("get_delta_ok(); get_delta_ok();");
-        //resultSet2.getObject(2);
-        DtmDatabaseMetaData dtmDatabaseMetaData = new DtmDatabaseMetaData(conn);
-        //final ResultSet columns = dtmDatabaseMetaData.getColumns("dtm_579", "%", "transactions_2", "%");
+        final String sql = "select * from dtm_902.all_types_table where id = ? and double_col = ? and boolean_col = ? " +
+                "and float_col = ? and bigint_col = ? and varchar_col = ? and date_col = ? and time_col = ? and timestamp_col = ? datasource_type='adqm'";
+
+        DtmPreparedStatement stmnt = (DtmPreparedStatement) conn.prepareStatement(sql);
+        stmnt.setInt(0, 1);
+        stmnt.setDouble(1, 2d);
+        stmnt.setBoolean(3, true);
+        stmnt.setFloat(4, 1.0f);
+        stmnt.setLong(5, 4L);
+        stmnt.setString(6, "test");
+        stmnt.setDate(7, Date.valueOf(LocalDate.now()));
+        stmnt.setTime(8, Time.valueOf(LocalTime
+                .parse("14:14:00", DateTimeFormatter.ISO_LOCAL_TIME)));
+        stmnt.setTimestamp(9, Timestamp.from(LocalDateTime
+                .parse("2021-01-14T14:14:00", DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                .atZone(ZoneId.of("UTC")).toInstant()));
+        final ResultSet resultSet = stmnt.executeQuery();
     }
 }

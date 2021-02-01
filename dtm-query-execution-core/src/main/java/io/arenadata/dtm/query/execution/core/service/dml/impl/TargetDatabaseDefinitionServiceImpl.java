@@ -7,15 +7,16 @@ import io.arenadata.dtm.common.model.RequestStatus;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QuerySourceRequest;
 import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.query.execution.core.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.dml.TargetDatabaseDefinitionService;
-import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.QueryCostRequest;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import lombok.val;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -32,28 +33,32 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
     private final DataSourcePluginService pluginService;
     private final EntityDao entityDao;
     private final DtmConfig dtmSettings;
+    private final AppConfiguration configuration;//FIXME get env from dtmConfig
 
     @Autowired
     public TargetDatabaseDefinitionServiceImpl(DataSourcePluginService pluginService,
                                                EntityDao entityDao,
-                                               DtmConfig dtmSettings) {
+                                               DtmConfig dtmSettings, AppConfiguration configuration) {
         this.pluginService = pluginService;
         this.entityDao = entityDao;
         this.dtmSettings = dtmSettings;
+        this.configuration = configuration;
     }
 
     @Override
-    public Future<QuerySourceRequest> getTargetSource(QuerySourceRequest request) {
+    public Future<QuerySourceRequest> getTargetSource(QuerySourceRequest request, SqlNode query) {
         return getEntitiesSourceTypes(request)
                 .compose(entities -> defineTargetSourceType(entities, request))
                 .map(sourceType -> {
                     val queryRequestWithSourceType = request.getQueryRequest().copy();
-                    queryRequestWithSourceType.setSourceType(sourceType);
+                    request.setSourceType(sourceType);
                     return QuerySourceRequest.builder()
                             .queryRequest(queryRequestWithSourceType)
                             .logicalSchema(request.getLogicalSchema())
+                            .queryTemplate(request.getQueryTemplate())
                             .metadata(request.getMetadata())
                             .sourceType(sourceType)
+                            .query(query)
                             .build();
                 });
     }
@@ -132,11 +137,11 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
 
     private Future<Object> calcQueryCostInPlugin(QuerySourceRequest request, SourceType sourceType) {
         return Future.future(p -> {
-            val costRequest = new QueryCostRequest(request.getQueryRequest(), request.getLogicalSchema());
-            val costRequestContext = new QueryCostRequestContext(
-                    createRequestMetrics(request),
-                    costRequest);
-            pluginService.calcQueryCost(sourceType, costRequestContext)
+            val costRequest = new QueryCostRequest(request.getQueryRequest().getRequestId(),
+                    configuration.getEnvName(),
+                    request.getQueryRequest().getDatamartMnemonic(),
+                    request.getLogicalSchema());
+            pluginService.calcQueryCost(sourceType, createRequestMetrics(request), costRequest)
                     .onComplete(costHandler -> {
                         if (costHandler.succeeded()) {
                             p.complete(Pair.of(sourceType, costHandler.result()));

@@ -4,10 +4,7 @@ import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.kafka.core.service.kafka.KafkaConsumerMonitor;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.StatusReporter;
-import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
-import io.arenadata.dtm.query.execution.plugin.api.request.StatusRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.StatusService;
-import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
 import io.vertx.core.Future;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +16,7 @@ import java.util.Map;
 
 @Service("adqmStatusService")
 @Slf4j
-public class AdqmStatusService implements StatusService<StatusQueryResult>, StatusReporter {
+public class AdqmStatusService implements StatusService, StatusReporter {
     private final KafkaConsumerMonitor kafkaConsumerMonitor;
     private final Map<String, String> topicsInUse = new HashMap<>();
 
@@ -28,24 +25,19 @@ public class AdqmStatusService implements StatusService<StatusQueryResult>, Stat
     }
 
     @Override
-    public Future<StatusQueryResult> execute(StatusRequestContext context) {
+    public Future<StatusQueryResult> execute(String topic) {
         return Future.future(promise -> {
-            if (context == null || context.getRequest() == null) {
-                promise.fail(new DataSourceException("StatusRequestContext should not be null"));
-                return;
-            }
-            StatusRequest request = context.getRequest();
-
-            if (topicsInUse.containsKey(request.getTopic())) {
-                String consumerGroup = topicsInUse.get(request.getTopic());
-
-                kafkaConsumerMonitor.getAggregateGroupConsumerInfo(consumerGroup, request.getTopic())
+            if (topicsInUse.containsKey(topic)) {
+                String consumerGroup = topicsInUse.get(topic);
+                kafkaConsumerMonitor.getAggregateGroupConsumerInfo(consumerGroup, topic)
                         .onSuccess(kafkaInfoResult -> {
                             StatusQueryResult result = new StatusQueryResult();
                             result.setPartitionInfo(kafkaInfoResult);
                             promise.complete(result);
                         })
                         .onFailure(promise::fail);
+            } else {
+                promise.fail("Topic isn't used");
             }
         });
     }

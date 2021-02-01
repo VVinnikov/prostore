@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.metadata.impl;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
@@ -10,11 +11,10 @@ import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateView;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
-import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.exception.view.ViewNotExistsException;
-import io.arenadata.dtm.query.execution.core.service.metadata.DdlQueryGenerator;
 import io.arenadata.dtm.query.execution.core.service.hsql.HSQLClient;
+import io.arenadata.dtm.query.execution.core.service.metadata.DdlQueryGenerator;
 import io.arenadata.dtm.query.execution.core.service.metadata.InformationSchemaService;
 import io.arenadata.dtm.query.execution.core.utils.InformationSchemaUtils;
 import io.vertx.core.CompositeFuture;
@@ -318,7 +318,7 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
 
     private Future<Void> createSchemas(List<String> datamarts) {
         return Future.future(p -> CompositeFuture.join(datamarts.stream()
-                .filter(datamart -> !InformationSchemaView.SCHEMA_NAME.equals(datamart.toUpperCase()))
+                .filter(datamart -> !InformationSchemaView.SCHEMA_NAME.equalsIgnoreCase(datamart))
                 .map(this::createSchemaForDatamart)
                 .collect(Collectors.toList()))
                 .onSuccess(success -> p.complete())

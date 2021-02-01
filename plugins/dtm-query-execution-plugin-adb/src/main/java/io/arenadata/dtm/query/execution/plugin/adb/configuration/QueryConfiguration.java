@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Configuration;
 public class QueryConfiguration {
 
   @Bean("adbQueryExecutor")
-  public AdbQueryExecutor greenplam(@Value("${core.env.name}") String database,
+  public AdbQueryExecutor greenplam(@Value("${core.env.name}") String database, // Todo transfer to EnvProperties
                                     GreenplumProperties greenplumProperties,
                                     @Qualifier("adbTypeToSqlTypeConverter") SqlTypeConverter typeConverter) {
     PgPoolOptions poolOptions = new PgPoolOptions();

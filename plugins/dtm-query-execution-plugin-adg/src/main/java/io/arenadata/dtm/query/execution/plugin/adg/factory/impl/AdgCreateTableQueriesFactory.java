@@ -1,11 +1,10 @@
 package io.arenadata.dtm.query.execution.plugin.adg.factory.impl;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.dto.AdgTables;
-import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.*;
+import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.AdgSpace;
+import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.Space;
 import io.arenadata.dtm.query.execution.plugin.adg.utils.AdgUtils;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.factory.CreateTableQueriesFactory;
 import io.arenadata.dtm.query.execution.plugin.api.factory.TableEntitiesFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,12 +24,10 @@ public class AdgCreateTableQueriesFactory implements CreateTableQueriesFactory<A
     }
 
     @Override
-    public AdgTables<AdgSpace> create(DdlRequestContext context) {
-        QueryRequest queryRequest = context.getRequest().getQueryRequest();
-        Entity entity = context.getRequest().getEntity();
-        AdgTables<Space> tableEntities = tableEntitiesFactory.create(entity, queryRequest.getEnvName());
+    public AdgTables<AdgSpace> create(Entity entity, String envName) {
+        AdgTables<Space> tableEntities = tableEntitiesFactory.create(entity, envName);
         Function<String, String> getName = postfix ->
-                AdgUtils.getSpaceName(queryRequest.getEnvName(), queryRequest.getDatamartMnemonic(), entity.getName(),
+                AdgUtils.getSpaceName(envName, entity.getSchema(), entity.getName(),
                         postfix);
         return new AdgTables<>(
                 new AdgSpace(getName.apply(ACTUAL_POSTFIX), tableEntities.getActual()),

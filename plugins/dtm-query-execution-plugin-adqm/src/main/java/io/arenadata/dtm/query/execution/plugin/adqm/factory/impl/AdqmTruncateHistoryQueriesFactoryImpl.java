@@ -5,7 +5,7 @@ import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.AdqmTruncateHistoryQueriesFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants;
-import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
+import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
 import org.apache.calcite.sql.SqlDialect;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -35,15 +35,15 @@ public class AdqmTruncateHistoryQueriesFactoryImpl implements AdqmTruncateHistor
     }
 
     @Override
-    public String insertIntoActualQuery(TruncateHistoryParams params) {
-        String sysCnExpression = params.getSysCn()
+    public String insertIntoActualQuery(TruncateHistoryRequest request) {
+        String sysCnExpression = request.getSysCn()
                 .map(sysCn -> String.format(" AND sys_to < %s", sysCn))
                 .orElse("");
-        String whereExpression = params.getConditions()
+        String whereExpression = request.getConditions()
                 .map(conditions -> String.format(" AND (%s)", conditions.toSqlString(sqlDialect)))
                 .orElse("");
-        Entity entity = params.getEntity();
-        String dbName = String.format("%s__%s", params.getEnv(), entity.getSchema());
+        Entity entity = request.getEntity();
+        String dbName = Constants.getDbName(request.getEnvName(), entity.getSchema());
         List<String> orderByColumns = entity.getFields().stream()
                 .filter(field -> field.getPrimaryOrder() != null)
                 .map(EntityField::getName)
@@ -55,16 +55,16 @@ public class AdqmTruncateHistoryQueriesFactoryImpl implements AdqmTruncateHistor
     }
 
     @Override
-    public String flushQuery(TruncateHistoryParams params) {
-        Entity entity = params.getEntity();
-        String dbName = String.format("%s__%s", params.getEnv(), entity.getSchema());
-        return String.format(FLUSH_PATTERN, dbName, entity.getName());
+    public String flushQuery(TruncateHistoryRequest request) {
+        Entity entity = request.getEntity();
+        return String.format(FLUSH_PATTERN, Constants.getDbName(request.getEnvName(), entity.getSchema()),
+                entity.getName());
     }
 
     @Override
-    public String optimizeQuery(TruncateHistoryParams params) {
-        Entity entity = params.getEntity();
-        String dbName = String.format("%s__%s", params.getEnv(), entity.getSchema());
-        return String.format(OPTIMIZE_PATTERN, dbName, entity.getName(), ddlProperties.getCluster());
+    public String optimizeQuery(TruncateHistoryRequest request) {
+        Entity entity = request.getEntity();
+        return String.format(OPTIMIZE_PATTERN, Constants.getDbName(request.getEnvName(), entity.getSchema()),
+                entity.getName(), ddlProperties.getCluster());
     }
 }

@@ -3,7 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adg.service.impl.ddl;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.AdgTruncateHistoryConditionFactory;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.adg.utils.AdgUtils;
-import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
+import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TruncateHistoryService;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
@@ -28,24 +28,24 @@ public class AdgTruncateHistoryService implements TruncateHistoryService {
     }
 
     @Override
-    public Future<Void> truncateHistory(TruncateHistoryParams params) {
-        return conditionFactory.create(params)
-                .compose(conditions -> params.getSysCn().isPresent()
-                        ? deleteSpaceTuples(params, HISTORY_POSTFIX, conditions)
-                        : deleteSpaceTuplesWithoutSysCn(params, conditions));
+    public Future<Void> truncateHistory(TruncateHistoryRequest request) {
+        return conditionFactory.create(request)
+                .compose(conditions -> request.getSysCn().isPresent()
+                        ? deleteSpaceTuples(request, HISTORY_POSTFIX, conditions)
+                        : deleteSpaceTuplesWithoutSysCn(request, conditions));
     }
 
-    private Future<Void> deleteSpaceTuples(TruncateHistoryParams params, String postfix, String conditions) {
-        String spaceName = AdgUtils.getSpaceName(params.getEnv(), params.getEntity().getSchema(),
-                params.getEntity().getName(), postfix);
+    private Future<Void> deleteSpaceTuples(TruncateHistoryRequest request, String postfix, String conditions) {
+        String spaceName = AdgUtils.getSpaceName(request.getEnvName(), request.getEntity().getSchema(),
+                request.getEntity().getName(), postfix);
         return adgCartridgeClient.deleteSpaceTuples(spaceName, conditions.isEmpty() ? null : conditions);
     }
 
-    private Future<Void> deleteSpaceTuplesWithoutSysCn(TruncateHistoryParams params,
-                                                    String conditions) {
+    private Future<Void> deleteSpaceTuplesWithoutSysCn(TruncateHistoryRequest request,
+                                                       String conditions) {
         return Future.future(promise -> CompositeFuture.join(Arrays.asList(
-                deleteSpaceTuples(params, ACTUAL_POSTFIX, conditions),
-                deleteSpaceTuples(params, HISTORY_POSTFIX, conditions)
+                deleteSpaceTuples(request, ACTUAL_POSTFIX, conditions),
+                deleteSpaceTuples(request, HISTORY_POSTFIX, conditions)
         ))
                 .onSuccess(result -> promise.complete())
                 .onFailure(promise::fail));

@@ -5,9 +5,8 @@ import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.plugin.sql.PreparedStatementRequest;
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
-import io.arenadata.dtm.query.execution.plugin.api.request.RollbackRequest;
+import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Test;
@@ -71,11 +70,9 @@ class AdqmRollbackRequestFactoryTest {
     @Test
     void create() {
         val adqmRollbackRequest = factory.create(RollbackRequest.builder()
-            .datamart("dtm")
+            .datamartMnemonic("dtm")
             .entity(entity)
-            .queryRequest(QueryRequest.builder()
-                .envName("env_1")
-                .build())
+            .envName("env_1")
             .sysCn(11)
             .destinationTable("tbl1")
             .build());

@@ -1,20 +1,13 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.ddl;
 
-import io.arenadata.dtm.async.AsyncHandler;
-import io.arenadata.dtm.query.calcite.core.extension.eddl.SqlCreateDatabase;
-import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.exception.DdlDatasourceException;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
-import io.vertx.core.AsyncResult;
+import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
+import io.arenadata.dtm.query.execution.plugin.api.service.DdlExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.service.DdlService;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -24,31 +17,19 @@ import org.springframework.stereotype.Component;
 public class CreateDatabaseExecutor implements DdlExecutor<Void> {
     private static final String CREATE_TEMPLATE = "CREATE DATABASE IF NOT EXISTS %s__%s ON CLUSTER %s";
 
-    private final AppConfiguration appConfiguration;
     private final DatabaseExecutor databaseExecutor;
     private final DdlProperties ddlProperties;
 
     public CreateDatabaseExecutor(DatabaseExecutor databaseExecutor,
-                                  DdlProperties ddlProperties,
-                                  AppConfiguration appConfiguration) {
+                                  DdlProperties ddlProperties) {
         this.databaseExecutor = databaseExecutor;
         this.ddlProperties = ddlProperties;
-        this.appConfiguration = appConfiguration;
     }
 
     @Override
-    public Future<Void> execute(DdlRequestContext context, String sqlNodeName) {
+    public Future<Void> execute(DdlRequest request) {
         return Future.future(promise -> {
-            SqlNode query = context.getQuery();
-            if (!(query instanceof SqlCreateDatabase)) {
-                promise.fail(new DdlDatasourceException(
-                        String.format("Expecting SqlCreateDatabase in context, receiving: %s",
-                                context)));
-                return;
-            }
-
-            String name = ((SqlCreateDatabase) query).getName().names.get(0);
-            createDatabase(name)
+            createDatabase(request.getEnvName(), request.getDatamartMnemonic())
                     .onComplete(promise);
         });
     }
@@ -64,9 +45,9 @@ public class CreateDatabaseExecutor implements DdlExecutor<Void> {
         service.addExecutor(this);
     }
 
-    private Future<Void> createDatabase(String dbname) {
+    private Future<Void> createDatabase(String envName, String dbname) {
         String cluster = ddlProperties.getCluster();
-        String createCmd = String.format(CREATE_TEMPLATE, appConfiguration.getSystemName(), dbname, cluster);
+        String createCmd = String.format(CREATE_TEMPLATE, envName, dbname, cluster);
         return databaseExecutor.executeUpdate(createCmd);
     }
 }

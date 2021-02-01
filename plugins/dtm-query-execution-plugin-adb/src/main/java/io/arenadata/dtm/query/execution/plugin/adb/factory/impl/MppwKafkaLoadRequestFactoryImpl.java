@@ -2,44 +2,52 @@ package io.arenadata.dtm.query.execution.plugin.adb.factory.impl;
 
 import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
 import io.arenadata.dtm.query.execution.plugin.adb.configuration.properties.MppwProperties;
+import io.arenadata.dtm.query.execution.plugin.adb.factory.KafkaMppwSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.MppwKafkaLoadRequestFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwKafkaLoadRequest;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
 import lombok.val;
 import org.apache.avro.Schema;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static io.arenadata.dtm.query.execution.plugin.adb.factory.Constants.SYS_FROM_ATTR;
+import static io.arenadata.dtm.query.execution.plugin.adb.factory.Constants.SYS_TO_ATTR;
+
 @Component
 public class MppwKafkaLoadRequestFactoryImpl implements MppwKafkaLoadRequestFactory {
 
-    private final List<String> excludeSystemFields = Arrays.asList(MetadataSqlFactoryImpl.SYS_FROM_ATTR,
-            MetadataSqlFactoryImpl.SYS_TO_ATTR);
+    private final List<String> excludeSystemFields = Arrays.asList(SYS_FROM_ATTR, SYS_TO_ATTR);
+    private final KafkaMppwSqlFactory kafkaMppwSqlFactory;
+
+    @Autowired
+    public MppwKafkaLoadRequestFactoryImpl(KafkaMppwSqlFactory kafkaMppwSqlFactory) {
+        this.kafkaMppwSqlFactory = kafkaMppwSqlFactory;
+    }
 
     @Override
-    public MppwKafkaLoadRequest create(MppwRequestContext context, String server, MppwProperties mppwProperties) {
-        val uploadMeta = (UploadExternalEntityMetadata) context.getRequest()
-            .getKafkaParameter().getUploadMetadata();
-        val kafkaParam = context.getRequest().getKafkaParameter();
+    public MppwKafkaLoadRequest create(MppwKafkaRequest request, String server, MppwProperties mppwProperties) {
+        val uploadMeta = (UploadExternalEntityMetadata) request.getUploadMetadata();
         val schema = new Schema.Parser().parse(uploadMeta.getExternalSchema());
-        val reqId = context.getRequest().getQueryRequest().getRequestId().toString();
+        val reqId = request.getRequestId().toString();
         return MppwKafkaLoadRequest.builder()
             .requestId(reqId)
-            .datamart(kafkaParam.getDatamart())
-            .tableName(kafkaParam.getDestinationTableName())
-            .writableExtTableName(MetadataSqlFactoryImpl.WRITABLE_EXT_TABLE_PREF + reqId)
+            .datamart(request.getDatamartMnemonic())
+            .tableName(request.getDestinationTableName())
+            .writableExtTableName(kafkaMppwSqlFactory.getTableName(reqId))
             .columns(getColumns(schema))
             .schema(schema)
-            .brokers(context.getRequest().getKafkaParameter().getBrokers().stream()
+            .brokers(request.getBrokers().stream()
                     .map(KafkaBrokerInfo::getAddress)
                     .collect(Collectors.joining(",")))
             .consumerGroup(mppwProperties.getConsumerGroup())
             .timeout(mppwProperties.getStopTimeoutMs())
-            .topic(context.getRequest().getKafkaParameter().getTopic())
+            .topic(request.getTopic())
             .uploadMessageLimit(mppwProperties.getDefaultMessageLimit())
             .server(server)
             .build();

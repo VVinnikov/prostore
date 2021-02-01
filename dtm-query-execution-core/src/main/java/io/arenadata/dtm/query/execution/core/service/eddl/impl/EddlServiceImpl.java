@@ -7,11 +7,11 @@ import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.dto.eddl.EddlAction;
 import io.arenadata.dtm.query.execution.core.dto.eddl.EddlQuery;
+import io.arenadata.dtm.query.execution.core.dto.eddl.EddlRequestContext;
 import io.arenadata.dtm.query.execution.core.service.eddl.EddlExecutor;
 import io.arenadata.dtm.query.execution.core.service.eddl.EddlQueryParamExtractor;
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsService;
-import io.arenadata.dtm.query.execution.plugin.api.eddl.EddlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.service.EddlService;
+import io.arenadata.dtm.query.execution.core.service.eddl.EddlService;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,7 +41,7 @@ public class EddlServiceImpl implements EddlService<QueryResult> {
 
     @Override
     public Future<QueryResult> execute(EddlRequestContext context) {
-        return paramExtractor.extract(context.getRequest().getQueryRequest())
+        return paramExtractor.extract(context)
                 .compose(eddlQuery -> sendMetricsAndExecute(context, eddlQuery));
     }
 

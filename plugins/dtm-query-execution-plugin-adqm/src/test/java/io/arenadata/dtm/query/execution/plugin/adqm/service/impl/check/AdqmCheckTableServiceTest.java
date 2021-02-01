@@ -3,16 +3,13 @@ package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.check;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmMetaTableEntityFactory;
-import io.arenadata.dtm.query.execution.plugin.adqm.utils.DdlUtils;
-import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmCreateTableQueriesFactoryTest;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmTableEntitiesFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.query.AdqmQueryExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
+import io.arenadata.dtm.query.execution.plugin.adqm.utils.DdlUtils;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
 import io.arenadata.dtm.query.execution.plugin.api.factory.MetaTableEntityFactory;
-import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
 import io.vertx.core.Future;
 import org.junit.jupiter.api.BeforeAll;
@@ -41,7 +38,7 @@ public class AdqmCheckTableServiceTest {
     private static Map<String, List<Map<String, Object>>> sysColumns;
     private Entity entity;
     private CheckTableService adqmCheckTableService;
-    private CheckContext checkContext;
+    private CheckTableRequest checkTableRequest;
 
     @BeforeAll
     static void init() {
@@ -65,7 +62,7 @@ public class AdqmCheckTableServiceTest {
     @BeforeEach
     void setUp() {
         DatabaseExecutor adqmQueryExecutor = mock(AdqmQueryExecutor.class);
-        entity = AdqmCreateTableQueriesFactoryTest.getEntity();
+        entity = getEntity();
         int fieldsCount = entity.getFields().size();
         entity.getFields().add(EntityField.builder()
                 .name(TEST_COLUMN_NAME)
@@ -74,9 +71,7 @@ public class AdqmCheckTableServiceTest {
                 .nullable(true)
                 .build());
 
-        QueryRequest queryRequest = new QueryRequest();
-        queryRequest.setEnvName(ENV);
-        checkContext = new CheckContext(null, new DatamartRequest(queryRequest), entity);
+        checkTableRequest = new CheckTableRequest(UUID.randomUUID(), ENV, entity.getSchema(), entity);
 
         tablePostFixes.forEach(postFix -> when(adqmQueryExecutor.execute(argThat(getPredicate(postFix)::test)))
                 .thenReturn(Future.succeededFuture(getResultSet(postFix, entity.getFields()))));
@@ -93,13 +88,13 @@ public class AdqmCheckTableServiceTest {
 
     @Test
     void testSuccess() {
-        assertTrue(adqmCheckTableService.check(checkContext).succeeded());
+        assertTrue(adqmCheckTableService.check(checkTableRequest).succeeded());
     }
 
     @Test
     void testTableNotExist() {
         entity.setName("not_exist_table");
-        String errors = adqmCheckTableService.check(checkContext).cause().getMessage();
+        String errors = adqmCheckTableService.check(checkTableRequest).cause().getMessage();
         tablePostFixes.forEach(postFix ->
                 assertThat(errors, containsString(String.format(CheckTableService.TABLE_NOT_EXIST_ERROR_TEMPLATE,
                         String.format("not_exist_table%s", postFix)))));
@@ -115,7 +110,7 @@ public class AdqmCheckTableServiceTest {
         String expectedError = String.format(CheckTableService.COLUMN_NOT_EXIST_ERROR_TEMPLATE,
                 "not_exist_column");
 
-        assertThat(adqmCheckTableService.check(checkContext).cause().getMessage(),
+        assertThat(adqmCheckTableService.check(checkTableRequest).cause().getMessage(),
                 containsString(expectedError));
     }
 
@@ -142,7 +137,7 @@ public class AdqmCheckTableServiceTest {
                 .findAny()
                 .orElseThrow(RuntimeException::new);
         consumer.accept(testColumn);
-        assertThat(adqmCheckTableService.check(checkContext).cause().getMessage(),
+        assertThat(adqmCheckTableService.check(checkTableRequest).cause().getMessage(),
                 containsString(expectedError));
     }
 
@@ -177,5 +172,36 @@ public class AdqmCheckTableServiceTest {
                 .collect(Collectors.toList());
         result.addAll(sysColumns.get(postfix));
         return result;
+    }
+
+    public static Entity getEntity() {
+        List<EntityField> keyFields = Arrays.asList(
+                new EntityField(0, "id", ColumnType.INT.name(), false, 1, 1, null),
+                new EntityField(1, "sk_key2", ColumnType.INT.name(), false, null, 2, null),
+                new EntityField(2, "pk2", ColumnType.INT.name(), false, 2, null, null),
+                new EntityField(3, "sk_key3", ColumnType.INT.name(), false, null, 3, null)
+        );
+        ColumnType[] types = ColumnType.values();
+        List<EntityField> fields = new ArrayList<>();
+        for (int i = 0; i < types.length; i++) {
+            ColumnType type = types[i];
+            if (Arrays.asList(ColumnType.BLOB, ColumnType.ANY).contains(type)) {
+                continue;
+            }
+
+            EntityField.EntityFieldBuilder builder = EntityField.builder()
+                    .ordinalPosition(i + keyFields.size())
+                    .type(type)
+                    .nullable(true)
+                    .name(type.name() + "_type");
+            if (Arrays.asList(ColumnType.CHAR, ColumnType.VARCHAR).contains(type)) {
+                builder.size(20);
+            } else if (Arrays.asList(ColumnType.TIME, ColumnType.TIMESTAMP).contains(type)) {
+                builder.accuracy(5);
+            }
+            fields.add(builder.build());
+        }
+        fields.addAll(keyFields);
+        return new Entity("test_schema.test_table", fields);
     }
 }

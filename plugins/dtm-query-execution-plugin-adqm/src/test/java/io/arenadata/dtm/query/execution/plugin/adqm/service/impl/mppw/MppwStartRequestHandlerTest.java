@@ -2,24 +2,21 @@ package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw;
 
 import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
 import io.arenadata.dtm.common.plugin.exload.Format;
-import io.arenadata.dtm.common.reader.QueryRequest;
-import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
-import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.AdqmMppwProperties;
+import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
+import io.arenadata.dtm.query.execution.plugin.adqm.dto.mppw.RestMppwKafkaLoadRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.AdqmRestMppwKafkaRequestFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmRestMppwKafkaRequestFactoryImpl;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.LoadType;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.RestLoadClient;
-import io.arenadata.dtm.query.execution.plugin.adqm.dto.mppw.RestMppwKafkaLoadRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockDatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockEnvironment;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockStatusReporter;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaParameter;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
-import io.arenadata.dtm.query.execution.plugin.api.request.MppwRequest;
 import io.vertx.core.Future;
 import org.apache.avro.Schema;
 import org.junit.jupiter.api.BeforeAll;
@@ -79,38 +76,8 @@ class MppwStartRequestHandlerTest {
                 createMppwProperties(KAFKA),
                 mockReporter, mockInitiator, mppwKafkaRequestFactory);
 
-        MppwRequest request = new MppwRequest(QueryRequest.builder()
-                .requestId(UUID.randomUUID())
-                .datamartMnemonic("shares").build(),
-                true, MppwKafkaParameter.builder()
-                .datamart("shares")
-                .sysCn(101L)
-                .destinationTableName("accounts")
-                .uploadMetadata(UploadExternalEntityMetadata.builder()
-                        .externalSchema(getSchema())
-                        .format(Format.AVRO)
-                        .uploadMessageLimit(1000)
-                        .build())
-                .topic(TEST_TOPIC)
-                .brokers(kafkaBrokers)
-                .build());
-
-        RestMppwKafkaLoadRequest restRequest = RestMppwKafkaLoadRequest.builder()
-                .requestId(request.getQueryRequest().getRequestId().toString())
-                .datamart(request.getKafkaParameter().getDatamart())
-                .tableName(request.getKafkaParameter().getDestinationTableName())
-                .kafkaTopic(request.getKafkaParameter().getTopic())
-                .kafkaBrokers(request.getKafkaParameter().getBrokers())
-                .hotDelta(request.getKafkaParameter().getSysCn())
-                .consumerGroup("mppwProperties.getRestLoadConsumerGroup()")
-                .format(request.getKafkaParameter().getUploadMetadata().getFormat().getName())
-                .schema(new Schema.Parser().parse(request.getKafkaParameter().getUploadMetadata().getExternalSchema()))
-                .messageProcessingLimit(((UploadExternalEntityMetadata)request.getKafkaParameter().getUploadMetadata())
-                        .getUploadMessageLimit() == null ? 0 :
-                        ((UploadExternalEntityMetadata)request.getKafkaParameter().getUploadMetadata()).getUploadMessageLimit())
-                .build();
-
-        when(mppwKafkaRequestFactory.create(request)).thenReturn(restRequest);
+        MppwKafkaRequest request = getRequest();
+        when(mppwKafkaRequestFactory.create(request)).thenReturn(getLoadRequest(request));
 
         handler.execute(request)
                 .onComplete(ar -> {
@@ -152,39 +119,9 @@ class MppwStartRequestHandlerTest {
         MppwRequestHandler handler = new MppwStartRequestHandler(executor, ddlProperties, appConfiguration,
                 createMppwProperties(REST),
                 mockReporter, mockInitiator, mppwKafkaRequestFactory);
-        MppwRequest request = new MppwRequest(QueryRequest.builder()
-                .requestId(UUID.randomUUID())
-                .sourceType(SourceType.ADQM)
-                .datamartMnemonic("shares").build(),
-                true, MppwKafkaParameter.builder()
-                .datamart("shares")
-                .sysCn(101L)
-                .destinationTableName("accounts")
-                .uploadMetadata(UploadExternalEntityMetadata.builder()
-                        .externalSchema(getSchema())
-                        .format(Format.AVRO)
-                        .uploadMessageLimit(1000)
-                        .build())
-                .topic(TEST_TOPIC)
-                .brokers(kafkaBrokers)
-                .build());
 
-        RestMppwKafkaLoadRequest restRequest = RestMppwKafkaLoadRequest.builder()
-                .requestId(request.getQueryRequest().getRequestId().toString())
-                .datamart(request.getKafkaParameter().getDatamart())
-                .tableName(request.getKafkaParameter().getDestinationTableName())
-                .kafkaTopic(request.getKafkaParameter().getTopic())
-                .kafkaBrokers(request.getKafkaParameter().getBrokers())
-                .hotDelta(request.getKafkaParameter().getSysCn())
-                .consumerGroup("mppwProperties.getRestLoadConsumerGroup()")
-                .format(request.getKafkaParameter().getUploadMetadata().getFormat().getName())
-                .schema(new Schema.Parser().parse(request.getKafkaParameter().getUploadMetadata().getExternalSchema()))
-                .messageProcessingLimit(((UploadExternalEntityMetadata)request.getKafkaParameter().getUploadMetadata())
-                        .getUploadMessageLimit() == null ? 0 :
-                        ((UploadExternalEntityMetadata)request.getKafkaParameter().getUploadMetadata()).getUploadMessageLimit())
-                .build();
-
-        when(mppwKafkaRequestFactory.create(request)).thenReturn(restRequest);
+        MppwKafkaRequest request = getRequest();
+        when(mppwKafkaRequestFactory.create(request)).thenReturn(getLoadRequest(request));
 
         handler.execute(request).onComplete(ar -> {
             assertTrue(ar.succeeded(), ar.cause() != null ? ar.cause().getMessage() : "");
@@ -216,5 +153,40 @@ class MppwStartRequestHandlerTest {
         adqmMppwProperties.setLoadType(loadType);
         adqmMppwProperties.setRestLoadConsumerGroup("restConsumerGroup");
         return adqmMppwProperties;
+    }
+
+    private MppwKafkaRequest getRequest() {
+        return MppwKafkaRequest.builder()
+                .requestId(UUID.randomUUID())
+                .datamartMnemonic("shares")
+                .envName("env")
+                .isLoadStart(true)
+                .sysCn(101L)
+                .destinationTableName("accounts")
+                .topic(TEST_TOPIC)
+                .uploadMetadata(UploadExternalEntityMetadata.builder()
+                        .externalSchema(getSchema())
+                        .format(Format.AVRO)
+                        .uploadMessageLimit(1000)
+                        .build())
+                .brokers(kafkaBrokers)
+                .build();
+    }
+
+    private RestMppwKafkaLoadRequest getLoadRequest(MppwKafkaRequest request) {
+        return RestMppwKafkaLoadRequest.builder()
+                .requestId(request.getRequestId().toString())
+                .datamart(request.getDatamartMnemonic())
+                .tableName(request.getDestinationTableName())
+                .kafkaTopic(request.getTopic())
+                .kafkaBrokers(request.getBrokers())
+                .hotDelta(request.getSysCn())
+                .consumerGroup("mppwProperties.getRestLoadConsumerGroup()")
+                .format(request.getUploadMetadata().getFormat().getName())
+                .schema(new Schema.Parser().parse(request.getUploadMetadata().getExternalSchema()))
+                .messageProcessingLimit(Optional.ofNullable(((UploadExternalEntityMetadata) request.getUploadMetadata())
+                        .getUploadMessageLimit())
+                        .orElse(0))
+                .build();
     }
 }

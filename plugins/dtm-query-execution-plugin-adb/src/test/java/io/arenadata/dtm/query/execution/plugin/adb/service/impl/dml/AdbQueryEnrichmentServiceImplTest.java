@@ -6,7 +6,6 @@ import io.arenadata.dtm.common.delta.SelectOnInterval;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.adb.calcite.AdbCalciteContextProvider;
@@ -17,7 +16,7 @@ import io.arenadata.dtm.query.execution.plugin.adb.factory.impl.AdbSchemaFactory
 import io.arenadata.dtm.query.execution.plugin.adb.service.QueryEnrichmentService;
 import io.arenadata.dtm.query.execution.plugin.adb.service.QueryExtendService;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.enrichment.*;
-import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
+import io.arenadata.dtm.query.execution.plugin.adb.utils.TestUtils;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestOptions;
@@ -28,7 +27,10 @@ import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.junit.jupiter.api.Test;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,6 +40,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Slf4j
 public class AdbQueryEnrichmentServiceImplTest {
 
+    public static final String SHARES_SCHEMA_NAME = "shares";
+    public static final String SHARES_2_SCHEMA_NAME = "shares_2";
+    public static final String TEST_DATAMART_SCHEMA_NAME = "test_datamart";
+    public static final String ENV_NAME = "test";
     QueryEnrichmentService adbQueryEnrichmentService;
 
     public AdbQueryEnrichmentServiceImplTest() {
@@ -303,16 +309,11 @@ public class AdbQueryEnrichmentServiceImplTest {
 
     private EnrichQueryRequest prepareRequestMultipleSchemas(String sql) {
         List<Datamart> schemas = Arrays.asList(
-                getSchema("shares", true),
-                getSchema("shares_2", false),
-                getSchema("test_datamart", false));
-        String requestSchema = schemas.get(0).getMnemonic();
-        QueryRequest queryRequest = new QueryRequest();
-        queryRequest.setSql(sql);
-        queryRequest.setRequestId(UUID.randomUUID());
-        queryRequest.setDatamartMnemonic(requestSchema);
+                getSchema(SHARES_SCHEMA_NAME, true),
+                getSchema(SHARES_2_SCHEMA_NAME, false),
+                getSchema(TEST_DATAMART_SCHEMA_NAME, false));
         SqlParserPos pos = new SqlParserPos(0, 0);
-        queryRequest.setDeltaInformations(Arrays.asList(
+        List<DeltaInformation> deltaInforamtions = Arrays.asList(
                 DeltaInformation.builder()
                         .tableAlias("a")
                         .deltaTimestamp("2019-12-23 15:15:14")
@@ -347,20 +348,20 @@ public class AdbQueryEnrichmentServiceImplTest {
                         .tableName(schemas.get(2).getEntities().get(1).getName())
                         .pos(pos)
                         .build()
-        ));
-        LlrRequest llrRequest = new LlrRequest(queryRequest, schemas, Collections.emptyList());
-        return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
+        );
+        return EnrichQueryRequest.builder()
+                .deltaInformations(deltaInforamtions)
+                .envName("test")
+                .query(TestUtils.DEFINITION_SERVICE.processingQuery(sql))
+                .schema(schemas)
+                .build();
     }
 
     private EnrichQueryRequest prepareRequestDeltaNum(String sql) {
-        List<Datamart> schemas = Arrays.asList(getSchema("shares", true));
+        List<Datamart> schemas = Collections.singletonList(getSchema(SHARES_SCHEMA_NAME, true));
         String schemaName = schemas.get(0).getMnemonic();
-        QueryRequest queryRequest = new QueryRequest();
-        queryRequest.setSql(sql);
-        queryRequest.setRequestId(UUID.randomUUID());
-        queryRequest.setDatamartMnemonic(schemaName);
         SqlParserPos pos = new SqlParserPos(0, 0);
-        queryRequest.setDeltaInformations(Arrays.asList(
+        List<DeltaInformation> deltaInforamtions = Arrays.asList(
                 DeltaInformation.builder()
                         .tableAlias("a")
                         .deltaTimestamp("2019-12-23 15:15:14")
@@ -384,20 +385,21 @@ public class AdbQueryEnrichmentServiceImplTest {
                         .tableName(schemas.get(0).getEntities().get(1).getName())
                         .pos(pos)
                         .build()
-        ));
-        LlrRequest llrRequest = new LlrRequest(queryRequest, schemas, Collections.emptyList());
-        return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
+        );
+
+        return EnrichQueryRequest.builder()
+                .deltaInformations(deltaInforamtions)
+                .envName(ENV_NAME)
+                .query(TestUtils.DEFINITION_SERVICE.processingQuery(sql))
+                .schema(schemas)
+                .build();
     }
 
     private EnrichQueryRequest prepareRequestDeltaInterval(String sql) {
-        List<Datamart> datamarts = Arrays.asList(getSchema("shares", true));
+        List<Datamart> datamarts = Collections.singletonList(getSchema(SHARES_SCHEMA_NAME, true));
         String schemaName = datamarts.get(0).getMnemonic();
-        QueryRequest queryRequest = new QueryRequest();
-        queryRequest.setSql(sql);
-        queryRequest.setRequestId(UUID.randomUUID());
-        queryRequest.setDatamartMnemonic(schemaName);
         SqlParserPos pos = new SqlParserPos(0, 0);
-        queryRequest.setDeltaInformations(Arrays.asList(
+        List<DeltaInformation> deltaInforamtions = Arrays.asList(
                 DeltaInformation.builder()
                         .tableAlias("a")
                         .deltaTimestamp(null)
@@ -422,20 +424,20 @@ public class AdbQueryEnrichmentServiceImplTest {
                         .tableName(datamarts.get(0).getEntities().get(1).getName())
                         .pos(pos)
                         .build()
-        ));
-        LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts, Collections.emptyList());
-        return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
+        );
+        return EnrichQueryRequest.builder()
+                .deltaInformations(deltaInforamtions)
+                .envName(ENV_NAME)
+                .query(TestUtils.DEFINITION_SERVICE.processingQuery(sql))
+                .schema(datamarts)
+                .build();
     }
 
     private EnrichQueryRequest prepareRequestDeltaFinishedIn(String sql) {
-        List<Datamart> datamarts = Arrays.asList(getSchema("shares", true));
+        List<Datamart> datamarts = Arrays.asList(getSchema(SHARES_SCHEMA_NAME, true));
         String schemaName = datamarts.get(0).getMnemonic();
-        QueryRequest queryRequest = new QueryRequest();
-        queryRequest.setSql(sql);
-        queryRequest.setRequestId(UUID.randomUUID());
-        queryRequest.setDatamartMnemonic(schemaName);
         SqlParserPos pos = new SqlParserPos(0, 0);
-        queryRequest.setDeltaInformations(Arrays.asList(
+        List<DeltaInformation> deltaInforamtions = Collections.singletonList(
                 DeltaInformation.builder()
                         .tableAlias("a")
                         .deltaTimestamp(null)
@@ -448,9 +450,13 @@ public class AdbQueryEnrichmentServiceImplTest {
                         .tableName(datamarts.get(0).getEntities().get(0).getName())
                         .pos(pos)
                         .build()
-        ));
-        LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts, Collections.emptyList());
-        return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
+        );
+        return EnrichQueryRequest.builder()
+                .deltaInformations(deltaInforamtions)
+                .envName(ENV_NAME)
+                .query(TestUtils.DEFINITION_SERVICE.processingQuery(sql))
+                .schema(datamarts)
+                .build();
     }
 
     private Datamart getSchema(String schemaName, boolean isDefault) {

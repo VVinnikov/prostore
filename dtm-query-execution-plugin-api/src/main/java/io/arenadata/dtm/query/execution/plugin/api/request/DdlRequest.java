@@ -1,28 +1,28 @@
 package io.arenadata.dtm.query.execution.plugin.api.request;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
-import io.arenadata.dtm.common.reader.QueryRequest;
+import io.arenadata.dtm.query.execution.plugin.api.dto.PluginRequest;
+import lombok.Builder;
+import lombok.Getter;
+import org.apache.calcite.sql.SqlKind;
 
+import java.util.UUID;
 
-public class DdlRequest extends DatamartRequest {
+@Getter
+public class DdlRequest extends PluginRequest {
 
-	private Entity entity;
+	private final SqlKind sqlKind;
+	private final Entity entity;
 
-	public DdlRequest(final QueryRequest queryRequest) {
-		this(queryRequest, null);
-	}
-
-	public DdlRequest(final QueryRequest queryRequest, final Entity entity) {
-		super(queryRequest);
+	@Builder
+	public DdlRequest(UUID requestId,
+					  String envName,
+					  String datamartMnemonic,
+					  Entity entity,
+					  SqlKind sqlKind) {
+		super(requestId, envName, datamartMnemonic);
 		this.entity = entity;
-	}
-
-	public Entity getEntity() {
-		return entity;
-	}
-
-	public void setEntity(Entity entity) {
-		this.entity = entity;
+		this.sqlKind = sqlKind;
 	}
 
 	@Override

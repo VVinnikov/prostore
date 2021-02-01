@@ -4,15 +4,15 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.framework.DtmCalciteFramework;
-import io.arenadata.dtm.query.execution.plugin.adqm.factory.AdqmTruncateHistoryQueriesFactory;
-import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmTruncateHistoryQueriesFactoryImpl;
-import io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.CalciteConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
+import io.arenadata.dtm.query.execution.plugin.adqm.factory.AdqmTruncateHistoryQueriesFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmCreateTableQueriesFactoryTest;
+import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmTruncateHistoryQueriesFactoryImpl;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.query.AdqmQueryExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
+import io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants;
+import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TruncateHistoryService;
 import io.vertx.core.Future;
@@ -114,8 +114,13 @@ public class AdqmTruncateHistoryServiceTest {
                     }
                 })
                 .orElse(null);
-        TruncateHistoryParams params = new TruncateHistoryParams(null, null, sysCn, entity, ENV, sqlNode);
-        adqmTruncateHistoryService.truncateHistory(params);
+        TruncateHistoryRequest request = TruncateHistoryRequest.builder()
+                .sysCn(sysCn)
+                .entity(entity)
+                .envName(ENV)
+                .conditions(sqlNode)
+                .build();
+        adqmTruncateHistoryService.truncateHistory(request);
         verify(adqmQueryExecutor, times(1)).execute(expected);
         verify(adqmQueryExecutor, times(1)).execute(
                 String.format("SYSTEM FLUSH DISTRIBUTED %s__%s.%s_actual", ENV, entity.getSchema(), entity.getName()));

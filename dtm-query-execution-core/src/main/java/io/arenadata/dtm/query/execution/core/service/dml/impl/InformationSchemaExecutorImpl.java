@@ -19,7 +19,6 @@ import java.util.stream.Collectors;
 
 @Service
 public class InformationSchemaExecutorImpl implements InformationSchemaExecutor {
-
     private final SqlDialect coreSqlDialect;
     private final QueryParserService parserService;
     private final HSQLClient client;
@@ -61,7 +60,7 @@ public class InformationSchemaExecutorImpl implements InformationSchemaExecutor 
     private Future<String> getEnrichmentQuerySql(QuerySourceRequest request) {
         return Future.future(p -> {
                     toUpperCase(request);
-                    val parserRequest = new QueryParserRequest(request.getQueryRequest(), request.getLogicalSchema());
+            val parserRequest = new QueryParserRequest(request.getQuery(), request.getLogicalSchema());
                     parserService.parse(parserRequest)
                             .map(response -> {
                                 val enrichmentNode = response.getSqlNode();

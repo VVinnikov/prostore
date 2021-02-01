@@ -2,7 +2,7 @@ package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.ddl;
 
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.AdqmTruncateHistoryQueriesFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
+import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TruncateHistoryService;
 import io.vertx.core.Future;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,10 +22,10 @@ public class AdqmTruncateHistoryService implements TruncateHistoryService {
     }
 
     @Override
-    public Future<Void> truncateHistory(TruncateHistoryParams params) {
-        return adqmQueryExecutor.execute(queriesFactory.insertIntoActualQuery(params))
-                .compose(result -> adqmQueryExecutor.execute(queriesFactory.flushQuery(params)))
-                .compose(result -> adqmQueryExecutor.execute(queriesFactory.optimizeQuery(params)))
+    public Future<Void> truncateHistory(TruncateHistoryRequest request) {
+        return adqmQueryExecutor.execute(queriesFactory.insertIntoActualQuery(request))
+                .compose(result -> adqmQueryExecutor.execute(queriesFactory.flushQuery(request)))
+                .compose(result -> adqmQueryExecutor.execute(queriesFactory.optimizeQuery(request)))
                 .compose(result -> Future.succeededFuture());
     }
 }

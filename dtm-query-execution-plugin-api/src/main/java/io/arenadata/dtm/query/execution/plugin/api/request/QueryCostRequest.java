@@ -1,15 +1,19 @@
 package io.arenadata.dtm.query.execution.plugin.api.request;
 
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
+import io.arenadata.dtm.query.execution.plugin.api.dto.PluginRequest;
 
 import java.util.List;
+import java.util.UUID;
 
-public class QueryCostRequest extends DatamartRequest {
+public class QueryCostRequest extends PluginRequest {
     private final List<Datamart> schema;
 
-    public QueryCostRequest(QueryRequest queryRequest, List<Datamart> schema) {
-        super(queryRequest);
+    public QueryCostRequest(UUID requestId,
+                            String envName,
+                            String datamart,
+                            List<Datamart> schema) {
+        super(requestId, envName, datamart);
         this.schema = schema;
     }
 

@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.core.dto.delta.query;
 
 import io.arenadata.dtm.common.reader.QueryRequest;
+import io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaByDateTime;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

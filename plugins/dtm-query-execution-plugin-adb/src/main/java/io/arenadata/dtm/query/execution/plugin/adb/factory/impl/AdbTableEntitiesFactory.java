@@ -17,21 +17,10 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static io.arenadata.dtm.query.execution.plugin.adb.factory.Constants.*;
+
 @Service("adbTableEntitiesFactory")
 public class AdbTableEntitiesFactory implements TableEntitiesFactory<AdbTables<AdbTableEntity>> {
-
-    /**
-     * Delta Number System Field
-     */
-    public static final String SYS_FROM_ATTR = "sys_from";
-    /**
-     * System field of maximum delta number
-     */
-    public static final String SYS_TO_ATTR = "sys_to";
-    /**
-     * System field of operation on an object
-     */
-    public static final String SYS_OP_ATTR = "sys_op";
     public static final String TABLE_POSTFIX_DELIMITER = "_";
 
     private static final List<AdbTableColumn> SYSTEM_COLUMNS = Arrays.asList(

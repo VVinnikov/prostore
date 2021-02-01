@@ -1,17 +1,10 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.ddl;
 
-import io.arenadata.dtm.common.reader.QueryRequest;
-import io.arenadata.dtm.query.calcite.core.extension.eddl.SqlCreateDatabase;
-import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockDatabaseExecutor;
-import io.arenadata.dtm.query.execution.plugin.adqm.service.mock.MockEnvironment;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
-import org.apache.calcite.sql.SqlIdentifier;
-import org.apache.calcite.sql.parser.SqlParserPos;
+import io.arenadata.dtm.query.execution.plugin.api.service.DdlExecutor;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -21,39 +14,44 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DatabaseDdlTest {
     private static final DdlProperties ddlProperties = new DdlProperties();
-    private static final AppConfiguration appConfiguration = new AppConfiguration(new MockEnvironment());
+    private static final String ENV = "dev";
+    private static final String DATAMART = "testdb";
+    private static final String CLUSTER = "test_cluster";
 
     @BeforeAll
     public static void setup() {
-        ddlProperties.setCluster("test_cluster");
+        ddlProperties.setCluster(CLUSTER);
     }
 
     @Test
     public void testCreateDatabase() {
-        SqlParserPos pos = new SqlParserPos(1, 1);
-        SqlCreateDatabase createDatabase = new SqlCreateDatabase(pos, true,
-                new SqlIdentifier("testdb", pos));
-        DdlRequestContext context = new DdlRequestContext(null, createDatabase);
+        String createTemplate = "CREATE DATABASE IF NOT EXISTS %s__%s ON CLUSTER %s";
+        DdlRequest request = DdlRequest.builder()
+                .envName(ENV)
+                .datamartMnemonic(DATAMART)
+                .build();
 
         DatabaseExecutor executor = new MockDatabaseExecutor(
-                Collections.singletonList(t -> t.equalsIgnoreCase("CREATE DATABASE IF NOT EXISTS dev__testdb on cluster test_cluster")));
+                Collections.singletonList(t -> t.equalsIgnoreCase(String.format(createTemplate, ENV, DATAMART, CLUSTER))));
 
-        DdlExecutor<Void> databaseDdlService = new CreateDatabaseExecutor(executor, ddlProperties, appConfiguration);
+        DdlExecutor<Void> databaseDdlService = new CreateDatabaseExecutor(executor, ddlProperties);
 
-        databaseDdlService.execute(context, "CREATE").onComplete(ar -> assertTrue(ar.succeeded()));
+        databaseDdlService.execute(request).onComplete(ar -> assertTrue(ar.succeeded()));
     }
 
     @Test
     public void testDropDatabase() {
-        final String datamartName = "testdb";
-        DdlRequestContext context = new DdlRequestContext(new DdlRequest(new QueryRequest()));
-        context.setDatamartName(datamartName);
+        String dropTemplate = "DROP DATABASE IF EXISTS %s__%s ON CLUSTER %s";
+        DdlRequest request = DdlRequest.builder()
+                .envName(ENV)
+                .datamartMnemonic(DATAMART)
+                .build();
 
         DatabaseExecutor executor = new MockDatabaseExecutor(
-                Collections.singletonList(t -> t.equalsIgnoreCase("drop database if exists dev__testdb on cluster test_cluster")));
+                Collections.singletonList(t -> t.equalsIgnoreCase(String.format(dropTemplate, ENV, DATAMART, CLUSTER))));
 
-        DdlExecutor<Void> databaseDdlService = new DropDatabaseExecutor(executor, ddlProperties, appConfiguration);
+        DdlExecutor<Void> databaseDdlService = new DropDatabaseExecutor(executor, ddlProperties);
 
-        databaseDdlService.execute(context, "DROP").onComplete(ar -> assertTrue(ar.succeeded()));
+        databaseDdlService.execute(request).onComplete(ar -> assertTrue(ar.succeeded()));
     }
 }

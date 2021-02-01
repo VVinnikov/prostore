@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.delta;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
@@ -9,7 +10,6 @@ import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.impl.DeltaServi
 import io.arenadata.dtm.query.execution.core.dto.delta.HotDelta;
 import io.arenadata.dtm.query.execution.core.dto.delta.operation.WriteOpFinish;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.GetDeltaHotQuery;
-import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.delta.BeginDeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.service.delta.impl.GetDeltaHotExecutor;
@@ -36,7 +36,7 @@ class GetDeltaHotExecutorTest {
     private final DeltaServiceDao deltaServiceDao = mock(DeltaServiceDaoImpl.class);
     private final DeltaQueryResultFactory deltaQueryResultFactory = mock(BeginDeltaQueryResultFactory.class);
     private DeltaExecutor deltaHotExecutor;
-    private QueryRequest req = new QueryRequest();
+    private final QueryRequest req = new QueryRequest();
     private String datamart;
 
     @BeforeEach

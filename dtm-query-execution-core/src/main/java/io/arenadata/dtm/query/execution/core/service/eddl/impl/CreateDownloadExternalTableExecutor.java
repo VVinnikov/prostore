@@ -59,7 +59,7 @@ public class CreateDownloadExternalTableExecutor implements EddlExecutor {
         return castQuery.getChunkSize() == null ? edmlProperties.getDefaultChunkSize() : castQuery.getChunkSize();
     }
 
-    private Future<Void> createTableIfNotExists(Entity entity, Boolean isTableExists) {
+    private Future<Void> createTableIfNotExists(Entity entity, boolean isTableExists) {
         if (isTableExists) {
             return Future.failedFuture(new ExternalTableAlreadyExistsException(entity.getNameWithSchema()));
         } else {
@@ -69,11 +69,9 @@ public class CreateDownloadExternalTableExecutor implements EddlExecutor {
 
     private Future<Void> createTable(Entity entity) {
         return entityDao.createEntity(entity)
-                .onSuccess(ar2 -> {
-                    log.debug("Table [{}] in datamart [{}] successfully created",
-                            entity.getName(),
-                            entity.getSchema());
-                });
+                .onSuccess(ar2 -> log.debug("Table [{}] in datamart [{}] successfully created",
+                        entity.getName(),
+                        entity.getSchema()));
     }
 
     @Override

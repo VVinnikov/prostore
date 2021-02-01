@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 public class DeltaServiceExternalImpl implements DeltaService {
@@ -42,7 +43,7 @@ public class DeltaServiceExternalImpl implements DeltaService {
     public Future<Long> getCnToDeltaHot(String datamart) {
         return Future.future(handler -> deltaServiceDao.getDeltaHot(datamart)
                 .onSuccess(deltaHot -> {
-                    if (deltaHot != null) {
+                    if (deltaHot != null && deltaHot.getCnTo() != null) {
                         handler.handle(Future.succeededFuture(deltaHot.getCnTo()));
                     } else {
                         deltaServiceDao.getDeltaOk(datamart)

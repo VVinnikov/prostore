@@ -12,7 +12,7 @@ import org.springframework.context.annotation.FilterType;
 @SpringBootApplication(exclude = {SpringApplicationAdminJmxAutoConfiguration.class})
 @ConfigurationPropertiesScan("io.arenadata.dtm")
 @ComponentScan(
-    basePackages = {"io.arenadata.dtm.query.execution", "io.arenadata.dtm.kafka.core"},
+    basePackages = {"io.arenadata.dtm.query.execution", "io.arenadata.dtm.kafka.core", "io.arenadata.dtm.cache"},
     excludeFilters = {@ComponentScan.Filter(type = FilterType.CUSTOM, classes = ExcludePluginFilter.class)},
     nameGenerator = BeanNameGenerator.class
 )

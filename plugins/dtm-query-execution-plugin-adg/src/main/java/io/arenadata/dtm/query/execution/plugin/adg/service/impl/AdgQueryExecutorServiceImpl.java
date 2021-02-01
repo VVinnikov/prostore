@@ -1,15 +1,14 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl;
 
 import io.arenadata.dtm.common.converter.SqlTypeConverter;
+import io.arenadata.dtm.common.reader.QueryParameters;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adg.model.metadata.ColumnTypeUtil;
 import io.arenadata.dtm.query.execution.plugin.adg.service.QueryExecutorService;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgClient;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgClientPool;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -17,34 +16,38 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Slf4j
 @Service("adgQueryExecutor")
 public class AdgQueryExecutorServiceImpl implements QueryExecutorService {
 
     private final AdgClientPool adgClientPool;
-    private final SqlTypeConverter typeConverter;
+    private final SqlTypeConverter adgTypeConverter;
+    private final SqlTypeConverter sqlTypeConverter;
 
     @Autowired
     public AdgQueryExecutorServiceImpl(@Qualifier("adgTtPool") AdgClientPool adgClientPool,
-                                       @Qualifier("adgTypeToSqlTypeConverter") SqlTypeConverter typeConverter) {
+                                       @Qualifier("adgTypeToSqlTypeConverter") SqlTypeConverter adgTypeConverter,
+                                       @Qualifier("adgTypeFromSqlTypeConverter") SqlTypeConverter sqlTypeConverter) {
         this.adgClientPool = adgClientPool;
-        this.typeConverter = typeConverter;
+        this.adgTypeConverter = adgTypeConverter;
+        this.sqlTypeConverter = sqlTypeConverter;
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public Future<List<Map<String, Object>>> execute(String sql, List<ColumnMetadata> queryMetadata) {
+    public Future<List<Map<String, Object>>> execute(String sql,
+                                                     QueryParameters queryParameters,
+                                                     List<ColumnMetadata> queryMetadata) {
         return Future.future(promise -> {
             AdgClient cl = null;
             try {
                 cl = adgClientPool.borrowObject();
-                cl.callQuery(sql, null)
+                List<Object> paramsList = createParamsList(queryParameters);
+                cl.callQuery(sql, paramsList.toArray())
                         .onComplete(ar -> {
                             if (ar.succeeded() && ar.result() != null && !ar.result().isEmpty()) {
                                 log.debug("ADG. execute query {}", sql);
@@ -76,11 +79,22 @@ public class AdgQueryExecutorServiceImpl implements QueryExecutorService {
         });
     }
 
+    private List<Object> createParamsList(QueryParameters params) {
+        if (params == null) {
+            return Collections.emptyList();
+        } else {
+            return IntStream.range(0, params.getValues().size())
+                    .mapToObj(n -> sqlTypeConverter.convert(params.getTypes().get(n),
+                            params.getValues().get(n)))
+                    .collect(Collectors.toList());
+        }
+    }
+
     private Map<String, Object> createRowMap(List<ColumnMetadata> metadata, List<?> row) {
         Map<String, Object> rowMap = new HashMap<>();
         for (int i = 0; i < row.size(); i++) {
             final ColumnMetadata columnMetadata = metadata.get(i);
-            rowMap.put(columnMetadata.getName(), typeConverter.convert(columnMetadata.getType(), row.get(i)));
+            rowMap.put(columnMetadata.getName(), adgTypeConverter.convert(columnMetadata.getType(), row.get(i)));
         }
         return rowMap;
     }

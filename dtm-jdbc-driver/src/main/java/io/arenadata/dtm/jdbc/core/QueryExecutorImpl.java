@@ -1,10 +1,12 @@
 package io.arenadata.dtm.jdbc.core;
 
+import io.arenadata.dtm.common.model.ddl.SystemMetadata;
 import io.arenadata.dtm.jdbc.model.ColumnInfo;
 import io.arenadata.dtm.jdbc.model.SchemaInfo;
 import io.arenadata.dtm.jdbc.model.TableInfo;
 import io.arenadata.dtm.jdbc.protocol.Protocol;
 import io.arenadata.dtm.jdbc.protocol.http.HttpReaderService;
+import io.arenadata.dtm.jdbc.util.DtmSqlException;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -53,7 +55,7 @@ public class QueryExecutorImpl implements QueryExecutor {
         this.schema = schema;
         this.info = info;
         this.client = HttpClients.createDefault();
-        this.protocol = new HttpReaderService(this.client, this.host, this.schema);
+        this.protocol = new HttpReaderService(this.client, this.host);
     }
 
     @Override
@@ -78,6 +80,7 @@ public class QueryExecutorImpl implements QueryExecutor {
             final QueryResult queryResult;
             queryResult = this.protocol.executeQuery(query.getNativeSql());
             if (queryResult.getResult() != null) {
+                setUsedSchemaIfExists(queryResult);
                 List<Field[]> result = new ArrayList<>();
                 List<Map<String, Object>> rows = queryResult.getResult();
                 List<ColumnMetadata> metadata = queryResult.getMetadata() == null ?
@@ -94,6 +97,22 @@ public class QueryExecutorImpl implements QueryExecutor {
             }
         } catch (SQLException e) {
             resultHandler.handleError(e);
+        }
+    }
+
+    private void setUsedSchemaIfExists(QueryResult result) throws DtmSqlException {
+        if (result.getMetadata() != null && result.getMetadata().size() == 1
+                && SystemMetadata.SCHEMA == result.getMetadata().get(0).getSystemMetadata()) {
+            if (!result.isEmpty()) {
+                final Optional<Object> schemaOptional = result.getResult().get(0).values().stream().findFirst();
+                if (schemaOptional.isPresent()) {
+                    this.schema = schemaOptional.get().toString();
+                } else {
+                    throw new DtmSqlException("Schema value not found!");
+                }
+            } else {
+                throw new DtmSqlException("Empty result for using schema!");
+            }
         }
     }
 

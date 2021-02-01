@@ -2,13 +2,11 @@ package io.arenadata.dtm.query.calcite.core.service.impl;
 
 import io.arenadata.dtm.common.reader.QueryTemplateResult;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
-import io.arenadata.dtm.query.calcite.core.dto.EnrichmentTemplateRequest;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.sql.SqlDialect;
-import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +30,7 @@ class QueryTemplateExtractorImplTest {
         "WHERE \"x\" = ? AND \"x\" > ? AND \"x\" < ? AND \"x\" <= ? AND \"x\" >= ? AND \"x\" <> ? AND \"z\" = ?" +
         " AND \"sys_from\" = 1";
     private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
-    private QueryTemplateExtractorImpl extractor;
+    private AbstractQueryTemplateExtractor extractor;
     private CalciteDefinitionService definitionService;
 
     @BeforeEach
@@ -48,7 +46,8 @@ class QueryTemplateExtractorImplTest {
             .build();
         definitionService = new CalciteDefinitionService(parserConfig) {
         };
-        extractor = new QueryTemplateExtractorImpl(definitionService, SqlDialect.CALCITE);
+        //FIXME move to plugins
+        extractor = null;//new AbstractQueryTemplateExtractor(definitionService, SqlDialect.CALCITE);
     }
 
     @Test
@@ -69,10 +68,7 @@ class QueryTemplateExtractorImplTest {
     @Test
     void extract() {
         SqlSelectTree selectTree = new SqlSelectTree(definitionService.processingQuery(EXPECTED_SQL));
-
         SqlSelectTree copy = selectTree.copy();
-
-
         QueryTemplateResult templateResult = extractor.extract(EXPECTED_SQL);
         assertEquals(EXPECTED_TEMPLATE, templateResult.getTemplate());
         assertEquals(7, templateResult.getParams().size());

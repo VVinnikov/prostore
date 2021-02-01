@@ -47,11 +47,11 @@ public class RequestContextFactoryImpl implements RequestContextFactory<CoreRequ
     public CoreRequestContext<? extends DatamartRequest, ? extends SqlNode> create(QueryRequest request,
                                                                                    SourceType sourceType,
                                                                                    SqlNode node) {
-        val changedQueryRequest = changeSql(request, node);
+        //val changedQueryRequest = changeSql(request, node);
         val envName = coreConfiguration.getEnvName();
         if (isConfigRequest(node)) {
             return ConfigRequestContext.builder()
-                    .request(new ConfigRequest(changedQueryRequest))
+                    .request(new ConfigRequest(request))
                     .envName(envName)
                     .metrics(createRequestMetrics(request))
                     .sqlConfigCall((SqlConfigCall) node)
@@ -62,13 +62,13 @@ public class RequestContextFactoryImpl implements RequestContextFactory<CoreRequ
                     if (node instanceof SqlBaseTruncate) {
                         return new DdlRequestContext(
                                 createRequestMetrics(request),
-                                new DatamartRequest(changedQueryRequest),
+                                new DatamartRequest(request),
                                 node,
                                 sourceType,
                                 envName);
                     } else {
                         return EddlRequestContext.builder()
-                                .request(new DatamartRequest(changedQueryRequest))
+                                .request(new DatamartRequest(request))
                                 .envName(envName)
                                 .metrics(createRequestMetrics(request))
                                 .sqlNode(node)
@@ -77,7 +77,7 @@ public class RequestContextFactoryImpl implements RequestContextFactory<CoreRequ
                 default:
                     return new DdlRequestContext(
                             createRequestMetrics(request),
-                            new DatamartRequest(changedQueryRequest),
+                            new DatamartRequest(request),
                             node,
                             sourceType,
                             envName);
@@ -85,14 +85,14 @@ public class RequestContextFactoryImpl implements RequestContextFactory<CoreRequ
         } else if (node instanceof SqlDeltaCall) {
             return new DeltaRequestContext(
                     createRequestMetrics(request),
-                    new DatamartRequest(changedQueryRequest),
+                    new DatamartRequest(request),
                     envName,
                     (SqlDeltaCall) node);
         } else if (SqlKind.CHECK.equals(node.getKind())) {
             SqlCheckCall sqlCheckCall = (SqlCheckCall) node;
-            Optional.ofNullable(sqlCheckCall.getSchema()).ifPresent(changedQueryRequest::setDatamartMnemonic);
+            Optional.ofNullable(sqlCheckCall.getSchema()).ifPresent(request::setDatamartMnemonic);
             return CheckContext.builder()
-                    .request(new DatamartRequest(changedQueryRequest))
+                    .request(new DatamartRequest(request))
                     .envName(envName)
                     .metrics(createRequestMetrics(request))
                     .checkType(sqlCheckCall.getType())
@@ -104,12 +104,12 @@ public class RequestContextFactoryImpl implements RequestContextFactory<CoreRequ
             case INSERT:
                 return new EdmlRequestContext(
                         createRequestMetrics(request),
-                        new DatamartRequest(changedQueryRequest),
+                        new DatamartRequest(request),
                         (SqlInsert) node,
                         envName);
             default:
                 return DmlRequestContext.builder()
-                        .request(new DmlRequest(changedQueryRequest))
+                        .request(new DmlRequest(request))
                         .envName(envName)
                         .metrics(createRequestMetrics(request))
                         .sourceType(sourceType)

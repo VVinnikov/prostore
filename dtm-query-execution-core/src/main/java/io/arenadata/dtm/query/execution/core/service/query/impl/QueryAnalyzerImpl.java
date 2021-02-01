@@ -17,6 +17,7 @@ import io.arenadata.dtm.query.execution.core.factory.QueryRequestFactory;
 import io.arenadata.dtm.query.execution.core.factory.RequestContextFactory;
 import io.arenadata.dtm.query.execution.core.service.query.QueryAnalyzer;
 import io.arenadata.dtm.query.execution.core.service.query.QueryDispatcher;
+import io.arenadata.dtm.query.execution.core.service.query.QueryPreparedService;
 import io.arenadata.dtm.query.execution.core.service.query.QuerySemicolonRemover;
 import io.arenadata.dtm.query.execution.core.utils.DatamartMnemonicExtractor;
 import io.arenadata.dtm.query.execution.core.utils.DefaultDatamartSetter;
@@ -47,6 +48,7 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
     private final DefaultDatamartSetter defaultDatamartSetter;
     private final QuerySemicolonRemover querySemicolonRemover;
     private final QueryRequestFactory queryRequestFactory;
+    private final QueryPreparedService queryPreparedService;
 
     @Autowired
     public QueryAnalyzerImpl(QueryDispatcher queryDispatcher,
@@ -57,7 +59,8 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
                              DatamartMnemonicExtractor datamartMnemonicExtractor,
                              DefaultDatamartSetter defaultDatamartSetter,
                              QuerySemicolonRemover querySemicolonRemover,
-                             QueryRequestFactory queryRequestFactory) {
+                             QueryRequestFactory queryRequestFactory,
+                             QueryPreparedService queryPreparedService) {
         this.queryDispatcher = queryDispatcher;
         this.definitionService = definitionService;
         this.requestContextFactory = requestContextFactory;
@@ -67,12 +70,34 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
         this.defaultDatamartSetter = defaultDatamartSetter;
         this.querySemicolonRemover = querySemicolonRemover;
         this.queryRequestFactory = queryRequestFactory;
+        this.queryPreparedService = queryPreparedService;
     }
 
     @Override
     public Future<QueryResult> analyzeAndExecute(InputQueryRequest execQueryRequest) {
         return getParsedQuery(execQueryRequest)
                 .compose(this::dispatchQuery);
+    }
+
+    private Future<ParsedQueryResponse> getParsedQuery(InputQueryRequest inputQueryRequest) {
+        return Future.future(promise -> vertx.executeBlocking(it -> {
+            try {
+                val queryRequest = queryRequestFactory.create(inputQueryRequest);
+                val queryRequestWithoutHint = getQueryRequestWithoutHint(queryRequest);
+                log.debug("Pre-parse request: {}", queryRequestWithoutHint.getQueryRequest().getSql());
+                SqlNode node;
+                if (queryRequest.getParameters() != null) {
+                    node = queryPreparedService.getPreparedQuery(queryRequestWithoutHint.getQueryRequest());
+                } else {
+                    node = definitionService.processingQuery(queryRequestWithoutHint.getQueryRequest().getSql());
+                }
+                it.complete(new ParsedQueryResponse(queryRequestWithoutHint.getQueryRequest(),
+                        node,
+                        queryRequestWithoutHint.getSourceType()));
+            } catch (Exception e) {
+                it.fail(new DtmException("Error parsing query", e));
+            }
+        }, promise));
     }
 
     private Future<QueryResult> dispatchQuery(ParsedQueryResponse parsedQueryResponse) {
@@ -93,20 +118,6 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
             queryDispatcher.dispatch(requestContext)
                     .onComplete(promise);
         });
-    }
-
-    private Future<ParsedQueryResponse> getParsedQuery(InputQueryRequest inputQueryRequest) {
-        return Future.future(promise -> vertx.executeBlocking(it -> {
-            try {
-                val queryRequest = queryRequestFactory.create(inputQueryRequest);
-                val queryRequestWithoutHint = getQueryRequestWithoutHint(queryRequest);
-                log.debug("Pre-parse request: {}", queryRequestWithoutHint.getQueryRequest().getSql());
-                val node = definitionService.processingQuery(queryRequestWithoutHint.getQueryRequest().getSql());
-                it.complete(new ParsedQueryResponse(queryRequest, node, queryRequestWithoutHint.getSourceType()));
-            } catch (Exception e) {
-                it.fail(new DtmException("Error parsing query", e));
-            }
-        }, promise));
     }
 
     private QuerySourceRequest getQueryRequestWithoutHint(QueryRequest queryRequest) {

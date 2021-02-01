@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.api.request;
 
 import io.arenadata.dtm.common.delta.DeltaInformation;
+import io.arenadata.dtm.common.reader.QueryParameters;
 import io.arenadata.dtm.common.reader.QueryTemplateResult;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
@@ -20,6 +21,7 @@ public class LlrRequest extends PluginRequest {
     private final QueryTemplateResult sourceQueryTemplateResult;
     private final List<DeltaInformation> deltaInformations;
     private final List<ColumnMetadata> metadata;
+    private final QueryParameters parameters;
     private final List<Datamart> schema;
     private final SqlNode sqlNode;
 
@@ -31,12 +33,14 @@ public class LlrRequest extends PluginRequest {
                       List<Datamart> schema,
                       List<ColumnMetadata> metadata,
                       QueryTemplateResult sourceQueryTemplateResult,
-                      List<DeltaInformation> deltaInformations) {
+                      List<DeltaInformation> deltaInformations,
+                      QueryParameters parameters) {
         super(requestId, envName, datamartMnemonic);
         this.sqlNode = sqlNode;
         this.schema = schema;
         this.metadata = metadata;
         this.sourceQueryTemplateResult = sourceQueryTemplateResult;
         this.deltaInformations = deltaInformations;
+        this.parameters = parameters;
     }
 }

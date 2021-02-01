@@ -18,7 +18,8 @@ public class QueryConfiguration {
     @Bean("adqmQueryExecutor")
     public AdqmQueryExecutor clickhouse(@Qualifier("coreVertx") Vertx vertx,
                                         ClickhouseProperties clickhouseProperties,
-                                        @Qualifier("adqmTypeToSqlTypeConverter") SqlTypeConverter typeConverter) {
+                                        @Qualifier("adqmTypeToSqlTypeConverter") SqlTypeConverter adqmTypeConverter,
+                                        @Qualifier("adqmTypeFromSqlTypeConverter") SqlTypeConverter sqlTypeConverter) {
         String url = String.format("jdbc:clickhouse://%s/%s", clickhouseProperties.getHosts(),
             clickhouseProperties.getDatabase());
         ClickHouseProperties properties = new ClickHouseProperties();
@@ -27,6 +28,6 @@ public class QueryConfiguration {
         properties.setSocketTimeout(clickhouseProperties.getSocketTimeout());
         properties.setDataTransferTimeout(clickhouseProperties.getDataTransferTimeout());
         DataSource dataSource = new AdqmBalancedClickhouseDataSource(url, properties);
-        return new AdqmQueryExecutor(vertx, dataSource, typeConverter);
+        return new AdqmQueryExecutor(vertx, dataSource, adqmTypeConverter, sqlTypeConverter);
     }
 }

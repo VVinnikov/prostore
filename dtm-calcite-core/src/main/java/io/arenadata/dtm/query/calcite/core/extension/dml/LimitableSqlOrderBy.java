@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.calcite.core.extension.dml;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
+import lombok.val;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.ImmutableNullableList;
@@ -22,21 +23,45 @@ public class LimitableSqlOrderBy extends SqlOrderBy {
         public SqlCall createCall(SqlLiteral functionQualifier,
                                   SqlParserPos pos, SqlNode... operands) {
             return new LimitableSqlOrderBy(pos, operands[0], (SqlNodeList) operands[1],
-                    operands[2], operands[3], ((SqlLiteral) operands[4]).getValueAs(Boolean.class));
+                    operands[2], operands[3], (SqlLiteral) operands[4]);
         }
     };
-    private final boolean isLimited;
+    public SqlNode query;
+    public SqlNodeList orderList;
+    public SqlNode offset;
+    public SqlNode fetch;
+    private SqlLiteral isLimited;
+    private SqlNode[] operands;
     private SqlKind kind;
+    private Long limit;
 
     public LimitableSqlOrderBy(SqlParserPos pos,
                                SqlNode query,
                                SqlNodeList orderList,
                                SqlNode offset,
                                SqlNode fetch,
-                               boolean isLimited) {
+                               SqlLiteral isLimited) {
         super(pos, query, orderList, offset, fetch);
+        operands = new SqlNode[5];
+        operands[0] = query;
+        operands[1] = orderList;
+        operands[2] = offset;
+        operands[3] = fetch;
+        operands[4] = isLimited;
         kind = SqlKind.ORDER_BY;
         this.isLimited = isLimited;
+        this.orderList = orderList;
+        this.offset = offset;
+        this.query = query;
+        this.fetch = fetch;
+
+        if (isLimited()) {
+            if (fetch instanceof SqlNumericLiteral) {
+                val value = ((SqlNumericLiteral) fetch).getValueAs(BigDecimal.class);
+                limit = value.longValue();
+
+            }
+        }
     }
 
     public BigDecimal getLimit(SqlNumericLiteral fetch) {
@@ -48,7 +73,11 @@ public class LimitableSqlOrderBy extends SqlOrderBy {
                 orderList,
                 offset,
                 fetch,
-                SqlLiteral.createBoolean(isLimited, SqlParserPos.ZERO));
+                SqlLiteral.createBoolean(isLimited(), SqlParserPos.ZERO));
+    }
+
+    private boolean isLimited() {
+        return isLimited.booleanValue();
     }
 
     @Override
@@ -73,28 +102,6 @@ public class LimitableSqlOrderBy extends SqlOrderBy {
         );
     }
 
-    @Override
-    @SneakyThrows
-    public void setOperand(int i, SqlNode operand) {
-        switch (i) {
-            case 0:
-                setOperand(operand, "query");
-                break;
-            case 1:
-                setOperand(operand, "orderList");
-                break;
-            case 2:
-                setOperand(operand, "offset");
-                break;
-            case 3:
-                setOperand(operand, "fetch");
-                break;
-            case 4:
-                setOperand(((SqlLiteral)operand).booleanValue(), "isLimited");
-                break;
-        }
-    }
-
     private void setOperand(Object operand, String query) throws IllegalAccessException {
         writeField(this, query, operand);
     }
@@ -105,6 +112,28 @@ public class LimitableSqlOrderBy extends SqlOrderBy {
         Field field = FieldUtils.getField(cls, fieldName, true);
         Validate.isTrue(field != null, "Cannot locate declared field %s.%s", cls.getName(), fieldName);
         FieldUtils.writeField(field, target, value, true);
+    }
+
+    @Override
+    public void setOperand(int i, SqlNode operand) {
+        operands[i] = operand;
+        switch (i) {
+            case 0:
+                query = operand;
+                break;
+            case 1:
+                orderList = (SqlNodeList) operand;
+                break;
+            case 2:
+                offset = operand;
+                break;
+            case 3:
+                fetch = operand;
+                break;
+            case 4:
+                isLimited = (SqlLiteral) operand;
+                break;
+        }
     }
 
     /**
@@ -147,7 +176,7 @@ public class LimitableSqlOrderBy extends SqlOrderBy {
             if (orderBy.fetch != null) {
                 final SqlWriter.Frame frame3 =
                         writer.startList(SqlWriter.FrameTypeEnum.FETCH);
-                if (orderBy.isLimited) {
+                if (orderBy.isLimited()) {
                     writer.newlineAndIndent();
                     writer.keyword("LIMIT");
                     orderBy.fetch.unparse(writer, -1, -1);
@@ -166,3 +195,4 @@ public class LimitableSqlOrderBy extends SqlOrderBy {
         }
     }
 }
+

@@ -63,6 +63,11 @@ class AdbDtmDataSourcePluginIT {
         }
 
         @Override
+        public Future<Void> prepareLlr(LlrRequest request) {
+            return null;
+        }
+
+        @Override
         public Future<QueryResult> mppr(MpprRequest request) {
             return null;
         }

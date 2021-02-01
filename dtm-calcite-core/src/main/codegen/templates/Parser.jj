@@ -603,7 +603,7 @@ SqlNode OrderedQueryOrExpr(ExprContext exprContext) :
     SqlNodeList orderBy = null;
     SqlNode start = null;
     SqlNode count = null;
-    boolean isLimited = false;
+    SqlLiteral isLimited = SqlLiteral.createBoolean(false, SqlParserPos.ZERO);
 }
 {
     (
@@ -618,7 +618,7 @@ SqlNode OrderedQueryOrExpr(ExprContext exprContext) :
         // Postgres-style syntax. "LIMIT ... OFFSET ..."
         <LIMIT>
         {
-            isLimited = true;
+            isLimited = SqlLiteral.createBoolean(true, SqlParserPos.ZERO);
         }
         (
             // MySQL-style syntax. "LIMIT start, count"

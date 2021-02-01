@@ -35,6 +35,11 @@ public class QueryRequest {
     private String sql;
 
     /**
+     * attribute of prepare request
+     */
+    private boolean isPrepare;
+
+    /**
      * Parameters (optional)
      */
     private List<String> parameters;

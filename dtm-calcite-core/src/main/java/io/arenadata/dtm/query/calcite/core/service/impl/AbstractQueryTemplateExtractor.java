@@ -17,14 +17,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class QueryTemplateExtractorImpl implements QueryTemplateExtractor {
+public abstract class AbstractQueryTemplateExtractor implements QueryTemplateExtractor {
     private static final SqlDynamicParam DYNAMIC_PARAM = new SqlDynamicParam(0, SqlParserPos.QUOTED_ZERO);
     private static final String REGEX = "(?i).*(LIKE\\[1\\]|EQUAL\\w*\\[1\\]|LESS\\w*\\[1\\]|GREATER\\w*\\[1\\]).*";
-    private static final String DYNAMIC_PARAM_PATH = "[1].DYNAMIC_PARAM";
+    public static final String DYNAMIC_PARAM_PATH = "[1].DYNAMIC_PARAM";
     private final DefinitionService<SqlNode> definitionService;
     private final SqlDialect sqlDialect;
 
-    public QueryTemplateExtractorImpl(DefinitionService<SqlNode> definitionService, SqlDialect sqlDialect) {
+    public AbstractQueryTemplateExtractor(DefinitionService<SqlNode> definitionService, SqlDialect sqlDialect) {
         this.definitionService = definitionService;
         this.sqlDialect = sqlDialect;
     }
@@ -41,9 +41,11 @@ public class QueryTemplateExtractorImpl implements QueryTemplateExtractor {
 
     @Override
     public SqlNode enrichTemplate(EnrichmentTemplateRequest request) {
-
+        //TODO perhaps it will be better to move method of enriching query template to separate interface
+        // and implement it in different plugin classes
         SqlSelectTree selectTree = new SqlSelectTree(SqlNodeUtil.copy(request.getTemplateNode()));
         List<SqlTreeNode> dynamicNodes = selectTree.findNodesByPath(DYNAMIC_PARAM_PATH);
+
         Iterator<SqlNode> paramIterator = request.getParams().iterator();
         for (SqlTreeNode dynamicNode : dynamicNodes) {
             SqlNode param;

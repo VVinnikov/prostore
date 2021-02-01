@@ -1,7 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.dml.impl;
 
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
-import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.RequestStatus;
 import io.arenadata.dtm.common.model.ddl.Entity;
@@ -9,6 +8,7 @@ import io.arenadata.dtm.common.reader.QuerySourceRequest;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
+import io.arenadata.dtm.query.execution.core.exception.query.NoSingleDataSourceContainsAllEntitiesException;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.dml.TargetDatabaseDefinitionService;
 import io.arenadata.dtm.query.execution.plugin.api.request.QueryCostRequest;
@@ -24,8 +24,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static com.google.common.collect.Sets.newHashSet;
 
 @Service
 public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefinitionService {
@@ -46,6 +44,7 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
     }
 
     @Override
+    @Deprecated
     public Future<QuerySourceRequest> getTargetSource(QuerySourceRequest request, SqlNode query) {
         return getEntitiesSourceTypes(request)
                 .compose(entities -> defineTargetSourceType(entities, request))
@@ -61,6 +60,17 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
                             .query(query)
                             .build();
                 });
+    }
+
+    @Override
+    public Future<Set<SourceType>> getAcceptableSourceTypes(QuerySourceRequest request) {
+        return getEntitiesSourceTypes(request)
+                .compose(entities -> Future.future(promise -> promise.complete(getSourceTypes(request, entities))));
+    }
+
+    @Override
+    public Future<SourceType> getSourceTypeWithLeastQueryCost(Set<SourceType> sourceTypes, QuerySourceRequest request) {
+        return getTargetSourceByCalcQueryCost(sourceTypes, request);
     }
 
     private Future<List<Entity>> getEntitiesSourceTypes(QuerySourceRequest request) {
@@ -92,14 +102,7 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
     private Set<SourceType> getSourceTypes(QuerySourceRequest request, List<Entity> entities) {
         final Set<SourceType> stResult = getCommonSourceTypes(entities);
         if (stResult.isEmpty()) {
-            throw new DtmException("Tables have no datasource in common");
-        } else if (request.getSourceType() != null) {
-            if (!stResult.contains(request.getSourceType())) {
-                throw new DtmException(String.format("Tables common datasources does not include %s",
-                        request.getSourceType()));
-            } else {
-                return newHashSet(request.getSourceType());
-            }
+            throw new NoSingleDataSourceContainsAllEntitiesException();
         } else {
             return stResult;
         }

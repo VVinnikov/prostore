@@ -149,4 +149,15 @@ public class SqlDeltaSnapshotDeltaParserTest {
                 " from test.pso FOR SYSTEM_TIME AS OF DELTA_NUM 1");
         assertNotNull(sqlNode);
     }
+
+    @Test
+    void parseSelectWithLimit() throws SqlParseException {
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
+        FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
+
+        SqlNode sqlNode = planner.parse("select case when id > 1 then 'ok' else 'not ok' end " +
+                " from test.pso limit 10");
+        assertNotNull(sqlNode);
+    }
 }

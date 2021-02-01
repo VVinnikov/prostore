@@ -37,4 +37,23 @@ public class ConverterConfiguration {
         transformerMap.put(ColumnType.ANY, getTransformerMap(new AnyFromObjectTransformer()));
         return transformerMap;
     }
+
+    @Bean("adbFromSqlTransformerMap")
+    public Map<ColumnType, Map<Class<?>, ColumnTransformer>> adbFromSqlTransformerMap(DtmConfig dtmSettings) {
+        Map<ColumnType, Map<Class<?>, ColumnTransformer>> transformerMap = new HashMap<>();
+        transformerMap.put(ColumnType.INT, getTransformerMap(new NumberFromLongTransformer()));
+        transformerMap.put(ColumnType.VARCHAR, getTransformerMap(new VarcharFromStringTransformer()));
+        transformerMap.put(ColumnType.CHAR, transformerMap.get(ColumnType.VARCHAR));
+        transformerMap.put(ColumnType.BIGINT, getTransformerMap(new NumberFromBigintTransformer()));
+        transformerMap.put(ColumnType.DOUBLE, getTransformerMap(new NumberFromDoubleTransformer()));
+        transformerMap.put(ColumnType.FLOAT, getTransformerMap(new NumberFromFloatTransformer()));
+        transformerMap.put(ColumnType.DATE, getTransformerMap(
+                new LocalDateFromLongTransformer(dtmSettings.getTimeZone())
+        ));
+        transformerMap.put(ColumnType.TIME, getTransformerMap(new LocalTimeFromStringTransformer()));
+        transformerMap.put(ColumnType.TIMESTAMP, getTransformerMap(new LocalDateTimeFromLongTransformer(dtmSettings.getTimeZone())));
+        transformerMap.put(ColumnType.BOOLEAN, getTransformerMap(new BooleanFromBooleanTransformer()));
+        transformerMap.put(ColumnType.ANY, getTransformerMap(new AnyFromObjectTransformer()));
+        return transformerMap;
+    }
 }

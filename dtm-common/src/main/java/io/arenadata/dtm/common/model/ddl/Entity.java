@@ -2,13 +2,15 @@ package io.arenadata.dtm.common.model.ddl;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.arenadata.dtm.common.reader.SourceType;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Physical model of the service database table
@@ -57,20 +59,11 @@ public class Entity implements Serializable {
     }
 
     public Entity copy() {
-        return Entity.builder()
-                .name(this.name)
-                .schema(this.schema)
-                .viewQuery(this.viewQuery)
-                .entityType(this.entityType)
-                .externalTableFormat(this.externalTableFormat)
-                .externalTableSchema(this.externalTableSchema)
-                .externalTableLocationType(this.externalTableLocationType)
-                .externalTableLocationPath(this.externalTableLocationPath)
-                .externalTableDownloadChunkSize(this.externalTableDownloadChunkSize)
-                .externalTableUploadMessageLimit(this.externalTableUploadMessageLimit)
-                .destination(this.destination != null ? new HashSet<>(this.destination) : null)
-                .fields(this.fields != null ? new ArrayList<>(this.fields) : null)
-                .build();
+        return toBuilder()
+            .fields(fields.stream()
+                .map(EntityField::copy)
+                .collect(Collectors.toList()))
+            .build();
     }
 }
 

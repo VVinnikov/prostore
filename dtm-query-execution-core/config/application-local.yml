@@ -17,7 +17,10 @@ core:
     active: ${CORE_PLUGINS_ACTIVE:ADG, ADB, ADQM}
 
   http:
-    port: ${DTM_CORE_PORT:9090}
+    port: ${DTM_CORE_HTTP_PORT:9090}
+    tcpNoDelay: ${DTM_CORE_HTTP_TCP_NO_DELAY:true}
+    tcpFastOpen: ${DTM_CORE_HTTP_TCP_FAST_OPEN:true}
+    tcpQuickAck: ${DTM_CORE_HTTP_TCP_QUICK_ACK:true}
 
   env:
     name: ${DTM_NAME:local}

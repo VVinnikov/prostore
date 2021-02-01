@@ -79,4 +79,8 @@ public class EntityField implements Serializable {
         }
     }
 
+    public EntityField copy() {
+        return toBuilder().build();
+    }
+
 }

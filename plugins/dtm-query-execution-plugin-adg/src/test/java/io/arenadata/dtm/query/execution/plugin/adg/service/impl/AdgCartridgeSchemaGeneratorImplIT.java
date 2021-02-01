@@ -8,7 +8,6 @@ import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.OperationYaml;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeSchemaGenerator;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
@@ -45,13 +44,16 @@ class AdgCartridgeSchemaGeneratorImplIT {
 
     @Test
     @SneakyThrows
-    void generate(VertxTestContext testContext) throws Throwable {
+    void generate(VertxTestContext testContext) {
         client.getSchema()
                 .onComplete(ar1 -> {
                     if (ar1.succeeded()) {
                         OperationYaml yaml = parseYaml(ar1.result().getData().getCluster().getSchema().getYaml());
-                        DdlRequestContext context = new DdlRequestContext(new DdlRequest(null, entity));
-                        generator.generate(context, yaml)
+                        DdlRequest request = DdlRequest.builder()
+                                .envName("env")
+                                .entity(entity)
+                                .build();
+                        generator.generate(request, yaml)
                                 .onComplete(ar2 -> {
                                     if (ar2.succeeded()) {
                                         testContext.completeNow();

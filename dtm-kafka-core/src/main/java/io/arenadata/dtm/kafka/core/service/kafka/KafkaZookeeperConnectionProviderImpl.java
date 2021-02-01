@@ -12,7 +12,6 @@ import org.apache.zookeeper.ZooKeeper;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import static org.apache.zookeeper.Watcher.Event.KeeperState.SyncConnected;

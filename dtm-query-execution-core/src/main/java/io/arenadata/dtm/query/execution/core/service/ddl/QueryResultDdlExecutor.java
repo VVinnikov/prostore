@@ -4,8 +4,7 @@ import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
+import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
@@ -19,9 +18,9 @@ public abstract class QueryResultDdlExecutor implements DdlExecutor<QueryResult>
         return request;
     }
 
-    protected String getSchemaName(QueryRequest request, String sqlNodeName) {
+    protected String getSchemaName(String requestDatamart, String sqlNodeName) {
         int indexComma = sqlNodeName.indexOf(".");
-        return indexComma == -1 ? request.getDatamartMnemonic() : sqlNodeName.substring(0, indexComma);
+        return indexComma == -1 ? requestDatamart : sqlNodeName.substring(0, indexComma);
     }
 
     protected String getTableName(String sqlNodeName) {

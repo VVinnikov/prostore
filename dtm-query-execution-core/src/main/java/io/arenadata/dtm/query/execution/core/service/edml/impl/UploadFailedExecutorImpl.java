@@ -3,11 +3,12 @@ package io.arenadata.dtm.query.execution.core.service.edml.impl;
 import io.arenadata.dtm.common.exception.CrashException;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
+import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.rollback.RollbackRequestContext;
 import io.arenadata.dtm.query.execution.core.factory.RollbackRequestContextFactory;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadFailedExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
@@ -64,7 +65,15 @@ public class UploadFailedExecutorImpl implements EdmlUploadFailedExecutor {
             destination.forEach(sourceType ->
                     futures.add(Future.future(p -> dataSourcePluginService.rollback(
                             sourceType,
-                            context)
+                            context.getMetrics(),
+                            RollbackRequest.builder()
+                                    .requestId(context.getRequest().getQueryRequest().getRequestId())
+                                    .envName(context.getEnvName())
+                                    .datamartMnemonic(context.getRequest().getDatamart())
+                                    .destinationTable(context.getRequest().getDestinationTable())
+                                    .sysCn(context.getRequest().getSysCn())
+                                    .entity(context.getRequest().getEntity())
+                                    .build())
                             .onSuccess(result -> {
                                 log.debug("Rollback data in plugin [{}], datamart [{}], " +
                                                 "table [{}], sysCn [{}] finished successfully",

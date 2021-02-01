@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.edml.impl;
 
+import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheService;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
@@ -14,7 +15,7 @@ import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadFailedExecutor;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
-import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
@@ -39,29 +40,42 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
     private final EdmlUploadFailedExecutor uploadFailedExecutor;
     private final DataSourcePluginService pluginService;
     private final LogicalSchemaProvider logicalSchemaProvider;
+    private final EvictQueryTemplateCacheService evictQueryTemplateCacheService;
 
     @Autowired
     public UploadExternalTableExecutor(DeltaServiceDao deltaServiceDao,
                                        EdmlUploadFailedExecutor uploadFailedExecutor,
                                        List<EdmlUploadExecutor> uploadExecutors,
                                        DataSourcePluginService pluginService,
-                                       LogicalSchemaProvider logicalSchemaProvider) {
+                                       LogicalSchemaProvider logicalSchemaProvider,
+                                       EvictQueryTemplateCacheService evictQueryTemplateCacheService) {
         this.deltaServiceDao = deltaServiceDao;
         this.uploadFailedExecutor = uploadFailedExecutor;
         this.executors = uploadExecutors.stream()
                 .collect(Collectors.toMap(EdmlUploadExecutor::getUploadType, it -> it));
         this.pluginService = pluginService;
         this.logicalSchemaProvider = logicalSchemaProvider;
+        this.evictQueryTemplateCacheService = evictQueryTemplateCacheService;
     }
 
     @Override
     public Future<QueryResult> execute(EdmlRequestContext context) {
-        return isEntitySourceTypesExistsInConfiguration(context)
+        return Future.future(promise -> isEntitySourceTypesExistsInConfiguration(context)
+                .compose(v -> {
+                    try {
+                        evictQueryTemplateCacheService.evictByDatamartName(context.getDestinationEntity().getSchema());
+                        return Future.succeededFuture(v);
+                    } catch (Exception e) {
+                        return Future.failedFuture(new DtmException("Evict cache error"));
+                    }
+                })
                 .compose(v -> writeNewOperationIfNeeded(context, context.getSourceEntity()))
                 .compose(v -> executeAndWriteOp(context))
                 .compose(queryResult -> writeOpSuccess(context.getSourceEntity().getSchema(),
                         context.getSysCn(),
-                        queryResult));
+                        queryResult))
+                .onSuccess(result -> promise.complete(QueryResult.emptyResult()))
+                .onFailure(promise::fail));
     }
 
     private Future<Void> isEntitySourceTypesExistsInConfiguration(EdmlRequestContext context) {
@@ -144,7 +158,8 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
 
     private Future<Void> initLogicalSchema(EdmlRequestContext context) {
         return Future.future(promise -> {
-            logicalSchemaProvider.getSchema(context.getRequest().getQueryRequest())
+            String datamartMnemonic = context.getRequest().getQueryRequest().getDatamartMnemonic();
+            logicalSchemaProvider.getSchemaFromQuery(context.getSqlNode(), datamartMnemonic)
                     .onComplete(ar -> {
                         if (ar.succeeded()) {
                             final List<Datamart> logicalSchema = ar.result();

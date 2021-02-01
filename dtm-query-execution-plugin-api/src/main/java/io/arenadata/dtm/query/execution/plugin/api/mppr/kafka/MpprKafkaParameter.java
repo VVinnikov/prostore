@@ -4,6 +4,7 @@ import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
 import io.arenadata.dtm.query.execution.plugin.api.edml.BaseExternalEntityMetadata;
 import lombok.Builder;
 import lombok.Data;
+import org.apache.calcite.sql.SqlNode;
 
 import java.util.List;
 
@@ -11,7 +12,7 @@ import java.util.List;
 @Builder
 public class MpprKafkaParameter {
     private String datamart;
-    private String dmlSubquery;
+    private SqlNode dmlSubQuery;
     private BaseExternalEntityMetadata downloadMetadata;
     private List<KafkaBrokerInfo> brokers;
     private String topic;

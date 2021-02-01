@@ -74,28 +74,28 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
     }
 
     @Override
-    public Future<Void> uploadData(TtUploadDataKafkaRequest request) {
+    public Future<Void> uploadData(AdgUploadDataKafkaRequest request) {
         val uri = cartridgeProperties.getUrl() + cartridgeProperties.getKafkaUploadDataUrl();
         return executePostRequest(uri, request)
                 .compose(this::handleUploadData);
     }
 
     @Override
-    public Future<Void> subscribe(TtSubscriptionKafkaRequest request) {
+    public Future<Void> subscribe(AdgSubscriptionKafkaRequest request) {
         val uri = cartridgeProperties.getUrl() + cartridgeProperties.getKafkaSubscriptionUrl();
         return executePostRequest(uri, request)
                 .compose(this::handleSubscription);
     }
 
     @Override
-    public Future<TtLoadDataKafkaResponse> loadData(TtLoadDataKafkaRequest request) {
+    public Future<TtLoadDataKafkaResponse> loadData(AdgLoadDataKafkaRequest request) {
         val uri = cartridgeProperties.getUrl() + cartridgeProperties.getKafkaLoadDataUrl();
         return executePostRequest(uri, request)
                 .compose(this::handleLoadData);
     }
 
     @Override
-    public Future<Void> transferDataToScdTable(TtTransferDataEtlRequest request) {
+    public Future<Void> transferDataToScdTable(AdgTransferDataEtlRequest request) {
         val uri = cartridgeProperties.getUrl() + cartridgeProperties.getTransferDataToScdTableUrl();
         return executeGetTransferDataRequest(uri, request)
                 .compose(this::handleTransferData);
@@ -132,14 +132,14 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
     }
 
     @Override
-    public Future<Void> executeDeleteSpacesQueued(TtDeleteTablesRequest request) {
+    public Future<Void> executeDeleteSpacesQueued(AdgDeleteTablesRequest request) {
         val uri = cartridgeProperties.getUrl() + cartridgeProperties.getTableQueuedDelete();
         return executeDeleteRequest(uri, request)
                 .compose(this::handleExecuteDeleteSpacesQueued);
     }
 
     @Override
-    public Future<Void> executeDeleteSpacesWithPrefixQueued(TtDeleteTablesWithPrefixRequest request) {
+    public Future<Void> executeDeleteSpacesWithPrefixQueued(AdgDeleteTablesWithPrefixRequest request) {
         val uri = cartridgeProperties.getUrl() + cartridgeProperties.getTableQueuedDelete() + "/prefix/" +
                 request.getTablePrefix();
         return executeDeleteRequest(uri, request)
@@ -213,7 +213,7 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
     }
 
 
-    private Future<HttpResponse<Buffer>> executeGetTransferDataRequest(String uri, TtTransferDataEtlRequest request) {
+    private Future<HttpResponse<Buffer>> executeGetTransferDataRequest(String uri, AdgTransferDataEtlRequest request) {
         return Future.future(promise -> {
             log.debug("send to [{}] request [{}]", uri, request);
             val tableNames = request.getHelperTableNames();

@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.delta.impl;
 
-import io.arenadata.dtm.async.AsyncHandler;
+import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheService;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.status.StatusEventCode;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
@@ -9,7 +10,6 @@ import io.arenadata.dtm.query.execution.core.dto.delta.DeltaRecord;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.CommitDeltaQuery;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaAction;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.DeltaQuery;
-import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.service.delta.DeltaExecutor;
 import io.arenadata.dtm.query.execution.core.service.delta.StatusEventPublisher;
@@ -33,14 +33,17 @@ public class CommitDeltaExecutor implements DeltaExecutor, StatusEventPublisher 
     private final Vertx vertx;
     private final DeltaServiceDao deltaServiceDao;
     private final DeltaQueryResultFactory deltaQueryResultFactory;
+    private final EvictQueryTemplateCacheService evictQueryTemplateCacheService;
 
     @Autowired
     public CommitDeltaExecutor(ServiceDbFacade serviceDbFacade,
                                @Qualifier("commitDeltaQueryResultFactory") DeltaQueryResultFactory deltaQueryResultFactory,
-                               @Qualifier("coreVertx") Vertx vertx) {
+                               @Qualifier("coreVertx") Vertx vertx,
+                               EvictQueryTemplateCacheService evictQueryTemplateCacheService) {
         this.deltaServiceDao = serviceDbFacade.getDeltaServiceDao();
         this.vertx = vertx;
         this.deltaQueryResultFactory = deltaQueryResultFactory;
+        this.evictQueryTemplateCacheService = evictQueryTemplateCacheService;
     }
 
     @Override
@@ -61,6 +64,11 @@ public class CommitDeltaExecutor implements DeltaExecutor, StatusEventPublisher 
 
     private Future<QueryResult> writeDeltaHotByDate(CommitDeltaQuery commitDeltaQuery) {
         return Future.future(promise -> {
+            try {
+                evictQueryTemplateCacheService.evictByDatamartName(commitDeltaQuery.getDatamart());
+            } catch (Exception e) {
+                promise.fail(new DtmException("Evict cache error"));
+            }
             deltaServiceDao.writeDeltaHotSuccess(commitDeltaQuery.getDatamart(), commitDeltaQuery.getDeltaDate())
                     .onSuccess(deltaDate -> {
                         try {
@@ -75,6 +83,11 @@ public class CommitDeltaExecutor implements DeltaExecutor, StatusEventPublisher 
 
     private Future<QueryResult> writeDeltaHot(CommitDeltaQuery commitDeltaQuery) {
         return Future.future(promise -> {
+            try {
+                evictQueryTemplateCacheService.evictByDatamartName(commitDeltaQuery.getDatamart());
+            } catch (Exception e) {
+                promise.fail(new DtmException("Evict cache error"));
+            }
             deltaServiceDao.writeDeltaHotSuccess(commitDeltaQuery.getDatamart())
                     .onSuccess(deltaDate -> {
                         try {

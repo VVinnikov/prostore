@@ -13,7 +13,10 @@ import io.arenadata.dtm.query.calcite.core.service.DeltaInformationExtractor;
 import io.arenadata.dtm.query.calcite.core.util.CalciteUtil;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.calcite.sql.*;
+import org.apache.calcite.sql.SqlBasicCall;
+import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
 import java.time.LocalDateTime;
@@ -22,11 +25,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.apache.calcite.sql.SqlDialect.EMPTY_CONTEXT;
-
 @Slf4j
 public class DeltaInformationExtractorImpl implements DeltaInformationExtractor {
-    private static final SqlDialect DIALECT = new SqlDialect(EMPTY_CONTEXT);
     private final DtmConfig dtmSettings;
 
     public DeltaInformationExtractorImpl(DtmConfig dtmSettings) {
@@ -40,7 +40,7 @@ public class DeltaInformationExtractorImpl implements DeltaInformationExtractor 
             val allTableAndSnapshots = tree.findAllTableAndSnapshots();
             val deltaInformations = getDeltaInformations(tree, allTableAndSnapshots);
             replaceSnapshots(getSnapshots(allTableAndSnapshots));
-            return new DeltaInformationResult(deltaInformations, root.toSqlString(DIALECT).toString());
+            return new DeltaInformationResult(deltaInformations, root);
         } catch (Exception e) {
             throw new DtmException("Error extracting delta information", e);
         }
@@ -160,7 +160,7 @@ public class DeltaInformationExtractorImpl implements DeltaInformationExtractor 
         DeltaType deltaType = DeltaType.NUM;
         if (!isLatestUncommittedDelta) {
             if (snapshotTime == null) {
-                deltaTime = CalciteUtil.LOCAL_DATE_TIME.format(LocalDateTime.now(this.dtmSettings.getTimeZone()));
+                deltaTime = CalciteUtil.LOCAL_DATE_TIME.format(LocalDateTime.now(this.dtmSettings.getTimeZone())); // todo use only LocalDateTime without string
                 if (deltaNum == null) {
                     deltaType = DeltaType.DATETIME;
                 }

@@ -1,10 +1,10 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.ddl;
 
-import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
+import io.arenadata.dtm.query.execution.plugin.adb.factory.DdlSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
+import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
+import io.arenadata.dtm.query.execution.plugin.api.service.DdlExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.service.DdlService;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
@@ -17,18 +17,18 @@ import org.springframework.stereotype.Component;
 public class DropTableExecutor implements DdlExecutor<Void> {
 
     private final AdbQueryExecutor adbQueryExecutor;
-    private final MetadataSqlFactory sqlFactory;
+    private final DdlSqlFactory sqlFactory;
 
     @Autowired
-    public DropTableExecutor(AdbQueryExecutor adbQueryExecutor, MetadataSqlFactory sqlFactory) {
+    public DropTableExecutor(AdbQueryExecutor adbQueryExecutor, DdlSqlFactory sqlFactory) {
         this.adbQueryExecutor = adbQueryExecutor;
         this.sqlFactory = sqlFactory;
     }
 
     @Override
-    public Future<Void> execute(DdlRequestContext context, String sqlNodeName) {
+    public Future<Void> execute(DdlRequest request) {
         return Future.future(promise -> {
-            String dropSql = sqlFactory.createDropTableScript(context.getRequest().getEntity());
+            String dropSql = sqlFactory.createDropTableScript(request.getEntity().getNameWithSchema());
             adbQueryExecutor.executeUpdate(dropSql)
                     .onComplete(promise);
         });

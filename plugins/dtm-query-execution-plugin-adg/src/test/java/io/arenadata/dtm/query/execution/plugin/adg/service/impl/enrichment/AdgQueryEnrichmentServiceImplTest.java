@@ -6,7 +6,6 @@ import io.arenadata.dtm.common.delta.SelectOnInterval;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.adg.calcite.AdgCalciteContextProvider;
 import io.arenadata.dtm.query.execution.plugin.adg.calcite.AdgCalciteSchemaFactory;
@@ -15,7 +14,7 @@ import io.arenadata.dtm.query.execution.plugin.adg.dto.EnrichQueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.impl.AdgHelperTableNamesFactoryImpl;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.impl.AdgSchemaFactory;
 import io.arenadata.dtm.query.execution.plugin.adg.service.QueryEnrichmentService;
-import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
+import io.arenadata.dtm.query.execution.plugin.adg.utils.TestUtils;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestOptions;
@@ -28,7 +27,6 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AdgQueryEnrichmentServiceImplTest {
-
+    private static final String ENV_NAME = "local";
     private final QueryEnrichmentService enrichService;
 
     public AdgQueryEnrichmentServiceImplTest() {
@@ -67,20 +65,20 @@ class AdgQueryEnrichmentServiceImplTest {
     }
 
     @Test
-    void enrichWithDeltaNum() throws Throwable {
+    void enrichWithDeltaNum() {
         enrichWithGrep(prepareRequestDeltaNum("SELECT account_id FROM shares.accounts"),
                 Arrays.asList("\"local__shares__accounts_history\" WHERE \"sys_from\" <= 1 AND \"sys_to\" >= 1",
                         "\"local__shares__accounts_actual\" WHERE \"sys_from\" <= 1"));
     }
 
     @Test
-    void enrichWithFinishedIn() throws Throwable {
+    void enrichWithFinishedIn() {
         enrichWithEquals(prepareRequestDeltaFinishedIn("SELECT account_id FROM shares.accounts"),
                 Collections.singletonList("SELECT \"account_id\" FROM \"local__shares__accounts_history\" WHERE \"sys_to\" >= 0 AND (\"sys_to\" <= 0 AND \"sys_op\" = 1)"));
     }
 
     @Test
-    void enrichWithDeltaInterval() throws Throwable {
+    void enrichWithDeltaInterval() {
         enrichWithGrep(prepareRequestDeltaInterval("select *, CASE WHEN (account_type = 'D' AND  amount >= 0) " +
                 "OR (account_type = 'C' AND  amount <= 0) THEN 'OK    ' ELSE 'NOT OK' END\n" +
                 "  from (\n" +
@@ -95,14 +93,14 @@ class AdgQueryEnrichmentServiceImplTest {
     }
 
     @Test
-    void enrichWithQuotes() throws Throwable {
+    void enrichWithQuotes() {
         enrichWithGrep(prepareRequestDeltaNum("SELECT \"account_id\" FROM \"shares\".\"accounts\""),
                 Arrays.asList("\"local__shares__accounts_history\" where \"sys_from\" <= 1 and \"sys_to\" >= 1",
                         "\"local__shares__accounts_actual\" where \"sys_from\" <= 1"));
     }
 
     @Test
-    void enrichWithMultipleSchemas() throws Throwable {
+    void enrichWithMultipleSchemas() {
         enrichWithGrep(prepareRequestMultipleSchema("SELECT a.account_id FROM accounts a " +
                         "JOIN shares_2.accounts aa ON aa.account_id = a.account_id " +
                         "JOIN test_datamart.transactions t ON t.account_id = a.account_id"),
@@ -158,13 +156,8 @@ class AdgQueryEnrichmentServiceImplTest {
                 getSchema("shares_2", false),
                 getSchema("test_datamart", false));
         String defaultSchema = datamarts.get(0).getMnemonic();
-        QueryRequest queryRequest = new QueryRequest();
-        queryRequest.setSql(sql);
-        queryRequest.setEnvName("local");
-        queryRequest.setRequestId(UUID.randomUUID());
-        queryRequest.setDatamartMnemonic(defaultSchema);
         SqlParserPos pos = new SqlParserPos(0, 0);
-        queryRequest.setDeltaInformations(Arrays.asList(
+        List<DeltaInformation> deltaInforamtions = Arrays.asList(
                 DeltaInformation.builder()
                         .tableAlias("a")
                         .deltaTimestamp("2019-12-23 15:15:14")
@@ -199,21 +192,21 @@ class AdgQueryEnrichmentServiceImplTest {
                         .tableName(datamarts.get(2).getEntities().get(1).getName())
                         .pos(pos)
                         .build()
-        ));
-        LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts, Collections.emptyList());
-        return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
+        );
+
+        return EnrichQueryRequest.builder()
+                .query(TestUtils.DEFINITION_SERVICE.processingQuery(sql))
+                .deltaInformations(deltaInforamtions)
+                .envName(ENV_NAME)
+                .schema(datamarts)
+                .build();
     }
 
     private EnrichQueryRequest prepareRequestDeltaNum(String sql) {
         List<Datamart> datamarts = Collections.singletonList(getSchema("shares", true));
         String schemaName = datamarts.get(0).getMnemonic();
-        QueryRequest queryRequest = new QueryRequest();
-        queryRequest.setSql(sql);
-        queryRequest.setEnvName("local");
-        queryRequest.setRequestId(UUID.randomUUID());
-        queryRequest.setDatamartMnemonic(schemaName);
         SqlParserPos pos = new SqlParserPos(0, 0);
-        queryRequest.setDeltaInformations(Arrays.asList(
+        List<DeltaInformation> deltaInforamtions = Arrays.asList(
                 DeltaInformation.builder()
                         .tableAlias("a")
                         .deltaTimestamp("2019-12-23 15:15:14")
@@ -237,21 +230,21 @@ class AdgQueryEnrichmentServiceImplTest {
                         .tableName(datamarts.get(0).getEntities().get(1).getName())
                         .pos(pos)
                         .build()
-        ));
-        LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts, Collections.emptyList());
-        return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
+        );
+
+        return EnrichQueryRequest.builder()
+                .query(TestUtils.DEFINITION_SERVICE.processingQuery(sql))
+                .deltaInformations(deltaInforamtions)
+                .envName(ENV_NAME)
+                .schema(datamarts)
+                .build();
     }
 
     private EnrichQueryRequest prepareRequestDeltaInterval(String sql) {
         List<Datamart> datamarts = Collections.singletonList(getSchema("shares", true));
         String schemaName = datamarts.get(0).getMnemonic();
-        QueryRequest queryRequest = new QueryRequest();
-        queryRequest.setSql(sql);
-        queryRequest.setEnvName("local");
-        queryRequest.setRequestId(UUID.randomUUID());
-        queryRequest.setDatamartMnemonic(schemaName);
         SqlParserPos pos = new SqlParserPos(0, 0);
-        queryRequest.setDeltaInformations(Arrays.asList(
+        List<DeltaInformation> deltaInforamtions = Arrays.asList(
                 DeltaInformation.builder()
                         .tableAlias("a")
                         .deltaTimestamp(null)
@@ -276,21 +269,20 @@ class AdgQueryEnrichmentServiceImplTest {
                         .tableName(datamarts.get(0).getEntities().get(1).getName())
                         .pos(pos)
                         .build()
-        ));
-        LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts, Collections.emptyList());
-        return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
+        );
+        return EnrichQueryRequest.builder()
+                .query(TestUtils.DEFINITION_SERVICE.processingQuery(sql))
+                .deltaInformations(deltaInforamtions)
+                .envName(ENV_NAME)
+                .schema(datamarts)
+                .build();
     }
 
     private EnrichQueryRequest prepareRequestDeltaFinishedIn(String sql) {
         List<Datamart> datamarts = Collections.singletonList(getSchema("shares", true));
         String schemaName = datamarts.get(0).getMnemonic();
-        QueryRequest queryRequest = new QueryRequest();
-        queryRequest.setSql(sql);
-        queryRequest.setEnvName("local");
-        queryRequest.setRequestId(UUID.randomUUID());
-        queryRequest.setDatamartMnemonic(schemaName);
         SqlParserPos pos = new SqlParserPos(0, 0);
-        queryRequest.setDeltaInformations(Collections.singletonList(
+        List<DeltaInformation> deltaInforamtions = Collections.singletonList(
                 DeltaInformation.builder()
                         .tableAlias("a")
                         .deltaTimestamp(null)
@@ -303,9 +295,13 @@ class AdgQueryEnrichmentServiceImplTest {
                         .tableName(datamarts.get(0).getEntities().get(0).getName())
                         .pos(pos)
                         .build()
-        ));
-        LlrRequest llrRequest = new LlrRequest(queryRequest, datamarts, Collections.emptyList());
-        return EnrichQueryRequest.generate(llrRequest.getQueryRequest(), llrRequest.getSchema());
+        );
+        return EnrichQueryRequest.builder()
+                .query(TestUtils.DEFINITION_SERVICE.processingQuery(sql))
+                .deltaInformations(deltaInforamtions)
+                .envName(ENV_NAME)
+                .schema(datamarts)
+                .build();
     }
 
     private Datamart getSchema(String schemaName, boolean isDefault) {

@@ -9,9 +9,7 @@ import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.TtDe
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.TtDeleteQueueResponse;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.TtLoadDataKafkaResponse;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.Space;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 
 import java.util.List;
 import java.util.Map;
@@ -30,13 +28,13 @@ public interface AdgCartridgeClient {
 
   Future<ResOperation> setSchema(String yaml);
 
-  Future<Void> uploadData(TtUploadDataKafkaRequest request);
+  Future<Void> uploadData(AdgUploadDataKafkaRequest request);
 
-  Future<Void> subscribe(TtSubscriptionKafkaRequest request);
+  Future<Void> subscribe(AdgSubscriptionKafkaRequest request);
 
-  Future<TtLoadDataKafkaResponse> loadData(TtLoadDataKafkaRequest request);
+  Future<TtLoadDataKafkaResponse> loadData(AdgLoadDataKafkaRequest request);
 
-  Future<Void> transferDataToScdTable(TtTransferDataEtlRequest request);
+  Future<Void> transferDataToScdTable(AdgTransferDataEtlRequest request);
 
   Future<Void> cancelSubscription(String topicName);
 
@@ -44,9 +42,9 @@ public interface AdgCartridgeClient {
 
   Future<Void> executeCreateSpacesQueued(OperationYaml request);
 
-  Future<Void> executeDeleteSpacesQueued(TtDeleteTablesRequest request);
+  Future<Void> executeDeleteSpacesQueued(AdgDeleteTablesRequest request);
 
-  Future<Void> executeDeleteSpacesWithPrefixQueued(TtDeleteTablesWithPrefixRequest request);
+  Future<Void> executeDeleteSpacesWithPrefixQueued(AdgDeleteTablesWithPrefixRequest request);
 
   Future<Map<String, Space>> getSpaceDescriptions(Set<String> spaceNames);
 

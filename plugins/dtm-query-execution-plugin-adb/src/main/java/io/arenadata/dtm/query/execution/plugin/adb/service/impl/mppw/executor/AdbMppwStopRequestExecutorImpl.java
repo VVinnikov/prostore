@@ -1,20 +1,18 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.executor;
 
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adb.configuration.properties.MppwProperties;
-import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
-import io.arenadata.dtm.query.execution.plugin.adb.factory.impl.MetadataSqlFactoryImpl;
+import io.arenadata.dtm.query.execution.plugin.adb.factory.KafkaMppwSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.MppwTopic;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.DeliveryOptions;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -25,26 +23,26 @@ public class AdbMppwStopRequestExecutorImpl implements AdbMppwRequestExecutor {
 
     private final Vertx vertx;
     private final AdbQueryExecutor adbQueryExecutor;
-    private final MetadataSqlFactory metadataSqlFactory;
+    private final KafkaMppwSqlFactory kafkaMppwSqlFactory;
     private final MppwProperties mppwProperties;
 
     @Autowired
     public AdbMppwStopRequestExecutorImpl(@Qualifier("coreVertx") Vertx vertx,
                                           AdbQueryExecutor adbQueryExecutor,
-                                          MetadataSqlFactory metadataSqlFactory,
+                                          KafkaMppwSqlFactory kafkaMppwSqlFactory,
                                           MppwProperties mppwProperties) {
         this.vertx = vertx;
         this.adbQueryExecutor = adbQueryExecutor;
-        this.metadataSqlFactory = metadataSqlFactory;
+        this.kafkaMppwSqlFactory = kafkaMppwSqlFactory;
         this.mppwProperties = mppwProperties;
     }
 
     @Override
-    public Future<QueryResult> execute(MppwRequestContext requestContext) {
-        return dropExtTable(requestContext)
+    public Future<QueryResult> execute(MppwKafkaRequest request) {
+        return dropExtTable(request)
                 .compose(v -> Future.future((Promise<QueryResult> promise) -> vertx.eventBus().request(
                         MppwTopic.KAFKA_STOP.getValue(),
-                        requestContext.getRequest().getQueryRequest().getRequestId().toString(),
+                        request.getRequestId().toString(),
                         new DeliveryOptions().setSendTimeout(mppwProperties.getStopTimeoutMs()),
                         ar -> {
                             if (ar.succeeded()) {
@@ -56,13 +54,10 @@ public class AdbMppwStopRequestExecutorImpl implements AdbMppwRequestExecutor {
                         })));
     }
 
-    private Future<Void> dropExtTable(MppwRequestContext requestContext) {
+    private Future<Void> dropExtTable(MppwRequest request) {
         return Future.future(promise -> {
-            QueryRequest queryRequest = requestContext.getRequest().getQueryRequest();
-            val schema = queryRequest.getDatamartMnemonic();
-            val table = MetadataSqlFactoryImpl.WRITABLE_EXT_TABLE_PREF +
-                    queryRequest.getRequestId().toString().replace("-", "_");
-            adbQueryExecutor.executeUpdate(metadataSqlFactory.dropExtTableSqlQuery(schema, table))
+            adbQueryExecutor.executeUpdate(kafkaMppwSqlFactory.dropExtTableSqlQuery(request.getDatamartMnemonic(),
+                    kafkaMppwSqlFactory.getTableName(request.getRequestId().toString())))
                     .onComplete(promise);
         });
     }

@@ -4,9 +4,9 @@ import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.extension.config.SqlConfigCall;
 import io.arenadata.dtm.query.calcite.core.extension.config.SqlConfigType;
-import io.arenadata.dtm.query.execution.plugin.api.config.ConfigRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.service.config.ConfigExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.service.config.ConfigService;
+import io.arenadata.dtm.query.execution.core.dto.config.ConfigRequestContext;
+import io.arenadata.dtm.query.execution.core.service.config.ConfigExecutor;
+import io.arenadata.dtm.query.execution.core.service.config.ConfigService;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +34,7 @@ public class ConfigServiceImpl implements ConfigService<QueryResult> {
 
     private Future<ConfigExecutor> getExecutor(ConfigRequestContext context) {
         return Future.future(promise -> {
-            SqlConfigCall configCall = context.getSqlConfigCall();
+            SqlConfigCall configCall = context.getSqlNode();
             ConfigExecutor executor = executorMap.get(configCall.getSqlConfigType());
             if (executor != null) {
                 promise.complete(executor);

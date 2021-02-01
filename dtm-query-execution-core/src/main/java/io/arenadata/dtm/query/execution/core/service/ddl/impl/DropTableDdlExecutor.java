@@ -1,22 +1,24 @@
 package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
+import io.arenadata.dtm.cache.service.CacheService;
+import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheService;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
+import io.arenadata.dtm.common.post.PostSqlActionType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
+import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
 import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
-import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.hsql.HSQLClient;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.utils.InformationSchemaUtils;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlType;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.PostSqlActionType;
+import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.ddl.DdlType;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -38,21 +40,24 @@ import static com.google.common.collect.Sets.newHashSet;
 public class DropTableDdlExecutor extends QueryResultDdlExecutor {
 
     private final DataSourcePluginService dataSourcePluginService;
-    private final EntityCacheService entityCacheService;
+    private final CacheService<EntityKey, Entity> entityCacheService;
     private final EntityDao entityDao;
     private final HSQLClient hsqlClient;
+    private final EvictQueryTemplateCacheService evictQueryTemplateCacheService;
 
     @Autowired
-    public DropTableDdlExecutor(@Qualifier("entityCacheService") EntityCacheService entityCacheService,
+    public DropTableDdlExecutor(@Qualifier("entityCacheService") CacheService<EntityKey, Entity> entityCacheService,
                                 MetadataExecutor<DdlRequestContext> metadataExecutor,
                                 ServiceDbFacade serviceDbFacade,
                                 DataSourcePluginService dataSourcePluginService,
-                                HSQLClient hsqlClient) {
+                                HSQLClient hsqlClient,
+                                EvictQueryTemplateCacheService evictQueryTemplateCacheService) {
         super(metadataExecutor, serviceDbFacade);
         this.entityCacheService = entityCacheService;
         this.entityDao = serviceDbFacade.getServiceDbDao().getEntityDao();
         this.dataSourcePluginService = dataSourcePluginService;
         this.hsqlClient = hsqlClient;
+        this.evictQueryTemplateCacheService = evictQueryTemplateCacheService;
     }
 
     @Override
@@ -62,17 +67,15 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
 
     private Future<QueryResult> dropTable(DdlRequestContext context, String sqlNodeName) {
         return Future.future(promise -> {
-            String schema = getSchemaName(context.getRequest().getQueryRequest(), sqlNodeName);
-            String tableName = getTableName(sqlNodeName);
-            entityCacheService.remove(schema, tableName);
-            Entity entity = createClassTable(schema, tableName);
-            context.getRequest().setEntity(entity);
-            context.setDatamartName(schema);
+            val datamartName = getSchemaName(context.getDatamartName(), sqlNodeName);
+            val tableName = getTableName(sqlNodeName);
+            entityCacheService.remove(new EntityKey(datamartName, tableName));
+            Entity entity = createClassTable(datamartName, tableName);
+            context.setEntity(entity);
+            context.setDatamartName(datamartName);
             context.setDdlType(DdlType.DROP_TABLE);
             dropTable(context, containsIfExistsCheck(context.getRequest().getQueryRequest().getSql()))
-                    .onSuccess(r -> {
-                        promise.complete(QueryResult.emptyResult());
-                    })
+                    .onSuccess(r -> promise.complete(QueryResult.emptyResult()))
                     .onFailure(promise::fail);
         });
     }
@@ -95,7 +98,7 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
     private Future<Entity> getEntity(DdlRequestContext context, boolean ifExists) {
         return Future.future(entityPromise -> {
             val datamartName = context.getDatamartName();
-            val entityName = context.getRequest().getEntity().getName();
+            val entityName = context.getEntity().getName();
             val tableWithSchema = datamartName + "." + entityName;
             entityDao.getEntity(datamartName, entityName)
                     .onSuccess(entity -> {
@@ -124,9 +127,14 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
         //we have to use source type from queryRequest.sourceType because
         //((SqlDropTable) context.getQuery()).getDestination() is always null,
         // since we cut sourceType from all query in HintExtractor
-        Optional<SourceType> requestDestination = Optional.ofNullable(context.getRequest().getQueryRequest().getSourceType());
+        try {
+            evictQueryTemplateCacheService.evictByEntityName(entity.getSchema(), entity.getName());
+        } catch (Exception e) {
+            return Future.failedFuture(new DtmException("Evict cache error"));
+        }
+        Optional<SourceType> requestDestination = Optional.ofNullable(context.getSourceType());
         if (!requestDestination.isPresent()) {
-            context.getRequest().getEntity().setDestination(dataSourcePluginService.getSourceTypes());
+            context.getEntity().setDestination(dataSourcePluginService.getSourceTypes());
             return dropEntityFromEverywhere(context, entity.getName());
         } else {
             final Set<SourceType> reqSourceTypes = newHashSet(requestDestination.get());
@@ -159,7 +167,7 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
                 entity.setDestination(entity.getDestination().stream()
                         .filter(type -> !resultDropDestination.contains(type))
                         .collect(Collectors.toSet()));
-                context.getRequest().getEntity().setDestination(resultDropDestination);
+                context.getEntity().setDestination(resultDropDestination);
                 if (entity.getDestination().isEmpty()) {
                     return dropEntityFromEverywhere(context, entity.getName());
                 } else {

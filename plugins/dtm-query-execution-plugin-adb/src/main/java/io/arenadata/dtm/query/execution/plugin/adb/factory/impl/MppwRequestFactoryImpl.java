@@ -9,6 +9,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static io.arenadata.dtm.query.execution.plugin.adb.factory.Constants.SYS_FROM_ATTR;
+
 @Component
 public class MppwRequestFactoryImpl implements MppwRequestFactory {
 
@@ -37,12 +39,12 @@ public class MppwRequestFactoryImpl implements MppwRequestFactory {
             .map(cn -> ("a.sys_op".equals(cn)) ? "s.sys_op" : cn)
             .collect(Collectors.joining(","));
         String joinConditionInsert = request.getKeyColumnList().stream()
-            .filter(columnName -> !MetadataSqlFactoryImpl.SYS_FROM_ATTR.equals(columnName))
+            .filter(columnName -> !SYS_FROM_ATTR.equals(columnName))
             .map(key -> "s." + key + "=" + "a." + key)
             .collect(Collectors.joining(" AND "));
 
         String joinConditionDelete = request.getKeyColumnList().stream()
-            .filter(columnName -> !MetadataSqlFactoryImpl.SYS_FROM_ATTR.equals(columnName))
+            .filter(columnName -> !SYS_FROM_ATTR.equals(columnName))
             .map(key -> "a." + key + "=" + "s." + key)
             .collect(Collectors.joining(" AND "));
 
@@ -80,8 +82,7 @@ public class MppwRequestFactoryImpl implements MppwRequestFactory {
 
     private List<String> getStagingColumnList(MppwTransferDataRequest request) {
         return request.getColumnList().stream()
-            .map(fieldName ->
-                MetadataSqlFactoryImpl.SYS_FROM_ATTR.equals(fieldName) ? String.valueOf(request.getHotDelta()) : fieldName)
+            .map(fieldName -> SYS_FROM_ATTR.equals(fieldName) ? String.valueOf(request.getHotDelta()) : fieldName)
             .collect(Collectors.toList());
     }
 }

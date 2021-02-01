@@ -5,9 +5,8 @@ import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTableEntity;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTables;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmMetaTableEntityFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmTableEntitiesFactory;
-import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckException;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
 import io.arenadata.dtm.query.execution.plugin.api.factory.MetaTableEntityFactory;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
 import io.vertx.core.CompositeFuture;
@@ -17,8 +16,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -37,9 +34,9 @@ public class AdqmCheckTableService implements CheckTableService {
     }
 
     @Override
-    public Future<Void> check(CheckContext context) {
+    public Future<Void> check(CheckTableRequest request) {
         AdqmTables<AdqmTableEntity> tableEntities = adqmTableEntitiesFactory
-                .create(context.getEntity(), context.getRequest().getQueryRequest().getEnvName());
+                .create(request.getEntity(), request.getEnvName());
         return Future.future(promise -> CompositeFuture.join(Stream.of(
                 tableEntities.getShard(), tableEntities.getDistributed())
                 .map(this::compare)

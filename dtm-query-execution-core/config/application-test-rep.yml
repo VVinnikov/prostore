@@ -34,7 +34,7 @@ core:
     edml:
       sourceType: ${EDML_DATASOURCE:ADG}
       defaultChunkSize: ${EDML_DEFAULT_CHUNK_SIZE:1000}
-      defaultMessageLimit: ${EDML_DEFAULT_MESSAGE_LIMIT:1000}
+      defaultMessageLimit: ${EDML_DEFAULT_MESSAGE_LIMIT:1000}  //toDo Remove
       pluginStatusCheckPeriodMs: ${EDML_STATUS_CHECK_PERIOD_MS:3000}
       firstOffsetTimeoutMs: ${EDML_FIRST_OFFSET_TIMEOUT_MS:15000}
       changeOffsetTimeoutMs: ${EDML_CHANGE_OFFSET_TIMEOUT_MS:10000}
@@ -60,7 +60,7 @@ core:
     status.event.publish:
       enabled: false
       topic: status.event
-    statusMonitorUrl: ${STATUS_MONITOR_URL:http://10.92.3.3:9095/status}
+    statusMonitorUrl: ${STATUS_MONITOR_URL:http://10.92.3.3:9095/status}  //toDo Remove
 
   cache:
     initialCapacity: ${CACHE_INITIAL_CAPACITY:100000}
@@ -77,7 +77,7 @@ adb:
     fetchSize: ${ADB_FETCH_SIZE:1000}
 
   mppw:
-    startLoadUrl: ${ADB_START_LOAD_URL:http://localhost:8990/newdata/adb/start}
+    startLoadUrl: ${ADB_START_LOAD_URL:http://localhost:8990/newdata/adb/start}  //toDo Remove
     consumerGroup: ${ADB_LOAD_GROUP:adb-emulator-load-adb}
     poolSize: ${ADB_MPPW_POOL_SIZE:2}
     stopTimeoutMs: ${ADB_MPPW_STOP_TIMEOUT_MS:86400000}

@@ -34,7 +34,7 @@ core:
     edml:
       sourceType: ${EDML_DATASOURCE:ADG}
       defaultChunkSize: ${EDML_DEFAULT_CHUNK_SIZE:1000}
-      defaultMessageLimit: ${EDML_DEFAULT_MESSAGE_LIMIT:1000}
+      defaultMessageLimit: ${EDML_DEFAULT_MESSAGE_LIMIT:1000}  //toDo Remove
       pluginStatusCheckPeriodMs: ${EDML_STATUS_CHECK_PERIOD_MS:3000}
       firstOffsetTimeoutMs: ${EDML_FIRST_OFFSET_TIMEOUT_MS:15000}
       changeOffsetTimeoutMs: ${EDML_CHANGE_OFFSET_TIMEOUT_MS:10000}

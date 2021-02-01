@@ -290,7 +290,7 @@ public abstract class AbstractCoreDtmIT {
                 .withEnv("CORE_PLUGINS_ACTIVE", Objects.requireNonNull(dtmProperties.getProperty("core.plugins.active")).toString())
                 .withEnv("EDML_DATASOURCE", Objects.requireNonNull(dtmProperties.getProperty("core.datasource.edml.sourceType")).toString())
                 .withEnv("EDML_DEFAULT_CHUNK_SIZE", Objects.requireNonNull(dtmProperties.getProperty("core.datasource.edml.defaultChunkSize")).toString())
-                .withEnv("EDML_DEFAULT_MESSAGE_LIMIT", Objects.requireNonNull(dtmProperties.getProperty("core.datasource.edml.defaultMessageLimit")).toString())
+                .withEnv("EDML_DEFAULT_MESSAGE_LIMIT", Objects.requireNonNull(dtmProperties.getProperty("core.datasource.edml.defaultMessageLimit")).toString())  //toDo Remove
                 .withEnv("EDML_STATUS_CHECK_PERIOD_MS", Objects.requireNonNull(dtmProperties.getProperty("core.datasource.edml.pluginStatusCheckPeriodMs")).toString())
                 .withEnv("EDML_FIRST_OFFSET_TIMEOUT_MS", Objects.requireNonNull(dtmProperties.getProperty("core.datasource.edml.firstOffsetTimeoutMs")).toString())
                 .withEnv("EDML_CHANGE_OFFSET_TIMEOUT_MS", Objects.requireNonNull(dtmProperties.getProperty("core.datasource.edml.changeOffsetTimeoutMs")).toString())
@@ -300,13 +300,13 @@ public abstract class AbstractCoreDtmIT {
                 .withEnv("ZOOKEEPER_KAFKA_CONNECTION_TIMEOUT_MS", Objects.requireNonNull(dtmProperties.getProperty("core.kafka.cluster.zookeeper.connection-timeout-ms")).toString())
                 .withEnv("ZOOKEEPER_KAFKA_SESSION_TIMEOUT_MS", Objects.requireNonNull(dtmProperties.getProperty("core.kafka.cluster.zookeeper.session-timeout-ms")).toString())
                 .withEnv("KAFKA_INPUT_STREAM_TIMEOUT_MS", Objects.requireNonNull(dtmProperties.getProperty("core.kafka.admin.inputStreamTimeoutMs")).toString())
-                .withEnv("STATUS_MONITOR_URL", Objects.requireNonNull(dtmProperties.getProperty("core.kafka.statusMonitorUrl")).toString())
+                .withEnv("STATUS_MONITOR_URL", Objects.requireNonNull(dtmProperties.getProperty("core.kafka.statusMonitorUrl")).toString())  //toDo Remove
                 .withEnv("ADB_DB_NAME", Objects.requireNonNull(dtmProperties.getProperty("adb.datasource.options.database")).toString())
                 .withEnv("ADB_USERNAME", Objects.requireNonNull(dtmProperties.getProperty("adb.datasource.options.user")).toString())
                 .withEnv("ADB_PASS", Objects.requireNonNull(dtmProperties.getProperty("adb.datasource.options.password")).toString())
                 .withEnv("ADB_HOST", Objects.requireNonNull(dtmProperties.getProperty("adb.datasource.options.host")).toString())
                 .withEnv("ADB_PORT", Objects.requireNonNull(dtmProperties.getProperty("adb.datasource.options.port")).toString())
-                .withEnv("ADB_START_LOAD_URL", Objects.requireNonNull(dtmProperties.getProperty("adb.mppw.startLoadUrl")).toString())
+                .withEnv("ADB_START_LOAD_URL", Objects.requireNonNull(dtmProperties.getProperty("adb.mppw.startLoadUrl")).toString())  // toDo Remove
                 .withEnv("ADB_MPPW_POOL_SIZE", Objects.requireNonNull(dtmProperties.getProperty("adb.mppw.poolSize")).toString())
                 .withEnv("ADB_LOAD_GROUP", Objects.requireNonNull(dtmProperties.getProperty("adb.mppw.consumerGroup")).toString())
                 .withEnv("ADB_MPPW_STOP_TIMEOUT_MS", Objects.requireNonNull(dtmProperties.getProperty("adb.mppw.stopTimeoutMs")).toString())

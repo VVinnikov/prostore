@@ -34,7 +34,6 @@ core:
     edml:
       sourceType: ${EDML_DATASOURCE:ADG}
       defaultChunkSize: ${EDML_DEFAULT_CHUNK_SIZE:1000}
-      defaultMessageLimit: ${EDML_DEFAULT_MESSAGE_LIMIT:1000}  //toDo Remove
       pluginStatusCheckPeriodMs: ${EDML_STATUS_CHECK_PERIOD_MS:3000}
       firstOffsetTimeoutMs: ${EDML_FIRST_OFFSET_TIMEOUT_MS:15000}
       changeOffsetTimeoutMs: ${EDML_CHANGE_OFFSET_TIMEOUT_MS:10000}
@@ -69,15 +68,14 @@ core:
 
 adb:
   datasource:
-    user: ${ADB_USERNAME:gpadmin}
-    password: ${ADB_PASS:gpadmin}
-    host: ${ADB_HOST:10.92.3.42}
+    user: ${ADB_USERNAME:test}
+    password: ${ADB_PASS:test}
+    host: ${ADB_HOST:10.92.3.5}
     port: ${ADB_PORT:5432}
     maxSize: 20
     fetchSize: ${ADB_FETCH_SIZE:1000}
 
   mppw:
-    startLoadUrl: ${ADB_START_LOAD_URL:http://localhost:8090/newdata/adb/start}
     consumerGroup: ${ADB_LOAD_GROUP:adb-emulator-load-adb}
     poolSize: ${ADB_MPPW_POOL_SIZE:2}
     stopTimeoutMs: ${ADB_MPPW_STOP_TIMEOUT_MS:86400000}

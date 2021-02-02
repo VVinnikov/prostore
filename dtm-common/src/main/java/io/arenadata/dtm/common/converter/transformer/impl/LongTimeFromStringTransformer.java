@@ -22,7 +22,7 @@ public class LongTimeFromStringTransformer extends AbstractColumnTransformer<Lon
 
     @Override
     public Long transformValue(String value) {
-        return value == null ? null : LocalTime.parse(value, timeFormatter).toNanoOfDay();
+        return value == null ? null : LocalTime.parse(value, timeFormatter).toNanoOfDay()/1000;
     }
 
     @Override

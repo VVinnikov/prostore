@@ -88,7 +88,10 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
         if (queryRequest.isPrepare()) {
             return prepareQuery(llrContext);
         } else {
-            return executeQuery(llrContext);
+            return replaceViewFromSqlNode(llrContext)
+                    .compose(v -> initDeltaInformations(llrContext))
+                    .compose(v -> initLlrContext(llrContext))
+                    .compose(v -> defineQueryAndExecute(llrContext));
         }
     }
 
@@ -131,10 +134,25 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
         }
     }
 
-    private Future<QueryResult> executeQuery(LlrRequestContext llrContext) {
-        return replaceViewFromSqlNode(llrContext)
-                .map(v -> getQueryTemplateValue(llrContext))
-                .compose(queryTemplateValue -> execute(queryTemplateValue, llrContext));
+    private Future<QueryResult> defineQueryAndExecute(LlrRequestContext llrContext) {
+        return Future.future(promise -> {
+            if (informationSchemaDefinitionService.isInformationSchemaRequest(llrContext.getDeltaInformations())) {
+                llrContext.getSourceRequest().setQuery(llrContext.getDmlRequestContext().getSqlNode());//FIXME check correct behaviour
+                metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
+                        SqlProcessingType.LLR,
+                        llrContext.getDmlRequestContext().getMetrics())
+                        .compose(v -> informationSchemaDefinitionService.checkAccessToSystemLogicalTables(llrContext.getOriginalQuery()))
+                        .compose(v -> informationSchemaExecutor.execute(llrContext.getSourceRequest()))
+                        .onComplete(metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
+                                SqlProcessingType.LLR,
+                                llrContext.getDmlRequestContext().getMetrics(),
+                                promise));
+            } else {
+                Optional<SourceQueryTemplateValue> queryTemplateValue = getQueryTemplateValue(llrContext);
+                execute(queryTemplateValue, llrContext)
+                        .onComplete(promise);
+            }
+        });
     }
 
     private Future<QueryRequest> replaceViewFromSqlNode(LlrRequestContext llrContext) {
@@ -170,9 +188,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                                 createLlrRequest(llrContext)))
                         .onComplete(promise);
             } else {
-                initDeltaInformations(llrContext)
-                        .compose(v -> initLlrContext(llrContext))
-                        .compose(v -> executeRequest(llrContext))
+                executeRequest(llrContext)
                         .onComplete(promise);
             }
         });
@@ -213,7 +229,6 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
     private Future<LlrRequestContext> initDeltaInformations(LlrRequestContext llrContext) {
         return deltaQueryPreprocessor.process(llrContext.getDmlRequestContext().getSqlNode())
                 .map(preprocessorResponse -> {
-                    QueryRequest queryRequest = llrContext.getSourceRequest().getQueryRequest();
                     llrContext.setDeltaInformations(preprocessorResponse.getDeltaInformations());
                     llrContext.getDmlRequestContext().setSqlNode(preprocessorResponse.getSqlNode());
                     return llrContext;
@@ -222,35 +237,20 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
 
     private Future<QueryResult> executeRequest(LlrRequestContext llrContext) {
         return Future.future(promise -> {
-            val sourceRequest = llrContext.getSourceRequest();
-            val dmlRequestContext = llrContext.getDmlRequestContext();
-            if (informationSchemaDefinitionService.isInformationSchemaRequest(llrContext.getDeltaInformations())) {
-                //TODO check this queries
-                metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
-                        SqlProcessingType.LLR,
-                        dmlRequestContext.getMetrics())
-                        .compose(v -> informationSchemaDefinitionService.checkAccessToSystemLogicalTables(llrContext.getOriginalQuery()))
-                        .compose(v -> informationSchemaExecutor.execute(sourceRequest))
-                        .onComplete(metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
-                                SqlProcessingType.LLR,
-                                dmlRequestContext.getMetrics(),
-                                promise));
-            } else {
-                val newQueryTemplateKey = QueryTemplateKey.builder().build();
-                val newQueryTemplateValue = SourceQueryTemplateValue.builder().build();
-                initLlrContext(llrContext)
-                        .compose(v -> targetDatabaseDefinitionService.getAcceptableSourceTypes(llrContext.getSourceRequest()))
-                        .map(sourceTypes -> {
-                            initQueryTemplateObjects(llrContext, newQueryTemplateKey, newQueryTemplateValue, sourceTypes);
-                            return sourceTypes;
-                        })
-                        .compose(v -> queryCacheService.put(newQueryTemplateKey, newQueryTemplateValue))
-                        .compose(queryTemplateValue -> getQuerySourceTypeAndUpdateQueryCacheIfNeeded(llrContext, queryTemplateValue))
-                        .compose(sourceType -> dataSourcePluginService.llr(sourceType,
-                                llrContext.getDmlRequestContext().getMetrics(),
-                                createLlrRequest(llrContext)))
-                        .onComplete(promise);
-            }
+            val newQueryTemplateKey = QueryTemplateKey.builder().build();
+            val newQueryTemplateValue = SourceQueryTemplateValue.builder().build();
+            initLlrContext(llrContext)//TODO check and remove as redundant
+                    .compose(v -> targetDatabaseDefinitionService.getAcceptableSourceTypes(llrContext.getSourceRequest()))
+                    .map(sourceTypes -> {
+                        initQueryTemplateObjects(llrContext, newQueryTemplateKey, newQueryTemplateValue, sourceTypes);
+                        return sourceTypes;
+                    })
+                    .compose(v -> queryCacheService.put(newQueryTemplateKey, newQueryTemplateValue))
+                    .compose(queryTemplateValue -> getQuerySourceTypeAndUpdateQueryCacheIfNeeded(llrContext, queryTemplateValue))
+                    .compose(sourceType -> dataSourcePluginService.llr(sourceType,
+                            llrContext.getDmlRequestContext().getMetrics(),
+                            createLlrRequest(llrContext)))
+                    .onComplete(promise);
         });
     }
 

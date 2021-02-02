@@ -106,6 +106,7 @@ public abstract class AbstractQueryTemplateExtractor implements QueryTemplateExt
     private String getConditionColumnName(SqlSelectTree selectTree, SqlTreeNode n) {
         final Optional<SqlTreeNode> parentNode = selectTree.getParentByChild(n);
         if (parentNode.isPresent()) {
+            //FIXME need to refactor, because this where condition wont'be work: select * from test t where 1=1 and t.id = 1 ....
             return ((SqlIdentifier) ((SqlBasicCall) parentNode.get().getNode()).getOperandList().get(0)).names.get(0);
         } else {
             throw new DtmException("Can't extract condition column name from sql node");

@@ -112,7 +112,7 @@ public class AdqmLlrServiceTest {
 
     @Test
     void testQueryExecuteSuccess() {
-        adqmLlrService.queryExecute("", Collections.emptyList())
+        adqmLlrService.queryExecute("", null, Collections.emptyList())
                 .onComplete(ar -> {
                     assertTrue(ar.succeeded());
                     assertEquals("value", ar.result().get(0).get("column"));

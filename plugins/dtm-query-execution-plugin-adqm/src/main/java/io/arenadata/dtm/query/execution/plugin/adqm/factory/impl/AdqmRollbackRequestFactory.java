@@ -27,8 +27,8 @@ public class AdqmRollbackRequestFactory implements RollbackRequestFactory<AdqmRo
         "  WHERE sys_from = <sys_cn> AND sign = 1\n" +
         "  UNION ALL\n" +
         "  SELECT <fields>, sys_from, toInt64(<maxLong>) AS sys_to, 0 AS sys_op, toDateTime('9999-12-31 00:00:00') AS close_date, arrayJoin([-1, 1])\n" +
-        "  FROM <dbname>.<tablename>_actual FINAL\n" +
-        "  WHERE sys_to = <prev_sys_cn> AND sign = 1";
+        "  FROM <dbname>.<tablename>_actual a FINAL\n" +
+        "  WHERE a.sys_to = <prev_sys_cn> AND sign = 1";
     private static final String OPTIMIZE_TABLE_TEMPLATE = "OPTIMIZE TABLE %s.%s_actual_shard ON CLUSTER %s FINAL";
 
     private final DdlProperties ddlProperties;
@@ -43,6 +43,7 @@ public class AdqmRollbackRequestFactory implements RollbackRequestFactory<AdqmRo
         return new AdqmRollbackRequest(
             Arrays.asList(
                 PreparedStatementRequest.onlySql(getDropTableSql(dbName, entityName, "ext_shard", cluster)),
+                PreparedStatementRequest.onlySql(getDropTableSql(dbName, entityName, "actual_loader_shard", cluster)),
                 PreparedStatementRequest.onlySql(getDropTableSql(dbName, entityName, "buffer_loader_shard", cluster)),
                 PreparedStatementRequest.onlySql(getDropTableSql(dbName, entityName, "buffer", cluster)),
                 PreparedStatementRequest.onlySql(getDropTableSql(dbName, entityName, "buffer_shard", cluster)),

@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class AdqmRollbackRequestFactoryTest {
     private static final List<String> EXPECTED_SQLS = Arrays.asList(
         "DROP TABLE IF EXISTS env_1__dtm.tbl1_ext_shard ON CLUSTER cluster_1",
+        "DROP TABLE IF EXISTS env_1__dtm.tbl1_actual_loader_shard ON CLUSTER cluster_1",
         "DROP TABLE IF EXISTS env_1__dtm.tbl1_buffer_loader_shard ON CLUSTER cluster_1",
         "DROP TABLE IF EXISTS env_1__dtm.tbl1_buffer ON CLUSTER cluster_1",
         "DROP TABLE IF EXISTS env_1__dtm.tbl1_buffer_shard ON CLUSTER cluster_1",
@@ -31,8 +32,8 @@ class AdqmRollbackRequestFactoryTest {
             "  WHERE sys_from = 11 AND sign = 1\n" +
             "  UNION ALL\n" +
             "  SELECT f1,f2,f3, sys_from, toInt64(9223372036854775807) AS sys_to, 0 AS sys_op, toDateTime('9999-12-31 00:00:00') AS close_date, arrayJoin([-1, 1])\n" +
-            "  FROM env_1__dtm.tbl1_actual FINAL\n" +
-            "  WHERE sys_to = 10 AND sign = 1",
+            "  FROM env_1__dtm.tbl1_actual a FINAL\n" +
+            "  WHERE a.sys_to = 10 AND sign = 1",
         "SYSTEM FLUSH DISTRIBUTED env_1__dtm.tbl1_actual",
         "OPTIMIZE TABLE env_1__dtm.tbl1_actual_shard ON CLUSTER cluster_1 FINAL"
     );

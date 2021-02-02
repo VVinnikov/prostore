@@ -31,7 +31,7 @@ public class GetDeltaByNumExecutorImpl extends DeltaServiceDaoExecutorHelper imp
     @Override
     public Future<OkDelta> execute(String datamart, Long deltaNum) {
         if(deltaNum < 0) {
-            throw new NegativeDeltaNumberException();
+            return Future.failedFuture(new NegativeDeltaNumberException());
         }
         Promise<OkDelta> resultPromise = Promise.promise();
         executor.getData(getDeltaPath(datamart))

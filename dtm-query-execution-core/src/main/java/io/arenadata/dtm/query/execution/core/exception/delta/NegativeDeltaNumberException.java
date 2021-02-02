@@ -6,7 +6,4 @@ public class NegativeDeltaNumberException extends DeltaException {
         super(MESSAGE);
     }
 
-    public NegativeDeltaNumberException(Throwable cause) {
-        super(MESSAGE, cause);
-    }
 }

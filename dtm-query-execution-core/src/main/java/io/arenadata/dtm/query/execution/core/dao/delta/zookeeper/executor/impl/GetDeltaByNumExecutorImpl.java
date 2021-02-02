@@ -30,6 +30,9 @@ public class GetDeltaByNumExecutorImpl extends DeltaServiceDaoExecutorHelper imp
 
     @Override
     public Future<OkDelta> execute(String datamart, Long deltaNum) {
+        if(deltaNum < 0) {
+            throw new NegativeDeltaNumberException();
+        }
         Promise<OkDelta> resultPromise = Promise.promise();
         executor.getData(getDeltaPath(datamart))
             .map(bytes -> {
@@ -50,8 +53,7 @@ public class GetDeltaByNumExecutorImpl extends DeltaServiceDaoExecutorHelper imp
                     datamart,
                     deltaNum);
                 if (error instanceof KeeperException.NoNodeException) {
-                    if(deltaNum < 0) resultPromise.fail(new NegativeDeltaNumberException(error));
-                    else resultPromise.fail(new DeltaNotFoundException(error));
+                   resultPromise.fail(new DeltaNotFoundException(error));
                 } else if (error instanceof DeltaException) {
                     resultPromise.fail(error);
                 } else {

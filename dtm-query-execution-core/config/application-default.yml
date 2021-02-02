@@ -61,6 +61,11 @@ core:
       topic: status.event
     statusMonitorUrl: ${STATUS_MONITOR_URL:http://127.0.0.1:9095/status}
 
+  vertx:
+    pool:
+      task-pool: 10
+      task-timeout: 86400000
+
   cache:
     initialCapacity: ${CACHE_INITIAL_CAPACITY:100000}
     maximumSize: ${CACHE_MAXIMUM_SIZE:100000}

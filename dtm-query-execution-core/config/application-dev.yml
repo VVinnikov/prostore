@@ -43,6 +43,11 @@ core:
       session-timeout-ms: ${ZOOKEEPER_DS_SESSION_TIMEOUT_MS:86400000}
       chroot: ${ZOOKEEPER_DS_CHROOT:/adtm}
 
+  vertx:
+    pool:
+      task-pool: 10
+      task-timeout: 86400000
+
   kafka:
     producer:
       property:

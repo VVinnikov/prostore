@@ -8,9 +8,9 @@ import io.arenadata.dtm.query.execution.core.kafka.StatusMonitorServiceImpl;
 import io.arenadata.dtm.query.execution.core.query.client.SqlClientFactoryImpl;
 import io.arenadata.dtm.query.execution.core.query.client.SqlClientProviderImpl;
 import io.arenadata.dtm.query.execution.core.query.executor.QueryExecutorImpl;
-import io.arenadata.dtm.query.execution.core.util.DockerImagesUtil;
 import io.arenadata.dtm.query.execution.core.service.zookeeper.ZookeeperConnectionProvider;
 import io.arenadata.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
+import io.arenadata.dtm.query.execution.core.util.DockerImagesUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -290,7 +290,6 @@ public abstract class AbstractCoreDtmIT {
                 .withEnv("CORE_PLUGINS_ACTIVE", Objects.requireNonNull(dtmProperties.getProperty("core.plugins.active")).toString())
                 .withEnv("EDML_DATASOURCE", Objects.requireNonNull(dtmProperties.getProperty("core.datasource.edml.sourceType")).toString())
                 .withEnv("EDML_DEFAULT_CHUNK_SIZE", Objects.requireNonNull(dtmProperties.getProperty("core.datasource.edml.defaultChunkSize")).toString())
-                .withEnv("EDML_DEFAULT_MESSAGE_LIMIT", Objects.requireNonNull(dtmProperties.getProperty("core.datasource.edml.defaultMessageLimit")).toString())
                 .withEnv("EDML_STATUS_CHECK_PERIOD_MS", Objects.requireNonNull(dtmProperties.getProperty("core.datasource.edml.pluginStatusCheckPeriodMs")).toString())
                 .withEnv("EDML_FIRST_OFFSET_TIMEOUT_MS", Objects.requireNonNull(dtmProperties.getProperty("core.datasource.edml.firstOffsetTimeoutMs")).toString())
                 .withEnv("EDML_CHANGE_OFFSET_TIMEOUT_MS", Objects.requireNonNull(dtmProperties.getProperty("core.datasource.edml.changeOffsetTimeoutMs")).toString())
@@ -306,7 +305,6 @@ public abstract class AbstractCoreDtmIT {
                 .withEnv("ADB_PASS", Objects.requireNonNull(dtmProperties.getProperty("adb.datasource.options.password")).toString())
                 .withEnv("ADB_HOST", Objects.requireNonNull(dtmProperties.getProperty("adb.datasource.options.host")).toString())
                 .withEnv("ADB_PORT", Objects.requireNonNull(dtmProperties.getProperty("adb.datasource.options.port")).toString())
-                .withEnv("ADB_START_LOAD_URL", Objects.requireNonNull(dtmProperties.getProperty("adb.mppw.startLoadUrl")).toString())
                 .withEnv("ADB_MPPW_POOL_SIZE", Objects.requireNonNull(dtmProperties.getProperty("adb.mppw.poolSize")).toString())
                 .withEnv("ADB_LOAD_GROUP", Objects.requireNonNull(dtmProperties.getProperty("adb.mppw.consumerGroup")).toString())
                 .withEnv("ADB_MPPW_STOP_TIMEOUT_MS", Objects.requireNonNull(dtmProperties.getProperty("adb.mppw.stopTimeoutMs")).toString())

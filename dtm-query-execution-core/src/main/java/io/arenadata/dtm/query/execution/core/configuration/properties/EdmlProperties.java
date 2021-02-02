@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 public class EdmlProperties {
     private SourceType sourceType;
     private Integer defaultChunkSize;
-    private Integer defaultMessageLimit;
     private Integer pluginStatusCheckPeriodMs;
     private Integer firstOffsetTimeoutMs;
     private Integer changeOffsetTimeoutMs;

@@ -109,7 +109,7 @@ class MppwStartRequestHandlerTest {
                 t -> t.equalsIgnoreCase("CREATE MATERIALIZED VIEW IF NOT EXISTS dev__shares.accounts_buffer_loader_shard ON CLUSTER test_arenadata TO dev__shares.accounts_buffer\n" +
                         "  AS SELECT column1, column2, sys_op AS sys_op_buffer FROM dev__shares.accounts_ext_shard"),
                 t -> t.equalsIgnoreCase("CREATE MATERIALIZED VIEW IF NOT EXISTS dev__shares.accounts_actual_loader_shard ON CLUSTER test_arenadata TO dev__shares.accounts_actual\n" +
-                        "AS SELECT es.column1, es.column2, es.column3, 101 AS sys_from, 9223372036854775807 as sys_to, 0 as sys_op_load, '9999-12-31 00:00:00' as SYS_CLOSE_DATE, 1 AS sign  FROM dev__shares.accounts_ext_shard es WHERE es.sys_op <> 1")
+                        "AS SELECT es.column1, es.column2, es.column3, 101 AS sys_from, 9223372036854775807 as sys_to, 0 as sys_op_load, '9999-12-31 00:00:00' as sys_close_date, 1 AS sign  FROM dev__shares.accounts_ext_shard es WHERE es.sys_op <> 1")
         ), mockData, false);
 
         MockStatusReporter mockReporter = createMockReporter("restConsumerGroup");

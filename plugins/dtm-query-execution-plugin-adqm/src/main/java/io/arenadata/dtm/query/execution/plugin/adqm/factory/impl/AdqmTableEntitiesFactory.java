@@ -25,7 +25,7 @@ public class AdqmTableEntitiesFactory implements TableEntitiesFactory<AdqmTables
             new AdqmTableColumn("sys_from", "Int64", false),
             new AdqmTableColumn("sys_to", "Int64", false),
             new AdqmTableColumn("sys_op", "Int8", false),
-            new AdqmTableColumn("close_date", "DateTime", false),
+            new AdqmTableColumn("sys_close_date", "DateTime", false),
             new AdqmTableColumn("sign", "Int8", false)
     );
 

@@ -47,14 +47,14 @@ public class AdqmCheckTableServiceTest {
                 getMapColumn("sys_from", "Int64", true),
                 getMapColumn("sys_to", "Int64", false),
                 getMapColumn("sys_op", "Int8", false),
-                getMapColumn("close_date", "DateTime", false),
+                getMapColumn("sys_close_date", "DateTime", false),
                 getMapColumn("sign", "Int8", false)
         ));
         sysColumns.put(ACTUAL_POSTFIX, Arrays.asList(
                 getMapColumn("sys_from", "Int64", false),
                 getMapColumn("sys_to", "Int64", false),
                 getMapColumn("sys_op", "Int8", false),
-                getMapColumn("close_date", "DateTime", false),
+                getMapColumn("sys_close_date", "DateTime", false),
                 getMapColumn("sign", "Int8", false)
         ));
     }

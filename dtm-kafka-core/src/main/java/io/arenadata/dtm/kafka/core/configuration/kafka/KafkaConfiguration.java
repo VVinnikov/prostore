@@ -1,6 +1,7 @@
 package io.arenadata.dtm.kafka.core.configuration.kafka;
 
 
+import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
 import io.arenadata.dtm.kafka.core.configuration.properties.KafkaProperties;
 import io.arenadata.dtm.kafka.core.factory.KafkaProducerFactory;
@@ -45,8 +46,9 @@ public class KafkaConfiguration {
 
     @Bean("coreKafkaConsumerMonitor")
     public KafkaConsumerMonitor kafkaConsumerMonitor(@Qualifier("coreVertx") Vertx vertx,
-                                                     KafkaProperties kafkaProperties) {
-        return new RestConsumerMonitorImpl(vertx, kafkaProperties);
+                                                     KafkaProperties kafkaProperties,
+                                                     DtmConfig dtmConfig) {
+        return new RestConsumerMonitorImpl(vertx, kafkaProperties, dtmConfig);
     }
 
     @ConditionalOnProperty(

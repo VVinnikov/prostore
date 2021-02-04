@@ -13,10 +13,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URL;
 import java.sql.*;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.*;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
@@ -35,16 +32,16 @@ public class DtmResultSet implements ResultSet {
         this.connection = connection;
         this.fields = fields;
         this.thisRow = (fields == null || fields.isEmpty()) ?
-            new Field[0] : fields.get(0);
+                new Field[0] : fields.get(0);
         this.metadata = metadata;
         this.zoneId = timeZone;
     }
 
     public static DtmResultSet createEmptyResultSet() {
         return new DtmResultSet(null,
-            Collections.singletonList(new Field[]{new Field("insert_id", "")}),
-            Collections.emptyList(),
-            DtmConnectionImpl.DEFAULT_TIME_ZONE);
+                Collections.singletonList(new Field[]{new Field("insert_id", "")}),
+                Collections.emptyList(),
+                DtmConnectionImpl.DEFAULT_TIME_ZONE);
     }
 
     @Override
@@ -141,7 +138,7 @@ public class DtmResultSet implements ResultSet {
                 return this.getTimestamp(columnIndex);
             default:
                 throw new SQLException(String.format("Column type %s for index %s not found!",
-                    columnMetadata.getType(), columnIndex));
+                        columnMetadata.getType(), columnIndex));
         }
     }
 
@@ -241,7 +238,7 @@ public class DtmResultSet implements ResultSet {
         final Object value = this.getValue(columnIndex);
         if (value != null) {
             return Date.valueOf(LocalDateTime.ofInstant(Instant.ofEpochMilli((Long) value),
-                this.zoneId).toLocalDate());
+                    this.zoneId).toLocalDate());
         } else {
             return null;
         }
@@ -249,8 +246,13 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public Time getTime(int columnIndex) throws SQLException {
-        Timestamp ts = this.getTimestamp(columnIndex);
-        return ts == null ? null : new Time(ts.getTime());
+        Object value = this.getValue(columnIndex);
+        if (value != null) {
+            long nanoOfDay = ((Integer) value) * 1000L;
+            return Time.valueOf(LocalTime.ofNanoOfDay(nanoOfDay));
+        } else {
+            return null;
+        }
     }
 
     @Override

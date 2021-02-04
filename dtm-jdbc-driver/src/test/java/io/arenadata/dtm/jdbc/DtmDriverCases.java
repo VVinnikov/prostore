@@ -3,6 +3,7 @@ package io.arenadata.dtm.jdbc;
 import io.arenadata.dtm.jdbc.core.BaseConnection;
 import io.arenadata.dtm.jdbc.ext.DtmConnectionImpl;
 import io.arenadata.dtm.jdbc.ext.DtmDatabaseMetaData;
+import io.arenadata.dtm.jdbc.ext.DtmResultSet;
 import io.arenadata.dtm.jdbc.ext.DtmStatement;
 import io.arenadata.dtm.jdbc.model.TableInfo;
 
@@ -20,14 +21,10 @@ public class DtmDriverCases {
 
         BaseConnection conn = new DtmConnectionImpl(host, user, schema, null, url);
         DtmStatement stmnt = (DtmStatement) conn.createStatement();
-        DtmStatement stmnt2 = (DtmStatement) conn.createStatement();
-        final List<TableInfo> tables = conn.getQueryExecutor().getTables("dtm_714");
-        final ResultSet createDb = stmnt.executeQuery("CREATE DATABASE dtm_test_sql;");
-        final ResultSet dropDb = stmnt.executeQuery("DROP DATABASE dtm_test_sql;");
-        //final ResultSet resultSet1 = stmnt.executeQuery("USE dtm_714");
-        //final ResultSet resultSet2 = stmnt.executeQuery("get_delta_ok(); get_delta_ok();");
-        //resultSet2.getObject(2);
-        DtmDatabaseMetaData dtmDatabaseMetaData = new DtmDatabaseMetaData(conn);
-        //final ResultSet columns = dtmDatabaseMetaData.getColumns("dtm_579", "%", "transactions_2", "%");
+        final DtmResultSet resultSet = (DtmResultSet) stmnt.executeQuery("select * from dtm_928_2.all_types_table where id = 1 datasource_type='adqm'");
+        resultSet.getDate(8);
+        resultSet.getTimestamp(9);
+        resultSet.getTime(10);
+        System.out.println(resultSet);
     }
 }

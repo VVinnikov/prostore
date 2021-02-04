@@ -70,7 +70,7 @@ public class AdqmCreateTableQueriesFactory implements CreateTableQueriesFactory<
                         distributed.getEnv(),
                         distributed.getSchema(),
                         shard.getName(),
-                        String.join(", ", distributed.getShardingKeys()))
+                        String.join("+", distributed.getShardingKeys()))
         );
     }
 

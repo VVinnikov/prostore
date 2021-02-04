@@ -49,11 +49,10 @@ public class ConverterConfiguration {
         transformerMap.put(ColumnType.BIGINT, getTransformerMap(new NumberFromBigintTransformer()));
         transformerMap.put(ColumnType.DOUBLE, getTransformerMap(new NumberFromDoubleTransformer()));
         transformerMap.put(ColumnType.FLOAT, getTransformerMap(new NumberFromFloatTransformer()));
-        transformerMap.put(ColumnType.DATE, getTransformerMap(new LongDateFromLongTransformer()));
-        transformerMap.put(ColumnType.TIME, getTransformerMap(new LocalTimeFromStringTransformer()));
+        transformerMap.put(ColumnType.DATE, getTransformerMap(new LongDateFromIntTransformer()));
+        transformerMap.put(ColumnType.TIME, getTransformerMap(new LongTimeFromLongTransformer()));
         transformerMap.put(ColumnType.TIMESTAMP, getTransformerMap(
-                new StringTimestampFromLongTransformer(DateTimeFormatter.ofPattern(DATE_TIME_FORMAT),
-                        dtmSettings.getTimeZone())));
+                new LongTimestampFromLongTransformer()));
         transformerMap.put(ColumnType.BOOLEAN, getTransformerMap(new BooleanFromBooleanTransformer(), new BooleanFromNumericTransformer()));
         transformerMap.put(ColumnType.ANY, getTransformerMap(new AnyFromObjectTransformer()));
         return transformerMap;

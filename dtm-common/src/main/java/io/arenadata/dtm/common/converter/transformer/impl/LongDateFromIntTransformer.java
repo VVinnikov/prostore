@@ -7,16 +7,16 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Collections;
 
-public class LongDateFromLongTransformer extends AbstractColumnTransformer<Long, Long> {
+public class LongDateFromIntTransformer extends AbstractColumnTransformer<Long, Integer> {
 
     @Override
-    public Long transformValue(Long value) {
-        return value;
+    public Long transformValue(Integer value) {
+        return value.longValue();
     }
 
     @Override
     public Collection<Class<?>> getTransformClasses() {
-        return Collections.singletonList(Long.class);
+        return Collections.singletonList(Integer.class);
     }
 
     @Override

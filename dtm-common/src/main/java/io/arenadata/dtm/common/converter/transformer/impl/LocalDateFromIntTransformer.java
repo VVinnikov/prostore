@@ -18,19 +18,18 @@ import java.util.Collections;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class LocalDateFromLongTransformer extends AbstractColumnTransformer<LocalDate, Long> {
+public class LocalDateFromIntTransformer extends AbstractColumnTransformer<LocalDate, Integer> {
 
     private ZoneId zoneId = ZoneId.of("UTC");
 
     @Override
-    public LocalDate transformValue(Long value) {
-        return value == null ? null : LocalDateTime.ofInstant(Instant.ofEpochMilli(value),
-                this.zoneId).toLocalDate();
+    public LocalDate transformValue(Integer value) {
+        return value == null ? null : LocalDate.ofEpochDay(value.longValue());
     }
 
     @Override
     public Collection<Class<?>> getTransformClasses() {
-        return Collections.singletonList(Long.class);
+        return Collections.singletonList(Integer.class);
     }
 
     @Override

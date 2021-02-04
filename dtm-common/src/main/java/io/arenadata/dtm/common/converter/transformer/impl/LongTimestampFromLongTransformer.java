@@ -10,7 +10,7 @@ public class LongTimestampFromLongTransformer extends AbstractColumnTransformer<
 
     @Override
     public Long transformValue(Long value) {
-        return value;
+        return value * 1000;//FIXME check using microsecond in timestamp and refactor this if will need
     }
 
     @Override

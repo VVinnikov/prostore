@@ -79,10 +79,11 @@ public class AdqmQueryExecutor implements DatabaseExecutor {
         if (params == null) {
             return new JsonArray(Collections.emptyList());
         } else {
-            return new JsonArray(IntStream.range(0, params.getValues().size())
+            List<Object> values = IntStream.range(0, params.getValues().size())
                     .mapToObj(n -> sqlTypeConverter.convert(params.getTypes().get(n),
                             params.getValues().get(n)))
-                    .collect(Collectors.toList()));
+                    .collect(Collectors.toList());
+            return new JsonArray(values);
         }
     }
 

@@ -48,9 +48,9 @@ public class ConverterConfiguration {
         transformerMap.put(ColumnType.DOUBLE, getTransformerMap(new NumberFromDoubleTransformer()));
         transformerMap.put(ColumnType.FLOAT, getTransformerMap(new NumberFromFloatTransformer()));
         transformerMap.put(ColumnType.DATE, getTransformerMap(
-                new LocalDateFromLongTransformer(dtmSettings.getTimeZone())
+                new LocalDateFromIntTransformer(dtmSettings.getTimeZone())
         ));
-        transformerMap.put(ColumnType.TIME, getTransformerMap(new LocalTimeFromStringTransformer()));
+        transformerMap.put(ColumnType.TIME, getTransformerMap(new LocalTimeFromLongTransformer()));
         transformerMap.put(ColumnType.TIMESTAMP, getTransformerMap(new LocalDateTimeFromLongTransformer(dtmSettings.getTimeZone())));
         transformerMap.put(ColumnType.BOOLEAN, getTransformerMap(new BooleanFromBooleanTransformer()));
         transformerMap.put(ColumnType.ANY, getTransformerMap(new AnyFromObjectTransformer()));

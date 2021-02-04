@@ -11,7 +11,7 @@ public class LongTimeFromLongTransformer extends AbstractColumnTransformer<Long,
 
     @Override
     public Long transformValue(Long value) {
-        return value;
+        return value/1000;
     }
 
     @Override

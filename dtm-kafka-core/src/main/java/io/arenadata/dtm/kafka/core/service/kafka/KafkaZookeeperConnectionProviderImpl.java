@@ -56,6 +56,7 @@ public class KafkaZookeeperConnectionProviderImpl implements KafkaZookeeperConne
                 });
         connectionLatch.await(properties.getConnectionTimeoutMs(), TimeUnit.MILLISECONDS);
         if (!synConnected) {
+            connection.close();
             throw new DtmException(String.format("Zookeeper connection timed out: [%d] ms",
                     properties.getConnectionTimeoutMs()));
         }

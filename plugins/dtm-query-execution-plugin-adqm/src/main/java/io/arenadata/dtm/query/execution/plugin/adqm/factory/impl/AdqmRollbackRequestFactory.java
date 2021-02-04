@@ -22,11 +22,11 @@ public class AdqmRollbackRequestFactory implements RollbackRequestFactory<AdqmRo
     private static final String DROP_TABLE_TEMPLATE = "DROP TABLE IF EXISTS %s.%s_%s ON CLUSTER %s";
     private static final String SYSTEM_FLUSH_TEMPLATE = "SYSTEM FLUSH DISTRIBUTED %s.%s_actual";
     private static final String INSERT_INTO_TEMPLATE = "INSERT INTO <dbname>.<tablename>_actual\n" +
-        "  SELECT <fields>, sys_from, sys_to, sys_op, close_date, -1\n" +
+        "  SELECT <fields>, sys_from, sys_to, sys_op, sys_close_date, -1\n" +
         "  FROM <dbname>.<tablename>_actual FINAL\n" +
         "  WHERE sys_from = <sys_cn> AND sign = 1\n" +
         "  UNION ALL\n" +
-        "  SELECT <fields>, sys_from, toInt64(<maxLong>) AS sys_to, 0 AS sys_op, toDateTime('9999-12-31 00:00:00') AS close_date, arrayJoin([-1, 1])\n" +
+        "  SELECT <fields>, sys_from, toInt64(<maxLong>) AS sys_to, 0 AS sys_op, toDateTime('9999-12-31 00:00:00') AS sys_close_date, arrayJoin([-1, 1])\n" +
         "  FROM <dbname>.<tablename>_actual a FINAL\n" +
         "  WHERE a.sys_to = <prev_sys_cn> AND sign = 1";
     private static final String OPTIMIZE_TABLE_TEMPLATE = "OPTIMIZE TABLE %s.%s_actual_shard ON CLUSTER %s FINAL";

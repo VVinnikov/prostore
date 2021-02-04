@@ -49,7 +49,7 @@ class MppwFinishRequestHandlerTest {
                         createRowMap("name", "sys_from"),
                         createRowMap("name", "sys_to"),
                         createRowMap("name", "sys_op"),
-                        createRowMap("name", "close_date"),
+                        createRowMap("name", "sys_close_date"),
                         createRowMap("name", "sign")
                 ));
         mockData.put(t -> t.contains("select sorting_key from system.tables"),

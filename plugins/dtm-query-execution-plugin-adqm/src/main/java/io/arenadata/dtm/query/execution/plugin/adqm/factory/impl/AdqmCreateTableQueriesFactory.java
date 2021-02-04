@@ -24,7 +24,7 @@ public class AdqmCreateTableQueriesFactory implements CreateTableQueriesFactory<
                     "(%s)\n" +
                     "ENGINE = CollapsingMergeTree(sign)\n" +
                     "ORDER BY (%s)\n" +
-                    "TTL close_date + INTERVAL %d SECOND TO DISK '%s'";
+                    "TTL sys_close_date + INTERVAL %d SECOND TO DISK '%s'";
 
     private static final String CREATE_DISTRIBUTED_TABLE_TEMPLATE =
             "CREATE TABLE %s__%s.%s ON CLUSTER %s\n" +

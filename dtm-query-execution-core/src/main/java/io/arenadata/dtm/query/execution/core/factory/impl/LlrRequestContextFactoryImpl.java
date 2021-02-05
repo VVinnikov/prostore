@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.core.factory.impl;
 import io.arenadata.dtm.common.cache.SourceQueryTemplateValue;
 import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.reader.QuerySourceRequest;
+import io.arenadata.dtm.query.calcite.core.dto.delta.DeltaQueryPreprocessorResponse;
 import io.arenadata.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
 import io.arenadata.dtm.query.execution.core.dto.dml.DmlRequestContext;
 import io.arenadata.dtm.query.execution.core.dto.dml.LlrRequestContext;
@@ -32,15 +33,38 @@ public class LlrRequestContextFactoryImpl implements LlrRequestContextFactory {
 
     @Override
     public Future<LlrRequestContext> create(DmlRequestContext context) {
+        LlrRequestContext llrContext = createLlrRequestContext(context);
+        return initDeltaInformations(llrContext)
+                .compose(v -> initLlrContext(llrContext));
+    }
+
+    @Override
+    public Future<LlrRequestContext> create(DeltaQueryPreprocessorResponse deltaResponse, DmlRequestContext context) {
+        LlrRequestContext llrContext = createLlrRequestContext(context);
+        llrContext.setDeltaInformations(deltaResponse.getDeltaInformations());
+        llrContext.getDmlRequestContext().setSqlNode(deltaResponse.getSqlNode());
+        return initLlrContext(llrContext);
+    }
+
+    @Override
+    public Future<LlrRequestContext> create(DmlRequestContext context, SourceQueryTemplateValue queryTemplateValue) {
+        LlrRequestContext llrContext = createLlrRequestContext(context);
+        llrContext.getSourceRequest().setMetadata(queryTemplateValue.getMetadata());
+        llrContext.getSourceRequest().setLogicalSchema(queryTemplateValue.getLogicalSchema());
+        llrContext.getSourceRequest().getQueryRequest().setSql(queryTemplateValue.getSql());
+        llrContext.setDeltaInformations(queryTemplateValue.getDeltaInformations());
+        llrContext.setQueryTemplateValue(queryTemplateValue);
+        return Future.succeededFuture(llrContext);
+    }
+
+    private LlrRequestContext createLlrRequestContext(DmlRequestContext context) {
         val sourceRequest = new QuerySourceRequest(context.getRequest().getQueryRequest(),
                 context.getSqlNode(),
                 context.getSourceType());
-        LlrRequestContext llrContext = LlrRequestContext.builder()
+        return LlrRequestContext.builder()
                 .sourceRequest(sourceRequest)
                 .dmlRequestContext(context)
                 .build();
-        return initDeltaInformations(llrContext)
-                .compose(v -> initLlrContext(llrContext));
     }
 
     private Future<LlrRequestContext> initDeltaInformations(LlrRequestContext llrContext) {
@@ -67,21 +91,5 @@ public class LlrRequestContextFactoryImpl implements LlrRequestContextFactory {
                             llrContext.getSourceRequest().setMetadata(metadata);
                             return llrContext;
                         }));
-    }
-
-    @Override
-    public Future<LlrRequestContext> create(DmlRequestContext context, SourceQueryTemplateValue queryTemplateValue) {
-        val sourceRequest = new QuerySourceRequest(context.getRequest().getQueryRequest(),
-                context.getSqlNode(),
-                context.getSourceType());
-        LlrRequestContext llrContext = LlrRequestContext.builder()
-                .sourceRequest(sourceRequest)
-                .dmlRequestContext(context)
-                .build();
-        llrContext.getSourceRequest().setMetadata(queryTemplateValue.getMetadata());
-        llrContext.getSourceRequest().setLogicalSchema(queryTemplateValue.getLogicalSchema());
-        llrContext.getSourceRequest().getQueryRequest().setSql(queryTemplateValue.getSql());
-        llrContext.setDeltaInformations(queryTemplateValue.getDeltaInformations());
-        return Future.succeededFuture(llrContext);
     }
 }

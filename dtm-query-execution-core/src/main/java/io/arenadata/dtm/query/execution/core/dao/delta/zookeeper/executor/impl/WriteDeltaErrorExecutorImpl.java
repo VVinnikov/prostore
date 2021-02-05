@@ -43,6 +43,7 @@ public class WriteDeltaErrorExecutorImpl extends DeltaServiceDaoExecutorHelper i
                 } else if (delta.getHot().isRollingBack()){
                     throw new DeltaAlreadyIsRollingBackException();
                 }
+                delta.getHot().setCnTo(-1L);
                 delta.getHot().setRollingBack(true);
                 return delta;
             })

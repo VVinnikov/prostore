@@ -43,7 +43,7 @@ public class DeltaServiceExternalImpl implements DeltaService {
     public Future<Long> getCnToDeltaHot(String datamart) {
         return Future.future(handler -> deltaServiceDao.getDeltaHot(datamart)
                 .onSuccess(deltaHot -> {
-                    if (deltaHot != null && deltaHot.getCnTo() != null) {
+                    if (deltaHot != null && deltaHot.getCnTo() != null && deltaHot.getCnTo() >= 0) {
                         handler.handle(Future.succeededFuture(deltaHot.getCnTo()));
                     } else {
                         deltaServiceDao.getDeltaOk(datamart)

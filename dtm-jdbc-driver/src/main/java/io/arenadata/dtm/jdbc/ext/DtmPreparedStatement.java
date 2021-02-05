@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 import java.net.URL;
 import java.sql.SQLXML;
 import java.sql.*;
+import java.time.ZoneId;
 import java.util.Calendar;
 
 import static java.sql.Types.*;
@@ -46,69 +47,71 @@ public class DtmPreparedStatement extends DtmStatement implements PreparedStatem
     }
 
     @Override
-    public void setBoolean(int parameterIndex, boolean x) throws SQLException {
-        parameters.setBoolean(parameterIndex, x, BOOLEAN);
+    public void setBoolean(int parameterIndex, boolean value) throws SQLException {
+        parameters.setBoolean(parameterIndex, value, BOOLEAN);
     }
 
     @Override
-    public void setByte(int parameterIndex, byte x) throws SQLException {
-        setShort(parameterIndex, (short) x);
+    public void setByte(int parameterIndex, byte value) throws SQLException {
+        setShort(parameterIndex, (short) value);
     }
 
     @Override
-    public void setShort(int parameterIndex, short x) throws SQLException {
-        parameters.setShort(parameterIndex, x, INTEGER);
+    public void setShort(int parameterIndex, short value) throws SQLException {
+        parameters.setShort(parameterIndex, value, INTEGER);
     }
 
     @Override
-    public void setInt(int parameterIndex, int x) throws SQLException {
-        parameters.setInt(parameterIndex, x, INTEGER);
+    public void setInt(int parameterIndex, int value) throws SQLException {
+        parameters.setInt(parameterIndex, value, INTEGER);
     }
 
     @Override
-    public void setLong(int parameterIndex, long x) throws SQLException {
-        parameters.setLong(parameterIndex, x, BIGINT);
+    public void setLong(int parameterIndex, long value) throws SQLException {
+        parameters.setLong(parameterIndex, value, BIGINT);
     }
 
     @Override
-    public void setFloat(int parameterIndex, float x) throws SQLException {
-        parameters.setFloat(parameterIndex, x, FLOAT);
+    public void setFloat(int parameterIndex, float value) throws SQLException {
+        parameters.setFloat(parameterIndex, value, FLOAT);
     }
 
     @Override
-    public void setDouble(int parameterIndex, double x) throws SQLException {
-        parameters.setDouble(parameterIndex, x, DOUBLE);
+    public void setDouble(int parameterIndex, double value) throws SQLException {
+        parameters.setDouble(parameterIndex, value, DOUBLE);
     }
 
     @Override
-    public void setBigDecimal(int parameterIndex, BigDecimal x) throws SQLException {
-        parameters.setBigDecimal(parameterIndex, x, DECIMAL);
+    public void setBigDecimal(int parameterIndex, BigDecimal value) throws SQLException {
+        parameters.setBigDecimal(parameterIndex, value, DECIMAL);
     }
 
     @Override
-    public void setString(int parameterIndex, String x) throws SQLException {
-        parameters.setString(parameterIndex, x, VARCHAR);
+    public void setString(int parameterIndex, String value) throws SQLException {
+        parameters.setString(parameterIndex, value, VARCHAR);
     }
 
     @Override
-    public void setBytes(int parameterIndex, byte[] x) throws SQLException {
-        //TODO
-        parameters.setBytes(parameterIndex, x, ARRAY);
+    public void setBytes(int parameterIndex, byte[] value) throws SQLException {
+        parameters.setBytes(parameterIndex, value, ARRAY);
     }
 
     @Override
-    public void setDate(int parameterIndex, Date x) throws SQLException {
-        parameters.setDate(parameterIndex, x, DATE);
+    public void setDate(int parameterIndex, Date value) throws SQLException {
+        long epochDay = value.toLocalDate().toEpochDay();
+        parameters.setDate(parameterIndex, epochDay, DATE);
     }
 
     @Override
-    public void setTime(int parameterIndex, Time x) throws SQLException {
-        parameters.setTime(parameterIndex, x, TIME);
+    public void setTime(int parameterIndex, Time value) throws SQLException {
+        long nanoOfDay = value.toLocalTime().toNanoOfDay();
+        parameters.setTime(parameterIndex, nanoOfDay, TIME);
     }
 
     @Override
-    public void setTimestamp(int parameterIndex, Timestamp x) throws SQLException {
-        parameters.setTimestamp(parameterIndex, x, TIMESTAMP);
+    public void setTimestamp(int parameterIndex, Timestamp value) throws SQLException {
+        long epochMilli = value.toLocalDateTime().atZone(ZoneId.of("UTC")).toInstant().toEpochMilli();
+        parameters.setTimestamp(parameterIndex, epochMilli, TIMESTAMP);
     }
 
     @Override
@@ -282,39 +285,39 @@ public class DtmPreparedStatement extends DtmStatement implements PreparedStatem
     }
 
     @Override
-    public void setObject(int parameterIndex, Object x, int targetSqlType, int scaleOrLength) throws SQLException {
-        if (x == null) {
+    public void setObject(int parameterIndex, Object value, int targetSqlType, int scaleOrLength) throws SQLException {
+        if (value == null) {
             parameters.setNull(parameterIndex, targetSqlType);
         } else {
             switch (targetSqlType) {
                 //TODO implement bigDecimal setting
                 case BOOLEAN:
-                    parameters.setBoolean(parameterIndex, (boolean) x, targetSqlType);
+                    this.setBoolean(parameterIndex, (boolean) value);
                     break;
                 case INTEGER:
-                    parameters.setInt(parameterIndex, (int) x, targetSqlType);
+                    this.setInt(parameterIndex, (int) value);
                     break;
                 case FLOAT:
-                    parameters.setFloat(parameterIndex, (float) x, targetSqlType);
+                    this.setFloat(parameterIndex, (float) value);
                     break;
                 case DOUBLE:
-                    parameters.setDouble(parameterIndex, (double) x, targetSqlType);
+                    this.setDouble(parameterIndex, (double) value);
                     break;
                 case BIGINT:
-                    parameters.setLong(parameterIndex, (long) x, targetSqlType);
+                    this.setLong(parameterIndex, (long) value);
                     break;
                 case CHAR:
                 case VARCHAR:
-                    parameters.setString(parameterIndex, x.toString(), targetSqlType);
+                    this.setString(parameterIndex, value.toString());
                     break;
                 case DATE:
-                    parameters.setDate(parameterIndex, (Date) x, targetSqlType);
+                    this.setDate(parameterIndex, (Date) value);
                     break;
                 case TIME:
-                    parameters.setTime(parameterIndex, (Time) x, targetSqlType);
+                    this.setTime(parameterIndex, (Time) value);
                     break;
                 case TIMESTAMP:
-                    parameters.setTimestamp(parameterIndex, (Timestamp) x, targetSqlType);
+                    this.setTimestamp(parameterIndex, (Timestamp) value);
                     break;
                 default:
                     throw new DtmSqlException(String.format("Type %s does not support", targetSqlType));

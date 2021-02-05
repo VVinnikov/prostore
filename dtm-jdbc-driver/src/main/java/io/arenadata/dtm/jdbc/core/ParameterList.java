@@ -5,8 +5,6 @@ import io.arenadata.dtm.common.model.ddl.ColumnType;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.SQLException;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.util.List;
 
 public interface ParameterList {
@@ -33,11 +31,11 @@ public interface ParameterList {
 
     void setBytes(int index, byte[] value, int sqlType) throws SQLException;
 
-    void setDate(int index, Date value, int sqlType) throws SQLException;
+    void setDate(int index, long value, int sqlType) throws SQLException;
 
-    void setTime(int index, Time value, int sqlType) throws SQLException;
+    void setTime(int index, long value, int sqlType) throws SQLException;
 
-    void setTimestamp(int index, Timestamp value, int sqlType) throws SQLException;
+    void setTimestamp(int index, long value, int sqlType) throws SQLException;
 
     ParameterList copy();
 

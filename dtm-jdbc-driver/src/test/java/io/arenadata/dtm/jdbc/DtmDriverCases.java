@@ -17,7 +17,7 @@ public class DtmDriverCases {
         String url = String.format("jdbc:adtm://%s/", host);
 
         BaseConnection conn = new DtmConnectionImpl(host, user, schema, null, url);
-        final String sql = "select * from dtm_889.all_types_table " +
+        final String sql = "select * from dtm_928_2.all_types_table " +
                 "where id = ? " +
                 " and double_col = ?" +
                 " and float_col = ?" +

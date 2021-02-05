@@ -7,10 +7,6 @@ import io.arenadata.dtm.jdbc.util.DtmSqlException;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.SQLException;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -91,21 +87,18 @@ public class SimpleParameterList implements ParameterList {
     }
 
     @Override
-    public void setDate(int index, Date value, int sqlType) throws SQLException {
-        //FIXME move convertion logic to previous level
-        this.bind(index, value.toLocalDate().toEpochDay(), sqlType);
+    public void setDate(int index, long value, int sqlType) throws SQLException {
+        this.bind(index, value, sqlType);
     }
 
     @Override
-    public void setTime(int index, Time value, int sqlType) throws SQLException {
-        //FIXME move convertion logic to previous level
-        this.bind(index, value.toLocalTime().toNanoOfDay(), sqlType);
+    public void setTime(int index, long value, int sqlType) throws SQLException {
+        this.bind(index, value, sqlType);
     }
 
     @Override
-    public void setTimestamp(int index, Timestamp value, int sqlType) throws SQLException {
-        //FIXME move convertion logic to previous level
-        this.bind(index, value.toLocalDateTime().atZone(ZoneId.of("UTC")).toInstant().toEpochMilli(), sqlType);
+    public void setTimestamp(int index, long value, int sqlType) throws SQLException {
+        this.bind(index, value, sqlType);
     }
 
     @Override

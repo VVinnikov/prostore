@@ -25,8 +25,7 @@ public class AdqmCreateTableQueriesFactoryTest {
             "TIME_type Nullable(Int64), TIMESTAMP_type Nullable(Int64), BOOLEAN_type Nullable(UInt8), " +
             "UUID_type Nullable(String), sys_from Int64, sys_to Int64, sys_op Int8, sys_close_date DateTime, sign Int8)\n" +
             "ENGINE = CollapsingMergeTree(sign)\n" +
-            "ORDER BY (id, pk2, sys_from)\n" +
-            "TTL sys_close_date + INTERVAL 3600 SECOND TO DISK 'default'";
+            "ORDER BY (id, pk2, sys_from)";
 
     private static final String EXPECTED_CREATE_DISTRIBUTED_TABLE_QUERY = "CREATE TABLE " +
             "env__test_schema.test_table_actual ON CLUSTER test_arenadata\n" +
@@ -44,9 +43,7 @@ public class AdqmCreateTableQueriesFactoryTest {
     void setUp() {
         Entity entity = getEntity();
         DdlProperties ddlProperties = new DdlProperties();
-        ddlProperties.setTtlSec(3600);
         ddlProperties.setCluster("test_arenadata");
-        ddlProperties.setArchiveDisk("default");
         CreateTableQueriesFactory<AdqmTables<String>> adqmCreateTableQueriesFactory =
                 new AdqmCreateTableQueriesFactory(ddlProperties, new AdqmTableEntitiesFactory());
         adqmTables = adqmCreateTableQueriesFactory.create(entity, ENV);

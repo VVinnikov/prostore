@@ -50,6 +50,7 @@ public class MockDatabaseExecutor implements DatabaseExecutor {
             if (r.getLeft()) {
                 promise.complete();
             } else {
+                System.out.println(r.getRight());
                 promise.fail(new DataSourceException(r.getRight()));
             }
         });

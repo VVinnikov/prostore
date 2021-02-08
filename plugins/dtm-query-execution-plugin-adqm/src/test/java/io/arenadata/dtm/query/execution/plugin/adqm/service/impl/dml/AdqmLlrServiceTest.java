@@ -47,7 +47,7 @@ public class AdqmLlrServiceTest {
                 .thenReturn(Future.succeededFuture(QueryTemplateValue.builder().build()));
         HashMap<String, Object> result = new HashMap<>();
         result.put("column", "value");
-        when(executorService.execute(any(), any()))
+        when(executorService.executeWithParams(any(), any(), any()))
                 .thenReturn(Future.succeededFuture(Collections.singletonList(result)));
     }
 
@@ -74,7 +74,7 @@ public class AdqmLlrServiceTest {
                     assertEquals(requestId, ar.result().getRequestId());
                     verify(queryCacheService, times(1)).get(any());
                     verify(queryCacheService, never()).put(any(), any());
-                    verify(executorService, times(1)).execute(eq(ENRICHED_QUERY), eq(metadata));
+                    verify(executorService, times(1)).executeWithParams(eq(ENRICHED_QUERY), eq(null), eq(metadata));
                 });
     }
 
@@ -95,7 +95,7 @@ public class AdqmLlrServiceTest {
                     assertEquals(requestId, ar.result().getRequestId());
                     verify(queryCacheService, times(1)).get(any());
                     verify(queryCacheService, times(1)).put(any(), any());
-                    verify(executorService, times(1)).execute(eq(ENRICHED_QUERY), eq(metadata));
+                    verify(executorService, times(1)).executeWithParams(eq(ENRICHED_QUERY), eq(null), eq(metadata));
                 });
     }
 
@@ -116,7 +116,9 @@ public class AdqmLlrServiceTest {
                 .onComplete(ar -> {
                     assertTrue(ar.succeeded());
                     assertEquals("value", ar.result().get(0).get("column"));
-                    verify(executorService, times(1)).execute(any(), eq(Collections.emptyList()));
+                    verify(executorService, times(1)).executeWithParams(any(),
+                            eq(null),
+                            eq(Collections.emptyList()));
                 });
     }
 }

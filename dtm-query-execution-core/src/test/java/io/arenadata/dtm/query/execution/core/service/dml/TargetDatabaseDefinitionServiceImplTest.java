@@ -41,7 +41,7 @@ class TargetDatabaseDefinitionServiceImplTest {
     private final EntityDao entityDao = mock(EntityDaoImpl.class);
     private TargetDatabaseDefinitionService targetDatabaseDefinitionService;
     private Set<SourceType> defaultSourceTypes = SourceType.pluginsSourceTypes();
-
+    //FIXME actualized tests
     @BeforeEach
     void setUp() {
         targetDatabaseDefinitionService = new TargetDatabaseDefinitionServiceImpl(dataSourcePluginService,

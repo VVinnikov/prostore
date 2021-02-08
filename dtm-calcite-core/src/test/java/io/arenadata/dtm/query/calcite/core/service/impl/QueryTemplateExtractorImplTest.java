@@ -42,6 +42,14 @@ class QueryTemplateExtractorImplTest {
             "FROM \"tbl1\"\n" +
             "WHERE \"x\" = ? AND \"x\" > ? AND \"x\" < ? AND \"x\" <= ? AND \"x\" >= ? AND \"x\" <> ? AND \"z\" = ?" +
             " AND \"sys_from\" = 1";
+    public static final String EXPECTED_BETWEEN_SQL = "SELECT *\n" +
+            "FROM \"tbl1\"\n" +
+            "WHERE \"x\" BETWEEN 1 AND 5" +
+            " AND \"z\" = \"x\"";
+    private static final String EXPECTED_SQL_WITH_BETWEEN_TEMPLATE = "SELECT *\n" +
+            "FROM \"tbl1\"\n" +
+            "WHERE \"x\" BETWEEN ASYMMETRIC ? AND ? AND \"z\" = \"x\"";
+
     private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private QueryTemplateExtractorImpl extractor;
     private CalciteDefinitionService definitionService;
@@ -83,6 +91,12 @@ class QueryTemplateExtractorImplTest {
         assertEquals(EXPECTED_FULL_TEMPLATE, templateResult.getTemplate());
     }
 
+    @Test
+    void extractWithBetween() {
+        QueryTemplateResult templateResult = extractor.extract(EXPECTED_BETWEEN_SQL);
+        assertEquals(2, templateResult.getParams().size());
+        assertEquals(EXPECTED_SQL_WITH_BETWEEN_TEMPLATE, templateResult.getTemplate());
+    }
 
     @Test
     void enrichTemplate() {

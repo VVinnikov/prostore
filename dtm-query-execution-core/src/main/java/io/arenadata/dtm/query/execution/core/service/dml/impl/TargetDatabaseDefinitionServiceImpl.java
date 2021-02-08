@@ -14,9 +14,7 @@ import io.arenadata.dtm.query.execution.core.service.dml.TargetDatabaseDefinitio
 import io.arenadata.dtm.query.execution.plugin.api.request.QueryCostRequest;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
-import io.vertx.core.Promise;
 import lombok.val;
-import org.apache.calcite.sql.SqlNode;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -44,83 +42,13 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
     }
 
     @Override
-    @Deprecated
-    public Future<QuerySourceRequest> getTargetSource(QuerySourceRequest request, SqlNode query) {
-        return getEntitiesSourceTypes(request)
-                .compose(entities -> defineTargetSourceType(entities, request))
-                .map(sourceType -> {
-                    val queryRequestWithSourceType = request.getQueryRequest().copy();
-                    request.setSourceType(sourceType);
-                    return QuerySourceRequest.builder()
-                            .queryRequest(queryRequestWithSourceType)
-                            .logicalSchema(request.getLogicalSchema())
-                            .queryTemplate(request.getQueryTemplate())
-                            .metadata(request.getMetadata())
-                            .sourceType(sourceType)
-                            .query(query)
-                            .build();
-                });
-    }
-
-    @Override
     public Future<Set<SourceType>> getAcceptableSourceTypes(QuerySourceRequest request) {
-        return getEntitiesSourceTypes(request)
-                .compose(entities -> Future.future(promise -> promise.complete(getSourceTypes(request, entities))));
+        return getEntities(request)
+                .compose(entities -> Future.future(promise -> promise.complete(getSourceTypes(entities))));
     }
 
     @Override
     public Future<SourceType> getSourceTypeWithLeastQueryCost(Set<SourceType> sourceTypes, QuerySourceRequest request) {
-        return getTargetSourceByCalcQueryCost(sourceTypes, request);
-    }
-
-    private Future<List<Entity>> getEntitiesSourceTypes(QuerySourceRequest request) {
-        return Future.future(promise -> {
-            List<Future> entityFutures = new ArrayList<>();
-            request.getLogicalSchema().forEach(datamart ->
-                    datamart.getEntities().forEach(entity ->
-                            entityFutures.add(entityDao.getEntity(datamart.getMnemonic(), entity.getName()))
-                    ));
-
-            CompositeFuture.join(entityFutures)
-                    .onSuccess(entities -> promise.complete(entities.list()))
-                    .onFailure(promise::fail);
-        });
-    }
-
-    private Future<SourceType> defineTargetSourceType(List<Entity> entities, QuerySourceRequest request) {
-        return Future.future((Promise<SourceType> promise) -> {
-            Set<SourceType> sourceTypes = getSourceTypes(request, entities);
-            if (sourceTypes.size() == 1) {
-                promise.complete(sourceTypes.iterator().next());
-            } else {
-                getTargetSourceByCalcQueryCost(sourceTypes, request)
-                        .onComplete(promise);
-            }
-        });
-    }
-
-    private Set<SourceType> getSourceTypes(QuerySourceRequest request, List<Entity> entities) {
-        final Set<SourceType> stResult = getCommonSourceTypes(entities);
-        if (stResult.isEmpty()) {
-            throw new NoSingleDataSourceContainsAllEntitiesException();
-        } else {
-            return stResult;
-        }
-    }
-
-    private Set<SourceType> getCommonSourceTypes(List<Entity> entities) {
-        final Set<SourceType> stResult = new HashSet<>();
-        entities.forEach(e -> {
-            if (stResult.isEmpty()) {
-                stResult.addAll(e.getDestination());
-            } else {
-                stResult.retainAll(e.getDestination());
-            }
-        });
-        return stResult;
-    }
-
-    private Future<SourceType> getTargetSourceByCalcQueryCost(Set<SourceType> sourceTypes, QuerySourceRequest request) {
         return Future.future(promise -> CompositeFuture.join(sourceTypes.stream()
                 .map(sourceType -> calcQueryCostInPlugin(request, sourceType))
                 .collect(Collectors.toList()))
@@ -138,6 +66,29 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
         );
     }
 
+    private Future<List<Entity>> getEntities(QuerySourceRequest request) {
+        return Future.future(promise -> {
+            List<Future> entityFutures = new ArrayList<>();
+            request.getLogicalSchema().forEach(datamart ->
+                    datamart.getEntities().forEach(entity ->
+                            entityFutures.add(entityDao.getEntity(datamart.getMnemonic(), entity.getName()))
+                    ));
+
+            CompositeFuture.join(entityFutures)
+                    .onSuccess(entities -> promise.complete(entities.list()))
+                    .onFailure(promise::fail);
+        });
+    }
+
+    private Set<SourceType> getSourceTypes(List<Entity> entities) {
+        final Set<SourceType> stResult = getCommonSourceTypes(entities);
+        if (stResult.isEmpty()) {
+            throw new NoSingleDataSourceContainsAllEntitiesException();
+        } else {
+            return stResult;
+        }
+    }
+
     private Future<Object> calcQueryCostInPlugin(QuerySourceRequest request, SourceType sourceType) {
         return Future.future(p -> {
             val costRequest = new QueryCostRequest(request.getQueryRequest().getRequestId(),
@@ -153,6 +104,22 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
                         }
                     });
         });
+    }
+
+    private Set<SourceType> getCommonSourceTypes(List<Entity> entities) {
+        final Set<SourceType> stResult = new HashSet<>();
+        if (!entities.isEmpty()) {
+            Set<SourceType> firstSourceTypes = entities.get(0).getDestination();
+            entities.forEach(e -> {
+                if (stResult.isEmpty()) {
+                    stResult.addAll(e.getDestination());
+                } else {
+                    stResult.retainAll(e.getDestination());
+                }
+            });
+            stResult.retainAll(firstSourceTypes);
+        }
+        return stResult;
     }
 
     private RequestMetrics createRequestMetrics(QuerySourceRequest request) {

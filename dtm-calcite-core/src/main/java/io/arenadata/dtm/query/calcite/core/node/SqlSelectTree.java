@@ -181,8 +181,7 @@ public class SqlSelectTree {
             int finalI = i;
             parentTree.createChild(getNextId(),
                     itemNode,
-                    new SqlNodeConsumer<>(parentNode, (sqlCall, sqlNode) ->
-                            sqlCall.setOperand(finalI, sqlNode)))
+                    new SqlNodeConsumer<>(parentNode, (sqlCall, sqlNode) -> sqlCall.setOperand(finalI, sqlNode)))
                     .ifPresent(this::addNodes);
         }
     }
@@ -270,12 +269,6 @@ public class SqlSelectTree {
             clonedNode = sqlBasicCall.getOperator().createCall(sqlBasicCall.getFunctionQuantifier(),
                     sqlBasicCall.getParserPosition(),
                     Arrays.copyOf(sqlBasicCall.operands, sqlBasicCall.operands.length));
-        } else if (origNode instanceof LimitableSqlOrderBy) {
-            LimitableSqlOrderBy sqlLimitableCall = (LimitableSqlOrderBy) origNode;
-            clonedNode = sqlLimitableCall.getOperator().createCall(
-                    sqlLimitableCall.getFunctionQuantifier(),
-                    sqlLimitableCall.getParserPosition(),
-                    sqlLimitableCall.getOperands());
         } else {
             clonedNode = SqlNode.clone(origNode);
         }

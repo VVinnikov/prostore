@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.core.service.dml;
 
-import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
@@ -12,15 +11,14 @@ import io.arenadata.dtm.query.execution.core.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.core.configuration.properties.CoreDtmSettings;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
+import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.datasource.impl.DataSourcePluginServiceImpl;
 import io.arenadata.dtm.query.execution.core.service.dml.impl.TargetDatabaseDefinitionServiceImpl;
-import io.arenadata.dtm.query.execution.core.utils.TestUtils;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.env.Environment;
@@ -40,8 +38,7 @@ class TargetDatabaseDefinitionServiceImplTest {
     private final DataSourcePluginService dataSourcePluginService = mock(DataSourcePluginServiceImpl.class);
     private final EntityDao entityDao = mock(EntityDaoImpl.class);
     private TargetDatabaseDefinitionService targetDatabaseDefinitionService;
-    private Set<SourceType> defaultSourceTypes = SourceType.pluginsSourceTypes();
-    //FIXME actualized tests
+
     @BeforeEach
     void setUp() {
         targetDatabaseDefinitionService = new TargetDatabaseDefinitionServiceImpl(dataSourcePluginService,
@@ -49,16 +46,13 @@ class TargetDatabaseDefinitionServiceImplTest {
     }
 
     @Test
-    void getTargetSourceWithCalcCosts() {
-        Promise<QuerySourceRequest> promise = Promise.promise();
+    void getAcceptableSourceTypesSuccess() {
+        Promise<Set<SourceType>> promise = Promise.promise();
         QueryRequest request = new QueryRequest();
         request.setSql("select t1.id from table_1 t1 join dtm_1.table_2 t2 " +
                 "ON t2.id = t1.id JOIN dtm_2.table_3 t3 ON t3.id = t2.id");
-        SqlNode sqlNode = TestUtils.DEFINITION_SERVICE.processingQuery(request.getSql());
         List<Datamart> schema = createLogicalSchema();
-        final Integer adbQueryCost = 1;
-        final Integer adgQueryCost = 0;
-
+        Set<SourceType> expectedSourcetTypes = new HashSet<>(Arrays.asList(SourceType.ADB, SourceType.ADG));
         QuerySourceRequest sourceRequest = new QuerySourceRequest();
         sourceRequest.setLogicalSchema(schema);
         sourceRequest.setQueryRequest(request);
@@ -76,39 +70,28 @@ class TargetDatabaseDefinitionServiceImplTest {
                 eq(schema.get(1).getEntities().get(0).getName())))
                 .thenReturn(Future.succeededFuture(schema.get(1).getEntities().get(0)));
 
-        when(dataSourcePluginService.getSourceTypes()).thenReturn(defaultSourceTypes);
-
-        when(dataSourcePluginService.calcQueryCost(eq(SourceType.ADB), any(), any()))
-                .thenReturn(Future.succeededFuture(adbQueryCost));
-
-        when(dataSourcePluginService.calcQueryCost(eq(SourceType.ADG), any(), any()))
-                .thenReturn(Future.succeededFuture(adgQueryCost));
-
-        targetDatabaseDefinitionService.getTargetSource(sourceRequest, sqlNode)
+        targetDatabaseDefinitionService.getAcceptableSourceTypes(sourceRequest)
                 .onComplete(promise);
 
         assertTrue(promise.future().succeeded());
-        assertEquals(SourceType.ADG, promise.future().result().getSourceType());
+        assertEquals(expectedSourcetTypes, promise.future().result());
     }
 
     @Test
-    void getTargetSourceWithSettedSourceType() {
-        Promise<QuerySourceRequest> promise = Promise.promise();
+    void getAcceptableSourceTypesEntitiesFailed() {
+        Promise<Set<SourceType>> promise = Promise.promise();
         QueryRequest request = new QueryRequest();
         request.setSql("select t1.id from table_1 t1 join dtm_1.table_2 t2 " +
                 "ON t2.id = t1.id JOIN dtm_2.table_3 t3 ON t3.id = t2.id");
-        SqlNode sqlNode = TestUtils.DEFINITION_SERVICE.processingQuery(request.getSql());
         List<Datamart> schema = createLogicalSchema();
-
         QuerySourceRequest sourceRequest = new QuerySourceRequest();
         sourceRequest.setLogicalSchema(schema);
         sourceRequest.setQueryRequest(request);
-        sourceRequest.setSourceType(SourceType.ADB);
         sourceRequest.setMetadata(Collections.singletonList(new ColumnMetadata("id", ColumnType.BIGINT)));
 
         when(entityDao.getEntity(eq(schema.get(0).getMnemonic()),
                 eq(schema.get(0).getEntities().get(0).getName())))
-                .thenReturn(Future.succeededFuture(schema.get(0).getEntities().get(0)));
+                .thenReturn(Future.failedFuture(new TableNotExistsException(schema.get(0).getEntities().get(0).getName())));
 
         when(entityDao.getEntity(eq(schema.get(0).getMnemonic()),
                 eq(schema.get(0).getEntities().get(1).getName())))
@@ -118,103 +101,25 @@ class TargetDatabaseDefinitionServiceImplTest {
                 eq(schema.get(1).getEntities().get(0).getName())))
                 .thenReturn(Future.succeededFuture(schema.get(1).getEntities().get(0)));
 
-        when(dataSourcePluginService.getSourceTypes()).thenReturn(defaultSourceTypes);
-
-        targetDatabaseDefinitionService.getTargetSource(sourceRequest, sqlNode)
-                .onComplete(promise);
-        assertTrue(promise.future().succeeded());
-        assertEquals(SourceType.ADB, promise.future().result().getSourceType());
-    }
-
-    @Test
-    void getTargetSourceWithSingleTableSourceType() {
-        Promise<QuerySourceRequest> promise = Promise.promise();
-        QueryRequest request = new QueryRequest();
-        request.setSql("select t1.id from table_1 t1 join dtm_1.table_2 t2 " +
-                "ON t2.id = t1.id JOIN dtm_2.table_3 t3 ON t3.id = t2.id");
-        SqlNode sqlNode = TestUtils.DEFINITION_SERVICE.processingQuery(request.getSql());
-        List<Datamart> schema = createLogicalSchema();
-        schema.get(1).getEntities().get(0)
-                .setDestination(new HashSet<>(Collections.singletonList(SourceType.ADG)));
-
-        QuerySourceRequest sourceRequest = new QuerySourceRequest();
-        sourceRequest.setLogicalSchema(schema);
-        sourceRequest.setQueryRequest(request);
-        sourceRequest.setMetadata(Collections.singletonList(new ColumnMetadata("id", ColumnType.BIGINT)));
-
-        when(entityDao.getEntity(eq(schema.get(0).getMnemonic()),
-                eq(schema.get(0).getEntities().get(0).getName())))
-                .thenReturn(Future.succeededFuture(schema.get(0).getEntities().get(0)));
-
-        when(entityDao.getEntity(eq(schema.get(0).getMnemonic()),
-                eq(schema.get(0).getEntities().get(1).getName())))
-                .thenReturn(Future.succeededFuture(schema.get(0).getEntities().get(1)));
-
-        when(entityDao.getEntity(eq(schema.get(1).getMnemonic()),
-                eq(schema.get(1).getEntities().get(0).getName())))
-                .thenReturn(Future.succeededFuture(schema.get(1).getEntities().get(0)));
-
-        when(dataSourcePluginService.getSourceTypes()).thenReturn(defaultSourceTypes);
-
-        targetDatabaseDefinitionService.getTargetSource(sourceRequest, sqlNode)
-                .onComplete(promise);
-        assertTrue(promise.future().succeeded());
-        assertEquals(SourceType.ADG, promise.future().result().getSourceType());
-    }
-
-    @Test
-    void getTargetSourceWithNonExistTableSourceType() {
-        Promise<QuerySourceRequest> promise = Promise.promise();
-        QueryRequest request = new QueryRequest();
-        request.setSql("select t1.id from table_1 t1 join dtm_1.table_2 t2 " +
-                "ON t2.id = t1.id JOIN dtm_2.table_3 t3 ON t3.id = t2.id");
-        SqlNode sqlNode = TestUtils.DEFINITION_SERVICE.processingQuery(request.getSql());
-        List<Datamart> schema = createLogicalSchema();
-        schema.get(0).getEntities().get(0)
-                .setDestination(new HashSet<>(Collections.singletonList(SourceType.ADB)));
-        schema.get(1).getEntities().get(0)
-                .setDestination(new HashSet<>(Collections.singletonList(SourceType.ADQM)));
-
-        QuerySourceRequest sourceRequest = new QuerySourceRequest();
-        sourceRequest.setLogicalSchema(schema);
-        sourceRequest.setQueryRequest(request);
-        sourceRequest.setMetadata(Collections.singletonList(new ColumnMetadata("id", ColumnType.BIGINT)));
-
-        when(entityDao.getEntity(eq(schema.get(0).getMnemonic()),
-                eq(schema.get(0).getEntities().get(0).getName())))
-                .thenReturn(Future.succeededFuture(schema.get(0).getEntities().get(0)));
-
-        when(entityDao.getEntity(eq(schema.get(0).getMnemonic()),
-                eq(schema.get(0).getEntities().get(1).getName())))
-                .thenReturn(Future.succeededFuture(schema.get(0).getEntities().get(1)));
-
-        when(entityDao.getEntity(eq(schema.get(1).getMnemonic()),
-                eq(schema.get(1).getEntities().get(0).getName())))
-                .thenReturn(Future.succeededFuture(schema.get(1).getEntities().get(0)));
-
-        when(dataSourcePluginService.getSourceTypes()).thenReturn(defaultSourceTypes);
-
-        targetDatabaseDefinitionService.getTargetSource(sourceRequest, sqlNode)
+        targetDatabaseDefinitionService.getAcceptableSourceTypes(sourceRequest)
                 .onComplete(promise);
 
         assertTrue(promise.future().failed());
     }
 
     @Test
-    void getTargetSourceWithNonEqualSettedSourceType() {
-        Promise<QuerySourceRequest> promise = Promise.promise();
+    void getAcceptableSourceTypesNoSingleDatasourceError() {
+        Promise<Set<SourceType>> promise = Promise.promise();
         QueryRequest request = new QueryRequest();
         request.setSql("select t1.id from table_1 t1 join dtm_1.table_2 t2 " +
                 "ON t2.id = t1.id JOIN dtm_2.table_3 t3 ON t3.id = t2.id");
-        SqlNode sqlNode = TestUtils.DEFINITION_SERVICE.processingQuery(request.getSql());
         List<Datamart> schema = createLogicalSchema();
-        schema.get(1).getEntities().get(0)
-                .setDestination(new HashSet<>(Collections.singletonList(SourceType.ADQM)));
-
+        schema.get(0).getEntities().get(0).setDestination(Collections.singleton(SourceType.ADB));
+        schema.get(0).getEntities().get(1).setDestination(Collections.singleton(SourceType.ADG));
+        schema.get(1).getEntities().get(0).setDestination(Collections.singleton(SourceType.ADQM));
         QuerySourceRequest sourceRequest = new QuerySourceRequest();
         sourceRequest.setLogicalSchema(schema);
         sourceRequest.setQueryRequest(request);
-        sourceRequest.setSourceType(SourceType.ADG);
         sourceRequest.setMetadata(Collections.singletonList(new ColumnMetadata("id", ColumnType.BIGINT)));
 
         when(entityDao.getEntity(eq(schema.get(0).getMnemonic()),
@@ -229,47 +134,53 @@ class TargetDatabaseDefinitionServiceImplTest {
                 eq(schema.get(1).getEntities().get(0).getName())))
                 .thenReturn(Future.succeededFuture(schema.get(1).getEntities().get(0)));
 
-        when(dataSourcePluginService.getSourceTypes()).thenReturn(defaultSourceTypes);
-
-        targetDatabaseDefinitionService.getTargetSource(sourceRequest, sqlNode)
+        targetDatabaseDefinitionService.getAcceptableSourceTypes(sourceRequest)
                 .onComplete(promise);
 
         assertTrue(promise.future().failed());
     }
 
     @Test
-    void getTargetSourceWithEqualCalcCosts() {
-        Promise<QuerySourceRequest> promise = Promise.promise();
+    void getAcceptableSourceTypesSingleTable() {
+        Promise<Set<SourceType>> promise = Promise.promise();
+        QueryRequest request = new QueryRequest();
+        request.setSql("select t1.id from table_1 t1");
+        List<Datamart> schema = createLogicalSchema();
+        schema.get(0).getEntities().remove(1);
+        schema.remove(1);
+        schema.get(0).getEntities().get(0).setDestination(Collections.singleton(SourceType.ADB));
+        QuerySourceRequest sourceRequest = new QuerySourceRequest();
+        sourceRequest.setLogicalSchema(schema);
+        sourceRequest.setQueryRequest(request);
+        sourceRequest.setMetadata(Collections.singletonList(new ColumnMetadata("id", ColumnType.BIGINT)));
+
+        when(entityDao.getEntity(eq(schema.get(0).getMnemonic()),
+                eq(schema.get(0).getEntities().get(0).getName())))
+                .thenReturn(Future.succeededFuture(schema.get(0).getEntities().get(0)));
+
+        targetDatabaseDefinitionService.getAcceptableSourceTypes(sourceRequest)
+                .onComplete(promise);
+
+        assertTrue(promise.future().succeeded());
+        assertEquals(new HashSet<>(Collections.singletonList(SourceType.ADB)), promise.future().result());
+    }
+
+    @Test
+    void getSourceTypeWithLeastQueryEqualCost() {
+        Promise<SourceType> promise = Promise.promise();
         QueryRequest request = new QueryRequest();
         request.setSql("select t1.id from table_1 t1 join dtm_1.table_2 t2 " +
                 "ON t2.id = t1.id JOIN dtm_2.table_3 t3 ON t3.id = t2.id");
-        SqlNode sqlNode = TestUtils.DEFINITION_SERVICE.processingQuery(request.getSql());
         List<Datamart> schema = createLogicalSchema();
-        schema.get(1).getEntities().get(0)
-                .setDestination(new HashSet<>(Arrays.asList(SourceType.ADB, SourceType.ADG, SourceType.ADQM)));
-
         final Integer adbQueryCost = 0;
         final Integer adgQueryCost = 0;
         final Integer adqmQueryCost = 0;
 
+        Set<SourceType> sourceTypes = new HashSet<>(Arrays.asList(SourceType.ADB, SourceType.ADG));
         QuerySourceRequest sourceRequest = new QuerySourceRequest();
         sourceRequest.setLogicalSchema(schema);
         sourceRequest.setQueryRequest(request);
         sourceRequest.setMetadata(Collections.singletonList(new ColumnMetadata("id", ColumnType.BIGINT)));
-
-        when(entityDao.getEntity(eq(schema.get(0).getMnemonic()),
-                eq(schema.get(0).getEntities().get(0).getName())))
-                .thenReturn(Future.succeededFuture(schema.get(0).getEntities().get(0)));
-
-        when(entityDao.getEntity(eq(schema.get(0).getMnemonic()),
-                eq(schema.get(0).getEntities().get(1).getName())))
-                .thenReturn(Future.succeededFuture(schema.get(0).getEntities().get(1)));
-
-        when(entityDao.getEntity(eq(schema.get(1).getMnemonic()),
-                eq(schema.get(1).getEntities().get(0).getName())))
-                .thenReturn(Future.succeededFuture(schema.get(1).getEntities().get(0)));
-
-        when(dataSourcePluginService.getSourceTypes()).thenReturn(defaultSourceTypes);
 
         when(dataSourcePluginService.calcQueryCost(eq(SourceType.ADB), any(), any()))
                 .thenReturn(Future.succeededFuture(adbQueryCost));
@@ -280,52 +191,44 @@ class TargetDatabaseDefinitionServiceImplTest {
         when(dataSourcePluginService.calcQueryCost(eq(SourceType.ADQM), any(), any()))
                 .thenReturn(Future.succeededFuture(adqmQueryCost));
 
-        targetDatabaseDefinitionService.getTargetSource(sourceRequest, sqlNode)
-                .onComplete(promise);
 
+        targetDatabaseDefinitionService.getSourceTypeWithLeastQueryCost(sourceTypes, sourceRequest)
+                .onComplete(promise);
         assertTrue(promise.future().succeeded());
-        assertEquals(SourceType.ADB, promise.future().result().getSourceType());
+        assertEquals(SourceType.ADB, promise.future().result());
     }
 
     @Test
-    void getTargetSourceWithCalcCostsError() {
-        Promise<QuerySourceRequest> promise = Promise.promise();
+    void getSourceTypeWithLeastQueryDifferentCost() {
+        Promise<SourceType> promise = Promise.promise();
         QueryRequest request = new QueryRequest();
         request.setSql("select t1.id from table_1 t1 join dtm_1.table_2 t2 " +
                 "ON t2.id = t1.id JOIN dtm_2.table_3 t3 ON t3.id = t2.id");
-        SqlNode sqlNode = TestUtils.DEFINITION_SERVICE.processingQuery(request.getSql());
         List<Datamart> schema = createLogicalSchema();
+        final Integer adbQueryCost = 1;
         final Integer adgQueryCost = 0;
+        final Integer adqmQueryCost = 3;
 
+        Set<SourceType> sourceTypes = new HashSet<>(Arrays.asList(SourceType.ADB, SourceType.ADG));
         QuerySourceRequest sourceRequest = new QuerySourceRequest();
         sourceRequest.setLogicalSchema(schema);
         sourceRequest.setQueryRequest(request);
         sourceRequest.setMetadata(Collections.singletonList(new ColumnMetadata("id", ColumnType.BIGINT)));
 
-        when(entityDao.getEntity(eq(schema.get(0).getMnemonic()),
-                eq(schema.get(0).getEntities().get(0).getName())))
-                .thenReturn(Future.succeededFuture(schema.get(0).getEntities().get(0)));
-
-        when(entityDao.getEntity(eq(schema.get(0).getMnemonic()),
-                eq(schema.get(0).getEntities().get(1).getName())))
-                .thenReturn(Future.succeededFuture(schema.get(0).getEntities().get(1)));
-
-        when(entityDao.getEntity(eq(schema.get(1).getMnemonic()),
-                eq(schema.get(1).getEntities().get(0).getName())))
-                .thenReturn(Future.succeededFuture(schema.get(1).getEntities().get(0)));
-
-        when(dataSourcePluginService.getSourceTypes()).thenReturn(defaultSourceTypes);
-
         when(dataSourcePluginService.calcQueryCost(eq(SourceType.ADB), any(), any()))
-                .thenReturn(Future.failedFuture(new DtmException("")));
+                .thenReturn(Future.succeededFuture(adbQueryCost));
 
         when(dataSourcePluginService.calcQueryCost(eq(SourceType.ADG), any(), any()))
                 .thenReturn(Future.succeededFuture(adgQueryCost));
 
-        targetDatabaseDefinitionService.getTargetSource(sourceRequest, sqlNode)
-                .onComplete(promise);
+        when(dataSourcePluginService.calcQueryCost(eq(SourceType.ADQM), any(), any()))
+                .thenReturn(Future.succeededFuture(adqmQueryCost));
 
-        assertTrue(promise.future().failed());
+
+        targetDatabaseDefinitionService.getSourceTypeWithLeastQueryCost(sourceTypes, sourceRequest)
+                .onComplete(promise);
+        assertTrue(promise.future().succeeded());
+        assertEquals(SourceType.ADG, promise.future().result());
     }
 
     private List<Datamart> createLogicalSchema() {

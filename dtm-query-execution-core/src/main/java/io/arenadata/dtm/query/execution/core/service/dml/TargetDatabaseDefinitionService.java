@@ -12,14 +12,6 @@ import java.util.Set;
  */
 public interface TargetDatabaseDefinitionService {
 
-    /**
-     * Get target source type
-     *
-     * @param request request
-     * @return future object
-     */
-    Future<QuerySourceRequest> getTargetSource(QuerySourceRequest request, SqlNode query);
-
     Future<Set<SourceType>> getAcceptableSourceTypes(QuerySourceRequest request);
 
     Future<SourceType> getSourceTypeWithLeastQueryCost(Set<SourceType> sourceTypes, QuerySourceRequest request);

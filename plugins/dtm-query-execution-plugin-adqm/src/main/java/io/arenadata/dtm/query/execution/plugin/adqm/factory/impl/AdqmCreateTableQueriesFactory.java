@@ -23,8 +23,7 @@ public class AdqmCreateTableQueriesFactory implements CreateTableQueriesFactory<
             "CREATE TABLE %s__%s.%s ON CLUSTER %s\n" +
                     "(%s)\n" +
                     "ENGINE = CollapsingMergeTree(sign)\n" +
-                    "ORDER BY (%s)\n" +
-                    "TTL sys_close_date + INTERVAL %d SECOND TO DISK '%s'";
+                    "ORDER BY (%s)";
 
     private static final String CREATE_DISTRIBUTED_TABLE_TEMPLATE =
             "CREATE TABLE %s__%s.%s ON CLUSTER %s\n" +
@@ -44,8 +43,6 @@ public class AdqmCreateTableQueriesFactory implements CreateTableQueriesFactory<
     @Override
     public AdqmTables<String> create(Entity entity, String envName) {
         String cluster = ddlProperties.getCluster();
-        Integer ttlSec = ddlProperties.getTtlSec();
-        String archiveDisk = ddlProperties.getArchiveDisk();
 
         AdqmTables<AdqmTableEntity> tables = tableEntitiesFactory.create(entity, envName);
         AdqmTableEntity shard = tables.getShard();
@@ -57,9 +54,7 @@ public class AdqmCreateTableQueriesFactory implements CreateTableQueriesFactory<
                         shard.getName(),
                         cluster,
                         getColumnsQuery(shard.getColumns()),
-                        String.join(", ", shard.getSortedKeys()),
-                        ttlSec,
-                        archiveDisk),
+                        String.join(", ", shard.getSortedKeys())),
                 String.format(CREATE_DISTRIBUTED_TABLE_TEMPLATE,
                         distributed.getEnv(),
                         distributed.getSchema(),

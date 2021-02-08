@@ -120,8 +120,6 @@ adqm:
 
   ddl:
     cluster: ${ADQM_CLUSTER:default_cluster}
-    ttlSec: ${ADQM_TTL_SEC:3600}
-    archiveDisk: ${ADQM_ARCHIVE_DISK:default}
 
   mppr:
     host: ${ADQM_MPPR_CONNECTOR_HOST:10.92.3.14}

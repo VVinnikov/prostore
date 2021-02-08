@@ -21,8 +21,8 @@ import java.util.stream.Collectors;
 
 public abstract class AbstractQueryTemplateExtractor implements QueryTemplateExtractor {
     private static final SqlDynamicParam DYNAMIC_PARAM = new SqlDynamicParam(0, SqlParserPos.QUOTED_ZERO);
-    private static final String REGEX = "(?i).*(LIKE\\[1\\]|EQUAL\\w*\\[1\\]|LESS\\w*\\[1\\]|GREATER\\w*\\[1\\]).*";
-    public static final String DYNAMIC_PARAM_PATH = "[1].DYNAMIC_PARAM";
+    private static final String REGEX = "(?i).*(LIKE|EQUAL\\w*|LESS\\w*|GREATER\\w*).*";
+    private static final String DYNAMIC_PARAM_PATH = "[1].DYNAMIC_PARAM";
     private final DefinitionService<SqlNode> definitionService;
     private final SqlDialect sqlDialect;
 
@@ -76,40 +76,94 @@ public abstract class AbstractQueryTemplateExtractor implements QueryTemplateExt
 
     private QueryTemplateResult extractTemplate(SqlNode sqlNode, List<String> excludeList) {
         SqlSelectTree selectTree = new SqlSelectTree(sqlNode);
-        List<SqlTreeNode> paramNodes = getTreeNodes(excludeList, selectTree);
-        paramNodes.forEach(node -> node.getSqlNodeSetter().accept(DYNAMIC_PARAM));
+        List<SqlNode> params = setDynamicParams(excludeList, selectTree);
         SqlNode resultTemplateNode = selectTree.getRoot().getNode();
         return new QueryTemplateResult(
                 resultTemplateNode
                         .toSqlString(sqlDialect).toString(),
                 resultTemplateNode,
-                paramNodes.stream()
-                        .map(node -> (SqlNode) node.getNode())
-                        .collect(Collectors.toList())
+                params
         );
     }
 
-    private List<SqlTreeNode> getTreeNodes(List<String> excludeList, SqlSelectTree selectTree) {
+    private List<SqlNode> setDynamicParams(List<String> excludeList, SqlSelectTree selectTree) {
         if (excludeList.isEmpty()) {
-            return selectTree.findNodesByPathRegex(REGEX);
+            return selectTree.findNodesByPathRegex(REGEX).stream()
+                    .map(this::replace)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .collect(Collectors.toList());
         } else {
-            return selectTree.findNodesByPathRegex(REGEX)
-                    .stream()
-                    .filter(n -> {
-                        final String column = getConditionColumnName(selectTree, n);
-                        return excludeList.stream().noneMatch(column::equalsIgnoreCase);
-                    })
+            return selectTree.findNodesByPathRegex(REGEX).stream()
+                    .map(sqlTreeNode -> replaceWithExclude(sqlTreeNode, excludeList))
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
                     .collect(Collectors.toList());
         }
     }
 
-    private String getConditionColumnName(SqlSelectTree selectTree, SqlTreeNode n) {
-        final Optional<SqlTreeNode> parentNode = selectTree.getParentByChild(n);
-        if (parentNode.isPresent()) {
-            //FIXME need to refactor, because this where condition wont'be work: select * from test t where 1=1 and t.id = 1 ....
-            return ((SqlIdentifier) ((SqlBasicCall) parentNode.get().getNode()).getOperandList().get(0)).names.get(0);
+    private Optional<SqlNode> replace(SqlTreeNode sqlTreeNode) {
+        SqlBasicCall sqlBasicCall = sqlTreeNode.getNode();
+        if (sqlBasicCall.getOperands().length == 2) {
+            SqlNode leftOperand = sqlBasicCall.getOperands()[0];
+            SqlNode rightOperand = sqlBasicCall.getOperands()[1];
+            boolean leftIsIdentifier = leftOperand instanceof SqlIdentifier;
+            boolean rightIsIdentifier = rightOperand instanceof SqlIdentifier;
+            if (leftIsIdentifier && !rightIsIdentifier) {
+                sqlTreeNode.getSqlNodeSetter().accept(new SqlBasicCall(
+                        sqlBasicCall.getOperator(),
+                        new SqlNode[]{leftOperand, DYNAMIC_PARAM},
+                        sqlBasicCall.getParserPosition()
+                ));
+                return Optional.of(rightOperand);
+            } else if (!leftIsIdentifier && rightIsIdentifier) {
+                sqlTreeNode.getSqlNodeSetter().accept(new SqlBasicCall(
+                        sqlBasicCall.getOperator(),
+                        new SqlNode[]{DYNAMIC_PARAM, rightOperand},
+                        sqlBasicCall.getParserPosition()
+                ));
+                return Optional.of(leftOperand);
+            }
+        }
+        return Optional.empty();
+    }
+
+    private Optional<SqlNode> replaceWithExclude(SqlTreeNode sqlTreeNode, List<String> excludeList) {
+        SqlBasicCall sqlBasicCall = sqlTreeNode.getNode();
+        if (sqlBasicCall.getOperands().length == 2) {
+            SqlNode leftOperand = sqlBasicCall.getOperands()[0];
+            SqlNode rightOperand = sqlBasicCall.getOperands()[1];
+            boolean leftIsLiteral = leftOperand instanceof SqlLiteral;
+            boolean rightIsLiteral = rightOperand instanceof SqlLiteral;
+            if (leftIsLiteral && !rightIsLiteral && isNotExclude(rightOperand, excludeList)) {
+                sqlTreeNode.getSqlNodeSetter().accept(new SqlBasicCall(
+                        sqlBasicCall.getOperator(),
+                        new SqlNode[]{DYNAMIC_PARAM, rightOperand},
+                        sqlBasicCall.getParserPosition()
+                ));
+                return Optional.of(rightOperand);
+            } else if (!leftIsLiteral && rightIsLiteral && isNotExclude(leftOperand, excludeList)) {
+                sqlTreeNode.getSqlNodeSetter().accept(new SqlBasicCall(
+                        sqlBasicCall.getOperator(),
+                        new SqlNode[]{leftOperand, DYNAMIC_PARAM},
+                        sqlBasicCall.getParserPosition()
+                ));
+                return Optional.of(leftOperand);
+            }
+        }
+        return Optional.empty();
+    }
+
+    private boolean isNotExclude(SqlNode operand, List<String> excludeList) {
+        if (excludeList.isEmpty()) {
+            return true;
+        } else if (operand instanceof SqlIdentifier) {
+            SqlIdentifier identifier = (SqlIdentifier) operand;
+            String columnName = identifier.getSimple();
+            return excludeList.stream()
+                    .noneMatch(e -> e.equalsIgnoreCase(columnName));
         } else {
-            throw new DtmException("Can't extract condition column name from sql node");
+            return true;
         }
     }
 

@@ -49,7 +49,7 @@ class MppwFinishRequestHandlerTest {
                         createRowMap("name", "sys_from"),
                         createRowMap("name", "sys_to"),
                         createRowMap("name", "sys_op"),
-                        createRowMap("name", "close_date"),
+                        createRowMap("name", "sys_close_date"),
                         createRowMap("name", "sign")
                 ));
         mockData.put(t -> t.contains("select sorting_key from system.tables"),
@@ -64,7 +64,7 @@ class MppwFinishRequestHandlerTest {
                 t -> t.equalsIgnoreCase("SYSTEM FLUSH DISTRIBUTED dev__shares.accounts_buffer"),
                 t -> t.equalsIgnoreCase("SYSTEM FLUSH DISTRIBUTED dev__shares.accounts_actual"),
                 t -> t.contains("a.column1, a.column2, a.column3, a.sys_from, 100") && t.contains("dev__shares.accounts_actual") &&
-                        t.contains("ANY INNER JOIN dev__shares.accounts_buffer_shard b USING(column1, column2)") &&
+                        t.contains("select column1, column2 from dev__shares.accounts_buffer_shard") &&
                         t.contains("sys_from < 101"),
                 t -> t.contains("SYSTEM FLUSH DISTRIBUTED dev__shares.accounts_actual"),
                 t -> t.equalsIgnoreCase("DROP TABLE IF EXISTS dev__shares.accounts_buffer ON CLUSTER test_arenadata"),

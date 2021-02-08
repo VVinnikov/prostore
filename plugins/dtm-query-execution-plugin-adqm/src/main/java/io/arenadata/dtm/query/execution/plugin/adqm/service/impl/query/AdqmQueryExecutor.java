@@ -55,7 +55,8 @@ public class AdqmQueryExecutor implements DatabaseExecutor {
     public Future<Void> executeUpdate(String sql) {
         log.debug(String.format("ADQM. Execute update %s", sql));
         return getSqlConnection()
-                .compose(conn -> executeQueryUpdate(conn, sql));
+                .compose(conn -> executeQueryUpdate(conn, sql))
+                .onFailure(err -> log.error(err.getMessage()));
     }
 
     @Override

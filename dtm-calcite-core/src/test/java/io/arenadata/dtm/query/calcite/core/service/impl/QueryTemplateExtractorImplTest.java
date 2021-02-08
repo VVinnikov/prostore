@@ -12,23 +12,37 @@ import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class QueryTemplateExtractorImplTest {
     public static final String EXPECTED_SQL = "SELECT *\n" +
-        "FROM \"tbl1\"\n" +
-        "WHERE \"x\" = 1 AND \"x\" > 2 AND \"x\" < 3 AND \"x\" <= 4 AND \"x\" >= 5 AND \"x\" <> 6 AND \"z\" = '8'";
+            "FROM \"tbl1\"\n" +
+            "WHERE \"x\" = 1 AND \"x\" > 2 AND \"x\" < 3 AND \"x\" <= 4 AND \"x\" >= 5 AND \"x\" <> 6 AND \"z\" = '8'";
+
+    public static final String EXPECTED_FULL_SQL = "SELECT *\n" +
+            "FROM \"tbl1\"\n" +
+            "WHERE \"x\" = 1" +
+            " AND 2 = 2" +
+            " AND 3 < \"x\"" +
+            " AND \"z\" = \"x\"";
+
+    public static final String EXPECTED_FULL_TEMPLATE = "SELECT *\n" +
+            "FROM \"tbl1\"\n" +
+            "WHERE \"x\" = ? AND 2 = 2 AND ? < \"x\" AND \"z\" = \"x\"";
+
     public static final String EXPECTED_SQL_WITH_SYS_COLUMNS = "SELECT *\n" +
-        "FROM \"tbl1\"\n" +
-        "WHERE \"x\" = 1 AND \"x\" > 2 AND \"x\" < 3 AND \"x\" <= 4 AND \"x\" >= 5 AND \"x\" <> 6 AND \"z\" = '8'" +
-        " AND \"sys_from\" = 1";
+            "FROM \"tbl1\"\n" +
+            "WHERE \"x\" = 1 AND \"x\" > 2 AND \"x\" < 3 AND \"x\" <= 4 AND \"x\" >= 5 AND \"x\" <> 6 AND \"z\" = '8'" +
+            " AND \"sys_from\" = 1";
     private static final String EXPECTED_TEMPLATE = "SELECT *\n" +
-        "FROM \"tbl1\"\n" +
-        "WHERE \"x\" = ? AND \"x\" > ? AND \"x\" < ? AND \"x\" <= ? AND \"x\" >= ? AND \"x\" <> ? AND \"z\" = ?";
+            "FROM \"tbl1\"\n" +
+            "WHERE \"x\" = ? AND \"x\" > ? AND \"x\" < ? AND \"x\" <= ? AND \"x\" >= ? AND \"x\" <> ? AND \"z\" = ?";
     private static final String EXPECTED_TEMPLATE_WITH_SYS_COLUMNS = "SELECT *\n" +
-        "FROM \"tbl1\"\n" +
-        "WHERE \"x\" = ? AND \"x\" > ? AND \"x\" < ? AND \"x\" <= ? AND \"x\" >= ? AND \"x\" <> ? AND \"z\" = ?" +
-        " AND \"sys_from\" = 1";
+            "FROM \"tbl1\"\n" +
+            "WHERE \"x\" = ? AND \"x\" > ? AND \"x\" < ? AND \"x\" <= ? AND \"x\" >= ? AND \"x\" <> ? AND \"z\" = ?" +
+            " AND \"sys_from\" = 1";
     private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private AbstractQueryTemplateExtractor extractor;
     private CalciteDefinitionService definitionService;
@@ -36,33 +50,18 @@ class QueryTemplateExtractorImplTest {
     @BeforeEach
     void setUp() {
         SqlParser.Config parserConfig = SqlParser.configBuilder()
-            .setParserFactory(calciteCoreConfiguration.eddlParserImplFactory())
-            .setConformance(SqlConformanceEnum.DEFAULT)
-            .setLex(Lex.MYSQL)
-            .setCaseSensitive(false)
-            .setUnquotedCasing(Casing.TO_LOWER)
-            .setQuotedCasing(Casing.TO_LOWER)
-            .setQuoting(Quoting.DOUBLE_QUOTE)
-            .build();
+                .setParserFactory(calciteCoreConfiguration.eddlParserImplFactory())
+                .setConformance(SqlConformanceEnum.DEFAULT)
+                .setLex(Lex.MYSQL)
+                .setCaseSensitive(false)
+                .setUnquotedCasing(Casing.TO_LOWER)
+                .setQuotedCasing(Casing.TO_LOWER)
+                .setQuoting(Quoting.DOUBLE_QUOTE)
+                .build();
         definitionService = new CalciteDefinitionService(parserConfig) {
         };
         //FIXME move to plugins
         extractor = null;//new AbstractQueryTemplateExtractor(definitionService, SqlDialect.CALCITE);
-    }
-
-    @Test
-    void test() {
-        long t = System.currentTimeMillis();
-        for (int i = 0; i < 1000; i++) {
-            new SqlSelectTree(definitionService.processingQuery(EXPECTED_SQL));
-        }
-        System.out.printf("\nparsing: %d", System.currentTimeMillis() - t);
-        t = System.currentTimeMillis();
-        SqlSelectTree selectTree = new SqlSelectTree(definitionService.processingQuery(EXPECTED_SQL));
-        for (int i = 0; i < 1000; i++) {
-            selectTree = new SqlSelectTree(selectTree.copy().getRoot().getNode());
-        }
-        System.out.printf("\ncopy: %d", System.currentTimeMillis() - t);
     }
 
     @Test
@@ -76,10 +75,18 @@ class QueryTemplateExtractorImplTest {
 
     @Test
     void extractWithSysColumn() {
-        QueryTemplateResult templateResult = extractor.extract(EXPECTED_SQL_WITH_SYS_COLUMNS);
+        QueryTemplateResult templateResult = extractor.extract(EXPECTED_SQL_WITH_SYS_COLUMNS, Collections.singletonList("sys_from"));
         assertEquals(EXPECTED_TEMPLATE_WITH_SYS_COLUMNS, templateResult.getTemplate());
         assertEquals(7, templateResult.getParams().size());
     }
+
+    @Test
+    void extractWithFull() {
+        QueryTemplateResult templateResult = extractor.extract(EXPECTED_FULL_SQL);
+        assertEquals(2, templateResult.getParams().size());
+        assertEquals(EXPECTED_FULL_TEMPLATE, templateResult.getTemplate());
+    }
+
 
     @Test
     void enrichTemplate() {

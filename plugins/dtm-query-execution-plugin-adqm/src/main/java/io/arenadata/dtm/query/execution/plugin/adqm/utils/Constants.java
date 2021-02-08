@@ -17,10 +17,10 @@ public final class Constants {
     public static final String SYS_FROM_FIELD = "sys_from";
     public static final String SYS_TO_FIELD = "sys_to";
     public static final String SYS_OP_FIELD = "sys_op";
-    public static final String CLOSE_DATE_FIELD = "close_date";
+    public static final String SYS_CLOSE_DATE_FIELD = "sys_close_date";
     public static final String SIGN_FIELD = "sign";
     public static final Set<String> SYSTEM_FIELDS = new HashSet<>(Arrays.asList(
-            SYS_FROM_FIELD, SYS_TO_FIELD, SYS_OP_FIELD, CLOSE_DATE_FIELD, SIGN_FIELD
+            SYS_FROM_FIELD, SYS_TO_FIELD, SYS_OP_FIELD, SYS_CLOSE_DATE_FIELD, SIGN_FIELD
     ));
 
     public static String getDbName(String envName, String datamartMnemonic) {

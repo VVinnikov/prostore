@@ -40,8 +40,8 @@ public class WriteNewDeltaHotExecutorImpl extends DeltaServiceDaoExecutorHelper 
         executor.getData(getDeltaPath(datamart), null, deltaStat)
                 .map(bytes -> bytes == null ? new Delta() : deserializedDelta(bytes))
                 .map(delta -> {
-                    if (delta.getOk() != null && delta.getHot() != null) {
-                        throw new DeltaIsNotCommittedException(delta.getHot().toString());
+                    if (delta.getHot() != null) {
+                        throw new DeltaIsNotCommittedException(delta.getHot().getDeltaNum());
                     }
                     var deltaNum = 0L;
                     var cnFrom = 0L;
@@ -77,7 +77,7 @@ public class WriteNewDeltaHotExecutorImpl extends DeltaServiceDaoExecutorHelper 
                             || error instanceof KeeperException.BadVersionException) {
                         resultPromise.fail(deltaHotNum == null ?
                                 new DeltaIsNotCommittedException(error) :
-                                new DeltaIsNotCommittedException(String.valueOf(deltaHotNum), error));
+                                new DeltaIsNotCommittedException(deltaHotNum, error));
                     } else if (error instanceof DeltaException) {
                         resultPromise.fail(error);
                     } else {

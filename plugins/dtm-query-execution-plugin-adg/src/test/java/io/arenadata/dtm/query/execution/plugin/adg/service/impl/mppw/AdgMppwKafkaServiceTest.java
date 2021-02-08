@@ -4,7 +4,6 @@ import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.plugin.exload.Format;
 import io.arenadata.dtm.common.reader.QueryResult;
-import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.AdgConnectorApiProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.AdgMppwKafkaProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.impl.AdgHelperTableNamesFactoryImpl;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.impl.AdgMppwKafkaContextFactoryImpl;
@@ -186,11 +185,6 @@ class AdgMppwKafkaServiceTest {
 
     private AdgMppwKafkaService getAdgMppwKafkaService() {
         val tableNamesFactory = new AdgHelperTableNamesFactoryImpl();
-        val connectorApiProperties = new AdgConnectorApiProperties();
-        connectorApiProperties.setUrl("https://localhost");
-        connectorApiProperties.setKafkaLoadDataUrl("/dataload");
-        connectorApiProperties.setKafkaSubscriptionUrl("/sbscription");
-        connectorApiProperties.setTransferDataToScdTableUrl("/transferDataToScdTablePath");
         val mppwKafkaProperties = new AdgMppwKafkaProperties();
         mppwKafkaProperties.setMaxNumberOfMessagesPerPartition(200);
         return new AdgMppwKafkaService(

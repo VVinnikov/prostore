@@ -23,9 +23,7 @@ class TableDdlTest {
 
     @BeforeAll
     public static void setup() {
-        ddlProperties.setTtlSec(3600);
         ddlProperties.setCluster(CLUSTER);
-        ddlProperties.setArchiveDisk("default");
     }
 
     @Test

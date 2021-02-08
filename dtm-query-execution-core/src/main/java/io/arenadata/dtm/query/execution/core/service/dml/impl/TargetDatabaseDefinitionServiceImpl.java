@@ -107,13 +107,17 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
 
     private Set<SourceType> getCommonSourceTypes(List<Entity> entities) {
         final Set<SourceType> stResult = new HashSet<>();
-        entities.forEach(e -> {
-            if (stResult.isEmpty()) {
-                stResult.addAll(e.getDestination());
-            } else {
-                stResult.retainAll(e.getDestination());
-            }
-        });
+        if (!entities.isEmpty()) {
+            Set<SourceType> firstSourceTypes = entities.get(0).getDestination();
+            entities.forEach(e -> {
+                if (stResult.isEmpty()) {
+                    stResult.addAll(e.getDestination());
+                } else {
+                    stResult.retainAll(e.getDestination());
+                }
+            });
+            stResult.retainAll(firstSourceTypes);
+        }
         return stResult;
     }
 

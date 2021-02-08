@@ -87,9 +87,7 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
                     sqlNode = defaultDatamartSetter.set(sqlNode, queryRequest.getDatamartMnemonic());
                 }
             }
-            val requestContext = requestContextFactory.create(queryRequest,
-                    parsedQueryResponse.getSourceType(),
-                    sqlNode);
+            val requestContext = requestContextFactory.create(queryRequest, sqlNode);
             queryDispatcher.dispatch(requestContext)
                     .onComplete(promise);
         });
@@ -98,11 +96,9 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
     private Future<ParsedQueryResponse> getParsedQuery(InputQueryRequest inputQueryRequest) {
         return Future.future(promise -> vertx.executeBlocking(it -> {
             try {
-                val queryRequest = queryRequestFactory.create(inputQueryRequest);
-                val queryRequestWithoutHint = getQueryRequestWithoutHint(queryRequest);
-                log.debug("Pre-parse request: {}", queryRequestWithoutHint.getQueryRequest().getSql());
-                val node = definitionService.processingQuery(queryRequestWithoutHint.getQueryRequest().getSql());
-                it.complete(new ParsedQueryResponse(queryRequest, node, queryRequestWithoutHint.getSourceType()));
+                val request = querySemicolonRemover.remove(queryRequestFactory.create(inputQueryRequest));
+                val node = definitionService.processingQuery(request.getSql());
+                it.complete(new ParsedQueryResponse(request, node));
             } catch (Exception e) {
                 it.fail(new DtmException("Error parsing query", e));
             }
@@ -131,7 +127,6 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
     private final static class ParsedQueryResponse {
         private final QueryRequest queryRequest;
         private final SqlNode sqlNode;
-        private final SourceType sourceType;
     }
 
 }

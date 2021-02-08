@@ -10,7 +10,6 @@ import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
-import io.arenadata.dtm.query.execution.core.exception.table.TableAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
@@ -74,10 +73,8 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
             datamartDao.existsDatamart(datamartName)
                     .compose(isExistsDatamart -> isExistsDatamart ?
                             entityDao.existsEntity(datamartName, entity.getName()) : getNotExistsDatamartFuture(datamartName))
-                    .onSuccess(isExistsEntity -> createTableIfNotExists(context, isExistsEntity)
-                            .onSuccess(success -> {
-                                promise.complete(QueryResult.emptyResult());
-                            })
+                    .onSuccess(isExistsEntity -> createTable(context)
+                            .onSuccess(success -> promise.complete(QueryResult.emptyResult()))
                             .onFailure(promise::fail))
                     .onFailure(promise::fail);
         });
@@ -106,16 +103,6 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
 
     private Future<Boolean> getNotExistsDatamartFuture(String datamartName) {
         return Future.failedFuture(new DatamartNotExistsException(datamartName));
-    }
-
-    private Future<Void> createTableIfNotExists(DdlRequestContext context,
-                                                Boolean isTableExists) {
-        if (isTableExists) {
-            return Future.failedFuture(
-                    new TableAlreadyExistsException(context.getEntity().getNameWithSchema()));
-        } else {
-            return createTable(context);
-        }
     }
 
     private Future<Void> createTable(DdlRequestContext context) {

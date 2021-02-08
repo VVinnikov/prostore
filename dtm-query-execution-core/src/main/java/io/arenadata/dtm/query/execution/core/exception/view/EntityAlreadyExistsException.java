@@ -8,7 +8,7 @@ public class EntityAlreadyExistsException extends DtmException {
         super(String.format("Entity %s already exists", table));
     }
 
-    public EntityAlreadyExistsException(String message, Throwable cause) {
-        super(message, cause);
+    public EntityAlreadyExistsException(String table, Throwable cause) {
+        super(String.format("Entity %s already exists", table), cause);
     }
 }

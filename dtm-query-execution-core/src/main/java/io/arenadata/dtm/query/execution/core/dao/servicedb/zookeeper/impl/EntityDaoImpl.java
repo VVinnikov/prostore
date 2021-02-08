@@ -1,7 +1,6 @@
 package io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import io.arenadata.dtm.async.AsyncHandler;
 import io.arenadata.dtm.async.AsyncUtils;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
@@ -9,8 +8,8 @@ import io.arenadata.dtm.query.execution.core.configuration.cache.CacheConfigurat
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.metadata.DatamartEntity;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
-import io.arenadata.dtm.query.execution.core.exception.table.TableAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
+import io.arenadata.dtm.query.execution.core.exception.view.EntityAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
 import io.vertx.core.Future;
 import io.vertx.core.json.jackson.DatabindCodec;
@@ -60,7 +59,7 @@ public class EntityDaoImpl implements EntityDao {
                         if (error instanceof KeeperException.NoNodeException) {
                             throw new DatamartNotExistsException(entity.getSchema(), error);
                         } else if (error instanceof KeeperException.NodeExistsException) {
-                            throw warn(new TableAlreadyExistsException(entity.getNameWithSchema(), error));
+                            throw warn(new EntityAlreadyExistsException(entity.getNameWithSchema(), error));
                         } else {
                             throw new DtmException(String.format("Can't create entity [%s]", entity.getNameWithSchema()), error);
                         }

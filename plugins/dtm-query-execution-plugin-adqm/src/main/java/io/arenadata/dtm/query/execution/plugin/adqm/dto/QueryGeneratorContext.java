@@ -1,7 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.dto;
 
 import io.arenadata.dtm.common.delta.DeltaInformation;
-import io.arenadata.dtm.common.reader.QueryRequest;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,7 +14,7 @@ import java.util.Iterator;
 @AllArgsConstructor
 public class QueryGeneratorContext {
     private final Iterator<DeltaInformation> deltaIterator;
-    private final QueryRequest queryRequest;
+    private final EnrichQueryRequest enrichQueryRequest;
     private final RelBuilder relBuilder;
     private final RelRoot relNode;
 }

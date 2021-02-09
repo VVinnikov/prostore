@@ -5,6 +5,7 @@ import io.arenadata.dtm.common.delta.DeltaType;
 import io.arenadata.dtm.query.execution.plugin.adg.dto.QueryGeneratorContext;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.AdgHelperTableNamesFactory;
 import io.arenadata.dtm.query.execution.plugin.adg.service.QueryExtendService;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.prepare.CalciteCatalogReader;
@@ -69,8 +70,8 @@ public class AdgCalciteDmlQueryExtendServiceImpl implements QueryExtendService {
         val qualifiedName = tableScan.getTable().getQualifiedName();
         val tableName = qualifiedName.get(qualifiedName.size() > 1 ? 1 : 0);
         val schemaName = deltaInfo.getSchemaName();
-        val queryRequest = context.getQueryRequest();
-        val tableNames = helperTableNamesFactory.create(queryRequest.getEnvName(),
+        val enrichQueryRequest = context.getEnrichQueryRequest();
+        val tableNames = helperTableNamesFactory.create(enrichQueryRequest.getEnvName(),
             schemaName, tableName);
         RelNode topRelNode;
         RelNode bottomRelNode;
@@ -89,7 +90,7 @@ public class AdgCalciteDmlQueryExtendServiceImpl implements QueryExtendService {
                 bottomRelNode = createBottomRelNodeDeltaNum(deltaInfo, relBuilder, rexNodes, tableNames.getActual());
                 break;
             default:
-                throw new RuntimeException(String.format("Incorrect delta type %s, expected values: %s!",
+                throw new DataSourceException(String.format("Incorrect delta type %s, expected values: %s!",
                     deltaInfo.getType(), DeltaType.values()));
         }
 

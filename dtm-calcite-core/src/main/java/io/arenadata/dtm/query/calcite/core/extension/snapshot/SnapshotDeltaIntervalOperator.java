@@ -1,12 +1,14 @@
 package io.arenadata.dtm.query.calcite.core.extension.snapshot;
 
 import io.arenadata.dtm.common.delta.SelectOnInterval;
+import lombok.Getter;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.ImmutableNullableList;
 
 import java.util.List;
 
+@Getter
 public class SnapshotDeltaIntervalOperator extends SqlCall {
 
     private SqlNode period;

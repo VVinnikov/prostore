@@ -1,19 +1,22 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl.enrichment;
 
 import io.arenadata.dtm.common.dto.QueryParserRequest;
+import io.arenadata.dtm.common.dto.QueryParserResponse;
 import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
+import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.adg.calcite.AdgCalciteContextProvider;
 import io.arenadata.dtm.query.execution.plugin.adg.dto.EnrichQueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.service.QueryEnrichmentService;
 import io.arenadata.dtm.query.execution.plugin.adg.service.QueryGenerator;
 import io.arenadata.dtm.query.execution.plugin.adg.service.SchemaExtender;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -23,6 +26,7 @@ public class AdgQueryEnrichmentServiceImpl implements QueryEnrichmentService {
     private final QueryGenerator adgQueryGenerator;
     private final SchemaExtender schemaExtender;
 
+    @Autowired
     public AdgQueryEnrichmentServiceImpl(
             @Qualifier("adgCalciteDMLQueryParserService") QueryParserService queryParserService,
             AdgCalciteContextProvider contextProvider,
@@ -34,29 +38,32 @@ public class AdgQueryEnrichmentServiceImpl implements QueryEnrichmentService {
     }
 
     @Override
-    public void enrich(EnrichQueryRequest request, Handler<AsyncResult<String>> asyncHandler) {
-        queryParserService.parse(new QueryParserRequest(request.getQueryRequest(), request.getSchema()), ar -> {
-            if (ar.succeeded()) {
-                val parserResponse = ar.result();
-                contextProvider.enrichContext(parserResponse.getCalciteContext(),
-                        schemaExtender.generatePhysicalSchema(request.getSchema(), request.getQueryRequest()));
-                // формируем новый sql-запрос
-                adgQueryGenerator.mutateQuery(parserResponse.getRelNode(),
-                        parserResponse.getQueryRequest().getDeltaInformations(),
-                        parserResponse.getCalciteContext(),
-                        request.getQueryRequest(),
-                        enrichedQueryResult -> {
-                            if (enrichedQueryResult.succeeded()) {
-                                log.debug("Request generated: {}", enrichedQueryResult.result());
-                                asyncHandler.handle(Future.succeededFuture(enrichedQueryResult.result()));
-                            } else {
-                                log.error("Error while enriching request", enrichedQueryResult.cause());
-                                asyncHandler.handle(Future.failedFuture(enrichedQueryResult.cause()));
-                            }
-                        });
-            } else {
-                asyncHandler.handle(Future.failedFuture(ar.cause()));
-            }
+    public Future<String> enrich(EnrichQueryRequest request) {
+        return queryParserService.parse(new QueryParserRequest(request.getQuery(), request.getSchema()))
+                .compose(parsedQuery -> modifyQuery(parsedQuery, request));
+    }
+
+    private Future<String> modifyQuery(QueryParserResponse parsedQuery,
+                                       EnrichQueryRequest request) {
+        return Future.future(promise -> {
+            contextProvider.enrichContext(parsedQuery.getCalciteContext(),
+                    generatePhysicalSchema(request.getSchema(), request.getEnvName()));
+            // form a new sql query
+            adgQueryGenerator.mutateQuery(parsedQuery.getRelNode(),
+                    request.getDeltaInformations(),
+                    parsedQuery.getCalciteContext(),
+                    request)
+                    .onSuccess(enrichResult -> {
+                        log.debug("Request generated: {}", enrichResult);
+                        promise.complete(enrichResult);
+                    })
+                    .onFailure(promise::fail);
         });
+    }
+
+    private List<Datamart> generatePhysicalSchema(List<Datamart> logicalSchemas, String envName) {
+        return logicalSchemas.stream()
+                .map(ls -> schemaExtender.createPhysicalSchema(ls, envName))
+                .collect(Collectors.toList());
     }
 }

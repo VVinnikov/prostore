@@ -2,7 +2,8 @@ package io.arenadata.dtm.query.execution.plugin.adb.factory.impl;
 
 import io.arenadata.dtm.query.execution.plugin.adb.factory.MppwTransferRequestFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwTransferDataRequest;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 import org.apache.avro.Schema;
 import org.springframework.stereotype.Component;
 
@@ -10,16 +11,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static io.arenadata.dtm.query.execution.plugin.adb.factory.Constants.SYS_FROM_ATTR;
+import static io.arenadata.dtm.query.execution.plugin.adb.factory.Constants.SYS_TO_ATTR;
+
 @Component
 public class MppwTransferRequestFactoryImpl implements MppwTransferRequestFactory {
 
     @Override
-    public MppwTransferDataRequest create(MppwRequestContext context, List<Map<String, Object>> keyColumns) {
+    public MppwTransferDataRequest create(MppwKafkaRequest request, List<Map<String, Object>> keyColumns) {
         return MppwTransferDataRequest.builder()
-                .datamart(context.getRequest().getKafkaParameter().getDatamart())
-                .tableName(context.getRequest().getKafkaParameter().getTargetTableName())
-                .hotDelta(context.getRequest().getKafkaParameter().getSysCn())
-                .columnList(getColumnList(context))
+                .datamart(request.getDatamartMnemonic())
+                .tableName(request.getDestinationTableName())
+                .hotDelta(request.getSysCn())
+                .columnList(getColumnList(request))
                 .keyColumnList(getKeyColumnList(keyColumns))
                 .build();
     }
@@ -28,12 +32,11 @@ public class MppwTransferRequestFactoryImpl implements MppwTransferRequestFactor
         return result.stream().map(o -> o.get("column_name").toString()).collect(Collectors.toList());
     }
 
-    private List<String> getColumnList(MppwRequestContext context) {
-        final List<String> columns = new Schema.Parser().parse(context.getRequest()
-                .getKafkaParameter().getUploadMetadata().getExternalSchema())
+    private List<String> getColumnList(MppwRequest request) {
+        final List<String> columns = new Schema.Parser().parse(request.getUploadMetadata().getExternalSchema())
                 .getFields().stream().map(Schema.Field::name).collect(Collectors.toList());
-        columns.add(MetadataSqlFactoryImpl.SYS_FROM_ATTR);
-        columns.add(MetadataSqlFactoryImpl.SYS_TO_ATTR);
+        columns.add(SYS_FROM_ATTR);
+        columns.add(SYS_TO_ATTR);
         return columns;
     }
 }

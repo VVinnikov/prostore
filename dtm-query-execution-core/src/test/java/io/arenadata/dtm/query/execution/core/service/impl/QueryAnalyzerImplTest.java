@@ -1,41 +1,35 @@
 package io.arenadata.dtm.query.execution.core.service.impl;
 
+import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.reader.InputQueryRequest;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
-import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
-import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
+import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.query.calcite.core.service.impl.DeltaInformationExtractorImpl;
 import io.arenadata.dtm.query.execution.core.configuration.AppConfiguration;
-import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
-import io.arenadata.dtm.query.execution.core.configuration.properties.CoreDtmSettings;
+import io.arenadata.dtm.query.execution.core.dto.CoreRequestContext;
 import io.arenadata.dtm.query.execution.core.factory.RequestContextFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.QueryRequestFactoryImpl;
 import io.arenadata.dtm.query.execution.core.factory.impl.RequestContextFactoryImpl;
-import io.arenadata.dtm.query.execution.core.service.QueryAnalyzer;
-import io.arenadata.dtm.query.execution.core.service.QueryDispatcher;
+import io.arenadata.dtm.query.execution.core.service.query.QueryAnalyzer;
+import io.arenadata.dtm.query.execution.core.service.query.QueryDispatcher;
+import io.arenadata.dtm.query.execution.core.service.query.impl.QueryAnalyzerImpl;
+import io.arenadata.dtm.query.execution.core.service.query.impl.QuerySemicolonRemoverImpl;
 import io.arenadata.dtm.query.execution.core.utils.DatamartMnemonicExtractor;
 import io.arenadata.dtm.query.execution.core.utils.DefaultDatamartSetter;
 import io.arenadata.dtm.query.execution.core.utils.HintExtractor;
-import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
-import io.arenadata.dtm.common.model.SqlProcessingType;
-import io.vertx.core.AsyncResult;
+import io.arenadata.dtm.query.execution.core.utils.TestUtils;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.TestOptions;
 import io.vertx.ext.unit.report.ReportOptions;
 import io.vertx.reactivex.ext.unit.Async;
 import io.vertx.reactivex.ext.unit.TestSuite;
 import lombok.Data;
-import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.env.Environment;
-
-import java.time.ZoneId;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,28 +38,22 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 class QueryAnalyzerImplTest {
-
-    private CalciteConfiguration config = new CalciteConfiguration();
-    private CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
-    private DefinitionService<SqlNode> definitionService =
-            new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
     private Vertx vertx = Vertx.vertx();
-    final CoreDtmSettings dtmSettings = new CoreDtmSettings(ZoneId.of("UTC"));
-    private RequestContextFactory<RequestContext<? extends DatamartRequest>, QueryRequest> requestContextFactory =
-            new RequestContextFactoryImpl(new SqlDialect(SqlDialect.EMPTY_CONTEXT), dtmSettings);
+    private RequestContextFactory<CoreRequestContext<? extends DatamartRequest, ? extends SqlNode>, QueryRequest> requestContextFactory =
+            new RequestContextFactoryImpl(TestUtils.SQL_DIALECT, TestUtils.getCoreConfiguration("test"));
     private QueryDispatcher queryDispatcher = mock(QueryDispatcher.class);
     private QueryAnalyzer queryAnalyzer;
 
     @BeforeEach
     void setUp() {
         queryAnalyzer = new QueryAnalyzerImpl(queryDispatcher,
-                definitionService,
+                TestUtils.DEFINITION_SERVICE,
                 requestContextFactory,
                 vertx,
                 new HintExtractor(),
-                new DatamartMnemonicExtractor(new DeltaInformationExtractorImpl(dtmSettings)),
+                new DatamartMnemonicExtractor(new DeltaInformationExtractorImpl(TestUtils.CORE_DTM_SETTINGS)),
                 new DefaultDatamartSetter(),
-                new SemicolonRemoverImpl(), new QueryRequestFactoryImpl(new AppConfiguration(mock(Environment.class))));
+                new QuerySemicolonRemoverImpl(), new QueryRequestFactoryImpl(new AppConfiguration(mock(Environment.class))));
     }
 
     @Test
@@ -164,10 +152,11 @@ class QueryAnalyzerImplTest {
         TestSuite suite = TestSuite.create("parse");
         suite.test("parse", context -> {
             Async async = context.async();
-            queryAnalyzer.analyzeAndExecute(queryRequest, res -> {
-                testData.setResult("complete");
-                async.complete();
-            });
+            queryAnalyzer.analyzeAndExecute(queryRequest)
+                    .onComplete(res -> {
+                        testData.setResult("complete");
+                        async.complete();
+                    });
             async.awaitSuccess();
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
@@ -176,13 +165,11 @@ class QueryAnalyzerImplTest {
     private TestData prepareExecute() {
         TestData testData = new TestData();
         doAnswer(invocation -> {
-            final RequestContext ddlRequest = invocation.getArgument(0);
+            final CoreRequestContext ddlRequest = invocation.getArgument(0);
             testData.setRequest(ddlRequest.getRequest().getQueryRequest());
             testData.setProcessingType(ddlRequest.getProcessingType());
-            Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(1);
-            handler.handle(Future.succeededFuture(QueryResult.emptyResult()));
-            return null;
-        }).when(queryDispatcher).dispatch(any(), any());
+            return Future.succeededFuture(QueryResult.emptyResult());
+        }).when(queryDispatcher).dispatch(any());
         return testData;
     }
 

@@ -51,4 +51,7 @@ public class SqlAlterView extends SqlAlter {
         return ImmutableNullableList.of(this.name, this.columnList, this.query);
     }
 
+    public SqlIdentifier getName() {
+        return name;
+    }
 }

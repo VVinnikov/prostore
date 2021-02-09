@@ -2,12 +2,13 @@ package io.arenadata.dtm.query.execution.plugin.adb.service;
 
 import io.arenadata.dtm.query.execution.plugin.adb.dto.EnrichQueryRequest;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 
 /**
- * Сервис обогащения SQL
+ * Query enrichment service
  */
 public interface QueryEnrichmentService {
 
-  void enrich(EnrichQueryRequest request, Handler<AsyncResult<String>> handler);
+  Future<String> enrich(EnrichQueryRequest request);
 }

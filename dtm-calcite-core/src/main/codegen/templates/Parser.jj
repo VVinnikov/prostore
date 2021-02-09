@@ -2803,7 +2803,7 @@ SqlNode Snapshot(SqlNode tableRef) :
             period = SqlLiteral.createNull(getPos());
         }
 
-        return new io.arenadata.dtm.query.calcite.core.extension.snapshot.SqlSnapshot(getPos(),
+        return new io.arenadata.dtm.query.calcite.core.extension.snapshot.SqlDeltaSnapshot(getPos(),
         tableRef, period, startedInOp, finishedInOp, num, isLatestUncommittedDelta);
     }
 }

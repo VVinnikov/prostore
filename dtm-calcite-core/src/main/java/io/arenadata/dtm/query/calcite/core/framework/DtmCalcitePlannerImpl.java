@@ -2,6 +2,7 @@ package io.arenadata.dtm.query.calcite.core.framework;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.UnmodifiableIterator;
+import io.arenadata.dtm.common.exception.DtmException;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
@@ -123,9 +124,8 @@ public class DtmCalcitePlannerImpl implements Planner, RelOptTable.ViewExpander 
     }
 
     private void ready() {
-        switch (this.state) {
-            case STATE_0_CLOSED:
-                this.reset();
+        if (this.state == State.STATE_0_CLOSED) {
+            this.reset();
         }
 
         this.ensure(DtmCalcitePlannerImpl.State.STATE_1_RESET);
@@ -152,17 +152,15 @@ public class DtmCalcitePlannerImpl implements Planner, RelOptTable.ViewExpander 
     }
 
     public SqlNode parse(Reader reader) throws SqlParseException {
-        switch (this.state) {
-            case STATE_0_CLOSED:
-            case STATE_1_RESET:
-                this.ready();
-            default:
-                this.ensure(DtmCalcitePlannerImpl.State.STATE_2_READY);
-                SqlParser parser = SqlParser.create(reader, this.parserConfig);
-                SqlNode sqlNode = parser.parseStmt();
-                this.state = DtmCalcitePlannerImpl.State.STATE_3_PARSED;
-                return sqlNode;
+        if (this.state == State.STATE_0_CLOSED || this.state == State.STATE_1_RESET) {
+            this.ready();
         }
+        this.ensure(DtmCalcitePlannerImpl.State.STATE_2_READY);
+        SqlParser parser = SqlParser.create(reader, this.parserConfig);
+        SqlNode sqlNode = parser.parseStmt();
+        this.state = DtmCalcitePlannerImpl.State.STATE_3_PARSED;
+        return sqlNode;
+
     }
 
     public SqlNode validate(SqlNode sqlNode) throws ValidationException {

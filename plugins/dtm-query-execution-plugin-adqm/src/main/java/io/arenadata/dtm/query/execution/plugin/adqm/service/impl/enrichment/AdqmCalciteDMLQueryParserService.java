@@ -6,6 +6,7 @@ import io.arenadata.dtm.query.calcite.core.service.impl.CalciteDMLQueryParserSer
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.vertx.core.Vertx;
 import lombok.val;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -17,18 +18,19 @@ import static io.arenadata.dtm.query.execution.plugin.adqm.service.impl.enrichme
 
 @Service("adqmCalciteDMLQueryParserService")
 public class AdqmCalciteDMLQueryParserService extends CalciteDMLQueryParserService {
+
+    @Autowired
     public AdqmCalciteDMLQueryParserService(
-        @Qualifier("adqmCalciteContextProvider") CalciteContextProvider contextProvider,
-        @Qualifier("coreVertx") Vertx vertx
-    ) {
+            @Qualifier("adqmCalciteContextProvider") CalciteContextProvider contextProvider,
+            @Qualifier("coreVertx") Vertx vertx) {
         super(contextProvider, vertx);
     }
 
     @Override
     protected List<Datamart> extendSchemes(List<Datamart> datamarts) {
         return super.extendSchemes(datamarts.stream()
-            .map(this::withSystemFields)
-            .collect(Collectors.toList()));
+                .map(this::withSystemFields)
+                .collect(Collectors.toList()));
     }
 
     private Datamart withSystemFields(Datamart logicalSchema) {
@@ -39,8 +41,8 @@ public class AdqmCalciteDMLQueryParserService extends CalciteDMLQueryParserServi
             val extendedFields = new ArrayList<>(entity.getFields());
             extendedFields.addAll(getExtendedColumns());
             extendedDatamartClasses.add(entity.toBuilder()
-                .fields(extendedFields)
-                .build());
+                    .fields(extendedFields)
+                    .build());
         });
         extendedSchema.setEntities(extendedDatamartClasses);
         return extendedSchema;

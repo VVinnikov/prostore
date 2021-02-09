@@ -1,8 +1,8 @@
 package io.arenadata.dtm.query.execution.core.configuration.vertx;
 
-import io.arenadata.dtm.query.execution.core.service.InformationSchemaService;
-import io.arenadata.dtm.query.execution.core.service.RestoreStateService;
-import io.arenadata.dtm.query.execution.core.verticle.QueryVerticle;
+import io.arenadata.dtm.query.execution.core.service.metadata.InformationSchemaService;
+import io.arenadata.dtm.query.execution.core.service.rollback.RestoreStateService;
+import io.arenadata.dtm.query.execution.core.verticle.starter.QueryWorkerStarter;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Verticle;
@@ -17,7 +17,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -41,33 +40,36 @@ public class VertxConfiguration implements ApplicationListener<ApplicationReadyE
         val restoreStateService = event.getApplicationContext().getBean(RestoreStateService.class);
         val vertx = event.getApplicationContext().getBean("coreVertx", Vertx.class);
         val verticles = event.getApplicationContext().getBeansOfType(Verticle.class);
-        val queryVerticle = verticles.remove(QueryVerticle.class.getName());
-
+        val queryWorkerStarter = event.getApplicationContext().getBean(QueryWorkerStarter.class);
         informationSchemaService.createInformationSchemaViews()
-            .compose(v -> deployVerticle(vertx, verticles.values()))
-            .compose(v -> restoreStateService.restoreState())
-            .compose(v -> deployVerticle(vertx, Collections.singletonList(queryVerticle)))
-            .onFailure(err -> {
-                val exitCode = SpringApplication.exit(event.getApplicationContext(), () -> 1);
-                System.exit(exitCode);
-            });
+                .compose(v -> deployVerticle(vertx, verticles.values()))
+                .compose(v -> {
+                    restoreStateService.restoreState()
+                            .onFailure(fail -> log.error("Error in restoring state", fail));
+                    return queryWorkerStarter.start(vertx);
+                })
+                .onSuccess(success -> log.debug("Dtm started successfully"))
+                .onFailure(err -> {
+                    val exitCode = SpringApplication.exit(event.getApplicationContext(), () -> 1);
+                    System.exit(exitCode);
+                });
     }
 
     private Future<Object> deployVerticle(Vertx vertx, Collection<Verticle> verticles) {
         log.info("Verticals found: {}", verticles.size());
         return CompositeFuture.join(verticles.stream()
-            .map(verticle -> Future.future(p -> {
-                vertx.deployVerticle(verticle, ar -> {
-                    if (ar.succeeded()) {
-                        log.debug("Vertical '{}' deployed successfully", verticle.getClass().getName());
-                        p.complete();
-                    } else {
-                        log.error("Vertical deploy error", ar.cause());
-                        p.fail(ar.cause());
-                    }
-                });
-            }))
-            .collect(Collectors.toList()))
-            .mapEmpty();
+                .map(verticle -> Future.future(p -> {
+                    vertx.deployVerticle(verticle, ar -> {
+                        if (ar.succeeded()) {
+                            log.debug("Vertical '{}' deployed successfully", verticle.getClass().getName());
+                            p.complete();
+                        } else {
+                            log.error("Vertical deploy error", ar.cause());
+                            p.fail(ar.cause());
+                        }
+                    });
+                }))
+                .collect(Collectors.toList()))
+                .mapEmpty();
     }
 }

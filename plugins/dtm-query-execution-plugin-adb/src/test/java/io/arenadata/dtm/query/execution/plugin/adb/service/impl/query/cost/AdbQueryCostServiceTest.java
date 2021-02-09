@@ -1,14 +1,12 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.cost;
 
-import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.adb.service.QueryEnrichmentService;
-import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.arenadata.dtm.query.execution.plugin.api.request.QueryCostRequest;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestOptions;
@@ -16,7 +14,6 @@ import io.vertx.ext.unit.TestSuite;
 import io.vertx.ext.unit.report.ReportOptions;
 import lombok.val;
 import org.junit.jupiter.api.Test;
-import org.mockito.stubbing.Answer;
 import utils.JsonUtils;
 
 import java.util.ArrayList;
@@ -24,27 +21,21 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class AdbQueryCostServiceTest {
     private final QueryEnrichmentService adbQueryEnrichmentService = mock(QueryEnrichmentService.class);
-    private final AdbQueryCostService costService = new AdbQueryCostService(adbQueryEnrichmentService);
+    private final AdbQueryCostService costService = new AdbQueryCostService();
 
     @Test
     void calc() {
         initEnrichmentMocks();
-        val context = getQueryCostRequestContext();
+        val context = getQueryCostRequest();
         TestSuite suite = TestSuite.create("test_suite");
         suite.test("executeQuery", testContext -> {
             Async async = testContext.async();
-            costService.calc(context, ar -> {
-                if (ar.succeeded()) {
-                    testContext.assertEquals(0, ar.result());
-                    async.complete();
-                } else {
-                    testContext.fail(ar.cause());
-                }
-            });
+            costService.calc(context);
             async.awaitSuccess(5000);
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
@@ -53,24 +44,17 @@ class AdbQueryCostServiceTest {
     @Test
     void calcWithEnrichmentError() {
         initEnrichmentBadMocks();
-        val context = getQueryCostRequestContext();
+        val context = getQueryCostRequest();
         TestSuite suite = TestSuite.create("test_suite");
         suite.test("executeQuery", testContext -> {
             Async async = testContext.async();
-            costService.calc(context, ar -> {
-                if (ar.succeeded()) {
-                    testContext.fail();
-                } else {
-                    testContext.asyncAssertFailure();
-                    async.complete();
-                }
-            });
+            costService.calc(context);
             async.awaitSuccess(5000);
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
     }
 
-    private QueryCostRequestContext getQueryCostRequestContext() {
+    private QueryCostRequest getQueryCostRequest() {
         JsonObject jsonSchema = JsonUtils.init("meta_data.json", "TEST_DATAMART");
         List<Datamart> schema = new ArrayList<>();
         schema.add(jsonSchema.mapTo(Datamart.class));
@@ -78,8 +62,7 @@ class AdbQueryCostServiceTest {
         queryRequest.setSql("SELECT * from PSO");
         queryRequest.setRequestId(UUID.randomUUID());
         queryRequest.setDatamartMnemonic("TEST_DATAMART");
-        QueryCostRequest costRequest = new QueryCostRequest(queryRequest, schema);
-        return new QueryCostRequestContext(new RequestMetrics(), costRequest);
+        return new QueryCostRequest(queryRequest.getRequestId(), "test", queryRequest.getDatamartMnemonic(), schema);
     }
 
     private void initEnrichmentMocks() {
@@ -89,16 +72,11 @@ class AdbQueryCostServiceTest {
         AsyncResult<List<List<?>>> asyncResult = mock(AsyncResult.class);
         when(asyncResult.succeeded()).thenReturn(true);
         when(asyncResult.result()).thenReturn(new ArrayList<>());
-        doAnswer((Answer<AsyncResult<Void>>) arg0 -> {
-            ((Handler<AsyncResult<Void>>) arg0.getArgument(1)).handle(asyncResultEmpty);
-            return null;
-        }).when(adbQueryEnrichmentService).enrich(any(), any());
+        when(adbQueryEnrichmentService.enrich(any())).thenReturn(Future.succeededFuture());
     }
 
     private void initEnrichmentBadMocks() {
-        doAnswer((Answer<AsyncResult<Void>>) args -> {
-            ((Handler<AsyncResult<Void>>) args.getArgument(1)).handle(Future.failedFuture("Enrichment error"));
-            return null;
-        }).when(adbQueryEnrichmentService).enrich(any(), any());
+        when(adbQueryEnrichmentService.enrich(any()))
+                .thenReturn(Future.failedFuture(new DataSourceException("Enrichment error")));
     }
 }

@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.calcite.core.util;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
-import lombok.val;
 import org.apache.calcite.sql.type.SqlTypeName;
 
 import java.time.LocalDateTime;
@@ -9,17 +9,32 @@ import java.time.format.DateTimeFormatter;
 
 import static org.apache.calcite.sql.type.SqlTypeName.*;
 
-public class CalciteUtil {
+public final class CalciteUtil {
     private static final String LOCAL_DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
     public static final DateTimeFormatter LOCAL_DATE_TIME = DateTimeFormatter.ofPattern(LOCAL_DATE_TIME_PATTERN);
+
+    private CalciteUtil() {
+    }
 
     public static LocalDateTime parseLocalDateTime(String localDateTime) {
         try {
             return LocalDateTime.parse(localDateTime, CalciteUtil.LOCAL_DATE_TIME);
         } catch (Exception e) {
-            val errMsg = String.format("Time[%s] is not in format: [%s]", localDateTime, LOCAL_DATE_TIME_PATTERN);
-            throw new RuntimeException(errMsg, e);
+            throw new DtmException(String.format("Time [%s] is not in format: [%s]",
+                    localDateTime,
+                    LOCAL_DATE_TIME_PATTERN),
+                    e);
         }
+    }
+
+    public static String parseSchemaName(String nameWithSchema) {
+        int indexComma = nameWithSchema.indexOf(".");
+        return indexComma != -1 ? nameWithSchema.substring(0, indexComma) : null;
+    }
+
+    public static String parseTableName(String nameWithSchema) {
+        int indexComma = nameWithSchema.indexOf(".");
+        return nameWithSchema.substring(indexComma + 1);
     }
 
     public static SqlTypeName valueOf(ColumnType type) {

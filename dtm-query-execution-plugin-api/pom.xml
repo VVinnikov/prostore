@@ -4,13 +4,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>dtm-query-execution-plugin-api</artifactId>
-    <version>3.3.0-SNAPSHOT</version>
+    <version>3.4.0-SNAPSHOT</version>
     <name>DTM Core API</name>
 
     <parent>
         <groupId>io.arenadata.dtm</groupId>
         <artifactId>parent</artifactId>
-        <version>3.3.0-SNAPSHOT</version>
+        <version>3.4.0-SNAPSHOT</version>
     </parent>
 
     <properties>
@@ -43,6 +43,17 @@
                 <exclusion>
                     <groupId>io.vertx</groupId>
                     <artifactId>vertx-core</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.arenadata.dtm</groupId>
+            <artifactId>dtm-cache</artifactId>
+            <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.arenadata</groupId>
+                    <artifactId>dtm-common</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

@@ -1,11 +1,11 @@
 package io.arenadata.dtm.jdbc.ext;
 
+import io.arenadata.dtm.jdbc.core.BaseConnection;
 import io.arenadata.dtm.jdbc.core.BaseStatement;
 import io.arenadata.dtm.jdbc.core.ConnectionFactory;
-import io.arenadata.dtm.jdbc.core.BaseConnection;
 import io.arenadata.dtm.jdbc.core.QueryExecutor;
 import io.arenadata.dtm.jdbc.model.ColumnInfo;
-import io.arenadata.dtm.jdbc.util.DtmException;
+import io.arenadata.dtm.jdbc.util.DtmSqlException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +33,7 @@ public class DtmConnectionImpl implements BaseConnection {
     /**
      * Executor for query
      */
-    private QueryExecutor queryExecutor;
+    private final QueryExecutor queryExecutor;
 
     public DtmConnectionImpl(String dbHost, String user, String schema, Properties info, String url) throws SQLException {
         this.queryExecutor = ConnectionFactory.openConnection(dbHost, user, schema, url, info);
@@ -113,7 +113,7 @@ public class DtmConnectionImpl implements BaseConnection {
 
     private void checkClosed() throws SQLException {
         if (isClosed()) {
-            throw new DtmException("The connection was closed");
+            throw new DtmSqlException("The connection was closed");
         }
     }
 
@@ -154,7 +154,6 @@ public class DtmConnectionImpl implements BaseConnection {
 
     @Override
     public void clearWarnings() throws SQLException {
-
     }
 
     @Override

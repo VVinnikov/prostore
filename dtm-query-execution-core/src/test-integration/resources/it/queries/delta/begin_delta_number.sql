@@ -1,0 +1,2 @@
+USE %s;
+BEGIN DELTA SET %d;

@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.core.service.edml;
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.configuration.kafka.KafkaAdminProperty;
 import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
@@ -12,23 +13,25 @@ import io.arenadata.dtm.common.plugin.status.kafka.KafkaPartitionInfo;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.kafka.core.configuration.properties.KafkaProperties;
 import io.arenadata.dtm.query.execution.core.configuration.properties.CoreDtmSettings;
 import io.arenadata.dtm.query.execution.core.configuration.properties.EdmlProperties;
 import io.arenadata.dtm.query.execution.core.factory.MppwKafkaRequestFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.MppwKafkaRequestFactoryImpl;
-import io.arenadata.dtm.query.execution.core.service.CheckColumnTypesService;
-import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.service.datasource.impl.DataSourcePluginServiceImpl;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadKafkaExecutor;
-import io.arenadata.dtm.query.execution.core.service.impl.CheckColumnTypesServiceImpl;
-import io.arenadata.dtm.query.execution.core.service.impl.DataSourcePluginServiceImpl;
-import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
+import io.arenadata.dtm.query.execution.core.service.query.CheckColumnTypesService;
+import io.arenadata.dtm.query.execution.core.service.query.impl.CheckColumnTypesServiceImpl;
+import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaParameter;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
-import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
-import io.arenadata.dtm.query.execution.plugin.api.request.MppwRequest;
-import io.vertx.core.*;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestOptions;
 import io.vertx.ext.unit.TestSuite;
@@ -45,33 +48,38 @@ import java.time.temporal.ChronoField;
 import java.util.*;
 import java.util.stream.LongStream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class UploadKafkaExecutorTest {
-
     private final DataSourcePluginService pluginService = mock(DataSourcePluginServiceImpl.class);
     private final MppwKafkaRequestFactory mppwKafkaRequestFactory = mock(MppwKafkaRequestFactoryImpl.class);
     private final EdmlProperties edmlProperties = mock(EdmlProperties.class);
     private final KafkaProperties kafkaProperties = mock(KafkaProperties.class);
     private final CheckColumnTypesService checkColumnTypesService = mock(CheckColumnTypesServiceImpl.class);
+    private final DtmConfig dtmSettings = mock(CoreDtmSettings.class);
+    private final Vertx vertx = Vertx.vertx();
+    private final Integer inpuStreamTimeoutMs = 2000;
+    private final Integer pluginStatusCheckPeriodMs = 1000;
+    private final Integer firstOffsetTimeoutMs = 15000;
+    private final Integer changeOffsetTimeoutMs = 10000;
+    private final long msgCommitTimeoutMs = 1000L;
+    private final long msgProcessTimeoutMs = 100L;
     private EdmlUploadExecutor uploadKafkaExecutor;
-    private DtmConfig dtmSettings = mock(CoreDtmSettings.class);
-    private Vertx vertx = Vertx.vertx();
     private Set<SourceType> sourceTypes;
     private QueryRequest queryRequest;
     private QueryResult queryResult;
     private Object resultException;
-    private Integer inpuStreamTimeoutMs = 2000;
-    private Integer pluginStatusCheckPeriodMs = 1000;
-    private Integer firstOffsetTimeoutMs = 15000;
-    private Integer changeOffsetTimeoutMs = 10000;
-    private long msgCommitTimeoutMs = 1000L;
-    private long msgProcessTimeoutMs = 100L;
+    private final MppwKafkaRequest pluginRequest = MppwKafkaRequest.builder()
+            .requestId(UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"))
+            .envName("env")
+            .datamartMnemonic("test")
+            .isLoadStart(true)
+            .build();
+
     private ZoneId timeZone;
 
     @BeforeEach
@@ -94,21 +102,17 @@ class UploadKafkaExecutorTest {
         TestSuite suite = TestSuite.create("mppwLoadTest");
         suite.test("executeMppwAllSuccess", context -> {
             Async async = context.async();
-            Promise promise = Promise.promise();
+            Promise<QueryResult> promise = Promise.promise();
             queryResult = null;
             KafkaAdminProperty kafkaAdminProperty = new KafkaAdminProperty();
             kafkaAdminProperty.setInputStreamTimeoutMs(inpuStreamTimeoutMs);
 
             EdmlRequestContext edmlRequestContext = createEdmlRequestContext();
 
-            final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
-            final MppwRequest adgRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
 
-            final Queue<MppwRequestContext> mppwContextQueue = new BlockingArrayQueue<>();
-            final MppwRequestContext mppwAdbContext = new MppwRequestContext(new RequestMetrics(), adbRequest);
-            final MppwRequestContext mppwAdgContext = new MppwRequestContext(new RequestMetrics(), adgRequest);
-            mppwContextQueue.add(mppwAdbContext);
-            mppwContextQueue.add(mppwAdgContext);
+            final Queue<MppwKafkaRequest> mppwContextQueue = new BlockingArrayQueue<>();
+            mppwContextQueue.add(pluginRequest);
+            mppwContextQueue.add(pluginRequest);
 
             final Queue<StatusQueryResult> adbStatusResultQueue = new BlockingArrayQueue<>();
             final Queue<StatusQueryResult> adgStatusResultQueue = new BlockingArrayQueue<>();
@@ -122,49 +126,42 @@ class UploadKafkaExecutorTest {
             when(kafkaProperties.getAdmin()).thenReturn(kafkaAdminProperty);
             when(mppwKafkaRequestFactory.create(edmlRequestContext))
                     .thenReturn(Future.succeededFuture(mppwContextQueue.poll()));
-            Mockito.doAnswer(invocation -> {
-                final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(2);
-                handler.handle(Future.succeededFuture());
-                return null;
-            }).when(pluginService).mppw(eq(SourceType.ADB), eq(mppwAdbContext), any());
-            Mockito.doAnswer(invocation -> {
-                final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(2);
-                handler.handle(Future.succeededFuture());
-                return null;
-            }).when(pluginService).mppw(eq(SourceType.ADG), eq(mppwAdgContext), any());
+            when(pluginService.mppw(eq(SourceType.ADB), any(), eq(pluginRequest)))
+                    .thenReturn(Future.succeededFuture());
+            when(pluginService.mppw(eq(SourceType.ADG), any(), eq(pluginRequest)))
+                    .thenReturn(Future.succeededFuture());
 
             Mockito.doAnswer(invocation -> {
-                final Handler<AsyncResult<StatusQueryResult>> handler = invocation.getArgument(2);
                 final SourceType ds = invocation.getArgument(0);
                 if (ds.equals(SourceType.ADB)) {
-                    handler.handle(Future.succeededFuture(adbStatusResultQueue.poll()));
+                    return Future.succeededFuture(adbStatusResultQueue.poll());
                 } else if (ds.equals(SourceType.ADG)) {
-                    handler.handle(Future.succeededFuture(adgStatusResultQueue.poll()));
+                    return Future.succeededFuture(adgStatusResultQueue.poll());
                 }
                 return null;
             }).when(pluginService).status(any(), any(), any());
 
             Mockito.doAnswer(invocation -> {
-                final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(2);
                 final SourceType ds = invocation.getArgument(0);
                 if (ds.equals(SourceType.ADB)) {
-                    handler.handle(Future.succeededFuture(new QueryResult()));
+                    return Future.succeededFuture(new QueryResult());
                 } else if (ds.equals(SourceType.ADG)) {
-                    handler.handle(Future.succeededFuture(new QueryResult()));
+                    return Future.succeededFuture(new QueryResult());
                 }
                 return null;
             }).when(pluginService).mppw(any(), any(), any());
 
-            uploadKafkaExecutor.execute(edmlRequestContext, ar -> {
-                if (ar.succeeded()) {
-                    promise.complete(ar.result());
-                    async.complete();
-                } else {
-                    promise.fail(ar.cause());
-                }
-            });
+            uploadKafkaExecutor.execute(edmlRequestContext)
+                    .onComplete(ar -> {
+                        if (ar.succeeded()) {
+                            promise.complete(ar.result());
+                            async.complete();
+                        } else {
+                            promise.fail(ar.cause());
+                        }
+                    });
             async.awaitSuccess();
-            queryResult = (QueryResult) promise.future().result();
+            queryResult = promise.future().result();
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
         assertNotNull(queryResult);
@@ -182,14 +179,9 @@ class UploadKafkaExecutorTest {
 
             EdmlRequestContext edmlRequestContext = createEdmlRequestContext();
 
-            final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
-            final MppwRequest adgRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
-
-            final Queue<MppwRequestContext> mppwContextQueue = new BlockingArrayQueue<>();
-            final MppwRequestContext mppwAdbContext = new MppwRequestContext(new RequestMetrics(), adbRequest);
-            final MppwRequestContext mppwAdgContext = new MppwRequestContext(new RequestMetrics(), adgRequest);
-            mppwContextQueue.add(mppwAdbContext);
-            mppwContextQueue.add(mppwAdgContext);
+            final Queue<MppwKafkaRequest> mppwContextQueue = new BlockingArrayQueue<>();
+            mppwContextQueue.add(pluginRequest);
+            mppwContextQueue.add(pluginRequest);
 
             final Queue<StatusQueryResult> adgStatusResultQueue = new BlockingArrayQueue<>();
             initStatusResultQueue(adgStatusResultQueue, 10, 5);
@@ -205,37 +197,36 @@ class UploadKafkaExecutorTest {
             when(kafkaProperties.getAdmin()).thenReturn(kafkaAdminProperty);
 
             Mockito.doAnswer(invocation -> {
-                final Handler<AsyncResult<StatusQueryResult>> handler = invocation.getArgument(2);
                 final SourceType ds = invocation.getArgument(0);
                 if (ds.equals(SourceType.ADG)) {
-                    handler.handle(Future.succeededFuture(adgStatusResultQueue.poll()));
+                    return Future.succeededFuture(adgStatusResultQueue.poll());
                 }
                 return null;
             }).when(pluginService).status(any(), any(), any());
 
             Mockito.doAnswer(invocation -> {
-                final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(2);
                 final SourceType ds = invocation.getArgument(0);
-                final MppwRequestContext requestContext = invocation.getArgument(1);
-                if (ds.equals(SourceType.ADB) && requestContext.getRequest().getIsLoadStart()) {
-                    handler.handle(Future.failedFuture(new RuntimeException("Start mppw error")));
-                } else if (ds.equals(SourceType.ADB) && !requestContext.getRequest().getIsLoadStart()) {
-                    handler.handle(Future.succeededFuture(new QueryResult()));
+                final MppwRequest requestContext = invocation.getArgument(1);
+                if (ds.equals(SourceType.ADB) && requestContext.getIsLoadStart()) {
+                    return Future.failedFuture(new DtmException("Start mppw error"));
+                } else if (ds.equals(SourceType.ADB) && !requestContext.getIsLoadStart()) {
+                    return Future.succeededFuture(new QueryResult());
                 } else if (ds.equals(SourceType.ADG)) {
-                    handler.handle(Future.succeededFuture(new QueryResult()));
+                    return Future.succeededFuture(new QueryResult());
                 }
                 return null;
             }).when(pluginService).mppw(any(), any(), any());
 
-            uploadKafkaExecutor.execute(edmlRequestContext, ar -> {
-                if (ar.succeeded()) {
-                    promise.complete(ar.result());
-                } else {
-                    resultException = ar.cause();
-                    promise.fail(ar.cause());
-                }
-                async.complete();
-            });
+            uploadKafkaExecutor.execute(edmlRequestContext)
+                    .onComplete(ar -> {
+                        if (ar.succeeded()) {
+                            promise.complete(ar.result());
+                        } else {
+                            resultException = ar.cause();
+                            promise.fail(ar.cause());
+                        }
+                        async.complete();
+                    });
             async.awaitSuccess();
             queryResult = (QueryResult) promise.future().result();
         });
@@ -245,77 +236,55 @@ class UploadKafkaExecutorTest {
 
     @Test
     void executeMppwWithFailedRetrievePluginStatus() {
-        TestSuite suite = TestSuite.create("mppwLoadTest");
-        RuntimeException exception = new RuntimeException("Status receiving error");
-        suite.test("executeMppwWithFailedRetrievePluginStatus", context -> {
-            Async async = context.async();
-            resultException = null;
-            Promise promise = Promise.promise();
-            KafkaAdminProperty kafkaAdminProperty = new KafkaAdminProperty();
-            kafkaAdminProperty.setInputStreamTimeoutMs(inpuStreamTimeoutMs);
+        RuntimeException exception = new DtmException("Error getting plugin status: ADB");
+        KafkaAdminProperty kafkaAdminProperty = new KafkaAdminProperty();
+        kafkaAdminProperty.setInputStreamTimeoutMs(inpuStreamTimeoutMs);
 
-            EdmlRequestContext edmlRequestContext = createEdmlRequestContext();
+        EdmlRequestContext edmlRequestContext = createEdmlRequestContext();
 
-            final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
-            final MppwRequest adgRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
+        final Queue<MppwKafkaRequest> mppwContextQueue = new BlockingArrayQueue<>();
+        mppwContextQueue.add(pluginRequest);
+        mppwContextQueue.add(pluginRequest);
 
-            final Queue<MppwRequestContext> mppwContextQueue = new BlockingArrayQueue<>();
-            final MppwRequestContext mppwAdbContext = new MppwRequestContext(new RequestMetrics(), adbRequest);
-            final MppwRequestContext mppwAdgContext = new MppwRequestContext(new RequestMetrics(), adgRequest);
-            mppwContextQueue.add(mppwAdbContext);
-            mppwContextQueue.add(mppwAdgContext);
+        final Queue<StatusQueryResult> adbStatusResultQueue = new BlockingArrayQueue<>();
+        final Queue<StatusQueryResult> adgStatusResultQueue = new BlockingArrayQueue<>();
+        initStatusResultQueue(adbStatusResultQueue, 10, 5);
+        initStatusResultQueue(adgStatusResultQueue, 10, 5);
 
-            final Queue<StatusQueryResult> adbStatusResultQueue = new BlockingArrayQueue<>();
-            final Queue<StatusQueryResult> adgStatusResultQueue = new BlockingArrayQueue<>();
-            initStatusResultQueue(adbStatusResultQueue, 10, 5);
-            initStatusResultQueue(adgStatusResultQueue, 10, 5);
+        when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
+        when(edmlProperties.getPluginStatusCheckPeriodMs()).thenReturn(pluginStatusCheckPeriodMs);
+        when(edmlProperties.getFirstOffsetTimeoutMs()).thenReturn(firstOffsetTimeoutMs);
+        when(edmlProperties.getChangeOffsetTimeoutMs()).thenReturn(changeOffsetTimeoutMs);
+        when(kafkaProperties.getAdmin()).thenReturn(kafkaAdminProperty);
 
-            when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
-            when(edmlProperties.getPluginStatusCheckPeriodMs()).thenReturn(pluginStatusCheckPeriodMs);
-            when(edmlProperties.getFirstOffsetTimeoutMs()).thenReturn(firstOffsetTimeoutMs);
-            when(edmlProperties.getChangeOffsetTimeoutMs()).thenReturn(changeOffsetTimeoutMs);
-            when(kafkaProperties.getAdmin()).thenReturn(kafkaAdminProperty);
+        when(mppwKafkaRequestFactory.create(edmlRequestContext))
+                .thenReturn(Future.succeededFuture(mppwContextQueue.poll()));
 
-            when(mppwKafkaRequestFactory.create(edmlRequestContext))
-                    .thenReturn(Future.succeededFuture(mppwContextQueue.poll()));
+        Mockito.doAnswer(invocation -> {
+            final SourceType ds = invocation.getArgument(0);
+            if (ds.equals(SourceType.ADB)) {
+                return Future.failedFuture(exception);
+            } else if (ds.equals(SourceType.ADG)) {
+                return Future.failedFuture(exception);
+            }
+            return null;
+        }).when(pluginService).status(any(), any(), any());
 
-            Mockito.doAnswer(invocation -> {
-                final Handler<AsyncResult<StatusQueryResult>> handler = invocation.getArgument(2);
-                final SourceType ds = invocation.getArgument(0);
-                if (ds.equals(SourceType.ADB)) {
-                    handler.handle(Future.failedFuture(exception));
-                } else if (ds.equals(SourceType.ADG)) {
-                    handler.handle(Future.failedFuture(exception));
-                }
-                return null;
-            }).when(pluginService).status(any(), any(), any());
+        Mockito.doAnswer(invocation -> {
+            final SourceType ds = invocation.getArgument(0);
+            if (ds.equals(SourceType.ADB)) {
+                return Future.succeededFuture(new QueryResult());
+            } else if (ds.equals(SourceType.ADG)) {
+                return Future.succeededFuture(new QueryResult());
+            }
+            return null;
+        }).when(pluginService).mppw(any(), any(), any());
 
-            Mockito.doAnswer(invocation -> {
-                final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(2);
-                final SourceType ds = invocation.getArgument(0);
-                final MppwRequestContext requestContext = invocation.getArgument(1);
-                if (ds.equals(SourceType.ADB)) {
-                    handler.handle(Future.succeededFuture(new QueryResult()));
-                } else if (ds.equals(SourceType.ADG)) {
-                    handler.handle(Future.succeededFuture(new QueryResult()));
-                }
-                return null;
-            }).when(pluginService).mppw(any(), any(), any());
-
-            uploadKafkaExecutor.execute(edmlRequestContext, ar -> {
-                if (ar.succeeded()) {
-                    promise.complete(ar.result());
-                } else {
-                    resultException = ar.cause();
-                    promise.fail(ar.cause());
-                }
-                async.complete();
-            });
-            async.awaitSuccess();
-            queryResult = (QueryResult) promise.future().result();
-        });
-        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
-        assertEquals(resultException, exception);
+        uploadKafkaExecutor.execute(edmlRequestContext)
+                .onComplete(ar -> {
+                    assertTrue(ar.failed());
+                    assertEquals(exception.getMessage(), ar.cause().getMessage());
+                });
     }
 
     @Test
@@ -330,14 +299,9 @@ class UploadKafkaExecutorTest {
 
             EdmlRequestContext edmlRequestContext = createEdmlRequestContext();
 
-            final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
-            final MppwRequest adgRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
-
-            final Queue<MppwRequestContext> mppwContextQueue = new BlockingArrayQueue<>();
-            final MppwRequestContext mppwAdbContext = new MppwRequestContext(new RequestMetrics(), adbRequest);
-            final MppwRequestContext mppwAdgContext = new MppwRequestContext(new RequestMetrics(), adgRequest);
-            mppwContextQueue.add(mppwAdbContext);
-            mppwContextQueue.add(mppwAdgContext);
+            final Queue<MppwKafkaRequest> mppwContextQueue = new BlockingArrayQueue<>();
+            mppwContextQueue.add(pluginRequest);
+            mppwContextQueue.add(pluginRequest);
 
             final Queue<StatusQueryResult> adbStatusResultQueue = new BlockingArrayQueue<>();
             final Queue<StatusQueryResult> adgStatusResultQueue = new BlockingArrayQueue<>();
@@ -354,37 +318,35 @@ class UploadKafkaExecutorTest {
                     .thenReturn(Future.succeededFuture(mppwContextQueue.poll()));
 
             Mockito.doAnswer(invocation -> {
-                final Handler<AsyncResult<StatusQueryResult>> handler = invocation.getArgument(2);
                 final SourceType ds = invocation.getArgument(0);
                 if (ds.equals(SourceType.ADB)) {
-                    handler.handle(Future.succeededFuture(adbStatusResultQueue.poll()));
+                    return Future.succeededFuture(adbStatusResultQueue.poll());
                 } else if (ds.equals(SourceType.ADG)) {
-                    handler.handle(Future.succeededFuture(adgStatusResultQueue.poll()));
+                    return Future.succeededFuture(adgStatusResultQueue.poll());
                 }
                 return null;
             }).when(pluginService).status(any(), any(), any());
 
             Mockito.doAnswer(invocation -> {
-                final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(2);
                 final SourceType ds = invocation.getArgument(0);
-                final MppwRequestContext requestContext = invocation.getArgument(1);
                 if (ds.equals(SourceType.ADB)) {
-                    handler.handle(Future.succeededFuture(new QueryResult()));
+                    return Future.succeededFuture(new QueryResult());
                 } else if (ds.equals(SourceType.ADG)) {
-                    handler.handle(Future.succeededFuture(new QueryResult()));
+                    return Future.succeededFuture(new QueryResult());
                 }
                 return null;
             }).when(pluginService).mppw(any(), any(), any());
 
-            uploadKafkaExecutor.execute(edmlRequestContext, ar -> {
-                if (ar.succeeded()) {
-                    promise.complete(ar.result());
-                } else {
-                    resultException = ar.cause();
-                    promise.fail(ar.cause());
-                }
-                async.complete();
-            });
+            uploadKafkaExecutor.execute(edmlRequestContext)
+                    .onComplete(ar -> {
+                        if (ar.succeeded()) {
+                            promise.complete(ar.result());
+                        } else {
+                            resultException = ar.cause();
+                            promise.fail(ar.cause());
+                        }
+                        async.complete();
+                    });
             async.awaitSuccess();
             queryResult = (QueryResult) promise.future().result();
         });
@@ -398,20 +360,15 @@ class UploadKafkaExecutorTest {
         suite.test("executeMppwLoadingInitFalure", context -> {
             Async async = context.async();
             resultException = null;
-            Promise promise = Promise.promise();
+            Promise<QueryResult> promise = Promise.promise();
             KafkaAdminProperty kafkaAdminProperty = new KafkaAdminProperty();
             kafkaAdminProperty.setInputStreamTimeoutMs(inpuStreamTimeoutMs);
 
             EdmlRequestContext edmlRequestContext = createEdmlRequestContext();
 
-            final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
-            final MppwRequest adgRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
-
-            final Queue<MppwRequestContext> mppwContextQueue = new BlockingArrayQueue<>();
-            final MppwRequestContext mppwAdbContext = new MppwRequestContext(new RequestMetrics(), adbRequest);
-            final MppwRequestContext mppwAdgContext = new MppwRequestContext(new RequestMetrics(), adgRequest);
-            mppwContextQueue.add(mppwAdbContext);
-            mppwContextQueue.add(mppwAdgContext);
+            final Queue<MppwKafkaRequest> mppwContextQueue = new BlockingArrayQueue<>();
+            mppwContextQueue.add(pluginRequest);
+            mppwContextQueue.add(pluginRequest);
 
             final Queue<StatusQueryResult> adbStatusResultQueue = new BlockingArrayQueue<>();
             final Queue<StatusQueryResult> adgStatusResultQueue = new BlockingArrayQueue<>();
@@ -428,38 +385,37 @@ class UploadKafkaExecutorTest {
                     .thenReturn(Future.succeededFuture(mppwContextQueue.poll()));
 
             Mockito.doAnswer(invocation -> {
-                final Handler<AsyncResult<StatusQueryResult>> handler = invocation.getArgument(2);
                 final SourceType ds = invocation.getArgument(0);
                 if (ds.equals(SourceType.ADB)) {
-                    handler.handle(Future.succeededFuture(adbStatusResultQueue.poll()));
+                    return Future.succeededFuture(adbStatusResultQueue.poll());
                 } else if (ds.equals(SourceType.ADG)) {
-                    handler.handle(Future.succeededFuture(adgStatusResultQueue.poll()));
+                    return Future.succeededFuture(adgStatusResultQueue.poll());
                 }
                 return null;
             }).when(pluginService).status(any(), any(), any());
 
             Mockito.doAnswer(invocation -> {
-                final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(2);
                 final SourceType ds = invocation.getArgument(0);
                 if (ds.equals(SourceType.ADB)) {
-                    handler.handle(Future.succeededFuture(new QueryResult()));
+                    return Future.succeededFuture(new QueryResult());
                 } else if (ds.equals(SourceType.ADG)) {
-                    handler.handle(Future.succeededFuture(new QueryResult()));
+                    return Future.succeededFuture(new QueryResult());
                 }
                 return null;
             }).when(pluginService).mppw(any(), any(), any());
 
-            uploadKafkaExecutor.execute(edmlRequestContext, ar -> {
-                if (ar.succeeded()) {
-                    promise.complete(ar.result());
-                } else {
-                    resultException = ar.cause();
-                    promise.fail(ar.cause());
-                }
-                async.complete();
-            });
+            uploadKafkaExecutor.execute(edmlRequestContext)
+                    .onComplete(ar -> {
+                        if (ar.succeeded()) {
+                            promise.complete(ar.result());
+                        } else {
+                            resultException = ar.cause();
+                            promise.fail(ar.cause());
+                        }
+                        async.complete();
+                    });
             async.awaitSuccess();
-            queryResult = (QueryResult) promise.future().result();
+            queryResult = promise.future().result();
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
         assertNotNull(resultException);
@@ -471,20 +427,15 @@ class UploadKafkaExecutorTest {
         suite.test("executeMppwWithZeroOffsets", context -> {
             Async async = context.async();
             resultException = null;
-            Promise promise = Promise.promise();
+            Promise<QueryResult> promise = Promise.promise();
             KafkaAdminProperty kafkaAdminProperty = new KafkaAdminProperty();
             kafkaAdminProperty.setInputStreamTimeoutMs(inpuStreamTimeoutMs);
 
             EdmlRequestContext edmlRequestContext = createEdmlRequestContext();
 
-            final MppwRequest adbRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
-            final MppwRequest adgRequest = new MppwRequest(queryRequest, true, createKafkaParameter());
-
-            final Queue<MppwRequestContext> mppwContextQueue = new BlockingArrayQueue<>();
-            final MppwRequestContext mppwAdbContext = new MppwRequestContext(new RequestMetrics(), adbRequest);
-            final MppwRequestContext mppwAdgContext = new MppwRequestContext(new RequestMetrics(), adgRequest);
-            mppwContextQueue.add(mppwAdbContext);
-            mppwContextQueue.add(mppwAdgContext);
+            final Queue<MppwKafkaRequest> mppwContextQueue = new BlockingArrayQueue<>();
+            mppwContextQueue.add(pluginRequest);
+            mppwContextQueue.add(pluginRequest);
 
             final Queue<StatusQueryResult> adbStatusResultQueue = new BlockingArrayQueue<>();
             final Queue<StatusQueryResult> adgStatusResultQueue = new BlockingArrayQueue<>();
@@ -501,38 +452,37 @@ class UploadKafkaExecutorTest {
                     .thenReturn(Future.succeededFuture(mppwContextQueue.poll()));
 
             Mockito.doAnswer(invocation -> {
-                final Handler<AsyncResult<StatusQueryResult>> handler = invocation.getArgument(2);
                 final SourceType ds = invocation.getArgument(0);
                 if (ds.equals(SourceType.ADB)) {
-                    handler.handle(Future.succeededFuture(adbStatusResultQueue.poll()));
+                    return Future.succeededFuture(adbStatusResultQueue.poll());
                 } else if (ds.equals(SourceType.ADG)) {
-                    handler.handle(Future.succeededFuture(adgStatusResultQueue.poll()));
+                    return Future.succeededFuture(adgStatusResultQueue.poll());
                 }
                 return null;
             }).when(pluginService).status(any(), any(), any());
 
             Mockito.doAnswer(invocation -> {
-                final Handler<AsyncResult<QueryResult>> handler = invocation.getArgument(2);
                 final SourceType ds = invocation.getArgument(0);
                 if (ds.equals(SourceType.ADB)) {
-                    handler.handle(Future.succeededFuture(new QueryResult()));
+                    return Future.succeededFuture(new QueryResult());
                 } else if (ds.equals(SourceType.ADG)) {
-                    handler.handle(Future.succeededFuture(new QueryResult()));
+                    return Future.succeededFuture(new QueryResult());
                 }
                 return null;
             }).when(pluginService).mppw(any(), any(), any());
 
-            uploadKafkaExecutor.execute(edmlRequestContext, ar -> {
-                if (ar.succeeded()) {
-                    promise.complete(ar.result());
-                } else {
-                    resultException = ar.cause();
-                    promise.fail(ar.cause());
-                }
-                async.complete();
-            });
+            uploadKafkaExecutor.execute(edmlRequestContext)
+                    .onComplete(ar -> {
+                        if (ar.succeeded()) {
+                            promise.complete(ar.result());
+                        } else {
+                            resultException = ar.cause();
+                            promise.fail(ar.cause());
+                        }
+                        async.complete();
+                    });
             async.awaitSuccess();
-            queryResult = (QueryResult) promise.future().result();
+            queryResult = promise.future().result();
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
         assertNotNull(resultException);
@@ -541,7 +491,7 @@ class UploadKafkaExecutorTest {
     @NotNull
     private EdmlRequestContext createEdmlRequestContext() {
         DatamartRequest request = new DatamartRequest(queryRequest);
-        EdmlRequestContext edmlRequestContext = new EdmlRequestContext(new RequestMetrics(), request, null);
+        EdmlRequestContext edmlRequestContext = new EdmlRequestContext(new RequestMetrics(), request, null, "env");
         edmlRequestContext.setDestinationEntity(Entity.builder()
                 .name("pso")
                 .schema("test")
@@ -593,7 +543,7 @@ class UploadKafkaExecutorTest {
         return MppwKafkaParameter.builder()
                 .sysCn(1L)
                 .datamart("test")
-                .targetTableName("test_tab")
+                .destinationTableName("test_tab")
                 .uploadMetadata(UploadExternalEntityMetadata.builder()
                         .name("ext_tab")
                         .externalSchema("")

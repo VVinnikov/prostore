@@ -1,14 +1,12 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl.ddl;
 
 import io.arenadata.dtm.query.execution.plugin.adg.factory.AdgHelperTableNamesFactory;
-import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.TtDeleteTablesWithPrefixRequest;
+import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.AdgDeleteTablesWithPrefixRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
-import io.vertx.core.AsyncResult;
+import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
+import io.arenadata.dtm.query.execution.plugin.api.service.DdlExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.service.DdlService;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.val;
 import org.apache.calcite.sql.SqlKind;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,21 +28,11 @@ public class DropSchemaExecutor implements DdlExecutor<Void> {
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<Void>> handler) {
-
-        val tableNames = adgHelperTableNamesFactory.create(
-                context.getRequest().getQueryRequest().getEnvName(),
-                context.getRequest().getQueryRequest().getDatamartMnemonic(),
-                "table");
-
-        val request = new TtDeleteTablesWithPrefixRequest(tableNames.getPrefix());
-
-        cartridgeClient.executeDeleteSpacesWithPrefixQueued(request, ar -> {
-            if(ar.succeeded()) {
-                handler.handle(Future.succeededFuture());
-            } else {
-                handler.handle(Future.failedFuture(ar.cause()));
-            }
+    public Future<Void> execute(DdlRequest request) {
+        return Future.future(promise -> {
+            val prefix = adgHelperTableNamesFactory.getTablePrefix(request.getEnvName(), request.getDatamartMnemonic());
+            cartridgeClient.executeDeleteSpacesWithPrefixQueued(new AdgDeleteTablesWithPrefixRequest(prefix))
+                    .onComplete(promise);
         });
     }
 

@@ -2,7 +2,7 @@ package io.arenadata.dtm.jdbc.ext;
 
 import io.arenadata.dtm.jdbc.core.BaseConnection;
 import io.arenadata.dtm.jdbc.core.Field;
-import io.arenadata.dtm.jdbc.util.DtmException;
+import io.arenadata.dtm.jdbc.util.DtmSqlException;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import lombok.SneakyThrows;
 import lombok.val;
@@ -13,10 +13,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URL;
 import java.sql.*;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.*;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
@@ -91,7 +88,7 @@ public class DtmResultSet implements ResultSet {
     public int findColumn(String columnLabel) {
         int col = findColumnIndex(columnLabel);
         if (col == 0) {
-            throw new DtmException("Column not found" + columnLabel);
+            throw new DtmSqlException("Column not found" + columnLabel);
         }
         return col;
     }
@@ -249,8 +246,13 @@ public class DtmResultSet implements ResultSet {
 
     @Override
     public Time getTime(int columnIndex) throws SQLException {
-        Timestamp ts = this.getTimestamp(columnIndex);
-        return ts == null ? null : new Time(ts.getTime());
+        Object value = this.getValue(columnIndex);
+        if (value != null) {
+            long nanoOfDay = ((Integer) value) * 1000L;
+            return Time.valueOf(LocalTime.ofNanoOfDay(nanoOfDay));
+        } else {
+            return null;
+        }
     }
 
     @Override

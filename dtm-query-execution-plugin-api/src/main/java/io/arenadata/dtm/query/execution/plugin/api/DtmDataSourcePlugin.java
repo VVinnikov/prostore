@@ -3,16 +3,20 @@ package io.arenadata.dtm.query.execution.plugin.api;
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
-import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
+import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
+import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.QueryCostRequest;
+import io.vertx.core.Future;
 import org.springframework.plugin.core.Plugin;
+
+import java.util.Set;
 
 /**
  * Data source plugin interface
@@ -39,54 +43,85 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
     /**
      * <p>execute DDL operation</p>
      *
-     * @param context            DDL context
-     * @param asyncResultHandler async handler
+     * @param request DDL context
+     * @return void
      */
-    void ddl(DdlRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler);
+    Future<Void> ddl(DdlRequest request);
 
     /**
      * <p>execute Low Latency Reading</p>
      *
-     * @param context            LLR context
-     * @param asyncResultHandler async handler
+     * @param request LLR context
+     * @return query result
      */
-    void llr(LlrRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler);
+    Future<QueryResult> llr(LlrRequest request);
 
     /**
      * <p>execute Massively Parallel Processing Reading</p>
      *
-     * @param context            MPPR context
-     * @param asyncResultHandler async handler
+     * @param request MPPR context
+     * @return query result
      */
-    void mppr(MpprRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler);
+    Future<QueryResult> mppr(MpprRequest request);
 
     /**
      * <p>execute Massively Parallel Processing Writing</p>
      *
-     * @param context            MPPW context
-     * @param asyncResultHandler async handler
+     * @param request MPPW context
+     * @return query result
      */
-    void mppw(MppwRequestContext context, Handler<AsyncResult<QueryResult>> asyncResultHandler);
+    Future<QueryResult> mppw(MppwRequest request);
 
     /**
      * <p>Calculate executing query cost</p>
      *
-     * @param context            Query cost context
-     * @param asyncResultHandler async handler
+     * @param request Query cost context
+     * @return query cost
      */
-    void calcQueryCost(QueryCostRequestContext context, Handler<AsyncResult<Integer>> asyncResultHandler);
+    Future<Integer> calcQueryCost(QueryCostRequest request);
 
     /**
      * <p>Get plugin status information</p>
-     * @param context            Status request context
-     * @param asyncResultHandler async handler
+     *
+     * @param topic Topic
+     * @return query status
      */
-    void status(StatusRequestContext context, Handler<AsyncResult<StatusQueryResult>> asyncResultHandler);
+    Future<StatusQueryResult> status(String topic);
 
     /**
-     *
-     * @param context            Rollback request context
-     * @param asyncResultHandler async handler
+     * @param request Rollback request
+     * @return void
      */
-    void rollback(RollbackRequestContext context, Handler<AsyncResult<Void>> asyncResultHandler);
+    Future<Void> rollback(RollbackRequest request);
+
+    /**
+     * <p>Get name set of active caches</p>
+     *
+     * @return set of caches names
+     */
+    Set<String> getActiveCaches();
+
+    /**
+     * @param request check table request
+     * @return error if check failed
+     */
+    Future<Void> checkTable(CheckTableRequest request);
+
+    /**
+     * @param request CheckDataByCountParams
+     * @return count of records
+     */
+    Future<Long> checkDataByCount(CheckDataByCountRequest request);
+
+    /**
+     * @param request CheckDataByHashInt32Params
+     * @return checksum
+     */
+    Future<Long> checkDataByHashInt32(CheckDataByHashInt32Request request);
+
+    /**
+     * @param request truncate params
+     * @return future object
+     */
+    Future<Void> truncateHistory(TruncateHistoryRequest request);
 }

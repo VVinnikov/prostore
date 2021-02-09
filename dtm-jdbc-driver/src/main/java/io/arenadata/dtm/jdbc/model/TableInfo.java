@@ -1,20 +1,17 @@
 package io.arenadata.dtm.jdbc.model;
 
 /**
- * Информация о таблице, получаемая из LL-R сервиса
+ * Table information from LL-R сервиса
  */
 public class TableInfo {
     /**
-     * Название таблицы
+     * table name
      */
     private String mnemonic;
     /**
-     * Название схемы, которой принадлежит таблица
+     * schema name
      */
     private String datamartMnemonic;
-
-    public TableInfo() {
-    }
 
     public String getMnemonic() {
         return mnemonic;

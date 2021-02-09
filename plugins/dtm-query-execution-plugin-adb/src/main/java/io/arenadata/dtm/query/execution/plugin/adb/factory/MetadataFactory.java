@@ -14,7 +14,6 @@ public interface MetadataFactory {
      * @param entity  physical model
      * @param handler Handler
      */
-    void apply(Entity entity, Handler<AsyncResult<Void>> handler);
 
     /**
      * Remove physical model from database

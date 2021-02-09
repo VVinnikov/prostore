@@ -8,48 +8,50 @@ import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.ResO
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.TtDeleteBatchResponse;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.TtDeleteQueueResponse;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.TtLoadDataKafkaResponse;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
+import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.Space;
+import io.vertx.core.Future;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
- * REST-клиент общения с Tarantool Cartridge
+ * REST-client for connecting with Tarantool Cartridge
  */
 public interface AdgCartridgeClient {
-  void getFiles(Handler<AsyncResult<ResOperation>> handler);
 
-  void setFiles(List<OperationFile> files, Handler<AsyncResult<ResOperation>> handler);
+  Future<ResOperation> getFiles();
 
-  void getSchema(Handler<AsyncResult<ResOperation>> handler);
+  Future<ResOperation> setFiles(List<OperationFile> files);
 
-  void setSchema(String yaml, Handler<AsyncResult<ResOperation>> handler);
+  Future<ResOperation> getSchema();
 
-  void uploadData(TtUploadDataKafkaRequest request, Handler<AsyncResult<Void>> handler);
+  Future<ResOperation> setSchema(String yaml);
 
-  void subscribe(TtSubscriptionKafkaRequest request, Handler<AsyncResult<Void>> handler);
+  Future<Void> uploadData(AdgUploadDataKafkaRequest request);
 
-  void loadData(TtLoadDataKafkaRequest request,
-                Handler<AsyncResult<TtLoadDataKafkaResponse>> handler);
+  Future<Void> subscribe(AdgSubscriptionKafkaRequest request);
 
-  void transferDataToScdTable(TtTransferDataEtlRequest request,
-                              Handler<AsyncResult<Void>> handler);
+  Future<TtLoadDataKafkaResponse> loadData(AdgLoadDataKafkaRequest request);
 
-  void cancelSubscription(String topicName, Handler<AsyncResult<Void>> handler);
+  Future<Void> transferDataToScdTable(AdgTransferDataEtlRequest request);
 
-  void addSpacesToDeleteQueue(TtDeleteTablesRequest request, Handler<AsyncResult<TtDeleteBatchResponse>> handler);
+  Future<Void> cancelSubscription(String topicName);
 
-  void executeDeleteQueue(TtDeleteTablesQueueRequest request, Handler<AsyncResult<TtDeleteQueueResponse>> handler);
+  Future<Void> reverseHistoryTransfer(ReverseHistoryTransferRequest request);
 
-  void executeDeleteSpacesWithPrefix(TtDeleteTablesWithPrefixRequest request,
-                                    Handler<AsyncResult<TtDeleteQueueResponse>> handler);
+  Future<Void> executeCreateSpacesQueued(OperationYaml request);
 
-  void reverseHistoryTransfer(ReverseHistoryTransferRequest request, Handler<AsyncResult<Void>> handler);
+  Future<Void> executeDeleteSpacesQueued(AdgDeleteTablesRequest request);
 
-  void executeCreateSpacesQueued(OperationYaml request, Handler<AsyncResult<Void>> handler);
+  Future<Void> executeDeleteSpacesWithPrefixQueued(AdgDeleteTablesWithPrefixRequest request);
 
-  void executeDeleteSpacesQueued(TtDeleteTablesRequest request, Handler<AsyncResult<Void>> handler);
+  Future<Map<String, Space>> getSpaceDescriptions(Set<String> spaceNames);
 
-  void executeDeleteSpacesWithPrefixQueued(TtDeleteTablesWithPrefixRequest request,
-                                           Handler<AsyncResult<Void>> handler);
+  Future<Long> getCheckSumByInt32Hash(String actualDataTableName,
+                                        String historicalDataTableName,
+                                        Long sysCn,
+                                        Set<String> columnList);
+
+  Future<Void> deleteSpaceTuples(String spaceName, String whereCondition);
 }

@@ -1,17 +1,16 @@
 package io.arenadata.dtm.query.execution.core.service.delta;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacadeImpl;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.impl.DeltaServiceDaoImpl;
-import io.arenadata.dtm.query.execution.core.dto.delta.DeltaRecord;
 import io.arenadata.dtm.query.execution.core.dto.delta.OkDelta;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.GetDeltaOkQuery;
 import io.arenadata.dtm.query.execution.core.factory.DeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.delta.BeginDeltaQueryResultFactory;
-import io.arenadata.dtm.query.execution.core.service.delta.impl.BeginDeltaExecutor;
 import io.arenadata.dtm.query.execution.core.service.delta.impl.GetDeltaOkExecutor;
 import io.arenadata.dtm.query.execution.core.utils.DeltaQueryUtil;
 import io.arenadata.dtm.query.execution.core.utils.QueryResultUtils;
@@ -35,7 +34,7 @@ class GetDeltaOkExecutorTest {
     private final DeltaServiceDao deltaServiceDao = mock(DeltaServiceDaoImpl.class);
     private final DeltaQueryResultFactory deltaQueryResultFactory = mock(BeginDeltaQueryResultFactory.class);
     private DeltaExecutor deltaOkExecutor;
-    private QueryRequest req = new QueryRequest();
+    private final QueryRequest req = new QueryRequest();
     private String datamart;
 
     @BeforeEach
@@ -49,7 +48,7 @@ class GetDeltaOkExecutorTest {
     @Test
     void executeSuccess() {
         deltaOkExecutor = new GetDeltaOkExecutor(serviceDbFacade, deltaQueryResultFactory);
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         GetDeltaOkQuery deltaQuery = GetDeltaOkQuery.builder()
                 .request(req)
                 .datamart(datamart)
@@ -74,28 +73,23 @@ class GetDeltaOkExecutorTest {
         when(deltaQueryResultFactory.create(any()))
                 .thenReturn(queryResult);
 
-        deltaOkExecutor.execute(deltaQuery, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        deltaOkExecutor.execute(deltaQuery)
+                .onComplete(promise);
 
-        assertEquals(deltaNum, ((QueryResult) promise.future().result()).getResult()
+        assertEquals(deltaNum, promise.future().result().getResult()
                 .get(0).get(DeltaQueryUtil.NUM_FIELD));
-        assertEquals(deltaDate, ((QueryResult) promise.future().result()).getResult()
+        assertEquals(deltaDate, promise.future().result().getResult()
                 .get(0).get(DeltaQueryUtil.DATE_TIME_FIELD));
-        assertEquals(cnFrom, ((QueryResult) promise.future().result()).getResult()
+        assertEquals(cnFrom, promise.future().result().getResult()
                 .get(0).get(DeltaQueryUtil.CN_FROM_FIELD));
-        assertNull(((QueryResult) promise.future().result()).getResult()
+        assertNull(promise.future().result().getResult()
                 .get(0).get(DeltaQueryUtil.CN_TO_FIELD));
     }
 
     @Test
     void executeEmptySuccess() {
         deltaOkExecutor = new GetDeltaOkExecutor(serviceDbFacade, deltaQueryResultFactory);
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         GetDeltaOkQuery deltaQuery = GetDeltaOkQuery.builder()
                 .request(req)
                 .datamart(datamart)
@@ -111,13 +105,8 @@ class GetDeltaOkExecutorTest {
         when(deltaQueryResultFactory.createEmpty())
                 .thenReturn(queryResult);
 
-        deltaOkExecutor.execute(deltaQuery, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        deltaOkExecutor.execute(deltaQuery)
+                .onComplete(promise);
 
         assertTrue(promise.future().succeeded());
     }
@@ -125,29 +114,24 @@ class GetDeltaOkExecutorTest {
     @Test
     void executeGetDeltaOkError() {
         deltaOkExecutor = new GetDeltaOkExecutor(serviceDbFacade, deltaQueryResultFactory);
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         GetDeltaOkQuery deltaQuery = GetDeltaOkQuery.builder()
                 .request(req)
                 .datamart(datamart)
                 .build();
 
         when(deltaServiceDao.getDeltaOk(eq(datamart)))
-                .thenReturn(Future.failedFuture(new RuntimeException("")));
+                .thenReturn(Future.failedFuture(new DtmException("")));
 
-        deltaOkExecutor.execute(deltaQuery, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        deltaOkExecutor.execute(deltaQuery)
+                .onComplete(promise);
         assertTrue(promise.future().failed());
     }
 
     @Test
     void executeDeltaQueryResultFactoryError() {
         deltaOkExecutor = new GetDeltaOkExecutor(serviceDbFacade, deltaQueryResultFactory);
-        Promise promise = Promise.promise();
+        Promise<QueryResult> promise = Promise.promise();
         GetDeltaOkQuery deltaQuery = GetDeltaOkQuery.builder()
                 .request(req)
                 .datamart(datamart)
@@ -170,13 +154,9 @@ class GetDeltaOkExecutorTest {
         when(deltaQueryResultFactory.create(any()))
                 .thenReturn(null);
 
-        deltaOkExecutor.execute(deltaQuery, handler -> {
-            if (handler.succeeded()) {
-                promise.complete(handler.result());
-            } else {
-                promise.fail(handler.cause());
-            }
-        });
+        deltaOkExecutor.execute(deltaQuery)
+                .onComplete(promise);
+        assertTrue(promise.future().failed());
     }
 
     private List<Map<String, Object>> createResult(long deltaNum, LocalDateTime deltaDate, long cnFrom, Long cnTo) {

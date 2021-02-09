@@ -1,64 +1,88 @@
 package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
+import io.arenadata.dtm.cache.service.CacheService;
+import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheService;
+import io.arenadata.dtm.common.exception.DtmException;
+import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.DropDatabase;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
-import io.arenadata.dtm.query.execution.core.dao.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
-import io.arenadata.dtm.query.execution.core.service.cache.EntityCacheService;
-import io.arenadata.dtm.query.execution.core.service.cache.impl.HotDeltaCacheService;
-import io.arenadata.dtm.query.execution.core.service.cache.impl.OkDeltaCacheService;
+import io.arenadata.dtm.query.execution.core.dto.delta.HotDelta;
+import io.arenadata.dtm.query.execution.core.dto.delta.OkDelta;
+import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
+import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.vertx.core.AsyncResult;
+import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import static io.arenadata.dtm.query.execution.plugin.api.ddl.DdlType.DROP_SCHEMA;
+import static io.arenadata.dtm.query.execution.core.dto.ddl.DdlType.DROP_SCHEMA;
 
 @Slf4j
 @Component
 public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
-    private final HotDeltaCacheService hotDeltaCacheService;
-    private final OkDeltaCacheService okDeltaCacheService;
-    private final EntityCacheService entityCacheService;
+    private final CacheService<String, HotDelta> hotDeltaCacheService;
+    private final CacheService<String, OkDelta> okDeltaCacheService;
+    private final CacheService<EntityKey, Entity> entityCacheService;
     private final DatamartDao datamartDao;
+    private final EvictQueryTemplateCacheService evictQueryTemplateCacheService;
 
     @Autowired
     public DropSchemaDdlExecutor(MetadataExecutor<DdlRequestContext> metadataExecutor,
-                                 HotDeltaCacheService hotDeltaCacheService,
-                                 OkDeltaCacheService okDeltaCacheService,
-                                 EntityCacheService entityCacheService,
-                                 ServiceDbFacade serviceDbFacade) {
+                                 @Qualifier("hotDeltaCacheService") CacheService<String, HotDelta> hotDeltaCacheService,
+                                 @Qualifier("okDeltaCacheService") CacheService<String, OkDelta> okDeltaCacheService,
+                                 @Qualifier("entityCacheService") CacheService<EntityKey, Entity> entityCacheService,
+                                 ServiceDbFacade serviceDbFacade,
+                                 EvictQueryTemplateCacheService evictQueryTemplateCacheService) {
         super(metadataExecutor, serviceDbFacade);
         this.hotDeltaCacheService = hotDeltaCacheService;
         this.okDeltaCacheService = okDeltaCacheService;
         this.entityCacheService = entityCacheService;
         datamartDao = serviceDbFacade.getServiceDbDao().getDatamartDao();
+        this.evictQueryTemplateCacheService = evictQueryTemplateCacheService;
     }
 
     @Override
-    public void execute(DdlRequestContext context, String sqlNodeName, Handler<AsyncResult<QueryResult>> handler) {
-        try {
-            String schemaName = ((DropDatabase) context.getQuery()).getName().names.get(0);
-            clearCacheByDatamartName(schemaName);
-            context.getRequest().getQueryRequest().setDatamartMnemonic(schemaName);
-            context.setDatamartName(schemaName);
-            datamartDao.existsDatamart(schemaName)
-                .compose(isExists -> isExists ? dropDatamartInPlugins(context) : getNotExistsDatamartFuture(schemaName))
-                .compose(r -> dropDatamart(context))
-                .onSuccess(success -> handler.handle(Future.succeededFuture(QueryResult.emptyResult())))
-                .onFailure(fail -> handler.handle(Future.failedFuture(fail)));
-        } catch (Exception e) {
-            log.error("Error deleting datamart!", e);
-            handler.handle(Future.failedFuture(e));
-        }
+    public Future<QueryResult> execute(DdlRequestContext context, String sqlNodeName) {
+        return dropSchema(context);
+    }
+
+    private Future<QueryResult> dropSchema(DdlRequestContext context) {
+        return Future.future(promise -> {
+            String datamartName = ((DropDatabase) context.getSqlNode()).getName().getSimple();
+            clearCacheByDatamartName(datamartName);
+            context.getRequest().getQueryRequest().setDatamartMnemonic(datamartName);
+            context.setDatamartName(datamartName);
+            datamartDao.existsDatamart(datamartName)
+                    .compose(isExists -> {
+                        if (isExists) {
+                            try {
+                                evictQueryTemplateCacheService.evictByDatamartName(datamartName);
+                                return dropDatamartInPlugins(context);
+                            } catch (Exception e) {
+                                return Future.failedFuture(new DtmException("Evict cache error"));
+                            }
+                        } else {
+                            return getNotExistsDatamartFuture(datamartName);
+                        }
+                    })
+                    .compose(r -> dropDatamart(datamartName))
+                    .onSuccess(success -> {
+                        try {
+                            evictQueryTemplateCacheService.evictByDatamartName(datamartName);
+                            promise.complete(QueryResult.emptyResult());
+                        } catch (Exception e) {
+                            promise.fail(new DtmException("Evict cache error"));
+                        }
+                    })
+                    .onFailure(promise::fail);
+        });
     }
 
     private void clearCacheByDatamartName(String schemaName) {
@@ -76,18 +100,16 @@ public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
             context.getRequest().setQueryRequest(replaceDatabaseInSql(context.getRequest().getQueryRequest()));
             context.setDdlType(DROP_SCHEMA);
             log.debug("Delete physical objects in plugins for datamart: [{}]", context.getDatamartName());
-            return Future.future((Promise<Void> promise) -> metadataExecutor.execute(context, promise));
+            return metadataExecutor.execute(context);
         } catch (Exception e) {
-            log.error("Error in dropping schema [{}]", context.getDatamartName(), e);
-            return Future.failedFuture(e);
+            return Future.failedFuture(new DtmException("Error generating drop datamart request", e));
         }
     }
 
-    private Future<Void> dropDatamart(DdlRequestContext context) {
-        log.debug("Deleted schema [{}] in data sources", context.getDatamartName());
-        return datamartDao.deleteDatamart(context.getDatamartName())
-            .onSuccess(success -> log.debug("Deleted datamart [{}] from datamart registry", context.getDatamartName()))
-            .onFailure(error -> log.error("Error deleting datamart [{}] from datamart registry!", context.getDatamartName(), error));
+    private Future<Void> dropDatamart(String datamartName) {
+        log.debug("Delete schema [{}] in data sources", datamartName);
+        return datamartDao.deleteDatamart(datamartName)
+                .onSuccess(success -> log.debug("Deleted datamart [{}] from datamart registry", datamartName));
     }
 
     @Override

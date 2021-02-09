@@ -10,7 +10,7 @@ public class TimeFromLongTransformer extends AbstractColumnTransformer<Long, Lon
 
     @Override
     public Long transformValue(Long value) {
-        return value == null ? null : value / 1000;
+        return value;
     }
 
     @Override

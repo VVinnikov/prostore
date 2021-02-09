@@ -24,7 +24,7 @@ public class QueryRequestFactoryImpl implements QueryRequestFactory {
                 .datamartMnemonic(inputQueryRequest.getDatamartMnemonic())
                 .sql(inputQueryRequest.getSql())
                 .parameters(inputQueryRequest.getParameters())
-                .envName(configuration.getEnvName())
+                //.envName(configuration.getEnvName())
                 .build();
     }
 }

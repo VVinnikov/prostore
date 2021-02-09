@@ -2,23 +2,21 @@ package io.arenadata.dtm.query.execution.plugin.adg.service;
 
 import io.arenadata.dtm.common.calcite.CalciteContext;
 import io.arenadata.dtm.common.delta.DeltaInformation;
-import io.arenadata.dtm.common.reader.QueryRequest;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
+import io.arenadata.dtm.query.execution.plugin.adg.dto.EnrichQueryRequest;
+import io.vertx.core.Future;
 import org.apache.calcite.rel.RelRoot;
 
 import java.util.List;
 
 /**
- * Преобразователи DML запроса
+ * Dml query modifier
  */
 public interface QueryGenerator {
     /**
-     * Преобразовать запрос
+     * modify query
      */
-    void mutateQuery(RelRoot sqlNode,
-                     List<DeltaInformation> deltaInformations,
-                     CalciteContext calciteContext,
-                     QueryRequest queryRequest,
-                     Handler<AsyncResult<String>> handler);
+    Future<String> mutateQuery(RelRoot sqlNode,
+                               List<DeltaInformation> deltaInformations,
+                               CalciteContext calciteContext,
+                               EnrichQueryRequest enrichQueryRequest);
 }

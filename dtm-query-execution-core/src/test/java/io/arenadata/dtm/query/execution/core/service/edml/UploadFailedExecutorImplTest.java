@@ -1,30 +1,29 @@
 package io.arenadata.dtm.query.execution.core.service.edml;
 
 import io.arenadata.dtm.common.exception.CrashException;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.impl.DeltaServiceDaoImpl;
 import io.arenadata.dtm.query.execution.core.factory.RollbackRequestContextFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.RollbackRequestContextFactoryImpl;
-import io.arenadata.dtm.query.execution.core.service.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.service.datasource.impl.DataSourcePluginServiceImpl;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadFailedExecutorImpl;
-import io.arenadata.dtm.query.execution.core.service.impl.DataSourcePluginServiceImpl;
-import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
-import io.arenadata.dtm.query.execution.plugin.api.request.RollbackRequest;
-import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
-import io.vertx.core.AsyncResult;
+import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.request.RollbackRequest;
+import io.arenadata.dtm.query.execution.core.dto.rollback.RollbackRequestContext;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -74,7 +73,7 @@ class UploadFailedExecutorImplTest {
 
     @Test
     void executeSuccess() {
-        Promise promise = Promise.promise();
+        Promise<Void> promise = Promise.promise();
         uploadFailedExecutor = new UploadFailedExecutorImpl(deltaServiceDao,
                 rollbackRequestContextFactory, pluginService);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
@@ -82,31 +81,31 @@ class UploadFailedExecutorImplTest {
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
         context.setSysCn(1L);
 
         final RollbackRequestContext rollbackRequestContext = new RollbackRequestContext(
                 new RequestMetrics(),
+                "test",
                 RollbackRequest.builder()
                         .queryRequest(context.getRequest().getQueryRequest())
                         .datamart(context.getSourceEntity().getName())
                         .destinationTable(context.getDestinationEntity().getName())
                         .sysCn(context.getSysCn())
                         .entity(context.getDestinationEntity())
-                        .build());
+                        .build(),
+                mock(SqlNode.class)
+        );
 
         when(rollbackRequestContextFactory.create(any()))
                 .thenReturn(rollbackRequestContext);
 
         when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Void>> handler = invocation.getArgument(2);
-            handler.handle(Future.succeededFuture());
-            return null;
-        }).when(pluginService).rollback(any(), any(), any());
+        when(pluginService.rollback(any(), any(), any()))
+                .thenReturn(Future.succeededFuture());
 
         when(deltaServiceDao.deleteWriteOperation(eq(sourceEntity.getSchema()), eq(context.getSysCn())))
                 .thenReturn(Future.succeededFuture());
@@ -118,7 +117,7 @@ class UploadFailedExecutorImplTest {
 
     @Test
     void executePluginRollbackError() {
-        Promise promise = Promise.promise();
+        Promise<Void> promise = Promise.promise();
         uploadFailedExecutor = new UploadFailedExecutorImpl(deltaServiceDao,
                 rollbackRequestContextFactory, pluginService);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
@@ -126,31 +125,30 @@ class UploadFailedExecutorImplTest {
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
         context.setSysCn(1L);
-
         final RollbackRequestContext rollbackRequestContext = new RollbackRequestContext(
                 new RequestMetrics(),
+                "test",
                 RollbackRequest.builder()
                         .queryRequest(context.getRequest().getQueryRequest())
                         .datamart(context.getSourceEntity().getName())
                         .destinationTable(context.getDestinationEntity().getName())
                         .sysCn(context.getSysCn())
                         .entity(context.getDestinationEntity())
-                        .build());
+                        .build(),
+                mock(SqlNode.class)
+                );
 
         when(rollbackRequestContextFactory.create(any()))
                 .thenReturn(rollbackRequestContext);
 
         when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Void>> handler = invocation.getArgument(2);
-            handler.handle(Future.failedFuture(new RuntimeException("")));
-            return null;
-        }).when(pluginService).rollback(any(), any(), any());
+        when(pluginService.rollback(any(), any(), any()))
+                .thenReturn(Future.failedFuture(new DtmException("")));
 
         uploadFailedExecutor.execute(context)
                 .onComplete(promise);
@@ -160,7 +158,7 @@ class UploadFailedExecutorImplTest {
 
     @Test
     void executeDeleteOperationError() {
-        Promise promise = Promise.promise();
+        Promise<Void> promise = Promise.promise();
         uploadFailedExecutor = new UploadFailedExecutorImpl(deltaServiceDao,
                 rollbackRequestContextFactory, pluginService);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
@@ -168,21 +166,18 @@ class UploadFailedExecutorImplTest {
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
         context.setSysCn(1L);
 
         when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<Void>> handler = invocation.getArgument(2);
-            handler.handle(Future.succeededFuture());
-            return null;
-        }).when(pluginService).rollback(any(), any(), any());
+        when(pluginService.rollback(any(), any(), any()))
+                .thenReturn(Future.succeededFuture());
 
         when(deltaServiceDao.deleteWriteOperation(eq(sourceEntity.getSchema()), eq(context.getSysCn())))
-                .thenReturn(Future.failedFuture(new RuntimeException("")));
+                .thenReturn(Future.failedFuture(new DtmException("")));
 
         uploadFailedExecutor.execute(context)
                 .onComplete(promise);

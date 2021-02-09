@@ -1,15 +1,16 @@
 package io.arenadata.dtm.query.execution.core.service.schema.impl;
 
+import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.dto.schema.DatamartSchemaKey;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaService;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.sql.SqlNode;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -31,22 +32,21 @@ public class LogicalSchemaProviderImpl implements LogicalSchemaProvider {
     }
 
     @Override
-    public void getSchema(QueryRequest request, Handler<AsyncResult<List<Datamart>>> resultHandler) {
-        try {
-            logicalSchemaService.createSchema(request, ar -> {
-                if (ar.succeeded()) {
-                    Map<DatamartSchemaKey, Entity> datamartTableMap = ar.result();
-                    log.trace("Received data schema on request: {}; {}", request, datamartTableMap);
-                    resultHandler.handle(Future.succeededFuture(getDatamartsSchemas(request.getDatamartMnemonic(), datamartTableMap)));
-                } else {
-                    log.error("Error getting data schema for request: {}", request, ar.cause());
-                    resultHandler.handle(Future.failedFuture(ar.cause()));
-                }
-            });
-        } catch (Exception e) {
-            log.error("Error in generating a logic diagram on request {}", request.getSql(), e);
-            resultHandler.handle(Future.failedFuture(e));
-        }
+    public Future<List<Datamart>> getSchemaFromQuery(SqlNode query, String datamart) {
+        return logicalSchemaService.createSchemaFromQuery(query)
+                .map(schemaMap -> {
+                    log.trace("Received data schema on request: {}; {}", query, schemaMap);
+                    return getDatamartsSchemas(datamart, schemaMap);
+                });
+    }
+
+    @Override
+    public Future<List<Datamart>> getSchemaFromDeltaInformations(List<DeltaInformation> deltaInformations, String datamart) {
+        return logicalSchemaService.createSchemaFromDeltaInformations(deltaInformations)
+                .map(schemaMap -> {
+                    log.trace("Received data schema on delta information: {}; {}", deltaInformations, schemaMap);
+                    return getDatamartsSchemas(datamart, schemaMap);
+                });
     }
 
     @NotNull
@@ -73,8 +73,9 @@ public class LogicalSchemaProviderImpl implements LogicalSchemaProvider {
     }
 
     @Override
-    public void updateSchema(QueryRequest request, Handler<AsyncResult<List<Datamart>>> resultHandler) {
+    public Future<List<Datamart>> updateSchema(QueryRequest request) {
         //TODO implement
+        return Future.failedFuture(new DtmException("Feature is not implemented"));
     }
 
 }

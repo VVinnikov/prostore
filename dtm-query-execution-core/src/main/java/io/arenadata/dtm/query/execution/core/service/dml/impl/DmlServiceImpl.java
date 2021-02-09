@@ -1,34 +1,54 @@
 package io.arenadata.dtm.query.execution.core.service.dml.impl;
 
+import io.arenadata.dtm.common.exception.DtmException;
+import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.reader.QueryResult;
-import io.arenadata.dtm.query.execution.plugin.api.dml.DmlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.service.dml.DmlExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.service.dml.DmlService;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
+import io.arenadata.dtm.query.calcite.core.extension.dml.DmlType;
+import io.arenadata.dtm.query.execution.core.dto.dml.DmlRequestContext;
+import io.arenadata.dtm.query.execution.core.service.dml.DmlExecutor;
+import io.arenadata.dtm.query.execution.core.service.dml.DmlService;
+import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.sql.SqlKind;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 
 @Slf4j
 @Service("coreDmlService")
 public class DmlServiceImpl implements DmlService<QueryResult> {
-    private final Map<SqlKind, DmlExecutor<QueryResult>> executorMap;
+    private final Map<DmlType, DmlExecutor<QueryResult>> executorMap;
 
     public DmlServiceImpl() {
-        this.executorMap = new HashMap<>();
+        this.executorMap = new EnumMap<>(DmlType.class);
     }
 
     @Override
-    public void execute(DmlRequestContext context, Handler<AsyncResult<QueryResult>> handler) {
-        executorMap.get(context.getQuery().getKind()).execute(context, handler);
+    public Future<QueryResult> execute(DmlRequestContext context) {
+        return getExecutor(context)
+                .compose(executor -> executor.execute(context));
+    }
+
+    private Future<DmlExecutor<QueryResult>> getExecutor(DmlRequestContext context) {
+        return Future.future(promise -> {
+            final DmlExecutor<QueryResult> dmlExecutor = executorMap.get(context.getType());
+            if (dmlExecutor != null) {
+                promise.complete(dmlExecutor);
+            } else {
+                promise.fail(new DtmException(
+                        String.format("Couldn't find dml executor for query kind %s",
+                                context.getSqlNode().getKind())));
+            }
+        });
+    }
+
+    @Override
+    public SqlProcessingType getSqlProcessingType() {
+        return SqlProcessingType.DML;
     }
 
     @Override
     public void addExecutor(DmlExecutor<QueryResult> executor) {
-        executorMap.put(executor.getSqlKind(), executor);
+        executorMap.put(executor.getType(), executor);
     }
 }

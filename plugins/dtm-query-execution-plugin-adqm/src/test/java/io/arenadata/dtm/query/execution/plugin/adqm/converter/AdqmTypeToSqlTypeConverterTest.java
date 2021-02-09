@@ -51,7 +51,7 @@ class AdqmTypeToSqlTypeConverterTest {
         doubleVal = 1.0d;
         floatVal = 1.0f;
         dateLongVal = 18540L;
-        timeLongVal = 58742894000000L;
+        timeLongVal = 58742894000L;
         timestampLongVal = 1601878742000L;
         timestampStrVal = "2020-10-05 14:15:16.000000";
         booleanVal = true;
@@ -71,7 +71,7 @@ class AdqmTypeToSqlTypeConverterTest {
         expectedValues.put(ColumnType.DOUBLE, doubleVal);
         expectedValues.put(ColumnType.FLOAT, floatVal);
         expectedValues.put(ColumnType.DATE, Date.valueOf(LocalDate.ofEpochDay(dateLongVal)));
-        expectedValues.put(ColumnType.TIME, timeLongVal / 1000);
+        expectedValues.put(ColumnType.TIME, timeLongVal);
         expectedValues.put(ColumnType.TIMESTAMP, Timestamp.from(LocalDateTime.parse(timestampStrVal,
                 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS")).atZone(UTC_TIME_ZONE).toInstant()));
         expectedValues.put(ColumnType.BOOLEAN, booleanVal);

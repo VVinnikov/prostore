@@ -3,8 +3,8 @@ package io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.impl;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaDaoExecutor;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.DeltaServiceDaoExecutorHelper;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.executor.WriteDeltaErrorExecutor;
-import io.arenadata.dtm.query.execution.core.dao.exception.delta.*;
 import io.arenadata.dtm.query.execution.core.dto.delta.Delta;
+import io.arenadata.dtm.query.execution.core.exception.delta.*;
 import io.arenadata.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -13,6 +13,7 @@ import lombok.val;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
 import org.apache.zookeeper.data.Stat;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +23,7 @@ import java.util.Arrays;
 @Component
 public class WriteDeltaErrorExecutorImpl extends DeltaServiceDaoExecutorHelper implements WriteDeltaErrorExecutor {
 
+    @Autowired
     public WriteDeltaErrorExecutorImpl(ZookeeperExecutor executor,
                                        @Value("${core.env.name}") String envName) {
         super(executor, envName);
@@ -37,7 +39,7 @@ public class WriteDeltaErrorExecutorImpl extends DeltaServiceDaoExecutorHelper i
                 if (delta.getHot() == null) {
                     throw new DeltaHotNotStartedException();
                 } else if (deltaHotNum != null && deltaHotNum != delta.getHot().getDeltaNum()) {
-                    throw new InvalidDeltaNumException();
+                    throw new DeltaNumIsNotNextToActualException(deltaHotNum.toString());
                 } else if (delta.getHot().isRollingBack()){
                     throw new DeltaAlreadyIsRollingBackException();
                 }
@@ -54,7 +56,6 @@ public class WriteDeltaErrorExecutorImpl extends DeltaServiceDaoExecutorHelper i
                 val errMsg = String.format("Can't write delta error on datamart[%s], deltaNum[%s]",
                     datamart,
                     deltaHotNum);
-                log.error(errMsg, error);
                 if (error instanceof KeeperException) {
                     if (error instanceof KeeperException.NotEmptyException) {
                         resultPromise.fail(new DeltaNotFinishedException(error));

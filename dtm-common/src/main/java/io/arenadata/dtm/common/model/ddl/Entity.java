@@ -2,11 +2,15 @@ package io.arenadata.dtm.common.model.ddl;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.arenadata.dtm.common.reader.SourceType;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Physical model of the service database table
@@ -15,7 +19,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
-public class Entity implements Serializable, Cloneable {
+public class Entity implements Serializable {
 
     private static final String DEFAULT_SCHEMA = "test";
 
@@ -54,10 +58,12 @@ public class Entity implements Serializable, Cloneable {
         return schema + "." + name;
     }
 
-    @Override
-    @SneakyThrows
-    public Entity clone() {
-        return (Entity) super.clone();
+    public Entity copy() {
+        return toBuilder()
+            .fields(fields.stream()
+                .map(EntityField::copy)
+                .collect(Collectors.toList()))
+            .build();
     }
 }
 

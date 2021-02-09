@@ -19,21 +19,22 @@ public class InformationSchemaUtils {
             "WHERE table_schema NOT IN ('DTM', 'INFORMATION_SCHEMА', 'SYSTEM_LOBS')";
     public static final String LOGIC_SCHEMA_COLUMNS =
         "CREATE VIEW IF NOT EXISTS DTM.logic_schema_columns AS\n" +
-            "SELECT c.table_catalog,\n" +
-            "       c.table_schema,\n" +
-            "       c.table_name,\n" +
-            "       c.column_name,\n" +
-            "       c.is_nullable,\n" +
-            "       c.character_maximum_length,\n" +
-            "       c.datetime_precision,\n" +
-            "       case\n" +
-            "           when com.comment is not NULL then comment\n" +
-            "           else c.data_type\n" +
-            "           end as data_type\n" +
-            "FROM information_schema.COLUMNS c\n" +
-            "         left outer join information_schema.system_comments com\n" +
-            "                         on c.TABLE_CATALOG = com.OBJECT_CATALOG and c.TABLE_SCHEMA = com.OBJECT_SCHEMA and\n" +
-            "                            c.TABLE_NAME = com.OBJECT_NAME and\n" +
+                "SELECT c.table_catalog,\n" +
+                "       c.table_schema,\n" +
+                "       c.table_name,\n" +
+                "       c.column_name,\n" +
+                "       c.is_nullable,\n" +
+                "       c.ordinal_position,\n" +
+                "       c.character_maximum_length,\n" +
+                "       c.datetime_precision,\n" +
+                "       case\n" +
+                "           when com.comment is not NULL then comment\n" +
+                "           else c.data_type\n" +
+                "           end as data_type\n" +
+                "FROM information_schema.COLUMNS c\n" +
+                "         left outer join information_schema.system_comments com\n" +
+                "                         on c.TABLE_CATALOG = com.OBJECT_CATALOG and c.TABLE_SCHEMA = com.OBJECT_SCHEMA and\n" +
+                "                            c.TABLE_NAME = com.OBJECT_NAME and\n" +
             "                            c.COLUMN_NAME = com.COLUMN_NAME\n" +
             "WHERE c.table_schema NOT IN ('DTM', 'INFORMATION_SCHEMA', 'SYSTEM_LOBS')";
     public static final String LOGIC_SCHEMA_ENTITY_CONSTRAINTS =
@@ -63,4 +64,8 @@ public class InformationSchemaUtils {
 
     public static final String DROP_VIEW = "DROP VIEW IF EXISTS %s";
     public static final String CREATE_VIEW = "CREATE VIEW %s AS %s";
+    public static final String CHECK_VIEW =
+            "SELECT VIEW_NAME\n" +
+            "FROM   INFORMATION_SCHEMA.VIEW_TABLE_USAGE\n" +
+            "WHERE  TABLE_SCHEMA = '%s' AND TABLE_NAME = '%s';";
 }

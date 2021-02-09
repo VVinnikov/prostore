@@ -1,6 +1,7 @@
 package io.arenadata.dtm.kafka.core.configuration.kafka;
 
 
+import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
 import io.arenadata.dtm.kafka.core.configuration.properties.KafkaProperties;
 import io.arenadata.dtm.kafka.core.factory.KafkaProducerFactory;
@@ -11,6 +12,7 @@ import io.arenadata.dtm.kafka.core.service.kafka.RestConsumerMonitorImpl;
 import io.vertx.core.Vertx;
 import io.vertx.kafka.client.producer.KafkaProducer;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
@@ -44,10 +46,15 @@ public class KafkaConfiguration {
 
     @Bean("coreKafkaConsumerMonitor")
     public KafkaConsumerMonitor kafkaConsumerMonitor(@Qualifier("coreVertx") Vertx vertx,
-                                                     KafkaProperties kafkaProperties) {
-        return new RestConsumerMonitorImpl(vertx, kafkaProperties);
+                                                     KafkaProperties kafkaProperties,
+                                                     DtmConfig dtmConfig) {
+        return new RestConsumerMonitorImpl(vertx, kafkaProperties, dtmConfig);
     }
 
+    @ConditionalOnProperty(
+            value = "core.kafka.status.event.publish.enabled",
+            havingValue = "true"
+    )
     @Bean("jsonCoreKafkaProducer")
     public KafkaProducer<String, String> jsonCoreKafkaProducer(@Qualifier("coreKafkaProducerFactory") KafkaProducerFactory<String, String> producerFactory,
                                                                @Qualifier("coreKafkaProperties") KafkaProperties kafkaProperties,

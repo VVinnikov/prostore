@@ -7,9 +7,12 @@ import io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaB
 import io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaByNum;
 import io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaHot;
 import io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaOk;
+import io.arenadata.dtm.query.execution.core.dto.delta.operation.DeltaRequestContext;
 import io.arenadata.dtm.query.execution.core.dto.delta.query.*;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.factory.DeltaQueryFactory;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlNode;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,8 +36,9 @@ public class DeltaQueryFactoryImpl implements DeltaQueryFactory {
     }
 
     @Override
-    public DeltaQuery create(SqlNode sqlNode) {
-        if (sqlNode instanceof SqlBeginDelta) {
+    public DeltaQuery create(DeltaRequestContext context) {
+        val sqlNode = context.getSqlNode();
+        if (context.getSqlNode() instanceof SqlBeginDelta) {
             return BeginDeltaQuery.builder()
                     .deltaNum(((SqlBeginDelta) sqlNode).getDeltaNumOperator().getNum())
                     .build();
@@ -43,9 +47,11 @@ public class DeltaQueryFactoryImpl implements DeltaQueryFactory {
                     .deltaDate(getDeltaDateTime(((SqlCommitDelta) sqlNode).getDeltaDateTimeOperator().getDeltaDateTime()))
                     .build();
         } else if (sqlNode instanceof SqlGetDeltaOk) {
-            return GetDeltaOkQuery.builder().build();
+            return GetDeltaOkQuery.builder()
+                    .build();
         } else if (sqlNode instanceof SqlGetDeltaHot) {
-            return GetDeltaHotQuery.builder().build();
+            return GetDeltaHotQuery.builder()
+                    .build();
         } else if (sqlNode instanceof SqlGetDeltaByNum) {
             return GetDeltaByNumQuery.builder()
                     .deltaNum(((SqlGetDeltaByNum) sqlNode).getDeltaNum())
@@ -55,9 +61,12 @@ public class DeltaQueryFactoryImpl implements DeltaQueryFactory {
                     .deltaDate(getDeltaDateTime(((SqlGetDeltaByDateTime) sqlNode).getDeltaDateTime()))
                     .build();
         } else if (sqlNode instanceof SqlRollbackDelta) {
-            return RollbackDeltaQuery.builder().build();
+            return RollbackDeltaQuery.builder()
+                    .sqlNode((SqlRollbackDelta) sqlNode)
+                    .envName(context.getEnvName())
+                    .build();
         } else {
-            throw new RuntimeException(String.format("Query [%s] is not a DELTA operator",
+            throw new DtmException(String.format("Query [%s] is not a DELTA operator",
                     sqlNode.toSqlString(sqlDialect)));
         }
     }
@@ -67,7 +76,7 @@ public class DeltaQueryFactoryImpl implements DeltaQueryFactory {
             try {
                 return LocalDateTime.parse(deltaDateTimeStr, DELTA_DATE_TIME_FORMATTER);
             } catch (Exception e) {
-                throw new RuntimeException(String.format("Incorrect format of delta date value: %s, correct template: %s",
+                throw new DtmException(String.format("Incorrect format of delta date value: %s, correct template: %s",
                         deltaDateTimeStr, DELTA_DATE_TIME_PATTERN), e);
             }
         } else {

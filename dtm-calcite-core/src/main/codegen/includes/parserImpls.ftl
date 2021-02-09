@@ -560,7 +560,7 @@ SqlNode SqlUseSchema() :
         pos = getPos();
 }
     {
-        return new io.arenadata.dtm.query.calcite.core.extension.ddl.SqlUseSchema(pos, id);
+        return new io.arenadata.dtm.query.calcite.core.extension.dml.SqlUseSchema(pos, id);
     }
 }
 SqlNode SqlGetDeltaOk() :
@@ -640,5 +640,79 @@ SqlNode SqlConfigStorageAdd() :
     <RPAREN>
     {
         return new io.arenadata.dtm.query.calcite.core.extension.config.function.SqlConfigStorageAdd(s.end(this), sourceType);
+    }
+}
+SqlNode SqlCheckDatabase() :
+{
+    Span s;
+    SqlIdentifier id = null;
+}
+{
+    <CHECK_DATABASE>
+    {
+        s = span();
+    }
+    (
+        <LPAREN> [id = CompoundIdentifier()] <RPAREN>
+        |
+        {id = null;}
+    )
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckDatabase(s.end(this), id);
+    }
+}
+SqlNode SqlCheckTable() :
+{
+    Span s;
+    final SqlIdentifier id;
+}
+{
+    <CHECK_TABLE>
+    {
+        s = span();
+    }
+    <LPAREN> id = CompoundIdentifier() <RPAREN>
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckTable(s.end(this), id);
+    }
+}
+SqlNode SqlCheckData() :
+{
+    Span s;
+    final SqlIdentifier id;
+    SqlLiteral deltaNum = null;
+    List<SqlNode> tableElementList = null;
+}
+{
+    <CHECK_DATA>
+    {
+        s = span();
+    }
+    <LPAREN> id = CompoundIdentifier()
+    <COMMA>
+        deltaNum = NumericLiteral()
+    [ <COMMA> <LBRACKET> tableElementList = SelectList() <RBRACKET> ]
+    <RPAREN>
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckData(s.end(this), id, deltaNum, tableElementList);
+    }
+}
+SqlNode SqlTruncateHistory() :
+{
+    final Span s;
+    final SqlIdentifier id;
+    final SqlNode datetime;
+    SqlNode conditions = null;
+}
+{
+    <TRUNCATE> <HISTORY>
+    {
+            s = span();
+    }
+    id = CompoundIdentifier()
+    <FOR> <SYSTEM_TIME> <AS> <OF> datetime = StringLiteral()
+    [<WHERE> conditions = SqlExpressionEof()]
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.ddl.truncate.SqlTruncateHistory(s.end(this), id, datetime, conditions);
     }
 }

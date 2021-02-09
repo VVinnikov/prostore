@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl.mppw;
 
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
+import io.arenadata.dtm.common.plugin.exload.Format;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.AdgMppwKafkaProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.dto.mppw.AdgMppwKafkaContext;
@@ -11,6 +12,7 @@ import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.AdgSu
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.AdgTransferDataEtlRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgMppwExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 import io.vertx.core.Future;
@@ -47,6 +49,10 @@ public class AdgMppwKafkaService implements AdgMppwExecutor {
     public Future<QueryResult> execute(MppwRequest request) {
         return Future.future(promise -> {
             log.debug("mppw start");
+            if (request.getUploadMetadata().getFormat() != Format.AVRO) {
+                promise.fail(new MppwDatasourceException(String.format("Format %s not implemented",
+                        request.getUploadMetadata().getFormat())));
+            }
             val mppwKafkaContext = contextFactory.create((MppwKafkaRequest) request);
             if (request.getIsLoadStart()) {
                 initializeLoading(mppwKafkaContext, request.getSourceEntity().getExternalTableUploadMessageLimit())

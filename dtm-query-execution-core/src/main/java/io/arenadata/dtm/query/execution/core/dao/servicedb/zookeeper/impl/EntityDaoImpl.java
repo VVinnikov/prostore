@@ -8,8 +8,8 @@ import io.arenadata.dtm.query.execution.core.configuration.cache.CacheConfigurat
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.metadata.DatamartEntity;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
-import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
-import io.arenadata.dtm.query.execution.core.exception.view.EntityAlreadyExistsException;
+import io.arenadata.dtm.query.execution.core.exception.entity.EntityAlreadyExistsException;
+import io.arenadata.dtm.query.execution.core.exception.entity.EntityNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
 import io.vertx.core.Future;
 import io.vertx.core.json.jackson.DatabindCodec;
@@ -82,7 +82,7 @@ public class EntityDaoImpl implements EntityDao {
                     .compose(AsyncUtils::toEmptyVoidFuture)
                     .otherwise(error -> {
                         if (error instanceof KeeperException.NoNodeException) {
-                            throw warn(new TableNotExistsException(entity.getNameWithSchema()));
+                            throw warn(new EntityNotExistsException(entity.getNameWithSchema()));
                         } else {
                             throw new DtmException(String.format("Can't update entity [%s]",
                                     entity.getNameWithSchema()),
@@ -111,7 +111,7 @@ public class EntityDaoImpl implements EntityDao {
                 .compose(AsyncUtils::toEmptyVoidFuture)
                 .otherwise(error -> {
                     if (error instanceof KeeperException.NoNodeException) {
-                        throw warn(new TableNotExistsException(nameWithSchema));
+                        throw warn(new EntityNotExistsException(nameWithSchema));
                     } else {
                         throw new DtmException(String.format("Can't delete entity [%s]", nameWithSchema), error);
                     }
@@ -137,8 +137,7 @@ public class EntityDaoImpl implements EntityDao {
                 })
                 .otherwise(error -> {
                     if (error instanceof KeeperException.NoNodeException) {
-                        //TODO change exception
-                        throw warn(new TableNotExistsException(nameWithSchema));
+                        throw warn(new EntityNotExistsException((nameWithSchema)));
                     } else {
                         throw new DtmException(String.format("Can't get entity [%s]", nameWithSchema), error);
                     }

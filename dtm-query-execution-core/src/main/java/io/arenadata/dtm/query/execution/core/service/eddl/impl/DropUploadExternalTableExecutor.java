@@ -10,8 +10,7 @@ import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
 import io.arenadata.dtm.query.execution.core.dto.eddl.DropUploadExternalTableQuery;
 import io.arenadata.dtm.query.execution.core.dto.eddl.EddlAction;
 import io.arenadata.dtm.query.execution.core.dto.eddl.EddlQuery;
-import io.arenadata.dtm.query.execution.core.exception.table.ExternalTableNotExistsException;
-import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
+import io.arenadata.dtm.query.execution.core.exception.entity.EntityNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.eddl.EddlExecutor;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
@@ -64,16 +63,10 @@ public class DropUploadExternalTableExecutor implements EddlExecutor {
                         if (EntityType.UPLOAD_EXTERNAL_TABLE == entity.getEntityType()) {
                             entityPromise.complete(entity);
                         } else {
-                            entityPromise.fail(new ExternalTableNotExistsException(tableWithSchema));
+                            entityPromise.fail(new EntityNotExistsException(tableWithSchema));
                         }
                     })
-                    .onFailure(error -> {
-                        if (error instanceof TableNotExistsException) {
-                            entityPromise.fail(new ExternalTableNotExistsException(tableWithSchema));
-                        } else {
-                            entityPromise.fail(error);
-                        }
-                    });
+                    .onFailure(entityPromise::fail);
         });
     }
 

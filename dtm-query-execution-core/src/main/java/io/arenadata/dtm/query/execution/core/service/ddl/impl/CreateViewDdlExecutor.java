@@ -12,16 +12,16 @@ import io.arenadata.dtm.query.calcite.core.node.SqlTreeNode;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
-import io.arenadata.dtm.query.execution.core.exception.view.EntityAlreadyExistsException;
+import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.core.exception.entity.EntityAlreadyExistsException;
+import io.arenadata.dtm.query.execution.core.exception.entity.EntityNotExistsException;
 import io.arenadata.dtm.query.execution.core.exception.view.ViewDisalowedOrDirectiveException;
-import io.arenadata.dtm.query.execution.core.exception.view.ViewNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.dml.ColumnMetadataService;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import io.arenadata.dtm.query.execution.core.utils.SqlPreparer;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
-import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import lombok.Builder;
@@ -234,7 +234,7 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
         if (EntityType.VIEW == entity.getEntityType()) {
             return Future.succeededFuture();
         } else {
-            return Future.failedFuture(new ViewNotExistsException(entity.getName()));
+            return Future.failedFuture(new EntityNotExistsException(entity.getName()));
         }
     }
 

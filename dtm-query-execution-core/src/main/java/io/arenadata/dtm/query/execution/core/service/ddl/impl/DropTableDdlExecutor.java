@@ -11,14 +11,14 @@ import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
-import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
+import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.ddl.DdlType;
+import io.arenadata.dtm.query.execution.core.exception.entity.EntityNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.hsql.HSQLClient;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.utils.InformationSchemaUtils;
-import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.core.dto.ddl.DdlType;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -99,20 +99,19 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
         return Future.future(entityPromise -> {
             val datamartName = context.getDatamartName();
             val entityName = context.getEntity().getName();
-            val tableWithSchema = datamartName + "." + entityName;
             entityDao.getEntity(datamartName, entityName)
                     .onSuccess(entity -> {
                         if (EntityType.TABLE == entity.getEntityType()) {
                             entityPromise.complete(entity);
                         } else {
-                            entityPromise.fail(new TableNotExistsException(tableWithSchema));
+                            entityPromise.fail(new EntityNotExistsException(datamartName, entityName));
                         }
                     })
                     .onFailure(error -> {
-                        if (error instanceof TableNotExistsException && ifExists) {
+                        if (error instanceof EntityNotExistsException && ifExists) {
                             entityPromise.complete(null);
                         } else {
-                            entityPromise.fail(new TableNotExistsException(tableWithSchema));
+                            entityPromise.fail(new EntityNotExistsException(datamartName, entityName));
                         }
                     });
         });

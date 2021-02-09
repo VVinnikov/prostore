@@ -12,7 +12,7 @@ import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateView;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartAlreadyExistsException;
-import io.arenadata.dtm.query.execution.core.exception.view.ViewNotExistsException;
+import io.arenadata.dtm.query.execution.core.exception.entity.EntityNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.hsql.HSQLClient;
 import io.arenadata.dtm.query.execution.core.service.metadata.DdlQueryGenerator;
 import io.arenadata.dtm.query.execution.core.service.metadata.InformationSchemaService;
@@ -208,7 +208,7 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
                                     final String viewRealName = view.getRealName().toUpperCase();
                                     return Optional.ofNullable(fieldsByView.get(viewRealName))
                                             .map(fields -> createEntity(view, fields).stream())
-                                            .orElseThrow(() -> new ViewNotExistsException(
+                                            .orElseThrow(() -> new EntityNotExistsException(
                                                     InformationSchemaView.DTM_SCHEMA_NAME + "." + viewRealName));
                                 })
                                 .collect(Collectors.toList());

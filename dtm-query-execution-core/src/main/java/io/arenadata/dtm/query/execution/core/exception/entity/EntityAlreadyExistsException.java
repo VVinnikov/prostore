@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.exception.view;
+package io.arenadata.dtm.query.execution.core.exception.entity;
 
 import io.arenadata.dtm.common.exception.DtmException;
 

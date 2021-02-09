@@ -18,7 +18,7 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.Servic
 import io.arenadata.dtm.query.execution.core.dto.eddl.CreateUploadExternalTableQuery;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
-import io.arenadata.dtm.query.execution.core.exception.view.EntityAlreadyExistsException;
+import io.arenadata.dtm.query.execution.core.exception.entity.EntityAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.service.avro.AvroSchemaGenerator;
 import io.arenadata.dtm.query.execution.core.service.avro.impl.AvroSchemaGeneratorImpl;
 import io.arenadata.dtm.query.execution.core.service.eddl.impl.CreateUploadExternalTableExecutor;

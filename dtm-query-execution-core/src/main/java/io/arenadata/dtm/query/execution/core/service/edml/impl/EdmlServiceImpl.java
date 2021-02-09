@@ -9,9 +9,8 @@ import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.edml.EdmlAction;
-import io.arenadata.dtm.query.execution.core.exception.table.ExternalTableNotExistsException;
-import io.arenadata.dtm.query.execution.core.service.edml.EdmlExecutor;
 import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
+import io.arenadata.dtm.query.execution.core.service.edml.EdmlExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlService;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
@@ -65,7 +64,7 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
                                 && destination.getEntityType() == EntityType.TABLE) {
                             edmlQueryPromise.complete(EdmlAction.UPLOAD);
                         } else {
-                            edmlQueryPromise.fail(new ExternalTableNotExistsException(
+                            edmlQueryPromise.fail(new DtmException(
                                     String.format("Can't determine external table from query [%s]",
                                             context.getSqlNode().toSqlString(SQL_DIALECT).toString())));
                         }

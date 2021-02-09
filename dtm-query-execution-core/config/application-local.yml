@@ -7,10 +7,10 @@ management:
   server:
     port: ${DTM_METRICS_PORT:8080}
   endpoints:
-    enabled-by-default: true
+    enabled-by-default: ${DTM_METRICS_ENABLED:true}
     web:
       exposure:
-        include: info, health, requests
+        include: ${DTM_METRICS_SCOPE:info, health, requests}
 
 core:
   plugins:
@@ -58,9 +58,14 @@ core:
     admin:
       inputStreamTimeoutMs: ${KAFKA_INPUT_STREAM_TIMEOUT_MS:2000}
     status.event.publish:
-      enabled: false
-      topic: status.event
+      enabled: ${KAFKA_STATUS_EVENT_ENABLED:false}
+      topic: ${KAFKA_STATUS_EVENT_TOPIC:status.event}
     statusMonitorUrl: ${STATUS_MONITOR_URL:http://127.0.0.1:9095/status}
+
+  vertx:
+    pool:
+      task-pool: ${DTM_CORE_TASK_POOL_SIZE:10}
+      task-timeout: ${DTM_CORE_TASK_TIMEOUT:86400000}
 
   cache:
     initialCapacity: ${CACHE_INITIAL_CAPACITY:100000}
@@ -73,7 +78,7 @@ adb:
     password: ${ADB_PASS:gpadmin}
     host: ${ADB_HOST:10.92.3.61}
     port: ${ADB_PORT:5432}
-    maxSize: 20
+    maxSize: ${ADB_MAX_POOL_SIZE:20}
     fetchSize: ${ADB_FETCH_SIZE:1000}
 
   mppw:
@@ -98,17 +103,17 @@ adg:
   mppw:
     consumerGroup: ${ADG_CONSUMER_GROUP:tarantool-group-csv}
     kafka:
-      maxNumberOfMessagesPerPartition: 200
-      callbackFunctionSecIdle: 100
+      maxNumberOfMessagesPerPartition: {ADG_MAX_MSG_PER_PARTITION:200}
+      callbackFunctionSecIdle: {ADG_CB_FUNC_IDLE:100}
 
   rollback:
-    eraseOperationBatchSize: 300
+    eraseOperationBatchSize: ${ADG_ROLLBACK_OPERATION_BATCH_SIZE:300}
 
   circuitbreaker:
-    maxFailures: 5
-    timeout: 30000
-    fallbackOnFailure: false
-    resetTimeout: 10000
+    maxFailures: ${ADG_CIRCUIT_BREAKER_MAX_FAILURES:5}
+    timeout: ${ADG_CIRCUIT_BREAKER_TIMEOUT:30000}
+    fallbackOnFailure: ${ADG_CIRCUIT_BREAKER_FALLBACK_ON_FAILURE:false}
+    resetTimeout: ${ADG_CIRCUIT_BREAKER_RESET_TIMEOUT:10000}
 
   web-client:
     max-pool-size: ${ADG_WEB_CLIENT_MAX_POOL_SIZE:100}

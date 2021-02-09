@@ -2,14 +2,16 @@ package io.arenadata.dtm.query.execution.core.service.dml.impl;
 
 import io.arenadata.dtm.common.dml.SelectCategory;
 import io.arenadata.dtm.common.model.ddl.EntityField;
+import io.arenadata.dtm.query.calcite.core.extension.dml.LimitableSqlOrderBy;
 import io.arenadata.dtm.query.execution.core.service.dml.SelectCategoryQualifier;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import lombok.val;
 import org.apache.calcite.sql.*;
 import org.springframework.stereotype.Component;
 
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Stack;
+import java.util.Queue;
 import java.util.stream.Collectors;
 
 @Component
@@ -17,7 +19,12 @@ public class SelectCategoryQualifierImpl implements SelectCategoryQualifier {
 
     @Override
     public SelectCategory qualify(List<Datamart> schema, SqlNode query) {
-        val sqlSelect = (SqlSelect) query;
+        SqlSelect sqlSelect;
+        if (query instanceof LimitableSqlOrderBy) {
+            sqlSelect = (SqlSelect) ((LimitableSqlOrderBy) query).query;
+        } else {
+            sqlSelect = (SqlSelect) query;
+        }
         if (isRelational(sqlSelect))
             return SelectCategory.RELATIONAL;
         if (isAnalytical(sqlSelect))
@@ -28,32 +35,45 @@ public class SelectCategoryQualifierImpl implements SelectCategoryQualifier {
     }
 
     private boolean isRelational(SqlSelect query) {
-        if (query.getFrom().getKind().equals(SqlKind.JOIN) || query.getSelectList().getList().stream()
-                .anyMatch(sqlNode -> sqlNode instanceof SqlSelect)) return true;
-        if (query.hasWhere()) {
+        if (query.getFrom().getKind().equals(SqlKind.JOIN) || checkSelectForSubquery(query)) {
+            return true;
+        } else if (query.hasWhere()) {
             return checkWhereForSubquery((SqlBasicCall) query.getWhere());
+        } else {
+            return false;
         }
-        return false;
+    }
+
+    private boolean checkSelectForSubquery(SqlSelect query) {
+        return query.getSelectList().getList().stream()
+                .anyMatch(sqlNode -> sqlNode instanceof SqlSelect);
     }
 
     private boolean checkWhereForSubquery(SqlBasicCall whereNode) {
-        Stack<SqlNode> stack = new Stack<>();
-        stack.push(whereNode);
-        while (!stack.isEmpty()) {
-            SqlNode childNode = stack.pop();
+        Queue<SqlNode> queue = new LinkedList<>();
+        queue.add(whereNode);
+        while (!queue.isEmpty()) {
+            SqlNode childNode = queue.poll();
             if (childNode instanceof SqlSelect) {
                 return true;
             } else if (childNode instanceof SqlBasicCall) {
-                ((SqlBasicCall) childNode).getOperandList().stream().forEach(stack::push);
+                ((SqlBasicCall) childNode).getOperandList().forEach(queue::add);
             }
         }
         return false;
     }
 
     private boolean isAnalytical(SqlSelect query) {
-        if (query.getSelectList().getList().stream().anyMatch(sqlNode -> sqlNode.getKind().equals(SqlKind.OTHER_FUNCTION))
-                || query.getGroup() != null) return true;
-        return false;
+        if (containsAggregateFunc(query) || query.getGroup() != null) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private boolean containsAggregateFunc(SqlSelect select) {
+        return select.getSelectList().getList().stream()
+                .anyMatch(sqlNode -> sqlNode.getKind().equals(SqlKind.OTHER_FUNCTION));
     }
 
     private boolean isDictionary(List<Datamart> schema, SqlSelect query) {
@@ -66,9 +86,10 @@ public class SelectCategoryQualifierImpl implements SelectCategoryQualifier {
 
     private boolean containsPrimaryKey(List<String> primaryKeys, SqlNode node) {
         if (node instanceof SqlIdentifier) {
-            val conditionColumn = (SqlIdentifier) node;
+            val conditionIdentifier = (SqlIdentifier) node;
+            val conditionColumn = conditionIdentifier.names.get(conditionIdentifier.names.size() - 1);
             for (String primaryKey : primaryKeys) {
-                if (conditionColumn.names.get(conditionColumn.names.size() - 1).equalsIgnoreCase(primaryKey)) {
+                if (conditionColumn.equalsIgnoreCase(primaryKey)) {
                     return true;
                 }
             }

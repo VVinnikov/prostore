@@ -77,11 +77,15 @@ public class SelectCategoryQualifierImpl implements SelectCategoryQualifier {
     }
 
     private boolean isDictionary(List<Datamart> schema, SqlSelect query) {
-        List<String> primaryKeys = schema.get(0).getEntities().get(0).getFields().stream()
-                .filter(field -> field.getPrimaryOrder() != null)
-                .map(EntityField::getName)
-                .collect(Collectors.toList());
-        return containsPrimaryKey(primaryKeys, query.getWhere());
+        if (query.getWhere() != null) {
+            List<String> primaryKeys = schema.get(0).getEntities().get(0).getFields().stream()
+                    .filter(field -> field.getPrimaryOrder() != null)
+                    .map(EntityField::getName)
+                    .collect(Collectors.toList());
+            return containsPrimaryKey(primaryKeys, query.getWhere());
+        } else {
+            return false;
+        }
     }
 
     private boolean containsPrimaryKey(List<String> primaryKeys, SqlNode node) {

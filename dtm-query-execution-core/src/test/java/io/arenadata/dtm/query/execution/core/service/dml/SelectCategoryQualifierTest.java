@@ -176,6 +176,8 @@ public class SelectCategoryQualifierTest {
             "FROM transactions t\n" +
             "WHERE t.transaction_id = 1 OR amount < 0 " +
             "ORDER BY transaction_id ASC";
+    private static final String SELECT_UNDEFINED_WITHOUT_WHERE = "SELECT *\n" +
+            "FROM transactions t";
     private static final String DATAMART = "datamart";
 
     private SelectCategoryQualifier selectCategoryQualifier = new SelectCategoryQualifierImpl();
@@ -478,5 +480,12 @@ public class SelectCategoryQualifierTest {
         SqlNode sqlNode = planner.parse(SELECT_PRIMARY_KEY_BETWEEN_ORDER_BY);
         val category = selectCategoryQualifier.qualify(schema, sqlNode);
         assertEquals(SelectCategory.DICTIONARY, category);
+    }
+
+    @Test
+    void testSelectWithoutWhere() throws SqlParseException {
+        SqlNode sqlNode = planner.parse(SELECT_UNDEFINED_WITHOUT_WHERE);
+        val category = selectCategoryQualifier.qualify(schema, sqlNode);
+        assertEquals(SelectCategory.UNDEFINED, category);
     }
 }

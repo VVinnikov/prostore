@@ -106,19 +106,13 @@ public class TargetDatabaseDefinitionServiceImpl implements TargetDatabaseDefini
     }
 
     private Set<SourceType> getCommonSourceTypes(List<Entity> entities) {
-        final Set<SourceType> stResult = new HashSet<>();
-        if (!entities.isEmpty()) {
-            Set<SourceType> firstSourceTypes = entities.get(0).getDestination();
-            entities.forEach(e -> {
-                if (stResult.isEmpty()) {
-                    stResult.addAll(e.getDestination());
-                } else {
-                    stResult.retainAll(e.getDestination());
-                }
-            });
-            stResult.retainAll(firstSourceTypes);
+        if (entities.isEmpty()) {
+            return new HashSet<>();
+        } else {
+            Set<SourceType> stResult = entities.get(0).getDestination();
+            entities.forEach(e -> stResult.retainAll(e.getDestination()));
+            return stResult;
         }
-        return stResult;
     }
 
     private Future<SourceType> getTargetSourceByCalcQueryCost(Set<SourceType> sourceTypes, QuerySourceRequest request) {

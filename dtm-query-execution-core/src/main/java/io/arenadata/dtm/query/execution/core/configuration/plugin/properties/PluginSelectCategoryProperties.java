@@ -11,7 +11,7 @@ import java.util.Map;
 
 @Component
 @Data
-@ConfigurationProperties("core.plugin.category")
+@ConfigurationProperties("core.plugins.category")
 public class PluginSelectCategoryProperties {
-    private Map<SelectCategory, List<SourceType>> selectCategorySourceTypeMapping;
+    private Map<SelectCategory, List<SourceType>> mapping;
 }

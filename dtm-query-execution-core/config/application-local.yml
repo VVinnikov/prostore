@@ -15,6 +15,12 @@ management:
 core:
   plugins:
     active: ${CORE_PLUGINS_ACTIVE:ADG, ADB, ADQM}
+    category:
+      mapping:
+        RELATIONAL: ADB,  ADQM, ADG
+        ANALYTICAL: ADQM, ADB,  ADG
+        DICTIONARY: ADG,  ADB,  ADQM
+        UNDEFINED:  ADB,  ADQM, ADG
 
   http:
     port: ${DTM_CORE_HTTP_PORT:9090}

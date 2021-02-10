@@ -9,18 +9,18 @@ import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckCall;
 import io.arenadata.dtm.query.calcite.core.extension.config.SqlConfigCall;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.truncate.SqlBaseTruncate;
 import io.arenadata.dtm.query.calcite.core.extension.delta.SqlDeltaCall;
+import io.arenadata.dtm.query.calcite.core.extension.dml.SqlSelectExt;
 import io.arenadata.dtm.query.execution.core.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.core.dto.CoreRequestContext;
 import io.arenadata.dtm.query.execution.core.dto.check.CheckContext;
 import io.arenadata.dtm.query.execution.core.dto.config.ConfigRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.core.dto.delta.operation.DeltaRequestContext;
 import io.arenadata.dtm.query.execution.core.dto.dml.DmlRequest;
 import io.arenadata.dtm.query.execution.core.dto.dml.DmlRequestContext;
 import io.arenadata.dtm.query.execution.core.dto.eddl.EddlRequestContext;
 import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.core.factory.RequestContextFactory;
-import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.request.ConfigRequest;
 import lombok.val;
 import org.apache.calcite.sql.*;
@@ -45,7 +45,6 @@ public class RequestContextFactoryImpl implements RequestContextFactory<CoreRequ
 
     @Override
     public CoreRequestContext<? extends DatamartRequest, ? extends SqlNode> create(QueryRequest request,
-                                                                                   SourceType sourceType,
                                                                                    SqlNode node) {
         val changedQueryRequest = changeSql(request, node);
         val envName = coreConfiguration.getEnvName();
@@ -64,7 +63,7 @@ public class RequestContextFactoryImpl implements RequestContextFactory<CoreRequ
                                 createRequestMetrics(request),
                                 new DatamartRequest(changedQueryRequest),
                                 node,
-                                sourceType,
+                                null,
                                 envName);
                     } else {
                         return EddlRequestContext.builder()
@@ -79,7 +78,7 @@ public class RequestContextFactoryImpl implements RequestContextFactory<CoreRequ
                             createRequestMetrics(request),
                             new DatamartRequest(changedQueryRequest),
                             node,
-                            sourceType,
+                            null,
                             envName);
             }
         } else if (node instanceof SqlDeltaCall) {
@@ -112,10 +111,20 @@ public class RequestContextFactoryImpl implements RequestContextFactory<CoreRequ
                         .request(new DmlRequest(changedQueryRequest))
                         .envName(envName)
                         .metrics(createRequestMetrics(request))
-                        .sourceType(sourceType)
+                        .sourceType(getDmlSourceType(node))
                         .sqlNode(node)
                         .build();
         }
+    }
+
+    private SourceType getDmlSourceType(SqlNode node) {
+        if (node instanceof SqlSelectExt) {
+            SqlCharStringLiteral dsTypeNode = ((SqlSelectExt) node).getDatasourceType();
+            if (dsTypeNode != null) {
+                return SourceType.valueOfAvailable(dsTypeNode.getNlsString().getValue());
+            }
+        }
+        return null;
     }
 
     private RequestMetrics createRequestMetrics(QueryRequest request) {

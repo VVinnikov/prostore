@@ -3,6 +3,8 @@ package io.arenadata.dtm.query.execution.core.calcite.dml;
 
 import io.arenadata.dtm.common.delta.SelectOnInterval;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
+import io.arenadata.dtm.query.calcite.core.extension.dml.LimitableSqlOrderBy;
+import io.arenadata.dtm.query.calcite.core.extension.dml.SqlSelectExt;
 import io.arenadata.dtm.query.calcite.core.extension.snapshot.SqlDeltaSnapshot;
 import io.arenadata.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
@@ -148,5 +150,51 @@ public class SqlDeltaSnapshotDeltaParserTest {
         SqlNode sqlNode = planner.parse("select case when id > 1 then 'ok' else 'not ok' end " +
                 " from test.pso FOR SYSTEM_TIME AS OF DELTA_NUM 1");
         assertNotNull(sqlNode);
+    }
+
+    @Test
+    void parseSelectWithDatasourceType() throws SqlParseException {
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
+        FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
+        SqlSelectExt sqlNode = (SqlSelectExt) planner.parse("select * from test.pso DATASOURCE_TYPE='adg'");
+        assertEquals("adg", sqlNode.getDatasourceType().getNlsString().getValue());
+    }
+
+    @Test
+    void parseSelectWithDatasourceTypeAndConditions() throws SqlParseException {
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
+        FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
+        SqlSelectExt sqlNode = (SqlSelectExt) planner.parse("select * from test.pso where id = 1 DATASOURCE_TYPE='adg'");
+        assertEquals("adg", sqlNode.getDatasourceType().getNlsString().getValue());
+    }
+
+    @Test
+    void parseSelectWithDatasourceTypeAndOrderBy() throws SqlParseException {
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
+        FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
+        LimitableSqlOrderBy sqlNode = (LimitableSqlOrderBy) planner.parse("select * from test.pso order by id DATASOURCE_TYPE='adg'");
+        assertEquals("adg", sqlNode.getDatasourceType().getNlsString().getValue());
+    }
+
+    @Test
+    void parseSelectWithDatasourceTypeAndLimit() throws SqlParseException {
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
+        FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
+        LimitableSqlOrderBy sqlNode = (LimitableSqlOrderBy) planner.parse("select * from test.pso limit 10 DATASOURCE_TYPE='adg'");
+        assertEquals("adg", sqlNode.getDatasourceType().getNlsString().getValue());
+    }
+
+    @Test
+    void parseSelectWithDatasourceTypeWithoutFrom() throws SqlParseException {
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
+        FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
+        Assertions.assertThrows(SqlParseException.class, () -> {
+            planner.parse("select 1 DATASOURCE_TYPE='adb");
+        });
     }
 }

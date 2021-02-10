@@ -127,6 +127,13 @@ public class SqlDdlParserImplTest {
         assertThrows(SqlParseException.class, () -> createTable(query));
     }
 
+    @Test
+    void createTableWithInvalidDatasourceTypeDefinition() {
+        //FIXME
+        String query = String.format(CREATE_TABLE_QUERY + " DATASOURCE_TYPE='%s'", "adb");
+        assertThrows(SqlParseException.class, () -> createTable(query));
+    }
+
     void createTable(String query) {
         createTable(query, sqlCreateTable -> {
         });

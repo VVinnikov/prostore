@@ -22,21 +22,24 @@ public class LimitableSqlOrderBy extends SqlOrderBy {
         public SqlCall createCall(SqlLiteral functionQualifier,
                                   SqlParserPos pos, SqlNode... operands) {
             return new LimitableSqlOrderBy(pos, operands[0], (SqlNodeList) operands[1],
-                    operands[2], operands[3], ((SqlLiteral) operands[4]).getValueAs(Boolean.class));
+                    operands[2], operands[3], ((SqlLiteral) operands[4]).getValueAs(Boolean.class), null);
         }
     };
     private final boolean isLimited;
     private SqlKind kind;
+    private SqlCharStringLiteral datasourceType;
 
     public LimitableSqlOrderBy(SqlParserPos pos,
                                SqlNode query,
                                SqlNodeList orderList,
                                SqlNode offset,
                                SqlNode fetch,
-                               boolean isLimited) {
+                               boolean isLimited,
+                               SqlNode datasourceType) {
         super(pos, query, orderList, offset, fetch);
         kind = SqlKind.ORDER_BY;
         this.isLimited = isLimited;
+        this.datasourceType = (SqlCharStringLiteral) datasourceType;
     }
 
     public BigDecimal getLimit(SqlNumericLiteral fetch) {
@@ -69,7 +72,8 @@ public class LimitableSqlOrderBy extends SqlOrderBy {
                 orderList,
                 offset,
                 fetch,
-                isLimited
+                isLimited,
+                datasourceType
         );
     }
 

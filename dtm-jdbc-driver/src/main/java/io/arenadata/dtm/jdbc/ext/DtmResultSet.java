@@ -247,8 +247,13 @@ public class DtmResultSet implements ResultSet {
     public Time getTime(int columnIndex) throws SQLException {
         Object value = this.getValue(columnIndex);
         if (value != null) {
-            long nanoOfDay = ((Long) value) * 1000L;
-            return Time.valueOf(LocalTime.ofNanoOfDay(nanoOfDay));
+            long nanoOfDay;
+            if (value instanceof Integer) {
+                nanoOfDay = ((Integer) value).longValue();
+            } else {
+                nanoOfDay = (Long) value;
+            }
+            return Time.valueOf(LocalTime.ofNanoOfDay(nanoOfDay * 1000));
         } else {
             return null;
         }

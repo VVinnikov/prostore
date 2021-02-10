@@ -57,6 +57,14 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
     Future<QueryResult> llr(LlrRequest request);
 
     /**
+     * <p>prepare Low Latency Read query</p>
+     *
+     * @param request prepare llr request
+     * @return void
+     */
+    Future<Void> prepareLlr(LlrRequest request);
+
+    /**
      * <p>execute Massively Parallel Processing Reading</p>
      *
      * @param request MPPR context

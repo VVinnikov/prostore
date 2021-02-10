@@ -9,7 +9,7 @@ import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.QueryTemplateResult;
 import io.arenadata.dtm.query.calcite.core.dialect.LimitSqlDialect;
 import io.arenadata.dtm.query.calcite.core.service.QueryTemplateExtractor;
-import io.arenadata.dtm.query.calcite.core.service.impl.QueryTemplateExtractorImpl;
+import io.arenadata.dtm.query.calcite.core.service.impl.AbstractQueryTemplateExtractor;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adg.service.DtmTestConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adg.service.QueryEnrichmentService;
@@ -45,7 +45,7 @@ class AdgLlrServiceTest {
     private final QueryEnrichmentService enrichmentService = mock(QueryEnrichmentService.class);
     private final QueryExecutorService executorService = mock(QueryExecutorService.class);
     private final CacheService<QueryTemplateKey, QueryTemplateValue> queryCacheService = mock(CaffeineCacheService.class);
-    private final QueryTemplateExtractor queryTemplateExtractor = mock(QueryTemplateExtractorImpl.class);
+    private final QueryTemplateExtractor queryTemplateExtractor = mock(AbstractQueryTemplateExtractor.class);
     private final LlrService<QueryResult> llrService = new AdgLlrService(enrichmentService,
             executorService,
             queryCacheService,
@@ -112,7 +112,7 @@ class AdgLlrServiceTest {
     }
 
     private void prepare(String sql, QueryResult expectedResult) {
-        when(executorService.execute(any(), any())).thenReturn(Future.succeededFuture(expectedResult.getResult()));
+        when(executorService.execute(any(), null, any())).thenReturn(Future.succeededFuture(expectedResult.getResult()));
         when(enrichmentService.enrich(any())).thenReturn(Future.succeededFuture(sql));
     }
 }

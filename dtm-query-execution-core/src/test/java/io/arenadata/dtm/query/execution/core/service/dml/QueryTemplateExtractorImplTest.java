@@ -1,8 +1,11 @@
-package io.arenadata.dtm.query.calcite.core.service.impl;
+package io.arenadata.dtm.query.execution.core.service.dml;
 
 import io.arenadata.dtm.common.reader.QueryTemplateResult;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.dto.EnrichmentTemplateRequest;
+import io.arenadata.dtm.query.calcite.core.service.impl.AbstractQueryTemplateExtractor;
+import io.arenadata.dtm.query.calcite.core.service.impl.CalciteDefinitionService;
+import io.arenadata.dtm.query.execution.core.service.query.impl.CoreQueryTemplateExtractor;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.config.Lex;
@@ -63,7 +66,7 @@ class QueryTemplateExtractorImplTest {
             "WHERE \"x\" BETWEEN ASYMMETRIC ? AND ? AND \"z\" = \"x\"";
 
     private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
-    private QueryTemplateExtractorImpl extractor;
+    private AbstractQueryTemplateExtractor extractor;
 
     @BeforeEach
     void setUp() {
@@ -78,7 +81,7 @@ class QueryTemplateExtractorImplTest {
                 .build();
         CalciteDefinitionService definitionService = new CalciteDefinitionService(parserConfig) {
         };
-        extractor = new QueryTemplateExtractorImpl(definitionService, SqlDialect.CALCITE);
+        extractor = new CoreQueryTemplateExtractor(definitionService, SqlDialect.CALCITE);
     }
 
     @Test

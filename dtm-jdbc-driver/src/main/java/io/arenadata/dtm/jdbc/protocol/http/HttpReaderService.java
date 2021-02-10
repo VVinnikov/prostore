@@ -44,15 +44,13 @@ public class HttpReaderService implements Protocol {
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private final CloseableHttpClient client;
     private final String backendHostUrl;
-    private String schema;
 
     @SneakyThrows
-    public HttpReaderService(CloseableHttpClient client, String dbHost, String schema) {
+    public HttpReaderService(CloseableHttpClient client, String dbHost) {
         if (isEmpty(dbHost)) {
             throw new DtmSqlException(String.format("Unable to create connection because parameter '%s' is not specified", HOST_PROPERTY));
         }
         this.backendHostUrl = "http://" + dbHost;
-        this.schema = schema;
         this.client = client;
     }
 
@@ -81,7 +79,6 @@ public class HttpReaderService implements Protocol {
             try (CloseableHttpResponse response = client.execute(httpGet)) {
                 checkResponseStatus(response);
                 InputStream content = response.getEntity().getContent();
-
                 return MAPPER.readValue(content, new TypeReference<List<TableInfo>>() {
                 });
             }
@@ -113,42 +110,40 @@ public class HttpReaderService implements Protocol {
     }
 
     @Override
-    public QueryResult executeQuery(String sql) throws SQLException {
+    public QueryResult executeQuery(QueryRequest queryRequest) throws SQLException {
         try {
             HttpPost httpPost = new HttpPost(backendHostUrl + "/query/execute");
-            QueryRequest queryRequest = prepareQueryRequest(sql);
-            String queryRequestJson = MAPPER.writeValueAsString(queryRequest);
-            log.debug("Preparing the query query [{}]", queryRequestJson);
-            httpPost.setEntity(new StringEntity(queryRequestJson, ContentType.APPLICATION_JSON));
-            try (CloseableHttpResponse response = client.execute(httpPost)) {
-                checkResponseStatus(response);
-                InputStream content = response.getEntity().getContent();
-                QueryResult result = MAPPER.readValue(content, new TypeReference<QueryResult>() {
-                });
-                setUsedSchemaIfExists(result);
-                log.info("Request received response {}", result);
-                return result;
-            }
+            return executeRequest(queryRequest, httpPost);
         } catch (Exception e) {
-            String errMsg = String.format("Error executing query [%s]: %s", sql, e.getMessage());
+            String errMsg = String.format("Error executing query [%s]: %s", queryRequest.getSql(), e.getMessage());
             log.error(errMsg, e);
             throw new SQLException(errMsg, e);
         }
     }
 
-    private void setUsedSchemaIfExists(QueryResult result) throws DtmSqlException {
-        if (result.getMetadata() != null && result.getMetadata().size() == 1
-                && SystemMetadata.SCHEMA == result.getMetadata().get(0).getSystemMetadata()) {
-            if (!result.isEmpty()) {
-                final Optional<Object> schemaOptional = result.getResult().get(0).values().stream().findFirst();
-                if (schemaOptional.isPresent()) {
-                    this.schema = schemaOptional.get().toString();
-                } else {
-                    throw new DtmSqlException("Schema value not found!");
-                }
-            } else {
-                throw new DtmSqlException("Empty result for using schema!");
-            }
+    @Override
+    public QueryResult prepareQuery(QueryRequest request) throws SQLException {
+        try {
+            HttpPost httpPost = new HttpPost(backendHostUrl + "/query/prepare");
+            return executeRequest(request, httpPost);
+        } catch (Exception e) {
+            String errMsg = String.format("Error executing query [%s]: %s", request.getSql(), e.getMessage());
+            log.error(errMsg, e);
+            throw new SQLException(errMsg, e);
+        }
+    }
+
+    private QueryResult executeRequest(QueryRequest queryRequest, HttpPost httpPost) throws IOException, DtmSqlException {
+        String queryRequestJson = MAPPER.writeValueAsString(queryRequest);
+        log.debug("Preparing the query [{}]", queryRequestJson);
+        httpPost.setEntity(new StringEntity(queryRequestJson, ContentType.APPLICATION_JSON));
+        try (CloseableHttpResponse response = client.execute(httpPost)) {
+            checkResponseStatus(response);
+            InputStream content = response.getEntity().getContent();
+            QueryResult result = MAPPER.readValue(content, new TypeReference<QueryResult>() {
+            });
+            log.info("Request received response {}", result);
+            return result;
         }
     }
 
@@ -168,13 +163,5 @@ public class HttpReaderService implements Protocol {
                 throw new DtmSqlException(String.format("The system returned an unsuccessful response:%s", response.getStatusLine().getReasonPhrase()));
             }
         }
-    }
-
-    private QueryRequest prepareQueryRequest(String sql) {
-        UUID uuid = UUID.randomUUID();
-        String schema = this.schema;
-        QueryRequest queryRequest = new QueryRequest(uuid, schema, sql);
-        log.info("Sql query generated {}", queryRequest);
-        return queryRequest;
     }
 }

@@ -51,6 +51,16 @@ public interface DataSourcePluginService {
     Future<QueryResult> llr(SourceType sourceType, RequestMetrics metrics, LlrRequest llrRequest);
 
     /**
+     * <p>prepare Low Latency Read request</p>
+     *
+     * @param sourceType Data source type
+     * @param metrics    metrics
+     * @param llrRequest llr request
+     * @return future object
+     */
+    Future<Void> prepareLlr(SourceType sourceType, RequestMetrics metrics, LlrRequest llrRequest);
+
+    /**
      * <p>execute Massively Parallel Processing Reading</p>
      *
      * @param sourceType Data source type

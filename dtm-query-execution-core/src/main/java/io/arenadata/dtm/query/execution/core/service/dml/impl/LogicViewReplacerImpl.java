@@ -39,6 +39,7 @@ public class LogicViewReplacerImpl implements LogicViewReplacer {
 
     @SneakyThrows
     @Override
+    @Deprecated
     public Future<String> replace(String sql, String datamart) {
         return Future.future((Promise<String> promise) -> {
             log.debug("before replacing:\n{}", sql);

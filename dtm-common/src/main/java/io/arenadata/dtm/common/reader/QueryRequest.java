@@ -35,13 +35,18 @@ public class QueryRequest {
     private String sql;
 
     /**
+     * attribute of prepare request
+     */
+    private boolean isPrepare;
+
+    /**
      * Parameters (optional)
      */
-    private List<String> parameters;
+    private QueryParameters parameters;
 
     public QueryRequest copy() {
         return toBuilder()
-                .parameters(parameters != null ? new ArrayList<>(parameters) : null)
+                .parameters(parameters != null ? parameters.copy() : null)
                 .build();
     }
 

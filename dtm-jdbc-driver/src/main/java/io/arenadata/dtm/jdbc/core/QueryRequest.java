@@ -31,13 +31,17 @@ public class QueryRequest {
     @NonNull
     private String sql;
     /**
-     * List of parameters
+     * query parameters
      */
-    private List<String> parameters;
+    private QueryParameters parameters;
 
-    public QueryRequest(UUID requestId, @NonNull String datamartMnemonic, @NonNull String sql) {
+    public QueryRequest(UUID requestId,
+                        @NonNull String datamartMnemonic,
+                        @NonNull String sql,
+                        QueryParameters parameters) {
         this.requestId = requestId;
         this.datamartMnemonic = datamartMnemonic;
         this.sql = sql;
+        this.parameters = parameters;
     }
 }

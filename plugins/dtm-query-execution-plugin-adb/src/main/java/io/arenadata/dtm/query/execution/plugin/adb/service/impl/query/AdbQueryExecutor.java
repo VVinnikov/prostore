@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adb.service.impl.query;
 import io.arenadata.dtm.common.converter.SqlTypeConverter;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.plugin.sql.PreparedStatementRequest;
+import io.arenadata.dtm.common.reader.QueryParameters;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.exception.LlrDatasourceException;
@@ -19,23 +20,30 @@ import lombok.val;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Slf4j
 public class AdbQueryExecutor implements DatabaseExecutor {
 
     private final PgPool pool;
     private final int fetchSize;
-    private final SqlTypeConverter typeConverter;
+    private final SqlTypeConverter adbTypeConverter;
+    private final SqlTypeConverter sqlTypeConverter;
 
-    public AdbQueryExecutor(PgPool pool, int fetchSize, SqlTypeConverter typeConverter) {
+    public AdbQueryExecutor(PgPool pool,
+                            int fetchSize,
+                            SqlTypeConverter adbTypeConverter,
+                            SqlTypeConverter sqlTypeConverter) {
         this.pool = pool;
         this.fetchSize = fetchSize;
-        this.typeConverter = typeConverter;
+        this.adbTypeConverter = adbTypeConverter;
+        this.sqlTypeConverter = sqlTypeConverter;
     }
 
     @Override
     public Future<List<Map<String, Object>>> execute(String sql, List<ColumnMetadata> metadata) {
-        return executeWithParams(sql, Collections.emptyList(), metadata);
+        return executeWithParams(sql, null, metadata);
     }
 
     @Override
@@ -66,7 +74,9 @@ public class AdbQueryExecutor implements DatabaseExecutor {
     }
 
     @Override
-    public Future<List<Map<String, Object>>> executeWithParams(String sql, List<Object> params, List<ColumnMetadata> metadata) {
+    public Future<List<Map<String, Object>>> executeWithParams(String sql,
+                                                               QueryParameters params,
+                                                               List<ColumnMetadata> metadata) {
         return Future.future(promise -> {
             final AdbConnectionCtx connectionCtx = new AdbConnectionCtx();
             getConnection()
@@ -76,7 +86,7 @@ public class AdbQueryExecutor implements DatabaseExecutor {
                     })
                     .compose(conn -> {
                         log.debug("ADB.Execute query: {} with params: {}", sql, params);
-                        return executePreparedQuery(conn, sql, new ArrayTuple(params));
+                        return executePreparedQuery(conn, sql, createParamsArray(params));
                     })
                     .map(rowSet -> createResult(metadata, rowSet))
                     .onSuccess(result -> {
@@ -90,6 +100,17 @@ public class AdbQueryExecutor implements DatabaseExecutor {
                         promise.fail(fail);
                     });
         });
+    }
+
+    private ArrayTuple createParamsArray(QueryParameters params) {
+        if (params == null) {
+            return new ArrayTuple(Collections.emptyList());
+        } else {
+            return new ArrayTuple(IntStream.range(0, params.getValues().size())
+                    .mapToObj(n -> sqlTypeConverter.convert(params.getTypes().get(n),
+                            params.getValues().get(n)))
+                    .collect(Collectors.toList()));
+        }
     }
 
     @Override
@@ -234,7 +255,7 @@ public class AdbQueryExecutor implements DatabaseExecutor {
         for (int i = 0; i < metadata.size(); i++) {
             ColumnMetadata columnMetadata = metadata.get(i);
             rowMap.put(columnMetadata.getName(),
-                    typeConverter.convert(columnMetadata.getType(), row.getValue(i)));
+                    adbTypeConverter.convert(columnMetadata.getType(), row.getValue(i)));
         }
         return rowMap;
     }

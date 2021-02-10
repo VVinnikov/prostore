@@ -4,16 +4,17 @@ import io.arenadata.dtm.jdbc.model.ColumnInfo;
 import io.arenadata.dtm.jdbc.model.SchemaInfo;
 import io.arenadata.dtm.jdbc.model.TableInfo;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.util.List;
 
 public interface QueryExecutor {
 
-    void execute(Query query, List<Object> parameters, ResultHandler resultHandler);
+    void execute(Query query, QueryParameters parameters, ResultHandler resultHandler);
 
-    void execute(List<Query> queries, List<List<Object>> parametersList, ResultHandler resultHandler);
+    void execute(List<Query> queries, List<QueryParameters> parametersList, ResultHandler resultHandler);
+
+    void prepareQuery(Query query, ResultHandler resultHandler);
 
     List<Query> createQuery(String sql) throws SQLException;
 

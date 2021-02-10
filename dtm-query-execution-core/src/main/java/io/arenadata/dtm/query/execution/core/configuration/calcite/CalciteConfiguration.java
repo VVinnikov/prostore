@@ -9,7 +9,8 @@ import io.arenadata.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
 import io.arenadata.dtm.query.calcite.core.service.QueryTemplateExtractor;
 import io.arenadata.dtm.query.calcite.core.service.impl.DeltaInformationExtractorImpl;
 import io.arenadata.dtm.query.calcite.core.service.impl.DeltaQueryPreprocessorImpl;
-import io.arenadata.dtm.query.calcite.core.service.impl.QueryTemplateExtractorImpl;
+import io.arenadata.dtm.query.calcite.core.service.impl.AbstractQueryTemplateExtractor;
+import io.arenadata.dtm.query.execution.core.service.query.impl.CoreQueryTemplateExtractor;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.config.Lex;
@@ -77,6 +78,6 @@ public class CalciteConfiguration {
     public QueryTemplateExtractor queryTemplateExtractor(@Qualifier("coreCalciteDefinitionService")
                                                                  DefinitionService<SqlNode> definitionService,
                                                          @Qualifier("coreSqlDialect") SqlDialect sqlDialect) {
-        return new QueryTemplateExtractorImpl(definitionService, sqlDialect);
+        return new CoreQueryTemplateExtractor(definitionService, sqlDialect);
     }
 }

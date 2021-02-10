@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adg.service.impl.dml;
 import io.arenadata.dtm.cache.service.CacheService;
 import io.arenadata.dtm.common.cache.QueryTemplateKey;
 import io.arenadata.dtm.common.cache.QueryTemplateValue;
+import io.arenadata.dtm.common.reader.QueryParameters;
 import io.arenadata.dtm.query.calcite.core.service.QueryTemplateExtractor;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adg.dto.EnrichQueryRequest;
@@ -35,7 +36,7 @@ public class AdgLlrService extends QueryResultCacheableLlrService {
                          QueryExecutorService executorService,
                          @Qualifier("adgQueryTemplateCacheService")
                                  CacheService<QueryTemplateKey, QueryTemplateValue> queryCacheService,
-                         @Qualifier("coreQueryTmplateExtractor") QueryTemplateExtractor templateExtractor,
+                         @Qualifier("adgQueryTemplateExtractor") QueryTemplateExtractor templateExtractor,
                          @Qualifier("adgSqlDialect") SqlDialect sqlDialect) {
         super(queryCacheService, templateExtractor, sqlDialect);
         this.queryEnrichmentService = queryEnrichmentService;
@@ -43,8 +44,11 @@ public class AdgLlrService extends QueryResultCacheableLlrService {
     }
 
     @Override
-    protected Future<List<Map<String, Object>>> queryExecute(String enrichedQuery, List<ColumnMetadata> metadata) {
-        return executorService.execute(enrichedQuery, metadata);
+    protected Future<List<Map<String, Object>>> queryExecute(String enrichedQuery,
+                                                             QueryParameters queryParameters,
+                                                             List<ColumnMetadata> metadata) {
+        //FIXME add params
+        return executorService.execute(enrichedQuery, queryParameters, metadata);
     }
 
     @Override

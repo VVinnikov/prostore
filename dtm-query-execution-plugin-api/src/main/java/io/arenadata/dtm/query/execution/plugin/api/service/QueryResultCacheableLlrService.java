@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.api.service;
 import io.arenadata.dtm.cache.service.CacheService;
 import io.arenadata.dtm.common.cache.QueryTemplateKey;
 import io.arenadata.dtm.common.cache.QueryTemplateValue;
+import io.arenadata.dtm.common.reader.QueryParameters;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.QueryTemplateResult;
 import io.arenadata.dtm.query.calcite.core.dto.EnrichmentTemplateRequest;
@@ -33,7 +34,7 @@ public abstract class QueryResultCacheableLlrService implements LlrService<Query
     @Override
     public Future<QueryResult> execute(LlrRequest request) {
         return Future.future(promise -> getQueryFromCacheOrInit(request)
-                .compose(enrichedQuery -> queryExecute(enrichedQuery, request.getMetadata()))
+                .compose(enrichedQuery -> queryExecute(enrichedQuery, request.getParameters(), request.getMetadata()))
                 .map(result -> QueryResult.builder()
                         .requestId(request.getRequestId())
                         .metadata(request.getMetadata())
@@ -42,7 +43,22 @@ public abstract class QueryResultCacheableLlrService implements LlrService<Query
                 .onComplete(promise));
     }
 
-    protected abstract Future<List<Map<String, Object>>> queryExecute(String enrichedQuery, List<ColumnMetadata> metadata);
+    @Override
+    public Future<Void> prepare(LlrRequest request) {
+        return Future.future(promise -> enrichQuery(request)
+                .compose(enrichRequest -> Future.future((Promise<String> p) -> {
+                    val template = extractTemplateWithoutSystemFields(enrichRequest);
+                    queryCacheService.put(getQueryTemplateKey(request), getQueryTemplateValue(template))
+                            .map(r -> enrichRequest)
+                            .onComplete(p);
+                }))
+                .onSuccess(success -> promise.complete())
+                .onFailure(promise::fail));
+    }
+
+    protected abstract Future<List<Map<String, Object>>> queryExecute(String enrichedQuery,
+                                                                      QueryParameters queryParameters,
+                                                                      List<ColumnMetadata> metadata);
 
     private Future<String> getQueryFromCacheOrInit(LlrRequest llrRq) {
         return Future.future(promise -> {

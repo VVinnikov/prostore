@@ -6,14 +6,15 @@ import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.query.calcite.core.service.impl.DeltaInformationExtractorImpl;
-import io.arenadata.dtm.query.execution.core.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.core.dto.CoreRequestContext;
 import io.arenadata.dtm.query.execution.core.factory.RequestContextFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.QueryRequestFactoryImpl;
 import io.arenadata.dtm.query.execution.core.factory.impl.RequestContextFactoryImpl;
 import io.arenadata.dtm.query.execution.core.service.query.QueryAnalyzer;
 import io.arenadata.dtm.query.execution.core.service.query.QueryDispatcher;
+import io.arenadata.dtm.query.execution.core.service.query.QueryPreparedService;
 import io.arenadata.dtm.query.execution.core.service.query.impl.QueryAnalyzerImpl;
+import io.arenadata.dtm.query.execution.core.service.query.impl.QueryPreparedServiceImpl;
 import io.arenadata.dtm.query.execution.core.service.query.impl.QuerySemicolonRemoverImpl;
 import io.arenadata.dtm.query.execution.core.utils.DatamartMnemonicExtractor;
 import io.arenadata.dtm.query.execution.core.utils.DefaultDatamartSetter;
@@ -29,7 +30,6 @@ import lombok.Data;
 import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.core.env.Environment;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,11 +38,12 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 class QueryAnalyzerImplTest {
-    private Vertx vertx = Vertx.vertx();
-    private RequestContextFactory<CoreRequestContext<? extends DatamartRequest, ? extends SqlNode>, QueryRequest> requestContextFactory =
+    private final Vertx vertx = Vertx.vertx();
+    private final RequestContextFactory<CoreRequestContext<? extends DatamartRequest, ? extends SqlNode>, QueryRequest> requestContextFactory =
             new RequestContextFactoryImpl(TestUtils.SQL_DIALECT, TestUtils.getCoreConfiguration("test"));
-    private QueryDispatcher queryDispatcher = mock(QueryDispatcher.class);
+    private final QueryDispatcher queryDispatcher = mock(QueryDispatcher.class);
     private QueryAnalyzer queryAnalyzer;
+    private final QueryPreparedService queryPreparedService = mock(QueryPreparedServiceImpl.class);
 
     @BeforeEach
     void setUp() {
@@ -53,7 +54,9 @@ class QueryAnalyzerImplTest {
                 new HintExtractor(),
                 new DatamartMnemonicExtractor(new DeltaInformationExtractorImpl(TestUtils.CORE_DTM_SETTINGS)),
                 new DefaultDatamartSetter(),
-                new QuerySemicolonRemoverImpl(), new QueryRequestFactoryImpl(new AppConfiguration(mock(Environment.class))));
+                new QuerySemicolonRemoverImpl(),
+                new QueryRequestFactoryImpl(),
+                queryPreparedService);
     }
 
     @Test

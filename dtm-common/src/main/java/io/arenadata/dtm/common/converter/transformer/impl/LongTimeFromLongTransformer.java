@@ -7,11 +7,11 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Collections;
 
-public class LocalDateFromLongTransformer extends AbstractColumnTransformer<LocalDate, Long> {
+public class LongTimeFromLongTransformer extends AbstractColumnTransformer<Long, Long> {
 
     @Override
-    public LocalDate transformValue(Long value) {
-        return value == null ? null : LocalDate.ofEpochDay(value);
+    public Long transformValue(Long value) {
+        return value/1000;
     }
 
     @Override
@@ -21,6 +21,6 @@ public class LocalDateFromLongTransformer extends AbstractColumnTransformer<Loca
 
     @Override
     public ColumnType getType() {
-        return ColumnType.DATE;
+        return ColumnType.TIME;
     }
 }

@@ -1,6 +1,7 @@
 package io.arenadata.dtm.common.converter;
 
 import io.arenadata.dtm.common.converter.transformer.ColumnTransformer;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 
 import java.util.Map;
@@ -20,12 +21,12 @@ public interface SqlTypeConverter {
                 try {
                     return transformerClassMap.get(Object.class).transform(value);
                 } catch (Exception e) {
-                    throw new RuntimeException(String.format("Can't transform value for column type [%s] and class [%s]",
+                    throw new DtmException(String.format("Can't transform value for column type [%s] and class [%s]",
                         type, value.getClass()), e);
                 }
             }
         } else {
-            throw new RuntimeException(String.format("Can't find transformers for type [%s]", type));
+            throw new DtmException(String.format("Can't find transformers for type [%s]", type));
         }
     }
 

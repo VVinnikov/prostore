@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.query;
 
 import io.arenadata.dtm.common.converter.SqlTypeConverter;
+import io.arenadata.dtm.common.reader.QueryParameters;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
@@ -23,10 +24,15 @@ import java.util.stream.IntStream;
 @Slf4j
 public class AdqmQueryExecutor implements DatabaseExecutor {
     private final SQLClient sqlClient;
-    private final SqlTypeConverter typeConverter;
+    private final SqlTypeConverter adqmTypeConverter;
+    private final SqlTypeConverter sqlTypeConverter;
 
-    public AdqmQueryExecutor(Vertx vertx, DataSource adqmDataSource, SqlTypeConverter typeConverter) {
-        this.typeConverter = typeConverter;
+    public AdqmQueryExecutor(Vertx vertx,
+                             DataSource adqmDataSource,
+                             SqlTypeConverter adqmTypeConverter,
+                             SqlTypeConverter sqlTypeConverter) {
+        this.adqmTypeConverter = adqmTypeConverter;
+        this.sqlTypeConverter = sqlTypeConverter;
         this.sqlClient = JDBCClient.create(vertx, adqmDataSource);
     }
 
@@ -54,11 +60,13 @@ public class AdqmQueryExecutor implements DatabaseExecutor {
     }
 
     @Override
-    public Future<?> executeWithParams(String sql, List<Object> params, List<ColumnMetadata> metadata) {
+    public Future<List<Map<String, Object>>> executeWithParams(String sql,
+                                                               QueryParameters params,
+                                                               List<ColumnMetadata> metadata) {
         log.debug(String.format("ADQM. Execute with params %s", sql));
         //TODO perhaps it's better to use RowStream interface for getting rows one by one and create chunks here
         return getSqlConnection()
-                .compose(conn -> executeQueryWithParams(conn, sql, new JsonArray(params)))
+                .compose(conn -> executeQueryWithParams(conn, sql, createParamsArray(params)))
                 .map(resultSet -> {
                     try {
                         return createResult(metadata, resultSet);
@@ -66,6 +74,18 @@ public class AdqmQueryExecutor implements DatabaseExecutor {
                         throw new DataSourceException("Error converting value to jdbc type", e);
                     }
                 });
+    }
+
+    private JsonArray createParamsArray(QueryParameters params) {
+        if (params == null) {
+            return new JsonArray(Collections.emptyList());
+        } else {
+            List<Object> values = IntStream.range(0, params.getValues().size())
+                    .mapToObj(n -> sqlTypeConverter.convert(params.getTypes().get(n),
+                            params.getValues().get(n)))
+                    .collect(Collectors.toList());
+            return new JsonArray(values);
+        }
     }
 
     private Future<SQLConnection> getSqlConnection() {
@@ -111,7 +131,7 @@ public class AdqmQueryExecutor implements DatabaseExecutor {
         Map<String, Object> rowMap = new HashMap<>();
         row.stream().forEach(column -> {
             final ColumnMetadata columnMetadata = metadata.get(columnIndexMap.get(column.getKey()));
-            rowMap.put(columnMetadata.getName(), typeConverter.convert(columnMetadata.getType(), column.getValue()));
+            rowMap.put(columnMetadata.getName(), adqmTypeConverter.convert(columnMetadata.getType(), column.getValue()));
         });
         return rowMap;
     }

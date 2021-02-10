@@ -66,6 +66,11 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
     }
 
     @Override
+    public Future<Void> prepareLlr(LlrRequest request) {
+        return llrService.prepare(request);
+    }
+
+    @Override
     public Future<QueryResult> mppr(MpprRequest request) {
         return mpprService.execute(request);
     }

@@ -18,7 +18,6 @@ import io.arenadata.dtm.query.execution.core.service.query.impl.QueryPreparedSer
 import io.arenadata.dtm.query.execution.core.service.query.impl.QuerySemicolonRemoverImpl;
 import io.arenadata.dtm.query.execution.core.utils.DatamartMnemonicExtractor;
 import io.arenadata.dtm.query.execution.core.utils.DefaultDatamartSetter;
-import io.arenadata.dtm.query.execution.core.utils.HintExtractor;
 import io.arenadata.dtm.query.execution.core.utils.TestUtils;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -51,7 +50,6 @@ class QueryAnalyzerImplTest {
                 TestUtils.DEFINITION_SERVICE,
                 requestContextFactory,
                 vertx,
-                new HintExtractor(),
                 new DatamartMnemonicExtractor(new DeltaInformationExtractorImpl(TestUtils.CORE_DTM_SETTINGS)),
                 new DefaultDatamartSetter(),
                 new QuerySemicolonRemoverImpl(),

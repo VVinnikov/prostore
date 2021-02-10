@@ -1,6 +1,7 @@
 package io.arenadata.dtm.common.cache;
 
 import io.arenadata.dtm.common.delta.DeltaInformation;
+import io.arenadata.dtm.common.dml.SelectCategory;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
@@ -19,6 +20,7 @@ public class SourceQueryTemplateValue {
     private List<DeltaInformation> deltaInformations;
     private List<ColumnMetadata> metadata;
     private List<Datamart> logicalSchema;
+    private SelectCategory selectCategory;
     private Set<SourceType> availableSourceTypes;
-    private SourceType leastQueryCostSourceType;
+    private SourceType mostSuitablePlugin;
 }

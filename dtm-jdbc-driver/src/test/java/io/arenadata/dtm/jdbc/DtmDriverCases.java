@@ -30,7 +30,8 @@ public class DtmDriverCases {
                 " and time_col = ?" +
                 " and uuid_col = ?" +
                 " and char_col = ?" +
-                " datasource_type='adg'";
+                //" datasource_type='adg'" +
+                "";
 
         DtmPreparedStatement stmnt = (DtmPreparedStatement) conn.prepareStatement(sql);
         stmnt.setInt(0, 1);

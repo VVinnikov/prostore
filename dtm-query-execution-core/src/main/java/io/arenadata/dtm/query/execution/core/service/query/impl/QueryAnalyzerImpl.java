@@ -21,7 +21,6 @@ import io.arenadata.dtm.query.execution.core.service.query.QueryPreparedService;
 import io.arenadata.dtm.query.execution.core.service.query.QuerySemicolonRemover;
 import io.arenadata.dtm.query.execution.core.utils.DatamartMnemonicExtractor;
 import io.arenadata.dtm.query.execution.core.utils.DefaultDatamartSetter;
-import io.arenadata.dtm.query.execution.core.utils.HintExtractor;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import lombok.Data;
@@ -42,7 +41,6 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
     private final QueryDispatcher queryDispatcher;
     private final DefinitionService<SqlNode> definitionService;
     private final Vertx vertx;
-    private final HintExtractor hintExtractor;
     private final RequestContextFactory<CoreRequestContext<? extends DatamartRequest, ? extends SqlNode>, QueryRequest> requestContextFactory;
     private final DatamartMnemonicExtractor datamartMnemonicExtractor;
     private final DefaultDatamartSetter defaultDatamartSetter;
@@ -55,7 +53,6 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
                              @Qualifier("coreCalciteDefinitionService") DefinitionService<SqlNode> definitionService,
                              RequestContextFactory<CoreRequestContext<? extends DatamartRequest, ? extends SqlNode>, QueryRequest> requestContextFactory,
                              @Qualifier("coreVertx") Vertx vertx,
-                             HintExtractor hintExtractor,
                              DatamartMnemonicExtractor datamartMnemonicExtractor,
                              DefaultDatamartSetter defaultDatamartSetter,
                              QuerySemicolonRemover querySemicolonRemover,
@@ -65,11 +62,11 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
         this.definitionService = definitionService;
         this.requestContextFactory = requestContextFactory;
         this.vertx = vertx;
-        this.hintExtractor = hintExtractor;
         this.datamartMnemonicExtractor = datamartMnemonicExtractor;
         this.defaultDatamartSetter = defaultDatamartSetter;
         this.queryRequestFactory = queryRequestFactory;
         this.queryPreparedService = queryPreparedService;
+        this.querySemicolonRemover = querySemicolonRemover;
     }
 
     @Override
@@ -84,6 +81,7 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
                 val request = querySemicolonRemover.remove(queryRequestFactory.create(inputQueryRequest));
                 SqlNode node;
                 if (request.getParameters() != null) {
+                    log.debug("Try to get prepared query by request [{}]", request);
                     node = queryPreparedService.getPreparedQuery(request);
                 } else {
                     node = definitionService.processingQuery(request.getSql());
@@ -111,11 +109,6 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
             queryDispatcher.dispatch(requestContext)
                     .onComplete(promise);
         });
-    }
-
-    private QuerySourceRequest getQueryRequestWithoutHint(QueryRequest queryRequest) {
-        val withoutSemicolon = querySemicolonRemover.remove(queryRequest);
-        return hintExtractor.extractHint(withoutSemicolon);
     }
 
     private boolean existsDatamart(SqlNode sqlNode) {

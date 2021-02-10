@@ -26,6 +26,7 @@ import io.arenadata.dtm.query.execution.core.service.metrics.MetricsService;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlNode;
@@ -36,6 +37,7 @@ import org.springframework.stereotype.Component;
 import java.util.Optional;
 
 @Component
+@Slf4j
 public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
 
     private final DataSourcePluginService dataSourcePluginService;
@@ -49,6 +51,8 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
     private final CacheService<QueryTemplateKey, SourceQueryTemplateValue> queryCacheService;
     private final CacheService<PreparedQueryKey, PreparedQueryValue> preparedQueryCacheService;
     private final LlrRequestContextFactory llrRequestContextFactory;
+    private final SelectCategoryQualifier selectCategoryQualifier;
+    private final SuitablePluginSelector suitablePluginSelector;
     private final SqlDialect sqlDialect;
 
     @Autowired
@@ -63,6 +67,8 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                           @Qualifier("coreQueryTemplateCacheService") CacheService<QueryTemplateKey, SourceQueryTemplateValue> queryCacheService,
                           @Qualifier("corePreparedQueryCacheService") CacheService<PreparedQueryKey, PreparedQueryValue> preparedQueryCacheService,
                           LlrRequestContextFactory llrRequestContextFactory,
+                          SelectCategoryQualifier selectCategoryQualifier,
+                          SuitablePluginSelector suitablePluginSelector,
                           @Qualifier("coreSqlDialect") SqlDialect sqlDialect) {
         this.dataSourcePluginService = dataSourcePluginService;
         this.targetDbDefService = targetDbDefService;
@@ -75,6 +81,8 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
         this.queryCacheService = queryCacheService;
         this.preparedQueryCacheService = preparedQueryCacheService;
         this.llrRequestContextFactory = llrRequestContextFactory;
+        this.selectCategoryQualifier = selectCategoryQualifier;
+        this.suitablePluginSelector = suitablePluginSelector;
         this.sqlDialect = sqlDialect;
     }
 
@@ -101,6 +109,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
         return Future.future(promise -> {
             val sql = queryRequest.getSql();
             val sqlNode = context.getSqlNode();
+            log.debug("Prepare sql query [{}]", sql);
             preparedQueryCacheService.put(new PreparedQueryKey(sql), new PreparedQueryValue(sqlNode));
             replaceViews(queryRequest, sqlNode)
                     .map(sqlNodeWithoutViews -> {
@@ -129,6 +138,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
 
     private Future<QueryResult> defineQueryAndExecute(SqlNode sqlNodeWithoutViews, DmlRequestContext context) {
         return Future.future(promise -> {
+            log.debug("Execute sql query [{}]", context.getRequest().getQueryRequest());
             val originalNode = context.getSqlNode();
             context.setSqlNode(sqlNodeWithoutViews);
             deltaQueryPreprocessor.process(context.getSqlNode())
@@ -184,6 +194,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                         .build()));
         if (sourceQueryTemplateValueOpt.isPresent()) {
             val queryTemplateValue = sourceQueryTemplateValueOpt.get();
+            log.debug("Found query template cache value by key [{}]", templateResult.getTemplate());
             return llrRequestContextFactory.create(context, queryTemplateValue)
                     .map(llrRequestContext -> {
                         llrRequestContext.getSourceRequest().setQueryTemplate(templateResult);
@@ -213,19 +224,24 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
 
     private Future<LlrRequestContext> initQuerySourceTypeAndUpdateQueryCacheIfNeeded(LlrRequestContext llrContext) {
         if (llrContext.getSourceRequest().getSourceType() == null
-                && llrContext.getQueryTemplateValue().getLeastQueryCostSourceType() == null) {
-            return targetDbDefService.getSourceTypeWithLeastQueryCost(llrContext.getQueryTemplateValue().getAvailableSourceTypes(),
-                    llrContext.getSourceRequest())
-                    .compose(leastQueryCostSourceType -> {
-                                llrContext.getQueryTemplateValue().setLeastQueryCostSourceType(leastQueryCostSourceType);
-                                return queryCacheService.put(QueryTemplateKey.builder()
-                                                .sourceQueryTemplate(llrContext.getSourceRequest().getQueryTemplate().getTemplate())
-                                                .logicalSchema(llrContext.getSourceRequest().getLogicalSchema())
-                                                .build(),
-                                        llrContext.getQueryTemplateValue());
-                            }
-                    )
-                    .map(v -> llrContext);
+                && llrContext.getQueryTemplateValue().getMostSuitablePlugin() == null) {
+            return Future.future(promise -> {
+                val selectCategory = selectCategoryQualifier.qualify(llrContext.getQueryTemplateValue().getLogicalSchema(),
+                        llrContext.getDmlRequestContext().getSqlNode());
+                val sourceType = suitablePluginSelector.selectByCategory(selectCategory,
+                        llrContext.getQueryTemplateValue().getAvailableSourceTypes());
+                log.debug("Defined category [{}] for sql query [{}]", selectCategory,
+                        llrContext.getDmlRequestContext().getRequest().getQueryRequest().getSql());
+                llrContext.getQueryTemplateValue().setSelectCategory(selectCategory);
+                llrContext.getQueryTemplateValue().setMostSuitablePlugin(sourceType.orElse(null));
+                queryCacheService.put(QueryTemplateKey.builder()
+                                .sourceQueryTemplate(llrContext.getSourceRequest().getQueryTemplate().getTemplate())
+                                .logicalSchema(llrContext.getSourceRequest().getLogicalSchema())
+                                .build(),
+                        llrContext.getQueryTemplateValue())
+                        .map(v -> llrContext)
+                        .onComplete(promise);
+            });
         } else if (llrContext.getSourceRequest().getSourceType() != null
                 && !llrContext.getQueryTemplateValue().getAvailableSourceTypes()
                 .contains(llrContext.getSourceRequest().getSourceType())) {
@@ -273,9 +289,13 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
     }
 
     private SourceType defineSourceType(LlrRequestContext llrRequestContext) {
-        return llrRequestContext.getSourceRequest().getSourceType() == null ?
-                llrRequestContext.getQueryTemplateValue().getLeastQueryCostSourceType() :
+        SourceType sourceType = llrRequestContext.getSourceRequest().getSourceType() == null ?
+                llrRequestContext.getQueryTemplateValue().getMostSuitablePlugin() :
                 llrRequestContext.getSourceRequest().getSourceType();
+        log.debug("Defined source type [{}] for query [{}]",
+                sourceType,
+                llrRequestContext.getDmlRequestContext().getRequest().getQueryRequest().getSql());
+        return sourceType;
     }
 
     private LlrRequest createLlrRequest(LlrRequestContext context) {

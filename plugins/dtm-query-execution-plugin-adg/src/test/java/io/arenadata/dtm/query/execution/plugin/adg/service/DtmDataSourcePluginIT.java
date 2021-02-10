@@ -78,11 +78,6 @@ class DtmDataSourcePluginIT {
         }
 
         @Override
-        public Future<Integer> calcQueryCost(QueryCostRequest request) {
-            return null;
-        }
-
-        @Override
         public Future<StatusQueryResult> status(String topic) {
             return null;
         }

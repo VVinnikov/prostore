@@ -11,8 +11,10 @@ import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
-import io.arenadata.dtm.query.execution.plugin.api.request.QueryCostRequest;
-import io.arenadata.dtm.query.execution.plugin.api.service.*;
+import io.arenadata.dtm.query.execution.plugin.api.service.DdlService;
+import io.arenadata.dtm.query.execution.plugin.api.service.LlrService;
+import io.arenadata.dtm.query.execution.plugin.api.service.RollbackService;
+import io.arenadata.dtm.query.execution.plugin.api.service.StatusService;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckDataService;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TruncateHistoryService;
@@ -26,7 +28,6 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
     protected final LlrService<QueryResult> llrService;
     protected final MpprService mpprService;
     protected final MppwService mppwService;
-    protected final QueryCostService<Integer> queryCostService;
     protected final StatusService statusService;
     protected final RollbackService<Void> rollbackService;
     protected final CheckTableService checkTableService;
@@ -37,7 +38,6 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
                                        LlrService<QueryResult> llrService,
                                        MpprService mpprService,
                                        MppwService mppwService,
-                                       QueryCostService<Integer> queryCostService,
                                        StatusService statusService,
                                        RollbackService<Void> rollbackService,
                                        CheckTableService checkTableService,
@@ -47,7 +47,6 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
         this.llrService = llrService;
         this.mpprService = mpprService;
         this.mppwService = mppwService;
-        this.queryCostService = queryCostService;
         this.statusService = statusService;
         this.rollbackService = rollbackService;
         this.checkTableService = checkTableService;
@@ -78,11 +77,6 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
     @Override
     public Future<QueryResult> mppw(MppwRequest request) {
         return mppwService.execute(request);
-    }
-
-    @Override
-    public Future<Integer> calcQueryCost(QueryCostRequest request) {
-        return queryCostService.calc(request);
     }
 
     @Override

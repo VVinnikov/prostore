@@ -81,14 +81,6 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
     Future<QueryResult> mppw(MppwRequest request);
 
     /**
-     * <p>Calculate executing query cost</p>
-     *
-     * @param request Query cost context
-     * @return query cost
-     */
-    Future<Integer> calcQueryCost(QueryCostRequest request);
-
-    /**
      * <p>Get plugin status information</p>
      *
      * @param topic Topic

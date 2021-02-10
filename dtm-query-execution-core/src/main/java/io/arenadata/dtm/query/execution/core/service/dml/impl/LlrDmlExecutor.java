@@ -41,7 +41,7 @@ import java.util.Optional;
 public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
 
     private final DataSourcePluginService dataSourcePluginService;
-    private final TargetDatabaseDefinitionService targetDbDefService;
+    private final AcceptableSourceTypesDefinitionService acceptableSourceTypesService;
     private final DeltaQueryPreprocessor deltaQueryPreprocessor;
     private final LogicViewReplacer logicViewReplacer;
     private final InformationSchemaExecutor infoSchemaExecutor;
@@ -57,7 +57,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
 
     @Autowired
     public LlrDmlExecutor(DataSourcePluginService dataSourcePluginService,
-                          TargetDatabaseDefinitionService targetDbDefService,
+                          AcceptableSourceTypesDefinitionService acceptableSourceTypesService,
                           DeltaQueryPreprocessor deltaQueryPreprocessor,
                           LogicViewReplacer logicViewReplacer,
                           InformationSchemaExecutor infoSchemaExecutor,
@@ -71,7 +71,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                           SuitablePluginSelector suitablePluginSelector,
                           @Qualifier("coreSqlDialect") SqlDialect sqlDialect) {
         this.dataSourcePluginService = dataSourcePluginService;
-        this.targetDbDefService = targetDbDefService;
+        this.acceptableSourceTypesService = acceptableSourceTypesService;
         this.deltaQueryPreprocessor = deltaQueryPreprocessor;
         this.logicViewReplacer = logicViewReplacer;
         this.infoSchemaExecutor = infoSchemaExecutor;
@@ -262,7 +262,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
         llrRequestContext.setQueryTemplateValue(newQueryTemplateValue);
         return Future.future(promise -> {
             initQueryTemplate(llrRequestContext, newQueryTemplateKey, newQueryTemplateValue);
-            targetDbDefService.getAcceptableSourceTypes(llrRequestContext.getSourceRequest())
+            acceptableSourceTypesService.define(llrRequestContext.getSourceRequest())
                     .map(sourceTypes -> {
                         newQueryTemplateValue.setAvailableSourceTypes(sourceTypes);
                         return sourceTypes;

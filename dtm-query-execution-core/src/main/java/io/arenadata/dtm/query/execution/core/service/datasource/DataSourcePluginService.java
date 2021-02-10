@@ -79,15 +79,6 @@ public interface DataSourcePluginService {
     Future<QueryResult> mppw(SourceType sourceType, RequestMetrics metrics, MppwRequest request);
 
     /**
-     * <p>Calculate executing query cost</p>
-     *
-     * @param sourceType Data source type
-     * @param context    Query cost context
-     * @return future object
-     */
-    Future<Integer> calcQueryCost(SourceType sourceType, RequestMetrics metrics, QueryCostRequest context);
-
-    /**
      * <p>Get plugin status information</p>
      *
      * @param sourceType Data source type

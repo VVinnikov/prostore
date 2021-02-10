@@ -106,14 +106,6 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     }
 
     @Override
-    public Future<Integer> calcQueryCost(SourceType sourceType, RequestMetrics metrics, QueryCostRequest request) {
-        return executeWithMetrics(sourceType,
-                SqlProcessingType.COST,
-                metrics,
-                plugin -> plugin.calcQueryCost(request));
-    }
-
-    @Override
     public Future<StatusQueryResult> status(SourceType sourceType, RequestMetrics metrics, String topic) {
         return executeWithMetrics(sourceType,
                 SqlProcessingType.STATUS,

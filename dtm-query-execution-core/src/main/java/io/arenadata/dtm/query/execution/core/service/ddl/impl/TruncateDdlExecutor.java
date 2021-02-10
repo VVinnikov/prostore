@@ -8,11 +8,11 @@ import io.arenadata.dtm.query.calcite.core.extension.ddl.truncate.SqlTruncateHis
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
-import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
+import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.core.exception.entity.EntityNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
-import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
@@ -87,7 +87,7 @@ public class TruncateDdlExecutor extends QueryResultDdlExecutor {
                     if (EntityType.TABLE.equals(entity.getEntityType())) {
                         p.complete(entity);
                     } else {
-                        p.fail(new TableNotExistsException(table));
+                        p.fail(new EntityNotExistsException(schema, table));
                     }
                 })
                 .onFailure(p::fail));

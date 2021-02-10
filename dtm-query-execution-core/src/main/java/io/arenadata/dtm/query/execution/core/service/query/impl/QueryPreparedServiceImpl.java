@@ -3,8 +3,8 @@ package io.arenadata.dtm.query.execution.core.service.query.impl;
 import io.arenadata.dtm.cache.service.CacheService;
 import io.arenadata.dtm.common.cache.PreparedQueryKey;
 import io.arenadata.dtm.common.cache.PreparedQueryValue;
-import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.QueryRequest;
+import io.arenadata.dtm.query.execution.core.exception.query.PreparedStatementNotFoundException;
 import io.arenadata.dtm.query.execution.core.service.query.QueryPreparedService;
 import org.apache.calcite.sql.SqlNode;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +28,7 @@ public class QueryPreparedServiceImpl implements QueryPreparedService {
         if (preparedQueryValue != null) {
             return preparedQueryValue.getSqlNode();
         } else {
-            throw new DtmException("Incorrect prepared statement query");
+            throw new PreparedStatementNotFoundException();
         }
     }
 }

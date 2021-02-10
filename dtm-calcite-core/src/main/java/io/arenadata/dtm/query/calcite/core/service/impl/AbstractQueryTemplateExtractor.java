@@ -21,7 +21,7 @@ import java.util.stream.Stream;
 public abstract class AbstractQueryTemplateExtractor implements QueryTemplateExtractor {
     private static final SqlDynamicParam DYNAMIC_PARAM = new SqlDynamicParam(0, SqlParserPos.QUOTED_ZERO);
     private static final String REGEX = "(?i).*(LIKE|EQUAL\\w*|LESS\\w*|GREATER\\w*|BETWEEN\\w*).*";
-    private static final String DYNAMIC_PARAM_PATH = ".DYNAMIC_PARAM";
+    public static final String DYNAMIC_PARAM_PATH = ".DYNAMIC_PARAM";
     private final DefinitionService<SqlNode> definitionService;
     private final SqlDialect sqlDialect;
 

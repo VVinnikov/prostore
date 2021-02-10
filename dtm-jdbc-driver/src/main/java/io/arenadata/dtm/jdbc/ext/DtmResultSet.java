@@ -115,7 +115,6 @@ public class DtmResultSet implements ResultSet {
         final ColumnMetadata columnMetadata = this.metadata.get(columnIndex - 1);
         switch (columnMetadata.getType()) {
             case INT:
-                return this.getInt(columnIndex);
             case BIGINT:
                 return this.getLong(columnIndex);
             case VARCHAR:
@@ -248,7 +247,7 @@ public class DtmResultSet implements ResultSet {
     public Time getTime(int columnIndex) throws SQLException {
         Object value = this.getValue(columnIndex);
         if (value != null) {
-            long nanoOfDay = ((Integer) value) * 1000L;
+            long nanoOfDay = ((Long) value) * 1000L;
             return Time.valueOf(LocalTime.ofNanoOfDay(nanoOfDay));
         } else {
             return null;

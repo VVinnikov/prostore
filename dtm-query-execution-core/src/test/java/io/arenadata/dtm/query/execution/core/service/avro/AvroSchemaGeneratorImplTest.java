@@ -45,14 +45,14 @@ class AvroSchemaGeneratorImplTest {
     void generateSchemaFields() {
         String avroResult = "{\"type\":\"record\",\"name\":\"uplexttab\",\"namespace\":\"test_datamart\"," +
                 "\"fields\":[{\"name\":\"id\",\"type\":\"long\"},{\"name\":\"name\"," +
-                "\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}],\"default\":null,\"defaultValue\":\"null\"}," +
-                "{\"name\":\"booleanvalue\",\"type\":[\"null\",\"boolean\"],\"default\":null,\"defaultValue\":\"null\"}," +
-                "{\"name\":\"charvalue\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}],\"default\":null,\"defaultValue\":\"null\"}," +
-                "{\"name\":\"bgintvalue\",\"type\":[\"null\",\"long\"],\"default\":null,\"defaultValue\":\"null\"}," +
-                "{\"name\":\"dbvalue\",\"type\":[\"null\",\"double\"],\"default\":null,\"defaultValue\":\"null\"}," +
-                "{\"name\":\"flvalue\",\"type\":[\"null\",\"float\"],\"default\":null,\"defaultValue\":\"null\"}," +
-                "{\"name\":\"datevalue\",\"type\":[\"null\",{\"type\":\"int\",\"logicalType\":\"date\"}],\"default\":null,\"defaultValue\":\"null\"}," +
-                "{\"name\":\"datetimevalue\",\"type\":[\"null\",{\"type\":\"long\",\"logicalType\":\"timestamp-micros\"}],\"default\":null,\"defaultValue\":\"null\"}," +
+                "\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}],\"default\":null}," +
+                "{\"name\":\"booleanvalue\",\"type\":[\"null\",\"boolean\"],\"default\":null}," +
+                "{\"name\":\"charvalue\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}],\"default\":null}," +
+                "{\"name\":\"bgintvalue\",\"type\":[\"null\",\"long\"],\"default\":null}," +
+                "{\"name\":\"dbvalue\",\"type\":[\"null\",\"double\"],\"default\":null}," +
+                "{\"name\":\"flvalue\",\"type\":[\"null\",\"float\"],\"default\":null}," +
+                "{\"name\":\"datevalue\",\"type\":[\"null\",{\"type\":\"int\",\"logicalType\":\"date\"}],\"default\":null}," +
+                "{\"name\":\"datetimevalue\",\"type\":[\"null\",{\"type\":\"long\",\"logicalType\":\"timestamp-micros\"}],\"default\":null}," +
                 "{\"name\":\"sys_op\",\"type\":\"int\",\"default\":0}]}";
         Schema tableSchema = avroSchemaGenerator.generateTableSchema(table);
         assertEquals(avroResult, tableSchema.toString());

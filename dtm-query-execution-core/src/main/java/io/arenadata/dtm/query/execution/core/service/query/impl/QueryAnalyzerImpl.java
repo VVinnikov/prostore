@@ -105,11 +105,6 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
         }, promise));
     }
 
-    private QuerySourceRequest getQueryRequestWithoutHint(QueryRequest queryRequest) {
-        val withoutSemicolon = querySemicolonRemover.remove(queryRequest);
-        return hintExtractor.extractHint(withoutSemicolon);
-    }
-
     private boolean existsDatamart(SqlNode sqlNode) {
         return !(sqlNode instanceof SqlDropSchema)
                 && !(sqlNode instanceof SqlCreateSchema)

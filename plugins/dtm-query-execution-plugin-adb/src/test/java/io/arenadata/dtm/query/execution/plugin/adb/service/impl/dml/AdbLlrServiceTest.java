@@ -9,7 +9,7 @@ import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.QueryTemplateResult;
 import io.arenadata.dtm.query.calcite.core.dialect.LimitSqlDialect;
 import io.arenadata.dtm.query.calcite.core.service.QueryTemplateExtractor;
-import io.arenadata.dtm.query.calcite.core.service.impl.QueryTemplateExtractorImpl;
+import io.arenadata.dtm.query.calcite.core.service.impl.AbstractQueryTemplateExtractor;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.adb.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adb.service.QueryEnrichmentService;
@@ -56,7 +56,7 @@ class AdbLlrServiceTest {
                 .thenReturn(Future.succeededFuture(new ArrayList<>()));
         QueryTemplateResult queryTemplateResult = mock(QueryTemplateResult.class);
         when(queryTemplateResult.getTemplate()).thenReturn(template);
-        QueryTemplateExtractor queryTemplateExtractor = mock(QueryTemplateExtractorImpl.class);
+        QueryTemplateExtractor queryTemplateExtractor = mock(AbstractQueryTemplateExtractor.class);
         when(queryTemplateExtractor.extract(anyString(), any())).thenReturn(queryTemplateResult);
         when(queryTemplateExtractor.extract(any(SqlNode.class), any())).thenReturn(queryTemplateResult);
         CacheService<QueryTemplateKey, QueryTemplateValue> queryCacheService = mock(CaffeineCacheService.class);

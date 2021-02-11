@@ -1,5 +1,6 @@
 package io.arenadata.dtm.jdbc.protocol;
 
+import io.arenadata.dtm.jdbc.core.QueryRequest;
 import io.arenadata.dtm.jdbc.core.QueryResult;
 import io.arenadata.dtm.jdbc.model.ColumnInfo;
 import io.arenadata.dtm.jdbc.model.SchemaInfo;
@@ -32,8 +33,16 @@ public interface Protocol {
     List<ColumnInfo> getDatabaseColumns(String schema, String tableName);
     /**
      * execute sql query without params
-     * @param sql - native sql query
+     * @param request query request
      * @return query result
      */
-    QueryResult executeQuery(String sql) throws SQLException;
+    QueryResult executeQuery(QueryRequest request) throws SQLException;
+
+    /**
+     * prepare query for preparedStatement
+     * @param request query request
+     * @return query result
+     * @throws SQLException
+     */
+    QueryResult prepareQuery(QueryRequest request) throws SQLException;
 }

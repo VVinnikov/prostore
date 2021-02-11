@@ -17,7 +17,8 @@ public class QueryConfiguration {
   @Bean("adbQueryExecutor")
   public AdbQueryExecutor greenplam(@Value("${core.env.name}") String database, // Todo transfer to EnvProperties
                                     GreenplumProperties greenplumProperties,
-                                    @Qualifier("adbTypeToSqlTypeConverter") SqlTypeConverter typeConverter) {
+                                    @Qualifier("adbTypeToSqlTypeConverter") SqlTypeConverter typeConverter,
+                                    @Qualifier("adbTypeFromSqlTypeConverter") SqlTypeConverter sqlTypeConverter) {
     PgPoolOptions poolOptions = new PgPoolOptions();
     poolOptions.setDatabase(database);
     poolOptions.setHost(greenplumProperties.getHost());
@@ -26,6 +27,6 @@ public class QueryConfiguration {
     poolOptions.setPassword(greenplumProperties.getPassword());
     poolOptions.setMaxSize(greenplumProperties.getMaxSize());
     PgPool pgPool = PgClient.pool(poolOptions);
-    return new AdbQueryExecutor(pgPool, greenplumProperties.getFetchSize(), typeConverter);
+    return new AdbQueryExecutor(pgPool, greenplumProperties.getFetchSize(), typeConverter, sqlTypeConverter);
   }
 }

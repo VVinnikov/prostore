@@ -57,6 +57,14 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
     Future<QueryResult> llr(LlrRequest request);
 
     /**
+     * <p>prepare Low Latency Read query</p>
+     *
+     * @param request prepare llr request
+     * @return void
+     */
+    Future<Void> prepareLlr(LlrRequest request);
+
+    /**
      * <p>execute Massively Parallel Processing Reading</p>
      *
      * @param request MPPR context
@@ -71,14 +79,6 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
      * @return query result
      */
     Future<QueryResult> mppw(MppwRequest request);
-
-    /**
-     * <p>Calculate executing query cost</p>
-     *
-     * @param request Query cost context
-     * @return query cost
-     */
-    Future<Integer> calcQueryCost(QueryCostRequest request);
 
     /**
      * <p>Get plugin status information</p>

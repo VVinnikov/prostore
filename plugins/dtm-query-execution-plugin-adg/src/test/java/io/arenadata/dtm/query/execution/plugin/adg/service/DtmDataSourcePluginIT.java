@@ -63,17 +63,17 @@ class DtmDataSourcePluginIT {
         }
 
         @Override
+        public Future<Void> prepareLlr(LlrRequest request) {
+            return null;
+        }
+
+        @Override
         public Future<QueryResult> mppr(MpprRequest request) {
             return null;
         }
 
         @Override
         public Future<QueryResult> mppw(MppwRequest request) {
-            return null;
-        }
-
-        @Override
-        public Future<Integer> calcQueryCost(QueryCostRequest request) {
             return null;
         }
 

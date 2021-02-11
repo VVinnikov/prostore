@@ -4,13 +4,12 @@ import io.arenadata.dtm.cache.factory.CaffeineCacheServiceFactory;
 import io.arenadata.dtm.cache.service.CacheService;
 import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheService;
 import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheServiceImpl;
-import io.arenadata.dtm.common.cache.QueryTemplateKey;
-import io.arenadata.dtm.common.cache.QueryTemplateValue;
+import io.arenadata.dtm.common.cache.*;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
-import io.arenadata.dtm.common.cache.SourceQueryTemplateValue;
 import io.arenadata.dtm.query.execution.core.dto.delta.HotDelta;
 import io.arenadata.dtm.query.execution.core.dto.delta.OkDelta;
+import org.apache.calcite.sql.SqlNode;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -24,6 +23,7 @@ import java.util.List;
 public class CacheConfiguration {
 
     public static final String CORE_QUERY_TEMPLATE_CACHE = "coreQueryTemplateCache";
+    public static final String CORE_PREPARED_QUERY_CACHE = "corePreparedQueryCache";
     public static final String ENTITY_CACHE = "entity";
     public static final String HOT_DELTA_CACHE = "hotDelta";
     public static final String OK_DELTA_CACHE = "okDelta";
@@ -54,6 +54,13 @@ public class CacheConfiguration {
                                                                                               CacheManager cacheManager) {
         return new CaffeineCacheServiceFactory<QueryTemplateKey, SourceQueryTemplateValue>(cacheManager)
                 .create(CORE_QUERY_TEMPLATE_CACHE);
+    }
+
+    @Bean("corePreparedQueryCacheService")
+    public CacheService<PreparedQueryKey, PreparedQueryValue> preparedQueryCacheService(@Qualifier("coffeineCacheManager")
+                                                                                                CacheManager cacheManager) {
+        return new CaffeineCacheServiceFactory<PreparedQueryKey, PreparedQueryValue>(cacheManager)
+                .create(CORE_PREPARED_QUERY_CACHE);
     }
 
     @Bean("evictQueryTemplateCacheServiceImpl")

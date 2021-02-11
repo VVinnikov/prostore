@@ -6,6 +6,7 @@ import io.arenadata.dtm.jdbc.core.ConnectionFactory;
 import io.arenadata.dtm.jdbc.core.QueryExecutor;
 import io.arenadata.dtm.jdbc.model.ColumnInfo;
 import io.arenadata.dtm.jdbc.util.DtmSqlException;
+import io.arenadata.dtm.jdbc.util.UrlConnectionParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +20,7 @@ import java.util.concurrent.Executor;
 
 public class DtmConnectionImpl implements BaseConnection {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger("io.arenadata.dtm.driver.jdbc.DtmDriver");
+    private static final Logger LOGGER = LoggerFactory.getLogger(DtmConnectionImpl.class);
     public static final ZoneId DEFAULT_TIME_ZONE = ZoneId.of("UTC");
     /**
      * Hold level of resultSet

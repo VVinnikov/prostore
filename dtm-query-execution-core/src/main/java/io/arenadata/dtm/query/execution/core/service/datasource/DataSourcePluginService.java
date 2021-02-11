@@ -51,6 +51,16 @@ public interface DataSourcePluginService {
     Future<QueryResult> llr(SourceType sourceType, RequestMetrics metrics, LlrRequest llrRequest);
 
     /**
+     * <p>prepare Low Latency Read request</p>
+     *
+     * @param sourceType Data source type
+     * @param metrics    metrics
+     * @param llrRequest llr request
+     * @return future object
+     */
+    Future<Void> prepareLlr(SourceType sourceType, RequestMetrics metrics, LlrRequest llrRequest);
+
+    /**
      * <p>execute Massively Parallel Processing Reading</p>
      *
      * @param sourceType Data source type
@@ -67,15 +77,6 @@ public interface DataSourcePluginService {
      * @return future object
      */
     Future<QueryResult> mppw(SourceType sourceType, RequestMetrics metrics, MppwRequest request);
-
-    /**
-     * <p>Calculate executing query cost</p>
-     *
-     * @param sourceType Data source type
-     * @param context    Query cost context
-     * @return future object
-     */
-    Future<Integer> calcQueryCost(SourceType sourceType, RequestMetrics metrics, QueryCostRequest context);
 
     /**
      * <p>Get plugin status information</p>

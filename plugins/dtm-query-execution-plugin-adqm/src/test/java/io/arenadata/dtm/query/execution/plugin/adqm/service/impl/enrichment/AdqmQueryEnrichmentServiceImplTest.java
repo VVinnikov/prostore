@@ -45,8 +45,7 @@ class AdqmQueryEnrichmentServiceImplTest {
         val calciteConfiguration = new CalciteConfiguration();
         calciteConfiguration.init();
         val parserConfig = calciteConfiguration.configDdlParser(
-                calciteConfiguration.ddlParserImplFactory()
-        );
+                calciteConfiguration.ddlParserImplFactory());
         val contextProvider = new AdqmCalciteContextProvider(
                 parserConfig,
                 new AdqmCalciteSchemaFactory(new AdqmSchemaFactory()));

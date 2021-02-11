@@ -82,6 +82,14 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     }
 
     @Override
+    public Future<Void> prepareLlr(SourceType sourceType, RequestMetrics metrics, LlrRequest llrRequest) {
+        return executeWithMetrics(sourceType,
+                SqlProcessingType.LLR,
+                metrics,
+                plugin -> plugin.prepareLlr(llrRequest));
+    }
+
+    @Override
     public Future<QueryResult> mppr(SourceType sourceType, RequestMetrics metrics, MpprRequest request) {
         return executeWithMetrics(sourceType,
                 SqlProcessingType.MPPR,
@@ -95,14 +103,6 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
                 SqlProcessingType.MPPW,
                 metrics,
                 plugin -> plugin.mppw(request));
-    }
-
-    @Override
-    public Future<Integer> calcQueryCost(SourceType sourceType, RequestMetrics metrics, QueryCostRequest request) {
-        return executeWithMetrics(sourceType,
-                SqlProcessingType.COST,
-                metrics,
-                plugin -> plugin.calcQueryCost(request));
     }
 
     @Override

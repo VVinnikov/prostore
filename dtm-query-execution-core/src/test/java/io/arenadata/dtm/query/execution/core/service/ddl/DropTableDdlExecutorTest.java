@@ -26,7 +26,7 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.Entity
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
 import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
 import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
+import io.arenadata.dtm.query.execution.core.exception.entity.EntityNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.datasource.impl.DataSourcePluginServiceImpl;
 import io.arenadata.dtm.query.execution.core.service.ddl.impl.DropTableDdlExecutor;
@@ -163,7 +163,7 @@ class DropTableDdlExecutorTest {
         context.getRequest().getQueryRequest().setSql("DROP TABLE IF EXISTS accounts");
         String entityName = entity.getName();
         when(entityDao.getEntity(eq(schema), eq(entityName)))
-                .thenReturn(Future.failedFuture(new TableNotExistsException(entityName)));
+                .thenReturn(Future.failedFuture(new EntityNotExistsException(entityName)));
 
         when(hsqlClient.getQueryResult(any()))
                 .thenReturn(Future.succeededFuture(new ResultSet().setResults(Collections.EMPTY_LIST)));

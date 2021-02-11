@@ -8,9 +8,8 @@ import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
-import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
-import io.arenadata.dtm.query.execution.core.exception.view.ViewNotExistsException;
 import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
+import io.arenadata.dtm.query.execution.core.exception.entity.EntityNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.utils.SqlPreparer;
@@ -59,13 +58,7 @@ public class DropViewDdlExecutor extends QueryResultDdlExecutor {
                     .onSuccess(success -> {
                         promise.complete(QueryResult.emptyResult());
                     })
-                    .onFailure(error -> {
-                        if (error instanceof TableNotExistsException) {
-                            promise.fail(new ViewNotExistsException(datamartName, viewName));
-                        } else {
-                            promise.fail(error);
-                        }
-                    });
+                    .onFailure(promise::fail);
         });
     }
 
@@ -73,7 +66,7 @@ public class DropViewDdlExecutor extends QueryResultDdlExecutor {
         if (EntityType.VIEW == entity.getEntityType()) {
             return Future.succeededFuture();
         } else {
-            return Future.failedFuture(new ViewNotExistsException(entity.getName()));
+            return Future.failedFuture(new EntityNotExistsException(entity.getNameWithSchema()));
         }
     }
 

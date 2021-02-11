@@ -12,22 +12,21 @@ import io.arenadata.dtm.query.calcite.core.node.SqlTreeNode;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
-import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
-import io.arenadata.dtm.query.execution.core.exception.table.TableAlreadyExistsException;
-import io.arenadata.dtm.query.execution.core.exception.view.EntityAlreadyExistsException;
+import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.core.exception.entity.EntityAlreadyExistsException;
+import io.arenadata.dtm.query.execution.core.exception.entity.EntityNotExistsException;
 import io.arenadata.dtm.query.execution.core.exception.view.ViewDisalowedOrDirectiveException;
-import io.arenadata.dtm.query.execution.core.exception.view.ViewNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.dml.ColumnMetadataService;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import io.arenadata.dtm.query.execution.core.utils.SqlPreparer;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
-import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import lombok.Builder;
 import lombok.Data;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlDialect;
@@ -110,9 +109,7 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
                     .compose(r -> entityDao.getEntity(viewEntity.getSchema(), viewEntity.getName()))
                     .map(this::checkEntityType)
                     .compose(r -> entityDao.updateEntity(viewEntity))
-                    .onSuccess(success -> {
-                        promise.complete(QueryResult.emptyResult());
-                    })
+                    .onSuccess(success -> promise.complete(QueryResult.emptyResult()))
                     .onFailure(promise::fail);
         });
 
@@ -222,15 +219,14 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
         }
     }
 
+    @SneakyThrows
     private Void checkCreateOrReplace(CreateViewContext ctx, Throwable error) {
-        if (error instanceof TableAlreadyExistsException && ctx.isCreateOrReplace()) {
+        if (error instanceof EntityAlreadyExistsException && ctx.isCreateOrReplace()) {
             // if there is an exception <entity already exists> and <orReplace> is true
             // then continue
             return null;
-        } else if (error instanceof DatamartNotExistsException) {
-            throw new DatamartNotExistsException(ctx.getViewEntity().getSchema());
         } else {
-            throw new EntityAlreadyExistsException(ctx.getViewEntity().getNameWithSchema());
+            throw error;
         }
     }
 
@@ -238,7 +234,7 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
         if (EntityType.VIEW == entity.getEntityType()) {
             return Future.succeededFuture();
         } else {
-            return Future.failedFuture(new ViewNotExistsException(entity.getName()));
+            return Future.failedFuture(new EntityNotExistsException(entity.getName()));
         }
     }
 

@@ -23,7 +23,7 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.Entity
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
 import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
 import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.core.exception.view.ViewNotExistsException;
+import io.arenadata.dtm.query.execution.core.exception.entity.EntityNotExistsException;
 import io.arenadata.dtm.query.execution.core.service.ddl.impl.AlterViewDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.dml.ColumnMetadataService;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
@@ -199,7 +199,7 @@ class AlterViewDdlExecutorTest {
                         .build())));
 
         when(entityDao.getEntity(eq(schema), eq(entityList.get(0).getName())))
-                .thenReturn(Future.failedFuture(new ViewNotExistsException(entityList.get(0).getName())));
+                .thenReturn(Future.failedFuture(new EntityNotExistsException(entityList.get(0).getName())));
 
         alterViewDdlExecutor.execute(context, sqlNodeName)
                 .onComplete(promise);

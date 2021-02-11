@@ -1,6 +1,7 @@
 package io.arenadata.dtm.jdbc.core;
 
 import io.arenadata.dtm.common.model.ddl.SystemMetadata;
+import io.arenadata.dtm.jdbc.ext.DtmConnectionImpl;
 import io.arenadata.dtm.jdbc.model.ColumnInfo;
 import io.arenadata.dtm.jdbc.model.SchemaInfo;
 import io.arenadata.dtm.jdbc.model.TableInfo;
@@ -10,6 +11,8 @@ import io.arenadata.dtm.jdbc.util.DtmSqlException;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -19,6 +22,8 @@ import java.util.*;
 import java.util.stream.IntStream;
 
 public class QueryExecutorImpl implements QueryExecutor {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(QueryExecutorImpl.class);
     /**
      * Host
      */
@@ -189,7 +194,7 @@ public class QueryExecutorImpl implements QueryExecutor {
             client = null;
             protocol = null;
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error("Error in closing client connection", e);
         }
     }
 

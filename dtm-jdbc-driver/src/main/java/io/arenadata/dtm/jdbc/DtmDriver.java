@@ -13,7 +13,7 @@ import static io.arenadata.dtm.jdbc.util.UrlConnectionParser.parseURL;
 public class DtmDriver implements Driver {
 
     private static final Logger PARENT_LOGGER = LoggerFactory.getLogger("io.arenadata.dtm.driver.jdbc");
-    private static final Logger LOGGER = LoggerFactory.getLogger("io.arenadata.dtm.driver.jdbc.DtmDriver");
+    private static final Logger LOGGER = LoggerFactory.getLogger(DtmDriver.class);
 
     static {
         try {

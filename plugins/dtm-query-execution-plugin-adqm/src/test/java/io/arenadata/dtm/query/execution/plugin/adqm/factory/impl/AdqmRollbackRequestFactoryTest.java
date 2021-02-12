@@ -1,9 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.factory.impl;
 
-import io.arenadata.dtm.common.model.ddl.Entity;
-import io.arenadata.dtm.common.model.ddl.EntityField;
-import io.arenadata.dtm.common.model.ddl.EntityType;
-import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
+import io.arenadata.dtm.common.model.ddl.*;
 import io.arenadata.dtm.common.plugin.sql.PreparedStatementRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
@@ -43,7 +40,7 @@ class AdqmRollbackRequestFactoryTest {
     public AdqmRollbackRequestFactoryTest() {
         this.entity = Entity.builder()
             .entityType(EntityType.UPLOAD_EXTERNAL_TABLE)
-            .externalTableFormat("avro")
+            .externalTableFormat(ExternalTableFormat.AVRO)
             .externalTableLocationPath("kafka://kafka-1.dtm.local:9092/topic")
             .externalTableLocationType(ExternalTableLocationType.KAFKA)
             .externalTableUploadMessageLimit(1000)

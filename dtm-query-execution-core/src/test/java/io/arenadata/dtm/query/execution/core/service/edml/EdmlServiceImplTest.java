@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.core.service.edml;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
+import io.arenadata.dtm.common.model.ddl.ExternalTableFormat;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
@@ -77,7 +78,7 @@ class EdmlServiceImplTest {
 
         Entity destinationEntity = Entity.builder()
                 .entityType(EntityType.DOWNLOAD_EXTERNAL_TABLE)
-                .externalTableFormat("avro")
+                .externalTableFormat(ExternalTableFormat.AVRO)
                 .externalTableLocationPath("kafka://kafka-1.dtm.local:9092/topic")
                 .externalTableLocationType(ExternalTableLocationType.KAFKA)
                 .externalTableUploadMessageLimit(1000)
@@ -126,7 +127,7 @@ class EdmlServiceImplTest {
 
         Entity sourceEntity = Entity.builder()
                 .entityType(EntityType.UPLOAD_EXTERNAL_TABLE)
-                .externalTableFormat("avro")
+                .externalTableFormat(ExternalTableFormat.AVRO)
                 .externalTableLocationPath("kafka://kafka-1.dtm.local:9092/topic")
                 .externalTableLocationType(ExternalTableLocationType.KAFKA)
                 .externalTableUploadMessageLimit(1000)
@@ -164,7 +165,7 @@ class EdmlServiceImplTest {
 
         Entity destinationEntity = Entity.builder()
                 .entityType(EntityType.DOWNLOAD_EXTERNAL_TABLE)
-                .externalTableFormat("avro")
+                .externalTableFormat(ExternalTableFormat.AVRO)
                 .externalTableLocationPath("kafka://kafka-1.dtm.local:9092/topic")
                 .externalTableLocationType(ExternalTableLocationType.KAFKA)
                 .externalTableUploadMessageLimit(1000)
@@ -175,7 +176,7 @@ class EdmlServiceImplTest {
 
         Entity sourceEntity = Entity.builder()
                 .entityType(EntityType.DOWNLOAD_EXTERNAL_TABLE)
-                .externalTableFormat("avro")
+                .externalTableFormat(ExternalTableFormat.AVRO)
                 .externalTableLocationPath("kafka://kafka-1.dtm.local:9092/topic")
                 .externalTableLocationType(ExternalTableLocationType.KAFKA)
                 .externalTableUploadMessageLimit(1000)
@@ -208,7 +209,7 @@ class EdmlServiceImplTest {
 
         Entity destinationEntity = Entity.builder()
                 .entityType(EntityType.UPLOAD_EXTERNAL_TABLE)
-                .externalTableFormat("avro")
+                .externalTableFormat(ExternalTableFormat.AVRO)
                 .externalTableLocationPath("kafka://kafka-1.dtm.local:9092/topic")
                 .externalTableLocationType(ExternalTableLocationType.KAFKA)
                 .externalTableUploadMessageLimit(1000)
@@ -219,7 +220,7 @@ class EdmlServiceImplTest {
 
         Entity sourceEntity = Entity.builder()
                 .entityType(EntityType.UPLOAD_EXTERNAL_TABLE)
-                .externalTableFormat("avro")
+                .externalTableFormat(ExternalTableFormat.AVRO)
                 .externalTableLocationPath("kafka://kafka-1.dtm.local:9092/topic")
                 .externalTableLocationType(ExternalTableLocationType.KAFKA)
                 .externalTableUploadMessageLimit(1000)

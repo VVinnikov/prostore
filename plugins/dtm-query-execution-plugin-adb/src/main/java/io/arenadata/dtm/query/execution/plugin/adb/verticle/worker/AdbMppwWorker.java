@@ -56,7 +56,7 @@ public class AdbMppwWorker extends AbstractVerticle {
         if (transferPromise != null) {
             transferPromise.onComplete(ar -> {
                 if (ar.failed()) {
-                    log.error("Failed to stop request: {}", requestId);
+                    log.error("Failed to stop request: {}", requestId, ar.cause());
                 }
                 requestMap.remove(requestId);
                 requestMessage.reply(requestId);
@@ -81,7 +81,7 @@ public class AdbMppwWorker extends AbstractVerticle {
                         promise.complete();
                     })
                     .onFailure(err -> {
-                        log.error("Error transferring data: {}", requestContext.getMppwKafkaLoadRequest());
+                        log.error("Error transferring data: {}", requestContext.getMppwKafkaLoadRequest(), err);
                         promise.fail(err);
                     });
         }

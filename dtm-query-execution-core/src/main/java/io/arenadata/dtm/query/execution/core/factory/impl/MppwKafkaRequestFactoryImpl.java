@@ -1,12 +1,12 @@
 package io.arenadata.dtm.query.execution.core.factory.impl;
 
 import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
-import io.arenadata.dtm.common.plugin.exload.Format;
+import io.arenadata.dtm.common.model.ddl.ExternalTableFormat;
 import io.arenadata.dtm.kafka.core.repository.ZookeeperKafkaProviderRepository;
+import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.core.exception.UnreachableLocationException;
 import io.arenadata.dtm.query.execution.core.factory.MppwKafkaRequestFactory;
 import io.arenadata.dtm.query.execution.core.utils.LocationUriParser;
-import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
 import io.vertx.core.Future;
@@ -52,7 +52,7 @@ public class MppwKafkaRequestFactoryImpl implements MppwKafkaRequestFactory {
                                     .topic(kafkaTopicUri.getTopic())
                                     .uploadMetadata(UploadExternalEntityMetadata.builder()
                                             .name(context.getSourceEntity().getName())
-                                            .format(Format.findByName(context.getSourceEntity().getExternalTableFormat()))
+                                            .format(context.getSourceEntity().getExternalTableFormat())
                                             .locationPath(context.getSourceEntity().getExternalTableLocationPath())
                                             .externalSchema(context.getSourceEntity().getExternalTableSchema())
                                             .uploadMessageLimit(context.getSourceEntity().getExternalTableUploadMessageLimit())

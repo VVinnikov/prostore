@@ -2,7 +2,7 @@ package io.arenadata.dtm.query.execution.plugin.adg.service.impl.mppw;
 
 import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
 import io.arenadata.dtm.common.model.ddl.Entity;
-import io.arenadata.dtm.common.plugin.exload.Format;
+import io.arenadata.dtm.common.model.ddl.ExternalTableFormat;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.AdgMppwKafkaProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.factory.impl.AdgHelperTableNamesFactoryImpl;
@@ -208,7 +208,7 @@ class AdgMppwKafkaServiceTest {
                         .externalSchema(getExternalTableSchema())
                         .uploadMessageLimit(1000)
                         .locationPath("kafka://kafka-1.dtm.local:9092/topic")
-                        .format(Format.AVRO)
+                        .format(ExternalTableFormat.AVRO)
                         .build())
                 .brokers(Collections.singletonList(new KafkaBrokerInfo("kafka.host", 9092)))
                 .topic("topic1")

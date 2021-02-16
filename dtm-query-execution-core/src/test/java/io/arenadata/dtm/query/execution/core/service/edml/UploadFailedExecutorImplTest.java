@@ -5,6 +5,7 @@ import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
+import io.arenadata.dtm.common.model.ddl.ExternalTableFormat;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.SourceType;
@@ -55,7 +56,7 @@ class UploadFailedExecutorImplTest {
         sourceTypes.addAll(Arrays.asList(SourceType.ADB, SourceType.ADG));
         sourceEntity = Entity.builder()
                 .entityType(EntityType.UPLOAD_EXTERNAL_TABLE)
-                .externalTableFormat("avro")
+                .externalTableFormat(ExternalTableFormat.AVRO)
                 .externalTableLocationPath("kafka://kafka-1.dtm.local:9092/topic")
                 .externalTableLocationType(ExternalTableLocationType.KAFKA)
                 .externalTableUploadMessageLimit(1000)

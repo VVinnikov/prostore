@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.core.factory.impl;
 
 import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
-import io.arenadata.dtm.common.plugin.exload.Format;
+import io.arenadata.dtm.common.model.ddl.ExternalTableFormat;
 import io.arenadata.dtm.kafka.core.repository.ZookeeperKafkaProviderRepository;
 import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.core.exception.UnreachableLocationException;
@@ -56,7 +56,7 @@ public class MpprKafkaRequestFactoryImpl implements MpprKafkaRequestFactory {
                                     .topic(kafkaTopicUri.getTopic())
                                     .downloadMetadata(DownloadExternalEntityMetadata.builder()
                                             .name(context.getDestinationEntity().getName())
-                                            .format(Format.findByName(context.getDestinationEntity().getExternalTableFormat()))
+                                            .format(context.getDestinationEntity().getExternalTableFormat())
                                             .externalSchema(context.getDestinationEntity().getExternalTableSchema())
                                             .locationPath(context.getDestinationEntity().getExternalTableLocationPath())
                                             .chunkSize(context.getDestinationEntity().getExternalTableDownloadChunkSize())

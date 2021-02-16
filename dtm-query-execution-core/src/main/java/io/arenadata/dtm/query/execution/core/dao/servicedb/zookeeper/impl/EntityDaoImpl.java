@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.MapperFeature;
 import io.arenadata.dtm.async.AsyncUtils;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
@@ -128,7 +129,7 @@ public class EntityDaoImpl implements EntityDao {
         return executor.getData(getTargetPath(datamartMnemonic, entityName))
                 .map(entityData -> {
                     try {
-                        return DatabindCodec.mapper().readValue(entityData, Entity.class);
+                        return DatabindCodec.mapper().enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS).readValue(entityData, Entity.class);
                     } catch (IOException e) {
                         throw new DtmException(
                                 String.format("Can't deserialize entity [%s]", nameWithSchema),

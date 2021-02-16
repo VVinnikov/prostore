@@ -27,7 +27,7 @@ public class Entity implements Serializable {
     private String schema;
     private String viewQuery;
     private EntityType entityType;
-    private String externalTableFormat;
+    private ExternalTableFormat externalTableFormat;
     private String externalTableSchema;
     private ExternalTableLocationType externalTableLocationType;
     private String externalTableLocationPath;

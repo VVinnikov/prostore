@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.core.dto.eddl;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
-import io.arenadata.dtm.common.plugin.exload.Format;
+import io.arenadata.dtm.common.model.ddl.ExternalTableFormat;
 import io.arenadata.dtm.common.plugin.exload.Type;
 import lombok.Builder;
 import lombok.Data;
@@ -31,7 +31,7 @@ public class CreateDownloadExternalTableQuery extends EddlQuery {
     /**
      * Format
      */
-    private Format format;
+    private ExternalTableFormat format;
 
     /**
      * Avro schema in json format
@@ -49,7 +49,7 @@ public class CreateDownloadExternalTableQuery extends EddlQuery {
                                             Entity entity,
                                             Type locationType,
                                             String locationPath,
-                                            Format format,
+                                            ExternalTableFormat format,
                                             String tableSchema,
                                             Integer chunkSize) {
         super(EddlAction.CREATE_DOWNLOAD_EXTERNAL_TABLE, schemaName, tableName);

@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.api.mppw.kafka;
 
-import io.arenadata.dtm.common.plugin.exload.Format;
+import io.arenadata.dtm.common.model.ddl.ExternalTableFormat;
 import io.arenadata.dtm.query.execution.plugin.api.edml.BaseExternalEntityMetadata;
 import lombok.Builder;
 import lombok.Data;
@@ -13,7 +13,7 @@ public class UploadExternalEntityMetadata extends BaseExternalEntityMetadata {
 
     @Builder
     public UploadExternalEntityMetadata(String name, String locationPath,
-                                        Format format, String externalSchema, Integer uploadMessageLimit) {
+                                        ExternalTableFormat format, String externalSchema, Integer uploadMessageLimit) {
         super(name, locationPath, format, externalSchema);
         this.uploadMessageLimit = uploadMessageLimit;
     }

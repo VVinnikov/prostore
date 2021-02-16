@@ -86,10 +86,10 @@ public class LlrRequestContextFactoryImpl implements LlrRequestContextFactory {
                 })
                 .compose(v -> columnMetadataService.getColumnMetadata(
                         new QueryParserRequest(llrContext.getDmlRequestContext().getSqlNode(),
-                                llrContext.getSourceRequest().getLogicalSchema()))
-                        .map(metadata -> {
-                            llrContext.getSourceRequest().setMetadata(metadata);
-                            return llrContext;
-                        }));
+                                llrContext.getSourceRequest().getLogicalSchema())))
+                .map(metadata -> {
+                    llrContext.getSourceRequest().setMetadata(metadata);
+                    return llrContext;
+                });
     }
 }

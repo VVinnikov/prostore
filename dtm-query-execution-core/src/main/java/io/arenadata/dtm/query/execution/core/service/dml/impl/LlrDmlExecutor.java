@@ -156,22 +156,32 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
     private Future<QueryResult> executeInformationSchemaRequest(DmlRequestContext context,
                                                                 SqlNode originalNode,
                                                                 DeltaQueryPreprocessorResponse deltaResponse) {
-        return Future.future((Promise<QueryResult> p) -> llrRequestContextFactory.create(deltaResponse, context)
+        return initLlrRequestContext(context, originalNode, deltaResponse)
+                .compose(llrRequestContext -> checkAccessAndExecute(llrRequestContext));
+    }
+
+    private Future<QueryResult> checkAccessAndExecute(LlrRequestContext llrRequestContext) {
+        return Future.future(p -> metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
+                SqlProcessingType.LLR,
+                llrRequestContext.getDmlRequestContext().getMetrics())
+                .compose(v -> infoSchemaDefService.checkAccessToSystemLogicalTables(llrRequestContext.getOriginalQuery()))
+                .compose(v -> infoSchemaExecutor.execute(llrRequestContext.getSourceRequest()))
+                .onComplete(metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
+                        SqlProcessingType.LLR,
+                        llrRequestContext.getDmlRequestContext().getMetrics(),
+                        p))
+        );
+    }
+
+    private Future<LlrRequestContext> initLlrRequestContext(DmlRequestContext context,
+                                                            SqlNode originalNode,
+                                                            DeltaQueryPreprocessorResponse deltaResponse) {
+        return llrRequestContextFactory.create(deltaResponse, context)
                 .map(llrRequestContext -> {
                     llrRequestContext.setOriginalQuery(originalNode);
                     llrRequestContext.getSourceRequest().setQuery(context.getSqlNode());
                     return llrRequestContext;
-                })
-                .compose(llrRequestContext ->
-                        metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
-                                SqlProcessingType.LLR,
-                                llrRequestContext.getDmlRequestContext().getMetrics())
-                                .compose(v -> infoSchemaDefService.checkAccessToSystemLogicalTables(llrRequestContext.getOriginalQuery()))
-                                .compose(v -> infoSchemaExecutor.execute(llrRequestContext.getSourceRequest()))
-                                .onComplete(metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
-                                        SqlProcessingType.LLR,
-                                        llrRequestContext.getDmlRequestContext().getMetrics(),
-                                        p))));
+                });
     }
 
     private Future<QueryResult> executeLlrRequest(DmlRequestContext context,

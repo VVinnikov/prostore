@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw;
 
 import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
-import io.arenadata.dtm.common.plugin.exload.Format;
+import io.arenadata.dtm.common.model.ddl.ExternalTableFormat;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.AdqmMppwProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
@@ -174,7 +174,7 @@ class MppwStartRequestHandlerTest {
                 .topic(TEST_TOPIC)
                 .uploadMetadata(UploadExternalEntityMetadata.builder()
                         .externalSchema(getSchema())
-                        .format(Format.AVRO)
+                        .format(ExternalTableFormat.AVRO)
                         .uploadMessageLimit(1000)
                         .build())
                 .brokers(kafkaBrokers)

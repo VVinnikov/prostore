@@ -1,11 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.eddl;
 
 import io.arenadata.dtm.common.exception.DtmException;
-import io.arenadata.dtm.common.model.ddl.ColumnType;
-import io.arenadata.dtm.common.model.ddl.Entity;
-import io.arenadata.dtm.common.model.ddl.EntityField;
-import io.arenadata.dtm.common.model.ddl.EntityType;
-import io.arenadata.dtm.common.plugin.exload.Format;
+import io.arenadata.dtm.common.model.ddl.*;
 import io.arenadata.dtm.common.plugin.exload.Type;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.core.configuration.properties.EdmlProperties;
@@ -77,7 +73,7 @@ public class CreateDownloadExternalTableExecutorTest {
                 .entity(entity)
                 .locationType(Type.KAFKA_TOPIC)
                 .locationPath(locationPath)
-                .format(Format.AVRO)
+                .format(ExternalTableFormat.AVRO)
                 .tableSchema(avroSchema.toString())
                 .chunkSize(chunkSize)
                 .build();

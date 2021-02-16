@@ -37,7 +37,7 @@ public class CreateUploadExternalTableExecutor implements EddlExecutor {
             val entity = castQuery.getEntity();
             entity.setExternalTableLocationType(ExternalTableLocationType.valueOf(castQuery.getLocationType().getName().toUpperCase()));
             entity.setExternalTableLocationPath(castQuery.getLocationPath());
-            entity.setExternalTableFormat(castQuery.getFormat().getName());
+            entity.setExternalTableFormat(castQuery.getFormat());
             entity.setExternalTableSchema(castQuery.getTableSchema());
             entity.setExternalTableUploadMessageLimit(castQuery.getMessageLimit());
             datamartDao.existsDatamart(schema)

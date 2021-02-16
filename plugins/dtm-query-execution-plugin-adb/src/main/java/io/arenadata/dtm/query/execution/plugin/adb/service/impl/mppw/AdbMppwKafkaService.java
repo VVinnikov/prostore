@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw;
 
+import io.arenadata.dtm.common.model.ddl.ExternalTableFormat;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
-import io.arenadata.dtm.common.plugin.exload.Format;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.executor.AdbMppwRequestExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
@@ -36,7 +36,7 @@ public class AdbMppwKafkaService implements AdbMppwExecutor {
                 promise.fail(new MppwDatasourceException("MppwRequest should not be null"));
                 return;
             }
-            if (request.getUploadMetadata().getFormat() != Format.AVRO) {
+            if (request.getUploadMetadata().getFormat() != ExternalTableFormat.AVRO) {
                 promise.fail(new MppwDatasourceException(String.format("Format %s not implemented",
                         request.getUploadMetadata().getFormat())));
             }

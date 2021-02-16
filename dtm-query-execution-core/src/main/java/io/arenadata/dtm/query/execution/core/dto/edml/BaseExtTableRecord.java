@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.core.dto.edml;
 
-import io.arenadata.dtm.common.plugin.exload.Format;
+import io.arenadata.dtm.common.model.ddl.ExternalTableFormat;
 import io.arenadata.dtm.common.plugin.exload.Type;
 import io.vertx.core.json.JsonObject;
 import lombok.Data;
@@ -12,6 +12,6 @@ public class BaseExtTableRecord {
     private String tableName;
     private Type locationType;
     private String locationPath;
-    private Format format;
+    private ExternalTableFormat format;
     private JsonObject tableSchema;
 }

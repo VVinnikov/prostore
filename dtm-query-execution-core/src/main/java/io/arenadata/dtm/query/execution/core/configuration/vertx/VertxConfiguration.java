@@ -50,6 +50,7 @@ public class VertxConfiguration implements ApplicationListener<ApplicationReadyE
                 })
                 .onSuccess(success -> log.debug("Dtm started successfully"))
                 .onFailure(err -> {
+                    log.error("Core startup error: ", err);
                     val exitCode = SpringApplication.exit(event.getApplicationContext(), () -> 1);
                     System.exit(exitCode);
                 });

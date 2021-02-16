@@ -236,8 +236,7 @@ public class DtmResultSet implements ResultSet {
     public Date getDate(int columnIndex) throws SQLException {
         final Object value = this.getValue(columnIndex);
         if (value != null) {
-            return Date.valueOf(LocalDateTime.ofInstant(Instant.ofEpochMilli((Long) value),
-                    this.zoneId).toLocalDate());
+            return Date.valueOf(LocalDate.ofEpochDay(((Number) value).intValue()));
         } else {
             return null;
         }

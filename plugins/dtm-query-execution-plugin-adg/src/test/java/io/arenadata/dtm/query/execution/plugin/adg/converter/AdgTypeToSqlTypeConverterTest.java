@@ -60,9 +60,9 @@ class AdgTypeToSqlTypeConverterTest {
         expectedValues.put(ColumnType.BIGINT, bigintVal);
         expectedValues.put(ColumnType.DOUBLE, doubleVal);
         expectedValues.put(ColumnType.FLOAT, floatVal);
-        expectedValues.put(ColumnType.DATE, Date.valueOf(LocalDate.ofEpochDay(dateLongVal)));
+        expectedValues.put(ColumnType.DATE, dateLongVal.intValue());
         expectedValues.put(ColumnType.TIME, timeLongVal);
-        expectedValues.put(ColumnType.TIMESTAMP, Timestamp.valueOf(LocalDateTime.ofInstant(Instant.ofEpochMilli(timestampLongVal), ZoneId.systemDefault())));
+        expectedValues.put(ColumnType.TIMESTAMP, timestampLongVal);
         expectedValues.put(ColumnType.BOOLEAN, booleanVal);
         expectedValues.put(ColumnType.UUID, UUID.fromString(uuidStrVal));
         expectedValues.put(ColumnType.ANY, JsonObject.mapFrom(objMapVal));
@@ -97,7 +97,7 @@ class AdgTypeToSqlTypeConverterTest {
         );
         assertAll("Date converting",
                 () -> assertEquals(expectedValues.get(ColumnType.DATE), typeConverter.convert(ColumnType.DATE, dateLongVal)),
-                () -> assertTrue(typeConverter.convert(ColumnType.DATE, dateLongVal) instanceof Date)
+                () -> assertTrue(typeConverter.convert(ColumnType.DATE, dateLongVal) instanceof Integer)
         );
         assertAll("Time converting",
                 () -> assertEquals(expectedValues.get(ColumnType.TIME), timeLongVal),
@@ -106,7 +106,7 @@ class AdgTypeToSqlTypeConverterTest {
         assertAll("Timestamp converting",
                 () -> assertEquals(expectedValues.get(ColumnType.TIMESTAMP), typeConverter.convert(ColumnType.TIMESTAMP,
                         timestampLongVal * 1000)),
-                () -> assertTrue(typeConverter.convert(ColumnType.TIMESTAMP, timestampLongVal * 1000) instanceof Timestamp)
+                () -> assertTrue(typeConverter.convert(ColumnType.TIMESTAMP, timestampLongVal * 1000) instanceof Long)
         );
         assertAll("Boolean converting",
                 () -> assertEquals(expectedValues.get(ColumnType.BOOLEAN), typeConverter.convert(ColumnType.BOOLEAN, booleanVal)),

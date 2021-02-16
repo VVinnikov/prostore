@@ -6,7 +6,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collection;
@@ -15,13 +14,13 @@ import java.util.Collections;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class TimestampFromLocalDateTimeTransformer extends AbstractColumnTransformer<Timestamp, LocalDateTime> {
+public class TimestampFromLocalDateTimeTransformer extends AbstractColumnTransformer<Long, LocalDateTime> {
 
     private ZoneId zoneId = ZoneId.of("UTC");
 
     @Override
-    public Timestamp transformValue(LocalDateTime value) {
-        return value == null ? null : Timestamp.from(value.atZone(zoneId).toInstant());
+    public Long transformValue(LocalDateTime value) {
+        return value == null ? null : value.atZone(zoneId).toInstant().toEpochMilli();
     }
 
     @Override

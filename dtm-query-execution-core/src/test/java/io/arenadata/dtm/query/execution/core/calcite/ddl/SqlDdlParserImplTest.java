@@ -153,26 +153,29 @@ public class SqlDdlParserImplTest {
         dropTable(DROP_TABLE_QUERY);
     }
 
+
+    @Test
+    void dropTableWithQuotedDestination() {
+        String query = DROP_TABLE_QUERY + " DATASOURCE_TYPE = 'adb'";
+        dropTable(query, sqlDropTable -> assertEquals(SourceType.ADB, sqlDropTable.getDestination()));
+    }
+
     @Test
     void dropTableWithDestination() {
-        Set<SourceType> selectedSourceTypes = new HashSet<>();
-        selectedSourceTypes.add(SourceType.ADB);
-        selectedSourceTypes.add(SourceType.ADG);
-        String query = String.format(DROP_TABLE_QUERY + " DATASOURCE_TYPE (%s)",
-                selectedSourceTypes.stream().map(SourceType::name).collect(Collectors.joining(", ")));
-        dropTable(query, sqlDropTable -> assertEquals(selectedSourceTypes, sqlDropTable.getDestination()));
+        String query = DROP_TABLE_QUERY + " DATASOURCE_TYPE = adb";
+        dropTable(query, sqlDropTable -> assertEquals(SourceType.ADB, sqlDropTable.getDestination()));
     }
 
     @Test
     void dropTableWithInformationSchema() {
-        String query = String.format(DROP_TABLE_QUERY + " DATASOURCE_TYPE (%s)",
+        String query = String.format(DROP_TABLE_QUERY + " DATASOURCE_TYPE = %s",
                 SourceType.INFORMATION_SCHEMA.name());
         assertThrows(SqlParseException.class, () -> dropTable(query));
     }
 
     @Test
     void dropTableWithInvalidDestination() {
-        String query = String.format(DROP_TABLE_QUERY + " DATASOURCE_TYPE (%s)", "adcvcb");
+        String query = String.format(DROP_TABLE_QUERY + " DATASOURCE_TYPE = %s", "adcvcb");
         assertThrows(SqlParseException.class, () -> dropTable(query));
     }
 

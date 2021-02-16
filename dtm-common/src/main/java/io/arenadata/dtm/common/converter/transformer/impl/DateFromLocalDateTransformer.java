@@ -3,16 +3,15 @@ package io.arenadata.dtm.common.converter.transformer.impl;
 import io.arenadata.dtm.common.converter.transformer.AbstractColumnTransformer;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 
-import java.sql.Date;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Collections;
 
-public class DateFromLocalDateTransformer extends AbstractColumnTransformer<Date, LocalDate> {
+public class DateFromLocalDateTransformer extends AbstractColumnTransformer<Integer, LocalDate> {
 
     @Override
-    public Date transformValue(LocalDate value) {
-        return value == null ? null : Date.valueOf(value);
+    public Integer transformValue(LocalDate value) {
+        return value == null ? null : Long.valueOf(value.toEpochDay()).intValue();
     }
 
     @Override

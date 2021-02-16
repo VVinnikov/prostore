@@ -8,6 +8,7 @@ import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.post.PostSqlActionType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlDropTable;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
@@ -73,6 +74,8 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
             Entity entity = createClassTable(datamartName, tableName);
             context.setEntity(entity);
             context.setDatamartName(datamartName);
+            SqlDropTable sqlDropTable = (SqlDropTable) context.getSqlCall();
+            context.setSourceType(sqlDropTable.getDestination());
             context.setDdlType(DdlType.DROP_TABLE);
             dropTable(context, containsIfExistsCheck(context.getRequest().getQueryRequest().getSql()))
                     .onSuccess(r -> promise.complete(QueryResult.emptyResult()))

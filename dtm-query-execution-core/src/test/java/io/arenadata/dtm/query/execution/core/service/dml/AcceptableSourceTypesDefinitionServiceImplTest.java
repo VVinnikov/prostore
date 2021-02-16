@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.dml;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
@@ -9,9 +10,6 @@ import io.arenadata.dtm.common.reader.QuerySourceRequest;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
-import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
-import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
-import io.arenadata.dtm.query.execution.core.service.datasource.impl.DataSourcePluginServiceImpl;
 import io.arenadata.dtm.query.execution.core.service.dml.impl.AcceptableSourceTypesDefinitionServiceImpl;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
@@ -24,14 +22,12 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class AcceptableSourceTypesDefinitionServiceImplTest {
 
-    private final DataSourcePluginService dataSourcePluginService = mock(DataSourcePluginServiceImpl.class);
     private final EntityDao entityDao = mock(EntityDaoImpl.class);
     private AcceptableSourceTypesDefinitionService acceptableSourceTypesDefinitionService;
 
@@ -86,7 +82,7 @@ class AcceptableSourceTypesDefinitionServiceImplTest {
 
         when(entityDao.getEntity(eq(schema.get(0).getMnemonic()),
                 eq(schema.get(0).getEntities().get(0).getName())))
-                .thenReturn(Future.failedFuture(new TableNotExistsException(schema.get(0).getEntities().get(0).getName())));
+                .thenReturn(Future.failedFuture(new DtmException(schema.get(0).getEntities().get(0).getName())));
 
         when(entityDao.getEntity(eq(schema.get(0).getMnemonic()),
                 eq(schema.get(0).getEntities().get(1).getName())))

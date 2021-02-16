@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.core.service.eddl.impl;
 
-import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.core.configuration.properties.EdmlProperties;
@@ -11,7 +10,6 @@ import io.arenadata.dtm.query.execution.core.dto.eddl.CreateDownloadExternalTabl
 import io.arenadata.dtm.query.execution.core.dto.eddl.EddlAction;
 import io.arenadata.dtm.query.execution.core.dto.eddl.EddlQuery;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
-import io.arenadata.dtm.query.execution.core.exception.table.ExternalTableAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.service.eddl.EddlExecutor;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
@@ -47,31 +45,17 @@ public class CreateDownloadExternalTableExecutor implements EddlExecutor {
             entity.setExternalTableDownloadChunkSize(getChunkSize(castQuery));
             datamartDao.existsDatamart(schema)
                     .compose(isExistsDatamart -> isExistsDatamart ?
-                            entityDao.existsEntity(schema, entity.getName()) : Future.failedFuture(new DatamartNotExistsException(schema)))
-                    .onSuccess(isExistsEntity -> createTableIfNotExists(entity, isExistsEntity)
-                            .onSuccess(success -> promise.complete(QueryResult.emptyResult()))
-                            .onFailure(promise::fail))
+                            entityDao.createEntity(entity)
+                                    .onSuccess(ar -> log.debug("Table [{}] in datamart [{}] successfully created",
+                                            entity.getName(),
+                                            entity.getSchema())) : Future.failedFuture(new DatamartNotExistsException(schema)))
+                    .onSuccess(success -> promise.complete(QueryResult.emptyResult()))
                     .onFailure(promise::fail);
         });
     }
 
     private Integer getChunkSize(CreateDownloadExternalTableQuery castQuery) {
         return castQuery.getChunkSize() == null ? edmlProperties.getDefaultChunkSize() : castQuery.getChunkSize();
-    }
-
-    private Future<Void> createTableIfNotExists(Entity entity, boolean isTableExists) {
-        if (isTableExists) {
-            return Future.failedFuture(new ExternalTableAlreadyExistsException(entity.getNameWithSchema()));
-        } else {
-            return createTable(entity);
-        }
-    }
-
-    private Future<Void> createTable(Entity entity) {
-        return entityDao.createEntity(entity)
-                .onSuccess(ar2 -> log.debug("Table [{}] in datamart [{}] successfully created",
-                        entity.getName(),
-                        entity.getSchema()));
     }
 
     @Override

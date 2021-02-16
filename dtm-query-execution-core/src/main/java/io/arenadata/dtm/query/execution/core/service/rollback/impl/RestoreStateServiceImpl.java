@@ -112,6 +112,8 @@ public class RestoreStateServiceImpl implements RestoreStateService {
         val queryRequest = new QueryRequest();
         queryRequest.setRequestId(UUID.randomUUID());
         queryRequest.setSql(op.getQuery());
+        //if will need in future, use method extract() of DatamartMnemonicExtractor
+        queryRequest.setDatamartMnemonic(dest.getSchema());
         val datamartRequest = new DatamartRequest(queryRequest);
         val sqlNode = definitionService.processingQuery(op.getQuery());
         val context = new EdmlRequestContext(

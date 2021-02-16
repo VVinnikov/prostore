@@ -64,7 +64,6 @@ public class AvroUtils {
         Schema.Field field = new Schema.Field(column.getName(),
             Schema.createUnion(Schema.create(Schema.Type.NULL), metadataColumnTypeToAvroSchema(column.getType())),
             null, Schema.Field.NULL_DEFAULT_VALUE);
-        field.addProp("defaultValue", "null");
         return field;
     }
 

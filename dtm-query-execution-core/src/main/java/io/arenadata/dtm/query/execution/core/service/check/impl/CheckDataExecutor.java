@@ -10,13 +10,13 @@ import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckData;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.check.CheckContext;
-import io.arenadata.dtm.query.execution.core.exception.table.TableNotExistsException;
+import io.arenadata.dtm.query.execution.core.exception.entity.EntityNotExistsException;
+import io.arenadata.dtm.query.execution.core.service.check.CheckExecutor;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.verticle.TaskVerticleExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckException;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
-import io.arenadata.dtm.query.execution.core.service.check.CheckExecutor;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import org.apache.calcite.util.Pair;
@@ -50,10 +50,12 @@ public class CheckDataExecutor implements CheckExecutor {
     @Override
     public Future<String> execute(CheckContext context) {
         SqlCheckData sqlCheckData = (SqlCheckData) context.getSqlNode();
-        return entityDao.getEntity(context.getRequest().getQueryRequest().getDatamartMnemonic(), sqlCheckData.getTable())
+        String schema = context.getRequest().getQueryRequest().getDatamartMnemonic();
+        String table = sqlCheckData.getTable();
+        return entityDao.getEntity(schema, table)
                 .compose(entity -> EntityType.TABLE.equals(entity.getEntityType())
                         ? Future.succeededFuture(entity)
-                        : Future.failedFuture(new TableNotExistsException(sqlCheckData.getTable())))
+                        : Future.failedFuture(new EntityNotExistsException(schema, table)))
                 .compose(entity -> check(context, entity, sqlCheckData));
     }
 

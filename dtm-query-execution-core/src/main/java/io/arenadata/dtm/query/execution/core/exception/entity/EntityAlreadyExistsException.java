@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.exception.view;
+package io.arenadata.dtm.query.execution.core.exception.entity;
 
 import io.arenadata.dtm.common.exception.DtmException;
 
@@ -8,7 +8,7 @@ public class EntityAlreadyExistsException extends DtmException {
         super(String.format("Entity %s already exists", table));
     }
 
-    public EntityAlreadyExistsException(String message, Throwable cause) {
-        super(message, cause);
+    public EntityAlreadyExistsException(String table, Throwable cause) {
+        super(String.format("Entity %s already exists", table), cause);
     }
 }

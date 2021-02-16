@@ -11,6 +11,7 @@ import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.kafka.MpprKafkaRequest;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -34,14 +35,15 @@ public class AdqmMpprKafkaExecutor implements AdqmMpprExecutor {
 
     @Override
     public Future<QueryResult> execute(MpprRequest request) {
+        val kafkaRequest = (MpprKafkaRequest) request;
         return adqmQueryEnrichmentService.enrich(EnrichQueryRequest.builder()
-                .query(request.getSqlNode())
-                .deltaInformations(request.getDeltaInformations())
-                .envName(request.getEnvName())
-                .schema(request.getLogicalSchema())
+                .query(kafkaRequest.getDmlSubQuery())
+                .deltaInformations(kafkaRequest.getDeltaInformations())
+                .envName(kafkaRequest.getEnvName())
+                .schema(kafkaRequest.getLogicalSchema())
                 .build())
                 .compose(enrichedQuery -> mpprKafkaConnectorService.call(
-                        requestFactory.create((MpprKafkaRequest) request, enrichedQuery)));
+                        requestFactory.create(kafkaRequest, enrichedQuery)));
     }
 
     @Override

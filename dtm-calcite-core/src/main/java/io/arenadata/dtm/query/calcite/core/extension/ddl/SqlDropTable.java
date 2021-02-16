@@ -7,25 +7,21 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public class SqlDropTable extends SqlDrop {
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator("DROP TABLE", SqlKind.DROP_TABLE);
-    private final Set<SourceType> destination;
+    private final SourceType destination;
     private final SqlIdentifier name;
 
     public SqlDropTable(SqlParserPos pos,
                         boolean ifExists,
                         SqlIdentifier name,
-                        SqlNodeList destination) {
+                        SqlNode destination) {
         super(OPERATOR, pos, ifExists);
         this.name = name;
         this.destination = Optional.ofNullable(destination)
-                .map(nodeList -> nodeList.getList().stream()
-                        .map(node -> SourceType.valueOfAvailable(node.toString()))
-                        .collect(Collectors.toSet()))
+                .map(node -> SourceType.valueOfAvailable(node.toString().replace("'", "")))
                 .orElse(null);
     }
 
@@ -34,7 +30,7 @@ public class SqlDropTable extends SqlDrop {
         return ImmutableList.of(name);
     }
 
-    public Set<SourceType> getDestination() {
+    public SourceType getDestination() {
         return destination;
     }
 

@@ -2769,6 +2769,25 @@ SqlNode OrderItem() :
 }
 
 /**
+*  Parses a type in DATASOURCE_TYPE clause
+*/
+SqlNode DatasourceTypeIdentifier() :
+{
+    SqlNode node;
+}
+{
+    <EQ>
+    (
+        node = StringLiteral()
+        |
+        node = SimpleIdentifier()
+    )
+    {
+        return node;
+    }
+}
+
+/**
  * Parses a FOR SYSTEM_TIME clause following a table expression.
  */
 SqlNode Snapshot(SqlNode tableRef) :

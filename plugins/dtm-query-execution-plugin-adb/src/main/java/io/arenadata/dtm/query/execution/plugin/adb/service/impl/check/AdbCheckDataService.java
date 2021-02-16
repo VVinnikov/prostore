@@ -121,7 +121,7 @@ public class AdbCheckDataService implements CheckDataService {
                 break;
             case TIME:
             case TIMESTAMP:
-                result = String.format("extract(epoch from %s)*1000000::bigint", field.getName());
+                result = String.format("(extract(epoch from %s)*1000000)::bigint", field.getName());
                 break;
             default:
                 result = field.getName();

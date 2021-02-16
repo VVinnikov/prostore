@@ -74,7 +74,7 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
             Entity entity = createClassTable(datamartName, tableName);
             context.setEntity(entity);
             context.setDatamartName(datamartName);
-            SqlDropTable sqlDropTable = (SqlDropTable) context.getSqlCall();
+            SqlDropTable sqlDropTable = (SqlDropTable) context.getSqlNode();
             context.setSourceType(sqlDropTable.getDestination());
             context.setDdlType(DdlType.DROP_TABLE);
             dropTable(context, containsIfExistsCheck(context.getRequest().getQueryRequest().getSql()))

@@ -29,7 +29,7 @@ public class AdgMpprKafkaService implements AdgMpprExecutor {
     public Future<QueryResult> execute(MpprRequest request) {
         return Future.future(promise -> {
             EnrichQueryRequest enrichQueryRequest = EnrichQueryRequest.builder()
-                    .query(request.getSqlNode())
+                    .query(((MpprKafkaRequest) request).getDmlSubQuery())
                     .deltaInformations(request.getDeltaInformations())
                     .envName(request.getEnvName())
                     .schema(request.getLogicalSchema())

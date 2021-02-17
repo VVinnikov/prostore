@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;
+import org.springframework.core.NestedExceptionUtils;
 
 import java.util.List;
 
@@ -44,7 +45,8 @@ public abstract class CalciteDMLQueryParserService implements QueryParserService
                         validatedQuery
                 ));
             } catch (Exception e) {
-                it.fail(new DtmException("Request parsing error", e));
+                String causeMsg = NestedExceptionUtils.getMostSpecificCause(e).getMessage();
+                it.fail(new DtmException("Request parsing error: " + causeMsg, e));
             }
         }, ar -> {
             if (ar.succeeded()) {

@@ -28,6 +28,7 @@ import org.springframework.plugin.core.PluginRegistry;
 import org.springframework.plugin.core.config.EnablePluginRegistries;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -62,7 +63,7 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
 
     @Override
     public Set<SourceType> getSourceTypes() {
-        return sourceTypes;
+        return new HashSet<>(sourceTypes);
     }
 
     @Override

@@ -136,7 +136,9 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
         }
         Optional<SourceType> requestDestination = Optional.ofNullable(context.getSourceType());
         if (!requestDestination.isPresent()) {
-            context.getEntity().setDestination(dataSourcePluginService.getSourceTypes());
+            val datasourcesForDeletation = dataSourcePluginService.getSourceTypes();
+            datasourcesForDeletation.retainAll(entity.getDestination());
+            context.getEntity().setDestination(datasourcesForDeletation);
             return dropEntityFromEverywhere(context, entity.getName());
         } else {
             final Set<SourceType> reqSourceTypes = newHashSet(requestDestination.get());

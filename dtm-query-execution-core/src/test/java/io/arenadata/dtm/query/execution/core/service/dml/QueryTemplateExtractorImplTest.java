@@ -33,6 +33,13 @@ class QueryTemplateExtractorImplTest {
             " AND 3 < \"x\"" +
             " AND \"z\" = \"x\"";
 
+    public static final String EXPECTED_SQL_WITH_IN = "SELECT *\n" +
+            "FROM \"testdelta\".\"accounts\"\n" +
+            "WHERE \"account_id\" IN (1, 2, 3)";
+    public static final String EXPECTED_SQL_WITH_IN_TEMPLATE = "SELECT *\n" +
+            "FROM \"testdelta\".\"accounts\"\n" +
+            "WHERE \"account_id\" IN (?, ?, ?)";
+
     public static final String EXPECTED_FULL_TEMPLATE = "SELECT *\n" +
             "FROM \"tbl1\"\n" +
             "WHERE \"x\" = ? AND 2 = 2 AND ? < \"x\" AND \"z\" = \"x\"";
@@ -110,6 +117,11 @@ class QueryTemplateExtractorImplTest {
     @Test
     void extractWithBetween() {
         assertExtract(EXPECTED_BETWEEN_SQL, EXPECTED_SQL_WITH_BETWEEN_TEMPLATE, 2);
+    }
+
+    @Test
+    void extractWithIn() {
+        assertExtract(EXPECTED_SQL_WITH_IN, EXPECTED_SQL_WITH_IN_TEMPLATE, 3);
     }
 
     private void assertExtract(String sql, String template, int paramsSize) {

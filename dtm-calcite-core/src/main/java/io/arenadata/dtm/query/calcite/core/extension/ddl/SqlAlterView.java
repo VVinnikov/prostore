@@ -21,6 +21,10 @@ public class SqlAlterView extends SqlAlter {
         this.query = (SqlNode) checkQueryAndGet(Objects.requireNonNull(query));
     }
 
+    public SqlNode getQuery() {
+        return query;
+    }
+
     private SqlNode checkQueryAndGet(SqlNode query) throws ParseException {
         if (query instanceof SqlSelect) {
             if (((SqlSelect) query).getFrom() == null) {

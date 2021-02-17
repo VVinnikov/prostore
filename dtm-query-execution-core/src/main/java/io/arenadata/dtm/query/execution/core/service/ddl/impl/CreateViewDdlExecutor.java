@@ -7,6 +7,9 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.QueryResult;
+import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlAlterView;
+import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateView;
+import io.arenadata.dtm.query.calcite.core.extension.dml.SqlSelectExt;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.calcite.core.node.SqlTreeNode;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
@@ -15,6 +18,7 @@ import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
 import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.core.exception.entity.EntityAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.exception.entity.EntityNotExistsException;
+import io.arenadata.dtm.query.execution.core.exception.view.DuplicateColumnNameNotAllowedException;
 import io.arenadata.dtm.query.execution.core.exception.view.ViewDisalowedOrDirectiveException;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.dml.ColumnMetadataService;
@@ -30,6 +34,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.jetbrains.annotations.NotNull;
@@ -38,6 +43,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -80,7 +86,8 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
         val datamartName = context.getDatamartName();
         val sqlNode = context.getSqlNode();
         return checkSnapshotNotExist(sqlNode)
-                .compose(v -> checkEntitiesType(datamartName, sqlNode));
+                .compose(v -> checkEntitiesType(datamartName, sqlNode))
+                .compose(v -> checkColumnDuplication(sqlNode));
     }
 
     protected Future<CreateViewContext> getCreateViewContext(DdlRequestContext context) {
@@ -142,6 +149,28 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
                         promise.complete();
                     })
                     .onFailure(promise::fail);
+        });
+    }
+
+    private Future<Void> checkColumnDuplication(SqlNode sqlNode) {
+        return Future.future(promise -> {
+            SqlSelectExt subQuery;
+            if (sqlNode instanceof SqlCreateView) {
+                subQuery = ((SqlSelectExt) ((SqlCreateView) sqlNode).getQuery());
+            } else {
+                subQuery = ((SqlSelectExt) ((SqlAlterView) sqlNode).getQuery());
+            }
+            val columnNameList = subQuery.getSelectList().getList().stream()
+                    .map(node -> {
+                        val identifierNames = ((SqlIdentifier) node).names;
+                        return identifierNames.get(identifierNames.size() - 1);
+                    })
+                    .collect(Collectors.toList());
+            val columnNameSet = new HashSet<>(columnNameList);
+            if (columnNameSet.size() < columnNameList.size()) {
+                promise.fail(new DuplicateColumnNameNotAllowedException());
+            }
+            promise.complete();
         });
     }
 

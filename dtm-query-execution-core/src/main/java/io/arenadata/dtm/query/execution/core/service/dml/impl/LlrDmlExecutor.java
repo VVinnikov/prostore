@@ -157,7 +157,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                                                                 SqlNode originalNode,
                                                                 DeltaQueryPreprocessorResponse deltaResponse) {
         return initLlrRequestContext(context, originalNode, deltaResponse)
-                .compose(llrRequestContext -> checkAccessAndExecute(llrRequestContext));
+                .compose(this::checkAccessAndExecute);
     }
 
     private Future<QueryResult> checkAccessAndExecute(LlrRequestContext llrRequestContext) {
@@ -197,7 +197,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
     private Future<LlrRequestContext> createLlrRequestContext(Optional<DeltaQueryPreprocessorResponse> deltaResponseOpt,
                                                               SqlNode originalNode,
                                                               DmlRequestContext context) {
-        val templateResult = createQueryTemplateResult(context.getSqlNode());
+        val templateResult = createQueryTemplateResult(originalNode);
         Optional<SourceQueryTemplateValue> sourceQueryTemplateValueOpt =
                 Optional.ofNullable(queryCacheService.get(QueryTemplateKey.builder()
                         .sourceQueryTemplate(templateResult.getTemplate())

@@ -174,4 +174,13 @@ class AdgTypeToSqlTypeConverterTest {
                 () -> assertNull(typeConverter.convert(ColumnType.ANY, objMapVal))
         );
     }
+
+    @Test
+    void convertDateWithNegative() {
+        short dateShortVal = -17678;
+        assertAll("Date converting",
+                () -> assertEquals(Integer.valueOf(dateShortVal), typeConverter.convert(ColumnType.DATE, dateShortVal)),
+                () -> assertTrue(typeConverter.convert(ColumnType.DATE, dateLongVal) instanceof Integer)
+        );
+    }
 }

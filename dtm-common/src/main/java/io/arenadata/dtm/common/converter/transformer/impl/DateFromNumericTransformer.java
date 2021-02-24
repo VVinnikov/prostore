@@ -15,7 +15,7 @@ public class DateFromNumericTransformer extends AbstractColumnTransformer<Intege
 
     @Override
     public Collection<Class<?>> getTransformClasses() {
-        return Arrays.asList(Long.class, Integer.class);
+        return Arrays.asList(Long.class, Integer.class, Short.class);
     }
 
     @Override

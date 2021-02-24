@@ -100,11 +100,11 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
     protected Future<CreateViewContext> getCreateViewContext(DdlRequestContext context, QueryParserResponse parserResponse) {
         return Future.future(p -> {
             val selectSqlNode = getParsedSelect(context.getSqlNode(), parserResponse);
-            val orReplace = SqlPreparer.isCreateOrReplace(context.getRequest().getQueryRequest().getSql());
-            replaceSqlSelectQuery(context, orReplace, selectSqlNode);
+            val isCreateOrReplace = SqlPreparer.isCreateOrReplace(context.getRequest().getQueryRequest().getSql());
+            replaceSqlSelectQuery(context, isCreateOrReplace, selectSqlNode);
             getEntityFuture(context, selectSqlNode, parserResponse.getSchema())
                     .map(entity -> CreateViewContext.builder()
-                            .createOrReplace(orReplace)
+                            .createOrReplace(isCreateOrReplace)
                             .viewEntity(entity)
                             .build())
                     .onComplete(p);

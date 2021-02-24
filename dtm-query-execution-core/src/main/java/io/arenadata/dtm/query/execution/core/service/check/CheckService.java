@@ -7,8 +7,6 @@ import io.arenadata.dtm.query.execution.core.service.DatamartExecutionService;
 
 public interface CheckService extends DatamartExecutionService<CheckContext, QueryResult> {
 
-    String CHECK_RESULT_COLUMN_NAME = "check_result";
-
     default SqlProcessingType getSqlProcessingType() {
         return SqlProcessingType.CHECK;
     }

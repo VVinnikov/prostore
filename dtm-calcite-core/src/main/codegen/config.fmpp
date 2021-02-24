@@ -60,6 +60,7 @@ data: {
       "CHECK_DATABASE"
       "CHECK_TABLE"
       "CHECK_DATA"
+      "CHECK_VERSIONS"
       "HISTORY"
     ]
 
@@ -418,6 +419,7 @@ data: {
         "SqlCheckDatabase()"
         "SqlCheckTable()"
         "SqlCheckData()"
+        "SqlCheckVersions()"
         "SqlTruncateHistory()"
     ]
 

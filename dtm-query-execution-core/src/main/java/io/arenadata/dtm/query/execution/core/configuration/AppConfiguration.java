@@ -8,9 +8,12 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.schema.codec.AvroEncoder;
 import io.arenadata.dtm.query.execution.core.configuration.properties.CoreDtmSettings;
+import io.vertx.core.Vertx;
 import io.vertx.core.json.jackson.DatabindCodec;
+import io.vertx.ext.web.client.WebClient;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -55,5 +58,10 @@ public class AppConfiguration {
     public DtmConfig dtmSettings() {
         final String tz = environment.getProperty("core.settings.timezone", String.class);
         return new CoreDtmSettings(ZoneId.of(Objects.requireNonNull(tz)));
+    }
+
+    @Bean("coreWebClient")
+    public WebClient webClient(@Qualifier("coreVertx") Vertx vertx) {
+        return WebClient.create(vertx);
     }
 }

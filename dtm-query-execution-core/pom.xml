@@ -322,6 +322,12 @@
         <profile>
             <id>it_test</id>
             <build>
+                <resources>
+                    <resource>
+                        <directory>config</directory>
+                        <filtering>true</filtering>
+                    </resource>
+                </resources>
                 <plugins>
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
@@ -379,6 +385,12 @@
         <profile>
             <id>dev</id>
             <build>
+                <resources>
+                    <resource>
+                        <directory>config</directory>
+                        <filtering>true</filtering>
+                    </resource>
+                </resources>
                 <plugins>
                     <plugin>
                         <groupId>org.springframework.boot</groupId>
@@ -392,6 +404,18 @@
                                 </goals>
                             </execution>
                         </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <configuration>
+                            <archive>
+                                <manifest>
+                                    <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                                    <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                                </manifest>
+                            </archive>
+                        </configuration>
                     </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
@@ -456,7 +480,25 @@
         <profile>
             <id>local</id>
             <build>
+                <resources>
+                    <resource>
+                        <directory>config</directory>
+                        <filtering>true</filtering>
+                    </resource>
+                </resources>
                 <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <configuration>
+                            <archive>
+                                <manifest>
+                                    <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                                    <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                                </manifest>
+                            </archive>
+                        </configuration>
+                    </plugin>
                     <plugin>
                         <groupId>org.springframework.boot</groupId>
                         <artifactId>spring-boot-maven-plugin</artifactId>

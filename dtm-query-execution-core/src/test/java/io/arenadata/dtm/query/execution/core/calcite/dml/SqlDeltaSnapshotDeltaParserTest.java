@@ -132,6 +132,16 @@ public class SqlDeltaSnapshotDeltaParserTest {
     }
 
     @Test
+    void parseSnapshotWithFloatDeltaNum() throws SqlParseException {
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
+        FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
+        Assertions.assertThrows(SqlParseException.class, () -> {
+            SqlNode sqlNode = planner.parse("select * from test.pso FOR SYSTEM_TIME AS OF DELTA_NUM 1.0");
+        });
+    }
+
+    @Test
     void parseSnaapshotWithIncorrectDeltaNum() {
         DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();

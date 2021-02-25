@@ -23,7 +23,7 @@ public class ApiController {
         return kafkaMonitor.status(request);
     }
 
-    @GetMapping("/version")
+    @GetMapping("/versions")
     public VersionInfo version() {
         return versionService.getVersionInfo();
     }

@@ -72,7 +72,7 @@ core:
       topic: ${KAFKA_STATUS_EVENT_TOPIC:status.event}
     statusMonitor:
       statusUrl: ${STATUS_MONITOR_URL:http://127.0.0.1:9095/status}
-      versionUrl: ${STATUS_MONITOR_VERSION_URL:http://127.0.0.1:9095/version}
+      versionUrl: ${STATUS_MONITOR_VERSION_URL:http://127.0.0.1:9095/versions}
 
   cache:
     initialCapacity: ${CACHE_INITIAL_CAPACITY:100000}

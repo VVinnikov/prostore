@@ -40,7 +40,7 @@ public class RestConsumerMonitorImpl implements KafkaConsumerMonitor {
     public Future<KafkaPartitionInfo> getAggregateGroupConsumerInfo(String consumerGroup, String topic) {
         return Future.future((Promise<KafkaPartitionInfo> p) -> {
             StatusRequest request = new StatusRequest(topic, consumerGroup);
-            webClient.postAbs(kafkaProperties.getStatusMonitorUrl()).sendJsonObject(JsonObject.mapFrom(request), ar -> {
+            webClient.postAbs(kafkaProperties.getStatusMonitor().getStatusUrl()).sendJsonObject(JsonObject.mapFrom(request), ar -> {
                 if (ar.succeeded()) {
                     HttpResponse<Buffer> response = ar.result();
                     if (response.statusCode() < 400 && response.statusCode() >= 200) {

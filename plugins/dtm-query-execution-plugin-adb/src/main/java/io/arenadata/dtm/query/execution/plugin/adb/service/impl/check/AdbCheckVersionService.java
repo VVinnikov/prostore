@@ -12,6 +12,6 @@ import java.util.List;
 public class AdbCheckVersionService implements CheckVersionService {
     @Override
     public Future<List<VersionInfo>> checkVersion(CheckVersionRequest request) {
-        return null;
+        return Future.succeededFuture(null);
     }
 }

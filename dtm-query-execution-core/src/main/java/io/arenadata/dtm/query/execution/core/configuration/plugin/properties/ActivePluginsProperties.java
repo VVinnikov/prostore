@@ -9,7 +9,7 @@ import java.util.Set;
 
 @Component
 @Data
-@ConfigurationProperties("core.plugins.active")
+@ConfigurationProperties("core.plugins")
 public class ActivePluginsProperties {
-    private Set<SourceType> activePlugins;
+    private Set<SourceType> active;
 }

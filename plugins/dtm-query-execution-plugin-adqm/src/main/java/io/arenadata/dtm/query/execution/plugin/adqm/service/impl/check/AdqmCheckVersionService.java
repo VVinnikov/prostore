@@ -8,10 +8,10 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-@Service("adqmCheckDataService")
+@Service("adqmCheckVersionService")
 public class AdqmCheckVersionService implements CheckVersionService {
     @Override
     public Future<List<VersionInfo>> checkVersion(CheckVersionRequest request) {
-        return null;
+        return Future.succeededFuture(null);
     }
 }

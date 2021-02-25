@@ -24,7 +24,7 @@ public class CheckServiceImpl implements CheckService {
     @Override
     public Future<QueryResult> execute(CheckContext context) {
         String datamart = context.getRequest().getQueryRequest().getDatamartMnemonic();
-        if (StringUtils.isEmpty(datamart)) {
+        if (StringUtils.isEmpty(datamart) && context.getCheckType() != CheckType.VERSIONS) {
             return Future.failedFuture(
                     new DtmException("Datamart must be specified for all tables and views"));
         } else {

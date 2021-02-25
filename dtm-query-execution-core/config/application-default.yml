@@ -64,8 +64,9 @@ core:
       inputStreamTimeoutMs: ${KAFKA_INPUT_STREAM_TIMEOUT_MS:2000}
     status.event.publish:
       enabled: ${KAFKA_STATUS_EVENT_ENABLED:false}
-      topic: ${KAFKA_STATUS_EVENT_TOPIC:status.event}
-    statusMonitorUrl: ${STATUS_MONITOR_URL:http://127.0.0.1:9095/status}
+    statusMonitor:
+      statusUrl: ${STATUS_MONITOR_URL:http://127.0.0.1:9095/status}
+      versionUrl: ${STATUS_MONITOR_VERSION_URL:http://127.0.0.1:9095/version}
 
   vertx:
     pool:

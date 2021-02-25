@@ -9,6 +9,7 @@ import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.common.version.VersionInfo;
 import io.arenadata.dtm.kafka.core.configuration.properties.KafkaProperties;
+import io.arenadata.dtm.kafka.core.configuration.properties.KafkaStatusMonitorProperties;
 import io.arenadata.dtm.query.calcite.core.extension.check.CheckType;
 import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckVersions;
 import io.arenadata.dtm.query.execution.core.configuration.plugin.properties.ActivePluginsProperties;
@@ -66,8 +67,8 @@ public class CheckVersionsExecutorTest {
 
     @BeforeEach
     void setUp() {
-        activePluginsProperties.setActivePlugins(SOURCE_TYPES);
-        kafkaProperties.setStatusMonitorUrl("http://status-monitor:9095/version");
+        activePluginsProperties.setActive(SOURCE_TYPES);
+        kafkaProperties.setStatusMonitor(new KafkaStatusMonitorProperties());
         versionsExecutor = new CheckVersionsExecutor(dataSourcePluginService,
                 queryResultFactory,
                 webClient,

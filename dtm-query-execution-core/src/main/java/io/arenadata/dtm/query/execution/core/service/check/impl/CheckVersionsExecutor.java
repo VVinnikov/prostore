@@ -70,7 +70,7 @@ public class CheckVersionsExecutor implements CheckExecutor {
     @NotNull
     private List<Future> getVersionsFutures(CheckContext context) {
         List<Future> componentsVersionsFutures = new ArrayList<>();
-        activePluginsProperties.getActivePlugins().forEach(ds -> {
+        activePluginsProperties.getActive().forEach(ds -> {
             componentsVersionsFutures.add(dataSourcePluginService.checkVersion(ds,
                     context.getMetrics(),
                     new CheckVersionRequest(context.getRequest().getQueryRequest().getRequestId(),
@@ -84,7 +84,7 @@ public class CheckVersionsExecutor implements CheckExecutor {
 
     private Future<List<VersionInfo>> getStatusMonitorVersion() {
         return Future.future(promise -> {
-            executeGetVersionRequest(kafkaProperties.getStatusMonitorUrl())
+            executeGetVersionRequest(kafkaProperties.getStatusMonitor().getVersionUrl())
                     .compose(this::handleResponse)
                     .onSuccess(result -> {
                         promise.complete(Collections.singletonList(result));

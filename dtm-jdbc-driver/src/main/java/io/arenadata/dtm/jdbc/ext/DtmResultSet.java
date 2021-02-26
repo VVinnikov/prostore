@@ -249,11 +249,8 @@ public class DtmResultSet implements ResultSet {
     public Time getTime(int columnIndex) throws SQLException {
         Object value = this.getValue(columnIndex);
         if (value != null) {
-            long nanoOfDay = ((Number) value).longValue();
-            return new Time(LocalTime.ofNanoOfDay(nanoOfDay * 1000).atDate(LocalDate.now(zoneId))
-                    .atZone(zoneId)
-                    .toInstant()
-                    .toEpochMilli());
+            long epochMillis = ((Number) value).longValue() / 1000;
+            return new Time(Timestamp.valueOf(LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), zoneId)).getTime());
         } else {
             return null;
         }

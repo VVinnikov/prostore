@@ -44,7 +44,7 @@ class AdgTypeToSqlTypeConverterTest {
         floatVal = 1.0f;
         dateLongVal = 18540L;
         timeLongVal = 58742894000L;
-        timestampLongVal = 1601878742000L;
+        timestampLongVal = 1601878742000000L;
         booleanVal = true;
         uuidStrVal = "a7180dcb-b286-4168-a34a-eb378a69abd4";
         objMapVal = new HashMap<>();
@@ -105,8 +105,8 @@ class AdgTypeToSqlTypeConverterTest {
         );
         assertAll("Timestamp converting",
                 () -> assertEquals(expectedValues.get(ColumnType.TIMESTAMP), typeConverter.convert(ColumnType.TIMESTAMP,
-                        timestampLongVal * 1000)),
-                () -> assertTrue(typeConverter.convert(ColumnType.TIMESTAMP, timestampLongVal * 1000) instanceof Long)
+                        timestampLongVal)),
+                () -> assertTrue(typeConverter.convert(ColumnType.TIMESTAMP, timestampLongVal) instanceof Long)
         );
         assertAll("Boolean converting",
                 () -> assertEquals(expectedValues.get(ColumnType.BOOLEAN), typeConverter.convert(ColumnType.BOOLEAN, booleanVal)),

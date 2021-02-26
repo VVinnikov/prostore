@@ -3,19 +3,20 @@ package io.arenadata.dtm.common.converter.transformer.impl;
 import io.arenadata.dtm.common.converter.transformer.AbstractColumnTransformer;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 
+import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 
-public class TimeFromLongTransformer extends AbstractColumnTransformer<Long, Long> {
+public class TimeFromNumberTransformer extends AbstractColumnTransformer<Long, Number> {
 
     @Override
-    public Long transformValue(Long value) {
-        return value;
+    public Long transformValue(Number value) {
+        return value.longValue();
     }
 
     @Override
     public Collection<Class<?>> getTransformClasses() {
-        return Collections.singletonList(Long.class);
+        return Arrays.asList(Long.class, Integer.class, BigInteger.class);
     }
 
     @Override

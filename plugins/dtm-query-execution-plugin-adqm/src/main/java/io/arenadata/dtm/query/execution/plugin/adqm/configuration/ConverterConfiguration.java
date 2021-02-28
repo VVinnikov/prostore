@@ -28,7 +28,7 @@ public class ConverterConfiguration {
         transformerMap.put(ColumnType.DOUBLE, getTransformerMap(new DoubleFromNumberTransformer()));
         transformerMap.put(ColumnType.FLOAT, getTransformerMap(new FloatFromNumberTransformer()));
         transformerMap.put(ColumnType.DATE, getTransformerMap(new DateFromLongTransformer()));
-        transformerMap.put(ColumnType.TIME, getTransformerMap(new TimeFromLongTransformer()));
+        transformerMap.put(ColumnType.TIME, getTransformerMap(new TimeFromNumberTransformer()));
         transformerMap.put(ColumnType.TIMESTAMP, getTransformerMap(new TimestampFromStringTransformer(
             DateTimeFormatter.ofPattern(DATE_TIME_FORMAT),
             dtmSettings.getTimeZone()),

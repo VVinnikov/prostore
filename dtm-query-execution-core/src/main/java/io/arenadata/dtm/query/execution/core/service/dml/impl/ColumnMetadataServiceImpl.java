@@ -50,6 +50,8 @@ public class ColumnMetadataServiceImpl implements ColumnMetadataService {
             case VARCHAR:
             case CHAR:
             case UUID:
+            case TIME:
+            case TIMESTAMP:
                 return field.getValue().getPrecision();
             default:
                 return null;

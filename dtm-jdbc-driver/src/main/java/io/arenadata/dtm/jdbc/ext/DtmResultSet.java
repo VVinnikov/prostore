@@ -6,6 +6,8 @@ import io.arenadata.dtm.jdbc.util.DtmSqlException;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import lombok.SneakyThrows;
 import lombok.val;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.io.Reader;
@@ -20,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 public class DtmResultSet implements ResultSet {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DtmResultSet.class);
     private final List<ColumnMetadata> metadata;
     private List<Field[]> fields;
     private int currentRow = -1;
@@ -113,6 +116,9 @@ public class DtmResultSet implements ResultSet {
     @Override
     public Object getObject(int columnIndex) throws SQLException {
         final ColumnMetadata columnMetadata = this.metadata.get(columnIndex - 1);
+        if (this.getValue(columnIndex) == null) {
+            return null;
+        }
         switch (columnMetadata.getType()) {
             case INT:
             case BIGINT:
@@ -246,8 +252,11 @@ public class DtmResultSet implements ResultSet {
     public Time getTime(int columnIndex) throws SQLException {
         Object value = this.getValue(columnIndex);
         if (value != null) {
-            long nanoOfDay = ((Number) value).longValue();
-            return Time.valueOf(LocalTime.ofNanoOfDay(nanoOfDay * 1000));
+            long longValue = ((Number) value).longValue();
+            long epochSeconds = longValue / 1000000;
+            return new Time(Timestamp.valueOf(LocalDateTime.ofInstant(Instant.ofEpochSecond(epochSeconds,
+                    getNanos(columnIndex, longValue)
+            ), zoneId)).getTime());
         } else {
             return null;
         }
@@ -260,7 +269,19 @@ public class DtmResultSet implements ResultSet {
             return null;
         } else {
             Number numberValue = (Number) value;
-            return Timestamp.from(Instant.ofEpochMilli(numberValue.longValue()));
+            long epochSeconds = numberValue.longValue() / 1000000;
+            int nanos = getNanos(columnIndex, numberValue);
+            return Timestamp.valueOf(LocalDateTime.ofInstant(Instant.ofEpochSecond(epochSeconds, nanos), zoneId));
+        }
+    }
+
+    private int getNanos(int columnIndex, Number tsValue) {
+        ColumnMetadata columnMetadata = metadata.get(columnIndex - 1);
+        if (columnMetadata.getSize() != null) {
+            int q = (int) Math.pow(10, 6 - columnMetadata.getSize());
+            return (int) (tsValue.longValue() % 1000000 / q * 1000 * q);
+        } else {
+            return 0;
         }
     }
 

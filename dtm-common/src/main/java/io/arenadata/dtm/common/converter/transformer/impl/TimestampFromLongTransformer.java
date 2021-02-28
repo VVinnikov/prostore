@@ -14,7 +14,7 @@ public class TimestampFromLongTransformer extends AbstractColumnTransformer<Long
 
     @Override
     public Long transformValue(Long value) {
-        return value == null ? null : value / 1000;
+        return value;
     }
 
     @Override

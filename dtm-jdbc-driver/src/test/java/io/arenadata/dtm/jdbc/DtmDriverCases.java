@@ -3,10 +3,9 @@ package io.arenadata.dtm.jdbc;
 import io.arenadata.dtm.jdbc.core.BaseConnection;
 import io.arenadata.dtm.jdbc.ext.DtmConnectionImpl;
 import io.arenadata.dtm.jdbc.ext.DtmPreparedStatement;
+import io.arenadata.dtm.jdbc.ext.DtmStatement;
 
 import java.sql.*;
-import java.time.*;
-import java.time.format.DateTimeFormatter;
 
 public class DtmDriverCases {
 
@@ -15,8 +14,23 @@ public class DtmDriverCases {
         String user = "";
         String schema = "";
         String url = String.format("jdbc:adtm://%s/", host);
-
         BaseConnection conn = new DtmConnectionImpl(host, user, schema, null, url);
+        //final ResultSet resultSet = testPrepareStmnt(conn);
+        final ResultSet resultSet = testStmnt(conn);
+        Time t9 = (Time) resultSet.getObject(10);
+        Time t10 = (Time) resultSet.getObject(11);
+        Timestamp t11 = (Timestamp) resultSet.getObject(12);
+        Timestamp t12 = (Timestamp) resultSet.getObject(13);
+        System.out.println(resultSet);
+    }
+
+    private static ResultSet testStmnt(BaseConnection conn) throws SQLException {
+        String sql = "select t1.* from dtm_983.time_ts_table t1 datasource_type='ADQM'";
+        DtmStatement stmnt = (DtmStatement) conn.createStatement();
+        return stmnt.executeQuery(sql);
+    }
+
+    private static ResultSet testPrepareStmnt(BaseConnection conn) throws SQLException {
         final String sql = "select * from dtm_928_2.all_types_table " +
                 "where id = ? " +
                 " and double_col = ?" +
@@ -47,6 +61,6 @@ public class DtmDriverCases {
         stmnt.setString(10, "d92beee8-749f-4539-aa15-3d2941dbb0f1");
         stmnt.setString(11, "c");
         final ResultSet resultSet = stmnt.executeQuery();
-        System.out.println(resultSet);
+        return resultSet;
     }
 }

@@ -116,6 +116,9 @@ public class DtmResultSet implements ResultSet {
     @Override
     public Object getObject(int columnIndex) throws SQLException {
         final ColumnMetadata columnMetadata = this.metadata.get(columnIndex - 1);
+        if (this.getValue(columnIndex) == null) {
+            return null;
+        }
         switch (columnMetadata.getType()) {
             case INT:
             case BIGINT:

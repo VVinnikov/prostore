@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collection;
@@ -20,7 +21,16 @@ public class TimestampFromLocalDateTimeTransformer extends AbstractColumnTransfo
 
     @Override
     public Long transformValue(LocalDateTime value) {
-        return value == null ? null : value.atZone(zoneId).toInstant().toEpochMilli();
+        if (value != null) {
+            Instant instant = getInstant(value);
+            int micros = instant.getNano() / 1000;
+            return instant.toEpochMilli() / 1000 * 1000000 + micros;
+        }
+        return null;
+    }
+
+    private Instant getInstant(LocalDateTime value) {
+        return value.atZone(zoneId).toInstant();
     }
 
     @Override

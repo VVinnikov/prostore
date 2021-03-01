@@ -208,16 +208,16 @@ public class DtmResultSet implements ResultSet {
     @Override
     public float getFloat(int columnIndex) throws SQLException {
         final Object value = this.getValue(columnIndex);
-        return value == null ? 0 : ((Double) value).floatValue();
+        return value == null ? 0 : ((Number) value).floatValue();
     }
 
     @Override
     public double getDouble(int columnIndex) throws SQLException {
-        String string = this.getString(columnIndex);
-        if (string == null) {
+        Object value = this.getValue(columnIndex);
+        if (value == null) {
             return 0.0D;
         } else {
-            return Double.parseDouble(string);
+            return ((Number) value).doubleValue();
         }
     }
 

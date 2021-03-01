@@ -83,7 +83,8 @@ public class DtmResultSetMetaData implements ResultSetMetaData {
 
     @Override
     public int getScale(int column) throws SQLException {
-        return this.getFieldMetadata(column).getAccuracy();
+        Integer size = columnMetadata.get(column).getSize();
+        return size == null ? 0: size;
     }
 
     @Override

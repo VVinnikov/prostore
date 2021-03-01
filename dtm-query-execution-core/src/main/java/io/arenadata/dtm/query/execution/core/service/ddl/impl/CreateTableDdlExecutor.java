@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
-import io.arenadata.dtm.common.exception.DtmException;
+import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.QueryResult;
@@ -10,6 +10,7 @@ import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
+import io.arenadata.dtm.query.execution.core.exception.table.ValidationDtmException;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
@@ -28,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -67,7 +69,7 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
             Set<SourceType> destination = Optional.ofNullable(requestDestination)
                     .orElse(dataSourcePluginService.getSourceTypes());
             entity.setDestination(destination);
-            checkRequiredKeys(entity.getFields());
+            validateFields(entity.getFields());
             context.setEntity(entity);
             context.setDatamartName(datamartName);
             datamartDao.existsDatamart(datamartName)
@@ -78,6 +80,24 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
                             .onFailure(promise::fail))
                     .onFailure(promise::fail);
         });
+    }
+
+    private void validateFields(List<EntityField> fields) {
+        checkRequiredKeys(fields);
+        checkVarcharSize(fields);
+    }
+
+    private void checkVarcharSize(List<EntityField> fields) {
+        List<String> notSetSizeFields = fields.stream()
+                .filter(field -> field.getType() == ColumnType.VARCHAR || field.getType() == ColumnType.CHAR)
+                .filter(field -> field.getSize() == null)
+                .map(EntityField::getName)
+                .collect(Collectors.toList());
+        if (!notSetSizeFields.isEmpty()) {
+            throw new ValidationDtmException(
+                    String.format("Specifying the size for columns%s with types[VARCHAR, CHAR] is required", notSetSizeFields)
+            );
+        }
     }
 
     private void checkRequiredKeys(List<EntityField> fields) {
@@ -95,7 +115,7 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
         }
 
         if (!notExistsKeys.isEmpty()) {
-            throw new DtmException(
+            throw new ValidationDtmException(
                     String.format("Primary keys and Sharding keys are required. The following keys do not exist: %s",
                             String.join(",", notExistsKeys)));
         }

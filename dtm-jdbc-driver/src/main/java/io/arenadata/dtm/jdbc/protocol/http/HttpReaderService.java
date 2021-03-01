@@ -115,7 +115,7 @@ public class HttpReaderService implements Protocol {
             HttpPost httpPost = new HttpPost(backendHostUrl + "/query/execute");
             return executeRequest(queryRequest, httpPost);
         } catch (Exception e) {
-            String errMsg = String.format("Error executing query [%s]: %s", queryRequest.getSql(), e.getMessage());
+            String errMsg = String.format("Error executing query [%s]", queryRequest.getSql());
             log.error(errMsg, e);
             throw new SQLException(errMsg, e);
         }

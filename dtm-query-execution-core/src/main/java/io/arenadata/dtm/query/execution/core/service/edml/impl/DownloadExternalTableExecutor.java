@@ -103,9 +103,11 @@ public class DownloadExternalTableExecutor implements EdmlExecutor {
                             promise.complete(queryResult);
                         })
                         .onFailure(fail -> promise.fail(new DtmException(
-                                String.format("Error executing mppr into table [%s] for dml query [%s]",
+                                String.format("Error executing mppr into table [%s] for dml query [%s]: %s",
                                         destination.getName(),
-                                        context.getDmlSubQuery()), fail)));
+                                        context.getDmlSubQuery(),
+                                        fail == null ? "" : fail.getMessage()),
+                                fail)));
             } else {
                 promise.fail(new DtmException("Other types of upload are not yet implemented!"));
             }

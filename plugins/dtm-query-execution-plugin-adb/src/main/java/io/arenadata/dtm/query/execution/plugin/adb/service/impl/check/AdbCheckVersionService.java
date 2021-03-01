@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service("adbCheckVersionService")
 public class AdbCheckVersionService implements CheckVersionService {
@@ -26,6 +27,7 @@ public class AdbCheckVersionService implements CheckVersionService {
     private final DatabaseExecutor databaseExecutor;
     private final AdbVersionQueriesFactory versionQueriesFactory;
     private final AdbVersionInfoFactory versionInfoFactory;
+    private final List<ColumnMetadata> metadata;
 
     @Autowired
     public AdbCheckVersionService(DatabaseExecutor databaseExecutor,
@@ -34,19 +36,20 @@ public class AdbCheckVersionService implements CheckVersionService {
         this.databaseExecutor = databaseExecutor;
         this.versionQueriesFactory = versionQueriesFactory;
         this.versionInfoFactory = versionInfoFactory;
+        metadata = createColumnMetadata();
     }
 
     @Override
     public Future<List<VersionInfo>> checkVersion(CheckVersionRequest request) {
         return Future.future(promise -> {
-            val columnMetadata = createColumnMetadata();
-            CompositeFuture.join(Arrays.asList(databaseExecutor.execute(versionQueriesFactory.createAdbVersionQuery(), columnMetadata),
-                    databaseExecutor.execute(versionQueriesFactory.createFdwVersionQuery(), columnMetadata),
-                    databaseExecutor.execute(versionQueriesFactory.createPxfVersionQuery(), columnMetadata)))
+            CompositeFuture.join(Arrays.asList(databaseExecutor.execute(versionQueriesFactory.createAdbVersionQuery(), metadata),
+                    databaseExecutor.execute(versionQueriesFactory.createFdwVersionQuery(), metadata),
+                    databaseExecutor.execute(versionQueriesFactory.createPxfVersionQuery(), metadata)))
                     .onSuccess(result -> {
-                        List<Map<String, Object>> resultList = new ArrayList<>();
                         List<List<Map<String, Object>>> list = result.list();
-                        list.forEach(resultList::addAll);
+                        List<Map<String, Object>> resultList = list.stream()
+                                .flatMap(List::stream)
+                                .collect(Collectors.toList());
                         promise.complete(versionInfoFactory.create(resultList));
                     })
                     .onFailure(promise::fail);

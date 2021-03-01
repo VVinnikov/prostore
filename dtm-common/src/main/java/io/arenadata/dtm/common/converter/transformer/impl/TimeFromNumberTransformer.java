@@ -16,7 +16,7 @@ public class TimeFromNumberTransformer extends AbstractColumnTransformer<Long, N
 
     @Override
     public Collection<Class<?>> getTransformClasses() {
-        return Arrays.asList(Long.class, Integer.class, BigInteger.class);
+        return Arrays.asList(Long.class, Integer.class, BigInteger.class, Short.class);
     }
 
     @Override

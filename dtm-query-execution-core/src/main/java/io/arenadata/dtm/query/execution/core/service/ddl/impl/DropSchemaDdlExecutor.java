@@ -9,13 +9,13 @@ import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.DropDatabase;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
+import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
+import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.core.dto.delta.HotDelta;
 import io.arenadata.dtm.query.execution.core.dto.delta.OkDelta;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
-import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
-import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
@@ -60,32 +60,32 @@ public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
             if (InformationSchemaView.SCHEMA_NAME.equalsIgnoreCase(datamartName)) {
                 promise.fail(new DtmException("Removing system databases is impossible"));
             } else {
-            clearCacheByDatamartName(datamartName);
-            context.getRequest().getQueryRequest().setDatamartMnemonic(datamartName);
-            context.setDatamartName(datamartName);
-            datamartDao.existsDatamart(datamartName)
-                    .compose(isExists -> {
-                        if (isExists) {
+                clearCacheByDatamartName(datamartName);
+                context.getRequest().getQueryRequest().setDatamartMnemonic(datamartName);
+                context.setDatamartName(datamartName);
+                datamartDao.existsDatamart(datamartName)
+                        .compose(isExists -> {
+                            if (isExists) {
+                                try {
+                                    evictQueryTemplateCacheService.evictByDatamartName(datamartName);
+                                    return dropDatamartInPlugins(context);
+                                } catch (Exception e) {
+                                    return Future.failedFuture(new DtmException("Evict cache error"));
+                                }
+                            } else {
+                                return getNotExistsDatamartFuture(datamartName);
+                            }
+                        })
+                        .compose(r -> dropDatamart(datamartName))
+                        .onSuccess(success -> {
                             try {
                                 evictQueryTemplateCacheService.evictByDatamartName(datamartName);
-                                return dropDatamartInPlugins(context);
+                                promise.complete(QueryResult.emptyResult());
                             } catch (Exception e) {
-                                return Future.failedFuture(new DtmException("Evict cache error"));
+                                promise.fail(new DtmException("Evict cache error"));
                             }
-                        } else {
-                            return getNotExistsDatamartFuture(datamartName);
-                        }
-                    })
-                    .compose(r -> dropDatamart(datamartName))
-                    .onSuccess(success -> {
-                        try {
-                            evictQueryTemplateCacheService.evictByDatamartName(datamartName);
-                            promise.complete(QueryResult.emptyResult());
-                        } catch (Exception e) {
-                            promise.fail(new DtmException("Evict cache error"));
-                        }
-                    })
-                    .onFailure(promise::fail);
+                        })
+                        .onFailure(promise::fail);
             }
         });
     }

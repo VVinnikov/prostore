@@ -59,7 +59,7 @@ public class DownloadKafkaExecutor implements EdmlDownloadExecutor {
                             pluginService.mppr(edmlProperties.getSourceType(), context.getMetrics(), mpprKafkaRequest));
         } else {
             return Future.failedFuture(new DtmException(
-                    String.format("Source not exist in [%s]", edmlProperties.getSourceType())));
+                    String.format("Queried entity is missing for the specified DATASOURCE_TYPE %s", edmlProperties.getSourceType())));
         }
     }
 

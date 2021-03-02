@@ -5,21 +5,22 @@ import io.arenadata.dtm.common.model.ddl.ColumnType;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 
 @Data
 @NoArgsConstructor
-public class TimestampFromLongTransformer extends AbstractColumnTransformer<Long, Long> {
+public class TimestampFromLongTransformer extends AbstractColumnTransformer<Long, Number> {
 
     @Override
-    public Long transformValue(Long value) {
-        return value;
+    public Long transformValue(Number value) {
+        return value.longValue();
     }
 
     @Override
     public Collection<Class<?>> getTransformClasses() {
-        return Collections.singletonList(Long.class);
+        return Arrays.asList(Long.class, Integer.class, BigInteger.class, Short.class);
     }
 
     @Override

@@ -811,7 +811,19 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public ResultSet getPrimaryKeys(String catalog, String schema, String table) throws SQLException {
-        return DtmResultSet.createEmptyResultSet();
+        String sql = "SELECT CONSTRAINT_CATALOG, TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, ORDINAL_POSITION, CONSTRAINT_NAME" +
+                " FROM information_schema.key_column_usage" +
+                " WHERE true";
+        if (catalog != null) {
+            sql += String.format(" AND CONSTRAINT_CATALOG = '%s'", catalog);
+        }
+        if (schema != null) {
+            sql += String.format(" AND TABLE_SCHEMA = '%s'", schema);
+        }
+        if (table != null) {
+            sql += String.format(" AND TABLE_NAME = '%s'", table);
+        }
+        return createMetaDataStatement().executeQuery(sql);
     }
 
     @Override
@@ -1102,5 +1114,9 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
     @Override
     public boolean isWrapperFor(Class<?> iface) throws SQLException {
         return false;
+    }
+
+    private Statement createMetaDataStatement() throws SQLException {
+        return connection.createStatement();
     }
 }

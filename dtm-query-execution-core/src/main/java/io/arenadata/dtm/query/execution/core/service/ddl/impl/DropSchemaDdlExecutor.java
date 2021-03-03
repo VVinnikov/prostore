@@ -58,7 +58,7 @@ public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
         return Future.future(promise -> {
             String datamartName = ((DropDatabase) context.getSqlNode()).getName().getSimple();
             if (InformationSchemaView.SCHEMA_NAME.equalsIgnoreCase(datamartName)) {
-                promise.fail(new DtmException("Removing system databases is impossible"));
+                promise.fail(new DtmException("System database INFORMATION_SCHEMA is non-deletable"));
             } else {
                 clearCacheByDatamartName(datamartName);
                 context.getRequest().getQueryRequest().setDatamartMnemonic(datamartName);

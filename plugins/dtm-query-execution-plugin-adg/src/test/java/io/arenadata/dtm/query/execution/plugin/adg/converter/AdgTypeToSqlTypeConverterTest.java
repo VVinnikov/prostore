@@ -36,7 +36,7 @@ class AdgTypeToSqlTypeConverterTest {
 
     @BeforeEach
     void setUp() {
-        typeConverter = new AdgTypeToSqlTypeConverter(new ConverterConfiguration().transformerMap());
+        typeConverter = new AdgTypeToSqlTypeConverter();
         charVal = "111";
         intVal = 1L;
         bigintVal = 100000000000L;
@@ -68,57 +68,44 @@ class AdgTypeToSqlTypeConverterTest {
         expectedValues.put(ColumnType.ANY, JsonObject.mapFrom(objMapVal));
 
         assertAll("Varchar converting",
-                () -> assertEquals(expectedValues.get(ColumnType.VARCHAR), typeConverter.convert(ColumnType.VARCHAR, charVal)),
-                () -> assertTrue(typeConverter.convert(ColumnType.VARCHAR, charVal) instanceof String)
+                () -> assertEquals(expectedValues.get(ColumnType.VARCHAR), typeConverter.convert(ColumnType.VARCHAR, charVal))
         );
         assertAll("Char converting",
-                () -> assertEquals(expectedValues.get(ColumnType.CHAR), typeConverter.convert(ColumnType.CHAR, charVal)),
-                () -> assertTrue(typeConverter.convert(ColumnType.CHAR, charVal) instanceof String)
+                () -> assertEquals(expectedValues.get(ColumnType.CHAR), typeConverter.convert(ColumnType.CHAR, charVal))
         );
         assertAll("Int converting",
-                () -> assertEquals(expectedValues.get(ColumnType.INT), typeConverter.convert(ColumnType.INT, intVal)),
-                () -> assertTrue(typeConverter.convert(ColumnType.INT, intVal) instanceof Long)
+                () -> assertEquals(expectedValues.get(ColumnType.INT), typeConverter.convert(ColumnType.INT, intVal))
         );
         assertAll("Bigint converting",
-                () -> assertEquals(expectedValues.get(ColumnType.BIGINT), typeConverter.convert(ColumnType.BIGINT, bigintVal)),
-                () -> assertTrue(typeConverter.convert(ColumnType.BIGINT, bigintVal) instanceof Long)
+                () -> assertEquals(expectedValues.get(ColumnType.BIGINT), typeConverter.convert(ColumnType.BIGINT, bigintVal))
         );
         assertAll("Bigint with small value converting",
-                () -> assertEquals(1L, typeConverter.convert(ColumnType.BIGINT, intVal)),
-                () -> assertTrue(typeConverter.convert(ColumnType.BIGINT, intVal) instanceof Long)
+                () -> assertEquals(1L, typeConverter.convert(ColumnType.BIGINT, intVal))
         );
         assertAll("Double converting",
-                () -> assertEquals(expectedValues.get(ColumnType.DOUBLE), typeConverter.convert(ColumnType.DOUBLE, doubleVal)),
-                () -> assertTrue(typeConverter.convert(ColumnType.DOUBLE, doubleVal) instanceof Double)
+                () -> assertEquals(expectedValues.get(ColumnType.DOUBLE), typeConverter.convert(ColumnType.DOUBLE, doubleVal))
         );
         assertAll("Float converting",
-                () -> assertEquals(expectedValues.get(ColumnType.FLOAT), typeConverter.convert(ColumnType.FLOAT, floatVal)),
-                () -> assertTrue(typeConverter.convert(ColumnType.FLOAT, floatVal) instanceof Float)
+                () -> assertEquals(expectedValues.get(ColumnType.FLOAT), typeConverter.convert(ColumnType.FLOAT, floatVal))
         );
         assertAll("Date converting",
-                () -> assertEquals(expectedValues.get(ColumnType.DATE), typeConverter.convert(ColumnType.DATE, dateLongVal)),
-                () -> assertTrue(typeConverter.convert(ColumnType.DATE, dateLongVal) instanceof Integer)
+                () -> assertEquals(expectedValues.get(ColumnType.DATE), typeConverter.convert(ColumnType.DATE, dateLongVal.intValue()))
         );
         assertAll("Time converting",
-                () -> assertEquals(expectedValues.get(ColumnType.TIME), timeLongVal),
-                () -> assertTrue(typeConverter.convert(ColumnType.TIME, timeLongVal) instanceof Number)
+                () -> assertEquals(expectedValues.get(ColumnType.TIME), timeLongVal)
         );
         assertAll("Timestamp converting",
                 () -> assertEquals(expectedValues.get(ColumnType.TIMESTAMP), typeConverter.convert(ColumnType.TIMESTAMP,
-                        timestampLongVal)),
-                () -> assertTrue(typeConverter.convert(ColumnType.TIMESTAMP, timestampLongVal) instanceof Long)
+                        timestampLongVal))
         );
         assertAll("Boolean converting",
-                () -> assertEquals(expectedValues.get(ColumnType.BOOLEAN), typeConverter.convert(ColumnType.BOOLEAN, booleanVal)),
-                () -> assertTrue(typeConverter.convert(ColumnType.BOOLEAN, booleanVal) instanceof Boolean)
+                () -> assertEquals(expectedValues.get(ColumnType.BOOLEAN), typeConverter.convert(ColumnType.BOOLEAN, booleanVal))
         );
         assertAll("UUID converting",
-                () -> assertEquals(expectedValues.get(ColumnType.UUID), typeConverter.convert(ColumnType.UUID, uuidStrVal)),
-                () -> assertTrue(typeConverter.convert(ColumnType.UUID, uuidStrVal) instanceof UUID)
+                () -> assertEquals(expectedValues.get(ColumnType.UUID), typeConverter.convert(ColumnType.UUID, uuidStrVal))
         );
         assertAll("Any converting",
-                () -> assertEquals(expectedValues.get(ColumnType.ANY), typeConverter.convert(ColumnType.ANY, JsonObject.mapFrom(objMapVal))),
-                () -> assertTrue(typeConverter.convert(ColumnType.ANY, JsonObject.mapFrom(objMapVal)) instanceof JsonObject)
+                () -> assertEquals(expectedValues.get(ColumnType.ANY), typeConverter.convert(ColumnType.ANY, JsonObject.mapFrom(objMapVal)))
         );
     }
 
@@ -177,10 +164,9 @@ class AdgTypeToSqlTypeConverterTest {
 
     @Test
     void convertDateWithNegative() {
-        short dateShortVal = -17678;
+        int dateShortVal = -17678;
         assertAll("Date converting",
-                () -> assertEquals(Integer.valueOf(dateShortVal), typeConverter.convert(ColumnType.DATE, dateShortVal)),
-                () -> assertTrue(typeConverter.convert(ColumnType.DATE, dateLongVal) instanceof Integer)
+                () -> assertEquals(Integer.valueOf(dateShortVal), typeConverter.convert(ColumnType.DATE, dateShortVal))
         );
     }
 }

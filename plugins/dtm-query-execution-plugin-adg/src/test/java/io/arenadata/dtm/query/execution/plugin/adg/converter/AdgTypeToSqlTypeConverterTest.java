@@ -64,7 +64,7 @@ class AdgTypeToSqlTypeConverterTest {
         expectedValues.put(ColumnType.TIME, timeLongVal);
         expectedValues.put(ColumnType.TIMESTAMP, timestampLongVal);
         expectedValues.put(ColumnType.BOOLEAN, booleanVal);
-        expectedValues.put(ColumnType.UUID, UUID.fromString(uuidStrVal));
+        expectedValues.put(ColumnType.UUID, uuidStrVal);
         expectedValues.put(ColumnType.ANY, JsonObject.mapFrom(objMapVal));
 
         assertAll("Varchar converting",

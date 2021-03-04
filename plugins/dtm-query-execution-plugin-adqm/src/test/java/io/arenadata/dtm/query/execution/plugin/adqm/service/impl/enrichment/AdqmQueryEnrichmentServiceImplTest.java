@@ -1,8 +1,8 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.enrichment;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.delta.DeltaType;
-import io.arenadata.dtm.common.delta.SelectOnInterval;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
@@ -16,13 +16,17 @@ import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmSchemaFacto
 import io.arenadata.dtm.query.execution.plugin.adqm.service.QueryEnrichmentService;
 import io.arenadata.dtm.query.execution.plugin.adqm.utils.TestUtils;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.jackson.DatabindCodec;
 import io.vertx.junit5.VertxTestContext;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
 
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -37,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class AdqmQueryEnrichmentServiceImplTest {
     private static final int TIMEOUT_SECONDS = 120;
     private static final String ENV_NAME = "local";
+    private static final List<Datamart> LOADED_DATAMARTS = loadDatamarts();
     private final QueryEnrichmentService enrichService;
     private final String[] expectedSqls;
 
@@ -64,6 +69,21 @@ class AdqmQueryEnrichmentServiceImplTest {
         expectedSqls = new String(Files.readAllBytes(Paths.get(getClass().getResource("/sql/expectedDmlSqls.sql").toURI())))
                 .split("---");
 
+    }
+
+    @SneakyThrows
+    private static List<Datamart> loadDatamarts() {
+        return DatabindCodec.mapper()
+                .readValue(loadTextFromFile("schema/dml.json"), new TypeReference<List<Datamart>>() {
+                });
+    }
+
+    @SneakyThrows
+    private static String loadTextFromFile(String path) {
+        try (InputStream inputStream = AdqmQueryEnrichmentServiceImpl.class.getClassLoader().getResourceAsStream(path)) {
+            assert inputStream != null;
+            return IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+        }
     }
 
     @Test
@@ -149,6 +169,16 @@ class AdqmQueryEnrichmentServiceImplTest {
                 expectedSqls[9], enrichService);
     }
 
+    @Test
+    void enrichWithAggregate() {
+        enrich(prepareRequestDeltaNumByAggregate("SELECT min(int_col) as min_col, min(double_col) as max_col, varchar_col\n" +
+                        "FROM dml.AGGREGATION_TABLE\n" +
+                        "group by varchar_col\n" +
+                        "order by varchar_col\n" +
+                        "limit 2"),
+                expectedSqls[10], enrichService);
+    }
+
     @SneakyThrows
     private void enrich(EnrichQueryRequest enrichRequest,
                         String expectedSql,
@@ -170,14 +200,10 @@ class AdqmQueryEnrichmentServiceImplTest {
                 String.format("Expected: %s\n Actual: %s", expectedSql.trim(), actual[0].trim()));
     }
 
-    private EnrichQueryRequest prepareRequestMultipleSchema(String sql) {
-        List<Datamart> datamarts = Arrays.asList(
-                getSchema("shares", true),
-                getSchema("shares_2", false),
-                getSchema("test_datamart", false));
-        String defaultSchema = datamarts.get(0).getMnemonic();
-        SqlParserPos pos = new SqlParserPos(0, 0);
-        List<DeltaInformation> deltaInforamtions = Arrays.asList(
+    private EnrichQueryRequest prepareRequestDeltaNumByAggregate(String sql) {
+        String schemaName = LOADED_DATAMARTS.get(0).getMnemonic();
+        String tableName = LOADED_DATAMARTS.get(0).getEntities().get(0).getName();
+        List<DeltaInformation> deltaInforamtions = Collections.singletonList(
                 DeltaInformation.builder()
                         .tableAlias("a")
                         .deltaTimestamp("2019-12-23 15:15:14")
@@ -185,39 +211,15 @@ class AdqmQueryEnrichmentServiceImplTest {
                         .selectOnNum(1L)
                         .selectOnInterval(null)
                         .type(DeltaType.NUM)
-                        .schemaName(defaultSchema)
-                        .tableName(datamarts.get(0).getEntities().get(0).getName())
-                        .pos(pos)
-                        .selectOnNum(1L)
-                        .build(),
-                DeltaInformation.builder()
-                        .tableAlias("aa")
-                        .deltaTimestamp("2019-12-23 15:15:14")
-                        .isLatestUncommittedDelta(false)
-                        .selectOnNum(2L)
-                        .selectOnInterval(null)
-                        .type(DeltaType.NUM)
-                        .schemaName(datamarts.get(1).getMnemonic())
-                        .tableName(datamarts.get(1).getEntities().get(1).getName())
-                        .pos(pos)
-                        .build(),
-                DeltaInformation.builder()
-                        .tableAlias("t")
-                        .deltaTimestamp("2019-12-23 15:15:14")
-                        .isLatestUncommittedDelta(false)
-                        .selectOnNum(2L)
-                        .selectOnInterval(null)
-                        .type(DeltaType.NUM)
-                        .schemaName(datamarts.get(2).getMnemonic())
-                        .tableName(datamarts.get(2).getEntities().get(1).getName())
-                        .pos(pos)
+                        .schemaName(schemaName)
+                        .tableName(tableName)
                         .build()
         );
         return EnrichQueryRequest.builder()
                 .query(TestUtils.DEFINITION_SERVICE.processingQuery(sql))
                 .deltaInformations(deltaInforamtions)
                 .envName(ENV_NAME)
-                .schema(datamarts)
+                .schema(LOADED_DATAMARTS)
                 .build();
     }
 
@@ -225,6 +227,7 @@ class AdqmQueryEnrichmentServiceImplTest {
         List<Datamart> datamarts = Collections.singletonList(getSchema("shares", true));
         String schemaName = datamarts.get(0).getMnemonic();
         SqlParserPos pos = new SqlParserPos(0, 0);
+        String tableName = datamarts.get(0).getEntities().get(0).getName();
         List<DeltaInformation> deltaInforamtions = Arrays.asList(
                 DeltaInformation.builder()
                         .tableAlias("a")
@@ -234,7 +237,7 @@ class AdqmQueryEnrichmentServiceImplTest {
                         .selectOnInterval(null)
                         .type(DeltaType.NUM)
                         .schemaName(schemaName)
-                        .tableName(datamarts.get(0).getEntities().get(0).getName())
+                        .tableName(tableName)
                         .pos(pos)
                         .build(),
                 DeltaInformation.builder()
@@ -245,7 +248,7 @@ class AdqmQueryEnrichmentServiceImplTest {
                         .selectOnInterval(null)
                         .type(DeltaType.NUM)
                         .schemaName(schemaName)
-                        .tableName(datamarts.get(0).getEntities().get(0).getName())
+                        .tableName(tableName)
                         .pos(pos)
                         .build(),
                 DeltaInformation.builder()
@@ -256,7 +259,7 @@ class AdqmQueryEnrichmentServiceImplTest {
                         .selectOnInterval(null)
                         .type(DeltaType.NUM)
                         .schemaName(schemaName)
-                        .tableName(datamarts.get(0).getEntities().get(0).getName())
+                        .tableName(tableName)
                         .pos(pos)
                         .build(),
                 DeltaInformation.builder()
@@ -267,43 +270,7 @@ class AdqmQueryEnrichmentServiceImplTest {
                         .selectOnInterval(null)
                         .type(DeltaType.NUM)
                         .schemaName(schemaName)
-                        .tableName(datamarts.get(0).getEntities().get(0).getName())
-                        .pos(pos)
-                        .build()
-        );
-        return EnrichQueryRequest.builder()
-                .query(TestUtils.DEFINITION_SERVICE.processingQuery(sql))
-                .deltaInformations(deltaInforamtions)
-                .envName(ENV_NAME)
-                .schema(datamarts)
-                .build();
-    }
-
-    private EnrichQueryRequest prepareRequestDeltaInterval(String sql) {
-        List<Datamart> datamarts = Collections.singletonList(getSchema("shares", true));
-        String schemaName = datamarts.get(0).getMnemonic();
-        SqlParserPos pos = new SqlParserPos(0, 0);
-        List<DeltaInformation> deltaInforamtions = Arrays.asList(
-                DeltaInformation.builder()
-                        .tableAlias("a")
-                        .deltaTimestamp(null)
-                        .isLatestUncommittedDelta(false)
-                        .selectOnNum(1L)
-                        .selectOnInterval(new SelectOnInterval(1L, 5L))
-                        .type(DeltaType.STARTED_IN)
-                        .schemaName(schemaName)
-                        .tableName(datamarts.get(0).getEntities().get(0).getName())
-                        .pos(pos)
-                        .build(),
-                DeltaInformation.builder()
-                        .tableAlias("t")
-                        .deltaTimestamp(null)
-                        .isLatestUncommittedDelta(false)
-                        .selectOnNum(1L)
-                        .selectOnInterval(new SelectOnInterval(3L, 4L))
-                        .type(DeltaType.FINISHED_IN)
-                        .schemaName(schemaName)
-                        .tableName(datamarts.get(0).getEntities().get(1).getName())
+                        .tableName(tableName)
                         .pos(pos)
                         .build()
         );
@@ -396,5 +363,4 @@ class AdqmQueryEnrichmentServiceImplTest {
 
         return new Datamart(schemaName, isDefault, Arrays.asList(transactions, accounts));
     }
-
 }

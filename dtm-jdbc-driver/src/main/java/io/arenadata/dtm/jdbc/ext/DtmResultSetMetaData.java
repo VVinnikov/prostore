@@ -33,7 +33,7 @@ public class DtmResultSetMetaData implements ResultSetMetaData {
 
     @Override
     public String getColumnName(int column) {
-        return this.getColumnLabel(column);
+        return this.columnMetadata.get(column - 1).getName();
     }
 
     @Override
@@ -78,13 +78,23 @@ public class DtmResultSetMetaData implements ResultSetMetaData {
 
     @Override
     public int getPrecision(int column) throws SQLException {
-        return this.getFieldMetadata(column).getLength();
+        Integer size = columnMetadata.get(column - 1).getSize();
+        return size == null ? 0 : size;
     }
 
     @Override
     public int getScale(int column) throws SQLException {
-        Integer size = columnMetadata.get(column).getSize();
-        return size == null ? 0: size;
+        ColumnMetadata columnInfo = columnMetadata.get(column - 1);
+        switch (columnInfo.getType()) {
+            case DOUBLE:
+            case FLOAT:
+            case TIME:
+            case TIMESTAMP:
+                Integer size = columnInfo.getSize();
+                return size == null ? 0 : size;
+            default:
+                return 0;
+        }
     }
 
     @Override

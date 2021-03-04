@@ -1,0 +1,81 @@
+[
+  {
+    "mnemonic": "dml",
+    "entities": [
+      {
+        "name": "aggregation_table",
+        "schema": "dml",
+        "viewQuery": null,
+        "entityType": "TABLE",
+        "externalTableFormat": null,
+        "externalTableSchema": null,
+        "externalTableLocationType": null,
+        "externalTableLocationPath": null,
+        "externalTableDownloadChunkSize": null,
+        "externalTableUploadMessageLimit": null,
+        "destination": [
+          "ADB",
+          "ADG",
+          "ADQM"
+        ],
+        "fields": [
+          {
+            "ordinalPosition": 0,
+            "name": "id",
+            "type": "INT",
+            "size": null,
+            "accuracy": null,
+            "nullable": false,
+            "primaryOrder": 1,
+            "shardingOrder": 1,
+            "defaultValue": null
+          },
+          {
+            "ordinalPosition": 1,
+            "name": "varchar_col",
+            "type": "VARCHAR",
+            "size": 36,
+            "accuracy": null,
+            "nullable": true,
+            "primaryOrder": null,
+            "shardingOrder": null,
+            "defaultValue": null
+          },
+          {
+            "ordinalPosition": 2,
+            "name": "boolean_col",
+            "type": "BOOLEAN",
+            "size": null,
+            "accuracy": null,
+            "nullable": true,
+            "primaryOrder": null,
+            "shardingOrder": null,
+            "defaultValue": null
+          },
+          {
+            "ordinalPosition": 3,
+            "name": "int_col",
+            "type": "INT",
+            "size": null,
+            "accuracy": null,
+            "nullable": true,
+            "primaryOrder": null,
+            "shardingOrder": null,
+            "defaultValue": null
+          },
+          {
+            "ordinalPosition": 4,
+            "name": "double_col",
+            "type": "DOUBLE",
+            "size": null,
+            "accuracy": null,
+            "nullable": true,
+            "primaryOrder": null,
+            "shardingOrder": null,
+            "defaultValue": null
+          }
+        ]
+      }
+    ]
+  }
+]

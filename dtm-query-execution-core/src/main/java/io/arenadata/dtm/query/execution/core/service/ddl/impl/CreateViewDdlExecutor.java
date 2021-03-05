@@ -103,10 +103,13 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
             val isCreateOrReplace = SqlPreparer.isCreateOrReplace(context.getRequest().getQueryRequest().getSql());
             replaceSqlSelectQuery(context, isCreateOrReplace, selectSqlNode);
             getEntityFuture(context, selectSqlNode, parserResponse.getSchema())
-                    .map(entity -> CreateViewContext.builder()
-                            .createOrReplace(isCreateOrReplace)
-                            .viewEntity(entity)
-                            .build())
+                    .map(entity -> {
+                        context.setEntity(entity);
+                        return CreateViewContext.builder()
+                                .createOrReplace(isCreateOrReplace)
+                                .viewEntity(entity)
+                                .build();
+                    })
                     .onComplete(p);
         });
     }

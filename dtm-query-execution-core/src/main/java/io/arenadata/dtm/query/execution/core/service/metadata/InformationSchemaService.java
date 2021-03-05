@@ -1,11 +1,12 @@
 package io.arenadata.dtm.query.execution.core.service.metadata;
 
+import io.arenadata.dtm.common.model.ddl.Entity;
 import io.vertx.core.Future;
-import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlKind;
 
 public interface InformationSchemaService {
 
-    Future<Void> update(SqlNode sql);
+    Future<Void> update(Entity entity, String datamart, SqlKind sqlKind);
 
     Future<Void> createInformationSchemaViews();
 }

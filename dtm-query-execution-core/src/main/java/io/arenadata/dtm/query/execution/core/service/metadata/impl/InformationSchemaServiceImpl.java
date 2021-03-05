@@ -84,6 +84,7 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     }
 
     private void shutdown(Throwable throwable) {
+        log.error("Shutdown application", throwable);
         val exitCode = SpringApplication.exit(applicationContext, () -> 1);
         System.exit(exitCode);
     }
@@ -109,27 +110,14 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     }
 
     private Future<Void> createTable(Entity entity) {
-        try {
-            val entityQueries = createEntityQueries(entity);
-            return client.executeQuery(entityQueries.getTableQuery().get())
-                    .compose(r -> client.executeQuery(entityQueries.getShardingKeyQuery().get()))
-                    .compose(r -> client.executeBatch(entityQueries.getCommentQueries()))
-                    .onFailure(this::shutdown);
-        } catch (Exception e) {
-            return Future.failedFuture(new DtmException("Error generating create table request", e));
-        }
+        return client.executeBatch(getEntitiesCreateQueries(Collections.singletonList(entity)))
+                .onFailure(this::shutdown);
     }
 
     private Future<Void> createView(Entity entity) {
-        try {
-            val entityQueries = createEntityQueries(entity);
-            return dropView(entity)
-                    .compose(v ->client.executeQuery(entityQueries.getViewQuery().get()))
-                    .compose(r -> client.executeBatch(entityQueries.getCommentQueries()))
-                    .onFailure(this::shutdown);
-        } catch (Exception e) {
-            return Future.failedFuture(new DtmException("Error generating create table request", e));
-        }
+        return dropView(entity)
+                .compose(v -> client.executeBatch(getEntitiesCreateQueries(Collections.singletonList(entity))))
+                .onFailure(this::shutdown);
     }
 
     private String commentOnColumn(String schemaTable, String column, String comment) {
@@ -304,33 +292,23 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
         List<String> commentQueries = new ArrayList<>();
         List<String> createShardingKeys = new ArrayList<>();
         entities.forEach(entity -> {
-            val entityQueries = createEntityQueries(entity);
-            entityQueries.getTableQuery().ifPresent(tableEntities::add);
-            entityQueries.getViewQuery().ifPresent(viewEntities::add);
-            commentQueries.addAll(entityQueries.getCommentQueries());
-            entityQueries.getShardingKeyQuery().ifPresent(createShardingKeys::add);
+            if (EntityType.VIEW.equals(entity.getEntityType())) {
+                viewEntities.add(ddlQueryGenerator.generateCreateViewQuery(entity));
+                commentQueries.addAll(getCommentQueries(entity));
+            }
+            if (EntityType.TABLE.equals(entity.getEntityType())) {
+                tableEntities.add(ddlQueryGenerator.generateCreateTableQuery(entity));
+                commentQueries.addAll(getCommentQueries(entity));
+                val shardingKeyColumns = entity.getFields().stream()
+                        .filter(field -> field.getShardingOrder() != null)
+                        .map(EntityField::getName)
+                        .collect(Collectors.toList());
+                createShardingKeys.add(createShardingKeyIndex(entity.getName(), entity.getNameWithSchema(), shardingKeyColumns));
+            }
         });
         return Stream.of(tableEntities, viewEntities, commentQueries, createShardingKeys)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
-    }
-
-    private EntityQueries createEntityQueries(Entity entity) {
-        val entityQueries = new EntityQueries();
-        if (EntityType.VIEW.equals(entity.getEntityType())) {
-            entityQueries.setViewQuery(Optional.of(ddlQueryGenerator.generateCreateViewQuery(entity)));
-            entityQueries.setCommentQueries(getCommentQueries(entity));
-        }
-        if (EntityType.TABLE.equals(entity.getEntityType())) {
-            entityQueries.setTableQuery(Optional.of(ddlQueryGenerator.generateCreateTableQuery(entity)));
-            entityQueries.setCommentQueries(getCommentQueries(entity));
-            val shardingKeyColumns = entity.getFields().stream()
-                    .filter(field -> field.getShardingOrder() != null)
-                    .map(EntityField::getName)
-                    .collect(Collectors.toList());
-            entityQueries.setShardingKeyQuery(Optional.of(createShardingKeyIndex(entity.getName(), entity.getNameWithSchema(), shardingKeyColumns)));
-        }
-        return entityQueries;
     }
 
     private List<String> getCommentQueries(Entity entity) {

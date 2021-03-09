@@ -5,6 +5,7 @@ import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguratio
 import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckData;
 import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckDatabase;
 import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckTable;
+import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckVersions;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlAlterView;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateView;
@@ -246,6 +247,16 @@ public class SqlDdlParserImplTest {
         assertThrows(SqlParseException.class, () -> definitionService.processingQuery(withIncorrectColumns));
         assertThrows(SqlParseException.class, () -> definitionService.processingQuery(withIncorrectDelta));
 
+    }
+
+    @Test
+    void checkVersions() {
+        String correct = "CHECK_VERSIONS()";
+        String incorrect = "CHECK_VERSIONS(test)";
+
+        SqlNode sqlNode1 = definitionService.processingQuery(correct);
+        assertNull(((SqlCheckVersions) sqlNode1).getSchema());
+        assertThrows(SqlParseException.class, () -> definitionService.processingQuery(incorrect));
     }
 
     void dropTable(String query) {

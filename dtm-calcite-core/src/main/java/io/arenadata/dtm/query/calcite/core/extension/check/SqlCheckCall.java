@@ -1,7 +1,11 @@
 package io.arenadata.dtm.query.calcite.core.extension.check;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.calcite.sql.*;
+import lombok.val;
+import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
 import javax.annotation.Nonnull;
@@ -23,10 +27,12 @@ public abstract class SqlCheckCall extends SqlCall {
 
     @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
-        writer.literal(
-                this.getOperator() + "(" + "'" +
-                        this.name +
-                        "'" + ")");
+        val nodeName = getNodeName();
+        writer.literal(this.getOperator() + "(" + nodeName + ")");
+    }
+
+    private String getNodeName() {
+        return this.name == null ? "" : "'" + this.name + "'";
     }
 
     @Nonnull

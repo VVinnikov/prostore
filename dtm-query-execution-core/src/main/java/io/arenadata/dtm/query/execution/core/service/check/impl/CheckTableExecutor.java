@@ -3,11 +3,13 @@ package io.arenadata.dtm.query.execution.core.service.check.impl;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
+import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.extension.check.CheckType;
 import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckTable;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.check.CheckContext;
+import io.arenadata.dtm.query.execution.core.factory.CheckQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckException;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
@@ -24,17 +26,22 @@ import java.util.stream.Collectors;
 
 @Service("checkTableExecutor")
 public class CheckTableExecutor implements CheckExecutor {
+
     private final DataSourcePluginService dataSourcePluginService;
     private final EntityDao entityDao;
+    private final CheckQueryResultFactory queryResultFactory;
 
     @Autowired
-    public CheckTableExecutor(DataSourcePluginService dataSourcePluginService, EntityDao entityDao) {
+    public CheckTableExecutor(DataSourcePluginService dataSourcePluginService,
+                              EntityDao entityDao,
+                              CheckQueryResultFactory queryResultFactory) {
         this.dataSourcePluginService = dataSourcePluginService;
         this.entityDao = entityDao;
+        this.queryResultFactory = queryResultFactory;
     }
 
     @Override
-    public Future<String> execute(CheckContext context) {
+    public Future<QueryResult> execute(CheckContext context) {
         String tableName = ((SqlCheckTable) context.getSqlNode()).getTable();
         String datamartMnemonic = context.getRequest().getQueryRequest().getDatamartMnemonic();
         return entityDao.getEntity(datamartMnemonic, tableName)
@@ -47,7 +54,8 @@ public class CheckTableExecutor implements CheckExecutor {
                                 tableName)));
                     }
                 })
-                .compose(entity -> checkEntity(entity, context));
+                .compose(entity -> checkEntity(entity, context))
+                .map(queryResultFactory::create);
     }
 
     private Future<String> checkEntity(Entity entity, CheckContext context) {

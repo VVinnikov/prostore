@@ -697,6 +697,20 @@ SqlNode SqlCheckData() :
         return new io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckData(s.end(this), id, deltaNum, tableElementList);
     }
 }
+SqlNode SqlCheckVersions() :
+{
+    SqlParserPos pos;
+}
+{
+    <CHECK_VERSIONS>
+    {
+        pos = getPos();
+    }
+    <LPAREN> <RPAREN>
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckVersions(pos);
+    }
+}
 SqlNode SqlTruncateHistory() :
 {
     final Span s;

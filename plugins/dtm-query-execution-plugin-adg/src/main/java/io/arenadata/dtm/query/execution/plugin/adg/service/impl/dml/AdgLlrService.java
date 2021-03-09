@@ -48,7 +48,9 @@ public class AdgLlrService extends QueryResultCacheableLlrService {
                                                              QueryParameters queryParameters,
                                                              List<ColumnMetadata> metadata) {
         //FIXME add params
-        return executorService.execute(enrichedQuery, queryParameters, metadata);
+        final long[] ts = new long[]{System.currentTimeMillis()};
+        return executorService.execute(enrichedQuery, queryParameters, metadata)
+                .onSuccess(v -> log.info("ms total: " + (System.currentTimeMillis() - ts[0])));
     }
 
     @Override

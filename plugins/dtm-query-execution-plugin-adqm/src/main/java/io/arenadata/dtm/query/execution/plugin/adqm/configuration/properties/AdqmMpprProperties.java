@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties("adqm.mppr")
 @Data
 public class AdqmMpprProperties {
-    private String host;
-    private Integer port;
-    private String url;
+    private String loadingUrl;
+    private String versionUrl;
 }

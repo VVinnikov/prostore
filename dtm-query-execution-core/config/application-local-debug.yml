@@ -141,9 +141,8 @@ adqm:
     cluster: ${ADQM_CLUSTER:default_cluster}
 
   mppr:
-    host: ${ADQM_MPPR_CONNECTOR_HOST:10.92.3.14}
-    port: ${ADQM_MPPR_CONNECTOR_PORT:8086}
-    url: ${ADQM_MPPR_CONNECTOR_URL:/query}
+    loadingUrl: ${ADQM_MPPR_CONNECTOR_URL:http://10.92.3.14:8086/query}
+    versionUrl: ${ADQM_MPPR_CONNECTOR_VERSION_URL:http://10.92.3.14:8086/versions}
 
   mppw:
     consumerGroup: ${ADQM_CONSUMER_GROUP:adqm}
@@ -151,6 +150,7 @@ adqm:
     loadType: ${ADQM_MPPW_LOAD_TYPE:REST}
     restStartLoadUrl: ${ADQM_REST_START_LOAD_URL:http://10.92.3.3:8090/newdata/adqm/start}
     restStopLoadUrl: ${ADQM_REST_STOP_LOAD_URL:http://10.92.3.3:8090/newdata/adqm/stop}
+    versionUrl: ${ADQM_MPPW_CONNECTOR_VERSION_URL:http://10.92.3.3:8090/versions}
     restLoadConsumerGroup: ${ADQM_REST_LOAD_GROUP:adb-emulator-load-adqm}
 
   web-client:

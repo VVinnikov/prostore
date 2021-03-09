@@ -55,18 +55,19 @@ public class AdqmQueryGeneratorImpl implements QueryGenerator {
                         .transform(0,
                                 extendedQuery.getTraitSet().replace(EnumerableConvention.INSTANCE),
                                 extendedQuery);
+                val sqlNodeResult = new NullNotCastableRelToSqlConverter(sqlDialect)
+                        .visitChild(0, planAfter)
+                        .asStatement();
+                val sqlTree = new SqlSelectTree(sqlNodeResult);
+                addFinalOperatorTopUnionTables(sqlTree);
+                replaceDollarSuffixInAlias(sqlTree);
+                val queryResult = Util.toLinux(sqlNodeResult.toSqlString(sqlDialect).getSql())
+                        .replaceAll("\n", " ");
+                log.debug("sql = " + queryResult);
+                promise.complete(queryResult);
             } catch (RelConversionException relConversionException) {
                 promise.fail(new DataSourceException("Error in converting relation node", relConversionException));
             }
-            val sqlNodeResult = new NullNotCastableRelToSqlConverter(sqlDialect)
-                    .visitChild(0, planAfter)
-                    .asStatement();
-            val sqlTree = new SqlSelectTree(sqlNodeResult);
-            addFinalOperatorTopUnionTables(sqlTree);
-            replaceDollarSuffixInAlias(sqlTree);
-            val queryResult = Util.toLinux(sqlNodeResult.toSqlString(sqlDialect).getSql()).replaceAll("\n", " ");
-            log.debug("sql = " + queryResult);
-            promise.complete(queryResult);
         });
     }
 

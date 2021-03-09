@@ -5,6 +5,7 @@ import io.arenadata.dtm.query.calcite.core.dialect.LimitSqlDialect;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.dialect.ClickHouseSqlDialect;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.SqlParserImplFactory;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
@@ -47,8 +48,8 @@ public class CalciteConfiguration {
 
     @Bean("adqmSqlDialect")
     public SqlDialect adgSqlDialect() {
-        SqlDialect.Context CONTEXT = SqlDialect.EMPTY_CONTEXT
-                .withDatabaseProduct(SqlDialect.DatabaseProduct.POSTGRESQL)
+        SqlDialect.Context CONTEXT = ClickHouseSqlDialect.DEFAULT_CONTEXT
+                .withDatabaseProduct(SqlDialect.DatabaseProduct.CLICKHOUSE)
                 .withIdentifierQuoteString("")
                 .withUnquotedCasing(Casing.TO_LOWER)
                 .withCaseSensitive(false)

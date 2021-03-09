@@ -179,6 +179,16 @@ class AdqmQueryEnrichmentServiceImplTest {
                 expectedSqls[10], enrichService);
     }
 
+    @Test
+    void enrichWithAggregate2() {
+        enrich(prepareRequestDeltaNumByAggregate("SELECT min(int_col) as min_col, min(double_col) as max_col, varchar_col, NULL as t1\n" +
+                        "FROM dml.AGGREGATION_TABLE\n" +
+                        "where varchar_col = 'ф'\n" +
+                        "group by varchar_col\n" +
+                        "limit 2"),
+                expectedSqls[11], enrichService);
+    }
+
     @SneakyThrows
     private void enrich(EnrichQueryRequest enrichRequest,
                         String expectedSql,

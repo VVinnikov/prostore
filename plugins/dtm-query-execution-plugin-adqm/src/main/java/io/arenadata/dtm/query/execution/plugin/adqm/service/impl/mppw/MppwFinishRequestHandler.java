@@ -45,7 +45,7 @@ public class MppwFinishRequestHandler extends AbstractMppwRequestHandler {
     private static final String INSERT_TEMPLATE = "INSERT INTO %s\n" +
             "  SELECT %s, a.sys_from, %d, b.sys_op_buffer, '%s', arrayJoin([-1, 1]) \n" +
             "  FROM %s a\n" +
-            "  ANY INNER JOIN %s b USING(%s)\n" +
+            "  SEMI LEFT JOIN %s b USING(%s)\n" +
             "  WHERE a.sys_from < %d\n" +
             "    AND a.sys_to > %d";
     private static final String SELECT_COLUMNS_QUERY = "select name from system.columns where database = '%s' and table = '%s'";

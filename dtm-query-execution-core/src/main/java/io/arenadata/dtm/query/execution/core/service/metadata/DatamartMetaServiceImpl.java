@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.service.metadata.impl;
+package io.arenadata.dtm.query.execution.core.service.metadata;
 
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;

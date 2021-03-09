@@ -16,7 +16,7 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.Servic
 import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.core.service.ddl.impl.CreateSchemaDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
-import io.arenadata.dtm.query.execution.core.service.metadata.impl.MetadataExecutorImpl;
+import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutorImpl;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.apache.calcite.sql.SqlNode;

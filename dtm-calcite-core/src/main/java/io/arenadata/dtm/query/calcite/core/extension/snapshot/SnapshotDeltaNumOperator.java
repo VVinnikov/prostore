@@ -20,7 +20,13 @@ public class SnapshotDeltaNumOperator extends SqlCall {
     public SnapshotDeltaNumOperator(SqlParserPos pos, SqlNumericLiteral deltaNumNode) {
         super(pos);
         this.deltaNumNode = deltaNumNode;
-        this.deltaNum = Optional.ofNullable(this.deltaNumNode).map(c -> c.longValue(true)).orElse(null);
+        this.deltaNum = Optional.ofNullable(this.deltaNumNode).map(c -> {
+            if (c.isInteger()) {
+                return c.longValue(true);
+            } else {
+                throw new IllegalArgumentException("DELTA_NUM is not integer value.");
+            }
+        }).orElse(null);
     }
 
     @Override

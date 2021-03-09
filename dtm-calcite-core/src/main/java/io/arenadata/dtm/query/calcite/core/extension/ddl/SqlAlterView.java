@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.calcite.core.extension.ddl;
 
 import io.arenadata.dtm.query.calcite.core.extension.parser.ParseException;
+import lombok.Getter;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.ImmutableNullableList;
@@ -8,6 +9,7 @@ import org.apache.calcite.util.ImmutableNullableList;
 import java.util.List;
 import java.util.Objects;
 
+@Getter
 public class SqlAlterView extends SqlAlter {
     private final SqlIdentifier name;
     private final SqlNodeList columnList;
@@ -49,9 +51,5 @@ public class SqlAlterView extends SqlAlter {
     @Override
     public List<SqlNode> getOperandList() {
         return ImmutableNullableList.of(this.name, this.columnList, this.query);
-    }
-
-    public SqlIdentifier getName() {
-        return name;
     }
 }

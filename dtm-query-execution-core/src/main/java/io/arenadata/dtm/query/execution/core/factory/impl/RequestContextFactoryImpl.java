@@ -9,7 +9,7 @@ import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckCall;
 import io.arenadata.dtm.query.calcite.core.extension.config.SqlConfigCall;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.truncate.SqlBaseTruncate;
 import io.arenadata.dtm.query.calcite.core.extension.delta.SqlDeltaCall;
-import io.arenadata.dtm.query.calcite.core.extension.dml.SqlSelectExt;
+import io.arenadata.dtm.query.calcite.core.extension.dml.SqlDataSourceTypeGetter;
 import io.arenadata.dtm.query.execution.core.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.core.dto.CoreRequestContext;
 import io.arenadata.dtm.query.execution.core.dto.check.CheckContext;
@@ -118,8 +118,8 @@ public class RequestContextFactoryImpl implements RequestContextFactory<CoreRequ
     }
 
     private SourceType getDmlSourceType(SqlNode node) {
-        if (node instanceof SqlSelectExt) {
-            SqlCharStringLiteral dsTypeNode = ((SqlSelectExt) node).getDatasourceType();
+        if (node instanceof SqlDataSourceTypeGetter) {
+            SqlCharStringLiteral dsTypeNode = ((SqlDataSourceTypeGetter) node).getDatasourceType();
             if (dsTypeNode != null) {
                 return SourceType.valueOfAvailable(dsTypeNode.getNlsString().getValue());
             }

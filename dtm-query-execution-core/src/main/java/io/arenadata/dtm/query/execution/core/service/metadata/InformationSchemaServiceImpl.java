@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.service.metadata.impl;
+package io.arenadata.dtm.query.execution.core.service.metadata;
 
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
@@ -6,9 +6,6 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.InformationSchemaView;
-import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlAlterView;
-import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
-import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateView;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartAlreadyExistsException;
@@ -20,13 +17,12 @@ import io.arenadata.dtm.query.execution.core.utils.InformationSchemaUtils;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonArray;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import lombok.var;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlNodeList;
-import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
@@ -46,8 +42,6 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     private static final int DATA_TYPE_COLUMN_INDEX = 3;
     private static final int IS_NULLABLE_COLUMN_INDEX = 4;
     private static final String IS_NULLABLE_COLUMN_TRUE = "YES";
-    private static final String SINGLE_BACK_QUOTE = "`";
-    private static final String EMPTY_CHAR = "";
 
     private final ApplicationContext applicationContext;
     private final DdlQueryGenerator ddlQueryGenerator;
@@ -69,108 +63,61 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     }
 
     @Override
-    public Future<Void> update(SqlNode sql) {
-        switch (sql.getKind()) {
+    public Future<Void> update(Entity entity, String datamart, SqlKind sqlKind) {
+        switch (sqlKind) {
             case CREATE_TABLE:
-                return createTable((SqlCreateTable) sql);
-            case CREATE_SCHEMA:
-            case DROP_SCHEMA:
-                return createOrDropSchema(sql);
-            case CREATE_VIEW:
-                return createOrReplaceView((SqlCreateView) sql);
-            case ALTER_VIEW:
-                return alterView((SqlAlterView) sql);
-            case DROP_VIEW:
+                return createTable(entity);
             case DROP_TABLE:
-                return client.executeQuery(sql.toString().replace(SINGLE_BACK_QUOTE, EMPTY_CHAR))
-                        .onFailure(this::shutdown);
+                return dropTable(entity);
+            case CREATE_SCHEMA:
+                return createSchema(datamart);
+            case DROP_SCHEMA:
+                return dropSchema(datamart);
+            case CREATE_VIEW:
+            case ALTER_VIEW:
+                return createView(entity);
+            case DROP_VIEW:
+                return dropView(entity);
             default:
-                throw new DtmException(String.format("Sql type not supported: %s", sql.getKind()));
+                throw new DtmException(String.format("Sql type not supported: %s", sqlKind));
         }
     }
 
     private void shutdown(Throwable throwable) {
+        log.error("Shutdown application", throwable);
         val exitCode = SpringApplication.exit(applicationContext, () -> 1);
         System.exit(exitCode);
     }
 
-    private Future<Void> alterView(SqlAlterView sqlAlterView) {
-        return client.executeQuery(sqlAlterView.toString().replace(SINGLE_BACK_QUOTE, EMPTY_CHAR))
-                .compose(v -> entityDao.getEntity(sqlAlterView.getName().names.get(0), sqlAlterView.getName().names.get(1))
-                        .compose(entity -> client.executeBatch(getCommentQueries(entity))))
+    private Future<Void> dropTable(Entity entity) {
+        return client.executeQuery(String.format(InformationSchemaUtils.DROP_TABLE, entity.getSchema(), entity.getName()))
                 .onFailure(this::shutdown);
     }
 
-
-    private Future<Void> createOrReplaceView(SqlCreateView sqlCreateView) {
-        return entityDao.getEntity(sqlCreateView.getName().names.get(0), sqlCreateView.getName().names.get(1))
-                .compose(entity -> {
-                    List<String> commentQueries = getCommentQueries(entity);
-                    if (sqlCreateView.getReplace()) {
-                        return client.executeQuery(String.format(InformationSchemaUtils.DROP_VIEW, sqlCreateView.getName()))
-                                .compose(v -> client.executeQuery(String.format(InformationSchemaUtils.CREATE_VIEW,
-                                        sqlCreateView.getName(),
-                                        sqlCreateView.getQuery().toString().replace(SINGLE_BACK_QUOTE, EMPTY_CHAR))))
-                                .compose(r -> client.executeBatch(commentQueries));
-                    } else {
-                        return client.executeQuery(sqlCreateView.toString().replace(SINGLE_BACK_QUOTE, EMPTY_CHAR))
-                                .compose(r -> client.executeBatch(commentQueries))
-                                .onFailure(this::shutdown);
-                    }
-                });
-    }
-
-    private Future<Void> createOrDropSchema(SqlNode sql) {
-        var schemaSql = sql.toString()
-                .replace("DATABASE", "SCHEMA")
-                .replace(SINGLE_BACK_QUOTE, EMPTY_CHAR);
-        schemaSql = SqlKind.DROP_SCHEMA == sql.getKind() ? schemaSql + " CASCADE" : schemaSql;
-        return client.executeQuery(schemaSql)
+    private Future<Void> dropView(Entity entity) {
+        return client.executeQuery(String.format(InformationSchemaUtils.DROP_VIEW, entity.getSchema(), entity.getName()))
                 .onFailure(this::shutdown);
     }
 
-    private Future<Void> createTable(SqlCreateTable createTable) {
-        try {
-            val distributedByColumns = createTable.getDistributedBy().getDistributedBy().getList().stream()
-                    .map(SqlNode::toString)
-                    .collect(Collectors.toList());
-            val schemaTable = createTable.getOperandList().get(0).toString();
-            val table = getTableName(schemaTable);
-            val creatTableQuery = sqlWithoutDistributedBy(createTable);
-
-            List<String> commentQueries = new ArrayList<>();
-            val columns = ((SqlNodeList) createTable.getOperandList().get(1)).getList();
-            columns.stream()
-                    .filter(node -> node instanceof SqlColumnDeclaration)
-                    .map(node -> (SqlColumnDeclaration) node)
-                    .forEach(column -> {
-                        val columnName = column.getOperandList().get(0).toString();
-                        val typeString = getTypeWithoutSize(column.getOperandList().get(1).toString());
-                        val type = ColumnType.fromTypeString(typeString);
-                        if (needComment(type)) {
-                            commentQueries.add(commentOnColumn(schemaTable, columnName, typeString));
-                        }
-                    });
-            return client.executeQuery(creatTableQuery)
-                    .compose(r -> client.executeQuery(createShardingKeyIndex(table, schemaTable, distributedByColumns)))
-                    .compose(r -> client.executeBatch(commentQueries))
-                    .onFailure(this::shutdown);
-        } catch (Exception e) {
-            return Future.failedFuture(new DtmException("Error generating create table request", e));
-        }
+    private Future<Void> createSchema(String datamart) {
+        return client.executeQuery(String.format(InformationSchemaUtils.CREATE_SCHEMA, datamart))
+                .onFailure(this::shutdown);
     }
 
-    private String getTypeWithoutSize(String type) {
-        val idx = type.indexOf("(");
-        if (idx != -1) {
-            return type.substring(0, idx);
-        }
-        return type;
+    private Future<Void> dropSchema(String datamart) {
+        return client.executeQuery(String.format(InformationSchemaUtils.DROP_SCHEMA, datamart))
+                .onFailure(this::shutdown);
     }
 
-    private String sqlWithoutDistributedBy(SqlCreateTable createTable) {
-        String sqlString = createTable.toString();
-        return sqlString.substring(0, sqlString.indexOf("DISTRIBUTED BY") - 1).replace(SINGLE_BACK_QUOTE, EMPTY_CHAR);
+    private Future<Void> createTable(Entity entity) {
+        return client.executeBatch(getEntitiesCreateQueries(Collections.singletonList(entity)))
+                .onFailure(this::shutdown);
+    }
+
+    private Future<Void> createView(Entity entity) {
+        return dropView(entity)
+                .compose(v -> client.executeBatch(getEntitiesCreateQueries(Collections.singletonList(entity))))
+                .onFailure(this::shutdown);
     }
 
     private String commentOnColumn(String schemaTable, String column, String comment) {
@@ -180,10 +127,6 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     private String createShardingKeyIndex(String table, String schemaTable, List<String> columns) {
         return String.format(InformationSchemaUtils.CREATE_SHARDING_KEY_INDEX,
                 table, schemaTable, String.join(", ", columns));
-    }
-
-    private String getTableName(String schemaTable) {
-        return schemaTable.substring(schemaTable.indexOf(".") + 1);
     }
 
     @Override
@@ -374,7 +317,7 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
                 .forEach(field -> {
                     val type = field.getType();
                     if (needComment(type)) {
-                        result.add(commentOnColumn(entity.getNameWithSchema(), field.getName(), type.toString()));
+                        result.add(commentOnColumn(entity.getNameWithSchema(), field.getName(), getComment(type)));
                     }
                 });
         return result;
@@ -386,9 +329,18 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
             case FLOAT:
             case INT:
             case VARCHAR:
+            case UUID:
                 return true;
             default:
                 return false;
         }
     }
+
+    private String getComment(ColumnType type) {
+        if (type == ColumnType.UUID) {
+            return "VARCHAR";
+        }
+        return type.toString();
+    }
+
 }

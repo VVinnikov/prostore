@@ -6,7 +6,6 @@ import io.arenadata.dtm.common.model.ddl.ColumnType;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 
 public class NumberFromBigintTransformer extends AbstractColumnTransformer<Number, Number> {
 
@@ -17,7 +16,7 @@ public class NumberFromBigintTransformer extends AbstractColumnTransformer<Numbe
 
     @Override
     public Collection<Class<?>> getTransformClasses() {
-        return Arrays.asList(Long.class, Integer.class, BigInteger.class);
+        return Arrays.asList(Long.class, Integer.class, BigInteger.class, Short.class);
     }
 
     @Override

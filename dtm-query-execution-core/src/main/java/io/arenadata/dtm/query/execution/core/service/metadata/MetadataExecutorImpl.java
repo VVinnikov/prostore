@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.service.metadata.impl;
+package io.arenadata.dtm.query.execution.core.service.metadata;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.SourceType;

@@ -2,13 +2,17 @@ package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
 import io.arenadata.dtm.cache.service.CacheService;
 import io.arenadata.dtm.common.dto.QueryParserRequest;
+import io.arenadata.dtm.common.dto.QueryParserResponse;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.QueryResult;
+import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateView;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.calcite.core.node.SqlTreeNode;
+import io.arenadata.dtm.query.calcite.core.rel2sql.NullNotCastableRelToSqlConverter;
+import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
@@ -22,6 +26,7 @@ import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import io.arenadata.dtm.query.execution.core.utils.SqlPreparer;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
+import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import lombok.Builder;
@@ -46,12 +51,13 @@ import java.util.stream.IntStream;
 @Slf4j
 @Component
 public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
-    private static final String VIEW_QUERY_PATH = "CREATE_VIEW.SELECT";
     private static final String VIEW_AND_TABLE_PATTERN = "(?i).*(JOIN|SELECT)\\.(|AS\\.)(SNAPSHOT|IDENTIFIER)$";
+    private static final String ALL_COLUMNS = "*";
     protected final SqlDialect sqlDialect;
     protected final EntityDao entityDao;
     protected final CacheService<EntityKey, Entity> entityCacheService;
-    private final LogicalSchemaProvider logicalSchemaProvider;
+    protected final LogicalSchemaProvider logicalSchemaProvider;
+    protected final QueryParserService parserService;
     private final ColumnMetadataService columnMetadataService;
 
     @Autowired
@@ -60,19 +66,22 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
                                  LogicalSchemaProvider logicalSchemaProvider,
                                  ColumnMetadataService columnMetadataService,
                                  ServiceDbFacade serviceDbFacade,
-                                 @Qualifier("coreSqlDialect") SqlDialect sqlDialect) {
+                                 @Qualifier("coreSqlDialect") SqlDialect sqlDialect,
+                                 @Qualifier("coreCalciteDMLQueryParserService") QueryParserService parserService) {
         super(metadataExecutor, serviceDbFacade);
         this.entityCacheService = entityCacheService;
         this.logicalSchemaProvider = logicalSchemaProvider;
         this.columnMetadataService = columnMetadataService;
         this.sqlDialect = sqlDialect;
         this.entityDao = serviceDbFacade.getServiceDbDao().getEntityDao();
+        this.parserService = parserService;
     }
 
     @Override
     public Future<QueryResult> execute(DdlRequestContext context, String sqlNodeName) {
         return checkViewQuery(context)
-                .compose(v -> getCreateViewContext(context))
+                .compose(v -> parseSelect(((SqlCreateView) context.getSqlNode()).getQuery(), context.getDatamartName()))
+                .compose(response -> getCreateViewContext(context, response))
                 .compose(this::createOrReplaceEntity);
     }
 
@@ -80,39 +89,59 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
         val datamartName = context.getDatamartName();
         val sqlNode = context.getSqlNode();
         return checkSnapshotNotExist(sqlNode)
-                .compose(v -> checkEntitiesType(datamartName, sqlNode));
+                .compose(v -> checkEntitiesType(sqlNode, datamartName));
     }
 
-    protected Future<CreateViewContext> getCreateViewContext(DdlRequestContext context) {
+    protected Future<QueryParserResponse> parseSelect(SqlNode viewQuery, String datamart) {
+        return logicalSchemaProvider.getSchemaFromQuery(viewQuery, datamart)
+                .compose(datamarts -> parserService.parse(new QueryParserRequest(viewQuery, datamarts)));
+    }
+
+    protected Future<CreateViewContext> getCreateViewContext(DdlRequestContext context, QueryParserResponse parserResponse) {
         return Future.future(p -> {
-            val tree = new SqlSelectTree(context.getSqlNode());
-            val viewQuery = getViewQuery(tree);
-            getEntityFuture(context, viewQuery, context.getDatamartName())
+            val selectSqlNode = getParsedSelect(context.getSqlNode(), parserResponse);
+            val isCreateOrReplace = SqlPreparer.isCreateOrReplace(context.getRequest().getQueryRequest().getSql());
+            replaceSqlSelectQuery(context, isCreateOrReplace, selectSqlNode);
+            getEntityFuture(context, selectSqlNode, parserResponse.getSchema())
                     .map(entity -> {
-                        String sql = context.getRequest().getQueryRequest().getSql();
+                        context.setEntity(entity);
                         return CreateViewContext.builder()
-                                .createOrReplace(SqlPreparer.isCreateOrReplace(sql))
+                                .createOrReplace(isCreateOrReplace)
                                 .viewEntity(entity)
-                                .sql(sql)
                                 .build();
                     })
                     .onComplete(p);
         });
     }
 
-    private Future<QueryResult> createOrReplaceEntity(CreateViewContext ctx) {
-        return Future.future(promise -> {
-            val viewEntity = ctx.getViewEntity();
-            entityCacheService.remove(new EntityKey(viewEntity.getSchema(), viewEntity.getName()));
-            entityDao.createEntity(viewEntity)
-                    .otherwise(error -> checkCreateOrReplace(ctx, error))
-                    .compose(r -> entityDao.getEntity(viewEntity.getSchema(), viewEntity.getName()))
-                    .map(this::checkEntityType)
-                    .compose(r -> entityDao.updateEntity(viewEntity))
-                    .onSuccess(success -> promise.complete(QueryResult.emptyResult()))
-                    .onFailure(promise::fail);
-        });
+    private SqlNode getParsedSelect(SqlNode originalSqlNode, QueryParserResponse response) {
+        if (isAllColumnSelect(originalSqlNode)) {
+            return response.getSqlNode();
+        } else {
+            return new NullNotCastableRelToSqlConverter(sqlDialect).visitChild(0, response.getRelNode().project()).asStatement();
+        }
+    }
 
+    private boolean isAllColumnSelect(SqlNode sqlNode) {
+        return sqlNode.toSqlString(sqlDialect).getSql().contains(ALL_COLUMNS);
+    }
+
+    @SneakyThrows
+    protected void replaceSqlSelectQuery(DdlRequestContext context, boolean replace, SqlNode newSelectNode) {
+        val sql = (SqlCreateView) context.getSqlNode();
+        val newSql = new SqlCreateView(sql.getParserPosition(), replace, sql.getName(), sql.getColumnList(), newSelectNode);
+        context.setSqlNode(newSql);
+    }
+
+    private Future<QueryResult> createOrReplaceEntity(CreateViewContext ctx) {
+        val viewEntity = ctx.getViewEntity();
+        entityCacheService.remove(new EntityKey(viewEntity.getSchema(), viewEntity.getName()));
+        return entityDao.createEntity(viewEntity)
+                .otherwise(error -> checkCreateOrReplace(ctx, error))
+                .compose(r -> entityDao.getEntity(viewEntity.getSchema(), viewEntity.getName()))
+                .map(this::checkEntityType)
+                .compose(r -> entityDao.updateEntity(viewEntity))
+                .map(v -> QueryResult.emptyResult());
     }
 
     private Future<Void> checkSnapshotNotExist(SqlNode sqlNode) {
@@ -127,7 +156,7 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
         });
     }
 
-    private Future<Void> checkEntitiesType(String contextDatamartName, SqlNode sqlNode) {
+    private Future<Void> checkEntitiesType(SqlNode sqlNode, String contextDatamartName) {
         return Future.future(promise -> {
             final List<SqlTreeNode> nodes = new SqlSelectTree(sqlNode)
                     .findNodesByPathRegex(VIEW_AND_TABLE_PATTERN);
@@ -168,20 +197,20 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
         return entityFutures;
     }
 
-    private Future<Entity> getEntityFuture(DdlRequestContext ctx, SqlNode viewQuery, String datamart) {
-        return logicalSchemaProvider.getSchemaFromQuery(viewQuery, datamart)
-                .compose(datamarts -> columnMetadataService.getColumnMetadata(new QueryParserRequest(viewQuery, datamarts)))
-                .map(columnMetadata -> toViewEntity(ctx, columnMetadata));
+    private Future<Entity> getEntityFuture(DdlRequestContext ctx, SqlNode viewQuery, List<Datamart> datamarts) {
+        return columnMetadataService.getColumnMetadata(new QueryParserRequest(viewQuery, datamarts))
+                .map(columnMetadata -> toViewEntity(ctx, viewQuery, columnMetadata));
     }
 
-    private Entity toViewEntity(DdlRequestContext ctx, List<ColumnMetadata> columnMetadata) {
+    @SneakyThrows
+    private Entity toViewEntity(DdlRequestContext ctx, SqlNode viewQuery, List<ColumnMetadata> columnMetadata) {
         val tree = new SqlSelectTree(ctx.getSqlNode());
         val viewNameNode = SqlPreparer.getViewNameNode(tree);
         val schemaName = viewNameNode.tryGetSchemaName()
                 .orElseThrow(() -> new DtmException("Unable to get schema of view"));
         val viewName = viewNameNode.tryGetTableName()
                 .orElseThrow(() -> new DtmException("Unable to get name of view"));
-        val viewQuery = getViewQuery(tree).toSqlString(sqlDialect)
+        val viewQueryString = viewQuery.toSqlString(sqlDialect)
                 .getSql()
                 .replace("\n", " ").replace("\r", "");
         ctx.setDatamartName(schemaName);
@@ -189,7 +218,7 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
                 .name(viewName)
                 .schema(schemaName)
                 .entityType(EntityType.VIEW)
-                .viewQuery(viewQuery)
+                .viewQuery(viewQueryString)
                 .fields(getEntityFields(columnMetadata))
                 .build();
     }
@@ -208,15 +237,6 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
                 .size(cm.getSize())
                 .ordinalPosition(position)
                 .build();
-    }
-
-    protected SqlNode getViewQuery(SqlSelectTree tree) {
-        val queryByView = tree.findNodesByPath(VIEW_QUERY_PATH);
-        if (queryByView.isEmpty()) {
-            throw new DtmException("Unable to get view query");
-        } else {
-            return queryByView.get(0).getNode();
-        }
     }
 
     @SneakyThrows
@@ -248,6 +268,5 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
     protected final static class CreateViewContext {
         private final boolean createOrReplace;
         private final Entity viewEntity;
-        private final String sql;
     }
 }

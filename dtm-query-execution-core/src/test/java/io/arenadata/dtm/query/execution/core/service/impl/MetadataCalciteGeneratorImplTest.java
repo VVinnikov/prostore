@@ -7,7 +7,7 @@ import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguratio
 import io.arenadata.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
-import io.arenadata.dtm.query.execution.core.service.metadata.impl.MetadataCalciteGeneratorImpl;
+import io.arenadata.dtm.query.execution.core.service.metadata.MetadataCalciteGeneratorImpl;
 import org.apache.calcite.sql.SqlCreate;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;

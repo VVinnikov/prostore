@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.service.metadata.impl;
+package io.arenadata.dtm.query.execution.core.service.metadata;
 
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
@@ -317,7 +317,7 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
                 .forEach(field -> {
                     val type = field.getType();
                     if (needComment(type)) {
-                        result.add(commentOnColumn(entity.getNameWithSchema(), field.getName(), type.toString()));
+                        result.add(commentOnColumn(entity.getNameWithSchema(), field.getName(), getComment(type)));
                     }
                 });
         return result;
@@ -329,19 +329,18 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
             case FLOAT:
             case INT:
             case VARCHAR:
+            case UUID:
                 return true;
             default:
                 return false;
         }
     }
 
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    private class EntityQueries {
-        Optional<String> tableQuery = Optional.empty();
-        Optional<String> viewQuery = Optional.empty();
-        List<String> commentQueries = new ArrayList<>();
-        Optional<String> shardingKeyQuery = Optional.empty();
+    private String getComment(ColumnType type) {
+        if (type == ColumnType.UUID) {
+            return "VARCHAR";
+        }
+        return type.toString();
     }
+
 }

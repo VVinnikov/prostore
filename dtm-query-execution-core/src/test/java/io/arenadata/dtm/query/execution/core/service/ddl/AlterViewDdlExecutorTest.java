@@ -37,7 +37,7 @@ import io.arenadata.dtm.query.execution.core.factory.impl.CoreSchemaFactory;
 import io.arenadata.dtm.query.execution.core.service.ddl.impl.AlterViewDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.dml.ColumnMetadataService;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
-import io.arenadata.dtm.query.execution.core.service.metadata.impl.MetadataExecutorImpl;
+import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutorImpl;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import io.arenadata.dtm.query.execution.core.service.schema.impl.LogicalSchemaProviderImpl;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;

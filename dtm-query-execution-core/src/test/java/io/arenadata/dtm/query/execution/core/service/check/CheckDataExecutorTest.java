@@ -14,6 +14,8 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.check.CheckContext;
 import io.arenadata.dtm.query.execution.core.dto.delta.OkDelta;
+import io.arenadata.dtm.query.execution.core.factory.CheckQueryResultFactory;
+import io.arenadata.dtm.query.execution.core.factory.impl.check.CheckQueryResultFactoryImpl;
 import io.arenadata.dtm.query.execution.core.service.check.impl.CheckDataExecutor;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.datasource.impl.DataSourcePluginServiceImpl;
@@ -40,14 +42,14 @@ public class CheckDataExecutorTest {
     private final static String DATAMART_MNEMONIC = "schema";
     private final static Set<SourceType> SOURCE_TYPES = Stream.of(SourceType.ADB, SourceType.ADG, SourceType.ADQM)
             .collect(Collectors.toSet());
-
     private final DataSourcePluginService dataSourcePluginService = mock(DataSourcePluginServiceImpl.class);
     private final DeltaServiceDao deltaServiceDao = mock(DeltaServiceDao.class);
     private final TaskVerticleExecutor taskVerticleExecutor = mock(TaskVerticleExecutor.class);
     private final EntityDao entityDao = mock(EntityDao.class);
     private final DatamartDao datamartDao = mock(DatamartDao.class);
+    private final CheckQueryResultFactory queryResultFactory = mock(CheckQueryResultFactoryImpl.class);
     private final CheckDataExecutor checkDataExecutor = new CheckDataExecutor(dataSourcePluginService,
-            deltaServiceDao, entityDao, taskVerticleExecutor);
+            deltaServiceDao, entityDao, taskVerticleExecutor, queryResultFactory);
     private Entity entity;
 
     @BeforeEach

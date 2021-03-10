@@ -6,6 +6,7 @@ import io.arenadata.dtm.query.execution.plugin.api.AbstractDtmDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.api.service.*;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckDataService;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
+import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckVersionService;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TruncateHistoryService;
 import io.arenadata.dtm.query.execution.plugin.api.service.mppr.MpprService;
 import io.arenadata.dtm.query.execution.plugin.api.service.mppw.MppwService;
@@ -27,7 +28,8 @@ public class AdqmDtmDataSourcePlugin extends AbstractDtmDataSourcePlugin {
             RollbackService<Void> rollbackService,
             CheckTableService checkTableService,
             CheckDataService checkDataService,
-            TruncateHistoryService truncateHistoryService) {
+            TruncateHistoryService truncateHistoryService,
+            CheckVersionService checkVersionService) {
         super(ddlService,
                 adqmLlrService,
                 adqmMpprService,
@@ -36,6 +38,7 @@ public class AdqmDtmDataSourcePlugin extends AbstractDtmDataSourcePlugin {
                 rollbackService,
                 checkTableService,
                 checkDataService,
+                checkVersionService,
                 truncateHistoryService);
     }
 

@@ -20,7 +20,7 @@ public class UpdateInfoSchemaDdlPostExecutor implements PostExecutor<DdlRequestC
 
     @Override
     public Future<Void> execute(DdlRequestContext context) {
-        return informationSchemaService.update(context.getSqlNode());
+        return informationSchemaService.update(context.getEntity(), context.getDatamartName(), context.getSqlNode().getKind());
     }
 
     @Override

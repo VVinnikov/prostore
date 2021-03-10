@@ -7,5 +7,5 @@ import java.util.Map;
 
 @Data
 public class KafkaProducerProperty {
-  Map<String, String> property = new HashMap<>();
+    Map<String, String> property = new HashMap<>();
 }

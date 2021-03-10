@@ -10,6 +10,8 @@ import io.arenadata.dtm.query.calcite.core.extension.check.CheckType;
 import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckTable;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.check.CheckContext;
+import io.arenadata.dtm.query.execution.core.factory.CheckQueryResultFactory;
+import io.arenadata.dtm.query.execution.core.factory.impl.check.CheckQueryResultFactoryImpl;
 import io.arenadata.dtm.query.execution.core.service.check.impl.CheckTableExecutor;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.datasource.impl.DataSourcePluginServiceImpl;
@@ -35,7 +37,8 @@ public class CheckTableExecutorTest {
 
     private final DataSourcePluginService dataSourcePluginService = mock(DataSourcePluginServiceImpl.class);
     private final EntityDao entityDao = mock(EntityDao.class);
-    private final CheckTableExecutor checkTableExecutor = new CheckTableExecutor(dataSourcePluginService, entityDao);
+    private final CheckQueryResultFactory queryResultFactory = mock(CheckQueryResultFactoryImpl.class);
+    private final CheckTableExecutor checkTableExecutor = new CheckTableExecutor(dataSourcePluginService, entityDao, queryResultFactory);
     private Entity entity;
 
 

@@ -5,7 +5,7 @@ import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
 @Getter
-public class SqlSelectExt extends SqlSelect {
+public class SqlSelectExt extends SqlSelect implements SqlDataSourceTypeGetter {
 
     private SqlCharStringLiteral datasourceType;
 

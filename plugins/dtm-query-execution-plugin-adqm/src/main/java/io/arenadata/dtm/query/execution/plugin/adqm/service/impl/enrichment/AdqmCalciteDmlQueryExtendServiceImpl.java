@@ -171,6 +171,9 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
     }
 
     private void processProject(BuilderCondext builderCtx, RelNodeContext nodeContext) {
+        if (builderCtx.getBuilder().peek() instanceof Project) {
+            return;
+        }
         val project = (Project) nodeContext.child;
         if (builderCtx.getDeltaInformations().size() > 0) {
             val deltaConditions = getDeltaConditions(builderCtx.getDeltaInformations(), builderCtx.getBuilder());
@@ -340,7 +343,7 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
         if (lastParent instanceof Project) {
             return lastNode;
         } else {
-            return lastParent.copy(lastNode.getTraitSet(), Collections.singletonList(lastNode));
+            return lastParent.copy(lastParent.getTraitSet(), Collections.singletonList(lastNode));
         }
 
     }

@@ -1,5 +1,6 @@
-package io.arenadata.dtm.query.execution.core.service.metadata.impl;
+package io.arenadata.dtm.query.execution.core.service.metadata;
 
+import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityFieldUtils;
@@ -69,17 +70,18 @@ public class HsqlDdlQueryGenerator implements DdlQueryGenerator {
                 return "VARCHAR(36)";
             case CHAR:
             case VARCHAR:
+                return getFieldTypeWithSize(field.getSize(), field.getType());
             case TIME:
             case TIMESTAMP:
-                return getFieldTypeWithSize(field);
+                return getFieldTypeWithSize(field.getAccuracy(), field.getType());
             default:
                 return field.getType().toString();
         }
     }
 
-    private String getFieldTypeWithSize(EntityField field) {
-        val size = field.getSize() == null ? "" : "(" + field.getSize() + ")";
-        return field.getType().toString() + size;
+    private String getFieldTypeWithSize(Integer fieldSize, ColumnType type) {
+        val size = fieldSize == null ? "" : "(" + fieldSize + ")";
+        return type.toString() + size;
     }
 
     private void appendPrimaryKeys(StringBuilder builder, String tableName, Collection<EntityField> pkList) {

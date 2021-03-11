@@ -9,7 +9,6 @@ import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.adqm.calcite.AdqmCalciteContextProvider;
 import io.arenadata.dtm.query.execution.plugin.adqm.calcite.AdqmCalciteSchemaFactory;
-import io.arenadata.dtm.query.execution.plugin.adqm.configuration.CalciteConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.EnrichQueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmHelperTableNamesFactoryImpl;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmSchemaFactory;
@@ -47,10 +46,8 @@ class AdqmQueryEnrichmentServiceImplTest {
 
     @SneakyThrows
     public AdqmQueryEnrichmentServiceImplTest() {
-        val calciteConfiguration = new CalciteConfiguration();
-        calciteConfiguration.init();
-        val parserConfig = calciteConfiguration.configDdlParser(
-                calciteConfiguration.ddlParserImplFactory());
+        val parserConfig = TestUtils.CALCITE_CONFIGURATION.configDdlParser(
+                TestUtils.CALCITE_CONFIGURATION.ddlParserImplFactory());
         val contextProvider = new AdqmCalciteContextProvider(
                 parserConfig,
                 new AdqmCalciteSchemaFactory(new AdqmSchemaFactory()));
@@ -63,7 +60,7 @@ class AdqmQueryEnrichmentServiceImplTest {
                 queryParserService,
                 contextProvider,
                 new AdqmQueryGeneratorImpl(queryExtendService,
-                        calciteConfiguration.adgSqlDialect()),
+                        TestUtils.CALCITE_CONFIGURATION.adqmSqlDialect()),
                 new AdqmSchemaExtenderImpl(helperTableNamesFactory));
 
         expectedSqls = new String(Files.readAllBytes(Paths.get(getClass().getResource("/sql/expectedDmlSqls.sql").toURI())))

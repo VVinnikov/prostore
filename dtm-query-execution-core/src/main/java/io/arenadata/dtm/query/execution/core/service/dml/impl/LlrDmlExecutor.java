@@ -317,7 +317,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                 .requestId(queryRequest.getRequestId())
                 .metadata(context.getSourceRequest().getMetadata())
                 .deltaInformations(context.getDeltaInformations())
-                .sqlNode(context.getSourceRequest().getQueryTemplate().getTemplateNode())
+                .sqlNode(context.getDmlRequestContext().getSqlNode())
                 .envName(context.getDmlRequestContext().getEnvName())
                 .parameters(context.getSourceRequest().getQueryRequest().getParameters())
                 .build();

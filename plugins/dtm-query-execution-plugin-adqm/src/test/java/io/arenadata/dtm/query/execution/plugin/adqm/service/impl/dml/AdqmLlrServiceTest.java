@@ -83,15 +83,20 @@ public class AdqmLlrServiceTest {
     void testExecuteWithoutCacheSuccess() {
         List<ColumnMetadata> metadata = Collections.singletonList(ColumnMetadata.builder().build());
         UUID requestId = UUID.randomUUID();
+        SqlNode sqlNode = mock(SqlNode.class);
+        SqlString sqlString = mock(SqlString.class);
         LlrRequest request = LlrRequest.builder()
                 .requestId(requestId)
+                .sqlNode(sqlNode)
                 .metadata(metadata)
                 .sourceQueryTemplateResult(new QueryTemplateResult("", null, Collections.emptyList()))
                 .build();
-        SqlNode sqlNode = mock(SqlNode.class);
-        SqlString sqlString = mock(SqlString.class);
         when(sqlString.getSql()).thenReturn(ENRICHED_QUERY);
         when(sqlNode.toSqlString(any(SqlDialect.class))).thenReturn(sqlString);
+        when(templateExtractor.extract(any(SqlNode.class)))
+                .thenReturn(new QueryTemplateResult(ENRICHED_QUERY, sqlNode, Collections.emptyList()));
+        when(templateExtractor.extract(anyString()))
+                .thenReturn(new QueryTemplateResult(ENRICHED_QUERY, sqlNode, Collections.emptyList()));
         when(templateExtractor.enrichTemplate(any())).thenReturn(sqlNode);
         adqmLlrService.execute(request)
                 .onComplete(ar -> {

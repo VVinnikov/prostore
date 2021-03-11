@@ -67,12 +67,17 @@ public abstract class QueryResultCacheableLlrService implements LlrService<Query
             if (queryTemplateValue != null) {
                 promise.complete(getEnrichmentSqlFromTemplate(llrRq, queryTemplateValue));
             } else {
-                enrichQuery(llrRq)
+                val templateResult = templateExtractor.extract(llrRq.getSqlNode());
+                LlrRequest templatedLlrRequest = llrRq.toBuilder()
+                        .sourceQueryTemplateResult(templateResult)
+                        .sqlNode(templateResult.getTemplateNode())
+                        .build();
+                enrichQuery(templatedLlrRequest)
                         .compose(enrichRequest -> Future.future((Promise<String> p) -> {
                             val template = extractTemplateWithoutSystemFields(enrichRequest);
                             QueryTemplateValue templateValue = getQueryTemplateValue(template);
                             queryCacheService.put(getQueryTemplateKey(llrRq), templateValue)
-                                    .map(r -> getEnrichmentSqlFromTemplate(llrRq, templateValue))
+                                    .map(r -> getEnrichmentSqlFromTemplate(templatedLlrRequest, templateValue))
                                     .onComplete(p);
                         }))
                         .onComplete(promise);

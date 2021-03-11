@@ -344,12 +344,12 @@ public class DtmStatement implements BaseStatement {
     }
 
     @Override
-    public ResultSet createDriverResultSet(List<Field[]> fields, List<ColumnMetadata> metadata) {
-        return createResultSet(fields, metadata, DtmConnectionImpl.DEFAULT_TIME_ZONE);
+    public ResultSet createDriverResultSet(Field[] fields, List<Tuple> tuples) {
+        return createResultSet(fields, tuples, DtmConnectionImpl.DEFAULT_TIME_ZONE);
     }
 
-    private DtmResultSet createResultSet(List<Field[]> fields, List<ColumnMetadata> metadata, ZoneId timeZone) {
-        return new DtmResultSet(this.connection, fields, metadata, timeZone);
+    private DtmResultSet createResultSet(Field[] fields, List<Tuple> tuples, ZoneId timeZone) {
+        return new DtmResultSet(this.connection, fields, tuples, timeZone);
     }
 
     public class DtmResultHandler extends ResultHandlerBase {
@@ -369,9 +369,9 @@ public class DtmStatement implements BaseStatement {
         }
 
         @Override
-        public void handleResultRows(Query query, List<Field[]> fields, List<ColumnMetadata> metadata, ZoneId timeZone) {
+        public void handleResultRows(Query query, Field[] fields, List<Tuple> tuples, ZoneId timeZone) {
             try {
-                ResultSet rs = createResultSet(fields, metadata, timeZone);
+                ResultSet rs = createResultSet(fields, tuples, timeZone);
                 this.append(new ResultSetWrapper((DtmResultSet) rs));
             } catch (Exception e) {
                 this.handleError(new SQLException(e));

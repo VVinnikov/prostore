@@ -1,54 +1,54 @@
 package io.arenadata.dtm.jdbc.ext;
 
+import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.jdbc.core.BaseConnection;
 import io.arenadata.dtm.jdbc.core.Field;
+import io.arenadata.dtm.jdbc.core.Tuple;
 import io.arenadata.dtm.jdbc.util.DtmSqlException;
-import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import lombok.SneakyThrows;
-import lombok.val;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.sql.Date;
 import java.sql.*;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public class DtmResultSet extends AbstractResultSet {
     private static final Logger LOGGER = LoggerFactory.getLogger(DtmResultSet.class);
-    private final List<ColumnMetadata> metadata;
-    private List<Field[]> fields;
+    private Field[] fields;
+    protected List<Tuple> rows;
     private int currentRow = -1;
-    private Field[] thisRow;
+    private Tuple thisRow;
     private BaseConnection connection;
     private ResultSetMetaData rsMetaData;
+    private Map<String, Integer> columnNameIndexMap;
     private final ZoneId zoneId;
 
-    public DtmResultSet(BaseConnection connection, List<Field[]> fields, List<ColumnMetadata> metadata, ZoneId timeZone) {
+    public DtmResultSet(BaseConnection connection, Field[] fields, List<Tuple> tuples, ZoneId timeZone) {
         this.connection = connection;
         this.fields = fields;
-        this.thisRow = (fields == null || fields.isEmpty()) ?
-                new Field[0] : fields.get(0);
-        this.metadata = metadata;
+        this.rows = tuples;
+        this.thisRow = (tuples == null || tuples.isEmpty()) ?
+                new Tuple(0) : tuples.get(0);
         this.zoneId = timeZone;
     }
 
     public static DtmResultSet createEmptyResultSet() {
         return new DtmResultSet(null,
-                Collections.singletonList(new Field[]{new Field("insert_id", "")}),
+                new Field[]{new Field("", ColumnType.VARCHAR)},
                 Collections.emptyList(),
                 DtmConnectionImpl.DEFAULT_TIME_ZONE);
     }
 
     @Override
     public boolean next() {
-        if (this.currentRow + 1 >= this.fields.size()) {
+        if (this.currentRow + 1 >= this.rows.size()) {
             return false;
         } else {
             this.currentRow++;
@@ -59,7 +59,7 @@ public class DtmResultSet extends AbstractResultSet {
 
     @Override
     public boolean first() throws SQLException {
-        if (this.fields.size() <= 0) {
+        if (this.rows.size() <= 0) {
             return false;
         }
 
@@ -70,7 +70,7 @@ public class DtmResultSet extends AbstractResultSet {
     }
 
     private void initRowBuffer() {
-        this.thisRow = this.fields.get(this.currentRow);
+        this.thisRow = this.rows.get(this.currentRow);
     }
 
     @Override
@@ -90,35 +90,53 @@ public class DtmResultSet extends AbstractResultSet {
     public int findColumn(String columnLabel) {
         int col = findColumnIndex(columnLabel);
         if (col == 0) {
-            throw new DtmSqlException("Column not found" + columnLabel);
+            throw new DtmSqlException("Column not found: " + columnLabel);
         }
         return col;
     }
 
     private int findColumnIndex(String columnName) {
-        for (int i = 1; i <= this.thisRow.length; i++) {
-            if (this.thisRow[i - 1].getColumnLabel().equals(columnName)) {
-                return i;
-            }
+        if (this.columnNameIndexMap == null) {
+            this.columnNameIndexMap = createColumnNameIndexMap(this.fields);
         }
-        return 0;
+        Integer index = this.columnNameIndexMap.get(columnName);
+        if (index != null) {
+            return index;
+        } else {
+            return 0;
+        }
+    }
+
+    private Map<String, Integer> createColumnNameIndexMap(Field[] fields) {
+        Map<String, Integer> columnNameIndexMap = new HashMap(fields.length * 2);
+
+        for (int i = fields.length - 1; i >= 0; --i) {
+            String columnLabel = fields[i].getColumnLabel();
+            columnNameIndexMap.put(columnLabel, i + 1);
+        }
+
+        return columnNameIndexMap;
     }
 
     @Override
     public ResultSetMetaData getMetaData() {
         if (this.rsMetaData == null) {
-            this.rsMetaData = new DtmResultSetMetaData(this.connection, this.metadata);
+            this.rsMetaData = createMetaData();
         }
         return this.rsMetaData;
     }
 
+    protected ResultSetMetaData createMetaData() {
+        return new DtmResultSetMetaData(this.connection, this.fields);
+    }
+
     @Override
     public Object getObject(int columnIndex) throws SQLException {
-        final ColumnMetadata columnMetadata = this.metadata.get(columnIndex - 1);
+        final Field field = this.fields[columnIndex - 1];
         if (this.getValue(columnIndex) == null) {
             return null;
         }
-        switch (columnMetadata.getType()) {
+        switch (field.getDtmType()) {
             case INT:
             case BIGINT:
                 return this.getLong(columnIndex);
@@ -142,7 +160,7 @@ public class DtmResultSet extends AbstractResultSet {
                 return this.getTimestamp(columnIndex);
             default:
                 throw new SQLException(String.format("Column type %s for index %s not found!",
-                        columnMetadata.getType(), columnIndex));
+                        field.getDtmType(), columnIndex));
         }
     }
 
@@ -152,11 +170,11 @@ public class DtmResultSet extends AbstractResultSet {
     }
 
     private Object getValue(int columnIndex) throws SQLException {
-        Field field = this.thisRow[columnIndex - 1];
-        if (field == null) {
-            throw new SQLException(String.format("Field for index %s not found!", columnIndex));
+        if (this.thisRow == null) {
+            throw new DtmSqlException("ResultSet not positioned properly, perhaps you need to call next.");
+        } else {
+            return this.thisRow.get(columnIndex - 1);
         }
-        return field.getValue();
     }
 
     @Override
@@ -270,9 +288,9 @@ public class DtmResultSet extends AbstractResultSet {
     }
 
     private int getNanos(int columnIndex, Number tsValue) {
-        ColumnMetadata columnMetadata = metadata.get(columnIndex - 1);
-        if (columnMetadata.getSize() != null) {
-            int q = (int) Math.pow(10, 6 - columnMetadata.getSize());
+        Field field = fields[columnIndex - 1];
+        if (field.getSize() != null) {
+            int q = (int) Math.pow(10, 6 - field.getSize());
             return (int) (tsValue.longValue() % 1000000 / q * 1000 * q);
         } else {
             return 0;
@@ -367,8 +385,12 @@ public class DtmResultSet extends AbstractResultSet {
 
     @Override
     public Date getDate(int columnIndex, Calendar cal) throws SQLException {
-        val value = (LocalDate) this.thisRow[columnIndex - 1].getValue();
-        return Date.valueOf(value);
+        Object value = this.getValue(columnIndex);
+        if (value != null) {
+            return Date.valueOf((LocalDate) value);
+        } else {
+            return null;
+        }
     }
 
     @Override

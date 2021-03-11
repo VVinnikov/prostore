@@ -21,6 +21,7 @@ import lombok.val;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.info.BuildProperties;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -35,24 +36,28 @@ public class CheckVersionsExecutor implements CheckExecutor {
     private final WebClient webClient;
     private final ActivePluginsProperties activePluginsProperties;
     private final KafkaProperties kafkaProperties;
+    private final BuildProperties buildProperties;
 
     @Autowired
     public CheckVersionsExecutor(DataSourcePluginService dataSourcePluginService,
                                  CheckVersionQueryResultFactory queryResultFactory,
                                  @Qualifier("coreWebClient") WebClient webClient,
                                  ActivePluginsProperties activePluginsProperties,
-                                 @Qualifier("coreKafkaProperties") KafkaProperties kafkaProperties) {
+                                 @Qualifier("coreKafkaProperties") KafkaProperties kafkaProperties,
+                                 BuildProperties buildProperties) {
         this.dataSourcePluginService = dataSourcePluginService;
         this.queryResultFactory = queryResultFactory;
         this.webClient = webClient;
         this.activePluginsProperties = activePluginsProperties;
         this.kafkaProperties = kafkaProperties;
+        this.buildProperties = buildProperties;
     }
 
     @Override
     public Future<QueryResult> execute(CheckContext context) {
         return Future.future(promise -> {
             List<VersionInfo> versions = new ArrayList<>();
+            versions.add(new VersionInfo(buildProperties.getName(), buildProperties.getVersion()));
             CompositeFuture.join(getVersionsFutures(context))
                     .onSuccess(result -> {
                         result.list().forEach(versionList -> {

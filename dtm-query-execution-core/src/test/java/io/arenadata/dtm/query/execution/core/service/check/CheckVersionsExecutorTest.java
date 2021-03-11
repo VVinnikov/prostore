@@ -41,6 +41,7 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.boot.info.BuildProperties;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -73,7 +74,7 @@ public class CheckVersionsExecutorTest {
                 queryResultFactory,
                 webClient,
                 activePluginsProperties,
-                kafkaProperties);
+                kafkaProperties, new BuildProperties(new Properties()));
         QueryRequest queryRequest = new QueryRequest();
         queryRequest.setDatamartMnemonic("test");
         SqlCheckVersions sqlCheckVersions = mock(SqlCheckVersions.class);

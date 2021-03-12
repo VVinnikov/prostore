@@ -8,6 +8,7 @@ import io.arenadata.dtm.query.calcite.core.service.QueryTemplateExtractor;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.QueryEnrichmentService;
+import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.AdqmTemplateParameterConverter;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
 import io.vertx.core.Future;
 import org.apache.calcite.sql.SqlDialect;
@@ -35,7 +36,7 @@ public class AdqmLlrServiceTest {
     private final QueryTemplateExtractor templateExtractor = mock(QueryTemplateExtractor.class);
     private final SqlDialect sqlDialect = mock(SqlDialect.class);
     private final AdqmLlrService adqmLlrService = new AdqmLlrService(queryEnrichmentService, executorService,
-            queryCacheService, templateExtractor, sqlDialect);
+            queryCacheService, templateExtractor, sqlDialect, new AdqmTemplateParameterConverter());
 
     @BeforeEach
     void setUp() {
@@ -82,11 +83,21 @@ public class AdqmLlrServiceTest {
     void testExecuteWithoutCacheSuccess() {
         List<ColumnMetadata> metadata = Collections.singletonList(ColumnMetadata.builder().build());
         UUID requestId = UUID.randomUUID();
+        SqlNode sqlNode = mock(SqlNode.class);
+        SqlString sqlString = mock(SqlString.class);
         LlrRequest request = LlrRequest.builder()
                 .requestId(requestId)
+                .sqlNode(sqlNode)
                 .metadata(metadata)
                 .sourceQueryTemplateResult(new QueryTemplateResult("", null, Collections.emptyList()))
                 .build();
+        when(sqlString.getSql()).thenReturn(ENRICHED_QUERY);
+        when(sqlNode.toSqlString(any(SqlDialect.class))).thenReturn(sqlString);
+        when(templateExtractor.extract(any(SqlNode.class)))
+                .thenReturn(new QueryTemplateResult(ENRICHED_QUERY, sqlNode, Collections.emptyList()));
+        when(templateExtractor.extract(anyString()))
+                .thenReturn(new QueryTemplateResult(ENRICHED_QUERY, sqlNode, Collections.emptyList()));
+        when(templateExtractor.enrichTemplate(any())).thenReturn(sqlNode);
         adqmLlrService.execute(request)
                 .onComplete(ar -> {
                     assertTrue(ar.succeeded());

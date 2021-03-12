@@ -28,7 +28,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
-public class AdqmLlrServiceTest {
+class AdqmLlrServiceTest {
     private final static String ENRICHED_QUERY = "enriched query";
     private final QueryEnrichmentService queryEnrichmentService = mock(QueryEnrichmentService.class);
     private final DatabaseExecutor executorService = mock(DatabaseExecutor.class);
@@ -50,33 +50,6 @@ public class AdqmLlrServiceTest {
         result.put("column", "value");
         when(executorService.executeWithParams(any(), any(), any()))
                 .thenReturn(Future.succeededFuture(Collections.singletonList(result)));
-    }
-
-    @Test
-    void testExecuteWithCacheSuccess() {
-        when(queryCacheService.get(any())).thenReturn(QueryTemplateValue.builder().build());
-        SqlNode sqlNode = mock(SqlNode.class);
-        SqlString sqlString = mock(SqlString.class);
-        when(sqlString.getSql()).thenReturn(ENRICHED_QUERY);
-        when(sqlNode.toSqlString(any(SqlDialect.class))).thenReturn(sqlString);
-        when(templateExtractor.enrichTemplate(any())).thenReturn(sqlNode);
-        List<ColumnMetadata> metadata = Collections.singletonList(ColumnMetadata.builder().build());
-        UUID requestId = UUID.randomUUID();
-        LlrRequest request = LlrRequest.builder()
-                .requestId(requestId)
-                .metadata(metadata)
-                .sourceQueryTemplateResult(new QueryTemplateResult("", null, Collections.emptyList()))
-                .build();
-        adqmLlrService.execute(request)
-                .onComplete(ar -> {
-                    assertTrue(ar.succeeded());
-                    assertEquals("value", ar.result().getResult().get(0).get("column"));
-                    assertEquals(metadata, ar.result().getMetadata());
-                    assertEquals(requestId, ar.result().getRequestId());
-                    verify(queryCacheService, times(1)).get(any());
-                    verify(queryCacheService, never()).put(any(), any());
-                    verify(executorService, times(1)).executeWithParams(eq(ENRICHED_QUERY), eq(null), eq(metadata));
-                });
     }
 
     @Test
@@ -104,8 +77,6 @@ public class AdqmLlrServiceTest {
                     assertEquals("value", ar.result().getResult().get(0).get("column"));
                     assertEquals(metadata, ar.result().getMetadata());
                     assertEquals(requestId, ar.result().getRequestId());
-                    verify(queryCacheService, times(1)).get(any());
-                    verify(queryCacheService, times(1)).put(any(), any());
                     verify(executorService, times(1)).executeWithParams(eq(ENRICHED_QUERY), eq(null), eq(metadata));
                 });
     }

@@ -195,7 +195,7 @@ public abstract class AbstractQueryTemplateExtractor implements QueryTemplateExt
             return true;
         } else if (operand instanceof SqlIdentifier) {
             SqlIdentifier identifier = (SqlIdentifier) operand;
-            String columnName = identifier.getSimple();
+            String columnName = identifier.isSimple()? identifier.getSimple() : identifier.names.get(1);
             return excludeList.stream()
                     .noneMatch(e -> e.equalsIgnoreCase(columnName));
         } else {

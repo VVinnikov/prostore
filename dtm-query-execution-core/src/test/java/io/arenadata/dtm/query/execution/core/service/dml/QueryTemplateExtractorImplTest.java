@@ -71,6 +71,20 @@ class QueryTemplateExtractorImplTest {
     private static final String EXPECTED_SQL_WITH_BETWEEN_TEMPLATE = "SELECT *\n" +
             "FROM \"tbl1\"\n" +
             "WHERE \"x\" BETWEEN ASYMMETRIC ? AND ? AND \"z\" = \"x\"";
+    private static final String EXPECTED_SQL_WITH_JOIN = "SELECT *\n" +
+            "FROM \"testdb623\".\"products\"\n" +
+            "INNER JOIN \"testdb623\".\"categories\" ON \"testdb623\".\"products\".\"category_id\" = \"testdb623\".\"categories\".\"id\"\n" +
+            "LEFT JOIN \"testdb623\".\"categories\" ON \"testdb623\".\"products\".\"category_id\" = \"testdb623\".\"categories\".\"id\"\n" +
+            "RIGHT JOIN \"testdb623\".\"categories\" ON \"testdb623\".\"products\".\"category_id\" = \"testdb623\".\"categories\".\"id\"\n" +
+            "CROSS JOIN \"testdb623\".\"categories\"\n" +
+            "WHERE \"id\" = 1";
+    private static final String EXPECTED_SQL_WITH_JOIN_TEMPLATE = "SELECT *\n" +
+            "FROM \"testdb623\".\"products\"\n" +
+            "INNER JOIN \"testdb623\".\"categories\" ON \"testdb623\".\"products\".\"category_id\" = \"testdb623\".\"categories\".\"id\"\n" +
+            "LEFT JOIN \"testdb623\".\"categories\" ON \"testdb623\".\"products\".\"category_id\" = \"testdb623\".\"categories\".\"id\"\n" +
+            "RIGHT JOIN \"testdb623\".\"categories\" ON \"testdb623\".\"products\".\"category_id\" = \"testdb623\".\"categories\".\"id\"\n" +
+            "CROSS JOIN \"testdb623\".\"categories\"\n" +
+            "WHERE \"id\" = ?";
 
     private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private AbstractQueryTemplateExtractor extractor;
@@ -122,6 +136,11 @@ class QueryTemplateExtractorImplTest {
     @Test
     void extractWithIn() {
         assertExtract(EXPECTED_SQL_WITH_IN, EXPECTED_SQL_WITH_IN_TEMPLATE, 3);
+    }
+
+    @Test
+    void extractWithJoin() {
+        assertExtract(EXPECTED_SQL_WITH_JOIN, EXPECTED_SQL_WITH_JOIN_TEMPLATE, 1);
     }
 
     private void assertExtract(String sql, String template, int paramsSize) {

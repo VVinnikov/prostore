@@ -5,6 +5,7 @@ import io.arenadata.dtm.common.cache.QueryTemplateKey;
 import io.arenadata.dtm.common.cache.QueryTemplateValue;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.reader.QueryParameters;
+import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.service.QueryTemplateExtractor;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.EnrichQueryRequest;
@@ -67,6 +68,19 @@ public class AdqmLlrService extends QueryResultCacheableLlrService {
         } else {
             return null;
         }
+    }
+
+    // TODO add query caching support for ADQM
+    @Override
+    public Future<QueryResult> execute(LlrRequest request) {
+        return Future.future(promise -> enrichQuery(request)
+                .compose(enrichedQuery -> queryExecute(enrichedQuery, request.getParameters(), request.getMetadata()))
+                .map(result -> QueryResult.builder()
+                        .requestId(request.getRequestId())
+                        .metadata(request.getMetadata())
+                        .result(result)
+                        .build())
+                .onComplete(promise));
     }
 
     @Override

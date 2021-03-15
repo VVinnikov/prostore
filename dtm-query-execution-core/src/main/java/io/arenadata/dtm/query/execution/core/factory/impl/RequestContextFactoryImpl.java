@@ -10,6 +10,7 @@ import io.arenadata.dtm.query.calcite.core.extension.config.SqlConfigCall;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.truncate.SqlBaseTruncate;
 import io.arenadata.dtm.query.calcite.core.extension.delta.SqlDeltaCall;
 import io.arenadata.dtm.query.calcite.core.extension.dml.SqlDataSourceTypeGetter;
+import io.arenadata.dtm.query.calcite.core.extension.edml.SqlRollbackCrashedWriteOps;
 import io.arenadata.dtm.query.execution.core.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.core.dto.CoreRequestContext;
 import io.arenadata.dtm.query.execution.core.dto.check.CheckContext;
@@ -46,7 +47,6 @@ public class RequestContextFactoryImpl implements RequestContextFactory<CoreRequ
     @Override
     public CoreRequestContext<? extends DatamartRequest, ? extends SqlNode> create(QueryRequest request,
                                                                                    SqlNode node) {
-        //val changedQueryRequest = changeSql(request, node);
         val envName = coreConfiguration.getEnvName();
         if (isConfigRequest(node)) {
             return ConfigRequestContext.builder()
@@ -101,10 +101,11 @@ public class RequestContextFactoryImpl implements RequestContextFactory<CoreRequ
 
         switch (node.getKind()) {
             case INSERT:
+            case ROLLBACK:
                 return new EdmlRequestContext(
                         createRequestMetrics(request),
                         new DatamartRequest(request),
-                        (SqlInsert) node,
+                        node,
                         envName);
             default:
                 return DmlRequestContext.builder()
@@ -142,11 +143,6 @@ public class RequestContextFactoryImpl implements RequestContextFactory<CoreRequ
 
     private boolean isDdlRequest(SqlNode node) {
         return node instanceof SqlDdl || node instanceof SqlAlter || node instanceof SqlBaseTruncate;
-    }
-
-    private QueryRequest changeSql(QueryRequest request, SqlNode node) {
-        request.setSql(node.toSqlString(sqlDialect).getSql());
-        return request;
     }
 
 }

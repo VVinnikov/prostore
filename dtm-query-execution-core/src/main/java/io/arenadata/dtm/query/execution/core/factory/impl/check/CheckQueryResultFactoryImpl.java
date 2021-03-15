@@ -20,7 +20,6 @@ public class CheckQueryResultFactoryImpl implements CheckQueryResultFactory {
         Map<String, Object> resultMap = new HashMap<>();
         resultMap.put(CHECK_RESULT_COLUMN_NAME, result);
         return QueryResult.builder()
-                //.requestId(requestId)
                 .metadata(Collections.singletonList(ColumnMetadata.builder()
                         .name(CHECK_RESULT_COLUMN_NAME)
                         .type(ColumnType.VARCHAR)

@@ -730,3 +730,16 @@ SqlNode SqlTruncateHistory() :
         return new io.arenadata.dtm.query.calcite.core.extension.ddl.truncate.SqlTruncateHistory(s.end(this), id, datetime, conditions);
     }
 }
+SqlNode SqlRollbackCrashedWriteOps() :
+{
+    SqlParserPos pos;
+}
+{
+    <ROLLBACK> <CRASHED_WRITE_OPERATIONS>
+    {
+            pos = getPos();
+    }
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.edml.SqlRollbackCrashedWriteOps(pos);
+    }
+}

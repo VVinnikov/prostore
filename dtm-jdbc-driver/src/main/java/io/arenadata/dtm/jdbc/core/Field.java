@@ -1,41 +1,87 @@
 package io.arenadata.dtm.jdbc.core;
 
+import io.arenadata.dtm.common.model.ddl.ColumnType;
+
 /**
- * Информация о поле в ResultSet
+ * Field information in ResultSet
  */
 public class Field {
-
     /**
-     * Название колонки
+     * Column name
      */
     private String columnLabel;
-
     /**
-     * Значение в данном поле
+     * Column size
      */
-    private Object value;
+    private Integer size;
+    /**
+     * Column sql type id
+     */
+    private int sqlType;
+    /**
+     * Column dtm type
+     */
+    private ColumnType dtmType;
+    /**
+     * Field metadata
+     */
+    private FieldMetadata metadata;
 
-    public Field() {
+    public Field(String columnLabel, ColumnType dtmType) {
+        this.columnLabel = columnLabel;
+        this.dtmType = dtmType;
     }
 
-    public Field(String columnLabel, Object value) {
+    public Field(String columnLabel, ColumnType dtmType, FieldMetadata metadata) {
         this.columnLabel = columnLabel;
-        this.value = value;
+        this.dtmType = dtmType;
+        this.metadata = metadata;
+    }
+
+    public Field(String columnLabel, Integer size, ColumnType dtmType, FieldMetadata metadata) {
+        this.columnLabel = columnLabel;
+        this.size = size;
+        this.dtmType = dtmType;
+        this.metadata = metadata;
     }
 
     public String getColumnLabel() {
         return columnLabel;
     }
 
-    public Object getValue() {
-        return value;
+    public void setColumnLabel(String columnLabel) {
+        this.columnLabel = columnLabel;
     }
 
-    @Override
-    public String toString() {
-        return "Field{" +
-                "columnLabel='" + columnLabel + '\'' +
-                ", value=" + value +
-                '}';
+    public int getSqlType() {
+        return sqlType;
+    }
+
+    public void setSqlType(int sqlType) {
+        this.sqlType = sqlType;
+    }
+
+    public FieldMetadata getMetadata() {
+        return metadata;
+    }
+
+    public void setMetadata(FieldMetadata metadata) {
+        this.metadata = metadata;
+    }
+
+    public ColumnType getDtmType() {
+        return dtmType;
+    }
+
+    public void setDtmType(ColumnType dtmType) {
+        this.dtmType = dtmType;
+    }
+
+    public Integer getSize() {
+        return size;
+    }
+
+    public void setSize(Integer size) {
+        this.size = size;
     }
 }

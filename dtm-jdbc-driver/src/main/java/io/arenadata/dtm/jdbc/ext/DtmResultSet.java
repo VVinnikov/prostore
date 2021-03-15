@@ -6,8 +6,6 @@ import io.arenadata.dtm.jdbc.core.Field;
 import io.arenadata.dtm.jdbc.core.Tuple;
 import io.arenadata.dtm.jdbc.util.DtmSqlException;
 import lombok.SneakyThrows;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -20,15 +18,14 @@ import java.time.ZoneId;
 import java.util.*;
 
 public class DtmResultSet extends AbstractResultSet {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DtmResultSet.class);
-    private Field[] fields;
+    private final Field[] fields;
+    private final BaseConnection connection;
+    private final ZoneId zoneId;
     protected List<Tuple> rows;
     private int currentRow = -1;
     private Tuple thisRow;
-    private BaseConnection connection;
     private ResultSetMetaData rsMetaData;
     private Map<String, Integer> columnNameIndexMap;
-    private final ZoneId zoneId;
 
     public DtmResultSet(BaseConnection connection, Field[] fields, List<Tuple> tuples, ZoneId timeZone) {
         this.connection = connection;
@@ -59,7 +56,7 @@ public class DtmResultSet extends AbstractResultSet {
 
     @Override
     public boolean first() throws SQLException {
-        if (this.rows.size() <= 0) {
+        if (this.rows.isEmpty()) {
             return false;
         }
 
@@ -108,14 +105,14 @@ public class DtmResultSet extends AbstractResultSet {
     }
 
     private Map<String, Integer> createColumnNameIndexMap(Field[] fields) {
-        Map<String, Integer> columnNameIndexMap = new HashMap(fields.length * 2);
+        Map<String, Integer> indexMap = new HashMap<>(fields.length * 2);
 
         for (int i = fields.length - 1; i >= 0; --i) {
             String columnLabel = fields[i].getColumnLabel();
-            columnNameIndexMap.put(columnLabel, i + 1);
+            indexMap.put(columnLabel, i + 1);
         }
 
-        return columnNameIndexMap;
+        return indexMap;
     }
 
     @Override
@@ -369,18 +366,8 @@ public class DtmResultSet extends AbstractResultSet {
     }
 
     @Override
-    public int getRow() throws SQLException {
-        return 0;
-    }
-
-    @Override
-    public boolean absolute(int row) throws SQLException {
-        return false;
-    }
-
-    @Override
     public int getType() throws SQLException {
-        return 0;
+        return ResultSet.TYPE_FORWARD_ONLY;
     }
 
     @Override
@@ -415,12 +402,16 @@ public class DtmResultSet extends AbstractResultSet {
 
     @Override
     public <T> T unwrap(Class<T> iface) throws SQLException {
-        return null;
+        if (isWrapperFor(iface)) {
+            return iface.cast(this);
+        } else {
+            throw new SQLException("Cannot unwrap to " + iface.getName());
+        }
     }
 
     @Override
     public boolean isWrapperFor(Class<?> iface) throws SQLException {
-        return false;
+        return iface != null && iface.isAssignableFrom(getClass());
     }
 
 }

@@ -25,7 +25,7 @@ public class LlrRequest extends PluginRequest {
     private final List<Datamart> schema;
     private final SqlNode sqlNode;
 
-    @Builder
+    @Builder(toBuilder = true)
     public LlrRequest(UUID requestId,
                       String envName,
                       String datamartMnemonic,

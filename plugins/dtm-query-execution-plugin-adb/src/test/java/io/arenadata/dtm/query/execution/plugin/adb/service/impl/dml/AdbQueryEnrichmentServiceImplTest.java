@@ -50,7 +50,6 @@ public class AdbQueryEnrichmentServiceImplTest {
         QueryExtendService queryExtender = new AdbCalciteDmlQueryExtendServiceImpl();
 
         CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
-        calciteConfiguration.init();
         SqlParser.Config parserConfig = calciteConfiguration.configDdlParser(
                 calciteConfiguration.ddlParserImplFactory()
         );

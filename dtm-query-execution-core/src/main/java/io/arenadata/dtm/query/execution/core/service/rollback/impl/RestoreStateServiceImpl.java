@@ -13,15 +13,15 @@ import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.delta.DeltaWriteOp;
+import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.edml.EraseWriteOpResult;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadFailedExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadExternalTableExecutor;
 import io.arenadata.dtm.query.execution.core.service.rollback.RestoreStateService;
-import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -29,9 +29,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Component
@@ -66,36 +66,59 @@ public class RestoreStateServiceImpl implements RestoreStateService {
     @Override
     public Future<Void> restoreState() {
         return datamartDao.getDatamarts()
-                .compose(this::processDatamarts)
-                .onSuccess(success -> log.info("State sucessfully restored"))
+                .compose(this::restoreDatamarts)
+                .onSuccess(success -> log.info("State successfully restored"))
                 .onFailure(err -> {
                     throw new DtmException("Error while trying to restore state", err);
                 });
     }
 
-    private Future<Void> processDatamarts(List<String> datamarts) {
+    @Override
+    public Future<List<EraseWriteOpResult>> restoreErase(String datamart) {
+        return deltaServiceDao.getDeltaWriteOperations(datamart)
+                .compose(ops -> eraseOperations(datamart, ops));
+    }
+
+    @Override
+    public Future<Void> restoreUpload(String datamart) {
+        return deltaServiceDao.getDeltaWriteOperations(datamart)
+                .compose(ops -> uploadOperations(datamart, ops));
+    }
+
+    private Future<Void> restoreDatamarts(List<String> datamarts) {
+        return Future.future(p -> CompositeFuture.join(Stream.concat(datamarts.stream().map(this::restoreErase),
+                datamarts.stream().map(this::restoreUpload))
+                .collect(Collectors.toList()))
+                .onSuccess(success -> p.complete())
+                .onFailure(p::fail));
+    }
+
+    private Future<List<EraseWriteOpResult>> eraseOperations(String datamart, List<DeltaWriteOp> ops) {
+        if (ops == null) {
+            return Future.succeededFuture(Collections.emptyList());
+        }
         return Future.future(p -> {
-            CompositeFuture.join(datamarts.stream()
-                    .map(this::getAndProcessOpertations)
+            CompositeFuture.join(ops.stream()
+                    .map(op -> getDestinationSourceEntities(datamart, op.getTableName(), op.getTableNameExt())
+                            .compose(entities -> eraseWriteOperation(entities.get(0), entities.get(1), op)))
                     .collect(Collectors.toList()))
-                    .onSuccess(success -> p.complete())
+                    .onSuccess(success -> {
+                        List<Optional<EraseWriteOpResult>> erOptList = success.list();
+                        p.complete(erOptList.stream().filter(Optional::isPresent)
+                                .map(Optional::get).collect(Collectors.toList()));
+                    })
                     .onFailure(p::fail);
         });
     }
 
-    private Future<Void> getAndProcessOpertations(String datamart) {
-        return deltaServiceDao.getDeltaWriteOperations(datamart)
-                .compose(ops -> processOperations(datamart, ops));
-    }
-
-    private Future<Void> processOperations(String datamart, List<DeltaWriteOp> ops) {
+    private Future<Void> uploadOperations(String datamart, List<DeltaWriteOp> ops) {
         if (ops == null) {
             return Future.succeededFuture();
         }
         return Future.future(p -> {
             CompositeFuture.join(ops.stream()
                     .map(op -> getDestinationSourceEntities(datamart, op.getTableName(), op.getTableNameExt())
-                            .compose(entities -> processWriteOperation(entities.get(0), entities.get(1), op)))
+                            .compose(entities -> uploadWriteOperation(entities.get(0), entities.get(1), op)))
                     .collect(Collectors.toList()))
                     .onSuccess(success -> p.complete())
                     .onFailure(p::fail);
@@ -108,7 +131,28 @@ public class RestoreStateServiceImpl implements RestoreStateService {
                 .onFailure(p::fail));
     }
 
-    private Future<Void> processWriteOperation(Entity dest, Entity source, DeltaWriteOp op) {
+    private Future<Optional<EraseWriteOpResult>> eraseWriteOperation(Entity dest, Entity source, DeltaWriteOp op) {
+        EdmlRequestContext context = createEdmlRequestContext(dest, source, op);
+        if (op.getStatus() == 2) {
+            return edmlUploadFailedExecutor.execute(context)
+                    .map(v -> Optional.of(new EraseWriteOpResult(dest.getName(), op.getSysCn())));
+        } else {
+            return Future.succeededFuture(Optional.empty());
+        }
+    }
+
+    private Future<Void> uploadWriteOperation(Entity dest, Entity source, DeltaWriteOp op) {
+        EdmlRequestContext context = createEdmlRequestContext(dest, source, op);
+        if (op.getStatus() == 0) {
+            return Future.future(promise -> uploadExternalTableExecutor.execute(context)
+                    .onSuccess(success -> promise.complete())
+                    .onFailure(promise::fail));
+        } else {
+            return Future.succeededFuture();
+        }
+    }
+
+    private EdmlRequestContext createEdmlRequestContext(Entity dest, Entity source, DeltaWriteOp op) {
         val queryRequest = new QueryRequest();
         queryRequest.setRequestId(UUID.randomUUID());
         queryRequest.setSql(op.getQuery());
@@ -124,18 +168,11 @@ public class RestoreStateServiceImpl implements RestoreStateService {
                         .isActive(true)
                         .build(),
                 datamartRequest,
-                (SqlInsert) sqlNode,
+                sqlNode,
                 envName);
         context.setSysCn(op.getSysCn());
         context.setSourceEntity(source);
         context.setDestinationEntity(dest);
-
-        if (op.getStatus() == 0) {
-            return Future.future(promise -> uploadExternalTableExecutor.execute(context)
-                    .onSuccess(success -> promise.complete())
-                    .onFailure(promise::fail));
-        } else if (op.getStatus() == 2) {
-            return edmlUploadFailedExecutor.execute(context);
-        } else return Future.succeededFuture();
+        return context;
     }
 }

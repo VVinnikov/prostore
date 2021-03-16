@@ -62,6 +62,7 @@ data: {
       "CHECK_DATA"
       "CHECK_VERSIONS"
       "HISTORY"
+      "CRASHED_WRITE_OPERATIONS"
     ]
 
     # List of keywords from "keywords" section that are not reserved.
@@ -421,6 +422,7 @@ data: {
         "SqlCheckData()"
         "SqlCheckVersions()"
         "SqlTruncateHistory()"
+        "SqlRollbackCrashedWriteOps()"
     ]
 
     # List of methods for parsing custom literals.

@@ -18,6 +18,7 @@ import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.SqlKind;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -45,8 +46,16 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
 
     @Override
     public Future<QueryResult> execute(EdmlRequestContext request) {
-        return defineTablesAndType(request)
+        return defineEdmlAction(request)
                 .compose(edmlType -> executeInternal(request, edmlType));
+    }
+
+    private Future<EdmlAction> defineEdmlAction(EdmlRequestContext context) {
+        if (context.getSqlNode().getKind() == SqlKind.ROLLBACK) {
+            return Future.succeededFuture(EdmlAction.ROLLBACK);
+        } else {
+            return defineTablesAndType(context);
+        }
     }
 
     private Future<EdmlAction> defineTablesAndType(EdmlRequestContext context) {

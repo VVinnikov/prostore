@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.configuration;
 
-import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
+import io.arenadata.dtm.calcite.adqm.configuration.AdqmCalciteConfiguration;
 import io.arenadata.dtm.query.calcite.core.dialect.LimitSqlDialect;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
@@ -40,7 +40,7 @@ public class CalciteConfiguration {
 
     @Bean("adqmParser")
     public SqlParserImplFactory ddlParserImplFactory() {
-        return new CalciteCoreConfiguration().eddlParserImplFactory();
+        return new AdqmCalciteConfiguration().eddlParserImplFactory();
     }
 
 

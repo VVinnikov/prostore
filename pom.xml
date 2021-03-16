@@ -20,6 +20,7 @@
         <module>plugins</module>
         <module>dtm-query-execution-core</module>
         <module>dtm-status-monitor</module>
+        <module>dtm-calcite-adqm</module>
     </modules>
 
     <properties>

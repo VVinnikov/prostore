@@ -158,7 +158,7 @@ public class SqlEddlParserImplTest {
                 SqlNodeUtils.getOne(sqlCreateUploadExternalTable, LocationOperator.class).getLocation());
         assertEquals(ExternalTableFormat.AVRO,
                 SqlNodeUtils.getOne(sqlCreateUploadExternalTable, FormatOperator.class).getFormat());
-        assertNull(SqlNodeUtils.getOne((SqlCall) sqlNode, MassageLimitOperator.class).getMessageLimit());
+        assertNull(SqlNodeUtils.getOne((SqlCall) sqlNode, MessageLimitOperator.class).getMessageLimit());
     }
 
     @Test
@@ -191,7 +191,7 @@ public class SqlEddlParserImplTest {
                 SqlNodeUtils.getOne(sqlCreateUploadExternalTable, LocationOperator.class).getLocation());
         assertEquals(ExternalTableFormat.AVRO,
                 SqlNodeUtils.getOne(sqlCreateUploadExternalTable, FormatOperator.class).getFormat());
-        assertEquals(1000, SqlNodeUtils.getOne((SqlCall) sqlNode, MassageLimitOperator.class).getMessageLimit());
+        assertEquals(1000, SqlNodeUtils.getOne((SqlCall) sqlNode, MessageLimitOperator.class).getMessageLimit());
     }
 
     @Test

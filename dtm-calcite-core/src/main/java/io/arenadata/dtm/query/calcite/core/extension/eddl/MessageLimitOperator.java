@@ -7,14 +7,14 @@ import org.apache.calcite.util.ImmutableNullableList;
 import java.util.List;
 import java.util.Optional;
 
-public class MassageLimitOperator extends SqlCall {
+public class MessageLimitOperator extends SqlCall {
 
     private final Integer messageLimit;
 
     private static final SqlOperator OPERATOR_MESSAGE_LIMIT =
             new SqlSpecialOperator("MESSAGE_LIMIT", SqlKind.OTHER_DDL);
 
-    public MassageLimitOperator(SqlParserPos pos, SqlNumericLiteral messageLimit) {
+    public MessageLimitOperator(SqlParserPos pos, SqlNumericLiteral messageLimit) {
         super(pos);
         this.messageLimit = Optional.ofNullable(messageLimit).map(c -> c.intValue(true)).orElse(null);
     }

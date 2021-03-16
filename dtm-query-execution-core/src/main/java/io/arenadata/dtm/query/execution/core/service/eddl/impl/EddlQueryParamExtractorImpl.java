@@ -115,7 +115,7 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
             val avroSchema = avroSchemaGenerator.generateTableSchema(entity);
             val locationOperator = SqlNodeUtils.getOne(ddl, LocationOperator.class);
             val format = SqlNodeUtils.getOne(ddl, FormatOperator.class).getFormat();
-            val messageLimitOperator = SqlNodeUtils.getOne(ddl, MassageLimitOperator.class);
+            val messageLimitOperator = SqlNodeUtils.getOne(ddl, MessageLimitOperator.class);
             return CreateUploadExternalTableQuery.builder()
                     .schemaName(tableInfo.getSchemaName())
                     .tableName(tableInfo.getTableName())

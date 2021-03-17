@@ -4,13 +4,11 @@ import io.arenadata.dtm.common.calcite.CalciteContext;
 import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.calcite.core.rel2sql.NullNotCastableRelToSqlConverter;
+import io.arenadata.dtm.query.calcite.core.util.RelNodeUtil;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.QueryGeneratorContext;
 import io.arenadata.dtm.query.execution.plugin.adb.service.QueryExtendService;
 import io.arenadata.dtm.query.execution.plugin.adb.service.QueryGenerator;
-import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
@@ -49,15 +47,21 @@ public class AdbQueryGeneratorImpl implements QueryGenerator {
         return Future.future(promise -> {
             val generatorContext = getContext(relNode, deltaInformations, calciteContext);
             val extendedQuery = queryExtendService.extendQuery(generatorContext);
-            RelNode planAfter = null;
-            try {
-                planAfter = calciteContext.getPlanner().transform(0,
-                        extendedQuery.getTraitSet().replace(EnumerableConvention.INSTANCE),
-                        extendedQuery);
-            } catch (RelConversionException e) {
-                promise.fail(new DtmException("Error converting rel node", e));
+            RelNode resultRelNode = null;
+            if (RelNodeUtil.isNeedToTrimSortColumns(relNode, extendedQuery)) {
+                resultRelNode = RelNodeUtil.trimUnusedSortColumn(calciteContext.getRelBuilder(),
+                        extendedQuery,
+                        relNode.validatedRowType);
+            } else {
+                try {
+                    resultRelNode = calciteContext.getPlanner()
+                            .transform(0, extendedQuery.getTraitSet().replace(EnumerableConvention.INSTANCE),
+                                    extendedQuery);
+                } catch (RelConversionException e) {
+                    promise.fail(new DtmException("Error in converting rel node", e));
+                }
             }
-            val sqlNodeResult = new NullNotCastableRelToSqlConverter(sqlDialect).visitChild(0, planAfter).asStatement();
+            val sqlNodeResult = new NullNotCastableRelToSqlConverter(sqlDialect).visitChild(0, resultRelNode).asStatement();
             val queryResult = Util.toLinux(sqlNodeResult.toSqlString(sqlDialect).getSql()).replaceAll("\n", " ");
             log.debug("sql = " + queryResult);
             promise.complete(queryResult);

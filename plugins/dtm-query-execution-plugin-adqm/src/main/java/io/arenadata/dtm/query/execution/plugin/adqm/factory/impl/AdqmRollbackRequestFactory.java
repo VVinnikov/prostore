@@ -60,12 +60,12 @@ public class AdqmRollbackRequestFactory implements RollbackRequestFactory<AdqmRo
             .map(EntityField::getName)
             .collect(Collectors.joining(","));
         return INSERT_INTO_TEMPLATE
-            .replaceAll("<dbname>", datamart)
-            .replaceAll("<tablename>", entity.getName())
-            .replaceAll("<fields>", fields)
-            .replaceAll("<maxLong>", String.valueOf(Long.MAX_VALUE))
-            .replaceAll("<sys_cn>", String.valueOf(sysCn))
-            .replaceAll("<prev_sys_cn>", String.valueOf(sysCn - 1));
+            .replace("<dbname>", datamart)
+            .replace("<tablename>", entity.getName())
+            .replace("<fields>", fields)
+            .replace("<maxLong>", String.valueOf(Long.MAX_VALUE))
+            .replace("<sys_cn>", String.valueOf(sysCn))
+            .replace("<prev_sys_cn>", String.valueOf(sysCn - 1));
     }
 
     private String getDropTableSql(String datamart, String entity, String tableSuffix, String cluster) {

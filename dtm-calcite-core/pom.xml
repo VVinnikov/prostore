@@ -160,7 +160,6 @@
                         <configuration>
                             <config>src/main/codegen/config.fmpp</config>
                             <output>${project.build.directory}/generated-sources/fmpp</output>
-                            <!--<templates>${project.build.directory}/codegen/templates</templates>-->
                             <templates>src/main/codegen/templates</templates>
                         </configuration>
                         <id>generate-fmpp-sources</id>

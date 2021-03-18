@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class SqlDeltaDdlParserImplTest {
+class SqlDeltaDdlParserImplTest {
 
     private final CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
     private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();

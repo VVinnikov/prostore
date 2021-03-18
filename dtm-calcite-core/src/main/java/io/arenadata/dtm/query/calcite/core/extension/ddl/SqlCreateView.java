@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.calcite.core.extension.ddl;
 
 import io.arenadata.dtm.query.calcite.core.extension.parser.ParseException;
+import io.arenadata.dtm.query.calcite.core.util.SqlNodeUtil;
 import lombok.Getter;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -21,25 +22,14 @@ public class SqlCreateView extends SqlCreate {
         super(OPERATOR, pos, replace, false);
         this.name = (SqlIdentifier) Objects.requireNonNull(name);
         this.columnList = columnList;
-        this.query = (SqlNode) checkQueryAndGet(Objects.requireNonNull(query));
-    }
-
-    private SqlNode checkQueryAndGet(SqlNode query) throws ParseException {
-        if (query instanceof SqlSelect) {
-            if (((SqlSelect) query).getFrom() == null) {
-                throw new ParseException("View query must have from clause!");
-            } else {
-                return query;
-            }
-        } else {
-            throw new ParseException(String.format("Type %s of query does not support!", query.getClass().getName()));
-        }
+        this.query = SqlNodeUtil.getViewQueryAndCheck(Objects.requireNonNull(query));
     }
 
     public List<SqlNode> getOperandList() {
         return ImmutableNullableList.of(this.name, this.columnList, this.query);
     }
 
+    @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
         if (this.getReplace()) {
             writer.keyword("CREATE OR REPLACE");
@@ -51,10 +41,10 @@ public class SqlCreateView extends SqlCreate {
         this.name.unparse(writer, leftPrec, rightPrec);
         if (this.columnList != null) {
             SqlWriter.Frame frame = writer.startList("(", ")");
-            Iterator var5 = this.columnList.iterator();
+            Iterator<SqlNode> var5 = this.columnList.iterator();
 
             while (var5.hasNext()) {
-                SqlNode c = (SqlNode) var5.next();
+                SqlNode c = var5.next();
                 writer.sep(",");
                 c.unparse(writer, 0, 0);
             }

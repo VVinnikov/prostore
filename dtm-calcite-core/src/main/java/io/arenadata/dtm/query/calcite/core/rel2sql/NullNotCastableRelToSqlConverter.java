@@ -8,11 +8,13 @@ import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.sql.*;
+import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.SqlLiteral;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlNodeList;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class NullNotCastableRelToSqlConverter extends RelToSqlConverter {
     /**
@@ -29,9 +31,6 @@ public class NullNotCastableRelToSqlConverter extends RelToSqlConverter {
         e.getVariablesSet();
         Result x = visitChild(0, e.getInput());
         parseCorrelTable(e, x);
-        if (isStar(e.getChildExps(), e.getInput().getRowType(), e.getRowType())) {
-            return x;
-        }
         final Builder builder = x.builder(e, Clause.SELECT);
         final List<SqlNode> selectList = new ArrayList<>();
         for (RexNode ref : e.getChildExps()) {
@@ -73,6 +72,8 @@ public class NullNotCastableRelToSqlConverter extends RelToSqlConverter {
             throw new AssertionError("Need to implement " + e.getClass().getName());
         }
     }
+
+
 
     @Override
     protected boolean isAnon() {

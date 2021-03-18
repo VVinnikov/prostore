@@ -1,7 +1,10 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.enrichment;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.delta.DeltaType;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.QueryGeneratorContext;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.AdqmHelperTableNamesFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.QueryExtendService;
@@ -15,7 +18,10 @@ import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelHomogeneousShuttle;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
-import org.apache.calcite.rel.core.*;
+import org.apache.calcite.rel.core.Filter;
+import org.apache.calcite.rel.core.Join;
+import org.apache.calcite.rel.core.Project;
+import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
@@ -37,8 +43,8 @@ import static io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants.*;
 @Service("adqmCalciteDmlQueryExtendService")
 public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService {
     private static final List<String> SYSTEM_FIELDS_PATTERNS = SYSTEM_FIELDS.stream()
-            .map(sf -> sf + "(\\d+|)")
-            .collect(Collectors.toList());
+        .map(sf -> sf + "(\\d+|)")
+        .collect(Collectors.toList());
     private static final int SCHEMA_INDEX = 0;
     private static final int TABLE_NAME_INDEX = 1;
     private static final int ONE_LITERAL = 1;
@@ -59,25 +65,25 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
         val withoutSystemFields = filterSystemFields(ctx, physicalTableNames);
         val allRelNodeCtxs = getRelNodeContexts(ctx, withoutSystemFields);
         val groupByDepth = allRelNodeCtxs.stream()
-                .collect(Collectors.groupingBy(RelNodeContext::getDepth, Collectors.toList()));
+            .collect(Collectors.groupingBy(RelNodeContext::getDepth, Collectors.toList()));
         val depthSort = groupByDepth.keySet().stream()
-                .sorted(Comparator.reverseOrder())
-                .collect(Collectors.toList());
+            .sorted(Comparator.reverseOrder())
+            .collect(Collectors.toList());
         if (depthSort.isEmpty()) {
             return withoutSystemFields;
         }
         RelNode lastParent = null;
-        BuilderCondext builderCtx = null;
-        val relBuilderMap = new HashMap<RelNode, BuilderCondext>();
+        BuilderContext builderCtx = null;
+        val relBuilderMap = new HashMap<RelNode, BuilderContext>();
         for (Integer depth : depthSort) {
             val relNodeContexts = groupByDepth.get(depth).stream()
-                    .sorted(Comparator.comparing(RelNodeContext::getI))
-                    .collect(Collectors.toList());
+                .sorted(Comparator.comparing(RelNodeContext::getI))
+                .collect(Collectors.toList());
             for (RelNodeContext nodeContext : relNodeContexts) {
                 lastParent = nodeContext.parent;
                 if (nodeContext.child instanceof TableScan) {
                     builderCtx = getOrCreateBuilderCtxByParent(ctx, lastParent, relBuilderMap);
-                    proccessTableScan(builderCtx, nodeContext);
+                    processTableScan(builderCtx, nodeContext);
                 } else {
                     builderCtx = getOrCreateBuilderCtxByChild(ctx, relBuilderMap, nodeContext);
                     builderCtx.setLastChildNode(nodeContext.getChild());
@@ -87,46 +93,62 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
                         processFilter(builderCtx, nodeContext);
                     } else if (nodeContext.child instanceof Project) {
                         processProject(builderCtx, nodeContext);
-                    } else if (nodeContext.child instanceof Aggregate) {
-                        builderCtx.getBuilder().push(
-                                nodeContext.child.copy(
-                                        nodeContext.child.getTraitSet(),
-                                        Collections.singletonList(builderCtx.getBuilder().build())
-                                )
-                        );
-                        if (nodeContext.getParent() instanceof Project) {
-                            Project parent = (Project) nodeContext.getParent();
-                            builderCtx.getBuilder().project(parent.getChildExps());
-                        }
                     } else {
-                        builderCtx.getBuilder().push(
-                                nodeContext.child.copy(
-                                        nodeContext.child.getTraitSet(),
-                                        Collections.singletonList(builderCtx.getBuilder().build())
-                                )
+                        val relBuilder = builderCtx.getBuilder();
+                        relBuilder.push(
+                            nodeContext.child.copy(
+                                nodeContext.child.getTraitSet(),
+                                Collections.singletonList(relBuilder.build())
+                            )
                         );
+//                        if (nodeContext.child instanceof Aggregate) {
+//                            relBuilder.push(
+//                                nodeContext.child.copy(
+//                                    nodeContext.child.getTraitSet(),
+//                                    Collections.singletonList(relBuilder.build())
+//                                )
+//                            );
+//                            if (nodeContext.getParent() instanceof Project) {
+//                                Project parent = (Project) nodeContext.getParent();
+//                                relBuilder.project(relBuilder.fields(parent.getRowType().getFieldNames()));
+//                            }
+//                        } else {
+//                            relBuilder.push(
+//                                nodeContext.child.copy(
+//                                    nodeContext.child.getTraitSet(),
+//                                    Collections.singletonList(relBuilder.build())
+//                                )
+//                            );
+//                            relBuilder.project(relBuilder.fields(nodeContext.getParent().getRowType().getFieldNames()));
+//                        }
                     }
                 }
                 if (!relBuilderMap.containsKey(nodeContext.getParent())) {
                     relBuilderMap.put(nodeContext.getParent(), builderCtx);
+                } else if (builderCtx.getBuilder().peek() != null) {
+                    relBuilderMap.get(nodeContext.getParent()).getBuilders().add(builderCtx.getBuilder());
                 }
             }
         }
-
         val resultEnrichmentNode = getResultEnrichmentNode(lastParent, builderCtx);
         return removeUnnecessaryCast(resultEnrichmentNode);
     }
 
     private RelNode filterSystemFields(QueryGeneratorContext ctx, RelNode physicalTableNames) {
-        val logicalFields = physicalTableNames
-                .getRowType()
-                .getFieldNames().stream()
-                .filter(fieldName -> SYSTEM_FIELDS_PATTERNS.stream().noneMatch(fieldName::matches))
-                .collect(Collectors.toList());
-        return ctx.getRelBuilder()
-                .push(physicalTableNames)
-                .project(ctx.getRelBuilder().fields(logicalFields))
-                .build();
+        final List<String> logicalFields = getLogicalFields(physicalTableNames
+            .getRowType()
+            .getFieldNames());
+        val relBuilder = ctx.getRelBuilder();
+        return relBuilder
+            .push(physicalTableNames)
+            .project(relBuilder.fields(logicalFields))
+            .build();
+    }
+
+    private List<String> getLogicalFields(List<String> fieldNames) {
+        return fieldNames.stream()
+            .filter(fieldName -> SYSTEM_FIELDS_PATTERNS.stream().noneMatch(fieldName::matches))
+            .collect(Collectors.toList());
     }
 
     private List<RelNodeContext> getRelNodeContexts(QueryGeneratorContext ctx, RelNode replacingTablesNode) {
@@ -142,12 +164,12 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
                     depth = contextMap.get(parent) + 1;
                 }
                 RelNodeContext nodeContext = RelNodeContext.builder()
-                        .deltaInformation(child instanceof TableScan ? ctx.getDeltaIterator().next() : null)
-                        .parent(parent)
-                        .child(child)
-                        .depth(depth)
-                        .i(id++)
-                        .build();
+                    .deltaInformation(child instanceof TableScan ? ctx.getDeltaIterator().next() : null)
+                    .parent(parent)
+                    .child(child)
+                    .depth(depth)
+                    .i(id++)
+                    .build();
                 contexts.add(nodeContext);
                 contextMap.put(child, depth);
                 return super.visitChild(parent, i, child);
@@ -156,99 +178,104 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
         return contexts;
     }
 
-    private void proccessTableScan(BuilderCondext builderCtx, RelNodeContext nodeContext) {
-        builderCtx.setLastChildNode(nodeContext.getChild());
-        TableScan tableScan = (TableScan) nodeContext.child;
+    private void processTableScan(BuilderContext builderCtx, RelNodeContext nodeContext) {
+        RelBuilder relBuilder = builderCtx.getBuilder();
+        relBuilder.scan(nodeContext.getChild().getTable().getQualifiedName())
+            .as(nodeContext.deltaInformation.getTableAlias());
+        val tableScan = (TableScan) nodeContext.child;
         builderCtx.getTableScans().add(tableScan);
-        builderCtx.getDeltaInformations().add(nodeContext.deltaInformation);
-        builderCtx.getBuilder().scan(nodeContext.getChild().getTable().getQualifiedName())
-                .as(nodeContext.deltaInformation.getTableAlias());
+        if (nodeContext.getParent() instanceof Join
+            && ((Join) nodeContext.getParent()).getRight().equals(nodeContext.getChild())) {
+            List<RexNode> deltaConditions = getDeltaConditions(Lists.newArrayList(nodeContext.getDeltaInformation()), relBuilder);
+            relBuilder.filter(deltaConditions);
+        } else {
+            builderCtx.getDeltaInformations().add(nodeContext.deltaInformation);
+            builderCtx.setLastChildNode(nodeContext.getChild());
+        }
     }
 
-    private void processJoin(BuilderCondext builderCtx, RelNodeContext nodeContext) {
+    private void processJoin(BuilderContext builderCtx, RelNodeContext nodeContext) {
         val join = (Join) nodeContext.child;
-        builderCtx.getBuilder().join(join.getJoinType(), join.getCondition());
+        val relBuilder = builderCtx.getBuilder();
+        relBuilder.join(join.getJoinType(), join.getCondition());
     }
 
-    private void processProject(BuilderCondext builderCtx, RelNodeContext nodeContext) {
-        if (builderCtx.getBuilder().peek() instanceof Project) {
+    private void processProject(BuilderContext builderCtx, RelNodeContext nodeContext) {
+        val relBuilder = builderCtx.getBuilder();
+        if (relBuilder.peek() instanceof Project) {
             return;
         }
         val project = (Project) nodeContext.child;
         if (builderCtx.getDeltaInformations().size() > 0) {
-            val deltaConditions = getDeltaConditions(builderCtx.getDeltaInformations(), builderCtx.getBuilder());
+            val deltaConditions = getDeltaConditions(builderCtx.getDeltaInformations(), relBuilder);
             val allDeltaConditions = deltaConditions.size() == 1 ?
-                    deltaConditions.get(0) : builderCtx.getBuilder().call(SqlStdOperatorTable.AND, deltaConditions);
-            builderCtx.getBuilder().filter(allDeltaConditions);
+                deltaConditions.get(0) : relBuilder.call(SqlStdOperatorTable.AND, deltaConditions);
+            relBuilder.filter(allDeltaConditions);
         }
-        builderCtx.getBuilder()
-                .project(project.getChildExps());
         if (builderCtx.getTableScans().size() > 0) {
-            addSignConditions(builderCtx, builderCtx.getBuilder().build());
+            addSignConditions(builderCtx, relBuilder.build());
             builderCtx.getTableScans().clear();
         }
+        relBuilder
+            .project(relBuilder.fields(project.getRowType().getFieldNames()));
     }
 
-    private void processFilter(BuilderCondext ctx, RelNodeContext nodeContext) {
+    private void processFilter(BuilderContext ctx, RelNodeContext nodeContext) {
         val filter = (Filter) nodeContext.child;
         val condition = filter.getCondition();
-        val deltaConditions = getDeltaConditions(ctx.getDeltaInformations(), ctx.getBuilder());
+        val builder = ctx.getBuilder();
+        val deltaConditions = getDeltaConditions(ctx.getDeltaInformations(), builder);
         deltaConditions.add(condition);
-        ctx.getBuilder().filter(ctx.getBuilder().call(SqlStdOperatorTable.AND, deltaConditions));
+        builder.filter(builder.call(SqlStdOperatorTable.AND, deltaConditions));
     }
 
-    private void addSignConditions(BuilderCondext ctx, RelNode relNode) {
-        List<String> fieldNames = relNode.getRowType().getFieldNames().stream()
-                .filter(f -> SYSTEM_FIELDS_PATTERNS.stream().noneMatch(f::matches))
-                .collect(Collectors.toList());
-
-        RelNode project = ctx.getBuilder()
-                .push(relNode)
-                .project(ctx.getBuilder().fields(fieldNames))
-                .build();
-
+    private void addSignConditions(BuilderContext ctx, RelNode relNode) {
+        val relBuilder = ctx.getBuilder();
+        relBuilder.push(relNode);
+        val project = relBuilder
+            .project(relBuilder.fields(), relNode.getRowType().getFieldNames(), true)
+            .build();
         val topSignConditions = ctx.getTableScans().stream()
-                .map(tableScan -> createSignSubQuery(tableScan, true))
-                .collect(Collectors.toList());
+            .map(tableScan -> createSignSubQuery(tableScan, true))
+            .collect(Collectors.toList());
 
-        val topNode = ctx.getBuilder()
-                .push(project)
-                .filter(topSignConditions.size() == ONE_TABLE ?
-                        topSignConditions.get(BY_ONE_TABLE) :
-                        ctx.getBuilder().call(getSignOperatorCondition(true), topSignConditions))
-                .build();
+        val topNode = relBuilder
+            .push(project)
+            .filter(topSignConditions.size() == ONE_TABLE ?
+                topSignConditions.get(BY_ONE_TABLE) :
+                relBuilder.call(getSignOperatorCondition(true), topSignConditions))
+            .build();
 
         val bottomSignConditions = ctx.getTableScans().stream()
-                .map(tableScan -> createSignSubQuery(tableScan, false))
-                .collect(Collectors.toList());
+            .map(tableScan -> createSignSubQuery(tableScan, false))
+            .collect(Collectors.toList());
 
-        val bottomNode = ctx.getBuilder()
-                .push(project)
-                .filter(bottomSignConditions.size() == ONE_TABLE ?
-                        bottomSignConditions.get(BY_ONE_TABLE) :
-                        ctx.getBuilder().call(getSignOperatorCondition(false), bottomSignConditions))
-                .build();
-
-        ctx.getBuilder().push(topNode)
-                .push(bottomNode)
-                .union(true);
-
+        val bottomNode = relBuilder
+            .push(project)
+            .filter(bottomSignConditions.size() == ONE_TABLE ?
+                bottomSignConditions.get(BY_ONE_TABLE) :
+                relBuilder.call(getSignOperatorCondition(false), bottomSignConditions))
+            .build();
+        relBuilder.push(topNode)
+            .push(bottomNode)
+            .union(true);
     }
 
     private RelNode iterateReplacingTableName(QueryGeneratorContext context, RelNode node, boolean isLocal) {
         List<RelNode> newInput = new ArrayList<>();
+        val relBuilder = context.getRelBuilder();
         if (node.getInputs() == null || node.getInputs().isEmpty()) {
             if (node instanceof TableScan) {
-                context.getRelBuilder().push(insertRenameTableScan(context, node, isLocal));
+                relBuilder.push(insertRenameTableScan(context, node, isLocal));
             }
-            return context.getRelBuilder().build();
+            return relBuilder.build();
         }
         for (int i = 0; i < node.getInputs().size(); i++) {
             RelNode input = node.getInput(i);
             newInput.add(iterateReplacingTableName(context, input, isLocal || isShard(node, input, i)));
         }
-        context.getRelBuilder().push(node.copy(node.getTraitSet(), newInput));
-        return context.getRelBuilder().build();
+        relBuilder.push(node.copy(node.getTraitSet(), newInput));
+        return relBuilder.build();
     }
 
     private boolean isShard(RelNode parentNode, RelNode node, int i) {
@@ -259,115 +286,127 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
                                   RelNode tableScan,
                                   boolean isShard) {
         val relBuilder = RelBuilder.proto(tableScan.getCluster().getPlanner().getContext())
-                .create(tableScan.getCluster(),
-                        ((CalciteCatalogReader) ctx.getRelBuilder().getRelOptSchema())
-                                .withSchemaPath(ctx.getEnrichQueryRequest()
-                                        .getDeltaInformations().stream()
-                                        .map(DeltaInformation::getSchemaName)
-                                        .distinct()
-                                        .collect(Collectors.toList())));
+            .create(tableScan.getCluster(),
+                ((CalciteCatalogReader) ctx.getRelBuilder().getRelOptSchema())
+                    .withSchemaPath(ctx.getEnrichQueryRequest()
+                        .getDeltaInformations().stream()
+                        .map(DeltaInformation::getSchemaName)
+                        .distinct()
+                        .collect(Collectors.toList())));
         val qualifiedName = tableScan.getTable().getQualifiedName();
         val queryRequest = ctx.getEnrichQueryRequest();
         val tableNames = helperTableNamesFactory.create(queryRequest.getEnvName(),
-                qualifiedName.get(SCHEMA_INDEX),
-                qualifiedName.get(TABLE_NAME_INDEX));
+            qualifiedName.get(SCHEMA_INDEX),
+            qualifiedName.get(TABLE_NAME_INDEX));
         val tableName = isShard ? tableNames.toQualifiedActualShard() : tableNames.toQualifiedActual();
         return relBuilder.scan(tableName).build();
     }
 
 
     private SqlBinaryOperator getSignOperatorCondition(boolean isTop) {
-        return isTop ? SqlStdOperatorTable.AND : SqlStdOperatorTable.OR;
+        return isTop ? SqlStdOperatorTable.OR : SqlStdOperatorTable.AND;
     }
 
     private RexNode createSignSubQuery(TableScan tableScan, boolean isTop) {
-        val builder = RelBuilder.proto(tableScan.getCluster().getPlanner().getContext())
-                .create(tableScan.getCluster(), tableScan.getTable().getRelOptSchema());
-        val node = builder.scan(tableScan.getTable().getQualifiedName())
-                .filter(builder.call(SqlStdOperatorTable.LESS_THAN,
-                        builder.field(SIGN_FIELD),
-                        builder.literal(0)))
-                .project(builder.alias(builder.literal(ONE_LITERAL), "r"))
-                .limit(0, LIMIT_1)
-                .build();
-        return builder.call(isTop ?
-                SqlStdOperatorTable.IS_NOT_NULL : SqlStdOperatorTable.IS_NULL, RexSubQuery.scalar(node));
+        val relBuilder = RelBuilder.proto(tableScan.getCluster().getPlanner().getContext())
+            .create(tableScan.getCluster(), tableScan.getTable().getRelOptSchema());
+        val node = relBuilder.scan(tableScan.getTable().getQualifiedName())
+            .filter(relBuilder.call(SqlStdOperatorTable.LESS_THAN,
+                relBuilder.field(SIGN_FIELD),
+                relBuilder.literal(0)))
+            .project(relBuilder.alias(relBuilder.literal(ONE_LITERAL), "r"))
+            .limit(0, LIMIT_1)
+            .build();
+        return relBuilder.call(isTop ?
+            SqlStdOperatorTable.IS_NOT_NULL : SqlStdOperatorTable.IS_NULL, RexSubQuery.scalar(node));
     }
 
-    private BuilderCondext getOrCreateBuilderCtxByParent(QueryGeneratorContext ctx,
+    private BuilderContext getOrCreateBuilderCtxByParent(QueryGeneratorContext ctx,
                                                          RelNode lastParent,
-                                                         HashMap<RelNode, BuilderCondext> relBuilderMap) {
+                                                         HashMap<RelNode, BuilderContext> relBuilderMap) {
         if (relBuilderMap.containsKey(lastParent)) {
             return relBuilderMap.get(lastParent);
         } else {
-            return BuilderCondext.builder()
-                    .builder(getRelBuilder(ctx))
-                    .deltaInformations(new ArrayList<>())
-                    .tableScans(new ArrayList<>())
-                    .build();
+            return getBuilderContext(ctx);
         }
     }
 
-    private BuilderCondext getOrCreateBuilderCtxByChild(QueryGeneratorContext context,
-                                                        HashMap<RelNode, BuilderCondext> relBuilderMap,
+    private BuilderContext getOrCreateBuilderCtxByChild(QueryGeneratorContext context,
+                                                        HashMap<RelNode, BuilderContext> relBuilderMap,
                                                         RelNodeContext nodeContext) {
         if (relBuilderMap.containsKey(nodeContext.child)) {
             return relBuilderMap.get(nodeContext.child);
         } else {
-            return BuilderCondext.builder()
-                    .builder(getRelBuilder(context))
-                    .deltaInformations(new ArrayList<>())
-                    .tableScans(new ArrayList<>())
-                    .build();
+            return getBuilderContext(context);
         }
     }
 
-    private RelNode getResultEnrichmentNode(RelNode lastParent, BuilderCondext buildCtx) {
+    private BuilderContext getBuilderContext(QueryGeneratorContext context) {
+        return BuilderContext.builder()
+            .builders(Sets.newHashSet(getRelBuilder(context)))
+            .deltaInformations(new ArrayList<>())
+            .tableScans(new ArrayList<>())
+            .build();
+    }
+
+    private RelNode getResultEnrichmentNode(RelNode lastParent, BuilderContext buildCtx) {
+        RelBuilder relBuilder = buildCtx.getBuilder();
         if (lastParent instanceof Join) {
             val join = (Join) buildCtx.getLastChildNode();
-            buildCtx.getBuilder().join(join.getJoinType(), join.getCondition());
+            relBuilder.join(join.getJoinType(), join.getCondition());
         }
         if (buildCtx.getDeltaInformations().size() > 0) {
-            val deltaConditions = getDeltaConditions(buildCtx.getDeltaInformations(), buildCtx.getBuilder());
+            val deltaConditions = getDeltaConditions(buildCtx.getDeltaInformations(), relBuilder);
             val allDeltaConditions = deltaConditions.size() == 1 ?
-                    deltaConditions.get(0) : buildCtx.getBuilder().call(SqlStdOperatorTable.AND, deltaConditions);
-            buildCtx.getBuilder().filter(allDeltaConditions);
-            val queryNode = buildCtx.getBuilder()
-                    .build();
+                deltaConditions.get(0) : relBuilder.call(SqlStdOperatorTable.AND, deltaConditions);
+            relBuilder.filter(allDeltaConditions);
+            val queryNode = relBuilder
+                .build();
             addSignConditions(buildCtx, queryNode);
         } else if (buildCtx.getTableScans().size() > 0) {
-            addSignConditions(buildCtx, buildCtx.getBuilder().project(lastParent.getChildExps()).build());
+            addSignConditions(buildCtx, relBuilder.project(lastParent.getChildExps()).build());
         }
+        filterSystemFields(relBuilder);
+        var lastNode = relBuilder.build();
+        return lastNode;
+//        if (lastParent instanceof Project) {
+//            return lastNode;
+//        } else {
+//            return lastParent.copy(lastParent.getTraitSet(), Collections.singletonList(lastNode));
+//        }
 
-        val lastNode = buildCtx.getBuilder().build();
-        if (lastParent instanceof Project) {
-            return lastNode;
-        } else {
-            return lastParent.copy(lastParent.getTraitSet(), Collections.singletonList(lastNode));
+    }
+
+    private void filterSystemFields(RelBuilder relBuilder) {
+        List<String> fieldNames = relBuilder.peek().getRowType()
+            .getFieldNames();
+        List<String> logicalFields = getLogicalFields(fieldNames);
+        if (fieldNames.size() > logicalFields.size()) {
+            relBuilder
+                .project(relBuilder.fields(logicalFields));
         }
-
     }
 
     private RelNode removeUnnecessaryCast(RelNode relNode) {
         return removeUnnecessaryCastInChildren(relNode)
-                .accept(new RelShuttleImpl() {
-                    @Override
-                    protected RelNode visitChild(RelNode parent, int i, RelNode child) {
-                        stack.push(parent);
-                        try {
-                            var inChildren = removeUnnecessaryCastInChildren(child);
-                            inChildren = inChildren.accept(this);
-                            if (inChildren != child) {
-                                final List<RelNode> newInputs = new ArrayList<>(parent.getInputs());
-                                newInputs.set(i, inChildren);
-                                return parent.copy(parent.getTraitSet(), newInputs);
-                            }
-                            return parent;
-                        } finally {
-                            stack.pop();
+            .accept(new RelShuttleImpl() {
+                @Override
+                protected RelNode visitChild(RelNode parent, int i, RelNode child) {
+                    stack.push(parent);
+                    try {
+                        var inChildren = removeUnnecessaryCastInChildren(child);
+                        inChildren = inChildren.accept(this);
+                        if (inChildren != child) {
+                            final List<RelNode> newInputs = new ArrayList<>(parent.getInputs());
+                            newInputs.set(i, inChildren);
+                            return parent.copy(parent.getTraitSet(), newInputs);
                         }
+                        return parent;
+                    } finally {
+                        stack.pop();
                     }
-                });
+                }
+            });
     }
 
     private RelNode removeUnnecessaryCastInChildren(RelNode rel) {
@@ -389,80 +428,80 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
 
     private RelBuilder getRelBuilder(QueryGeneratorContext ctx) {
         val schemaPaths = ctx
-                .getEnrichQueryRequest()
-                .getDeltaInformations().stream()
-                .map(DeltaInformation::getSchemaName)
-                .distinct()
-                .collect(Collectors.toList());
+            .getEnrichQueryRequest()
+            .getDeltaInformations().stream()
+            .map(DeltaInformation::getSchemaName)
+            .distinct()
+            .collect(Collectors.toList());
 
         return RelBuilder.proto(ctx.getRelNode().rel.getCluster().getPlanner().getContext())
-                .create(ctx.getRelNode().rel.getCluster(),
-                        ((CalciteCatalogReader) ctx.getRelBuilder().getRelOptSchema())
-                                .withSchemaPath(schemaPaths));
+            .create(ctx.getRelNode().rel.getCluster(),
+                ((CalciteCatalogReader) ctx.getRelBuilder().getRelOptSchema())
+                    .withSchemaPath(schemaPaths));
     }
 
     private List<RexNode> getDeltaConditions(List<DeltaInformation> deltaInformations,
-                                             RelBuilder builder) {
+                                             RelBuilder relBuilder) {
         List<RexNode> conditions = deltaInformations.stream()
-                .flatMap(deltaInfo -> {
-                    val conditionContext = DeltaConditionContext.builder()
-                            .tableCount(deltaInformations.size())
-                            .deltaInfo(deltaInfo)
-                            .builder(builder)
-                            .finalize(false)
-                            .build();
+            .flatMap(deltaInfo -> {
+                val conditionContext = DeltaConditionContext.builder()
+                    .tableCount(deltaInformations.size())
+                    .deltaInfo(deltaInfo)
+                    .builder(relBuilder)
+                    .finalize(false)
+                    .build();
 
-                    switch (deltaInfo.getType()) {
-                        case STARTED_IN:
-                            return createRelNodeDeltaStartedIn(conditionContext).stream();
-                        case FINISHED_IN:
-                            return createRelNodeDeltaFinishedIn(conditionContext).stream();
-                        case DATETIME:
-                        case NUM:
-                            return createRelNodeDeltaNum(conditionContext).stream();
-                        default:
-                            throw new DataSourceException(String.format("Incorrect delta type %s, expected values: %s!",
-                                    deltaInfo.getType(),
-                                    Arrays.toString(DeltaType.values())));
-                    }
-                }).collect(Collectors.toList());
+                switch (deltaInfo.getType()) {
+                    case STARTED_IN:
+                        return createRelNodeDeltaStartedIn(conditionContext).stream();
+                    case FINISHED_IN:
+                        return createRelNodeDeltaFinishedIn(conditionContext).stream();
+                    case DATETIME:
+                    case NUM:
+                        return createRelNodeDeltaNum(conditionContext).stream();
+                    default:
+                        throw new DataSourceException(String.format("Incorrect delta type %s, expected values: %s!",
+                            deltaInfo.getType(),
+                            Arrays.toString(DeltaType.values())));
+                }
+            }).collect(Collectors.toList());
         deltaInformations.clear();
         return conditions;
     }
 
     private List<RexNode> createRelNodeDeltaStartedIn(DeltaConditionContext ctx) {
         return Arrays.asList(
-                ctx.builder.call(SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
-                        ctx.builder.field(ctx.deltaInfo.getTableAlias(), SYS_FROM_FIELD),
-                        ctx.builder.literal(ctx.deltaInfo.getSelectOnInterval().getSelectOnFrom())),
-                ctx.builder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
-                        ctx.builder.field(ctx.deltaInfo.getTableAlias(), SYS_FROM_FIELD),
-                        ctx.builder.literal(ctx.deltaInfo.getSelectOnInterval().getSelectOnTo()))
+            ctx.builder.call(SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
+                ctx.builder.field(ctx.deltaInfo.getTableAlias(), SYS_FROM_FIELD),
+                ctx.builder.literal(ctx.deltaInfo.getSelectOnInterval().getSelectOnFrom())),
+            ctx.builder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
+                ctx.builder.field(ctx.deltaInfo.getTableAlias(), SYS_FROM_FIELD),
+                ctx.builder.literal(ctx.deltaInfo.getSelectOnInterval().getSelectOnTo()))
         );
     }
 
     private List<RexNode> createRelNodeDeltaFinishedIn(DeltaConditionContext ctx) {
         return Arrays.asList(
-                ctx.builder.call(SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
-                        ctx.builder.field(ctx.deltaInfo.getTableAlias(), SYS_TO_FIELD),
-                        ctx.builder.literal(ctx.deltaInfo.getSelectOnInterval().getSelectOnFrom() - 1)),
-                ctx.builder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
-                        ctx.builder.field(ctx.deltaInfo.getTableAlias(), SYS_TO_FIELD),
-                        ctx.builder.literal(ctx.deltaInfo.getSelectOnInterval().getSelectOnTo() - 1)),
-                ctx.builder.call(SqlStdOperatorTable.EQUALS,
-                        ctx.builder.field(ctx.deltaInfo.getTableAlias(), SYS_OP_FIELD),
-                        ctx.builder.literal(1))
+            ctx.builder.call(SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
+                ctx.builder.field(ctx.deltaInfo.getTableAlias(), SYS_TO_FIELD),
+                ctx.builder.literal(ctx.deltaInfo.getSelectOnInterval().getSelectOnFrom() - 1)),
+            ctx.builder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
+                ctx.builder.field(ctx.deltaInfo.getTableAlias(), SYS_TO_FIELD),
+                ctx.builder.literal(ctx.deltaInfo.getSelectOnInterval().getSelectOnTo() - 1)),
+            ctx.builder.call(SqlStdOperatorTable.EQUALS,
+                ctx.builder.field(ctx.deltaInfo.getTableAlias(), SYS_OP_FIELD),
+                ctx.builder.literal(1))
         );
     }
 
     private List<RexNode> createRelNodeDeltaNum(DeltaConditionContext ctx) {
         return Arrays.asList(
-                ctx.builder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
-                        ctx.builder.field(ctx.deltaInfo.getTableAlias(), SYS_FROM_FIELD),
-                        ctx.builder.literal(ctx.deltaInfo.getSelectOnNum())),
-                ctx.builder.call(SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
-                        ctx.builder.field(ctx.deltaInfo.getTableAlias(), SYS_TO_FIELD),
-                        ctx.builder.literal(ctx.deltaInfo.getSelectOnNum()))
+            ctx.builder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
+                ctx.builder.field(SYS_FROM_FIELD),
+                ctx.builder.literal(ctx.deltaInfo.getSelectOnNum())),
+            ctx.builder.call(SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
+                ctx.builder.field(SYS_TO_FIELD),
+                ctx.builder.literal(ctx.deltaInfo.getSelectOnNum()))
         );
     }
 
@@ -488,11 +527,19 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
 
     @Data
     @Builder
-    private static final class BuilderCondext {
+    private static final class BuilderContext {
         private List<DeltaInformation> deltaInformations;
         private List<TableScan> tableScans;
         private RelNode lastChildNode;
-        private RelBuilder builder;
+        private Set<RelBuilder> builders;
+
+        public RelBuilder getBuilder() {
+            RelBuilder relBuilder = builders.stream()
+                .reduce((b1, b2) -> b2.push(b1.build()))
+                .orElseThrow(() -> new DtmException("Can't get builder"));
+            builders = Sets.newHashSet(relBuilder);
+            return relBuilder;
+        }
     }
 
 }

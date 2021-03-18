@@ -15,12 +15,12 @@
         <module>dtm-jdbc-driver</module>
         <module>dtm-kafka-core</module>
         <module>dtm-calcite-core</module>
+        <module>dtm-calcite-adqm</module>
         <module>dtm-cache</module>
         <module>dtm-query-execution-plugin-api</module>
         <module>plugins</module>
         <module>dtm-query-execution-core</module>
         <module>dtm-status-monitor</module>
-        <module>dtm-calcite-adqm</module>
     </modules>
 
     <properties>

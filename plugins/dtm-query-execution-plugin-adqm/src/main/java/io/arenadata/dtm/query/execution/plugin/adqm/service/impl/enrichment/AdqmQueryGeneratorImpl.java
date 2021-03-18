@@ -4,6 +4,7 @@ import io.arenadata.dtm.common.calcite.CalciteContext;
 import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.calcite.core.rel2sql.NullNotCastableRelToSqlConverter;
+import io.arenadata.dtm.query.calcite.core.util.RelNodeUtil;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.EnrichQueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.QueryGeneratorContext;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.QueryExtendService;
@@ -12,12 +13,12 @@ import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.calcite.adapter.enumerable.EnumerableConvention;
+import lombok.var;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.logical.LogicalSort;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlIdentifier;
-import org.apache.calcite.tools.RelConversionException;
 import org.apache.calcite.util.Util;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -45,58 +46,63 @@ public class AdqmQueryGeneratorImpl implements QueryGenerator {
                                       EnrichQueryRequest enrichQueryRequest) {
         return Future.future(promise -> {
             val generatorContext = getContext(relNode,
-                    deltaInformations,
-                    calciteContext,
-                    enrichQueryRequest);
-            val extendedQuery = queryExtendService.extendQuery(generatorContext);
-            RelNode planAfter = null;
+                deltaInformations,
+                calciteContext,
+                enrichQueryRequest);
             try {
-                planAfter = calciteContext.getPlanner()
-                        .transform(0,
-                                extendedQuery.getTraitSet().replace(EnumerableConvention.INSTANCE),
-                                extendedQuery);
+                var extendedQuery = queryExtendService.extendQuery(generatorContext);
+                if (isNeedToTrimSortColumns(relNode, extendedQuery)) {
+                    extendedQuery = RelNodeUtil.trimUnusedSortColumn(calciteContext.getRelBuilder(),
+                        extendedQuery,
+                        relNode.validatedRowType);
+                }
                 val sqlNodeResult = new NullNotCastableRelToSqlConverter(sqlDialect)
-                        .visitChild(0, planAfter)
-                        .asStatement();
+                    .visitChild(0, extendedQuery)
+                    .asStatement();
                 val sqlTree = new SqlSelectTree(sqlNodeResult);
                 addFinalOperatorTopUnionTables(sqlTree);
                 replaceDollarSuffixInAlias(sqlTree);
                 val queryResult = Util.toLinux(sqlNodeResult.toSqlString(sqlDialect).getSql())
-                        .replaceAll("\n", " ");
+                    .replaceAll("\n", " ");
                 log.debug("sql = " + queryResult);
                 promise.complete(queryResult);
-            } catch (RelConversionException relConversionException) {
-                promise.fail(new DataSourceException("Error in converting relation node", relConversionException));
+            } catch (Throwable exception) {
+                promise.fail(new DataSourceException("Error in converting relation node", exception));
             }
         });
     }
 
+    private boolean isNeedToTrimSortColumns(RelRoot relRoot, RelNode sourceRelNode) {
+        return sourceRelNode.getInputs().size() > 0 && sourceRelNode.getInput(0) instanceof LogicalSort
+            && sourceRelNode.getRowType().getFieldCount() != relRoot.validatedRowType.getFieldCount();
+    }
+
     private void addFinalOperatorTopUnionTables(SqlSelectTree tree) {
         tree.findAllTableAndSnapshots()
-                .stream()
-                .filter(n -> !n.getKindPath().contains("UNION[1]"))
-                .filter(n -> !n.getKindPath().contains("SCALAR_QUERY"))
-                .forEach(node -> {
-                    SqlIdentifier identifier = node.getNode();
-                    val names = Arrays.asList(
-                            identifier.names.get(0),
-                            identifier.names.get(1) + " FINAL"
-                    );
-                    node.getSqlNodeSetter().accept(new SqlIdentifier(names, identifier.getParserPosition()));
-                });
+            .stream()
+            .filter(n -> !n.getKindPath().contains("UNION[1]"))
+            .filter(n -> !n.getKindPath().contains("SCALAR_QUERY"))
+            .forEach(node -> {
+                SqlIdentifier identifier = node.getNode();
+                val names = Arrays.asList(
+                    identifier.names.get(0),
+                    identifier.names.get(1) + " FINAL"
+                );
+                node.getSqlNodeSetter().accept(new SqlIdentifier(names, identifier.getParserPosition()));
+            });
     }
 
     private void replaceDollarSuffixInAlias(SqlSelectTree tree) {
         tree.findNodesByPathRegex(ALIAS_PATTERN).stream()
-                .filter(n -> {
-                    val alias = n.tryGetTableName();
-                    return alias.isPresent() && alias.get().contains("$");
-                })
-                .forEach(sqlTreeNode -> {
-                    SqlIdentifier identifier = sqlTreeNode.getNode();
-                    val preparedAlias = identifier.getSimple().replace("$", "__");
-                    sqlTreeNode.getSqlNodeSetter().accept(new SqlIdentifier(preparedAlias, identifier.getParserPosition()));
-                });
+            .filter(n -> {
+                val alias = n.tryGetTableName();
+                return alias.isPresent() && alias.get().contains("$");
+            })
+            .forEach(sqlTreeNode -> {
+                SqlIdentifier identifier = sqlTreeNode.getNode();
+                val preparedAlias = identifier.getSimple().replace("$", "__");
+                sqlTreeNode.getSqlNodeSetter().accept(new SqlIdentifier(preparedAlias, identifier.getParserPosition()));
+            });
     }
 
     private QueryGeneratorContext getContext(RelRoot relNode,
@@ -104,10 +110,10 @@ public class AdqmQueryGeneratorImpl implements QueryGenerator {
                                              CalciteContext calciteContext,
                                              EnrichQueryRequest enrichQueryRequest) {
         return QueryGeneratorContext.builder()
-                .deltaIterator(deltaInformations.iterator())
-                .relBuilder(calciteContext.getRelBuilder())
-                .enrichQueryRequest(enrichQueryRequest)
-                .relNode(relNode)
-                .build();
+            .deltaIterator(deltaInformations.iterator())
+            .relBuilder(calciteContext.getRelBuilder())
+            .enrichQueryRequest(enrichQueryRequest)
+            .relNode(relNode)
+            .build();
     }
 }

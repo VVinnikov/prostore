@@ -168,7 +168,7 @@ class AdqmQueryEnrichmentServiceImplTest {
 
     @Test
     void enrichWithAggregate() {
-        enrich(prepareRequestDeltaNumByAggregate("SELECT min(int_col) as min_col, min(double_col) as max_col, varchar_col\n" +
+        enrich(prepareRequestDeltaNumWithAggregate("SELECT min(int_col) as min_col, min(double_col) as max_col, varchar_col\n" +
                         "FROM dml.AGGREGATION_TABLE\n" +
                         "group by varchar_col\n" +
                         "order by varchar_col\n" +
@@ -178,12 +178,58 @@ class AdqmQueryEnrichmentServiceImplTest {
 
     @Test
     void enrichWithAggregate2() {
-        enrich(prepareRequestDeltaNumByAggregate("SELECT min(int_col) as min_col, min(double_col) as max_col, varchar_col, NULL as t1\n" +
+        enrich(prepareRequestDeltaNumWithAggregate("SELECT min(int_col) as min_col, min(double_col) as max_col, varchar_col, NULL as t1\n" +
                         "FROM dml.AGGREGATION_TABLE\n" +
                         "where varchar_col = 'ф'\n" +
                         "group by varchar_col\n" +
                         "limit 2"),
                 expectedSqls[11], enrichService);
+    }
+
+    @Test
+    void enrichWithSort() {
+        enrich(prepareRequestDeltaNumWithSort("SELECT COUNT(c.category_name),\n" +
+                "       c.category_name,\n" +
+                "       sum(p.units_in_stock),\n" +
+                "       c.id\n" +
+                "FROM dml.products p\n" +
+//                "         JOIN(select * from dml.categories c0 where c0.id = 1) c on p.category_id = c.id\n" +
+//                "         JOIN(select c0.id from dml.categories c0) c2 on p.category_id = c2.id\n" +
+//                "         JOIN(select * from dml.categories c0) c3 on p.category_id = c3.id\n" +
+                "         JOIN dml.categories c on p.category_id = c.id\n" +
+                "GROUP BY c.category_name, c.id\n" +
+                "ORDER BY c.id\n" +
+                "limit 5"),
+            expectedSqls[11], enrichService);
+    }
+    @Test
+    void enrichWithSort3() {
+        enrich(prepareRequestDeltaNumWithSort("SELECT COUNT(dml.categories.category_name),\n" +
+                "       dml.categories.category_name,\n" +
+                "       dml.categories.id,\n" +
+                "       sum(dml.products.units_in_stock)\n" +
+                "FROM dml.products\n" +
+                "         INNER JOIN dml.categories on dml.products.category_id = dml.categories.id\n" +
+                "GROUP BY dml.categories.category_name, dml.categories.id\n" +
+                "ORDER BY dml.categories.id limit 5"),
+            expectedSqls[11], enrichService);
+    }
+    @Test
+    void enrichWithSort4() {
+        enrich(prepareRequestDeltaNumWithSort("SELECT *\n" +
+                "from dml.categories c\n" +
+                "         JOIN (select * from  dml.products) p on c.id = p.category_id\n" +
+                "ORDER by c.id, p.product_name"),
+            expectedSqls[11], enrichService);
+    }
+
+    @Test
+    void enrichWithSort2() {
+        enrich(prepareRequestDeltaNumWithSort("SELECT p.* \n" +
+                "FROM dml.products p\n" +
+                "         JOIN dml.categories c on p.category_id = c.id\n" +
+                "ORDER BY c.id"),
+            expectedSqls[11], enrichService);
     }
 
     @SneakyThrows
@@ -200,14 +246,77 @@ class AdqmQueryEnrichmentServiceImplTest {
                     } else {
                         actual[0] = ar.cause().getMessage();
                         testContext.failNow(ar.cause());
+                        log.error("ERROR", ar.cause());
                     }
                 });
         assertThat(testContext.awaitCompletion(TIMEOUT_SECONDS, TimeUnit.SECONDS)).isTrue();
-        assertEquals(expectedSql.trim(), actual[0].trim(),
+            assertEquals(expectedSql.trim(), actual[0].trim(),
                 String.format("Expected: %s\n Actual: %s", expectedSql.trim(), actual[0].trim()));
     }
 
-    private EnrichQueryRequest prepareRequestDeltaNumByAggregate(String sql) {
+    private EnrichQueryRequest prepareRequestDeltaNumWithSort(String sql) {
+        String schemaName = LOADED_DATAMARTS.get(0).getMnemonic();
+        List<DeltaInformation> deltaInforamtions = Arrays.asList(
+            DeltaInformation.builder()
+                .tableAlias("p")
+                .deltaTimestamp("2019-12-23 15:15:14")
+                .isLatestUncommittedDelta(false)
+                .selectOnNum(1L)
+                .selectOnInterval(null)
+                .type(DeltaType.NUM)
+                .schemaName(schemaName)
+                .tableName(LOADED_DATAMARTS.get(0).getEntities().get(1).getName())
+                .build(),
+            DeltaInformation.builder()
+                .tableAlias("c")
+                .deltaTimestamp("2019-12-23 15:15:14")
+                .isLatestUncommittedDelta(false)
+                .selectOnNum(1L)
+                .selectOnInterval(null)
+                .type(DeltaType.NUM)
+                .schemaName(schemaName)
+                .tableName(LOADED_DATAMARTS.get(0).getEntities().get(2).getName())
+                .build(),
+            DeltaInformation.builder()
+                .tableAlias("c")
+                .deltaTimestamp("2019-12-23 15:15:14")
+                .isLatestUncommittedDelta(false)
+                .selectOnNum(1L)
+                .selectOnInterval(null)
+                .type(DeltaType.NUM)
+                .schemaName(schemaName)
+                .tableName(LOADED_DATAMARTS.get(0).getEntities().get(2).getName())
+                .build(),
+            DeltaInformation.builder()
+                .tableAlias("c")
+                .deltaTimestamp("2019-12-23 15:15:14")
+                .isLatestUncommittedDelta(false)
+                .selectOnNum(1L)
+                .selectOnInterval(null)
+                .type(DeltaType.NUM)
+                .schemaName(schemaName)
+                .tableName(LOADED_DATAMARTS.get(0).getEntities().get(2).getName())
+                .build(),
+            DeltaInformation.builder()
+                .tableAlias("c")
+                .deltaTimestamp("2019-12-23 15:15:14")
+                .isLatestUncommittedDelta(false)
+                .selectOnNum(1L)
+                .selectOnInterval(null)
+                .type(DeltaType.NUM)
+                .schemaName(schemaName)
+                .tableName(LOADED_DATAMARTS.get(0).getEntities().get(2).getName())
+                .build()
+        );
+        return EnrichQueryRequest.builder()
+            .query(TestUtils.DEFINITION_SERVICE.processingQuery(sql))
+            .deltaInformations(deltaInforamtions)
+            .envName(ENV_NAME)
+            .schema(LOADED_DATAMARTS)
+            .build();
+    }
+
+    private EnrichQueryRequest prepareRequestDeltaNumWithAggregate(String sql) {
         String schemaName = LOADED_DATAMARTS.get(0).getMnemonic();
         String tableName = LOADED_DATAMARTS.get(0).getEntities().get(0).getName();
         List<DeltaInformation> deltaInforamtions = Collections.singletonList(

@@ -13,6 +13,7 @@ import io.arenadata.dtm.query.execution.plugin.adqm.dto.EnrichQueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmHelperTableNamesFactoryImpl;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmSchemaFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.QueryEnrichmentService;
+import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.query.AdqmQueryJoinConditionsCheckServiceImpl;
 import io.arenadata.dtm.query.execution.plugin.adqm.utils.TestUtils;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.jackson.DatabindCodec;
@@ -60,7 +61,7 @@ class AdqmQueryEnrichmentServiceImplTest {
                 queryParserService,
                 contextProvider,
                 new AdqmQueryGeneratorImpl(queryExtendService,
-                        TestUtils.CALCITE_CONFIGURATION.adqmSqlDialect()),
+                        TestUtils.CALCITE_CONFIGURATION.adqmSqlDialect(), new AdqmQueryJoinConditionsCheckServiceImpl()),
                 new AdqmSchemaExtenderImpl(helperTableNamesFactory));
 
         expectedSqls = new String(Files.readAllBytes(Paths.get(getClass().getResource("/sql/expectedDmlSqls.sql").toURI())))

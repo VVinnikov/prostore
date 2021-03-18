@@ -12,6 +12,7 @@ import io.arenadata.dtm.query.execution.plugin.adqm.calcite.AdqmCalciteSchemaFac
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.EnrichQueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmHelperTableNamesFactoryImpl;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmSchemaFactory;
+import io.arenadata.dtm.query.execution.plugin.adqm.service.AdqmQueryJoinConditionsCheckService;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.QueryEnrichmentService;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.query.AdqmQueryJoinConditionsCheckServiceImpl;
 import io.arenadata.dtm.query.execution.plugin.adqm.utils.TestUtils;
@@ -36,6 +37,9 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @Slf4j
 class AdqmQueryEnrichmentServiceImplTest {
@@ -57,11 +61,13 @@ class AdqmQueryEnrichmentServiceImplTest {
         val helperTableNamesFactory = new AdqmHelperTableNamesFactoryImpl();
         val queryExtendService = new AdqmCalciteDmlQueryExtendServiceImpl(helperTableNamesFactory);
 
+        AdqmQueryJoinConditionsCheckService conditionsCheckService = mock(AdqmQueryJoinConditionsCheckServiceImpl.class);
+        when(conditionsCheckService.isJoinConditionsCorrect(any())).thenReturn(true);
         enrichService = new AdqmQueryEnrichmentServiceImpl(
                 queryParserService,
                 contextProvider,
                 new AdqmQueryGeneratorImpl(queryExtendService,
-                        TestUtils.CALCITE_CONFIGURATION.adqmSqlDialect(), new AdqmQueryJoinConditionsCheckServiceImpl()),
+                        TestUtils.CALCITE_CONFIGURATION.adqmSqlDialect(), conditionsCheckService),
                 new AdqmSchemaExtenderImpl(helperTableNamesFactory));
 
         expectedSqls = new String(Files.readAllBytes(Paths.get(getClass().getResource("/sql/expectedDmlSqls.sql").toURI())))
@@ -193,6 +199,7 @@ class AdqmQueryEnrichmentServiceImplTest {
                         QueryEnrichmentService service) {
         val testContext = new VertxTestContext();
         val actual = new String[]{""};
+
         service.enrich(enrichRequest)
                 .onComplete(ar -> {
                     if (ar.succeeded()) {

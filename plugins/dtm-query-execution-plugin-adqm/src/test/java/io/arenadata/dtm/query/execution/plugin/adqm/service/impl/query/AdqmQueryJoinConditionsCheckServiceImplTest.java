@@ -221,7 +221,7 @@ class AdqmQueryJoinConditionsCheckServiceImplTest {
                 .envName(envName)
                 .schema(schemas)
                 .build();
-        assertThrows(DataSourceException.class, () -> conditionsCheckService.isJoinConditionsCorrect(request));
+        assertFalse(conditionsCheckService.isJoinConditionsCorrect(request));
     }
 
     private List<Datamart> createSchema() {

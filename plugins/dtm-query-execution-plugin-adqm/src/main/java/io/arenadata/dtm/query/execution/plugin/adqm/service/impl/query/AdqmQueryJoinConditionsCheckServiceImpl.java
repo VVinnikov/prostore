@@ -41,7 +41,7 @@ public class AdqmQueryJoinConditionsCheckServiceImpl implements AdqmQueryJoinCon
         for (SqlTreeNode node : nodes) {
             ConditionStat conditionStat = new ConditionStat();
             SqlJoin join = node.getNode();
-            if (!(join.getCondition() instanceof SqlBasicCall)) {
+            if (join.getCondition() instanceof SqlBasicCall) {
                 SqlBasicCall joinCondition = (SqlBasicCall) join.getCondition();
                 fillConditionStat(joinCondition, conditionStat);
                 if (!isConditionsCorrect(tableDistrKeyMap, conditionStat)) {
@@ -95,7 +95,7 @@ public class AdqmQueryJoinConditionsCheckServiceImpl implements AdqmQueryJoinCon
             } else if (condition.getOperator().getKind() == SqlKind.OR) {
                 conditionStat.setCount(conditionStat.getCount() + 1);
                 return;
-            } else {
+            } else if (sqlNode instanceof SqlBasicCall) {
                 fillConditionStat((SqlBasicCall) sqlNode, conditionStat);
             }
         }

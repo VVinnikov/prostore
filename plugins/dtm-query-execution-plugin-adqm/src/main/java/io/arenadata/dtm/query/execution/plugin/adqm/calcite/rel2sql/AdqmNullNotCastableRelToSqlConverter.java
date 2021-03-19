@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.calcite.core.rel2sql;
+package io.arenadata.dtm.query.execution.plugin.adqm.calcite.rel2sql;
 
 import lombok.val;
 import org.apache.calcite.adapter.enumerable.EnumerableLimit;
@@ -16,13 +16,13 @@ import org.apache.calcite.sql.SqlNodeList;
 import java.util.ArrayList;
 import java.util.List;
 
-public class NullNotCastableRelToSqlConverter extends RelToSqlConverter {
+public class AdqmNullNotCastableRelToSqlConverter extends RelToSqlConverter {
     /**
      * Creates a RelToSqlConverter.
      *
      * @param dialect
      */
-    public NullNotCastableRelToSqlConverter(SqlDialect dialect) {
+    public AdqmNullNotCastableRelToSqlConverter(SqlDialect dialect) {
         super(dialect);
     }
 
@@ -31,9 +31,6 @@ public class NullNotCastableRelToSqlConverter extends RelToSqlConverter {
         e.getVariablesSet();
         Result x = visitChild(0, e.getInput());
         parseCorrelTable(e, x);
-        if (isStar(e.getChildExps(), e.getInput().getRowType(), e.getRowType())) {
-            return x;
-        }
         final Builder builder = x.builder(e, Clause.SELECT);
         final List<SqlNode> selectList = new ArrayList<>();
         for (RexNode ref : e.getChildExps()) {
@@ -75,6 +72,8 @@ public class NullNotCastableRelToSqlConverter extends RelToSqlConverter {
             throw new AssertionError("Need to implement " + e.getClass().getName());
         }
     }
+
+
 
     @Override
     protected boolean isAnon() {

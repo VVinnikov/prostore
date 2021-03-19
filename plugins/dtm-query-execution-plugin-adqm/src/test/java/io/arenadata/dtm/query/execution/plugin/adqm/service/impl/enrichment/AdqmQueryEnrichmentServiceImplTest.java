@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.commons.io.IOUtils;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.InputStream;
@@ -85,30 +86,21 @@ class AdqmQueryEnrichmentServiceImplTest {
 
     @Test
     void enrichWithDeltaNum() {
-        enrich(prepareRequestDeltaNum("SELECT a1.account_id\n" +
-                        "FROM (SELECT a2.account_id FROM shares.accounts a2 where a2.account_id = 12) a1\n" +
-                        "    INNER JOIN shares.transactions t1 ON a1.account_id = t1.account_id\n" +
-                        "WHERE a1.account_id = 1"),
+        enrich(prepareRequestDeltaNum("SELECT a.account_id FROM shares.accounts a" +
+                        " join shares.transactions t on t.account_id = a.account_id" +
+                        " where a.account_id = 10"),
                 expectedSqls[0], enrichService);
     }
 
     @Test
     void enrichWithDeltaNum2() {
         enrich(prepareRequestDeltaNum("SELECT a.account_id FROM shares.accounts a" +
-                        " join shares.transactions t on t.account_id = a.account_id" +
-                        " where a.account_id = 10"),
+                        " join shares.transactions t on t.account_id = a.account_id"),
                 expectedSqls[1], enrichService);
     }
 
     @Test
     void enrichWithDeltaNum3() {
-        enrich(prepareRequestDeltaNum("SELECT a.account_id FROM shares.accounts a" +
-                        " join shares.transactions t on t.account_id = a.account_id"),
-                expectedSqls[2], enrichService);
-    }
-
-    @Test
-    void enrichWithDeltaNum4() {
         enrich(prepareRequestDeltaNum("select *, CASE WHEN (account_type = 'D' AND  amount >= 0) " +
                         "OR (account_type = 'C' AND  amount <= 0) THEN 'OK' ELSE 'NOT OK' END\n" +
                         "  from (\n" +
@@ -117,53 +109,41 @@ class AdqmQueryEnrichmentServiceImplTest {
                         "    left join shares.transactions t using(account_id)\n" +
                         "   group by a.account_id, account_type\n" +
                         ")x"),
+                expectedSqls[2], enrichService);
+    }
+
+    @Test
+    void enrichWithDeltaNum4() {
+        enrich(prepareRequestDeltaNum("SELECT * FROM shares.transactions as tran"),
                 expectedSqls[3], enrichService);
     }
 
     @Test
     void enrichWithDeltaNum5() {
-        enrich(prepareRequestDeltaNum("SELECT * FROM shares.transactions as tran"),
+        enrich(prepareRequestDeltaNum("SELECT a1.account_id\n" +
+                        "FROM (SELECT a2.account_id FROM shares.accounts a2 where a2.account_id = 12) a1\n" +
+                        "    INNER JOIN shares.transactions t1 ON a1.account_id = t1.account_id"),
                 expectedSqls[4], enrichService);
     }
 
     @Test
     void enrichWithDeltaNum6() {
-        enrich(prepareRequestDeltaNum("SELECT a1.account_id\n" +
-                        "FROM (SELECT a2.account_id FROM shares.accounts a2 where a2.account_id = 12) a1\n" +
-                        "    INNER JOIN shares.transactions t1 ON a1.account_id = t1.account_id"),
-                expectedSqls[5], enrichService);
-    }
-
-    @Test
-    void enrichWithDeltaNum7() {
-        enrich(prepareRequestDeltaNum("SELECT a1.account_id\n" +
-                        "FROM (SELECT a2.account_id FROM shares.accounts a2 where a2.account_id = 12) a1\n" +
-                        "    INNER JOIN shares.transactions t1 ON a1.account_id = t1.account_id\n" +
-                        "    INNER JOIN shares.transactions t2 ON a1.account_id = t2.transaction_id\n" +
-                        "    INNER JOIN shares.transactions t3 ON a1.account_id = t3.transaction_id\n" +
-                        "WHERE t1.account_id = 5 AND t2.transaction_id = 3"
-                ),
-                expectedSqls[6], enrichService);
-    }
-
-    @Test
-    void enrichWithDeltaNum8() {
         enrich(prepareRequestDeltaNum("SELECT a.account_id FROM shares.accounts a" +
                         " join shares.transactions t on t.account_id = a.account_id " +
                         "LIMIT 10"),
-                expectedSqls[7], enrichService);
+                expectedSqls[5], enrichService);
     }
 
     @Test
     void enrichCount() {
         enrich(prepareRequestDeltaNum("SELECT count(*) FROM shares.accounts"),
-                expectedSqls[8], enrichService);
+                expectedSqls[6], enrichService);
     }
 
     @Test
     void enrichWithDeltaNum9() {
         enrich(prepareRequestDeltaNum("SELECT * FROM shares.transactions where account_id = 1"),
-                expectedSqls[9], enrichService);
+                expectedSqls[7], enrichService);
     }
 
     @Test
@@ -173,7 +153,7 @@ class AdqmQueryEnrichmentServiceImplTest {
                         "group by varchar_col\n" +
                         "order by varchar_col\n" +
                         "limit 2"),
-                expectedSqls[10], enrichService);
+                expectedSqls[8], enrichService);
     }
 
     @Test
@@ -183,7 +163,7 @@ class AdqmQueryEnrichmentServiceImplTest {
                         "where varchar_col = 'ф'\n" +
                         "group by varchar_col\n" +
                         "limit 2"),
-                expectedSqls[11], enrichService);
+                expectedSqls[9], enrichService);
     }
 
     @Test
@@ -193,14 +173,11 @@ class AdqmQueryEnrichmentServiceImplTest {
                 "       sum(p.units_in_stock),\n" +
                 "       c.id\n" +
                 "FROM dml.products p\n" +
-//                "         JOIN(select * from dml.categories c0 where c0.id = 1) c on p.category_id = c.id\n" +
-//                "         JOIN(select c0.id from dml.categories c0) c2 on p.category_id = c2.id\n" +
-//                "         JOIN(select * from dml.categories c0) c3 on p.category_id = c3.id\n" +
                 "         JOIN dml.categories c on p.category_id = c.id\n" +
                 "GROUP BY c.category_name, c.id\n" +
                 "ORDER BY c.id\n" +
                 "limit 5"),
-            expectedSqls[11], enrichService);
+            expectedSqls[10], enrichService);
     }
     @Test
     void enrichWithSort3() {
@@ -214,22 +191,35 @@ class AdqmQueryEnrichmentServiceImplTest {
                 "ORDER BY dml.categories.id limit 5"),
             expectedSqls[11], enrichService);
     }
+
     @Test
     void enrichWithSort4() {
-        enrich(prepareRequestDeltaNumWithSort("SELECT *\n" +
-                "from dml.categories c\n" +
-                "         JOIN (select * from  dml.products) p on c.id = p.category_id\n" +
-                "ORDER by c.id, p.product_name"),
-            expectedSqls[11], enrichService);
+        enrich(prepareRequestDeltaNumWithSort("SELECT COUNT(dml.categories.category_name),\n" +
+                "       sum(dml.products.units_in_stock)\n" +
+                "FROM dml.products\n" +
+                "         INNER JOIN dml.categories on dml.products.category_id = dml.categories.id\n" +
+                "GROUP BY dml.categories.category_name, dml.categories.id\n" +
+                "ORDER BY dml.categories.id limit 5"),
+            expectedSqls[12], enrichService);
     }
 
     @Test
-    void enrichWithSort2() {
-        enrich(prepareRequestDeltaNumWithSort("SELECT p.* \n" +
+    void enrichWithSort5() {
+        enrich(prepareRequestDeltaNumWithSort("SELECT c.id \n" +
                 "FROM dml.products p\n" +
                 "         JOIN dml.categories c on p.category_id = c.id\n" +
                 "ORDER BY c.id"),
-            expectedSqls[11], enrichService);
+            expectedSqls[13], enrichService);
+    }
+
+    @Test
+    @Disabled("Needed refactoring AdqmCalciteDmlQueryExtendServiceImpl.processProject")
+    void enrichWithSort6() {
+        enrich(prepareRequestDeltaNumWithSort("SELECT *\n" +
+                "from dml.categories c\n" +
+                "         JOIN (select * from  dml.products) p on c.id = p.category_id\n" +
+                "ORDER by c.id, p.product_name desc"),
+            expectedSqls[13], enrichService);
     }
 
     @SneakyThrows
@@ -312,7 +302,7 @@ class AdqmQueryEnrichmentServiceImplTest {
             .query(TestUtils.DEFINITION_SERVICE.processingQuery(sql))
             .deltaInformations(deltaInforamtions)
             .envName(ENV_NAME)
-            .schema(LOADED_DATAMARTS)
+            .schema(loadDatamarts())
             .build();
     }
 
@@ -335,7 +325,7 @@ class AdqmQueryEnrichmentServiceImplTest {
                 .query(TestUtils.DEFINITION_SERVICE.processingQuery(sql))
                 .deltaInformations(deltaInforamtions)
                 .envName(ENV_NAME)
-                .schema(LOADED_DATAMARTS)
+                .schema(loadDatamarts())
                 .build();
     }
 

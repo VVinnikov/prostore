@@ -3,8 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.enrichment;
 import io.arenadata.dtm.common.calcite.CalciteContext;
 import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
-import io.arenadata.dtm.query.calcite.core.rel2sql.NullNotCastableRelToSqlConverter;
-import io.arenadata.dtm.query.calcite.core.util.RelNodeUtil;
+import io.arenadata.dtm.query.execution.plugin.adqm.calcite.rel2sql.AdqmNullNotCastableRelToSqlConverter;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.EnrichQueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.QueryGeneratorContext;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.QueryExtendService;
@@ -14,9 +13,7 @@ import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import lombok.var;
-import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
-import org.apache.calcite.rel.logical.LogicalSort;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.util.Util;
@@ -51,12 +48,7 @@ public class AdqmQueryGeneratorImpl implements QueryGenerator {
                 enrichQueryRequest);
             try {
                 var extendedQuery = queryExtendService.extendQuery(generatorContext);
-                if (isNeedToTrimSortColumns(relNode, extendedQuery)) {
-                    extendedQuery = RelNodeUtil.trimUnusedSortColumn(calciteContext.getRelBuilder(),
-                        extendedQuery,
-                        relNode.validatedRowType);
-                }
-                val sqlNodeResult = new NullNotCastableRelToSqlConverter(sqlDialect)
+                val sqlNodeResult = new AdqmNullNotCastableRelToSqlConverter(sqlDialect)
                     .visitChild(0, extendedQuery)
                     .asStatement();
                 val sqlTree = new SqlSelectTree(sqlNodeResult);
@@ -70,11 +62,6 @@ public class AdqmQueryGeneratorImpl implements QueryGenerator {
                 promise.fail(new DataSourceException("Error in converting relation node", exception));
             }
         });
-    }
-
-    private boolean isNeedToTrimSortColumns(RelRoot relRoot, RelNode sourceRelNode) {
-        return sourceRelNode.getInputs().size() > 0 && sourceRelNode.getInput(0) instanceof LogicalSort
-            && sourceRelNode.getRowType().getFieldCount() != relRoot.validatedRowType.getFieldCount();
     }
 
     private void addFinalOperatorTopUnionTables(SqlSelectTree tree) {

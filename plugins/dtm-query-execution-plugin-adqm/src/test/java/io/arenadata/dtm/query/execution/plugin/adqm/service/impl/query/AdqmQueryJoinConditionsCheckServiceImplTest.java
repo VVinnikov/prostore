@@ -45,8 +45,8 @@ class AdqmQueryJoinConditionsCheckServiceImplTest {
     @Test
     void queryCondition() throws SqlParseException {
         String query = "SELECT * FROM dtm_1032.products\n" +
-                "INNER JOIN dtm_1032.categories on dtm_1032.products.id = dtm_1032.categories.id\n" +
-                "                                      AND dtm_1032.products.product_name = dtm_1032.categories.category_name\n" +
+                "INNER JOIN dtm_1032.categories c on dtm_1032.products.id = dtm_1032.categories.id\n" +
+                "                                      AND dtm_1032.products.product_name = c.category_name\n" +
                 "WHERE dtm_1032.products.category_id > 5\n" +
                 "    limit 5";
         DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();

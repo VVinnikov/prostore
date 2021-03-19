@@ -43,7 +43,7 @@ public class AdqmQueryJoinConditionsCheckServiceImpl implements AdqmQueryJoinCon
             SqlJoin join = node.getNode();
             if (join.getCondition() instanceof SqlBasicCall) {
                 SqlBasicCall joinCondition = (SqlBasicCall) join.getCondition();
-                fillConditionStat(joinCondition, conditionStat);
+                fillConditionStat(join.getLeft(), join.getRight(), joinCondition, conditionStat);
                 if (!isConditionsCorrect(tableDistrKeyMap, conditionStat)) {
                     return false;
                 }
@@ -79,16 +79,24 @@ public class AdqmQueryJoinConditionsCheckServiceImpl implements AdqmQueryJoinCon
         return false;
     }
 
-    private void fillConditionStat(SqlBasicCall condition, ConditionStat conditionStat) {
+    private void fillConditionStat(SqlNode leftNode, SqlNode rightNode, SqlBasicCall condition, ConditionStat conditionStat) {
         ConditionValue left = null;
         ConditionValue right = null;
         for (SqlNode sqlNode : condition.getOperandList()) {
             if (condition.getOperator().getKind() == SqlKind.EQUALS && sqlNode instanceof SqlIdentifier) {
-                SqlIdentifier id = (SqlIdentifier) sqlNode;
+                SqlIdentifier conditionId = (SqlIdentifier) sqlNode;
                 if (left == null) {
-                    left = new ConditionValue(id.names.asList());
+                    if (leftNode instanceof SqlBasicCall) {
+                        left = new ConditionValue(getConditionAttrsFromSqlBasicCall((SqlBasicCall) leftNode, conditionId));
+                    } else {
+                        left = new ConditionValue(conditionId.names.asList());
+                    }
                 } else {
-                    right = new ConditionValue(id.names.asList());
+                    if (rightNode instanceof SqlBasicCall){
+                        right = new ConditionValue(getConditionAttrsFromSqlBasicCall((SqlBasicCall) rightNode, conditionId));
+                    } else {
+                        right = new ConditionValue(conditionId.names.asList());
+                    }
                     conditionStat.getConditionList().add(Pair.of(left, right));
                     conditionStat.setCount(conditionStat.getCount() + 1);
                 }
@@ -96,9 +104,16 @@ public class AdqmQueryJoinConditionsCheckServiceImpl implements AdqmQueryJoinCon
                 conditionStat.setCount(conditionStat.getCount() + 1);
                 return;
             } else if (sqlNode instanceof SqlBasicCall) {
-                fillConditionStat((SqlBasicCall) sqlNode, conditionStat);
+                fillConditionStat(leftNode, rightNode, (SqlBasicCall) sqlNode, conditionStat);
             }
         }
+    }
+
+    private List<String> getConditionAttrsFromSqlBasicCall(SqlBasicCall leftNode, SqlIdentifier conditionId) {
+        SqlIdentifier nodeId = (SqlIdentifier) leftNode.getOperandList().get(0);
+        List<String> names = new ArrayList<>(nodeId.names.asList());
+        names.add(conditionId.names.get(conditionId.names.size() - 1));
+        return names;
     }
 
     @Data

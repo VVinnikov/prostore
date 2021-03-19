@@ -50,6 +50,7 @@ public class AdqmQueryGeneratorImpl implements QueryGenerator {
                     deltaInformations,
                     calciteContext,
                     enrichQueryRequest);
+
             if (!joinConditionsCheckService.isJoinConditionsCorrect(enrichQueryRequest)) {
                 promise.fail(new DataSourceException("Clickhouse’s global join is restricted"));
             }

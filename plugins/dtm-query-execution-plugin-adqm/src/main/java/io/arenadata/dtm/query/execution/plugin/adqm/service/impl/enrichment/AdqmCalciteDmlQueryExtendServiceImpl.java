@@ -18,7 +18,6 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.*;
-import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalSort;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexNode;
@@ -56,7 +55,6 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
     @Override
     public RelNode extendQuery(QueryGeneratorContext ctx) {
         val rawRelationNode = ctx.getRelNode().rel;
-        System.out.println(checkShardingKey(ctx, ctx.getRelNode().rel));
         val physicalTableNames = iterateReplacingTableName(ctx, rawRelationNode, ctx.getEnrichQueryRequest().isLocal());
         val withoutSystemFields = filterSystemFields(ctx, physicalTableNames);
         val allRelNodeCtxs = getRelNodeContexts(ctx, withoutSystemFields);
@@ -199,18 +197,6 @@ public class AdqmCalciteDmlQueryExtendServiceImpl implements QueryExtendService 
         return fieldNames.stream()
             .filter(fieldName -> SYSTEM_FIELDS_PATTERNS.stream().noneMatch(fieldName::matches))
             .collect(Collectors.toList());
-    }
-
-    private boolean checkShardingKey(QueryGeneratorContext ctx, RelNode replacingTablesNode) {
-        List<RelNodeContext> contexts = new ArrayList<>();
-        Map<RelNode, Integer> contextMap = new HashMap<>();
-        replacingTablesNode.accept(new RelHomogeneousShuttle() {
-            @Override
-            public RelNode visit(LogicalJoin join) {
-                return super.visit(join);
-            }
-        });
-        return true;
     }
 
     private List<RelNodeContext> getRelNodeContexts(QueryGeneratorContext ctx, RelNode replacingTablesNode) {

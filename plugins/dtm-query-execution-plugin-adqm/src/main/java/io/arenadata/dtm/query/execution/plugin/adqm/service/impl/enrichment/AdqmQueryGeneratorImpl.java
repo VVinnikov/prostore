@@ -2,7 +2,6 @@ package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.enrichment;
 
 import io.arenadata.dtm.common.calcite.CalciteContext;
 import io.arenadata.dtm.common.delta.DeltaInformation;
-import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.execution.plugin.adqm.calcite.rel2sql.AdqmNullNotCastableRelToSqlConverter;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.EnrichQueryRequest;
@@ -16,15 +15,14 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import lombok.var;
 import org.apache.calcite.rel.RelRoot;
-import org.apache.calcite.sql.*;
-import org.apache.calcite.tools.RelConversionException;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.util.Util;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
 
 @Slf4j
 @Service("adqmQueryGenerator")
@@ -58,8 +56,8 @@ public class AdqmQueryGeneratorImpl implements QueryGenerator {
             try {
                 var extendedQuery = queryExtendService.extendQuery(generatorContext);
                 val sqlNodeResult = new AdqmNullNotCastableRelToSqlConverter(sqlDialect)
-                    .visitChild(0, extendedQuery)
-                    .asStatement();
+                        .visitChild(0, extendedQuery)
+                        .asStatement();
                 val sqlTree = new SqlSelectTree(sqlNodeResult);
                 addFinalOperatorTopUnionTables(sqlTree);
                 replaceDollarSuffixInAlias(sqlTree);
@@ -67,7 +65,7 @@ public class AdqmQueryGeneratorImpl implements QueryGenerator {
                         .replaceAll("\n", " ");
                 log.debug("sql = " + queryResult);
                 promise.complete(queryResult);
-            } catch (Throwable exception) {
+            } catch (Exception exception) {
                 promise.fail(new DataSourceException("Error in converting relation node", exception));
             }
         });

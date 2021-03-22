@@ -13,10 +13,7 @@ import org.apache.calcite.sql.*;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,6 +23,7 @@ public class AdqmQueryJoinConditionsCheckServiceImpl implements AdqmQueryJoinCon
 
     @Override
     public boolean isJoinConditionsCorrect(EnrichQueryRequest enrichQueryRequest) {
+        //FIXME refactor this to use RelNodes
         Map<String, Map<String, Integer>> tableDistrKeyMap = new HashMap<>();
         enrichQueryRequest.getSchema().forEach(d -> {
             String schema = d.getMnemonic();
@@ -86,17 +84,9 @@ public class AdqmQueryJoinConditionsCheckServiceImpl implements AdqmQueryJoinCon
             if (condition.getOperator().getKind() == SqlKind.EQUALS && sqlNode instanceof SqlIdentifier) {
                 SqlIdentifier conditionId = (SqlIdentifier) sqlNode;
                 if (left == null) {
-                    if (leftNode instanceof SqlBasicCall) {
-                        left = new ConditionValue(getConditionAttrsFromSqlBasicCall((SqlBasicCall) leftNode, conditionId));
-                    } else {
-                        left = new ConditionValue(conditionId.names.asList());
-                    }
+                    left = createConditionValue(Arrays.asList(leftNode, rightNode), conditionId);
                 } else {
-                    if (rightNode instanceof SqlBasicCall){
-                        right = new ConditionValue(getConditionAttrsFromSqlBasicCall((SqlBasicCall) rightNode, conditionId));
-                    } else {
-                        right = new ConditionValue(conditionId.names.asList());
-                    }
+                    right = createConditionValue(Arrays.asList(leftNode, rightNode), conditionId);
                     conditionStat.getConditionList().add(Pair.of(left, right));
                     conditionStat.setCount(conditionStat.getCount() + 1);
                 }
@@ -109,11 +99,29 @@ public class AdqmQueryJoinConditionsCheckServiceImpl implements AdqmQueryJoinCon
         }
     }
 
-    private List<String> getConditionAttrsFromSqlBasicCall(SqlBasicCall leftNode, SqlIdentifier conditionId) {
-        SqlIdentifier nodeId = (SqlIdentifier) leftNode.getOperandList().get(0);
-        List<String> names = new ArrayList<>(nodeId.names.asList());
-        names.add(conditionId.names.get(conditionId.names.size() - 1));
-        return names;
+    private ConditionValue createConditionValue(List<SqlNode> nodes, SqlIdentifier conditionId) {
+        List<String> names = new ArrayList<>();
+        for (SqlNode node : nodes) {
+            if (node instanceof SqlIdentifier) {
+                SqlIdentifier id = (SqlIdentifier) node;
+                if (id.names.asList().containsAll(conditionId.names.asList().subList(0, 2))) {
+                    names.addAll(conditionId.names.asList());
+                }
+            } else if (node instanceof SqlBasicCall) {
+                SqlBasicCall joinNode = (SqlBasicCall) node;
+                SqlIdentifier id = (SqlIdentifier) joinNode.getOperandList().get(joinNode.getOperandList().size() - 1);
+                if (id.toString().equals(conditionId.names.get(0))
+                        || ((SqlIdentifier) joinNode.getOperandList().get(0)).names.asList()
+                        .containsAll(conditionId.names.asList().subList(0, 2))) {
+                    SqlIdentifier ident = (SqlIdentifier) joinNode.getOperandList().get(0);
+                    names.addAll(ident.names.asList());
+                    names.add(conditionId.names.get(conditionId.names.size() - 1));
+                }
+            } else {
+                return new ConditionValue(conditionId.names.asList());
+            }
+        }
+        return new ConditionValue(names);
     }
 
     @Data

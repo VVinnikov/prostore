@@ -278,8 +278,11 @@ public class DtmResultSet extends AbstractResultSet {
             return null;
         } else {
             Number numberValue = (Number) value;
-            long epochSeconds = numberValue.longValue() / 1000000;
             int nanos = getNanos(columnIndex, numberValue);
+            long epochSeconds = numberValue.longValue() / 1000000;
+            if (nanos < 0) {
+                epochSeconds = epochSeconds - 1;
+            }
             return Timestamp.valueOf(LocalDateTime.ofInstant(Instant.ofEpochSecond(epochSeconds, nanos), zoneId));
         }
     }

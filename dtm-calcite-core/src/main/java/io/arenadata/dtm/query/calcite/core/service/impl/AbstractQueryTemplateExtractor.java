@@ -13,6 +13,7 @@ import org.apache.calcite.sql.fun.SqlBetweenOperator;
 import org.apache.calcite.sql.fun.SqlInOperator;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -165,13 +166,22 @@ public abstract class AbstractQueryTemplateExtractor implements QueryTemplateExt
     private Stream<SqlNode> betweenReplace(SqlTreeNode sqlTreeNode, SqlBasicCall sqlBasicCall) {
         SqlNode id = sqlBasicCall.getOperands()[0];
         SqlNode leftOperand = sqlBasicCall.getOperands()[1];
+        List<SqlNode> params = new ArrayList<>();
+        if (leftOperand instanceof SqlLiteral) {
+            params.add(sqlBasicCall.getOperands()[1]);
+            leftOperand = DYNAMIC_PARAM;
+        }
         SqlNode rightOperand = sqlBasicCall.getOperands()[2];
+        if (rightOperand instanceof SqlLiteral) {
+            params.add(sqlBasicCall.getOperands()[2]);
+            rightOperand = DYNAMIC_PARAM;
+        }
         sqlTreeNode.getSqlNodeSetter().accept(new SqlBasicCall(
                 sqlBasicCall.getOperator(),
-                new SqlNode[]{id, DYNAMIC_PARAM, DYNAMIC_PARAM},
+                new SqlNode[]{id, leftOperand, rightOperand},
                 sqlBasicCall.getParserPosition()
         ));
-        return Stream.of(leftOperand, rightOperand);
+        return params.stream();
     }
 
     private Stream<SqlNode> inReplace(SqlTreeNode sqlTreeNode, SqlBasicCall sqlBasicCall) {

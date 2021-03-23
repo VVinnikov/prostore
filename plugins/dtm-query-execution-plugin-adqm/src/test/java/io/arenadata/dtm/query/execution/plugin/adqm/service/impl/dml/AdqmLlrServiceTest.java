@@ -9,6 +9,7 @@ import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.QueryEnrichmentService;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.AdqmTemplateParameterConverter;
+import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.enrichment.AdqmDateTimeNodeToLongConverter;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
 import io.vertx.core.Future;
 import org.apache.calcite.sql.SqlDialect;
@@ -36,7 +37,7 @@ class AdqmLlrServiceTest {
     private final QueryTemplateExtractor templateExtractor = mock(QueryTemplateExtractor.class);
     private final SqlDialect sqlDialect = mock(SqlDialect.class);
     private final AdqmLlrService adqmLlrService = new AdqmLlrService(queryEnrichmentService, executorService,
-            queryCacheService, templateExtractor, sqlDialect, new AdqmTemplateParameterConverter());
+            queryCacheService, templateExtractor, sqlDialect, new AdqmTemplateParameterConverter(), new AdqmDateTimeNodeToLongConverter());
 
     @BeforeEach
     void setUp() {

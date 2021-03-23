@@ -67,4 +67,11 @@ public class AdgLlrService extends QueryResultCacheableLlrService {
     protected List<String> ignoredSystemFieldsInTemplate() {
         return SYSTEM_FIELDS;
     }
+//
+//    @Override
+//    protected List<SqlNode> convertParams(List<Para> params) {
+//        return super.convertParams(params);
+////        return Collections.singletonList(SqlNumericLiteral.createExactNumeric("1605271", params.get(0).getParserPosition()));
+//    }
+
 }

@@ -9,7 +9,9 @@ import io.arenadata.dtm.query.execution.plugin.api.dto.PluginRequest;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.type.SqlTypeName;
 
 import java.util.List;
 import java.util.UUID;
@@ -24,6 +26,8 @@ public class LlrRequest extends PluginRequest {
     private final QueryParameters parameters;
     private final List<Datamart> schema;
     private final SqlNode sqlNode;
+    private final List<SqlTypeName> parameterTypes;
+    private final RelRoot relRoot;
 
     @Builder(toBuilder = true)
     public LlrRequest(UUID requestId,
@@ -34,7 +38,9 @@ public class LlrRequest extends PluginRequest {
                       List<ColumnMetadata> metadata,
                       QueryTemplateResult sourceQueryTemplateResult,
                       List<DeltaInformation> deltaInformations,
-                      QueryParameters parameters) {
+                      QueryParameters parameters,
+                      List<SqlTypeName> parameterTypes,
+                      RelRoot relRoot) {
         super(requestId, envName, datamartMnemonic);
         this.sqlNode = sqlNode;
         this.schema = schema;
@@ -42,5 +48,7 @@ public class LlrRequest extends PluginRequest {
         this.sourceQueryTemplateResult = sourceQueryTemplateResult;
         this.deltaInformations = deltaInformations;
         this.parameters = parameters;
+        this.parameterTypes = parameterTypes;
+        this.relRoot = relRoot;
     }
 }

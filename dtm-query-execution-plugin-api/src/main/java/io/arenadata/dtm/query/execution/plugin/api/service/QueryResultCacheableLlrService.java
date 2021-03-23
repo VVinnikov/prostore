@@ -15,6 +15,7 @@ import io.vertx.core.Promise;
 import lombok.val;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.type.SqlTypeName;
 
 import java.util.List;
 import java.util.Map;
@@ -113,7 +114,7 @@ public abstract class QueryResultCacheableLlrService implements LlrService<Query
     }
 
     private String getEnrichmentSqlFromTemplate(LlrRequest llrRq, QueryTemplateValue queryTemplateValue) {
-        val params = convertParams(llrRq.getSourceQueryTemplateResult().getParams());
+        val params = convertParams(llrRq.getSourceQueryTemplateResult().getParams(), llrRq.getParameterTypes());
         val enrichQueryTemplateNode = queryTemplateValue.getEnrichQueryTemplateNode();
         val enrichTemplate =
                 templateExtractor.enrichTemplate(new EnrichmentTemplateRequest(enrichQueryTemplateNode, params));
@@ -122,7 +123,7 @@ public abstract class QueryResultCacheableLlrService implements LlrService<Query
 
     protected abstract List<String> ignoredSystemFieldsInTemplate();
 
-    protected List<SqlNode> convertParams(List<SqlNode> params) {
+    protected List<SqlNode> convertParams(List<SqlNode> params, List<SqlTypeName> dateTimeConditions) {
         return params;
     }
 }

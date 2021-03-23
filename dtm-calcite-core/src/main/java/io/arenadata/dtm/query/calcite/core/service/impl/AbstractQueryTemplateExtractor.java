@@ -22,7 +22,7 @@ import java.util.stream.Stream;
 public abstract class AbstractQueryTemplateExtractor implements QueryTemplateExtractor {
     public static final String DYNAMIC_PARAM_PATH = ".DYNAMIC_PARAM";
     private static final SqlDynamicParam DYNAMIC_PARAM = new SqlDynamicParam(0, SqlParserPos.QUOTED_ZERO);
-    private static final String REGEX = "(?i).*(LIKE|EQUAL\\w*|LESS\\w*|GREATER\\w*|BETWEEN\\w*|.IN\\w*).*";
+    private static final String REGEX = "(?i).*(LIKE|EQUAL\\w*|LESS\\w*|GREATER\\w*|BETWEEN\\w*|.IN\\w*)";
     private final DefinitionService<SqlNode> definitionService;
     private final SqlDialect sqlDialect;
 
@@ -107,16 +107,14 @@ public abstract class AbstractQueryTemplateExtractor implements QueryTemplateExt
             } else if (sqlBasicCall.getOperands().length == 2) {
                 SqlNode leftOperand = sqlBasicCall.getOperands()[0];
                 SqlNode rightOperand = sqlBasicCall.getOperands()[1];
-                boolean leftIsIdentifier = leftOperand instanceof SqlIdentifier;
-                boolean rightIsIdentifier = rightOperand instanceof SqlIdentifier;
-                if (leftIsIdentifier && !rightIsIdentifier) {
+                if (leftOperand instanceof SqlIdentifier && rightOperand instanceof SqlLiteral) {
                     sqlTreeNode.getSqlNodeSetter().accept(new SqlBasicCall(
                             sqlBasicCall.getOperator(),
                             new SqlNode[]{leftOperand, DYNAMIC_PARAM},
                             sqlBasicCall.getParserPosition()
                     ));
                     return Stream.of(rightOperand);
-                } else if (!leftIsIdentifier && rightIsIdentifier) {
+                } else if (leftOperand instanceof SqlLiteral && rightOperand instanceof SqlIdentifier) {
                     sqlTreeNode.getSqlNodeSetter().accept(new SqlBasicCall(
                             sqlBasicCall.getOperator(),
                             new SqlNode[]{DYNAMIC_PARAM, rightOperand},
@@ -138,16 +136,18 @@ public abstract class AbstractQueryTemplateExtractor implements QueryTemplateExt
             if (sqlBasicCall.getOperands().length == 2) {
                 SqlNode leftOperand = sqlBasicCall.getOperands()[0];
                 SqlNode rightOperand = sqlBasicCall.getOperands()[1];
-                boolean leftIsIdentifier = leftOperand instanceof SqlIdentifier;
-                boolean rightIsIdentifier = rightOperand instanceof SqlIdentifier;
-                if (leftIsIdentifier && !rightIsIdentifier && isNotExclude(leftOperand, excludeList)) {
+                if (leftOperand instanceof SqlIdentifier &&
+                        rightOperand instanceof SqlLiteral &&
+                        isNotExclude(leftOperand, excludeList)) {
                     sqlTreeNode.getSqlNodeSetter().accept(new SqlBasicCall(
                             sqlBasicCall.getOperator(),
                             new SqlNode[]{leftOperand, DYNAMIC_PARAM},
                             sqlBasicCall.getParserPosition()
                     ));
                     return Stream.of(rightOperand);
-                } else if (!leftIsIdentifier && rightIsIdentifier && isNotExclude(rightOperand, excludeList)) {
+                } else if (leftOperand instanceof SqlLiteral &&
+                        rightOperand instanceof SqlIdentifier &&
+                        isNotExclude(rightOperand, excludeList)) {
                     sqlTreeNode.getSqlNodeSetter().accept(new SqlBasicCall(
                             sqlBasicCall.getOperator(),
                             new SqlNode[]{DYNAMIC_PARAM, rightOperand},
@@ -176,18 +176,22 @@ public abstract class AbstractQueryTemplateExtractor implements QueryTemplateExt
 
     private Stream<SqlNode> inReplace(SqlTreeNode sqlTreeNode, SqlBasicCall sqlBasicCall) {
         SqlNode id = sqlBasicCall.getOperands()[0];
-        SqlNodeList inList = (SqlNodeList) sqlBasicCall.getOperands()[1];
+        if (sqlBasicCall.getOperands()[1] instanceof SqlNodeList) {
+            SqlNodeList inList = (SqlNodeList) sqlBasicCall.getOperands()[1];
 
-        SqlNodeList replacedNodeList = new SqlNodeList(inList.getList().stream()
-                .map(n -> DYNAMIC_PARAM)
-                .collect(Collectors.toList()), inList.getParserPosition());
+            SqlNodeList replacedNodeList = new SqlNodeList(inList.getList().stream()
+                    .map(n -> DYNAMIC_PARAM)
+                    .collect(Collectors.toList()), inList.getParserPosition());
 
-        sqlTreeNode.getSqlNodeSetter().accept(new SqlBasicCall(
-                sqlBasicCall.getOperator(),
-                new SqlNode[]{id, replacedNodeList},
-                sqlBasicCall.getParserPosition()
-        ));
-        return inList.getList().stream();
+            sqlTreeNode.getSqlNodeSetter().accept(new SqlBasicCall(
+                    sqlBasicCall.getOperator(),
+                    new SqlNode[]{id, replacedNodeList},
+                    sqlBasicCall.getParserPosition()
+            ));
+            return inList.getList().stream();
+        } else {
+            return Stream.empty();
+        }
     }
 
     private boolean isNotExclude(SqlNode operand, List<String> excludeList) {
@@ -195,7 +199,7 @@ public abstract class AbstractQueryTemplateExtractor implements QueryTemplateExt
             return true;
         } else if (operand instanceof SqlIdentifier) {
             SqlIdentifier identifier = (SqlIdentifier) operand;
-            String columnName = identifier.isSimple()? identifier.getSimple() : identifier.names.get(1);
+            String columnName = identifier.isSimple() ? identifier.getSimple() : identifier.names.get(1);
             return excludeList.stream()
                     .noneMatch(e -> e.equalsIgnoreCase(columnName));
         } else {

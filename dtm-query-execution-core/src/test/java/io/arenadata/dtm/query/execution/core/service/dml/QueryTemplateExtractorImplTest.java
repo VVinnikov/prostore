@@ -86,6 +86,26 @@ class QueryTemplateExtractorImplTest {
             "CROSS JOIN \"testdb623\".\"categories\"\n" +
             "WHERE \"id\" = ?";
 
+    private static final String EXPECTED_SQL_WITH_WHERE_SUBQUERY = "SELECT *\n" +
+            "FROM \"dtm\".\"table1\" AS \"a\"\n" +
+            "INNER JOIN \"table3\" AS \"c\" ON \"c\".\"id\" = (SELECT \"a2\".\"id\"\n" +
+            "FROM \"dtm\".\"table1\" AS \"a2\"\n" +
+            "WHERE \"a2\".\"id\" = 10\n" +
+            "LIMIT 1) AND \"c\".\"id\" < 20\n" +
+            "WHERE \"a\".\"id\" IN (SELECT \"b\".\"id\"\n" +
+            "FROM \"table2\" AS \"b\"\n" +
+            "WHERE \"b\".\"id\" > 10)";
+
+    private static final String EXPECTED_SQL_WITH_WHERE_SUBQUERY_TEMPLATE = "SELECT *\n" +
+            "FROM \"dtm\".\"table1\" AS \"a\"\n" +
+            "INNER JOIN \"table3\" AS \"c\" ON \"c\".\"id\" = (SELECT \"a2\".\"id\"\n" +
+            "FROM \"dtm\".\"table1\" AS \"a2\"\n" +
+            "WHERE \"a2\".\"id\" = ?\n" +
+            "LIMIT 1) AND \"c\".\"id\" < ?\n" +
+            "WHERE \"a\".\"id\" IN (SELECT \"b\".\"id\"\n" +
+            "FROM \"table2\" AS \"b\"\n" +
+            "WHERE \"b\".\"id\" > ?)";
+
     private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private AbstractQueryTemplateExtractor extractor;
 
@@ -141,6 +161,11 @@ class QueryTemplateExtractorImplTest {
     @Test
     void extractWithJoin() {
         assertExtract(EXPECTED_SQL_WITH_JOIN, EXPECTED_SQL_WITH_JOIN_TEMPLATE, 1);
+    }
+
+    @Test
+    void extractWithSubQuery() {
+        assertExtract(EXPECTED_SQL_WITH_WHERE_SUBQUERY, EXPECTED_SQL_WITH_WHERE_SUBQUERY_TEMPLATE, 3);
     }
 
     private void assertExtract(String sql, String template, int paramsSize) {

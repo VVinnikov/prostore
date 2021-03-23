@@ -202,14 +202,7 @@ public class SqlSelectTree {
     }
 
     private void flattenSqlJoin(SqlTreeNode parentTree, SqlJoin parentNode) {
-        parentTree.resetChildPos();
-        parentTree.createChild(getNextId(),
-                parentNode.getLeft(),
-                new SqlNodeConsumer<>(parentNode, SqlJoin::setLeft)).ifPresent(this::addNodes);
-        parentTree.resetChildPos();
-        parentTree.createChild(getNextId(),
-                parentNode.getRight(),
-                new SqlNodeConsumer<>(parentNode, SqlJoin::setRight)).ifPresent(this::addNodes);
+        flattenSqlCall(parentTree, parentNode);
     }
 
     private void flattenSqlNodeList(SqlTreeNode parentTree, SqlNodeList parentNode) {

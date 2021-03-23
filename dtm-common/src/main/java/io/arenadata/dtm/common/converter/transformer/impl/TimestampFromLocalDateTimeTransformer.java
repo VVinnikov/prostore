@@ -24,7 +24,7 @@ public class TimestampFromLocalDateTimeTransformer extends AbstractColumnTransfo
         if (value != null) {
             Instant instant = getInstant(value);
             int micros = instant.getNano() / 1000;
-            if (instant.getEpochSecond() < 0) {
+            if (instant.getEpochSecond() < 0 && instant.getNano() > 0) {
                 instant = instant.minusSeconds(1);
             }
             return instant.toEpochMilli() / 1000 * 1000000 + micros;

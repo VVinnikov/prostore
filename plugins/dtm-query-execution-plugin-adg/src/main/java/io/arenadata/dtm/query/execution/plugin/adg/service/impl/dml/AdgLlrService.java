@@ -11,9 +11,12 @@ import io.arenadata.dtm.query.execution.plugin.adg.service.QueryEnrichmentServic
 import io.arenadata.dtm.query.execution.plugin.adg.service.QueryExecutorService;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.QueryResultCacheableLlrService;
+import io.arenadata.dtm.query.execution.plugin.api.service.TemplateParameterConverter;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -30,6 +33,7 @@ public class AdgLlrService extends QueryResultCacheableLlrService {
     private static final List<String> SYSTEM_FIELDS = Arrays.asList(SYS_FROM_FIELD, SYS_OP_FIELD, SYS_TO_FIELD);
     private final QueryEnrichmentService queryEnrichmentService;
     private final QueryExecutorService executorService;
+    private final TemplateParameterConverter templateParameterConverter;
 
     @Autowired
     public AdgLlrService(QueryEnrichmentService queryEnrichmentService,
@@ -37,10 +41,12 @@ public class AdgLlrService extends QueryResultCacheableLlrService {
                          @Qualifier("adgQueryTemplateCacheService")
                                  CacheService<QueryTemplateKey, QueryTemplateValue> queryCacheService,
                          @Qualifier("adgQueryTemplateExtractor") QueryTemplateExtractor templateExtractor,
-                         @Qualifier("adgSqlDialect") SqlDialect sqlDialect) {
+                         @Qualifier("adgSqlDialect") SqlDialect sqlDialect,
+                         @Qualifier("adgTemplateParameterConverter") TemplateParameterConverter templateParameterConverter) {
         super(queryCacheService, templateExtractor, sqlDialect);
         this.queryEnrichmentService = queryEnrichmentService;
         this.executorService = executorService;
+        this.templateParameterConverter = templateParameterConverter;
     }
 
     @Override
@@ -48,9 +54,7 @@ public class AdgLlrService extends QueryResultCacheableLlrService {
                                                              QueryParameters queryParameters,
                                                              List<ColumnMetadata> metadata) {
         //FIXME add params
-        final long[] ts = new long[]{System.currentTimeMillis()};
-        return executorService.execute(enrichedQuery, queryParameters, metadata)
-                .onSuccess(v -> log.info("ms total: " + (System.currentTimeMillis() - ts[0])));
+        return executorService.execute(enrichedQuery, queryParameters, metadata);
     }
 
     @Override
@@ -67,11 +71,10 @@ public class AdgLlrService extends QueryResultCacheableLlrService {
     protected List<String> ignoredSystemFieldsInTemplate() {
         return SYSTEM_FIELDS;
     }
-//
-//    @Override
-//    protected List<SqlNode> convertParams(List<Para> params) {
-//        return super.convertParams(params);
-////        return Collections.singletonList(SqlNumericLiteral.createExactNumeric("1605271", params.get(0).getParserPosition()));
-//    }
+
+    @Override
+    protected List<SqlNode> convertParams(List<SqlNode> params, List<SqlTypeName> parameterTypes) {
+        return templateParameterConverter.convert(params, parameterTypes);
+    }
 
 }

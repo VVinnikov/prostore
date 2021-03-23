@@ -123,7 +123,7 @@ public abstract class QueryResultCacheableLlrService implements LlrService<Query
 
     protected abstract List<String> ignoredSystemFieldsInTemplate();
 
-    protected List<SqlNode> convertParams(List<SqlNode> params, List<SqlTypeName> dateTimeConditions) {
+    protected List<SqlNode> convertParams(List<SqlNode> params, List<SqlTypeName> parameterTypes) {
         return params;
     }
 }

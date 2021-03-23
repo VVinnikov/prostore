@@ -89,7 +89,7 @@ public class LlrRequestContextFactoryImpl implements LlrRequestContextFactory {
                     llrContext.getSourceRequest().setLogicalSchema(schema);
                     return llrContext;
                 })
-                .compose(v -> parserService.parse(new QueryParserRequest(llrContext.getDmlRequestContext().getSqlNode(),
+                .compose(v -> parserService.parse(new QueryParserRequest(llrContext.getSourceRequest().getQueryTemplate().getTemplateNode(),
                         llrContext.getSourceRequest().getLogicalSchema())))
                 .map(response -> {
                     llrContext.setRelNode(response.getRelNode());

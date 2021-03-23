@@ -30,13 +30,10 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.type.SqlTypeName;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -57,7 +54,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
     private final SelectCategoryQualifier selectCategoryQualifier;
     private final SuitablePluginSelector suitablePluginSelector;
     private final SqlDialect sqlDialect;
-    private final ParametersTypeExtractor parametersTypeExtractor;
+    private final SqlParametersTypeExtractor parametersTypeExtractor;
 
     @Autowired
     public LlrDmlExecutor(DataSourcePluginService dataSourcePluginService,
@@ -74,7 +71,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                           SelectCategoryQualifier selectCategoryQualifier,
                           SuitablePluginSelector suitablePluginSelector,
                           @Qualifier("coreSqlDialect") SqlDialect sqlDialect,
-                          ParametersTypeExtractor parametersTypeExtractor) {
+                          SqlParametersTypeExtractor parametersTypeExtractor) {
         this.dataSourcePluginService = dataSourcePluginService;
         this.acceptableSourceTypesService = acceptableSourceTypesService;
         this.deltaQueryPreprocessor = deltaQueryPreprocessor;
@@ -127,7 +124,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                     .compose(this::initQuerySourceTypeAndUpdateQueryCacheIfNeeded)
                     .compose(llrRequestContext -> dataSourcePluginService.prepareLlr(defineSourceType(llrRequestContext),
                             llrRequestContext.getDmlRequestContext().getMetrics(),
-                            createLlrRequest(llrRequestContext, Collections.EMPTY_LIST)))
+                            createLlrRequest(llrRequestContext)))
                     .map(v -> QueryResult.emptyResult())
                     .onComplete(promise);
         });
@@ -195,10 +192,9 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                                                   DeltaQueryPreprocessorResponse deltaResponse) {
         return createLlrRequestContext(Optional.of(deltaResponse), originalNode, context)
                 .compose(this::initQuerySourceTypeAndUpdateQueryCacheIfNeeded)
-                .compose(llrRequestContext -> parametersTypeExtractor.extract(llrRequestContext)
-                        .compose(paramTypes -> dataSourcePluginService.llr(defineSourceType(llrRequestContext),
-                                llrRequestContext.getDmlRequestContext().getMetrics(),
-                                createLlrRequest(llrRequestContext, paramTypes))));
+                .compose(llrRequestContext -> dataSourcePluginService.llr(defineSourceType(llrRequestContext),
+                        llrRequestContext.getDmlRequestContext().getMetrics(),
+                        createLlrRequest(llrRequestContext)));
     }
 
     private Future<LlrRequestContext> createLlrRequestContext(Optional<DeltaQueryPreprocessorResponse> deltaResponseOpt,
@@ -303,6 +299,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
         newQueryTemplateValue.setMetadata(llrRequestContext.getSourceRequest().getMetadata());
         newQueryTemplateValue.setLogicalSchema(llrRequestContext.getSourceRequest().getLogicalSchema());
         newQueryTemplateValue.setSql(llrRequestContext.getSourceRequest().getQueryRequest().getSql());
+        newQueryTemplateValue.setParameterTypes(parametersTypeExtractor.extract(llrRequestContext.getRelNode().rel));
     }
 
     private SourceType defineSourceType(LlrRequestContext llrRequestContext) {
@@ -315,20 +312,19 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
         return sourceType;
     }
 
-    private LlrRequest createLlrRequest(LlrRequestContext context, List<SqlTypeName> paramTypes) {
+    private LlrRequest createLlrRequest(LlrRequestContext context) {
         QueryRequest queryRequest = context.getDmlRequestContext().getRequest().getQueryRequest();
         return LlrRequest.builder()
                 .sourceQueryTemplateResult(context.getSourceRequest().getQueryTemplate())
-                .datamartMnemonic(queryRequest.getDatamartMnemonic())
+                .parameters(context.getSourceRequest().getQueryRequest().getParameters())
+                .parameterTypes(context.getQueryTemplateValue().getParameterTypes())
                 .schema(context.getSourceRequest().getLogicalSchema())
-                .requestId(queryRequest.getRequestId())
-                .metadata(context.getSourceRequest().getMetadata())
-                .deltaInformations(context.getDeltaInformations())
                 .sqlNode(context.getDmlRequestContext().getSqlNode())
                 .envName(context.getDmlRequestContext().getEnvName())
-                .parameters(context.getSourceRequest().getQueryRequest().getParameters())
-                .relRoot(context.getRelNode())
-                .parameterTypes(paramTypes)
+                .datamartMnemonic(queryRequest.getDatamartMnemonic())
+                .metadata(context.getSourceRequest().getMetadata())
+                .deltaInformations(context.getDeltaInformations())
+                .requestId(queryRequest.getRequestId())
                 .build();
     }
 

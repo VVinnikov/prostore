@@ -280,9 +280,6 @@ public class DtmResultSet extends AbstractResultSet {
             Number numberValue = (Number) value;
             int nanos = getNanos(columnIndex, numberValue);
             long epochSeconds = numberValue.longValue() / 1000000;
-            if (nanos < 0) {
-                epochSeconds = epochSeconds - 1;
-            }
             return Timestamp.valueOf(LocalDateTime.ofInstant(Instant.ofEpochSecond(epochSeconds, nanos), zoneId));
         }
     }

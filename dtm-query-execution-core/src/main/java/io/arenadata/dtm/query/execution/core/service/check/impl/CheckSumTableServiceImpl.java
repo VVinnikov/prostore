@@ -49,12 +49,15 @@ public class CheckSumTableServiceImpl implements CheckSumTableService {
         });
     }
 
-    private Future<Void> calcCheckSumInDataSources(long sysCnTo, long sysCn, List<String> sysCnHashList, CheckSumRequestContext request) {
+    private Future<Void> calcCheckSumInDataSources(long sysCnTo,
+                                                   long sysCn,
+                                                   List<String> sysCnHashList,
+                                                   CheckSumRequestContext request) {
         if (sysCn < sysCnTo) {
             return Future.succeededFuture();
         } else {
             return Future.future(promise -> CompositeFuture.join(request.getEntity().getDestination().stream()
-                    .map(sourceType -> calcCheckSum(sysCn, sourceType, request))
+                    .map(sourceType -> calcCheckSumLoop(sysCn, sourceType, request))
                     .collect(Collectors.toList()))
                     .onSuccess(result -> {
                         List<Pair<SourceType, Long>> resultList = result.list();
@@ -76,7 +79,7 @@ public class CheckSumTableServiceImpl implements CheckSumTableService {
         }
     }
 
-    private Future<Pair<SourceType, Long>> calcCheckSum(Long sysCn, SourceType sourceType, CheckSumRequestContext context) {
+    private Future<Pair<SourceType, Long>> calcCheckSumLoop(Long sysCn, SourceType sourceType, CheckSumRequestContext context) {
         return Future.future(promise -> dataSourcePluginService.checkDataByHashInt32(sourceType,
                 context.getCheckContext().getMetrics(),
                 new CheckDataByHashInt32Request(context.getEntity(),
@@ -94,7 +97,8 @@ public class CheckSumTableServiceImpl implements CheckSumTableService {
                 }));
     }
 
-    private Long convertCheckSumsToLong(List<String> sysCnHashList) {
+    @Override
+    public Long convertCheckSumsToLong(List<String> sysCnHashList) {
         val hashSum = String.join(HASH_SUM_SYS_CN_DELIMITER, sysCnHashList);
         val md5 = DigestUtils.md5Hex(hashSum).toLowerCase();
         long result = 0;
@@ -114,24 +118,24 @@ public class CheckSumTableServiceImpl implements CheckSumTableService {
 
     @Override
     public Future<Long> calcCheckSumForAllTables(CheckSumRequestContext request) {
-        return Future.future(promise -> entityDao.getEntityNamesByDatamart(request.getDatamart())
+        List<Long> entitiesHashList = new ArrayList<>();
+        return entityDao.getEntityNamesByDatamart(request.getDatamart())
                 .compose(entityNames -> getEntities(entityNames, request.getDatamart()))
-                .onSuccess(entities -> CompositeFuture.join(entities.stream()
-                        .map(e -> {
-                            CheckSumRequestContext requestContext = request.copy();
-                            requestContext.setEntity(e);
-                            return calcCheckSumTable(requestContext);
-                        })
-                        .collect(Collectors.toList()))
-                        .onSuccess(result -> {
-                            List<Long> entitiesHashList = result.list();
-                            Long resultHashValue = convertCheckSumsToLong(entitiesHashList.stream()
-                                    .map(Object::toString)
-                                    .collect(Collectors.toList()));
-                            promise.complete(resultHashValue);
-                        })
-                        .onFailure(promise::fail))
-                .onFailure(promise::fail));
+                .compose(entities -> calcCheckSumLoop(entities.iterator(), entitiesHashList, request))
+                .map(v ->
+                        convertCheckSumsToLong(entitiesHashList.stream()
+                                .map(Object::toString)
+                                .collect(Collectors.toList())));
+    }
+
+    private Future<Long> calcCheckSumLoop(Iterator<Entity> iterator,
+                                          List<Long> nwEntitiesHashList,
+                                          CheckSumRequestContext request) {
+        CheckSumRequestContext requestContext = request.copy();
+        requestContext.setEntity(iterator.next());
+        return calcCheckSumTable(requestContext)
+                .onSuccess(nwEntitiesHashList::add)
+                .compose(v -> iterator.hasNext() ? calcCheckSumLoop(iterator, nwEntitiesHashList, request) : Future.succeededFuture());
     }
 
     private Future<List<Entity>> getEntities(List<String> entityNames, String datamartMnemonic) {

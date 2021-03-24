@@ -551,4 +551,32 @@ class CheckSumTableServiceImplTest {
                 .onComplete(promise);
         assertTrue(promise.future().failed());
     }
+
+    @Test
+    void convertCheckSumsToLong() {
+        assertEquals(
+                7291435975718679096L,
+                getActualSum("12345")
+        );
+        assertEquals(
+                3774642321231984182L,
+                getActualSum("000000000000000000000000")
+        );
+        assertEquals(
+                7363438594191549539L,
+                getActualSum("Напиток знаний нельзя выпить залпом… (с)")
+        );
+        assertEquals(
+                3688790481895503714L,
+                getActualSum("sfrsfv -s&*& (#as fkjs df&^*sw jdefksfd^&^8eswr")
+        );
+        assertEquals(
+                7147556962894820913L,
+                getActualSum("6")
+        );
+    }
+
+    private Long getActualSum(String s) {
+        return checkSumTableService.convertCheckSumsToLong(Collections.singletonList(s));
+    }
 }

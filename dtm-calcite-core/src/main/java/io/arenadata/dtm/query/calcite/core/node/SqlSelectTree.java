@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 @Data
 @Slf4j
 public class SqlSelectTree {
-    public static final String IS_TABLE_OR_SNAPSHOTS_PATTERN = "(?i).*(^\\w+|JOIN|SELECT)\\.(|AS\\.)(SNAPSHOT|IDENTIFIER)$";
+    public static final String IS_TABLE_OR_SNAPSHOTS_PATTERN = "(?i).*(^\\w+|JOIN(|\\[\\d+\\])|SELECT)\\.(|AS\\.)(SNAPSHOT|IDENTIFIER)$";
     public static final String SELECT_AS_SNAPSHOT = "SNAPSHOT";
     private static final String QUERY_FIELD = "query";
     private static final String COLUMN_LIST_FIELD = "columnList";
@@ -202,14 +202,7 @@ public class SqlSelectTree {
     }
 
     private void flattenSqlJoin(SqlTreeNode parentTree, SqlJoin parentNode) {
-        parentTree.resetChildPos();
-        parentTree.createChild(getNextId(),
-                parentNode.getLeft(),
-                new SqlNodeConsumer<>(parentNode, SqlJoin::setLeft)).ifPresent(this::addNodes);
-        parentTree.resetChildPos();
-        parentTree.createChild(getNextId(),
-                parentNode.getRight(),
-                new SqlNodeConsumer<>(parentNode, SqlJoin::setRight)).ifPresent(this::addNodes);
+        flattenSqlCall(parentTree, parentNode);
     }
 
     private void flattenSqlNodeList(SqlTreeNode parentTree, SqlNodeList parentNode) {

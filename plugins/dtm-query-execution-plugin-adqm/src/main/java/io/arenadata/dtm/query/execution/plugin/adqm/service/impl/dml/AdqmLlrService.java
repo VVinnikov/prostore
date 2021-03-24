@@ -10,14 +10,15 @@ import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.EnrichQueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.QueryEnrichmentService;
-import io.arenadata.dtm.query.execution.plugin.adqm.service.TemplateParameterConverter;
 import io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.QueryResultCacheableLlrService;
+import io.arenadata.dtm.query.execution.plugin.api.service.TemplateParameterConverter;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -80,8 +81,8 @@ public class AdqmLlrService extends QueryResultCacheableLlrService {
     }
 
     @Override
-    protected List<SqlNode> convertParams(List<SqlNode> params) {
-        return templateParameterConverter.convert(params);
+    protected List<SqlNode> convertParams(List<SqlNode> params, List<SqlTypeName> parameterTypes) {
+        return templateParameterConverter.convert(params, parameterTypes);
     }
 
     @Override

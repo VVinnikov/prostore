@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoField;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -23,11 +24,7 @@ public class TimestampFromLocalDateTimeTransformer extends AbstractColumnTransfo
     public Long transformValue(LocalDateTime value) {
         if (value != null) {
             Instant instant = getInstant(value);
-            int micros = instant.getNano() / 1000;
-            if (instant.getEpochSecond() < 0 && instant.getNano() > 0) {
-                instant = instant.minusSeconds(1);
-            }
-            return instant.toEpochMilli() / 1000 * 1000000 + micros;
+            return instant.getLong(ChronoField.INSTANT_SECONDS) * 1000L * 1000L + instant.getLong(ChronoField.MICRO_OF_SECOND);
         }
         return null;
     }

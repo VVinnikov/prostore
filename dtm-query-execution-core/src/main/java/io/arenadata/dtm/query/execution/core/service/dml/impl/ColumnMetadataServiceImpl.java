@@ -30,10 +30,15 @@ public class ColumnMetadataServiceImpl implements ColumnMetadataService {
     @Override
     public Future<List<ColumnMetadata>> getColumnMetadata(QueryParserRequest request) {
         return parserService.parse(request)
-                .map(response -> getColumnMetadata(response.getRelNode()));
+                .map(response -> getColumnMetadataInner(response.getRelNode()));
     }
 
-    private List<ColumnMetadata> getColumnMetadata(RelRoot relNode) {
+    @Override
+    public Future<List<ColumnMetadata>> getColumnMetadata(RelRoot relNode) {
+        return Future.succeededFuture(getColumnMetadataInner(relNode));
+    }
+
+    private List<ColumnMetadata> getColumnMetadataInner(RelRoot relNode) {
         return relNode.project().getRowType().getFieldList().stream()
                 .sorted(Comparator.comparing(RelDataTypeField::getIndex))
                 .map(f -> new ColumnMetadata(f.getName(), getType(f.getType()), getSize(f)))

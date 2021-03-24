@@ -55,7 +55,8 @@ class AdgLlrServiceTest {
                     .withIdentifierQuoteString("\"")
                     .withUnquotedCasing(Casing.TO_LOWER)
                     .withCaseSensitive(false)
-                    .withQuotedCasing(Casing.UNCHANGED)));
+                    .withQuotedCasing(Casing.UNCHANGED)),
+            new AdgTemplateParameterConverter());
 
     @Test
     void testExecuteNotEmptyOk() {

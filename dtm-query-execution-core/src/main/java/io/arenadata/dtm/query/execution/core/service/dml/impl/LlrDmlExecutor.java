@@ -216,7 +216,10 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                     });
         } else {
             if (deltaResponseOpt.isPresent()) {
-                return llrRequestContextFactory.create(deltaResponseOpt.get(), context)
+                val deltaQueryPreprocessorResponse = deltaResponseOpt.get();
+                SqlNode templateNode = templateExtractor.extract(deltaQueryPreprocessorResponse.getSqlNode()).getTemplateNode();
+                context.setSqlNode(templateNode);
+                return llrRequestContextFactory.create(deltaQueryPreprocessorResponse, context)
                         .map(llrRequestContext -> {
                             llrRequestContext.getSourceRequest().setQueryTemplate(templateResult);
                             llrRequestContext.setOriginalQuery(originalNode);
@@ -224,6 +227,8 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                         })
                         .compose(this::cacheQueryTemplateValue);
             } else {
+                SqlNode templateNode = templateExtractor.extract(context.getSqlNode()).getTemplateNode();
+                context.setSqlNode(templateNode);
                 return llrRequestContextFactory.create(context)
                         .map(llrRequestContext -> {
                             llrRequestContext.getSourceRequest().setQueryTemplate(templateResult);

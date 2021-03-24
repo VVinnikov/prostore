@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 @Data
 @Slf4j
 public class SqlSelectTree {
-    public static final String IS_TABLE_OR_SNAPSHOTS_PATTERN = "(?i).*(^\\w+|JOIN|SELECT)\\.(|AS\\.)(SNAPSHOT|IDENTIFIER)$";
+    public static final String IS_TABLE_OR_SNAPSHOTS_PATTERN = "(?i).*(^\\w+|JOIN(|\\[\\d+\\])|SELECT)\\.(|AS\\.)(SNAPSHOT|IDENTIFIER)$";
     public static final String SELECT_AS_SNAPSHOT = "SNAPSHOT";
     private static final String QUERY_FIELD = "query";
     private static final String COLUMN_LIST_FIELD = "columnList";

@@ -39,26 +39,27 @@ public class AdbMppwStopRequestExecutorImpl implements AdbMppwRequestExecutor {
 
     @Override
     public Future<QueryResult> execute(MppwKafkaRequest request) {
-        return dropExtTable(request)
-                .compose(v -> Future.future((Promise<QueryResult> promise) -> vertx.eventBus().request(
-                        MppwTopic.KAFKA_STOP.getValue(),
-                        request.getRequestId().toString(),
-                        new DeliveryOptions().setSendTimeout(mppwProperties.getStopTimeoutMs()),
-                        ar -> {
+        return Future.future((Promise<QueryResult> promise) -> vertx.eventBus().request(
+                MppwTopic.KAFKA_STOP.getValue(),
+                request.getRequestId().toString(),
+                new DeliveryOptions().setSendTimeout(mppwProperties.getStopTimeoutMs()),
+                ar -> dropExtTable(request)
+                        .onSuccess(v -> {
                             if (ar.succeeded()) {
-                                log.debug("Mppw kafka stopped successfully");
-                                promise.complete(QueryResult.emptyResult());
+                                promise.complete();
                             } else {
                                 promise.fail(new MppwDatasourceException("Error stopping mppw kafka", ar.cause()));
                             }
-                        })));
+                        })
+                        .onFailure(error -> promise.fail(new MppwDatasourceException("Error stopping mppw kafka", error)))))
+                .map(v -> QueryResult.emptyResult())
+                .onSuccess(v -> log.debug("Mppw kafka stopped successfully"));
     }
 
     private Future<Void> dropExtTable(MppwRequest request) {
-        return Future.future(promise -> {
-            adbQueryExecutor.executeUpdate(kafkaMppwSqlFactory.dropExtTableSqlQuery(request.getDatamartMnemonic(),
-                    kafkaMppwSqlFactory.getTableName(request.getRequestId().toString())))
-                    .onComplete(promise);
-        });
+        return Future.future(promise ->
+                adbQueryExecutor.executeUpdate(kafkaMppwSqlFactory.dropExtTableSqlQuery(request.getDatamartMnemonic(),
+                        kafkaMppwSqlFactory.getTableName(request.getRequestId().toString())))
+                        .onComplete(promise));
     }
 }

@@ -54,6 +54,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
     private final SelectCategoryQualifier selectCategoryQualifier;
     private final SuitablePluginSelector suitablePluginSelector;
     private final SqlDialect sqlDialect;
+    private final SqlParametersTypeExtractor parametersTypeExtractor;
 
     @Autowired
     public LlrDmlExecutor(DataSourcePluginService dataSourcePluginService,
@@ -69,7 +70,8 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                           LlrRequestContextFactory llrRequestContextFactory,
                           SelectCategoryQualifier selectCategoryQualifier,
                           SuitablePluginSelector suitablePluginSelector,
-                          @Qualifier("coreSqlDialect") SqlDialect sqlDialect) {
+                          @Qualifier("coreSqlDialect") SqlDialect sqlDialect,
+                          SqlParametersTypeExtractor parametersTypeExtractor) {
         this.dataSourcePluginService = dataSourcePluginService;
         this.acceptableSourceTypesService = acceptableSourceTypesService;
         this.deltaQueryPreprocessor = deltaQueryPreprocessor;
@@ -84,6 +86,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
         this.selectCategoryQualifier = selectCategoryQualifier;
         this.suitablePluginSelector = suitablePluginSelector;
         this.sqlDialect = sqlDialect;
+        this.parametersTypeExtractor = parametersTypeExtractor;
     }
 
     public Future<QueryResult> execute(DmlRequestContext context) {
@@ -213,7 +216,10 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                     });
         } else {
             if (deltaResponseOpt.isPresent()) {
-                return llrRequestContextFactory.create(deltaResponseOpt.get(), context)
+                val deltaQueryPreprocessorResponse = deltaResponseOpt.get();
+                SqlNode templateNode = templateExtractor.extract(deltaQueryPreprocessorResponse.getSqlNode()).getTemplateNode();
+                context.setSqlNode(templateNode);
+                return llrRequestContextFactory.create(deltaQueryPreprocessorResponse, context)
                         .map(llrRequestContext -> {
                             llrRequestContext.getSourceRequest().setQueryTemplate(templateResult);
                             llrRequestContext.setOriginalQuery(originalNode);
@@ -221,6 +227,8 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                         })
                         .compose(this::cacheQueryTemplateValue);
             } else {
+                SqlNode templateNode = templateExtractor.extract(context.getSqlNode()).getTemplateNode();
+                context.setSqlNode(templateNode);
                 return llrRequestContextFactory.create(context)
                         .map(llrRequestContext -> {
                             llrRequestContext.getSourceRequest().setQueryTemplate(templateResult);
@@ -296,6 +304,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
         newQueryTemplateValue.setMetadata(llrRequestContext.getSourceRequest().getMetadata());
         newQueryTemplateValue.setLogicalSchema(llrRequestContext.getSourceRequest().getLogicalSchema());
         newQueryTemplateValue.setSql(llrRequestContext.getSourceRequest().getQueryRequest().getSql());
+        newQueryTemplateValue.setParameterTypes(parametersTypeExtractor.extract(llrRequestContext.getRelNode().rel));
     }
 
     private SourceType defineSourceType(LlrRequestContext llrRequestContext) {
@@ -312,14 +321,15 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
         QueryRequest queryRequest = context.getDmlRequestContext().getRequest().getQueryRequest();
         return LlrRequest.builder()
                 .sourceQueryTemplateResult(context.getSourceRequest().getQueryTemplate())
-                .datamartMnemonic(queryRequest.getDatamartMnemonic())
+                .parameters(context.getSourceRequest().getQueryRequest().getParameters())
+                .parameterTypes(context.getQueryTemplateValue().getParameterTypes())
                 .schema(context.getSourceRequest().getLogicalSchema())
-                .requestId(queryRequest.getRequestId())
-                .metadata(context.getSourceRequest().getMetadata())
-                .deltaInformations(context.getDeltaInformations())
                 .sqlNode(context.getDmlRequestContext().getSqlNode())
                 .envName(context.getDmlRequestContext().getEnvName())
-                .parameters(context.getSourceRequest().getQueryRequest().getParameters())
+                .datamartMnemonic(queryRequest.getDatamartMnemonic())
+                .metadata(context.getSourceRequest().getMetadata())
+                .deltaInformations(context.getDeltaInformations())
+                .requestId(queryRequest.getRequestId())
                 .build();
     }
 

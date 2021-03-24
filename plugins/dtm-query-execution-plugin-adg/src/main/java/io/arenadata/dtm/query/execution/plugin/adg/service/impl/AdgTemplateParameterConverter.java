@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.plugin.adqm.service.impl;
+package io.arenadata.dtm.query.execution.plugin.adg.service.impl;
 
 import io.arenadata.dtm.query.execution.plugin.api.service.TemplateParameterConverter;
 import org.apache.calcite.sql.SqlLiteral;
@@ -14,8 +14,8 @@ import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.List;
 
-@Service("adqmTemplateParameterConverter")
-public class AdqmTemplateParameterConverter implements TemplateParameterConverter {
+@Service("adgTemplateParameterConverter")
+public class AdgTemplateParameterConverter implements TemplateParameterConverter {
     private static final DateTimeFormatter TIMESTAMP_FORMATTER = new DateTimeFormatterBuilder()
             .appendPattern("yyyy-MM-dd HH:mm:ss")
             .appendFraction(ChronoField.MICRO_OF_SECOND, 0, 6, true)
@@ -34,13 +34,6 @@ public class AdqmTemplateParameterConverter implements TemplateParameterConverte
 
     protected SqlNode convertParam(SqlNode param, SqlTypeName typeName) {
         switch (typeName) {
-            case BOOLEAN:
-                Boolean aBoolean = ((SqlLiteral) param).getValueAs(Boolean.class);
-                if (aBoolean == null) {
-                    return SqlLiteral.createNull(param.getParserPosition());
-                } else {
-                    return SqlLiteral.createExactNumeric(aBoolean ? "1" : "0", param.getParserPosition());
-                }
             case TIME:
                 LocalTime time = LocalTime.parse(((SqlLiteral) param).getValueAs(String.class));
                 long nanoOfDay = time.toNanoOfDay();
@@ -59,11 +52,8 @@ public class AdqmTemplateParameterConverter implements TemplateParameterConverte
     }
 
     public Long transformTimestamp(LocalDateTime value) {
-        if (value != null) {
             Instant instant = getInstant(value);
             return instant.getLong(ChronoField.INSTANT_SECONDS) * 1000L * 1000L + instant.getLong(ChronoField.MICRO_OF_SECOND);
-        }
-        return null;
     }
 
     private Instant getInstant(LocalDateTime value) {

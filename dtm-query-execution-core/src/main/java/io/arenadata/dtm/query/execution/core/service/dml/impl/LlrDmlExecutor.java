@@ -147,9 +147,9 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
             deltaQueryPreprocessor.process(context.getSqlNode())
                     .compose(deltaResponse -> {
                         if (infoSchemaDefService.isInformationSchemaRequest(deltaResponse.getDeltaInformations())) {
-                            return executeInformationSchemaRequest(context, originalNode, deltaResponse);
+                            return executeInformationSchemaRequest(context, sqlNodeWithoutViews, deltaResponse);
                         } else {
-                            return executeLlrRequest(context, originalNode, deltaResponse);
+                            return executeLlrRequest(context, sqlNodeWithoutViews, deltaResponse);
                         }
                     })
                     .onComplete(promise);

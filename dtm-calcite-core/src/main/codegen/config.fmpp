@@ -61,6 +61,7 @@ data: {
       "CHECK_TABLE"
       "CHECK_DATA"
       "CHECK_VERSIONS"
+      "CHECK_SUM"
       "HISTORY"
       "CRASHED_WRITE_OPERATIONS"
     ]
@@ -421,6 +422,7 @@ data: {
         "SqlCheckTable()"
         "SqlCheckData()"
         "SqlCheckVersions()"
+        "SqlCheckSum()"
         "SqlTruncateHistory()"
         "SqlRollbackCrashedWriteOps()"
     ]

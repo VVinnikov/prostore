@@ -57,7 +57,6 @@ public class LlrRequestContextFactoryImpl implements LlrRequestContextFactory {
         llrContext.getSourceRequest().setMetadata(queryTemplateValue.getMetadata());
         llrContext.getSourceRequest().setLogicalSchema(queryTemplateValue.getLogicalSchema());
         llrContext.getSourceRequest().getQueryRequest().setSql(queryTemplateValue.getSql());
-        llrContext.setDeltaInformations(queryTemplateValue.getDeltaInformations());
         llrContext.setQueryTemplateValue(queryTemplateValue);
         return Future.succeededFuture(llrContext);
     }

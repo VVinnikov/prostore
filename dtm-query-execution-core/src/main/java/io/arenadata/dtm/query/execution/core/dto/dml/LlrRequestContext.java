@@ -6,6 +6,7 @@ import io.arenadata.dtm.common.reader.QuerySourceRequest;
 import lombok.Builder;
 import lombok.Data;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.sql.SqlNode;
 
 import java.util.List;
 
@@ -16,13 +17,16 @@ public class LlrRequestContext {
     private QuerySourceRequest sourceRequest;
     private SourceQueryTemplateValue queryTemplateValue;
     private RelRoot relNode;
+    private SqlNode originalQuery;
 
     @Builder
     public LlrRequestContext(List<DeltaInformation> deltaInformations,
                              DmlRequestContext dmlRequestContext,
-                             QuerySourceRequest sourceRequest) {
+                             QuerySourceRequest sourceRequest,
+                             SqlNode originalQuery) {
         this.deltaInformations = deltaInformations;
         this.dmlRequestContext = dmlRequestContext;
         this.sourceRequest = sourceRequest;
+        this.originalQuery = originalQuery;
     }
 }

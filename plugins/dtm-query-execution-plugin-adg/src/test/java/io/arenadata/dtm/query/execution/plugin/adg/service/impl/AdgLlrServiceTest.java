@@ -77,7 +77,8 @@ class AdgLlrServiceTest {
                 .sourceQueryTemplateResult(new QueryTemplateResult(sql, sqlNode, Collections.emptyList()))
                 .schema(new ArrayList<>())
                 .requestId(requestId)
-                .sqlNode(sqlNode)
+                .withoutViewsQuery(sqlNode)
+                .originalQuery(sqlNode)
                 .build();
 
         llrService.execute(llrRequest)
@@ -103,7 +104,8 @@ class AdgLlrServiceTest {
                 .sourceQueryTemplateResult(new QueryTemplateResult(sql, sqlNode, Collections.emptyList()))
                 .requestId(requestId)
                 .schema(new ArrayList<>())
-                .sqlNode(sqlNode)
+                .withoutViewsQuery(sqlNode)
+                .originalQuery(sqlNode)
                 .build();
 
         llrService.execute(llrRequest)

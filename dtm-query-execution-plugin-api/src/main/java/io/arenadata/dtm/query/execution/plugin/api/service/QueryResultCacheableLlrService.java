@@ -71,9 +71,8 @@ public abstract class QueryResultCacheableLlrService implements LlrService<Query
                 enrichQuery(llrRq)
                         .compose(enrichRequest -> Future.future((Promise<String> p) -> {
                             val template = extractTemplateWithoutSystemFields(enrichRequest);
-                            QueryTemplateValue templateValue = getQueryTemplateValue(template);
-                            queryCacheService.put(getQueryTemplateKey(llrRq), templateValue)
-                                    .map(r -> getEnrichmentSqlFromTemplate(llrRq, templateValue))
+                            queryCacheService.put(getQueryTemplateKey(llrRq), getQueryTemplateValue(template))
+                                    .map(r -> getEnrichmentSqlFromTemplate(llrRq, getQueryTemplateValue(template)))
                                     .onComplete(p);
                         }))
                         .onComplete(promise);
@@ -84,11 +83,7 @@ public abstract class QueryResultCacheableLlrService implements LlrService<Query
     protected abstract Future<String> enrichQuery(LlrRequest llrRequest);
 
     private QueryTemplateValue getQueryTemplateValueFromCache(LlrRequest llrRq) {
-        val template = llrRq.getSourceQueryTemplateResult().getTemplate();
-        val queryTemplateKey = QueryTemplateKey.builder()
-                .sourceQueryTemplate(template)
-                .build();
-        return queryCacheService.get(queryTemplateKey);
+        return queryCacheService.get(getQueryTemplateKey(llrRq));
     }
 
     private QueryTemplateResult extractTemplateWithoutSystemFields(String enrichRequest) {
@@ -102,8 +97,9 @@ public abstract class QueryResultCacheableLlrService implements LlrService<Query
     }
 
     private QueryTemplateKey getQueryTemplateKey(LlrRequest llrRq) {
+        String template = templateExtractor.extract(llrRq.getOriginalQuery()).getTemplate();
         return QueryTemplateKey.builder()
-                .sourceQueryTemplate(llrRq.getSourceQueryTemplateResult().getTemplate())
+                .sourceQueryTemplate(template)
                 .logicalSchema(llrRq.getSchema())
                 .build();
     }

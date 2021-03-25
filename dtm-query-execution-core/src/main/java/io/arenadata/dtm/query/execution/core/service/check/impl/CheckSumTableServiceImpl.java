@@ -6,9 +6,9 @@ import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.check.CheckSumRequestContext;
+import io.arenadata.dtm.query.execution.core.exception.check.CheckSumException;
 import io.arenadata.dtm.query.execution.core.service.check.CheckSumTableService;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
-import io.arenadata.dtm.query.execution.plugin.api.check.CheckException;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
@@ -71,8 +71,7 @@ public class CheckSumTableServiceImpl implements CheckSumTableService {
                                     .onSuccess(promise::complete)
                                     .onFailure(promise::fail);
                         } else {
-                            promise.fail(new CheckException(String.format("Consistency breach detected for %s",
-                                    request.getEntity().getName())));
+                            promise.fail(new CheckSumException(request.getEntity().getName()));
                         }
                     })
                     .onFailure(promise::fail));

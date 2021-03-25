@@ -13,6 +13,7 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.check.CheckContext;
 import io.arenadata.dtm.query.execution.core.dto.check.CheckSumRequestContext;
 import io.arenadata.dtm.query.execution.core.dto.delta.OkDelta;
+import io.arenadata.dtm.query.execution.core.exception.check.CheckSumException;
 import io.arenadata.dtm.query.execution.core.service.check.impl.CheckSumTableServiceImpl;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.datasource.impl.DataSourcePluginServiceImpl;
@@ -273,6 +274,7 @@ class CheckSumTableServiceImplTest {
         checkSumTableService.calcCheckSumTable(context)
                 .onComplete(promise);
         assertTrue(promise.future().failed());
+        assertEquals(CheckSumException.class, promise.future().cause().getClass());
     }
 
     @Test

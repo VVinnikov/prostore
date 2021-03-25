@@ -139,17 +139,17 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                 });
     }
 
-    private Future<QueryResult> defineQueryAndExecute(SqlNode sqlNodeWithoutViews, DmlRequestContext context) {
+    private Future<QueryResult> defineQueryAndExecute(SqlNode withoutViewsQuery, DmlRequestContext context) {
         return Future.future(promise -> {
             log.debug("Execute sql query [{}]", context.getRequest().getQueryRequest());
-            val originalNode = context.getSqlNode();
-            context.setSqlNode(sqlNodeWithoutViews);
+            val originalQuery = context.getSqlNode();
+            context.setSqlNode(withoutViewsQuery);
             deltaQueryPreprocessor.process(context.getSqlNode())
                     .compose(deltaResponse -> {
                         if (infoSchemaDefService.isInformationSchemaRequest(deltaResponse.getDeltaInformations())) {
-                            return executeInformationSchemaRequest(context, originalNode, deltaResponse);
+                            return executeInformationSchemaRequest(context, originalQuery, deltaResponse);
                         } else {
-                            return executeLlrRequest(context, originalNode, deltaResponse);
+                            return executeLlrRequest(context, withoutViewsQuery, deltaResponse);
                         }
                     })
                     .onComplete(promise);
@@ -157,17 +157,17 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
     }
 
     private Future<QueryResult> executeInformationSchemaRequest(DmlRequestContext context,
-                                                                SqlNode originalNode,
+                                                                SqlNode originalQuery,
                                                                 DeltaQueryPreprocessorResponse deltaResponse) {
-        return initLlrRequestContext(context, originalNode, deltaResponse)
-                .compose(this::checkAccessAndExecute);
+        return initLlrRequestContext(context, deltaResponse)
+                .compose(llrRequestContext -> checkAccessAndExecute(llrRequestContext, originalQuery));
     }
 
-    private Future<QueryResult> checkAccessAndExecute(LlrRequestContext llrRequestContext) {
+    private Future<QueryResult> checkAccessAndExecute(LlrRequestContext llrRequestContext, SqlNode originalQuery) {
         return Future.future(p -> metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
                 SqlProcessingType.LLR,
                 llrRequestContext.getDmlRequestContext().getMetrics())
-                .compose(v -> infoSchemaDefService.checkAccessToSystemLogicalTables(llrRequestContext.getOriginalQuery()))
+                .compose(v -> infoSchemaDefService.checkAccessToSystemLogicalTables(originalQuery))
                 .compose(v -> infoSchemaExecutor.execute(llrRequestContext.getSourceRequest()))
                 .onComplete(metricsService.sendMetrics(SourceType.INFORMATION_SCHEMA,
                         SqlProcessingType.LLR,
@@ -177,11 +177,9 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
     }
 
     private Future<LlrRequestContext> initLlrRequestContext(DmlRequestContext context,
-                                                            SqlNode originalNode,
                                                             DeltaQueryPreprocessorResponse deltaResponse) {
         return llrRequestContextFactory.create(deltaResponse, context)
                 .map(llrRequestContext -> {
-                    llrRequestContext.setOriginalQuery(originalNode);
                     llrRequestContext.getSourceRequest().setQuery(context.getSqlNode());
                     return llrRequestContext;
                 });
@@ -211,7 +209,6 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
             return llrRequestContextFactory.create(context, queryTemplateValue)
                     .map(llrRequestContext -> {
                         llrRequestContext.getSourceRequest().setQueryTemplate(templateResult);
-                        llrRequestContext.setOriginalQuery(originalNode);
                         return llrRequestContext;
                     });
         } else {
@@ -222,7 +219,6 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                 return llrRequestContextFactory.create(deltaQueryPreprocessorResponse, context)
                         .map(llrRequestContext -> {
                             llrRequestContext.getSourceRequest().setQueryTemplate(templateResult);
-                            llrRequestContext.setOriginalQuery(originalNode);
                             return llrRequestContext;
                         })
                         .compose(this::cacheQueryTemplateValue);
@@ -232,7 +228,6 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                 return llrRequestContextFactory.create(context)
                         .map(llrRequestContext -> {
                             llrRequestContext.getSourceRequest().setQueryTemplate(templateResult);
-                            llrRequestContext.setOriginalQuery(originalNode);
                             return llrRequestContext;
                         })
                         .compose(this::cacheQueryTemplateValue);

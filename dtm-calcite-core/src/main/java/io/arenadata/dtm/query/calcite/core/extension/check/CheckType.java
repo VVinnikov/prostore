@@ -4,5 +4,6 @@ public enum CheckType {
     DATABASE,
     TABLE,
     DATA,
-    VERSIONS
+    VERSIONS,
+    SUM
 }

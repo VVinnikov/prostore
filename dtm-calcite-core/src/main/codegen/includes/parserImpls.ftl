@@ -743,3 +743,25 @@ SqlNode SqlRollbackCrashedWriteOps() :
         return new io.arenadata.dtm.query.calcite.core.extension.edml.SqlRollbackCrashedWriteOps(pos);
     }
 }
+SqlNode SqlCheckSum() :
+{
+    Span s;
+    final SqlLiteral deltaNum;
+    SqlIdentifier table = null;
+    List<SqlNode> tableElementList = null;
+}
+{
+    <CHECK_SUM>
+    {
+        s = span();
+    }
+    <LPAREN> deltaNum = NumericLiteral()
+    [ <COMMA>
+            table = CompoundIdentifier()
+            [ <COMMA> <LBRACKET> tableElementList = SelectList() <RBRACKET> ]
+    ]
+    <RPAREN>
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckSum(s.end(this), deltaNum, table, tableElementList);
+    }
+}

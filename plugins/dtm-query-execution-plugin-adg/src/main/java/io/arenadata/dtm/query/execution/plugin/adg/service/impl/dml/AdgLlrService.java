@@ -62,7 +62,7 @@ public class AdgLlrService extends QueryResultCacheableLlrService {
         return queryEnrichmentService.enrich(EnrichQueryRequest.builder()
                 .deltaInformations(llrRequest.getDeltaInformations())
                 .envName(llrRequest.getEnvName())
-                .query(llrRequest.getSqlNode())
+                .query(llrRequest.getWithoutViewsQuery())
                 .schema(llrRequest.getSchema())
                 .build());
     }

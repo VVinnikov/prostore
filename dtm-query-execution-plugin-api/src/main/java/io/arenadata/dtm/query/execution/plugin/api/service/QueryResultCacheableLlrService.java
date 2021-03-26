@@ -64,23 +64,15 @@ public abstract class QueryResultCacheableLlrService implements LlrService<Query
 
     private Future<String> getQueryFromCacheOrInit(LlrRequest llrRq) {
         return Future.future(promise -> {
-                List<SqlNode> convertedParams = convertParams(llrRq.getSourceQueryTemplateResult().getParams(),
-                        llrRq.getParameterTypes());
             val queryTemplateValue = getQueryTemplateValueFromCache(llrRq);
             if (queryTemplateValue != null) {
-                promise.complete(getEnrichmentSqlFromTemplate(queryTemplateValue, convertedParams));
+                promise.complete(getEnrichmentSqlFromTemplate(llrRq, queryTemplateValue));
             } else {
-                val templateResult = templateExtractor.extract(llrRq.getSqlNode());
-                val templatedLlrRequest = llrRq.toBuilder()
-                        .sourceQueryTemplateResult(templateResult)
-                        .sqlNode(templateResult.getTemplateNode())
-                        .build();
-                enrichQuery(templatedLlrRequest)
+                enrichQuery(llrRq)
                         .compose(enrichRequest -> Future.future((Promise<String> p) -> {
                             val template = extractTemplateWithoutSystemFields(enrichRequest);
-                            QueryTemplateValue templateValue = getQueryTemplateValue(template);
-                            queryCacheService.put(getQueryTemplateKey(llrRq), templateValue)
-                                    .map(r -> getEnrichmentSqlFromTemplate(templateValue, convertedParams))
+                            queryCacheService.put(getQueryTemplateKey(llrRq), getQueryTemplateValue(template))
+                                    .map(r -> getEnrichmentSqlFromTemplate(llrRq, getQueryTemplateValue(template)))
                                     .onComplete(p);
                         }))
                         .onComplete(promise);
@@ -91,11 +83,7 @@ public abstract class QueryResultCacheableLlrService implements LlrService<Query
     protected abstract Future<String> enrichQuery(LlrRequest llrRequest);
 
     private QueryTemplateValue getQueryTemplateValueFromCache(LlrRequest llrRq) {
-        val template = llrRq.getSourceQueryTemplateResult().getTemplate();
-        val queryTemplateKey = QueryTemplateKey.builder()
-                .sourceQueryTemplate(template)
-                .build();
-        return queryCacheService.get(queryTemplateKey);
+        return queryCacheService.get(getQueryTemplateKey(llrRq));
     }
 
     private QueryTemplateResult extractTemplateWithoutSystemFields(String enrichRequest) {
@@ -109,13 +97,15 @@ public abstract class QueryResultCacheableLlrService implements LlrService<Query
     }
 
     private QueryTemplateKey getQueryTemplateKey(LlrRequest llrRq) {
+        String template = templateExtractor.extract(llrRq.getOriginalQuery()).getTemplate();
         return QueryTemplateKey.builder()
-                .sourceQueryTemplate(llrRq.getSourceQueryTemplateResult().getTemplate())
+                .sourceQueryTemplate(template)
                 .logicalSchema(llrRq.getSchema())
                 .build();
     }
 
-    private String getEnrichmentSqlFromTemplate(QueryTemplateValue queryTemplateValue, List<SqlNode> params) {
+    private String getEnrichmentSqlFromTemplate(LlrRequest llrRq, QueryTemplateValue queryTemplateValue) {
+        val params = convertParams(llrRq.getSourceQueryTemplateResult().getParams(), llrRq.getParameterTypes());
         val enrichQueryTemplateNode = queryTemplateValue.getEnrichQueryTemplateNode();
         val enrichTemplate =
                 templateExtractor.enrichTemplate(new EnrichmentTemplateRequest(enrichQueryTemplateNode, params));

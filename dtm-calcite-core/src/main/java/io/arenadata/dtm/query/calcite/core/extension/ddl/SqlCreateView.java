@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.calcite.core.extension.ddl;
 
+import io.arenadata.dtm.query.calcite.core.extension.dml.LimitableSqlOrderBy;
 import io.arenadata.dtm.query.calcite.core.extension.parser.ParseException;
 import lombok.Getter;
 import org.apache.calcite.sql.*;
@@ -31,6 +32,9 @@ public class SqlCreateView extends SqlCreate {
             } else {
                 return query;
             }
+        } else if (query instanceof LimitableSqlOrderBy) {
+            checkQueryAndGet(((LimitableSqlOrderBy) query).query);
+            return query;
         } else {
             throw new ParseException(String.format("Type %s of query does not support!", query.getClass().getName()));
         }

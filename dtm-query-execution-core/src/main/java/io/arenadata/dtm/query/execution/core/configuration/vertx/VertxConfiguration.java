@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.configuration.vertx;
 
+import io.arenadata.dtm.query.execution.core.service.init.CoreInitializationService;
 import io.arenadata.dtm.query.execution.core.service.metadata.InformationSchemaService;
 import io.arenadata.dtm.query.execution.core.service.rollback.RestoreStateService;
 import io.arenadata.dtm.query.execution.core.verticle.starter.QueryWorkerStarter;
@@ -37,12 +38,14 @@ public class VertxConfiguration implements ApplicationListener<ApplicationReadyE
     @Override
     public void onApplicationEvent(ApplicationReadyEvent event) {
         val informationSchemaService = event.getApplicationContext().getBean(InformationSchemaService.class);
+        val coreInitializationService = event.getApplicationContext().getBean(CoreInitializationService.class);
         val restoreStateService = event.getApplicationContext().getBean(RestoreStateService.class);
         val vertx = event.getApplicationContext().getBean("coreVertx", Vertx.class);
         val verticles = event.getApplicationContext().getBeansOfType(Verticle.class);
         val queryWorkerStarter = event.getApplicationContext().getBean(QueryWorkerStarter.class);
         informationSchemaService.createInformationSchemaViews()
                 .compose(v -> deployVerticle(vertx, verticles.values()))
+                .compose(v -> coreInitializationService.execute())
                 .compose(v -> {
                     restoreStateService.restoreState()
                             .onFailure(fail -> log.error("Error in restoring state", fail));
@@ -73,4 +76,5 @@ public class VertxConfiguration implements ApplicationListener<ApplicationReadyE
                 .collect(Collectors.toList()))
                 .mapEmpty();
     }
+
 }

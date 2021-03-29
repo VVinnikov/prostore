@@ -13,10 +13,7 @@ import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
-import io.arenadata.dtm.query.execution.plugin.api.service.DdlService;
-import io.arenadata.dtm.query.execution.plugin.api.service.LlrService;
-import io.arenadata.dtm.query.execution.plugin.api.service.RollbackService;
-import io.arenadata.dtm.query.execution.plugin.api.service.StatusService;
+import io.arenadata.dtm.query.execution.plugin.api.service.*;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckDataService;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckVersionService;
@@ -39,6 +36,7 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
     protected final CheckDataService checkDataService;
     protected final CheckVersionService checkVersionService;
     protected final TruncateHistoryService truncateService;
+    protected final PluginInitializationService initializationService;
 
     public AbstractDtmDataSourcePlugin(DdlService<Void> ddlService,
                                        LlrService<QueryResult> llrService,
@@ -49,7 +47,8 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
                                        CheckTableService checkTableService,
                                        CheckDataService checkDataService,
                                        CheckVersionService checkVersionService,
-                                       TruncateHistoryService truncateService) {
+                                       TruncateHistoryService truncateService,
+                                       PluginInitializationService initializationService) {
         this.ddlService = ddlService;
         this.llrService = llrService;
         this.mpprService = mpprService;
@@ -60,6 +59,7 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
         this.checkDataService = checkDataService;
         this.checkVersionService = checkVersionService;
         this.truncateService = truncateService;
+        this.initializationService = initializationService;
     }
 
     @Override
@@ -122,4 +122,8 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
         return truncateService.truncateHistory(request);
     }
 
+    @Override
+    public Future<Void> initialize() {
+        return initializationService.execute();
+    }
 }

@@ -185,6 +185,11 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
                 plugin -> plugin.truncateHistory(request));
     }
 
+    @Override
+    public Future<Void> initialize(SourceType sourceType) {
+        return execute(getPlugin(sourceType).initialize());
+    }
+
     private <T> Future<T> executeWithMetrics(SourceType sourceType,
                                              SqlProcessingType sqlProcessingType,
                                              RequestMetrics requestMetrics,

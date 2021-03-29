@@ -115,6 +115,11 @@ class DtmDataSourcePluginIT {
         public Future<Void> truncateHistory(TruncateHistoryRequest params) {
             return null;
         }
+
+        @Override
+        public Future<Void> initialize() {
+            return null;
+        }
     };
 
     @Test

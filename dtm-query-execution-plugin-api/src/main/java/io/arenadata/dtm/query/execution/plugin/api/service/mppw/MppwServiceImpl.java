@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class MppwServiceImpl<T extends MppwExecutor> implements MppwService{
+public class MppwServiceImpl<T extends MppwExecutor> implements MppwService {
     private final Map<ExternalTableLocationType, MppwExecutor> executors;
 
     public MppwServiceImpl(List<T> executors) {

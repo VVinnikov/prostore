@@ -6,6 +6,7 @@ import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.execution.plugin.adqm.calcite.rel2sql.AdqmNullNotCastableRelToSqlConverter;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.EnrichQueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.QueryGeneratorContext;
+import io.arenadata.dtm.query.execution.plugin.adqm.dto.query.AdqmCheckJoinRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.AdqmQueryJoinConditionsCheckService;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.QueryExtendService;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.QueryGenerator;
@@ -51,7 +52,9 @@ public class AdqmQueryGeneratorImpl implements QueryGenerator {
                     calciteContext,
                     enrichQueryRequest);
 
-            if (!joinConditionsCheckService.isJoinConditionsCorrect(enrichQueryRequest)) {
+            if (!joinConditionsCheckService.isJoinConditionsCorrect(
+                    new AdqmCheckJoinRequest(generatorContext.getRelNode().rel,
+                            generatorContext.getEnrichQueryRequest().getSchema()))) {
                 promise.fail(new DataSourceException("Clickhouse’s global join is restricted"));
             }
             try {

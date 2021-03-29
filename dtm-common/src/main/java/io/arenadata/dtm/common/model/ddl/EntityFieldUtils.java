@@ -10,6 +10,9 @@ public class EntityFieldUtils {
 
 	private static final List<String> pkSystemField = Arrays.asList("sys_from");
 
+	private EntityFieldUtils() {
+	}
+
 	public static List<EntityField> getPrimaryKeyList(final List<EntityField> fields) {
 		return fields.stream()
 				.filter(f -> f.getPrimaryOrder() != null)

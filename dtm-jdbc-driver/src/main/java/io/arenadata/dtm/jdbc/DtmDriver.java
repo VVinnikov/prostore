@@ -20,7 +20,7 @@ public class DtmDriver implements Driver {
             DriverManager.registerDriver(new DtmDriver());
             LOGGER.info("Driver registered");
         } catch (SQLException e) {
-            LOGGER.error("Error registering JDBC driver " + e.getCause());
+            LOGGER.error("Error registering JDBC driver", e.getCause());
         }
     }
 

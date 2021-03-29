@@ -8,15 +8,15 @@ import io.arenadata.dtm.jdbc.core.Tuple;
 import io.arenadata.dtm.jdbc.model.ColumnInfo;
 import io.arenadata.dtm.jdbc.model.SchemaInfo;
 import io.arenadata.dtm.jdbc.model.TableInfo;
-import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static io.arenadata.dtm.jdbc.util.DriverConstants.*;
 import static io.arenadata.dtm.jdbc.util.DriverInfo.*;
@@ -24,6 +24,7 @@ import static org.apache.http.util.TextUtils.isEmpty;
 
 public class DtmDatabaseMetaData implements DatabaseMetaData {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(DtmDatabaseMetaData.class);
     private final BaseConnection connection;
     private ResultSet catalogs;
 
@@ -137,7 +138,7 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                                 String columnNamePattern) throws SQLException {
         List<ColumnInfo> columns = new ArrayList<>();
         tableNamePattern = tableNamePattern.replace("\\", "");
-        System.out.printf("Table name pattern: %s", tableNamePattern);
+        LOGGER.info("Table name pattern: {}", tableNamePattern);
         //Временный костыль что бы пофиксить возможный запрос всех полей в схеме.
         if (tableNamePattern.indexOf('%') != -1) {
             ResultSet tables = this.getTables(catalog, schemaPattern, null, null);
@@ -145,7 +146,7 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                 final List<ColumnInfo> databaseColumns = this.connection.getQueryExecutor().getTableColumns(
                         tables.getString(CATALOG_NAME_COLUMN),
                         tables.getString(TABLE_NAME_COLUMN));
-                System.out.printf("Table name: %s", tables.getString(TABLE_NAME_COLUMN));
+                LOGGER.info("Table name: {}", tables.getString(TABLE_NAME_COLUMN));
                 columns.addAll(databaseColumns);
             }
         } else {

@@ -73,7 +73,7 @@ public class AdqmLlrService extends QueryResultCacheableLlrService {
     @Override
     protected Future<String> enrichQuery(LlrRequest llrRequest) {
         return queryEnrichmentService.enrich(EnrichQueryRequest.builder()
-                .query(llrRequest.getSqlNode())
+                .query(llrRequest.getWithoutViewsQuery())
                 .deltaInformations(llrRequest.getDeltaInformations())
                 .envName(llrRequest.getEnvName())
                 .schema(llrRequest.getSchema())

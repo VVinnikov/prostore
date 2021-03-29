@@ -60,7 +60,8 @@ class AdqmLlrServiceTest {
         SqlString sqlString = mock(SqlString.class);
         LlrRequest request = LlrRequest.builder()
                 .requestId(requestId)
-                .sqlNode(sqlNode)
+                .withoutViewsQuery(sqlNode)
+                .originalQuery(sqlNode)
                 .metadata(metadata)
                 .sourceQueryTemplateResult(new QueryTemplateResult("", null, Collections.emptyList()))
                 .build();

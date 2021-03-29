@@ -16,8 +16,8 @@ public class LlrRequestContext {
     private DmlRequestContext dmlRequestContext;
     private QuerySourceRequest sourceRequest;
     private SourceQueryTemplateValue queryTemplateValue;
-    private SqlNode originalQuery;
     private RelRoot relNode;
+    private SqlNode originalQuery;
 
     @Builder
     public LlrRequestContext(List<DeltaInformation> deltaInformations,

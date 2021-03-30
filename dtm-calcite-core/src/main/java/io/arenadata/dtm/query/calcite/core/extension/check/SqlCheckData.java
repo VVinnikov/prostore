@@ -5,6 +5,7 @@ import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
 import javax.annotation.Nonnull;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -27,7 +28,7 @@ public class SqlCheckData extends SqlCheckCall {
                 .map(val -> (columns.stream()
                         .map(c -> ((SqlIdentifier) c))
                         .map(SqlIdentifier::getSimple)
-                        .collect(Collectors.toSet())))
+                        .collect(Collectors.toCollection(LinkedHashSet::new))))
                 .orElse(null);
     }
 
@@ -57,5 +58,25 @@ public class SqlCheckData extends SqlCheckCall {
 
     public Set<String> getColumns() {
         return columns;
+    }
+
+    @Override
+    public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
+        String delimiter = ", ";
+        String delta = this.deltaNum.toString();
+        writer.literal(OPERATOR + "(" + getTableName() + delimiter + delta + getTableColumns(delimiter) + ")");
+    }
+
+    private String getTableColumns(String delimiter) {
+        if (this.columns == null) {
+            return "";
+        } else {
+            return delimiter + "[" + String.join(delimiter, this.columns) + "]";
+        }
+
+    }
+
+    private String getTableName() {
+        return this.name.toString();
     }
 }

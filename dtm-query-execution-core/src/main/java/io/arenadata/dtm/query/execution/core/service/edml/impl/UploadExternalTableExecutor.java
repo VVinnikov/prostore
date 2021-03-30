@@ -9,13 +9,13 @@ import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dto.delta.DeltaWriteOpRequest;
 import io.arenadata.dtm.query.execution.core.dto.edml.EdmlAction;
+import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadFailedExecutor;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
-import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
@@ -74,6 +74,14 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
                 .compose(queryResult -> writeOpSuccess(context.getSourceEntity().getSchema(),
                         context.getSysCn(),
                         queryResult))
+                .compose(v -> {
+                    try {
+                        evictQueryTemplateCacheService.evictByDatamartName(context.getDestinationEntity().getSchema());
+                        return Future.succeededFuture(v);
+                    } catch (Exception e) {
+                        return Future.failedFuture(new DtmException("Evict cache error"));
+                    }
+                })
                 .onSuccess(result -> promise.complete(QueryResult.emptyResult()))
                 .onFailure(promise::fail));
     }

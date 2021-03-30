@@ -1,6 +1,9 @@
 package io.arenadata.dtm.query.execution.core.service.edml.impl;
 
+import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheService;
 import io.arenadata.dtm.common.exception.CrashException;
+import io.arenadata.dtm.common.exception.DtmException;
+import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
@@ -27,14 +30,17 @@ public class UploadFailedExecutorImpl implements EdmlUploadFailedExecutor {
     private final DeltaServiceDao deltaServiceDao;
     private final RollbackRequestContextFactory rollbackRequestContextFactory;
     private final DataSourcePluginService dataSourcePluginService;
+    private final EvictQueryTemplateCacheService evictQueryTemplateCacheService;
 
     @Autowired
     public UploadFailedExecutorImpl(DeltaServiceDao deltaServiceDao,
                                     RollbackRequestContextFactory rollbackRequestContextFactory,
-                                    DataSourcePluginService dataSourcePluginService) {
+                                    DataSourcePluginService dataSourcePluginService,
+                                    EvictQueryTemplateCacheService evictQueryTemplateCacheService) {
         this.deltaServiceDao = deltaServiceDao;
         this.rollbackRequestContextFactory = rollbackRequestContextFactory;
         this.dataSourcePluginService = dataSourcePluginService;
+        this.evictQueryTemplateCacheService = evictQueryTemplateCacheService;
     }
 
     @Override
@@ -42,7 +48,19 @@ public class UploadFailedExecutorImpl implements EdmlUploadFailedExecutor {
         return Future.future(promise -> eraseWriteOp(context)
                 .compose(v -> deltaServiceDao.deleteWriteOperation(context.getSourceEntity().getSchema(),
                         context.getSysCn()))
-                .setHandler(promise));
+                .onComplete(ar -> {
+                    try {
+                        Entity destinationEntity = context.getDestinationEntity();
+                        evictQueryTemplateCacheService.evictByEntityName(destinationEntity.getSchema(), destinationEntity.getName());
+                    } catch (Exception e) {
+                        promise.fail(new DtmException(e));
+                    }
+                    if (ar.succeeded()) {
+                        promise.complete();
+                    } else {
+                        promise.fail(ar.cause());
+                    }
+                }));
     }
 
     private Future<Void> eraseWriteOp(EdmlRequestContext context) {

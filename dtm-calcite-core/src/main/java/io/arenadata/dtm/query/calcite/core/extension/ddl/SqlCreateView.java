@@ -20,9 +20,9 @@ public class SqlCreateView extends SqlCreate {
 
     public SqlCreateView(SqlParserPos pos, boolean replace, SqlIdentifier name, SqlNodeList columnList, SqlNode query) throws ParseException {
         super(OPERATOR, pos, replace, false);
-        this.name = (SqlIdentifier) Objects.requireNonNull(name);
+        this.name = Objects.requireNonNull(name);
         this.columnList = columnList;
-        this.query = SqlNodeUtil.getViewQueryAndCheck(Objects.requireNonNull(query));
+        this.query = SqlNodeUtil.checkViewQueryAndGet(Objects.requireNonNull(query));
     }
 
     public List<SqlNode> getOperandList() {

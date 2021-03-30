@@ -19,9 +19,9 @@ public class SqlAlterView extends SqlAlter {
 
     public SqlAlterView(SqlParserPos pos, SqlIdentifier name, SqlNodeList columnList, SqlNode query) throws ParseException {
         super(pos, OPERATOR.getName());
-        this.name = (SqlIdentifier) Objects.requireNonNull(name);
+        this.name = Objects.requireNonNull(name);
         this.columnList = columnList;
-        this.query = SqlNodeUtil.getViewQueryAndCheck(Objects.requireNonNull(query));
+        this.query = SqlNodeUtil.checkViewQueryAndGet(Objects.requireNonNull(query));
     }
 
     @Override

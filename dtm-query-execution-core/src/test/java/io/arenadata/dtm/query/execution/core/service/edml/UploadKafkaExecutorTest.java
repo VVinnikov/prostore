@@ -20,6 +20,7 @@ import io.arenadata.dtm.query.execution.core.configuration.properties.EdmlProper
 import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.core.factory.MppwKafkaRequestFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.MppwKafkaRequestFactoryImpl;
+import io.arenadata.dtm.query.execution.core.factory.impl.edml.mppw.MppwErrorMessageFactoryImpl;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.datasource.impl.DataSourcePluginServiceImpl;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadKafkaExecutor;
@@ -84,8 +85,14 @@ class UploadKafkaExecutorTest {
 
     @BeforeEach
     void setUp() {
-        uploadKafkaExecutor = new UploadKafkaExecutor(pluginService, mppwKafkaRequestFactory,
-                edmlProperties, kafkaProperties, vertx, dtmSettings, checkColumnTypesService);
+        uploadKafkaExecutor = new UploadKafkaExecutor(pluginService,
+                mppwKafkaRequestFactory,
+                edmlProperties,
+                kafkaProperties,
+                vertx,
+                dtmSettings,
+                new MppwErrorMessageFactoryImpl(),
+                checkColumnTypesService);
         sourceTypes = new HashSet<>();
         sourceTypes.addAll(Arrays.asList(SourceType.ADB, SourceType.ADG));
         queryRequest = new QueryRequest();

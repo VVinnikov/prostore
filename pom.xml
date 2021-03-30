@@ -36,9 +36,9 @@
         <maven.assembly.plugin>3.3.0</maven.assembly.plugin>
         <maven.jar.plugin>3.2.0</maven.jar.plugin>
         <apache.avro.version>1.9.2</apache.avro.version>
-        <apache.kafka.version>2.4.0</apache.kafka.version>
+        <apache.kafka.version>2.6.0</apache.kafka.version>
         <apache.httpclient.version>4.5.6</apache.httpclient.version>
-        <apache.commons.lang.version>3.10</apache.commons.lang.version>
+        <apache.commons.lang.version>3.12.0</apache.commons.lang.version>
         <logback.version>1.2.3</logback.version>
         <junit.version>5.4.1</junit.version>
         <hamcrest.version>2.2</hamcrest.version>

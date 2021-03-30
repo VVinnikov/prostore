@@ -53,11 +53,11 @@ public class AdgClientImpl implements AdgClient {
     }
 
     @Override
-    public Future<List<?>> eval(String expression, Object... args) {
+    public Future<List<Object>> eval(String expression, Object... args) {
         return Future.future(promise -> {
             client.composableAsyncOps().eval(expression, args)
                     .thenAccept(res -> {
-                        promise.complete(resultTranslator.translate(res));
+                        promise.complete(resultTranslator.translate((List<Object>) res));
                     })
                     .exceptionally(e -> {
                         promise.fail(new DataSourceException(e));
@@ -67,11 +67,11 @@ public class AdgClientImpl implements AdgClient {
     }
 
     @Override
-    public Future<List<?>> call(String function, Object... args) {
+    public Future<List<Object>> call(String function, Object... args) {
         return Future.future(promise -> {
             client.composableAsyncOps().call(function, args)
                     .thenAccept(res -> {
-                        promise.complete(resultTranslator.translate(res));
+                        promise.complete(resultTranslator.translate((List<Object>) res));
                     })
                     .exceptionally(e -> {
                         promise.fail(new DataSourceException(e));
@@ -81,7 +81,7 @@ public class AdgClientImpl implements AdgClient {
     }
 
     @Override
-    public Future<List<?>> callQuery(String sql, Object... params) {
+    public Future<List<Object>> callQuery(String sql, Object... params) {
         if (params == null || params.length == 0) {
             return call("query", sql);
         } else {
@@ -90,7 +90,7 @@ public class AdgClientImpl implements AdgClient {
     }
 
     @Override
-    public Future<List<?>> callLoadLines(String table, Object... rows) {
+    public Future<List<Object>> callLoadLines(String table, Object... rows) {
         return call("load_lines", table, rows);
     }
 

@@ -13,9 +13,12 @@ import io.arenadata.dtm.query.execution.plugin.adqm.service.QueryEnrichmentServi
 import io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.QueryResultCacheableLlrService;
+import io.arenadata.dtm.query.execution.plugin.api.service.TemplateParameterConverter;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -31,6 +34,7 @@ public class AdqmLlrService extends QueryResultCacheableLlrService {
     private static final List<String> SYSTEM_FIELDS = new ArrayList<>(Constants.SYSTEM_FIELDS);
     private final QueryEnrichmentService queryEnrichmentService;
     private final DatabaseExecutor executorService;
+    private final TemplateParameterConverter templateParameterConverter;
 
     @Autowired
     public AdqmLlrService(QueryEnrichmentService queryEnrichmentService,
@@ -38,10 +42,12 @@ public class AdqmLlrService extends QueryResultCacheableLlrService {
                           @Qualifier("adqmQueryTemplateCacheService")
                                   CacheService<QueryTemplateKey, QueryTemplateValue> queryCacheService,
                           @Qualifier("adqmQueryTemplateExtractor") QueryTemplateExtractor templateExtractor,
-                          @Qualifier("adqmSqlDialect") SqlDialect sqlDialect) {
+                          @Qualifier("adqmSqlDialect") SqlDialect sqlDialect,
+                          @Qualifier("adqmTemplateParameterConverter") TemplateParameterConverter templateParameterConverter) {
         super(queryCacheService, templateExtractor, sqlDialect);
         this.queryEnrichmentService = queryEnrichmentService;
         this.executorService = adqmQueryExecutor;
+        this.templateParameterConverter = templateParameterConverter;
     }
 
     @Override
@@ -67,11 +73,16 @@ public class AdqmLlrService extends QueryResultCacheableLlrService {
     @Override
     protected Future<String> enrichQuery(LlrRequest llrRequest) {
         return queryEnrichmentService.enrich(EnrichQueryRequest.builder()
+                .query(llrRequest.getWithoutViewsQuery())
                 .deltaInformations(llrRequest.getDeltaInformations())
                 .envName(llrRequest.getEnvName())
-                .query(llrRequest.getSqlNode())
                 .schema(llrRequest.getSchema())
                 .build());
+    }
+
+    @Override
+    protected List<SqlNode> convertParams(List<SqlNode> params, List<SqlTypeName> parameterTypes) {
+        return templateParameterConverter.convert(params, parameterTypes);
     }
 
     @Override

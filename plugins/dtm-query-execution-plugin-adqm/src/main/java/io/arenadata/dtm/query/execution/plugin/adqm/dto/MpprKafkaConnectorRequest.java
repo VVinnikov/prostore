@@ -1,7 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.dto;
 
 import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
-import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -32,7 +31,6 @@ public class MpprKafkaConnectorRequest {
     List<KafkaBrokerInfo> kafkaBrokers;
     String kafkaTopic;
     Integer chunkSize;
-    SourceType sourceType;
     String avroSchema;
     List<ColumnMetadata> metadata;
 }

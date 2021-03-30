@@ -10,7 +10,6 @@ import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlNode;
 
 import java.util.List;
@@ -30,7 +29,7 @@ public class EdmlRequestContext extends CoreRequestContext<DatamartRequest, SqlN
 
     public EdmlRequestContext(RequestMetrics metrics,
                               DatamartRequest request,
-                              SqlInsert sqlNode,
+                              SqlNode sqlNode,
                               String envName) {
         super(metrics, envName, request, sqlNode);
     }

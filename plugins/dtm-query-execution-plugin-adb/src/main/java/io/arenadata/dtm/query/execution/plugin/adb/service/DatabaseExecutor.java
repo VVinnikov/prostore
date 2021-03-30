@@ -5,6 +5,7 @@ import io.arenadata.dtm.common.reader.QueryParameters;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.vertx.core.Future;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -24,6 +25,6 @@ public interface DatabaseExecutor {
     Future<Void> executeInTransaction(List<PreparedStatementRequest> requests);
 
     default Future<List<Map<String, Object>>> execute(String sql) {
-        return execute(sql, null);
+        return execute(sql, Collections.emptyList());
     }
 }

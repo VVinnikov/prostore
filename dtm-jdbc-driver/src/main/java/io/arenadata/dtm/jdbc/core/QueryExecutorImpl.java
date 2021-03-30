@@ -1,7 +1,6 @@
 package io.arenadata.dtm.jdbc.core;
 
 import io.arenadata.dtm.common.model.ddl.SystemMetadata;
-import io.arenadata.dtm.jdbc.ext.DtmConnectionImpl;
 import io.arenadata.dtm.jdbc.model.ColumnInfo;
 import io.arenadata.dtm.jdbc.model.SchemaInfo;
 import io.arenadata.dtm.jdbc.model.TableInfo;
@@ -97,19 +96,24 @@ public class QueryExecutorImpl implements QueryExecutor {
             queryResult = this.protocol.executeQuery(queryRequest);
             if (queryResult.getResult() != null) {
                 setUsedSchemaIfExists(queryResult);
-                List<Field[]> result = new ArrayList<>();
                 List<Map<String, Object>> rows = queryResult.getResult();
                 List<ColumnMetadata> metadata = queryResult.getMetadata() == null ?
                         Collections.emptyList() : queryResult.getMetadata();
+                final Field[] fields = new Field[metadata.size()];
+                final List<Tuple> tuples = new ArrayList<>();
+                IntStream.range(0, metadata.size()).forEach(n -> {
+                    ColumnMetadata md = metadata.get(n);
+                    fields[n] = new Field(md.getName(), md.getSize(), md.getType(), null);
+                });
                 rows.forEach(row -> {
-                    Field[] resultFields = new Field[row.size()];
+                    Tuple tuple = new Tuple(metadata.size());
                     IntStream.range(0, queryResult.getMetadata().size()).forEach(key -> {
                         String columnName = queryResult.getMetadata().get(key).getName();
-                        resultFields[key] = new Field(columnName, row.get(columnName));
+                        tuple.set(key, row.get(columnName));
                     });
-                    result.add(resultFields);
+                    tuples.add(tuple);
                 });
-                resultHandler.handleResultRows(query, result, metadata, ZoneId.of(queryResult.getTimeZone()));
+                resultHandler.handleResultRows(query, fields, tuples, ZoneId.of(queryResult.getTimeZone()));
             }
         } catch (SQLException e) {
             resultHandler.handleError(e);

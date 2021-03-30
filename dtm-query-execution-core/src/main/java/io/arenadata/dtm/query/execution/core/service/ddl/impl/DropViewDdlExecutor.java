@@ -53,6 +53,10 @@ public class DropViewDdlExecutor extends QueryResultDdlExecutor {
             context.setDatamartName(datamartName);
             entityCacheService.remove(new EntityKey(datamartName, viewName));
             entityDao.getEntity(datamartName, viewName)
+                    .map(entity -> {
+                        context.setEntity(entity);
+                        return entity;
+                    })
                     .compose(this::checkEntityType)
                     .compose(v -> entityDao.deleteEntity(datamartName, viewName))
                     .onSuccess(success -> {

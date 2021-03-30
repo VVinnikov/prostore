@@ -66,7 +66,7 @@ class AdbTypeToSqlTypeConverterTest {
         expectedValues.put(ColumnType.FLOAT, floatVal);
         expectedValues.put(ColumnType.DATE, dateLongVal.intValue());
         expectedValues.put(ColumnType.TIME, timeLongVal / 1000);
-        expectedValues.put(ColumnType.TIMESTAMP, timestampLongVal);
+        expectedValues.put(ColumnType.TIMESTAMP, timestampLongVal * 1000);
         expectedValues.put(ColumnType.BOOLEAN, booleanVal);
         expectedValues.put(ColumnType.UUID, UUID.fromString(uuidStrVal));
         expectedValues.put(ColumnType.ANY, JsonObject.mapFrom(objMapVal));

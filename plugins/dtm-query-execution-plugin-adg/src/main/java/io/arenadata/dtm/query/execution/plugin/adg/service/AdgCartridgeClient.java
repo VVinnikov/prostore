@@ -1,12 +1,11 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service;
 
+import io.arenadata.dtm.common.version.VersionInfo;
 import io.arenadata.dtm.query.execution.plugin.adg.dto.rollback.ReverseHistoryTransferRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.OperationFile;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.OperationYaml;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.*;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.ResOperation;
-import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.TtDeleteBatchResponse;
-import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.TtDeleteQueueResponse;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.TtLoadDataKafkaResponse;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.Space;
 import io.vertx.core.Future;
@@ -54,4 +53,6 @@ public interface AdgCartridgeClient {
                                         Set<String> columnList);
 
   Future<Void> deleteSpaceTuples(String spaceName, String whereCondition);
+
+  Future<List<VersionInfo>> getCheckVersions();
 }

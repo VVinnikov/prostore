@@ -697,6 +697,20 @@ SqlNode SqlCheckData() :
         return new io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckData(s.end(this), id, deltaNum, tableElementList);
     }
 }
+SqlNode SqlCheckVersions() :
+{
+    SqlParserPos pos;
+}
+{
+    <CHECK_VERSIONS>
+    {
+        pos = getPos();
+    }
+    <LPAREN> <RPAREN>
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckVersions(pos);
+    }
+}
 SqlNode SqlTruncateHistory() :
 {
     final Span s;
@@ -714,5 +728,40 @@ SqlNode SqlTruncateHistory() :
     [<WHERE> conditions = SqlExpressionEof()]
     {
         return new io.arenadata.dtm.query.calcite.core.extension.ddl.truncate.SqlTruncateHistory(s.end(this), id, datetime, conditions);
+    }
+}
+SqlNode SqlRollbackCrashedWriteOps() :
+{
+    SqlParserPos pos;
+}
+{
+    <ROLLBACK> <CRASHED_WRITE_OPERATIONS>
+    {
+            pos = getPos();
+    }
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.edml.SqlRollbackCrashedWriteOps(pos);
+    }
+}
+SqlNode SqlCheckSum() :
+{
+    Span s;
+    final SqlLiteral deltaNum;
+    SqlIdentifier table = null;
+    List<SqlNode> tableElementList = null;
+}
+{
+    <CHECK_SUM>
+    {
+        s = span();
+    }
+    <LPAREN> deltaNum = NumericLiteral()
+    [ <COMMA>
+            table = CompoundIdentifier()
+            [ <COMMA> <LBRACKET> tableElementList = SelectList() <RBRACKET> ]
+    ]
+    <RPAREN>
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckSum(s.end(this), deltaNum, table, tableElementList);
     }
 }

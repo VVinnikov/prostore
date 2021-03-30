@@ -4,8 +4,10 @@ import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.common.version.VersionInfo;
 import io.arenadata.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckVersionRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
 import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
@@ -14,9 +16,9 @@ import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
-import io.arenadata.dtm.query.execution.plugin.api.request.QueryCostRequest;
 import io.vertx.core.Future;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -129,8 +131,21 @@ public interface DataSourcePluginService {
     Future<Long> checkDataByHashInt32(SourceType sourceType, RequestMetrics metrics, CheckDataByHashInt32Request request);
 
     /**
+     * @param request CheckVersionRequest
+     * @return checksum
+     */
+    Future<List<VersionInfo>> checkVersion(SourceType sourceType, RequestMetrics metrics, CheckVersionRequest request);
+
+    /**
      * @param request TruncateHistoryRequest
      * @return void
      */
     Future<Void> truncateHistory(SourceType sourceType, RequestMetrics metrics, TruncateHistoryRequest request);
+
+    /**
+     * <p>initialize plugin by source type</p>
+     * @param sourceType
+     * @return void
+     */
+    Future<Void> initialize(SourceType sourceType);
 }

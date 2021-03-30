@@ -6,8 +6,10 @@ import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.common.version.VersionInfo;
 import io.arenadata.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckVersionRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
 import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
@@ -27,10 +29,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @SpringBootTest(classes = DtmTestConfiguration.class)
@@ -108,7 +107,17 @@ class DtmDataSourcePluginIT {
         }
 
         @Override
+        public Future<List<VersionInfo>> checkVersion(CheckVersionRequest request) {
+            return null;
+        }
+
+        @Override
         public Future<Void> truncateHistory(TruncateHistoryRequest params) {
+            return null;
+        }
+
+        @Override
+        public Future<Void> initialize() {
             return null;
         }
     };

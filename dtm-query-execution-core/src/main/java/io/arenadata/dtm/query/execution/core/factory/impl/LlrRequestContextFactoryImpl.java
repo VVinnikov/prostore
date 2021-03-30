@@ -5,6 +5,8 @@ import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.reader.QuerySourceRequest;
 import io.arenadata.dtm.query.calcite.core.dto.delta.DeltaQueryPreprocessorResponse;
 import io.arenadata.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
+import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
+import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDMLQueryParserService;
 import io.arenadata.dtm.query.execution.core.dto.dml.DmlRequestContext;
 import io.arenadata.dtm.query.execution.core.dto.dml.LlrRequestContext;
 import io.arenadata.dtm.query.execution.core.factory.LlrRequestContextFactory;
@@ -21,14 +23,17 @@ public class LlrRequestContextFactoryImpl implements LlrRequestContextFactory {
     private final LogicalSchemaProvider logicalSchemaProvider;
     private final ColumnMetadataService columnMetadataService;
     private final DeltaQueryPreprocessor deltaQueryPreprocessor;
+    private final QueryParserService parserService;
 
     @Autowired
     public LlrRequestContextFactoryImpl(LogicalSchemaProvider logicalSchemaProvider,
                                         ColumnMetadataService columnMetadataService,
-                                        DeltaQueryPreprocessor deltaQueryPreprocessor) {
+                                        DeltaQueryPreprocessor deltaQueryPreprocessor,
+                                        CoreCalciteDMLQueryParserService parserService) {
         this.logicalSchemaProvider = logicalSchemaProvider;
         this.columnMetadataService = columnMetadataService;
         this.deltaQueryPreprocessor = deltaQueryPreprocessor;
+        this.parserService = parserService;
     }
 
     @Override
@@ -52,7 +57,6 @@ public class LlrRequestContextFactoryImpl implements LlrRequestContextFactory {
         llrContext.getSourceRequest().setMetadata(queryTemplateValue.getMetadata());
         llrContext.getSourceRequest().setLogicalSchema(queryTemplateValue.getLogicalSchema());
         llrContext.getSourceRequest().getQueryRequest().setSql(queryTemplateValue.getSql());
-        llrContext.setDeltaInformations(queryTemplateValue.getDeltaInformations());
         llrContext.setQueryTemplateValue(queryTemplateValue);
         return Future.succeededFuture(llrContext);
     }
@@ -84,9 +88,13 @@ public class LlrRequestContextFactoryImpl implements LlrRequestContextFactory {
                     llrContext.getSourceRequest().setLogicalSchema(schema);
                     return llrContext;
                 })
-                .compose(v -> columnMetadataService.getColumnMetadata(
-                        new QueryParserRequest(llrContext.getDmlRequestContext().getSqlNode(),
-                                llrContext.getSourceRequest().getLogicalSchema())))
+                .compose(v -> parserService.parse(new QueryParserRequest(llrContext.getDmlRequestContext().getSqlNode(),
+                        llrContext.getSourceRequest().getLogicalSchema())))
+                .map(response -> {
+                    llrContext.setRelNode(response.getRelNode());
+                    return response;
+                })
+                .compose(response -> columnMetadataService.getColumnMetadata(response.getRelNode()))
                 .map(metadata -> {
                     llrContext.getSourceRequest().setMetadata(metadata);
                     return llrContext;

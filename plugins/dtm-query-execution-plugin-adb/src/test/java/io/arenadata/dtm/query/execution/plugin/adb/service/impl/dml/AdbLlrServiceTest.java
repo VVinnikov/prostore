@@ -20,8 +20,11 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.Casing;
+import org.apache.calcite.sql.SqlCharStringLiteral;
 import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.parser.SqlParserPos;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -54,11 +57,16 @@ class AdbLlrServiceTest {
         DatabaseExecutor adbDatabaseExecutor = mock(DatabaseExecutor.class);
         when(adbDatabaseExecutor.execute(any(), any()))
                 .thenReturn(Future.succeededFuture(new ArrayList<>()));
+        when(adbDatabaseExecutor.executeWithParams(any(), any(), any()))
+                .thenReturn(Future.succeededFuture(new ArrayList<>()));
         QueryTemplateResult queryTemplateResult = mock(QueryTemplateResult.class);
         when(queryTemplateResult.getTemplate()).thenReturn(template);
+        SqlCharStringLiteral sqlNode = SqlLiteral.createCharString("", SqlParserPos.ZERO);
+        when(queryTemplateResult.getTemplateNode()).thenReturn(sqlNode);
         QueryTemplateExtractor queryTemplateExtractor = mock(AbstractQueryTemplateExtractor.class);
         when(queryTemplateExtractor.extract(anyString(), any())).thenReturn(queryTemplateResult);
         when(queryTemplateExtractor.extract(any(SqlNode.class), any())).thenReturn(queryTemplateResult);
+        when(queryTemplateExtractor.enrichTemplate(any())).thenReturn(sqlNode);
         CacheService<QueryTemplateKey, QueryTemplateValue> queryCacheService = mock(CaffeineCacheService.class);
         when(queryCacheService.put(any(), any())).thenReturn(Future.succeededFuture());
         adbLLRService = new AdbLlrService(adbQueryEnrichmentService,
@@ -86,7 +94,8 @@ class AdbLlrServiceTest {
         QueryTemplateResult queryTemplateResult = new QueryTemplateResult(template, sqlNode, Collections.emptyList());
         LlrRequest llrRequest = LlrRequest.builder()
                 .sourceQueryTemplateResult(queryTemplateResult)
-                .sqlNode(sqlNode)
+                .withoutViewsQuery(sqlNode)
+                .originalQuery(sqlNode)
                 .requestId(uuid)
                 .envName("test")
                 .metadata(Collections.emptyList())

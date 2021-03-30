@@ -5,11 +5,13 @@ import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.common.version.VersionInfo;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsService;
 import io.arenadata.dtm.query.execution.core.verticle.TaskVerticleExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckVersionRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
 import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
@@ -18,7 +20,6 @@ import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
-import io.arenadata.dtm.query.execution.plugin.api.request.QueryCostRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,7 @@ import org.springframework.plugin.core.config.EnablePluginRegistries;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -164,6 +166,15 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     }
 
     @Override
+    public Future<List<VersionInfo>> checkVersion(SourceType sourceType, RequestMetrics metrics, CheckVersionRequest request) {
+        return executeWithMetrics(
+                sourceType,
+                SqlProcessingType.CHECK,
+                metrics,
+                plugin -> plugin.checkVersion(request));
+    }
+
+    @Override
     public Future<Void> truncateHistory(SourceType sourceType,
                                         RequestMetrics metrics,
                                         TruncateHistoryRequest request) {
@@ -172,6 +183,11 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
                 SqlProcessingType.TRUNCATE,
                 metrics,
                 plugin -> plugin.truncateHistory(request));
+    }
+
+    @Override
+    public Future<Void> initialize(SourceType sourceType) {
+        return execute(getPlugin(sourceType).initialize());
     }
 
     private <T> Future<T> executeWithMetrics(SourceType sourceType,

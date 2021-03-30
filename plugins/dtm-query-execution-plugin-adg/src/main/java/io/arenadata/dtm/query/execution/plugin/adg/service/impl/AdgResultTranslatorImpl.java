@@ -11,7 +11,7 @@ import java.util.Map;
 public class AdgResultTranslatorImpl implements AdgResultTranslator {
 
     @Override
-    public List<?> translate(List<?> list) {
+    public List<Object> translate(List<Object> list) {
         if (list.get(0) != null) {
             return list;
         }

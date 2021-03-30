@@ -2,7 +2,9 @@ package io.arenadata.dtm.query.execution.plugin.api;
 
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
+import io.arenadata.dtm.common.version.VersionInfo;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckVersionRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
 import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
@@ -11,16 +13,16 @@ import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
-import io.arenadata.dtm.query.execution.plugin.api.service.DdlService;
-import io.arenadata.dtm.query.execution.plugin.api.service.LlrService;
-import io.arenadata.dtm.query.execution.plugin.api.service.RollbackService;
-import io.arenadata.dtm.query.execution.plugin.api.service.StatusService;
+import io.arenadata.dtm.query.execution.plugin.api.service.*;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckDataService;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
+import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckVersionService;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TruncateHistoryService;
 import io.arenadata.dtm.query.execution.plugin.api.service.mppr.MpprService;
 import io.arenadata.dtm.query.execution.plugin.api.service.mppw.MppwService;
 import io.vertx.core.Future;
+
+import java.util.List;
 
 public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin {
 
@@ -32,7 +34,9 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
     protected final RollbackService<Void> rollbackService;
     protected final CheckTableService checkTableService;
     protected final CheckDataService checkDataService;
+    protected final CheckVersionService checkVersionService;
     protected final TruncateHistoryService truncateService;
+    protected final PluginInitializationService initializationService;
 
     public AbstractDtmDataSourcePlugin(DdlService<Void> ddlService,
                                        LlrService<QueryResult> llrService,
@@ -42,7 +46,9 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
                                        RollbackService<Void> rollbackService,
                                        CheckTableService checkTableService,
                                        CheckDataService checkDataService,
-                                       TruncateHistoryService truncateService) {
+                                       CheckVersionService checkVersionService,
+                                       TruncateHistoryService truncateService,
+                                       PluginInitializationService initializationService) {
         this.ddlService = ddlService;
         this.llrService = llrService;
         this.mpprService = mpprService;
@@ -51,7 +57,9 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
         this.rollbackService = rollbackService;
         this.checkTableService = checkTableService;
         this.checkDataService = checkDataService;
+        this.checkVersionService = checkVersionService;
         this.truncateService = truncateService;
+        this.initializationService = initializationService;
     }
 
     @Override
@@ -105,7 +113,17 @@ public abstract class AbstractDtmDataSourcePlugin implements DtmDataSourcePlugin
     }
 
     @Override
+    public Future<List<VersionInfo>> checkVersion(CheckVersionRequest request) {
+        return checkVersionService.checkVersion(request);
+    }
+
+    @Override
     public Future<Void> truncateHistory(TruncateHistoryRequest request) {
         return truncateService.truncateHistory(request);
+    }
+
+    @Override
+    public Future<Void> initialize() {
+        return initializationService.execute();
     }
 }

@@ -37,7 +37,7 @@ import io.arenadata.dtm.query.execution.core.factory.impl.CoreSchemaFactory;
 import io.arenadata.dtm.query.execution.core.service.ddl.impl.AlterViewDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.dml.ColumnMetadataService;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
-import io.arenadata.dtm.query.execution.core.service.metadata.impl.MetadataExecutorImpl;
+import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutorImpl;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import io.arenadata.dtm.query.execution.core.service.schema.impl.LogicalSchemaProviderImpl;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
@@ -137,7 +137,7 @@ class AlterViewDdlExecutorTest {
         when(parserService.parse(any()))
                 .thenReturn(Future.succeededFuture(parse(new QueryParserRequest(((SqlAlterView) sqlNode).getQuery(), logicSchema))));
 
-        when(columnMetadataService.getColumnMetadata(any()))
+        when(columnMetadataService.getColumnMetadata(any(QueryParserRequest.class)))
                 .thenReturn(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()
                         .name("id")
                         .type(ColumnType.BIGINT)
@@ -180,7 +180,7 @@ class AlterViewDdlExecutorTest {
         when(parserService.parse(any()))
                 .thenReturn(Future.succeededFuture(parse(new QueryParserRequest(((SqlAlterView) sqlNode).getQuery(), logicSchema))));
 
-        when(columnMetadataService.getColumnMetadata(any()))
+        when(columnMetadataService.getColumnMetadata(any(QueryParserRequest.class)))
                 .thenReturn(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()
                         .name("id")
                         .type(ColumnType.BIGINT)
@@ -221,7 +221,7 @@ class AlterViewDdlExecutorTest {
         when(entityDao.getEntity(eq(schema), eq(entityList.get(1).getName())))
                 .thenReturn(Future.succeededFuture(entityList.get(1)));
 
-        when(columnMetadataService.getColumnMetadata(any()))
+        when(columnMetadataService.getColumnMetadata(any(QueryParserRequest.class)))
                 .thenReturn(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()
                         .name("id")
                         .type(ColumnType.BIGINT)
@@ -253,7 +253,7 @@ class AlterViewDdlExecutorTest {
         when(entityDao.getEntity(eq(schema), eq(entityList.get(1).getName())))
                 .thenReturn(Future.succeededFuture(entityList.get(1)));
 
-        when(columnMetadataService.getColumnMetadata(any()))
+        when(columnMetadataService.getColumnMetadata(any(QueryParserRequest.class)))
                 .thenReturn(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()
                         .name("id")
                         .type(ColumnType.BIGINT)
@@ -285,7 +285,7 @@ class AlterViewDdlExecutorTest {
         SqlNode sqlNode = planner.parse(queryRequest.getSql());
         DdlRequestContext context = new DdlRequestContext(null, new DatamartRequest(queryRequest), sqlNode, null, null);
 
-        when(columnMetadataService.getColumnMetadata(any()))
+        when(columnMetadataService.getColumnMetadata(any(QueryParserRequest.class)))
                 .thenReturn(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()
                         .name("id")
                         .type(ColumnType.BIGINT)
@@ -326,7 +326,7 @@ class AlterViewDdlExecutorTest {
         when(parserService.parse(any()))
                 .thenReturn(Future.succeededFuture(parse(new QueryParserRequest(((SqlAlterView) sqlNode).getQuery(), logicSchema))));
 
-        when(columnMetadataService.getColumnMetadata(any()))
+        when(columnMetadataService.getColumnMetadata(any(QueryParserRequest.class)))
                 .thenReturn(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()
                         .name("id")
                         .type(ColumnType.BIGINT)

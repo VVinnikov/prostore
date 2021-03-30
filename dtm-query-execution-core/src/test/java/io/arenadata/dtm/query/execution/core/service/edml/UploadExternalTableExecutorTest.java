@@ -17,6 +17,7 @@ import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDefinitionServic
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.impl.DeltaServiceDaoImpl;
+import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.datasource.impl.DataSourcePluginServiceImpl;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadExternalTableExecutor;
@@ -24,7 +25,6 @@ import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadFailedExecu
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadKafkaExecutor;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import io.arenadata.dtm.query.execution.core.service.schema.impl.LogicalSchemaProviderImpl;
-import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.apache.calcite.sql.SqlInsert;
@@ -120,7 +120,8 @@ class UploadExternalTableExecutorTest {
 
         assertTrue(promise.future().succeeded());
         assertEquals(queryResult, promise.future().result());
-        verifyEvictCacheExecuted();
+        verify(evictQueryTemplateCacheService, times(2))
+                .evictByDatamartName(destEntity.getSchema());
     }
 
     @Test
@@ -156,7 +157,8 @@ class UploadExternalTableExecutorTest {
         assertTrue(promise.future().succeeded());
         assertEquals(queryResult, promise.future().result());
         assertEquals(context.getSysCn(), sysCn);
-        verifyEvictCacheExecuted();
+        verify(evictQueryTemplateCacheService, times(2))
+                .evictByDatamartName(destEntity.getSchema());
     }
 
     @Test

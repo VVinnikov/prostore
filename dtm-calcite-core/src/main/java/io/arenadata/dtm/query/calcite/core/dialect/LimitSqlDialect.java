@@ -7,7 +7,7 @@ import org.apache.calcite.sql.dialect.PostgresqlSqlDialect;
 
 public class LimitSqlDialect extends PostgresqlSqlDialect {
     /**
-     * Creates a PostgresqlSqlDialect.
+     * Creates a LimitSqlDialect.
      *
      * @param context
      */
@@ -21,7 +21,7 @@ public class LimitSqlDialect extends PostgresqlSqlDialect {
         if (offset != null) {
             writer.newlineAndIndent();
             final SqlWriter.Frame offsetFrame =
-                writer.startList(SqlWriter.FrameTypeEnum.OFFSET);
+                    writer.startList(SqlWriter.FrameTypeEnum.OFFSET);
             writer.keyword("OFFSET");
             offset.unparse(writer, -1, -1);
             writer.keyword("ROWS");
@@ -29,11 +29,22 @@ public class LimitSqlDialect extends PostgresqlSqlDialect {
         }
         if (fetch != null) {
             final SqlWriter.Frame fetchFrame =
-                writer.startList(SqlWriter.FrameTypeEnum.FETCH);
+                    writer.startList(SqlWriter.FrameTypeEnum.FETCH);
             writer.newlineAndIndent();
             writer.keyword("LIMIT");
             fetch.unparse(writer, -1, -1);
             writer.endList(fetchFrame);
         }
+    }
+
+    @Override
+    public void quoteStringLiteral(StringBuilder buf, String charsetName, String val) {
+        if (charsetName != null) {
+            buf.append("_");
+            buf.append(charsetName);
+        }
+        buf.append(literalQuoteString);
+        buf.append(val.replace(literalEndQuoteString, literalEscapedQuote));
+        buf.append(literalEndQuoteString);
     }
 }

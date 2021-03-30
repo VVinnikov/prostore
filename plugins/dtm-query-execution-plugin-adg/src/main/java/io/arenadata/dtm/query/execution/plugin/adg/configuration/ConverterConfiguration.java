@@ -15,25 +15,6 @@ import static io.arenadata.dtm.common.converter.transformer.ColumnTransformer.ge
 @Configuration
 public class ConverterConfiguration {
 
-    @Bean("adgTransformerMap")
-    public Map<ColumnType, Map<Class<?>, ColumnTransformer>> transformerMap() {
-        Map<ColumnType, Map<Class<?>, ColumnTransformer>> transformerMap = new HashMap<>();
-        transformerMap.put(ColumnType.INT, getTransformerMap(new LongFromNumberTransformer()));
-        transformerMap.put(ColumnType.VARCHAR, getTransformerMap(new VarcharFromStringTransformer()));
-        transformerMap.put(ColumnType.CHAR, transformerMap.get(ColumnType.VARCHAR));
-        transformerMap.put(ColumnType.BIGINT, getTransformerMap(new BigintFromNumberTransformer()));
-        transformerMap.put(ColumnType.DOUBLE, getTransformerMap(new DoubleFromNumberTransformer()));
-        transformerMap.put(ColumnType.FLOAT, getTransformerMap(new FloatFromNumberTransformer()));
-        transformerMap.put(ColumnType.DATE, getTransformerMap(new DateFromNumericTransformer()));
-        transformerMap.put(ColumnType.TIME, getTransformerMap(new TimeFromNumberTransformer()));
-        transformerMap.put(ColumnType.TIMESTAMP, getTransformerMap(new TimestampFromLongTransformer()));
-        transformerMap.put(ColumnType.BOOLEAN, getTransformerMap(new BooleanFromBooleanTransformer()));
-        transformerMap.put(ColumnType.UUID, getTransformerMap(new UuidFromStringTransformer()));
-        transformerMap.put(ColumnType.BLOB, getTransformerMap(new BlobFromObjectTransformer()));
-        transformerMap.put(ColumnType.ANY, getTransformerMap(new AnyFromObjectTransformer()));
-        return transformerMap;
-    }
-
     @Bean("adgFromSqlTransformerMap")
     public Map<ColumnType, Map<Class<?>, ColumnTransformer>> adgFromSqlTransformerMap(DtmConfig dtmSettings) {
         Map<ColumnType, Map<Class<?>, ColumnTransformer>> transformerMap = new HashMap<>();

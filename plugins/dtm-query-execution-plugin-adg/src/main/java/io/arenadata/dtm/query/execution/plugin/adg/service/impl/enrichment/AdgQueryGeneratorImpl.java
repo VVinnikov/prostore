@@ -4,6 +4,7 @@ import io.arenadata.dtm.common.calcite.CalciteContext;
 import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.calcite.core.rel2sql.NullNotCastableRelToSqlConverter;
+import io.arenadata.dtm.query.calcite.core.util.RelNodeUtil;
 import io.arenadata.dtm.query.execution.plugin.adg.dto.EnrichQueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.dto.QueryGeneratorContext;
 import io.arenadata.dtm.query.execution.plugin.adg.service.QueryExtendService;
@@ -48,22 +49,29 @@ public class AdgQueryGeneratorImpl implements QueryGenerator {
                     calciteContext,
                     enrichQueryRequest);
             val extendedQuery = queryExtendService.extendQuery(generatorContext);
-            RelNode planAfter = null;
-            try {
-                planAfter = calciteContext.getPlanner()
-                        .transform(0, extendedQuery.getTraitSet().replace(EnumerableConvention.INSTANCE),
-                                extendedQuery);
-            } catch (RelConversionException e) {
-                promise.fail(new DtmException("Error in converting rel node", e));
+            RelNode resultRelNode = null;
+            if (RelNodeUtil.isNeedToTrimSortColumns(relNode, extendedQuery)) {
+                resultRelNode = RelNodeUtil.trimUnusedSortColumn(calciteContext.getRelBuilder(),
+                        extendedQuery,
+                        relNode.validatedRowType);
+            } else {
+                try {
+                    resultRelNode = calciteContext.getPlanner()
+                            .transform(0, extendedQuery.getTraitSet().replace(EnumerableConvention.INSTANCE),
+                                    extendedQuery);
+                } catch (RelConversionException e) {
+                    promise.fail(new DtmException("Error in converting rel node", e));
+                }
             }
             SqlNode sqlNodeResult = new NullNotCastableRelToSqlConverter(sqlDialect)
-                    .visitChild(0, planAfter).asStatement();
+                    .visitChild(0, resultRelNode).asStatement();
             String queryResult = Util.toLinux(sqlNodeResult.toSqlString(sqlDialect).getSql())
                     .replace("\n", " ");
             log.debug("sql = " + queryResult);
             promise.complete(queryResult);
         });
     }
+
 
     private QueryGeneratorContext getContext(RelRoot relNode,
                                              List<DeltaInformation> deltaInformations,

@@ -16,7 +16,7 @@ import java.util.List;
 
 @Getter
 @Setter
-public class LimitableSqlOrderBy extends SqlOrderBy {
+public class LimitableSqlOrderBy extends SqlOrderBy implements SqlDataSourceTypeGetter {
     private static final SqlSpecialOperator OPERATOR = new LimitableSqlOrderBy.Operator() {
         @Override
         public SqlCall createCall(SqlLiteral functionQualifier,

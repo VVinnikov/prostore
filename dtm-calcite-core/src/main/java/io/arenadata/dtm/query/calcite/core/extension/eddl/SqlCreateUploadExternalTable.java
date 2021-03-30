@@ -13,7 +13,7 @@ public class SqlCreateUploadExternalTable extends SqlCreate {
     private final SqlNodeList columnList;
     private final LocationOperator locationOperator;
     private final FormatOperator formatOperator;
-    private final MassageLimitOperator massageLimitOperator;
+    private final MessageLimitOperator messageLimitOperator;
 
     private static final SqlOperator OPERATOR_TABLE =
             new SqlSpecialOperator("CREATE UPLOAD EXTERNAL TABLE", SqlKind.OTHER_DDL);
@@ -25,11 +25,11 @@ public class SqlCreateUploadExternalTable extends SqlCreate {
         this.columnList = columnList;
         this.locationOperator = new LocationOperator(pos, (SqlCharStringLiteral) location);
         this.formatOperator = new FormatOperator(pos, (SqlCharStringLiteral) format);
-        this.massageLimitOperator = new MassageLimitOperator(pos, (SqlNumericLiteral) chunkSize);
+        this.messageLimitOperator = new MessageLimitOperator(pos, (SqlNumericLiteral) chunkSize);
     }
 
     public List<SqlNode> getOperandList() {
-        return ImmutableList.of(this.name, this.columnList, this.locationOperator, this.formatOperator, this.massageLimitOperator);
+        return ImmutableList.of(this.name, this.columnList, this.locationOperator, this.formatOperator, this.messageLimitOperator);
     }
 
     @Override
@@ -47,7 +47,7 @@ public class SqlCreateUploadExternalTable extends SqlCreate {
 
         this.locationOperator.unparse(writer, leftPrec, rightPrec);
         this.formatOperator.unparse(writer, leftPrec, rightPrec);
-        this.massageLimitOperator.unparse(writer, leftPrec, rightPrec);
+        this.messageLimitOperator.unparse(writer, leftPrec, rightPrec);
     }
 
     public SqlIdentifier getName() {
@@ -66,7 +66,7 @@ public class SqlCreateUploadExternalTable extends SqlCreate {
         return formatOperator;
     }
 
-    public MassageLimitOperator getMassageLimitOperator() {
-        return massageLimitOperator;
+    public MessageLimitOperator getMassageLimitOperator() {
+        return messageLimitOperator;
     }
 }

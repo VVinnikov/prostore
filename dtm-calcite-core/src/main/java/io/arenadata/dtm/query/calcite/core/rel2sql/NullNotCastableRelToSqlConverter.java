@@ -8,11 +8,13 @@ import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.sql.*;
+import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.SqlLiteral;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlNodeList;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class NullNotCastableRelToSqlConverter extends RelToSqlConverter {
     /**
@@ -65,10 +67,7 @@ public class NullNotCastableRelToSqlConverter extends RelToSqlConverter {
                 Result x = visitChild(0, input);
                 parseCorrelTable(e, x);
                 final Builder builder = x.builder(input, Clause.FETCH);
-                val columns = x.qualifiedContext().fieldList().stream()
-                    .map(n -> new SqlIdentifier(((SqlIdentifier) n).names.get(1), n.getParserPosition()))
-                    .collect(Collectors.toList());
-                builder.setSelect(new SqlNodeList(columns, POS));
+                builder.setSelect(x.asSelect().getSelectList());
                 builder.setFetch(SqlLiteral.createExactNumeric(((EnumerableLimit) e).fetch.toStringRaw(), POS));
                 return builder.result();
             }

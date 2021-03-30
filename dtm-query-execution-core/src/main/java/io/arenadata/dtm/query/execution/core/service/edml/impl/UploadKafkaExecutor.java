@@ -2,6 +2,7 @@ package io.arenadata.dtm.query.execution.core.service.edml.impl;
 
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.dto.QueryParserRequest;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
@@ -9,18 +10,19 @@ import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.kafka.core.configuration.properties.KafkaProperties;
 import io.arenadata.dtm.query.execution.core.configuration.properties.EdmlProperties;
-import io.arenadata.dtm.common.exception.DtmException;
+import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.edml.MppwStopFuture;
+import io.arenadata.dtm.query.execution.core.dto.edml.MppwStopReason;
 import io.arenadata.dtm.query.execution.core.factory.MppwKafkaRequestFactory;
-import io.arenadata.dtm.query.execution.core.service.query.CheckColumnTypesService;
+import io.arenadata.dtm.query.execution.core.factory.impl.edml.mppw.MppwErrorMessageFactory;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlUploadExecutor;
+import io.arenadata.dtm.query.execution.core.service.query.CheckColumnTypesService;
 import io.arenadata.dtm.query.execution.core.service.query.impl.CheckColumnTypesServiceImpl;
-import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 import io.vertx.core.*;
 import lombok.Builder;
 import lombok.Data;
-import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.jetbrains.annotations.NotNull;
@@ -44,6 +46,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
     private final KafkaProperties kafkaProperties;
     private final Vertx vertx;
     private final DtmConfig dtmSettings;
+    private final MppwErrorMessageFactory errorMessageFactory;
     private final CheckColumnTypesService checkColumnTypesService;
 
     @Autowired
@@ -53,6 +56,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                                KafkaProperties kafkaProperties,
                                @Qualifier("coreVertx") Vertx vertx,
                                DtmConfig dtmSettings,
+                               MppwErrorMessageFactory errorMessageFactory,
                                CheckColumnTypesService checkColumnTypesService) {
         this.pluginService = pluginService;
         this.mppwKafkaRequestFactory = mppwKafkaRequestFactory;
@@ -60,6 +64,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
         this.kafkaProperties = kafkaProperties;
         this.vertx = vertx;
         this.dtmSettings = dtmSettings;
+        this.errorMessageFactory = errorMessageFactory;
         this.checkColumnTypesService = checkColumnTypesService;
     }
 
@@ -232,6 +237,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                                     Handler<AsyncResult<QueryResult>> resultHandler) {
         List<Future<QueryResult>> stopMppwFutures = getStopMppwFutures(mppwStopFutureMap, startCompositeFuture);
         // This extra copy of futures to satisfy CompositeFuture.join signature, which require untyped Future
+
         CompositeFuture.join(new ArrayList<>(stopMppwFutures))
                 .onComplete(stopComplete -> {
                     if (stopComplete.succeeded()) {
@@ -245,7 +251,11 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                             resultHandler.handle(Future.failedFuture(e));
                         }
                     } else {
-                        resultHandler.handle(Future.failedFuture(stopComplete.cause()));
+                        String stopStatus = collectStatus(mppwStopFutureMap);
+                        RuntimeException e = new DtmException(
+                                String.format("The offset of one of the plugins has changed: %n %s", stopStatus),
+                                stopComplete.cause());
+                        resultHandler.handle(Future.failedFuture(e));
                     }
                 });
     }
@@ -261,10 +271,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                         log.debug("Completed stopping mppw loading by plugin: {}", ds);
                         promise.complete(queryResult);
                     })
-                    .onFailure(fail -> {
-                        log.error("Error in stopping mppw loading by plugin: {}", ds, fail);
-                        promise.complete(QueryResult.emptyResult());
-                    });
+                    .onFailure(promise::fail);
         });
     }
 
@@ -279,12 +286,9 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
     }
 
     private String collectStatus(Map<SourceType, MppwStopFuture> mppwStopFutureMap) {
-        return mppwStopFutureMap.values().stream().map(s ->
-                String.format("Plugin: %s, status: %s, offset: %d, reason: %s",
-                        s.sourceType.name(), s.stopReason.name(),
-                        s.offset == null ? -1L : s.offset,
-                        s.cause == null ? "" : s.cause.getMessage())
-        ).collect(Collectors.joining("\n"));
+        return mppwStopFutureMap.values().stream()
+                .map(errorMessageFactory::create)
+                .collect(Collectors.joining("\n"));
     }
 
     private boolean isAllMppwPluginsHasEqualOffsets(Map<SourceType, MppwStopFuture> resultMap) {
@@ -315,26 +319,12 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
         return ExternalTableLocationType.KAFKA;
     }
 
-    @Data
-    @ToString
-    @Builder
-    private static class MppwStopFuture {
-        private SourceType sourceType;
-        private Future<QueryResult> future;
-        private Long offset;
-        private Throwable cause;
-        private MppwStopReason stopReason;
-    }
 
     @Data
     @Builder
     private static class MppwLoadStatusResult {
         private Long lastOffset;
         private LocalDateTime lastOffsetTime;
-    }
-
-    private enum MppwStopReason {
-        OFFSET_RECEIVED, TIMEOUT_RECEIVED, ERROR_RECEIVED;
     }
 
 }

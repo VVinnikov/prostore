@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.query;
 
+import io.arenadata.dtm.async.AsyncUtils;
 import io.arenadata.dtm.common.converter.SqlTypeConverter;
 import io.arenadata.dtm.common.reader.QueryParameters;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
@@ -38,10 +39,11 @@ public class AdqmQueryExecutor implements DatabaseExecutor {
 
     @Override
     public Future<List<Map<String, Object>>> execute(String sql, List<ColumnMetadata> metadata) {
-        log.debug(String.format("ADQM. Execute %s", sql));
+        log.debug("ADQM. Execute query: [{}] ", sql);
         //TODO perhaps it's better to use RowStream interface for getting rows one by one and create chunks here
-        return getSqlConnection()
-                .compose(conn -> executeQuery(conn, sql))
+        return AsyncUtils.measureMs(getSqlConnection()
+                        .compose(conn -> executeQuery(conn, sql)),
+                duration -> log.debug("ADQM. Query completed successfully: [{}] in [{}]ms", sql, duration))
                 .map(resultSet -> {
                     try {
                         return createResult(metadata, resultSet);
@@ -53,9 +55,10 @@ public class AdqmQueryExecutor implements DatabaseExecutor {
 
     @Override
     public Future<Void> executeUpdate(String sql) {
-        log.debug(String.format("ADQM. Execute update %s", sql));
-        return getSqlConnection()
-                .compose(conn -> executeQueryUpdate(conn, sql))
+        log.debug("ADQM. Execute update: [{}] ", sql);
+        return AsyncUtils.measureMs(getSqlConnection()
+                        .compose(conn -> executeQueryUpdate(conn, sql)),
+                duration -> log.debug("ADQM. Update completed successfully: [{}] in [{}]ms", sql, duration))
                 .onFailure(err -> log.error(err.getMessage()));
     }
 
@@ -63,10 +66,11 @@ public class AdqmQueryExecutor implements DatabaseExecutor {
     public Future<List<Map<String, Object>>> executeWithParams(String sql,
                                                                QueryParameters params,
                                                                List<ColumnMetadata> metadata) {
-        log.debug(String.format("ADQM. Execute with params %s", sql));
+        log.debug("ADQM. Execute query: [{}] with params: [{}]", sql, params);
         //TODO perhaps it's better to use RowStream interface for getting rows one by one and create chunks here
-        return getSqlConnection()
-                .compose(conn -> executeQueryWithParams(conn, sql, createParamsArray(params)))
+        return AsyncUtils.measureMs(getSqlConnection()
+                        .compose(conn -> executeQueryWithParams(conn, sql, createParamsArray(params))),
+                duration -> log.debug("ADQM. Query completed successfully: [{}] in [{}]ms", sql, duration))
                 .map(resultSet -> {
                     try {
                         return createResult(metadata, resultSet);

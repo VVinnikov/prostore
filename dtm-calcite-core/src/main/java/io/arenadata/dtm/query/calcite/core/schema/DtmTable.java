@@ -18,7 +18,7 @@ import java.util.ArrayList;
 
 public abstract class DtmTable extends AbstractQueryableTable implements TranslatableTable {
 
-    private static final int UUID_SIZE = 36;
+    protected static final int UUID_SIZE = 36;
     protected final QueryableSchema dtmSchema;
     protected final Entity entity;
 

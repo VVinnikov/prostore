@@ -27,7 +27,8 @@ public class AdbDataSourcePluginConfig {
             @Qualifier("adbCheckTableService") CheckTableService checkTableService,
             @Qualifier("adbCheckDataService") CheckDataService checkDataService,
             @Qualifier("adbTruncateHistoryService") TruncateHistoryService truncateHistoryService,
-            @Qualifier("adbCheckVersionService") CheckVersionService checkVersionService) {
+            @Qualifier("adbCheckVersionService") CheckVersionService checkVersionService,
+            @Qualifier("adbInitializationService") PluginInitializationService initializationService) {
         return new AdbDtmDataSourcePlugin(
                 ddlService,
                 llrService,
@@ -38,6 +39,7 @@ public class AdbDataSourcePluginConfig {
                 checkTableService,
                 checkDataService,
                 truncateHistoryService,
-                checkVersionService);
+                checkVersionService,
+                initializationService);
     }
 }

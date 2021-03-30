@@ -125,4 +125,16 @@ public class SqlDeltaSnapshot extends SqlSnapshot {
                 latestUncommittedDeltaOperator.getIsLatestNode()
         );
     }
+
+    public SqlDeltaSnapshot copy(SqlNode tableRef) {
+        return new SqlDeltaSnapshot(
+                pos,
+                tableRef,
+                period,
+                started,
+                finished,
+                deltaNumOperator.getDeltaNumNode(),
+                latestUncommittedDeltaOperator.getIsLatestNode()
+        );
+    }
 }

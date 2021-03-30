@@ -13,7 +13,8 @@ import org.apache.calcite.sql.parser.impl.SqlParserImpl;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @Slf4j
 class SqlSelectTreeTest {
@@ -75,6 +76,26 @@ class SqlSelectTreeTest {
                 "    left join shares.transactions3 using(account_id)\n" +
                 "   group by a.account_id, account_type\n" +
                 ")x";
+        SqlParser.Config config = SqlParser.configBuilder()
+                .setParserFactory(SqlParserImpl.FACTORY)
+                .setConformance(SqlConformanceEnum.DEFAULT)
+                .setLex(Lex.MYSQL)
+                .setCaseSensitive(false)
+                .setUnquotedCasing(Casing.TO_LOWER)
+                .setQuotedCasing(Casing.TO_LOWER)
+                .setQuoting(Quoting.DOUBLE_QUOTE)
+                .build();
+        SqlParser parser = SqlParser.create(sql, config);
+        SqlNode sqlNode = parser.parseQuery();
+        SqlSelectTree selectTree = new SqlSelectTree(sqlNode);
+        assertNotNull(selectTree);
+        assertFalse(selectTree.findAllTableAndSnapshots().isEmpty());
+        log.info(selectTree.findAllTableAndSnapshots().toString());
+    }
+
+    @Test
+    void test4() throws SqlParseException {
+        val sql = "select * from dtm.table1 a join table3 c on c.id = (select a2.id from dtm.table1 a2 where a2.id = 10 limit 1) where a.id in (select b.id from table2 b where b.id > 10)";
         SqlParser.Config config = SqlParser.configBuilder()
                 .setParserFactory(SqlParserImpl.FACTORY)
                 .setConformance(SqlConformanceEnum.DEFAULT)

@@ -63,6 +63,11 @@ class SqlNodeUtilTest {
                 " order by t1.id");
     }
 
+    @Test
+    void copyWithWhereSubQuery() {
+        assertCopied("select * from dtm.table1 a join table3 c on c.id = (select a2.id from dtm.table1 a2 where a2.id = 10 limit 1) and c.id < 20 where a.id in (select b.id from table2 b where b.id > 10)");
+    }
+
     private void assertCopied(String sql) {
         SqlNode expected = DEFINITION_SERVICE.processingQuery(sql);
         SqlNode actual = SqlNodeUtil.copy(expected);

@@ -3,21 +3,21 @@ package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.enrichment;
 import io.arenadata.dtm.common.calcite.CalciteContext;
 import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
-import io.arenadata.dtm.query.calcite.core.rel2sql.NullNotCastableRelToSqlConverter;
+import io.arenadata.dtm.query.execution.plugin.adqm.calcite.rel2sql.AdqmNullNotCastableRelToSqlConverter;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.EnrichQueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.QueryGeneratorContext;
+import io.arenadata.dtm.query.execution.plugin.adqm.dto.query.AdqmCheckJoinRequest;
+import io.arenadata.dtm.query.execution.plugin.adqm.service.AdqmQueryJoinConditionsCheckService;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.QueryExtendService;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.QueryGenerator;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.calcite.adapter.enumerable.EnumerableConvention;
-import org.apache.calcite.rel.RelNode;
+import lombok.var;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlIdentifier;
-import org.apache.calcite.tools.RelConversionException;
 import org.apache.calcite.util.Util;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -31,11 +31,14 @@ public class AdqmQueryGeneratorImpl implements QueryGenerator {
     public static final String ALIAS_PATTERN = ".*SELECT.OTHER(\\[\\d+\\]|)(.AS(\\[\\d+\\]|)|).IDENTIFIER";
     private final QueryExtendService queryExtendService;
     private final SqlDialect sqlDialect;
+    private final AdqmQueryJoinConditionsCheckService joinConditionsCheckService;
 
     public AdqmQueryGeneratorImpl(@Qualifier("adqmCalciteDmlQueryExtendService") QueryExtendService queryExtendService,
-                                  @Qualifier("adqmSqlDialect") SqlDialect sqlDialect) {
+                                  @Qualifier("adqmSqlDialect") SqlDialect sqlDialect,
+                                  AdqmQueryJoinConditionsCheckService joinConditionsCheckService) {
         this.queryExtendService = queryExtendService;
         this.sqlDialect = sqlDialect;
+        this.joinConditionsCheckService = joinConditionsCheckService;
     }
 
     @Override
@@ -48,15 +51,16 @@ public class AdqmQueryGeneratorImpl implements QueryGenerator {
                     deltaInformations,
                     calciteContext,
                     enrichQueryRequest);
-            val extendedQuery = queryExtendService.extendQuery(generatorContext);
-            RelNode planAfter = null;
+
+            if (!joinConditionsCheckService.isJoinConditionsCorrect(
+                    new AdqmCheckJoinRequest(generatorContext.getRelNode().rel,
+                            generatorContext.getEnrichQueryRequest().getSchema()))) {
+                promise.fail(new DataSourceException("Clickhouse’s global join is restricted"));
+            }
             try {
-                planAfter = calciteContext.getPlanner()
-                        .transform(0,
-                                extendedQuery.getTraitSet().replace(EnumerableConvention.INSTANCE),
-                                extendedQuery);
-                val sqlNodeResult = new NullNotCastableRelToSqlConverter(sqlDialect)
-                        .visitChild(0, planAfter)
+                var extendedQuery = queryExtendService.extendQuery(generatorContext);
+                val sqlNodeResult = new AdqmNullNotCastableRelToSqlConverter(sqlDialect)
+                        .visitChild(0, extendedQuery)
                         .asStatement();
                 val sqlTree = new SqlSelectTree(sqlNodeResult);
                 addFinalOperatorTopUnionTables(sqlTree);
@@ -65,8 +69,8 @@ public class AdqmQueryGeneratorImpl implements QueryGenerator {
                         .replaceAll("\n", " ");
                 log.debug("sql = " + queryResult);
                 promise.complete(queryResult);
-            } catch (RelConversionException relConversionException) {
-                promise.fail(new DataSourceException("Error in converting relation node", relConversionException));
+            } catch (Exception exception) {
+                promise.fail(new DataSourceException("Error in converting relation node", exception));
             }
         });
     }

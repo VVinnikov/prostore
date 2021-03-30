@@ -94,7 +94,8 @@ class AdbLlrServiceTest {
         QueryTemplateResult queryTemplateResult = new QueryTemplateResult(template, sqlNode, Collections.emptyList());
         LlrRequest llrRequest = LlrRequest.builder()
                 .sourceQueryTemplateResult(queryTemplateResult)
-                .sqlNode(sqlNode)
+                .withoutViewsQuery(sqlNode)
+                .originalQuery(sqlNode)
                 .requestId(uuid)
                 .envName("test")
                 .metadata(Collections.emptyList())

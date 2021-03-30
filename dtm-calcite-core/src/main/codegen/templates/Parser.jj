@@ -121,6 +121,9 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.SourceStringReader;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.trace.CalciteTrace;
+import io.arenadata.dtm.query.calcite.core.extension.ddl.*;
+import io.arenadata.dtm.query.calcite.core.extension.delta.*;
+import io.arenadata.dtm.query.calcite.core.extension.eddl.*;
 
 import org.slf4j.Logger;
 
@@ -601,6 +604,7 @@ SqlNode OrderedQueryOrExpr(ExprContext exprContext) :
     SqlNode start = null;
     SqlNode count = null;
     boolean isLimited = false;
+    SqlNode datasourceType = null;
 }
 {
     (
@@ -644,12 +648,13 @@ SqlNode OrderedQueryOrExpr(ExprContext exprContext) :
         <FETCH> ( <FIRST> | <NEXT> ) count = UnsignedNumericLiteralOrParam()
         ( <ROW> | <ROWS> ) <ONLY>
     ]
+    [ <DATASOURCE_TYPE> <EQ> datasourceType = StringLiteral() ]
     {
         if (orderBy != null || start != null || count != null) {
             if (orderBy == null) {
                 orderBy = SqlNodeList.EMPTY;
             }
-            e = new ru.ibs.dtm.query.calcite.core.extension.dml.LimitableSqlOrderBy(getPos(), e, orderBy, start, count, isLimited);
+            e = new io.arenadata.dtm.query.calcite.core.extension.dml.LimitableSqlOrderBy(getPos(), e, orderBy, start, count, isLimited, datasourceType);
 
         }
         return e;
@@ -1258,6 +1263,7 @@ SqlSelect SqlSelect() :
     final SqlNodeList groupBy;
     final SqlNode having;
     final SqlNodeList windowDecls;
+    SqlNode datasourceType = null;
     final List<SqlNode> hints = new ArrayList<SqlNode>();
     final Span s;
 }
@@ -1304,11 +1310,12 @@ SqlSelect SqlSelect() :
             windowDecls = null;
         }
     )
+    [ <DATASOURCE_TYPE> <EQ> datasourceType = StringLiteral() ]
     {
-        return new SqlSelect(s.end(this), keywordList,
+        return new io.arenadata.dtm.query.calcite.core.extension.dml.SqlSelectExt(s.end(this), keywordList,
             new SqlNodeList(selectList, Span.of(selectList).pos()),
             fromClause, where, groupBy, having, windowDecls, null, null, null,
-            new SqlNodeList(hints, getPos()));
+            new SqlNodeList(hints, getPos()), datasourceType);
     }
 }
 
@@ -2762,13 +2769,32 @@ SqlNode OrderItem() :
 }
 
 /**
+*  Parses a type in DATASOURCE_TYPE clause
+*/
+SqlNode DatasourceTypeIdentifier() :
+{
+    SqlNode node;
+}
+{
+    <EQ>
+    (
+        node = StringLiteral()
+        |
+        node = SimpleIdentifier()
+    )
+    {
+        return node;
+    }
+}
+
+/**
  * Parses a FOR SYSTEM_TIME clause following a table expression.
  */
 SqlNode Snapshot(SqlNode tableRef) :
 {
     SqlOperator startedInOp = null;
     SqlOperator finishedInOp = null;
-    SqlLiteral isLatestUncommitedDelta = null;
+    SqlLiteral isLatestUncommittedDelta = null;
     Span deltaSpan = null;
     SqlNode num = null;
     final SqlParserPos pos;
@@ -2789,7 +2815,7 @@ SqlNode Snapshot(SqlNode tableRef) :
                 (
                  <DELTA_NUM> { num = NumericLiteral(); }
                  |
-                 <LATEST_UNCOMMITED_DELTA> { isLatestUncommitedDelta = SqlLiteral.createBoolean(true, getPos());}
+                 <LATEST_UNCOMMITTED_DELTA> { isLatestUncommittedDelta = SqlLiteral.createBoolean(true, getPos());}
                  |
                  period = Expression(ExprContext.ACCEPT_NON_QUERY)
                 )
@@ -2800,8 +2826,8 @@ SqlNode Snapshot(SqlNode tableRef) :
             period = SqlLiteral.createNull(getPos());
         }
 
-        return new ru.ibs.dtm.query.calcite.core.extension.snapshot.SqlSnapshot(getPos(),
-        tableRef, period, startedInOp, finishedInOp, num, isLatestUncommitedDelta);
+        return new io.arenadata.dtm.query.calcite.core.extension.snapshot.SqlDeltaSnapshot(getPos(),
+        tableRef, period, startedInOp, finishedInOp, num, isLatestUncommittedDelta);
     }
 }
 

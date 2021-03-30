@@ -249,15 +249,17 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     SqlNodeList tableElementList = null;
     SqlNode query = null;
     SqlNodeList distributedBy = null;
+    SqlNodeList destination = null;
 }
 {
     <TABLE> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
     [ tableElementList = TableElementList() ]
     [ <DISTRIBUTED> <BY> distributedBy = ParenthesizedSimpleIdentifierList() ]
     [ <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) ]
+    [ <DATASOURCE_TYPE> destination = ParenthesizedSimpleIdentifierList() ]
     {
-        return new ru.ibs.dtm.query.calcite.core.extension.ddl.SqlCreateTable(s.end(this), replace, ifNotExists, id,
-            tableElementList, query, distributedBy);
+        return new SqlCreateTable(s.end(this), replace, ifNotExists, id,
+            tableElementList, query, distributedBy, destination);
     }
 }
 SqlCreate SqlCreateDownloadExternalTable(Span s, boolean replace) :
@@ -276,7 +278,7 @@ SqlCreate SqlCreateDownloadExternalTable(Span s, boolean replace) :
     <FORMAT> format = StringLiteral()
     [ <CHUNK_SIZE> chunkSize = NumericLiteral() ]
     {
-        return new ru.ibs.dtm.query.calcite.core.extension.eddl.SqlCreateDownloadExternalTable(s.end(this),
+        return new SqlCreateDownloadExternalTable(s.end(this),
             ifNotExists, id, tableElementList, location, format, chunkSize);
     }
 }
@@ -296,7 +298,7 @@ SqlCreate SqlCreateUploadExternalTable(Span s, boolean replace) :
     <FORMAT> format = StringLiteral()
     [ <MESSAGE_LIMIT> messageLimit = NumericLiteral() ]
     {
-        return new ru.ibs.dtm.query.calcite.core.extension.eddl.SqlCreateUploadExternalTable(s.end(this),
+        return new SqlCreateUploadExternalTable(s.end(this),
             ifNotExists, id, tableElementList, location, format, messageLimit);
 }
 }
@@ -308,7 +310,7 @@ SqlCreate SqlCreateDatabase(Span s, boolean replace) :
 {
    <DATABASE> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
    {
-    return new ru.ibs.dtm.query.calcite.core.extension.eddl.SqlCreateDatabase(s.end(this), ifNotExists, id);
+    return new SqlCreateDatabase(s.end(this), ifNotExists, id);
     }
 }
 SqlCreate SqlCreateView(Span s, boolean replace) :
@@ -321,7 +323,7 @@ SqlCreate SqlCreateView(Span s, boolean replace) :
     <VIEW> id = CompoundIdentifier()
     [ columnList = ParenthesizedSimpleIdentifierList() ]
     <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) {
-        return new ru.ibs.dtm.query.calcite.core.extension.ddl.SqlCreateView(s.end(this), replace, id, columnList, query);
+        return new SqlCreateView(s.end(this), replace, id, columnList, query);
     }
 }
 SqlAlter SqlAlterView(Span s) :
@@ -334,7 +336,7 @@ SqlAlter SqlAlterView(Span s) :
     <VIEW> id = CompoundIdentifier()
     [ columnList = ParenthesizedSimpleIdentifierList() ]
     <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) {
-        return new ru.ibs.dtm.query.calcite.core.extension.ddl.SqlAlterView(s.end(this), id, columnList, query);
+        return new SqlAlterView(s.end(this), id, columnList, query);
 }
 }
 SqlCreate SqlCreateMaterializedView(Span s, boolean replace) :
@@ -365,7 +367,7 @@ SqlNode SqlBeginDelta() :
     }
     [ <SET> num = NumericLiteral() ]
 {
-    return new ru.ibs.dtm.query.calcite.core.extension.delta.SqlBeginDelta(beginPos, num);
+    return new SqlBeginDelta(beginPos, num);
 }
 }
 SqlNode SqlCommitDelta() :
@@ -380,7 +382,20 @@ SqlNode SqlCommitDelta() :
     }
     [ <SET> dateTime = StringLiteral() ]
 {
-    return new ru.ibs.dtm.query.calcite.core.extension.delta.SqlCommitDelta(commitPos, dateTime);
+    return new SqlCommitDelta(commitPos, dateTime);
+}
+}
+SqlNode SqlRollbackDelta() :
+{
+    SqlParserPos rollbackPos;
+}
+{
+    <ROLLBACK> <DELTA>
+    {
+            rollbackPos = getPos();
+    }
+{
+return new SqlRollbackDelta(rollbackPos);
 }
 }
 private void FunctionJarDef(SqlNodeList usingList) :
@@ -462,10 +477,13 @@ SqlDrop SqlDropTable(Span s, boolean replace) :
 {
     final boolean ifExists;
     final SqlIdentifier id;
+    SqlNode destination = null;
 }
 {
-    <TABLE> ifExists = IfExistsOpt() id = CompoundIdentifier() {
-        return SqlDdlNodes.dropTable(s.end(this), ifExists, id);
+    <TABLE> ifExists = IfExistsOpt() id = CompoundIdentifier()
+    [ <DATASOURCE_TYPE> destination = DatasourceTypeIdentifier() ]
+    {
+        return new SqlDropTable(s.end(this), ifExists, id, destination);
     }
 }
 SqlDrop DropDatabase(Span s, boolean replace) :
@@ -475,7 +493,7 @@ SqlDrop DropDatabase(Span s, boolean replace) :
 }
 {
    <DATABASE> ifExists = IfExistsOpt() id = CompoundIdentifier() {
-      return new ru.ibs.dtm.query.calcite.core.extension.eddl.DropDatabase(s.end(this),ifExists,id);
+      return new DropDatabase(s.end(this),ifExists,id);
    }
 }
 SqlDrop SqlDropUploadExternalTable(Span s, boolean replace) :
@@ -485,7 +503,7 @@ SqlDrop SqlDropUploadExternalTable(Span s, boolean replace) :
 }
 {
     <UPLOAD> <EXTERNAL> <TABLE> ifExists = IfExistsOpt() id = CompoundIdentifier() {
-        return new ru.ibs.dtm.query.calcite.core.extension.eddl.SqlDropUploadExternalTable(s.end(this), ifExists, id);
+        return new SqlDropUploadExternalTable(s.end(this), ifExists, id);
     }
 }
 SqlDrop SqlDropDownloadExternalTable(Span s, boolean replace) :
@@ -495,7 +513,7 @@ SqlDrop SqlDropDownloadExternalTable(Span s, boolean replace) :
 }
 {
     <DOWNLOAD> <EXTERNAL> <TABLE> ifExists = IfExistsOpt() id = CompoundIdentifier() {
-        return new ru.ibs.dtm.query.calcite.core.extension.eddl.SqlDropDownloadExternalTable(s.end(this), ifExists, id);
+        return new SqlDropDownloadExternalTable(s.end(this), ifExists, id);
 }
 }
 SqlDrop SqlDropView(Span s, boolean replace) :
@@ -542,6 +560,208 @@ SqlNode SqlUseSchema() :
         pos = getPos();
 }
     {
-        return new ru.ibs.dtm.query.calcite.core.extension.ddl.SqlUseSchema(pos, id);
+        return new io.arenadata.dtm.query.calcite.core.extension.dml.SqlUseSchema(pos, id);
+    }
+}
+SqlNode SqlGetDeltaOk() :
+{
+    SqlParserPos pos;
+}
+{
+    <GET_DELTA_OK>
+    {
+        pos = getPos();
+    }
+    <LPAREN> <RPAREN>
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaOk(pos);
+    }
+}
+SqlNode SqlGetDeltaHot() :
+{
+    SqlParserPos pos;
+}
+{
+    <GET_DELTA_HOT>
+    {
+        pos = getPos();
+    }
+    <LPAREN> <RPAREN>
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaHot(pos);
+    }
+}
+SqlNode SqlGetDeltaByDateTime() :
+{
+    Span s;
+    SqlNode deltaDateTime = null;
+}
+{
+    <GET_DELTA_BY_DATETIME>
+    {
+        s = span();
+    }
+    <LPAREN>
+        deltaDateTime = StringLiteral()
+    <RPAREN>
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaByDateTime(s.end(this), deltaDateTime);
+    }
+}
+SqlNode SqlGetDeltaByNum() :
+{
+    Span s;
+    SqlNode deltaNum = null;
+}
+{
+    <GET_DELTA_BY_NUM>
+    {
+        s = span();
+    }
+    <LPAREN>
+        deltaNum = NumericLiteral()
+    <RPAREN>
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.delta.function.SqlGetDeltaByNum(s.end(this), deltaNum);
+    }
+}
+SqlNode SqlConfigStorageAdd() :
+{
+    Span s;
+    SqlNode sourceType = null;
+}
+{
+    <CONFIG_STORAGE_ADD>
+    {
+        s = span();
+    }
+    <LPAREN>
+        sourceType = StringLiteral()
+    <RPAREN>
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.config.function.SqlConfigStorageAdd(s.end(this), sourceType);
+    }
+}
+SqlNode SqlCheckDatabase() :
+{
+    Span s;
+    SqlIdentifier id = null;
+}
+{
+    <CHECK_DATABASE>
+    {
+        s = span();
+    }
+    (
+        <LPAREN> [id = CompoundIdentifier()] <RPAREN>
+        |
+        {id = null;}
+    )
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckDatabase(s.end(this), id);
+    }
+}
+SqlNode SqlCheckTable() :
+{
+    Span s;
+    final SqlIdentifier id;
+}
+{
+    <CHECK_TABLE>
+    {
+        s = span();
+    }
+    <LPAREN> id = CompoundIdentifier() <RPAREN>
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckTable(s.end(this), id);
+    }
+}
+SqlNode SqlCheckData() :
+{
+    Span s;
+    final SqlIdentifier id;
+    SqlLiteral deltaNum = null;
+    List<SqlNode> tableElementList = null;
+}
+{
+    <CHECK_DATA>
+    {
+        s = span();
+    }
+    <LPAREN> id = CompoundIdentifier()
+    <COMMA>
+        deltaNum = NumericLiteral()
+    [ <COMMA> <LBRACKET> tableElementList = SelectList() <RBRACKET> ]
+    <RPAREN>
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckData(s.end(this), id, deltaNum, tableElementList);
+    }
+}
+SqlNode SqlCheckVersions() :
+{
+    SqlParserPos pos;
+}
+{
+    <CHECK_VERSIONS>
+    {
+        pos = getPos();
+    }
+    <LPAREN> <RPAREN>
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckVersions(pos);
+    }
+}
+SqlNode SqlTruncateHistory() :
+{
+    final Span s;
+    final SqlIdentifier id;
+    final SqlNode datetime;
+    SqlNode conditions = null;
+}
+{
+    <TRUNCATE> <HISTORY>
+    {
+            s = span();
+    }
+    id = CompoundIdentifier()
+    <FOR> <SYSTEM_TIME> <AS> <OF> datetime = StringLiteral()
+    [<WHERE> conditions = SqlExpressionEof()]
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.ddl.truncate.SqlTruncateHistory(s.end(this), id, datetime, conditions);
+    }
+}
+SqlNode SqlRollbackCrashedWriteOps() :
+{
+    SqlParserPos pos;
+}
+{
+    <ROLLBACK> <CRASHED_WRITE_OPERATIONS>
+    {
+            pos = getPos();
+    }
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.edml.SqlRollbackCrashedWriteOps(pos);
+    }
+}
+SqlNode SqlCheckSum() :
+{
+    Span s;
+    final SqlLiteral deltaNum;
+    SqlIdentifier table = null;
+    List<SqlNode> tableElementList = null;
+}
+{
+    <CHECK_SUM>
+    {
+        s = span();
+    }
+    <LPAREN> deltaNum = NumericLiteral()
+    [ <COMMA>
+            table = CompoundIdentifier()
+            [ <COMMA> <LBRACKET> tableElementList = SelectList() <RBRACKET> ]
+    ]
+    <RPAREN>
+    {
+        return new io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckSum(s.end(this), deltaNum, table, tableElementList);
     }
 }

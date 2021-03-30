@@ -4,13 +4,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>dtm-common</artifactId>
-    <version>2.6.0-SNAPSHOT</version>
+    <version>3.5.0-SNAPSHOT</version>
     <name>DTM Common</name>
 
     <parent>
-        <groupId>ru.ibs.dtm</groupId>
+        <groupId>io.arenadata.dtm</groupId>
         <artifactId>parent</artifactId>
-        <version>2.6.0-SNAPSHOT</version>
+        <version>3.5.0-SNAPSHOT</version>
     </parent>
 
     <dependencies>
@@ -28,6 +28,10 @@
             <groupId>io.vertx</groupId>
             <artifactId>vertx-core</artifactId>
             <version>${vertx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.calcite</groupId>

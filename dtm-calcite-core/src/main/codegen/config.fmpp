@@ -16,7 +16,7 @@
 data: {
   parser: {
     # Generated parser implementation class package and name
-    package: "ru.ibs.dtm.query.calcite.core.extension.parser",
+    package: "io.arenadata.dtm.query.calcite.core.extension.parser",
     class: "SqlEddlParserImpl",
 
     # List of import statements.
@@ -49,8 +49,21 @@ data: {
       "STARTED",
       "FINISHED",
       "DELTA_NUM",
-      "LATEST_UNCOMMITED_DELTA"
+      "LATEST_UNCOMMITTED_DELTA"
       "USE"
+      "GET_DELTA_OK"
+      "GET_DELTA_HOT"
+      "GET_DELTA_BY_DATETIME"
+      "GET_DELTA_BY_NUM"
+      "CONFIG_STORAGE_ADD"
+      "DATASOURCE_TYPE"
+      "CHECK_DATABASE"
+      "CHECK_TABLE"
+      "CHECK_DATA"
+      "CHECK_VERSIONS"
+      "CHECK_SUM"
+      "HISTORY"
+      "CRASHED_WRITE_OPERATIONS"
     ]
 
     # List of keywords from "keywords" section that are not reserved.
@@ -398,7 +411,20 @@ data: {
     statementParserMethods: [
         "SqlBeginDelta()"
         "SqlCommitDelta()"
+        "SqlRollbackDelta()"
         "SqlUseSchema()"
+        "SqlGetDeltaOk()"
+        "SqlGetDeltaHot()"
+        "SqlGetDeltaByDateTime()"
+        "SqlGetDeltaByNum()"
+        "SqlConfigStorageAdd()"
+        "SqlCheckDatabase()"
+        "SqlCheckTable()"
+        "SqlCheckData()"
+        "SqlCheckVersions()"
+        "SqlCheckSum()"
+        "SqlTruncateHistory()"
+        "SqlRollbackCrashedWriteOps()"
     ]
 
     # List of methods for parsing custom literals.

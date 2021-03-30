@@ -1,5 +1,5 @@
 # DTM core services & plugins
-Main project of data mart for NSUD.
+Main project of data mart.
 
 ## Local deployment
 
@@ -24,14 +24,6 @@ For MPPW support you also need to confugure & run [dtm-vendor-emulator](https://
 ```shell script
 cd dtm-query-execution-core
 docker-compose -f environment/docker-compose-build.yml up -d
-```
-
-#### Load initial data
-
-To load schema changes use sub-project [dtm-migration](dtm-migration/README.md) and run:
-```shell script
-cd dtm-migration
-mvn spring-boot:run
 ```
 
 #### Build project using maven
@@ -112,7 +104,7 @@ Use profile `local` for project builder.
 
 Setup run configuration for core application:
  1. Working dir - `dtm-query-execution-core`.
- 2. Main class - `ru.ibs.dtm.query.execution.core.ServiceQueryExecutionApplication`.
+ 2. Main class - `io.arenadata.dtm.query.execution.core.ServiceQueryExecutionApplication`.
  3. VM options - `-Dspring.profiles.active=dev`.
 
 ## Setup JDBC test client

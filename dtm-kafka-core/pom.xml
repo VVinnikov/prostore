@@ -4,13 +4,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>dtm-kafka-core</artifactId>
-    <version>2.6.0-SNAPSHOT</version>
+    <version>3.5.0-SNAPSHOT</version>
     <name>DTM Kafka Core</name>
 
     <parent>
-        <groupId>ru.ibs.dtm</groupId>
+        <groupId>io.arenadata.dtm</groupId>
         <artifactId>parent</artifactId>
-        <version>2.6.0-SNAPSHOT</version>
+        <version>3.5.0-SNAPSHOT</version>
     </parent>
 
     <properties>
@@ -20,7 +20,7 @@
     <dependencies>
         <!-- DTM-->
         <dependency>
-            <groupId>ru.ibs.dtm</groupId>
+            <groupId>io.arenadata.dtm</groupId>
             <artifactId>dtm-common</artifactId>
             <version>${dtm.common.version}</version>
             <exclusions>
@@ -152,7 +152,6 @@
             <scope>test</scope>
         </dependency>
 
-
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
@@ -164,7 +163,6 @@
             <artifactId>scala-library</artifactId>
             <version>2.12.8</version>
         </dependency>
-
 
     </dependencies>
 

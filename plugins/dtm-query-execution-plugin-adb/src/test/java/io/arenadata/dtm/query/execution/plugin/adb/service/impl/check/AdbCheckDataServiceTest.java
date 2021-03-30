@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
-public class AdbCheckDataServiceTest {
+class AdbCheckDataServiceTest {
     private final static Long RESULT = 1L;
     private final AdbQueryExecutor adbQueryExecutor = mock(AdbQueryExecutor.class);
     private final AdbCheckDataService adbCheckDataService = new AdbCheckDataService(adbQueryExecutor);
@@ -43,7 +43,6 @@ public class AdbCheckDataServiceTest {
                 .onComplete(ar -> {
                     assertTrue(ar.succeeded());
                     assertEquals(RESULT, ar.result());
-                    verify(adbQueryExecutor, times(1)).executeUpdate(any());
                     verify(adbQueryExecutor, times(1)).execute(any(), any());
                 });
     }

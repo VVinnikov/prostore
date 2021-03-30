@@ -2,6 +2,7 @@ package io.arenadata.dtm.query.execution.core.factory.impl.edml.mppw;
 
 import io.arenadata.dtm.query.execution.core.dto.edml.MppwStopFuture;
 import io.arenadata.dtm.query.execution.core.dto.edml.MppwStopReason;
+import io.arenadata.dtm.query.execution.core.factory.MppwErrorMessageFactory;
 import org.springframework.core.NestedExceptionUtils;
 import org.springframework.stereotype.Component;
 

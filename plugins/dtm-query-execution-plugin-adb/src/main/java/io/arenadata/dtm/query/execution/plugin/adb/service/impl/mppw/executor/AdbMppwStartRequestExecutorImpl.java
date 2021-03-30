@@ -2,7 +2,7 @@ package io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.executor;
 
 import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
-import io.arenadata.dtm.common.plugin.exload.Format;
+import io.arenadata.dtm.common.model.ddl.ExternalTableFormat;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adb.configuration.properties.MppwProperties;
@@ -64,7 +64,7 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
     public Future<QueryResult> execute(MppwKafkaRequest request) {
         return Future.future((Promise<QueryResult> promise) -> {
             val format = request.getUploadMetadata().getFormat();
-            if (!Format.AVRO.equals(format)) {
+            if (!ExternalTableFormat.AVRO.equals(format)) {
                 promise.fail(new MppwDatasourceException(String.format("Format %s not implemented", format)));
             }
             List<KafkaBrokerInfo> brokers = request.getBrokers();

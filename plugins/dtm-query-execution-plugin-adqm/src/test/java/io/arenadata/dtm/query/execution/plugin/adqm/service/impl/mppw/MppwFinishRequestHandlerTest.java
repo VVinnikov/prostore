@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw;
 
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
-import io.arenadata.dtm.common.plugin.exload.Format;
+import io.arenadata.dtm.common.model.ddl.ExternalTableFormat;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
@@ -62,7 +62,7 @@ class MppwFinishRequestHandlerTest {
                 t -> t.equalsIgnoreCase("SYSTEM FLUSH DISTRIBUTED dev__shares.accounts_buffer"),
                 t -> t.equalsIgnoreCase("SYSTEM FLUSH DISTRIBUTED dev__shares.accounts_actual"),
                 t -> t.contains("a.column1, a.column2, a.column3, a.sys_from, 100") && t.contains("dev__shares.accounts_actual") &&
-                        t.contains("ANY INNER JOIN dev__shares.accounts_buffer_shard b USING(column1, column2)") &&
+                        t.contains("SEMI LEFT JOIN dev__shares.accounts_buffer_shard b USING(column1, column2)") &&
                         t.contains("sys_from < 101"),
                 t -> t.contains("SYSTEM FLUSH DISTRIBUTED dev__shares.accounts_actual"),
                 t -> t.equalsIgnoreCase("DROP TABLE IF EXISTS dev__shares.accounts_buffer ON CLUSTER test_arenadata"),
@@ -87,7 +87,7 @@ class MppwFinishRequestHandlerTest {
                 .sysCn(101L)
                 .destinationTableName("accounts")
                 .topic(TEST_TOPIC)
-                .uploadMetadata(new BaseExternalEntityMetadata("", "", Format.AVRO, ""))
+                .uploadMetadata(new BaseExternalEntityMetadata("", "", ExternalTableFormat.AVRO, ""))
                 .build();
         handler.execute(request).onComplete(ar -> {
             assertTrue(ar.succeeded(), ar.cause() != null ? ar.cause().getMessage() : "");

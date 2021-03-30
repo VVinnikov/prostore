@@ -9,10 +9,7 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "core.kafka")
 @Data
 public class KafkaProperties {
-    KafkaProducerProperty producer = new KafkaProducerProperty();
-    KafkaAdminProperty admin = new KafkaAdminProperty();
-
-    private String statusMonitorUrl;
-
-
+    private KafkaProducerProperty producer = new KafkaProducerProperty();
+    private KafkaAdminProperty admin = new KafkaAdminProperty();
+    private KafkaStatusMonitorProperties statusMonitor = new KafkaStatusMonitorProperties();
 }

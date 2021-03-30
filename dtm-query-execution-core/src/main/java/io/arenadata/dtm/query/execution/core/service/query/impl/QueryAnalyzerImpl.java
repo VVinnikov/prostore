@@ -11,6 +11,7 @@ import io.arenadata.dtm.query.calcite.core.extension.delta.SqlRollbackDelta;
 import io.arenadata.dtm.query.calcite.core.extension.dml.SqlUseSchema;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.DropDatabase;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.SqlCreateDatabase;
+import io.arenadata.dtm.query.calcite.core.extension.edml.SqlRollbackCrashedWriteOps;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.execution.core.dto.CoreRequestContext;
 import io.arenadata.dtm.query.execution.core.factory.QueryRequestFactory;
@@ -121,7 +122,8 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
                 && !(sqlNode instanceof SqlRollbackDelta)
                 && !(sqlNode instanceof SqlUseSchema)
                 && !(sqlNode instanceof SqlConfigStorageAdd)
-                && !(sqlNode instanceof SqlCheckCall);
+                && !(sqlNode instanceof SqlCheckCall)
+                && !(sqlNode instanceof SqlRollbackCrashedWriteOps);
     }
 
     @Data

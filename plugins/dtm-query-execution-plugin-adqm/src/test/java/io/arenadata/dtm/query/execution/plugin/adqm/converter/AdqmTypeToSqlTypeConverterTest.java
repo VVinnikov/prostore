@@ -70,10 +70,10 @@ class AdqmTypeToSqlTypeConverterTest {
         expectedValues.put(ColumnType.BIGINT, Arrays.asList(bigintVal, bigInteger));
         expectedValues.put(ColumnType.DOUBLE, doubleVal);
         expectedValues.put(ColumnType.FLOAT, floatVal);
-        expectedValues.put(ColumnType.DATE, Date.valueOf(LocalDate.ofEpochDay(dateLongVal)));
+        expectedValues.put(ColumnType.DATE, dateLongVal.intValue());
         expectedValues.put(ColumnType.TIME, timeLongVal);
-        expectedValues.put(ColumnType.TIMESTAMP, Timestamp.from(LocalDateTime.parse(timestampStrVal,
-                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS")).atZone(UTC_TIME_ZONE).toInstant()));
+        expectedValues.put(ColumnType.TIMESTAMP, LocalDateTime.parse(timestampStrVal,
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS")).atZone(UTC_TIME_ZONE).toInstant().toEpochMilli());
         expectedValues.put(ColumnType.BOOLEAN, booleanVal);
         expectedValues.put(ColumnType.UUID, UUID.fromString(uuidStrVal));
         expectedValues.put(ColumnType.ANY, JsonObject.mapFrom(objMapVal));
@@ -110,7 +110,7 @@ class AdqmTypeToSqlTypeConverterTest {
         );
         assertAll("Date converting",
                 () -> assertEquals(expectedValues.get(ColumnType.DATE), typeConverter.convert(ColumnType.DATE, dateLongVal)),
-                () -> assertTrue(typeConverter.convert(ColumnType.DATE, dateLongVal) instanceof Date)
+                () -> assertTrue(typeConverter.convert(ColumnType.DATE, dateLongVal) instanceof Integer)
         );
         assertAll("Time converting",
                 () -> assertEquals(expectedValues.get(ColumnType.TIME), typeConverter.convert(ColumnType.TIME, timeLongVal)),
@@ -119,7 +119,7 @@ class AdqmTypeToSqlTypeConverterTest {
         assertAll("Timestamp converting",
                 () -> assertEquals(expectedValues.get(ColumnType.TIMESTAMP), typeConverter.convert(ColumnType.TIMESTAMP,
                         timestampStrVal)),
-                () -> assertTrue(typeConverter.convert(ColumnType.TIMESTAMP, timestampStrVal) instanceof Timestamp)
+                () -> assertTrue(typeConverter.convert(ColumnType.TIMESTAMP, timestampStrVal) instanceof Long)
         );
         assertAll("Boolean converting",
                 () -> assertEquals(expectedValues.get(ColumnType.BOOLEAN), typeConverter.convert(ColumnType.BOOLEAN, booleanVal)),

@@ -4,6 +4,7 @@ import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityType;
+import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.extension.check.CheckType;
 import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckData;
@@ -11,6 +12,7 @@ import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.check.CheckContext;
 import io.arenadata.dtm.query.execution.core.exception.entity.EntityNotExistsException;
+import io.arenadata.dtm.query.execution.core.factory.CheckQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.service.check.CheckExecutor;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.verticle.TaskVerticleExecutor;
@@ -36,19 +38,23 @@ public class CheckDataExecutor implements CheckExecutor {
     private final DeltaServiceDao deltaServiceDao;
     private final EntityDao entityDao;
     private final TaskVerticleExecutor taskVerticleExecutor;
+    private final CheckQueryResultFactory queryResultFactory;
 
     @Autowired
     public CheckDataExecutor(DataSourcePluginService dataSourcePluginService,
-                             DeltaServiceDao deltaServiceDao, EntityDao entityDao,
-                             TaskVerticleExecutor taskVerticleExecutor) {
+                             DeltaServiceDao deltaServiceDao,
+                             EntityDao entityDao,
+                             TaskVerticleExecutor taskVerticleExecutor,
+                             CheckQueryResultFactory queryResultFactory) {
         this.dataSourcePluginService = dataSourcePluginService;
         this.deltaServiceDao = deltaServiceDao;
         this.entityDao = entityDao;
         this.taskVerticleExecutor = taskVerticleExecutor;
+        this.queryResultFactory = queryResultFactory;
     }
 
     @Override
-    public Future<String> execute(CheckContext context) {
+    public Future<QueryResult> execute(CheckContext context) {
         SqlCheckData sqlCheckData = (SqlCheckData) context.getSqlNode();
         String schema = context.getRequest().getQueryRequest().getDatamartMnemonic();
         String table = sqlCheckData.getTable();
@@ -56,7 +62,8 @@ public class CheckDataExecutor implements CheckExecutor {
                 .compose(entity -> EntityType.TABLE.equals(entity.getEntityType())
                         ? Future.succeededFuture(entity)
                         : Future.failedFuture(new EntityNotExistsException(schema, table)))
-                .compose(entity -> check(context, entity, sqlCheckData));
+                .compose(entity -> check(context, entity, sqlCheckData))
+                .map(queryResultFactory::create);
     }
 
     @Override

@@ -64,8 +64,9 @@ core:
       inputStreamTimeoutMs: ${KAFKA_INPUT_STREAM_TIMEOUT_MS:2000}
     status.event.publish:
       enabled: ${KAFKA_STATUS_EVENT_ENABLED:false}
-      topic: ${KAFKA_STATUS_EVENT_TOPIC:status.event}
-    statusMonitorUrl: ${STATUS_MONITOR_URL:http://127.0.0.1:9095/status}
+    statusMonitor:
+      statusUrl: ${STATUS_MONITOR_URL:http://127.0.0.1:9095/status}
+      versionUrl: ${STATUS_MONITOR_VERSION_URL:http://127.0.0.1:9095/versions}
 
   vertx:
     pool:
@@ -108,8 +109,8 @@ adg:
   mppw:
     consumerGroup: ${ADG_CONSUMER_GROUP:tarantool-group-csv}
     kafka:
-      maxNumberOfMessagesPerPartition: {ADG_MAX_MSG_PER_PARTITION:200}
-      callbackFunctionSecIdle: {ADG_CB_FUNC_IDLE:100}
+      maxNumberOfMessagesPerPartition: ${ADG_MAX_MSG_PER_PARTITION:200}
+      callbackFunctionSecIdle: ${ADG_CB_FUNC_IDLE:100}
 
   rollback:
     eraseOperationBatchSize: ${ADG_ROLLBACK_OPERATION_BATCH_SIZE:300}
@@ -136,9 +137,8 @@ adqm:
     cluster: ${ADQM_CLUSTER:test_arenadata}
 
   mppr:
-    host: ${ADQM_MPPR_CONNECTOR_HOST:10.92.3.14}
-    port: ${ADQM_MPPR_CONNECTOR_PORT:8086}
-    url: ${ADQM_MPPR_CONNECTOR_URL:/query}
+    loadingUrl: ${ADQM_MPPR_CONNECTOR_URL:http://10.92.3.14:8086/query}
+    versionUrl: ${ADQM_MPPR_CONNECTOR_VERSION_URL:http://10.92.3.14:8086/versions}
 
   mppw:
     consumerGroup: ${ADQM_CONSUMER_GROUP:adqm}
@@ -146,6 +146,7 @@ adqm:
     loadType: ${ADQM_MPPW_LOAD_TYPE:REST}
     restStartLoadUrl: ${ADQM_REST_START_LOAD_URL:http://10.92.3.86:8090/newdata/adqm/start}
     restStopLoadUrl: ${ADQM_REST_STOP_LOAD_URL:http://10.92.3.86:8090/newdata/adqm/stop}
+    versionUrl: ${ADQM_MPPW_CONNECTOR_VERSION_URL:http://10.92.3.86:8090/versions}
     restLoadConsumerGroup: ${ADQM_REST_LOAD_GROUP:adb-emulator-load-adqm}
 
   web-client:

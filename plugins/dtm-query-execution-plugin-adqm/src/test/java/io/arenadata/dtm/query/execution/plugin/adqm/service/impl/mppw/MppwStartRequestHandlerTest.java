@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw;
 
 import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
-import io.arenadata.dtm.common.plugin.exload.Format;
+import io.arenadata.dtm.common.model.ddl.ExternalTableFormat;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.AdqmMppwProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
@@ -65,7 +65,7 @@ class MppwStartRequestHandlerTest {
                 t -> t.equalsIgnoreCase("DROP TABLE IF EXISTS dev__shares.accounts_buffer_loader_shard ON CLUSTER test_arenadata"),
                 t -> t.equalsIgnoreCase("DROP TABLE IF EXISTS dev__shares.accounts_buffer ON CLUSTER test_arenadata"),
                 t -> t.equalsIgnoreCase("DROP TABLE IF EXISTS dev__shares.accounts_buffer_shard ON CLUSTER test_arenadata"),
-                t -> t.equalsIgnoreCase("CREATE TABLE IF NOT EXISTS dev__shares.accounts_buffer_shard ON CLUSTER test_arenadata (column1 Int64, column2 Int64, sys_op_buffer Nullable(Int8)) ENGINE = Join(ANY, INNER, column1, column2)"),
+                t -> t.equalsIgnoreCase("CREATE TABLE IF NOT EXISTS dev__shares.accounts_buffer_shard ON CLUSTER test_arenadata (column1 Int64, column2 Int64, sys_op_buffer Nullable(Int8)) ENGINE = Join(SEMI, LEFT, column1, column2)"),
                 t -> t.equalsIgnoreCase("CREATE TABLE IF NOT EXISTS dev__shares.accounts_buffer ON CLUSTER test_arenadata AS dev__shares.accounts_buffer_shard ENGINE=Distributed('test_arenadata', 'shares', 'accounts_buffer_shard', column1)"),
                 t -> t.equalsIgnoreCase("CREATE MATERIALIZED VIEW IF NOT EXISTS dev__shares.accounts_buffer_loader_shard ON CLUSTER test_arenadata TO dev__shares.accounts_buffer\n" +
                         "  AS SELECT column1, column2, sys_op AS sys_op_buffer FROM dev__shares.accounts_ext_shard"),
@@ -112,7 +112,7 @@ class MppwStartRequestHandlerTest {
                 t -> t.equalsIgnoreCase("DROP TABLE IF EXISTS dev__shares.accounts_buffer_loader_shard ON CLUSTER test_arenadata"),
                 t -> t.equalsIgnoreCase("DROP TABLE IF EXISTS dev__shares.accounts_buffer ON CLUSTER test_arenadata"),
                 t -> t.equalsIgnoreCase("DROP TABLE IF EXISTS dev__shares.accounts_buffer_shard ON CLUSTER test_arenadata"),
-                t -> t.equalsIgnoreCase("CREATE TABLE IF NOT EXISTS dev__shares.accounts_buffer_shard ON CLUSTER test_arenadata (column1 Int64, column2 Int64, sys_op_buffer Nullable(Int8)) ENGINE = Join(ANY, INNER, column1, column2)"),
+                t -> t.equalsIgnoreCase("CREATE TABLE IF NOT EXISTS dev__shares.accounts_buffer_shard ON CLUSTER test_arenadata (column1 Int64, column2 Int64, sys_op_buffer Nullable(Int8)) ENGINE = Join(SEMI, LEFT, column1, column2)"),
                 t -> t.equalsIgnoreCase("CREATE TABLE IF NOT EXISTS dev__shares.accounts_buffer ON CLUSTER test_arenadata AS dev__shares.accounts_buffer_shard ENGINE=Distributed('test_arenadata', 'shares', 'accounts_buffer_shard', column1)"),
                 t -> t.equalsIgnoreCase("CREATE MATERIALIZED VIEW IF NOT EXISTS dev__shares.accounts_buffer_loader_shard ON CLUSTER test_arenadata TO dev__shares.accounts_buffer\n" +
                         "  AS SELECT column1, column2, sys_op AS sys_op_buffer FROM dev__shares.accounts_ext_shard"),
@@ -174,7 +174,7 @@ class MppwStartRequestHandlerTest {
                 .topic(TEST_TOPIC)
                 .uploadMetadata(UploadExternalEntityMetadata.builder()
                         .externalSchema(getSchema())
-                        .format(Format.AVRO)
+                        .format(ExternalTableFormat.AVRO)
                         .uploadMessageLimit(1000)
                         .build())
                 .brokers(kafkaBrokers)

@@ -64,11 +64,15 @@ public class TestUtils {
                 .filter(field -> field.getPrimaryOrder() == null)
                 .map(TestUtils::createAttribute)
                 .collect(Collectors.toList());
+        List<SpaceAttribute> stageLogAttrs = entity.getFields().stream()
+                .sorted(Comparator.comparing(EntityField::getOrdinalPosition))
+                .map(TestUtils::createAttribute)
+                .collect(Collectors.toList());
         return SPACE_POSTFIXES.stream()
                 .collect(Collectors.toMap(
                         postfix -> String.format("env__%s__%s%s", entity.getSchema(), entity.getName(), postfix),
                         postfix -> Space.builder()
-                                .format(getAttrs(postfix, pkAttrs, logAttrs))
+                                .format(postfix.equalsIgnoreCase(STAGING_POSTFIX)? getAttrs(postfix, Collections.emptyList() ,stageLogAttrs): getAttrs(postfix, pkAttrs, logAttrs))
                                 .indexes(spaceIndexMap.get(postfix))
                                 .build()));
     }
@@ -96,20 +100,23 @@ public class TestUtils {
     public static List<SpaceAttribute> getAttrs(String postfix,
                                                 List<SpaceAttribute> pkAttrs,
                                                 List<SpaceAttribute> logAttrs) {
-        List<SpaceAttribute> result = new ArrayList<>(pkAttrs);
-        result.add(new SpaceAttribute(false, BUCKET_ID, SpaceAttributeTypes.UNSIGNED));
+        List<SpaceAttribute> result;
         switch (postfix) {
             case ACTUAL_POSTFIX:
             case HISTORY_POSTFIX:
+                result = new ArrayList<>(pkAttrs);
+                result.add(new SpaceAttribute(false, BUCKET_ID, SpaceAttributeTypes.UNSIGNED));
                 result.add(new SpaceAttribute(false, SYS_FROM_FIELD, SpaceAttributeTypes.NUMBER));
                 result.add(new SpaceAttribute(true, SYS_TO_FIELD, SpaceAttributeTypes.NUMBER));
                 result.add(new SpaceAttribute(false, SYS_OP_FIELD, SpaceAttributeTypes.NUMBER));
+                result.addAll(logAttrs);
                 break;
-            case STAGING_POSTFIX:
+            default:
+                result = new ArrayList<>(logAttrs);
                 result.add(new SpaceAttribute(false, SYS_OP_FIELD, SpaceAttributeTypes.NUMBER));
+                result.add(new SpaceAttribute(false, BUCKET_ID, SpaceAttributeTypes.UNSIGNED));
                 break;
         }
-        result.addAll(logAttrs);
         return result;
     }
 

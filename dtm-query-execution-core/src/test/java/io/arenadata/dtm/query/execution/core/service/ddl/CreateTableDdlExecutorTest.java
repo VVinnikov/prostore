@@ -26,8 +26,8 @@ import io.arenadata.dtm.query.execution.core.service.datasource.impl.DataSourceP
 import io.arenadata.dtm.query.execution.core.service.ddl.impl.CreateTableDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
-import io.arenadata.dtm.query.execution.core.service.metadata.impl.MetadataCalciteGeneratorImpl;
-import io.arenadata.dtm.query.execution.core.service.metadata.impl.MetadataExecutorImpl;
+import io.arenadata.dtm.query.execution.core.service.metadata.MetadataCalciteGeneratorImpl;
+import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutorImpl;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.apache.calcite.sql.SqlNode;

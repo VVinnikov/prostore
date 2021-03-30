@@ -25,7 +25,6 @@ public class MpprKafkaConnectorRequestFactoryImpl implements MpprKafkaConnectorR
                 .chunkSize(downloadMetadata.getChunkSize())
                 .avroSchema(downloadMetadata.getExternalSchema())
                 .metadata(request.getMetadata())
-                .sourceType(SourceType.ADQM)
                 .build();
     }
 }

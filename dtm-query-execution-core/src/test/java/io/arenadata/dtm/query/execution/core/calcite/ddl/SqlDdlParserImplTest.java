@@ -2,9 +2,7 @@ package io.arenadata.dtm.query.execution.core.calcite.ddl;
 
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
-import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckData;
-import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckDatabase;
-import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckTable;
+import io.arenadata.dtm.query.calcite.core.extension.check.*;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlAlterView;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateView;
@@ -35,6 +33,7 @@ public class SqlDdlParserImplTest {
             "    primary key (account_id)\n" +
             ") distributed by (account_id)";
     private static final String DROP_TABLE_QUERY = "drop table test.table_name";
+    private final SqlDialect sqlDialect = new SqlDialect(SqlDialect.EMPTY_CONTEXT);
     private CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
     private CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private final DefinitionService<SqlNode> definitionService =
@@ -153,26 +152,29 @@ public class SqlDdlParserImplTest {
         dropTable(DROP_TABLE_QUERY);
     }
 
+
+    @Test
+    void dropTableWithQuotedDestination() {
+        String query = DROP_TABLE_QUERY + " DATASOURCE_TYPE = 'adb'";
+        dropTable(query, sqlDropTable -> assertEquals(SourceType.ADB, sqlDropTable.getDestination()));
+    }
+
     @Test
     void dropTableWithDestination() {
-        Set<SourceType> selectedSourceTypes = new HashSet<>();
-        selectedSourceTypes.add(SourceType.ADB);
-        selectedSourceTypes.add(SourceType.ADG);
-        String query = String.format(DROP_TABLE_QUERY + " DATASOURCE_TYPE (%s)",
-                selectedSourceTypes.stream().map(SourceType::name).collect(Collectors.joining(", ")));
-        dropTable(query, sqlDropTable -> assertEquals(selectedSourceTypes, sqlDropTable.getDestination()));
+        String query = DROP_TABLE_QUERY + " DATASOURCE_TYPE = adb";
+        dropTable(query, sqlDropTable -> assertEquals(SourceType.ADB, sqlDropTable.getDestination()));
     }
 
     @Test
     void dropTableWithInformationSchema() {
-        String query = String.format(DROP_TABLE_QUERY + " DATASOURCE_TYPE (%s)",
+        String query = String.format(DROP_TABLE_QUERY + " DATASOURCE_TYPE = %s",
                 SourceType.INFORMATION_SCHEMA.name());
         assertThrows(SqlParseException.class, () -> dropTable(query));
     }
 
     @Test
     void dropTableWithInvalidDestination() {
-        String query = String.format(DROP_TABLE_QUERY + " DATASOURCE_TYPE (%s)", "adcvcb");
+        String query = String.format(DROP_TABLE_QUERY + " DATASOURCE_TYPE = %s", "adcvcb");
         assertThrows(SqlParseException.class, () -> dropTable(query));
     }
 
@@ -222,28 +224,89 @@ public class SqlDdlParserImplTest {
         String withoutColumns = "CHECK_DATA(test.testTable, 1)";
         String withIncorrectColumns = "CHECK_DATA(test.testTable, 1, [id,, name])";
         String withIncorrectDelta = "CHECK_DATA(test.testTable, a, [id, name])";
+
         SqlNode sqlNode1 = definitionService.processingQuery(withSchema);
         assertEquals(schema, ((SqlCheckData) sqlNode1).getSchema());
         assertEquals(table, ((SqlCheckData) sqlNode1).getTable());
         assertEquals(columns, ((SqlCheckData) sqlNode1).getColumns());
         assertEquals(deltaNum, ((SqlCheckData) sqlNode1).getDeltaNum());
+        assertEquals("CHECK_DATA(test.testtable, 1, [id, name])", sqlNode1.toSqlString(sqlDialect).toString());
 
         SqlNode sqlNode2 = definitionService.processingQuery(withoutSchema);
         assertNull(((SqlCheckData) sqlNode2).getSchema());
         assertEquals(table, ((SqlCheckData) sqlNode2).getTable());
         assertEquals(columns, ((SqlCheckData) sqlNode2).getColumns());
         assertEquals(deltaNum, ((SqlCheckData) sqlNode2).getDeltaNum());
+        assertEquals("CHECK_DATA(testtable, 1, [id, name])", sqlNode2.toSqlString(sqlDialect).toString());
 
         SqlNode sqlNode3 = definitionService.processingQuery(withoutColumns);
         assertEquals(schema, ((SqlCheckData) sqlNode3).getSchema());
         assertEquals(table, ((SqlCheckData) sqlNode3).getTable());
         assertNull(((SqlCheckData) sqlNode3).getColumns());
         assertEquals(deltaNum, ((SqlCheckData) sqlNode3).getDeltaNum());
+        assertEquals("CHECK_DATA(test.testtable, 1)", sqlNode3.toSqlString(sqlDialect).toString());
 
         assertThrows(SqlParseException.class, () -> definitionService.processingQuery(withIncorrectColumns));
         assertThrows(SqlParseException.class, () -> definitionService.processingQuery(withIncorrectDelta));
 
     }
+
+    @Test
+    void checkVersions() {
+        String correct = "CHECK_VERSIONS()";
+        String incorrect = "CHECK_VERSIONS(test)";
+
+        SqlNode sqlNode1 = definitionService.processingQuery(correct);
+        assertNull(((SqlCheckVersions) sqlNode1).getSchema());
+        assertThrows(SqlParseException.class, () -> definitionService.processingQuery(incorrect));
+    }
+
+    @Test
+    void checkSum() {
+        String schema = "test";
+        String table = "test_table";
+        Long deltaNum = 1L;
+        Set<String> columns = new HashSet<>(Arrays.asList("id", "name"));
+        String withSchema = "CHECK_SUM(1, test.test_table, [id, name])";
+        String withoutSchema = "CHECK_SUM(1, test_table, [id, name])";
+        String withoutColumns = "CHECK_SUM(1, test_table)";
+        String withoutTable = "CHECK_SUM(1)";
+        String withIncorrectColumns = "CHECK_SUM(1, test_table, [id,, name])";
+        String withIncorrectDelta = "CHECK_SUM(a, test_table, [id, name])";
+
+        SqlNode sqlNode1 = definitionService.processingQuery(withSchema);
+        assertEquals(deltaNum, ((SqlCheckSum) sqlNode1).getDeltaNum());
+        assertEquals(schema, ((SqlCheckSum) sqlNode1).getSchema());
+        assertEquals(table, ((SqlCheckSum) sqlNode1).getTable());
+        assertEquals(columns, ((SqlCheckSum) sqlNode1).getColumns());
+        assertEquals("CHECK_SUM(1, test.test_table, [id, name])", sqlNode1.toSqlString(sqlDialect).toString());
+
+        SqlNode sqlNode2 = definitionService.processingQuery(withoutSchema);
+        assertEquals(deltaNum, ((SqlCheckSum) sqlNode2).getDeltaNum());
+        assertNull(((SqlCheckSum) sqlNode2).getSchema());
+        assertEquals(table, ((SqlCheckSum) sqlNode2).getTable());
+        assertEquals(columns, ((SqlCheckSum) sqlNode2).getColumns());
+        assertEquals("CHECK_SUM(1, test_table, [id, name])", sqlNode2.toSqlString(sqlDialect).toString());
+
+        SqlNode sqlNode3 = definitionService.processingQuery(withoutColumns);
+        assertEquals(deltaNum, ((SqlCheckSum) sqlNode3).getDeltaNum());
+        assertNull(((SqlCheckSum) sqlNode3).getSchema());
+        assertEquals(table, ((SqlCheckSum) sqlNode3).getTable());
+        assertNull(((SqlCheckSum) sqlNode3).getColumns());
+        assertEquals("CHECK_SUM(1, test_table)", sqlNode3.toSqlString(sqlDialect).toString());
+
+        SqlNode sqlNode4 = definitionService.processingQuery(withoutTable);
+        assertEquals(deltaNum, ((SqlCheckSum) sqlNode4).getDeltaNum());
+        assertNull(((SqlCheckSum) sqlNode4).getSchema());
+        assertNull(((SqlCheckSum) sqlNode4).getTable());
+        assertNull(((SqlCheckSum) sqlNode4).getColumns());
+        assertEquals("CHECK_SUM(1)", sqlNode4.toSqlString(sqlDialect).toString());
+
+        assertThrows(SqlParseException.class, () -> definitionService.processingQuery(withIncorrectColumns));
+        assertThrows(SqlParseException.class, () -> definitionService.processingQuery(withIncorrectDelta));
+
+    }
+
 
     void dropTable(String query) {
         dropTable(query, sqlDropTable -> {

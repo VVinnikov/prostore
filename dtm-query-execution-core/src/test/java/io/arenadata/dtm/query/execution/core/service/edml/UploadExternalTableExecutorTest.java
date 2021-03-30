@@ -5,6 +5,7 @@ import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
+import io.arenadata.dtm.common.model.ddl.ExternalTableFormat;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
@@ -16,6 +17,7 @@ import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDefinitionServic
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.impl.DeltaServiceDaoImpl;
+import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.datasource.impl.DataSourcePluginServiceImpl;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadExternalTableExecutor;
@@ -23,7 +25,6 @@ import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadFailedExecu
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadKafkaExecutor;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import io.arenadata.dtm.query.execution.core.service.schema.impl.LogicalSchemaProviderImpl;
-import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.apache.calcite.sql.SqlInsert;
@@ -66,7 +67,7 @@ class UploadExternalTableExecutorTest {
         sourceTypes.addAll(Arrays.asList(SourceType.ADB, SourceType.ADG));
         sourceEntity = Entity.builder()
                 .entityType(EntityType.UPLOAD_EXTERNAL_TABLE)
-                .externalTableFormat("avro")
+                .externalTableFormat(ExternalTableFormat.AVRO)
                 .externalTableLocationPath("kafka://kafka-1.dtm.local:9092/topic")
                 .externalTableLocationType(ExternalTableLocationType.KAFKA)
                 .externalTableUploadMessageLimit(1000)
@@ -119,7 +120,8 @@ class UploadExternalTableExecutorTest {
 
         assertTrue(promise.future().succeeded());
         assertEquals(queryResult, promise.future().result());
-        verifyEvictCacheExecuted();
+        verify(evictQueryTemplateCacheService, times(2))
+                .evictByDatamartName(destEntity.getSchema());
     }
 
     @Test
@@ -155,7 +157,8 @@ class UploadExternalTableExecutorTest {
         assertTrue(promise.future().succeeded());
         assertEquals(queryResult, promise.future().result());
         assertEquals(context.getSysCn(), sysCn);
-        verifyEvictCacheExecuted();
+        verify(evictQueryTemplateCacheService, times(2))
+                .evictByDatamartName(destEntity.getSchema());
     }
 
     @Test

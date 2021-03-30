@@ -7,6 +7,7 @@ import io.arenadata.dtm.query.execution.plugin.adqm.service.MpprKafkaConnectorSe
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.WebClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,14 +33,8 @@ public class MpprKafkaConnectorServiceImpl implements MpprKafkaConnectorService 
     @Override
     public Future<QueryResult> call(MpprKafkaConnectorRequest request) {
         return Future.future(promise -> {
-            log.debug("Calling MpprKafkaConnector with parameters: host = {}, port = {}, url = {}, request = {}",
-                    adqmMpprProperties.getHost(),
-                    adqmMpprProperties.getPort(),
-                    adqmMpprProperties.getUrl(),
-                    request);
-            client.post(adqmMpprProperties.getPort(),
-                    adqmMpprProperties.getHost(),
-                    adqmMpprProperties.getUrl())
+            log.debug("Calling MpprKafkaConnector with url: {}", adqmMpprProperties.getLoadingUrl());
+            client.postAbs(adqmMpprProperties.getLoadingUrl())
                     .sendJson(request, ar -> {
                         if (ar.succeeded()) {
                             if (ar.result().statusCode() == HttpURLConnection.HTTP_OK) {

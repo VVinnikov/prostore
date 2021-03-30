@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.calcite.core.extension.ddl;
 
 import io.arenadata.dtm.query.calcite.core.extension.parser.ParseException;
+import io.arenadata.dtm.query.calcite.core.util.SqlNodeUtil;
 import lombok.Getter;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -19,21 +20,9 @@ public class SqlCreateView extends SqlCreate {
 
     public SqlCreateView(SqlParserPos pos, boolean replace, SqlIdentifier name, SqlNodeList columnList, SqlNode query) throws ParseException {
         super(OPERATOR, pos, replace, false);
-        this.name = (SqlIdentifier) Objects.requireNonNull(name);
+        this.name = Objects.requireNonNull(name);
         this.columnList = columnList;
-        this.query = (SqlNode) checkQueryAndGet(Objects.requireNonNull(query));
-    }
-
-    private SqlNode checkQueryAndGet(SqlNode query) throws ParseException {
-        if (query instanceof SqlSelect) {
-            if (((SqlSelect) query).getFrom() == null) {
-                throw new ParseException("View query must have from clause!");
-            } else {
-                return query;
-            }
-        } else {
-            throw new ParseException(String.format("Type %s of query does not support!", query.getClass().getName()));
-        }
+        this.query = SqlNodeUtil.checkViewQueryAndGet(Objects.requireNonNull(query));
     }
 
     public List<SqlNode> getOperandList() {

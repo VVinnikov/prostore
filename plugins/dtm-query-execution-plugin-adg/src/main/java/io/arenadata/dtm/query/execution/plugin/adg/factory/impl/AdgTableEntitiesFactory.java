@@ -11,10 +11,7 @@ import io.arenadata.dtm.query.execution.plugin.api.factory.TableEntitiesFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.arenadata.dtm.query.execution.plugin.adg.constants.ColumnFields.*;
@@ -49,26 +46,45 @@ public class AdgTableEntitiesFactory implements TableEntitiesFactory<AdgTables<S
     }
 
     private List<SpaceAttribute> createSpaceAttributes(List<EntityField> fields, String tablePosfix) {
-        /* fields order:
-         1. fields from a primary key
-         2. bucket_id field
-         3. all system fields that are part of some index
-         4. logical fields
-         */
-        final List<SpaceAttribute> pkAttrs = EntityFieldUtils.getPrimaryKeyList(fields).stream()
-                .map(this::createAttribute)
-                .collect(Collectors.toList());
-        final SpaceAttribute bucketIdAttr = new SpaceAttribute(false, BUCKET_ID, SpaceAttributeTypes.UNSIGNED);
-        final List<SpaceAttribute> indSysAttrs = createIndexedSysAttrs(tablePosfix);
-        final List<SpaceAttribute> logicalNonPkAttrs = fields.stream()
-                .filter(f -> f.getPrimaryOrder() == null)
-                .map(this::createAttribute)
-                .collect(Collectors.toList());
-        List<SpaceAttribute> attributes = new ArrayList<>(pkAttrs);
-        attributes.add(bucketIdAttr);
-        attributes.addAll(indSysAttrs);
-        attributes.addAll(logicalNonPkAttrs);
-        return attributes;
+        if (STAGING_POSTFIX.equalsIgnoreCase(tablePosfix)) {
+                /* fields order:
+                 1. logical fields
+                 2. all system fields that are part of some index
+                 3. bucket_id field
+                */
+            final SpaceAttribute bucketIdAttr = new SpaceAttribute(false, BUCKET_ID, SpaceAttributeTypes.UNSIGNED);
+            final List<SpaceAttribute> indSysAttrs = createIndexedSysAttrs(tablePosfix);
+            final List<SpaceAttribute> logicalNonPkAttrs = fields.stream()
+                    .sorted(Comparator.comparing(EntityField::getOrdinalPosition))
+                    .map(this::createAttribute)
+                    .collect(Collectors.toList());
+            List<SpaceAttribute> attributes = new ArrayList<>();
+            attributes.addAll(logicalNonPkAttrs);
+            attributes.addAll(indSysAttrs);
+            attributes.add(bucketIdAttr);
+            return attributes;
+        } else {
+                /* fields order:
+                 1. fields from a primary key
+                 2. bucket_id field
+                 3. all system fields that are part of some index
+                 4. logical fields
+                */
+            final List<SpaceAttribute> pkAttrs = EntityFieldUtils.getPrimaryKeyList(fields).stream()
+                    .map(this::createAttribute)
+                    .collect(Collectors.toList());
+            final SpaceAttribute bucketIdAttr = new SpaceAttribute(false, BUCKET_ID, SpaceAttributeTypes.UNSIGNED);
+            final List<SpaceAttribute> indSysAttrs = createIndexedSysAttrs(tablePosfix);
+            final List<SpaceAttribute> logicalNonPkAttrs = fields.stream()
+                    .filter(f -> f.getPrimaryOrder() == null)
+                    .map(this::createAttribute)
+                    .collect(Collectors.toList());
+            List<SpaceAttribute> attributes = new ArrayList<>(pkAttrs);
+            attributes.add(bucketIdAttr);
+            attributes.addAll(indSysAttrs);
+            attributes.addAll(logicalNonPkAttrs);
+            return attributes;
+        }
     }
 
     private List<SpaceIndex> createSpaceIndexes(List<EntityField> fields, String tablePosfix) {

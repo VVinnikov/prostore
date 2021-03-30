@@ -7,7 +7,7 @@ import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
-import io.arenadata.dtm.common.plugin.exload.Format;
+import io.arenadata.dtm.common.model.ddl.ExternalTableFormat;
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.plugin.status.kafka.KafkaPartitionInfo;
 import io.arenadata.dtm.common.reader.QueryRequest;
@@ -17,6 +17,7 @@ import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.kafka.core.configuration.properties.KafkaProperties;
 import io.arenadata.dtm.query.execution.core.configuration.properties.CoreDtmSettings;
 import io.arenadata.dtm.query.execution.core.configuration.properties.EdmlProperties;
+import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.core.factory.MppwKafkaRequestFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.MppwKafkaRequestFactoryImpl;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
@@ -24,7 +25,6 @@ import io.arenadata.dtm.query.execution.core.service.datasource.impl.DataSourceP
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadKafkaExecutor;
 import io.arenadata.dtm.query.execution.core.service.query.CheckColumnTypesService;
 import io.arenadata.dtm.query.execution.core.service.query.impl.CheckColumnTypesServiceImpl;
-import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaParameter;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
@@ -549,7 +549,7 @@ class UploadKafkaExecutorTest {
                         .externalSchema("")
                         .uploadMessageLimit(1000)
                         .locationPath("kafka://kafka-1.dtm.local:9092/topic")
-                        .format(Format.AVRO)
+                        .format(ExternalTableFormat.AVRO)
                         .build())
                 .brokers(Collections.singletonList(new KafkaBrokerInfo("kafka.host", 9092)))
                 .topic("topic")

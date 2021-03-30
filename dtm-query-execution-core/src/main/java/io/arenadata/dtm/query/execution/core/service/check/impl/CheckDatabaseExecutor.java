@@ -2,12 +2,14 @@ package io.arenadata.dtm.query.execution.core.service.check.impl;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
+import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.extension.check.CheckType;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.check.CheckContext;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
+import io.arenadata.dtm.query.execution.core.factory.CheckQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckException;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
@@ -28,24 +30,28 @@ public class CheckDatabaseExecutor implements CheckExecutor {
     private final DataSourcePluginService dataSourcePluginService;
     private final EntityDao entityDao;
     private final DatamartDao datamartDao;
+    private final CheckQueryResultFactory queryResultFactory;
 
     @Autowired
     public CheckDatabaseExecutor(DataSourcePluginService dataSourcePluginService,
                                  EntityDao entityDao,
-                                 DatamartDao datamartDao) {
+                                 DatamartDao datamartDao,
+                                 CheckQueryResultFactory queryResultFactory) {
         this.dataSourcePluginService = dataSourcePluginService;
         this.entityDao = entityDao;
         this.datamartDao = datamartDao;
+        this.queryResultFactory = queryResultFactory;
     }
 
     @Override
-    public Future<String> execute(CheckContext context) {
+    public Future<QueryResult> execute(CheckContext context) {
         String datamartMnemonic = context.getRequest().getQueryRequest().getDatamartMnemonic();
         return datamartExists(datamartMnemonic)
                 .compose(exist -> exist ? entityDao.getEntityNamesByDatamart(datamartMnemonic)
                         : Future.failedFuture(new DatamartNotExistsException(datamartMnemonic)))
                 .compose(names -> getEntities(names, datamartMnemonic))
-                .compose(entities -> checkEntities(entities, context));
+                .compose(entities -> checkEntities(entities, context))
+                .map(queryResultFactory::create);
     }
 
     private Future<Boolean> datamartExists(String datamart) {

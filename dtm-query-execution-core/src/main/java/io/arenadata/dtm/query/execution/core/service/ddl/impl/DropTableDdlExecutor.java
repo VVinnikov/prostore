@@ -8,6 +8,7 @@ import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.post.PostSqlActionType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlDropTable;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.cache.EntityKey;
@@ -73,6 +74,8 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
             Entity entity = createClassTable(datamartName, tableName);
             context.setEntity(entity);
             context.setDatamartName(datamartName);
+            SqlDropTable sqlDropTable = (SqlDropTable) context.getSqlNode();
+            context.setSourceType(sqlDropTable.getDestination());
             context.setDdlType(DdlType.DROP_TABLE);
             dropTable(context, containsIfExistsCheck(context.getRequest().getQueryRequest().getSql()))
                     .onSuccess(r -> promise.complete(QueryResult.emptyResult()))
@@ -87,7 +90,7 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
     protected Future<Void> dropTable(DdlRequestContext context, boolean ifExists) {
         return getEntity(context, ifExists)
                 .compose(entity -> Optional.ofNullable(entity)
-                        .map(e -> checkViewsAndUpdateEntity(context, e))
+                        .map(e -> checkViewsAndUpdateEntity(context, e, ifExists))
                         .orElse(Future.succeededFuture()));
     }
 
@@ -117,12 +120,12 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
         });
     }
 
-    private Future<Void> checkViewsAndUpdateEntity(DdlRequestContext context, Entity entity) {
+    private Future<Void> checkViewsAndUpdateEntity(DdlRequestContext context, Entity entity, boolean ifExists) {
         return checkRelatedViews(entity)
-                .compose(e -> updateEntity(context, e));
+                .compose(e -> updateEntity(context, e, ifExists));
     }
 
-    private Future<Void> updateEntity(DdlRequestContext context, Entity entity) {
+    private Future<Void> updateEntity(DdlRequestContext context, Entity entity, boolean ifExists) {
         //we have to use source type from queryRequest.sourceType because
         //((SqlDropTable) context.getQuery()).getDestination() is always null,
         // since we cut sourceType from all query in HintExtractor
@@ -133,22 +136,25 @@ public class DropTableDdlExecutor extends QueryResultDdlExecutor {
         }
         Optional<SourceType> requestDestination = Optional.ofNullable(context.getSourceType());
         if (!requestDestination.isPresent()) {
-            context.getEntity().setDestination(dataSourcePluginService.getSourceTypes());
+            val datasourcesForDeletation = dataSourcePluginService.getSourceTypes();
+            datasourcesForDeletation.retainAll(entity.getDestination());
+            context.getEntity().setDestination(datasourcesForDeletation);
             return dropEntityFromEverywhere(context, entity.getName());
         } else {
             final Set<SourceType> reqSourceTypes = newHashSet(requestDestination.get());
-            return dropFromDataSource(context, entity, reqSourceTypes);
+            return dropFromDataSource(context, entity, reqSourceTypes, ifExists);
         }
     }
 
     private Future<Void> dropFromDataSource(DdlRequestContext context,
                                             Entity entity,
-                                            Set<SourceType> requestDestination) {
+                                            Set<SourceType> requestDestination,
+                                            boolean ifExists) {
         final Set<SourceType> notExistsDestination = requestDestination.stream()
                 .filter(type -> !entity.getDestination().contains(type))
                 .collect(Collectors.toSet());
         if (!notExistsDestination.isEmpty()) {
-            return Future.failedFuture(
+            return ifExists ? Future.succeededFuture() : Future.failedFuture(
                     new DtmException(String.format("Table [%s] doesn't exist in [%s]",
                             entity.getName(),
                             notExistsDestination)));

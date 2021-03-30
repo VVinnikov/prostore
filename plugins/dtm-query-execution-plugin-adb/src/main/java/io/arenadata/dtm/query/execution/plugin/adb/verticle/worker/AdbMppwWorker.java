@@ -1,9 +1,9 @@
 package io.arenadata.dtm.query.execution.plugin.adb.verticle.worker;
 
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.MppwTopic;
+import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwKafkaLoadRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwKafkaRequestContext;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwTransferDataRequest;
-import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwKafkaLoadRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.handler.AdbMppwHandler;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
@@ -18,6 +18,7 @@ import java.util.Map;
 @Slf4j
 public class AdbMppwWorker extends AbstractVerticle {
 
+    public static final int ERROR_CODE = 400;
     private final Map<String, MppwKafkaRequestContext> requestMap;
     private final Map<String, Future> resultMap;
     private final AdbMppwHandler mppwTransferDataHandler;
@@ -56,7 +57,11 @@ public class AdbMppwWorker extends AbstractVerticle {
         if (transferPromise != null) {
             transferPromise.onComplete(ar -> {
                 requestMap.remove(requestId);
-                requestMessage.reply(requestId);
+                if (ar.failed()) {
+                    requestMessage.fail(ERROR_CODE, ar.cause().getMessage());
+                } else {
+                    requestMessage.reply(requestId);
+                }
             });
         } else {
             requestMessage.reply(requestId);
@@ -77,7 +82,10 @@ public class AdbMppwWorker extends AbstractVerticle {
                                 requestContext.getMppwKafkaLoadRequest().getRequestId());
                         promise.complete();
                     })
-                    .onFailure(promise::fail);
+                    .onFailure(err -> {
+                        log.error("Error transferring data: {}", requestContext.getMppwKafkaLoadRequest(), err);
+                        promise.fail(err);
+                    });
         }
     }
 }

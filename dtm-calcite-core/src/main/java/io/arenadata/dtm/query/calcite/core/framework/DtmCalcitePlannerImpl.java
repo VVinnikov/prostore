@@ -199,7 +199,7 @@ public class DtmCalcitePlannerImpl implements Planner, RelOptTable.ViewExpander 
         RexBuilder rexBuilder = this.createRexBuilder();
         RelOptCluster cluster = RelOptCluster.create(this.planner, rexBuilder);
         org.apache.calcite.sql2rel.SqlToRelConverter.Config config = SqlToRelConverter.configBuilder().withConfig(this.sqlToRelConverterConfig).withTrimUnusedFields(false).build();
-        SqlToRelConverter sqlToRelConverter = new SqlToRelConverter(this, this.validator, this.createCatalogReader(), cluster, this.convertletTable, config);
+        SqlToRelConverter sqlToRelConverter = new DtmSqlToRelConverter(this, this.validator, this.createCatalogReader(), cluster, this.convertletTable, config);
         this.root = sqlToRelConverter.convertQuery(this.validatedSqlNode, false, true);
         this.root = this.root.withRel(sqlToRelConverter.flattenTypes(this.root.rel, true));
         RelBuilder relBuilder = config.getRelBuilderFactory().create(cluster, (RelOptSchema) null);
@@ -227,7 +227,7 @@ public class DtmCalcitePlannerImpl implements Planner, RelOptTable.ViewExpander 
         RexBuilder rexBuilder = this.createRexBuilder();
         RelOptCluster cluster = RelOptCluster.create(this.planner, rexBuilder);
         org.apache.calcite.sql2rel.SqlToRelConverter.Config config = SqlToRelConverter.configBuilder().withConfig(this.sqlToRelConverterConfig).withTrimUnusedFields(false).build();
-        SqlToRelConverter sqlToRelConverter = new SqlToRelConverter(this, validator, catalogReader, cluster, this.convertletTable, config);
+        SqlToRelConverter sqlToRelConverter = new DtmSqlToRelConverter(this, validator, catalogReader, cluster, this.convertletTable, config);
         RelRoot root = sqlToRelConverter.convertQuery(sqlNode, true, false);
         RelRoot root2 = root.withRel(sqlToRelConverter.flattenTypes(root.rel, true));
         RelBuilder relBuilder = config.getRelBuilderFactory().create(cluster, (RelOptSchema) null);

@@ -2,6 +2,7 @@ package io.arenadata.dtm.query.execution.core.service.dml.impl;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
+import io.arenadata.dtm.query.calcite.core.extension.snapshot.SqlDeltaSnapshot;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.calcite.core.node.SqlTreeNode;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
@@ -102,10 +103,8 @@ public class LogicViewReplacerImpl implements LogicViewReplacer {
                                         entity);
                             } else {
                                 if (currSnapshot != null) {
-                                    SqlSnapshot parentSnapshot = parentNode.getNode();
-                                    SqlSnapshot childSnapshot = new SqlSnapshot(SqlParserPos.QUOTED_ZERO,
-                                            childNode.getNode(),
-                                            parentSnapshot.getPeriod());
+                                    SqlDeltaSnapshot parentSnapshot = parentNode.getNode();
+                                    SqlSnapshot childSnapshot = parentSnapshot.copy(childNode.getNode());
                                     childNode.getSqlNodeSetter().accept(childSnapshot);
                                 }
                                 return Future.succeededFuture();

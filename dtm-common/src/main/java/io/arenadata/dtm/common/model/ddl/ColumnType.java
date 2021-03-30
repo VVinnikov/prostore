@@ -1,31 +1,36 @@
 package io.arenadata.dtm.common.model.ddl;
 
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.sql.Types;
 
 /**
  * Logical model data types
  */
 public enum ColumnType {
-    VARCHAR(Types.VARCHAR, new String[]{"varchar"}),
-    CHAR(Types.CHAR, new String[]{"char"}),
-    BIGINT(Types.BIGINT, new String[]{"bigint"}),
-    INT(Types.INTEGER, new String[]{"int", "integer"}),
-    DOUBLE(Types.DOUBLE, new String[]{"double"}),
-    FLOAT(Types.FLOAT, new String[]{"float"}),
-    DATE(Types.DATE, new String[]{"date"}),
-    TIME(Types.TIME, new String[]{"time"}),
-    TIMESTAMP(Types.TIMESTAMP, new String[]{"timestamp"}),
-    BOOLEAN(Types.BOOLEAN, new String[]{"boolean"}),
-    BLOB(Types.BLOB, new String[]{"blob"}),
-    UUID(Types.OTHER, new String[]{"uuid"}),
-    ANY(Types.OTHER, new String[]{"any"});
+    VARCHAR(Types.VARCHAR, String.class, new String[]{"varchar"}),
+    CHAR(Types.CHAR, String.class, new String[]{"char"}),
+    BIGINT(Types.BIGINT, Long.class, new String[]{"bigint"}),
+    INT(Types.INTEGER,Long.class, new String[]{"int", "integer"}),
+    DOUBLE(Types.DOUBLE, Double.class, new String[]{"double"}),
+    FLOAT(Types.FLOAT, Float.class, new String[]{"float"}),
+    DATE(Types.DATE, Date.class, new String[]{"date"}),
+    TIME(Types.TIME, Time.class, new String[]{"time"}),
+    TIMESTAMP(Types.TIMESTAMP, Timestamp.class, new String[]{"timestamp"}),
+    BOOLEAN(Types.BOOLEAN, Boolean.class, new String[]{"boolean"}),
+    BLOB(Types.BLOB, Object.class, new String[]{"blob"}),
+    UUID(Types.OTHER, String.class, new String[]{"uuid"}),
+    ANY(Types.OTHER, Object.class, new String[]{"any"});
 
     private final int sqlType;
     private final String[] aliases;
+    private final Class<?> clazz;
 
-    ColumnType(int sqlType, String[] aliases) {
+    ColumnType(int sqlType, Class<?> clazz, String[] aliases) {
         this.sqlType = sqlType;
         this.aliases = aliases;
+        this.clazz = clazz;
     }
 
     public static ColumnType fromTypeString(String typeString) {
@@ -51,5 +56,9 @@ public enum ColumnType {
 
     public String[] getAliases() {
         return aliases;
+    }
+
+    public Class<?> getClazz() {
+        return clazz;
     }
 }

@@ -240,7 +240,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                         } else {
                             String stopStatus = collectStatus(mppwStopFutureMap);
                             RuntimeException e = new DtmException(
-                                    String.format("The offset of one of the plugins has changed: \n %s", stopStatus),
+                                    String.format("The offset of one of the plugins has changed: %n %s", stopStatus),
                                     stopComplete.cause());
                             resultHandler.handle(Future.failedFuture(e));
                         }
@@ -261,7 +261,10 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                         log.debug("Completed stopping mppw loading by plugin: {}", ds);
                         promise.complete(queryResult);
                     })
-                    .onFailure(promise::fail);
+                    .onFailure(fail -> {
+                        log.error("Error in stopping mppw loading by plugin: {}", ds, fail);
+                        promise.complete(QueryResult.emptyResult());
+                    });
         });
     }
 

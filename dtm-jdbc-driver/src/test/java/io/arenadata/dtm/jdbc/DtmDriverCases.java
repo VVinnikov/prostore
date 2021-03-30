@@ -3,10 +3,10 @@ package io.arenadata.dtm.jdbc;
 import io.arenadata.dtm.jdbc.core.BaseConnection;
 import io.arenadata.dtm.jdbc.ext.DtmConnectionImpl;
 import io.arenadata.dtm.jdbc.ext.DtmPreparedStatement;
+import io.arenadata.dtm.jdbc.ext.DtmResultSet;
+import io.arenadata.dtm.jdbc.ext.DtmStatement;
 
 import java.sql.*;
-import java.time.*;
-import java.time.format.DateTimeFormatter;
 
 public class DtmDriverCases {
 
@@ -15,8 +15,30 @@ public class DtmDriverCases {
         String user = "";
         String schema = "";
         String url = String.format("jdbc:adtm://%s/", host);
-
         BaseConnection conn = new DtmConnectionImpl(host, user, schema, null, url);
+        DtmStatement stmnt = (DtmStatement) conn.createStatement();
+        DatabaseMetaData metaData = conn.getMetaData();
+        //ResultSet resultSet = stmnt.executeQuery("use dtm_1012");
+        //ResultSet resultSet = metaData.getSchemas();
+        //ResultSet resultSet = metaData.getColumns("dtm_1012", "", "accounts_all", null);
+        //final ResultSet resultSet = testPrepareStmnt(conn);
+        final ResultSet resultSet = testStmnt(conn);
+        //Time t9 = (Time) resultSet.getObject(10);
+        //Time t10 = (Time) resultSet.getObject(11);
+        Timestamp t5 = (Timestamp) resultSet.getObject(5);
+        Timestamp t6 = (Timestamp) resultSet.getObject(6);
+        //Timestamp t12 = (Timestamp) resultSet.getObject(13);
+        //resultSet.findColumn("TABLE_CAT");
+        System.out.println(resultSet);
+    }
+
+    private static ResultSet testStmnt(BaseConnection conn) throws SQLException {
+        String sql = "select t1.* from dtm_1046.accounts t1 datasource_type='ADB'";
+        DtmStatement stmnt = (DtmStatement) conn.createStatement();
+        return stmnt.executeQuery(sql);
+    }
+
+    private static ResultSet testPrepareStmnt(BaseConnection conn) throws SQLException {
         final String sql = "select * from dtm_928_2.all_types_table " +
                 "where id = ? " +
                 " and double_col = ?" +
@@ -47,6 +69,6 @@ public class DtmDriverCases {
         stmnt.setString(10, "d92beee8-749f-4539-aa15-3d2941dbb0f1");
         stmnt.setString(11, "c");
         final ResultSet resultSet = stmnt.executeQuery();
-        System.out.println(resultSet);
+        return resultSet;
     }
 }

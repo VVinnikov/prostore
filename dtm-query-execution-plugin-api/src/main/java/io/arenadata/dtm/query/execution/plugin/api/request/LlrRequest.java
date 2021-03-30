@@ -9,7 +9,9 @@ import io.arenadata.dtm.query.execution.plugin.api.dto.PluginRequest;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.type.SqlTypeName;
 
 import java.util.List;
 import java.util.UUID;
@@ -20,27 +22,36 @@ public class LlrRequest extends PluginRequest {
 
     private final QueryTemplateResult sourceQueryTemplateResult;
     private final List<DeltaInformation> deltaInformations;
+    private final List<SqlTypeName> parameterTypes;
     private final List<ColumnMetadata> metadata;
     private final QueryParameters parameters;
     private final List<Datamart> schema;
-    private final SqlNode sqlNode;
+    private final SqlNode originalQuery;
+    private final SqlNode withoutViewsQuery;
+    private final RelRoot relRoot;
 
-    @Builder
+    @Builder(toBuilder = true)
     public LlrRequest(UUID requestId,
-                      String envName,
-                      String datamartMnemonic,
-                      SqlNode sqlNode,
-                      List<Datamart> schema,
-                      List<ColumnMetadata> metadata,
                       QueryTemplateResult sourceQueryTemplateResult,
                       List<DeltaInformation> deltaInformations,
-                      QueryParameters parameters) {
+                      List<SqlTypeName> parameterTypes,
+                      List<ColumnMetadata> metadata,
+                      QueryParameters parameters,
+                      String datamartMnemonic,
+                      List<Datamart> schema,
+                      SqlNode originalQuery,
+                      SqlNode withoutViewsQuery,
+                      String envName,
+                      RelRoot relRoot) {
         super(requestId, envName, datamartMnemonic);
-        this.sqlNode = sqlNode;
-        this.schema = schema;
-        this.metadata = metadata;
         this.sourceQueryTemplateResult = sourceQueryTemplateResult;
         this.deltaInformations = deltaInformations;
+        this.parameterTypes = parameterTypes;
+        this.originalQuery = originalQuery;
+        this.withoutViewsQuery = withoutViewsQuery;
         this.parameters = parameters;
+        this.metadata = metadata;
+        this.relRoot = relRoot;
+        this.schema = schema;
     }
 }

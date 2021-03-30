@@ -3,7 +3,9 @@ package io.arenadata.dtm.query.execution.plugin.api;
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.common.version.VersionInfo;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckVersionRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
 import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
@@ -16,6 +18,7 @@ import io.arenadata.dtm.query.execution.plugin.api.request.QueryCostRequest;
 import io.vertx.core.Future;
 import org.springframework.plugin.core.Plugin;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -118,6 +121,12 @@ public interface DtmDataSourcePlugin extends Plugin<SourceType> {
      * @return checksum
      */
     Future<Long> checkDataByHashInt32(CheckDataByHashInt32Request request);
+
+    /**
+     * @param request CheckVersionRequest
+     * @return list of version info
+     */
+    Future<List<VersionInfo>> checkVersion(CheckVersionRequest request);
 
     /**
      * @param request truncate params

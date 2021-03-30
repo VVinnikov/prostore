@@ -10,6 +10,8 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao
 import io.arenadata.dtm.query.execution.core.dto.config.ConfigRequestContext;
 import io.arenadata.dtm.query.execution.core.service.config.impl.ConfigStorageAddDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.service.init.CoreInitializationService;
+import io.arenadata.dtm.query.execution.core.service.init.impl.CoreInitializationServiceImpl;
 import io.arenadata.dtm.query.execution.plugin.api.request.ConfigRequest;
 import io.vertx.core.Future;
 import org.apache.calcite.sql.SqlNode;
@@ -25,12 +27,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-public class ConfigStorageAddDdlExecutorTest {
+class ConfigStorageAddDdlExecutorTest {
     private final CalciteDefinitionService calciteDefinitionService = mock(CalciteDefinitionService.class);
     private final DataSourcePluginService dataSourcePluginService = mock(DataSourcePluginService.class);
+    private final CoreInitializationService initializationService = mock(CoreInitializationServiceImpl.class);
     private final DatamartDao datamartDao = mock(DatamartDao.class);
     private final ConfigStorageAddDdlExecutor configStorageAddDdlExecutor =
-            new ConfigStorageAddDdlExecutor(calciteDefinitionService, dataSourcePluginService, datamartDao);
+            new ConfigStorageAddDdlExecutor(calciteDefinitionService, dataSourcePluginService, datamartDao, initializationService);
 
     @BeforeEach
     void init() {
@@ -38,6 +41,7 @@ public class ConfigStorageAddDdlExecutorTest {
         when(datamartDao.getDatamarts()).thenReturn(Future.succeededFuture(Collections.singletonList("schema")));
         when(dataSourcePluginService.ddl(any(), any(), any())).thenReturn(Future.succeededFuture());
         when(calciteDefinitionService.processingQuery(any())).thenReturn(mock(SqlNode.class));
+        when(initializationService.execute(any())).thenReturn(Future.succeededFuture());
     }
 
     @Test

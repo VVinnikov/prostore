@@ -10,10 +10,11 @@ import io.arenadata.dtm.query.calcite.core.extension.config.function.SqlConfigSt
 import io.arenadata.dtm.query.calcite.core.service.impl.CalciteDefinitionService;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.dto.config.ConfigRequestContext;
-import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.core.service.config.ConfigExecutor;
+import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.service.init.CoreInitializationService;
+import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import lombok.SneakyThrows;
@@ -37,14 +38,16 @@ public class ConfigStorageAddDdlExecutor implements ConfigExecutor {
     private final CalciteDefinitionService calciteDefinitionService;
     private final DataSourcePluginService dataSourcePluginService;
     private final DatamartDao datamartDao;
+    private final CoreInitializationService initializationService;
 
     @Autowired
     public ConfigStorageAddDdlExecutor(@Qualifier("coreCalciteDefinitionService") CalciteDefinitionService calciteDefinitionService,
                                        DataSourcePluginService dataSourcePluginService,
-                                       DatamartDao datamartDao) {
+                                       DatamartDao datamartDao, CoreInitializationService initializationService) {
         this.calciteDefinitionService = calciteDefinitionService;
         this.dataSourcePluginService = dataSourcePluginService;
         this.datamartDao = datamartDao;
+        this.initializationService = initializationService;
     }
 
     @Override
@@ -53,12 +56,12 @@ public class ConfigStorageAddDdlExecutor implements ConfigExecutor {
             SqlConfigStorageAdd configStorageAdd = (SqlConfigStorageAdd) context.getSqlNode();
             if (configStorageAdd.getSourceType() != null) {
                 val sourceType = configStorageAdd.getSourceType();
-                //context.setSourceType(sourceType);//TODO check
                 if (dataSourcePluginService.getSourceTypes().contains(sourceType)) {
                     datamartDao.getDatamarts()
                             .compose(datamarts -> joinCreateDatamartFutures(sourceType,
                                     datamarts,
                                     context))
+                            .compose(v -> initializationService.execute(sourceType))
                             .onSuccess(success -> p.complete(QueryResult.emptyResult()))
                             .onFailure(error -> p.fail(new DtmException(String.format(CAN_T_ADD_STORAGE, sourceType))));
                 } else {

@@ -29,7 +29,8 @@ public class AdbDtmDataSourcePlugin extends AbstractDtmDataSourcePlugin {
             CheckTableService checkTableService,
             CheckDataService checkDataService,
             TruncateHistoryService truncateService,
-            CheckVersionService checkVersionService) {
+            CheckVersionService checkVersionService,
+            PluginInitializationService initializationService) {
         super(ddlService,
                 adbLlrService,
                 adbMpprService,
@@ -39,7 +40,8 @@ public class AdbDtmDataSourcePlugin extends AbstractDtmDataSourcePlugin {
                 checkTableService,
                 checkDataService,
                 checkVersionService,
-                truncateService);
+                truncateService,
+                initializationService);
     }
 
     @Override

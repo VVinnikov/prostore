@@ -58,7 +58,6 @@ public class AdbMppwWorker extends AbstractVerticle {
             transferPromise.onComplete(ar -> {
                 requestMap.remove(requestId);
                 if (ar.failed()) {
-                    log.error("Failed to stop request: {}", requestId, ar.cause());
                     requestMessage.fail(ERROR_CODE, ar.cause().getMessage());
                 } else {
                     requestMessage.reply(requestId);

@@ -14,11 +14,13 @@ public class DtmCalciteSqlValidator extends SqlValidatorImpl {
         super(opTab, catalogReader, typeFactory, conformance);
     }
 
+    @Override
     protected RelDataType getLogicalSourceRowType(RelDataType sourceRowType, SqlInsert insert) {
         RelDataType superType = super.getLogicalSourceRowType(sourceRowType, insert);
         return ((JavaTypeFactory) this.typeFactory).toSql(superType);
     }
 
+    @Override
     protected RelDataType getLogicalTargetRowType(RelDataType targetRowType, SqlInsert insert) {
         RelDataType superType = super.getLogicalTargetRowType(targetRowType, insert);
         return ((JavaTypeFactory) this.typeFactory).toSql(superType);

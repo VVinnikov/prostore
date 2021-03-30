@@ -28,12 +28,7 @@ public class AdbCheckDataService implements CheckDataService {
             "SELECT 1 " +
             "FROM %s.%s_actual " +
             "WHERE sys_from = %d) AS tmp";
-    private static final String CREATE_OR_REPLACE_FUNC = "CREATE OR REPLACE FUNCTION dtmInt32Hash(bytea) RETURNS integer\n" +
-            "    AS 'select get_byte($1, 0)+(get_byte($1, 1)<<8)+(get_byte($1, 2)<<16)+(get_byte($1, 3)<<24)' \n" +
-            "    LANGUAGE SQL\n" +
-            "    IMMUTABLE\n" +
-            "    LEAKPROOF\n" +
-            "    RETURNS NULL ON NULL INPUT;";
+
     private static final String CHECK_DATA_BY_HASH_TEMPLATE =
             "SELECT sum(dtmInt32Hash(MD5(concat(%s))::bytea)) FROM\n" +
                     "(\n" +
@@ -73,8 +68,7 @@ public class AdbCheckDataService implements CheckDataService {
 
     @Override
     public Future<Long> checkDataByHashInt32(CheckDataByHashInt32Request request) {
-        return queryExecutor.executeUpdate(CREATE_OR_REPLACE_FUNC)
-                .compose(v -> checkDataByHash(request));
+        return checkDataByHash(request);
     }
 
     private Future<Long> checkDataByHash(CheckDataByHashInt32Request params) {

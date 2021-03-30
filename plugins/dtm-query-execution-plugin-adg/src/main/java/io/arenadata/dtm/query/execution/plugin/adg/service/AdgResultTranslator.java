@@ -6,5 +6,5 @@ import java.util.List;
  * Result translator for Tarantool
  */
 public interface AdgResultTranslator {
-    List<?> translate(List<?> list);
+    List<Object> translate(List<Object> list);
 }

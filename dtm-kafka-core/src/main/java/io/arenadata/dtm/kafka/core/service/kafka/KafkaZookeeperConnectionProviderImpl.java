@@ -12,7 +12,6 @@ import org.apache.zookeeper.ZooKeeper;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import static org.apache.zookeeper.Watcher.Event.KeeperState.SyncConnected;
@@ -57,6 +56,7 @@ public class KafkaZookeeperConnectionProviderImpl implements KafkaZookeeperConne
                 });
         connectionLatch.await(properties.getConnectionTimeoutMs(), TimeUnit.MILLISECONDS);
         if (!synConnected) {
+            connection.close();
             throw new DtmException(String.format("Zookeeper connection timed out: [%d] ms",
                     properties.getConnectionTimeoutMs()));
         }

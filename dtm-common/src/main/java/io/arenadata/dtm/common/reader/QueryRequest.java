@@ -1,6 +1,5 @@
 package io.arenadata.dtm.common.reader;
 
-import io.arenadata.dtm.common.delta.DeltaInformation;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,7 +14,7 @@ import java.util.UUID;
  * Query request for receiving data
  */
 @Data
-@Builder
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class QueryRequest {
@@ -36,45 +35,19 @@ public class QueryRequest {
     private String sql;
 
     /**
-     * Name of environment
+     * attribute of prepare request
      */
-    private String envName;
+    private boolean isPrepare;
 
     /**
      * Parameters (optional)
      */
-    private List<String> parameters;
-
-    /**
-     * Delta Information list
-     */
-    private List<DeltaInformation> deltaInformations;
-
-    /**
-     * Data source type
-     */
-    private SourceType sourceType;
-
-    public QueryRequest(UUID requestId, String datamartMnemonic, String sql) {
-        this.requestId = requestId;
-        this.datamartMnemonic = datamartMnemonic;
-        this.sql = sql;
-    }
+    private QueryParameters parameters;
 
     public QueryRequest copy() {
-        QueryRequest newQueryRequest = new QueryRequest();
-        newQueryRequest.setSql(sql);
-        newQueryRequest.setDatamartMnemonic(datamartMnemonic);
-        newQueryRequest.setRequestId(requestId);
-        if (parameters != null) {
-            newQueryRequest.setParameters(new ArrayList<>(parameters));
-        }
-        if (deltaInformations != null) {
-            newQueryRequest.setDeltaInformations(new ArrayList<>(deltaInformations));
-        }
-        newQueryRequest.setEnvName(envName);
-        newQueryRequest.setSourceType(sourceType);
-        return newQueryRequest;
+        return toBuilder()
+                .parameters(parameters != null ? parameters.copy() : null)
+                .build();
     }
 
     @Override

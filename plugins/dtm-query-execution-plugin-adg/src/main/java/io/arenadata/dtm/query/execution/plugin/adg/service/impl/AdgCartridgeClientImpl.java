@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adg.service.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.arenadata.dtm.common.exception.DtmException;
+import io.arenadata.dtm.common.version.VersionInfo;
 import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.TarantoolCartridgeProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.dto.rollback.ReverseHistoryTransferRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.OperationFile;
@@ -74,28 +75,28 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
     }
 
     @Override
-    public Future<Void> uploadData(TtUploadDataKafkaRequest request) {
+    public Future<Void> uploadData(AdgUploadDataKafkaRequest request) {
         val uri = cartridgeProperties.getUrl() + cartridgeProperties.getKafkaUploadDataUrl();
         return executePostRequest(uri, request)
                 .compose(this::handleUploadData);
     }
 
     @Override
-    public Future<Void> subscribe(TtSubscriptionKafkaRequest request) {
+    public Future<Void> subscribe(AdgSubscriptionKafkaRequest request) {
         val uri = cartridgeProperties.getUrl() + cartridgeProperties.getKafkaSubscriptionUrl();
         return executePostRequest(uri, request)
                 .compose(this::handleSubscription);
     }
 
     @Override
-    public Future<TtLoadDataKafkaResponse> loadData(TtLoadDataKafkaRequest request) {
+    public Future<TtLoadDataKafkaResponse> loadData(AdgLoadDataKafkaRequest request) {
         val uri = cartridgeProperties.getUrl() + cartridgeProperties.getKafkaLoadDataUrl();
         return executePostRequest(uri, request)
                 .compose(this::handleLoadData);
     }
 
     @Override
-    public Future<Void> transferDataToScdTable(TtTransferDataEtlRequest request) {
+    public Future<Void> transferDataToScdTable(AdgTransferDataEtlRequest request) {
         val uri = cartridgeProperties.getUrl() + cartridgeProperties.getTransferDataToScdTableUrl();
         return executeGetTransferDataRequest(uri, request)
                 .compose(this::handleTransferData);
@@ -118,29 +119,6 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
     }
 
     @Override
-    public Future<TtDeleteBatchResponse> addSpacesToDeleteQueue(TtDeleteTablesRequest request) {
-        val uri = cartridgeProperties.getUrl() + cartridgeProperties.getTableBatchDeleteUrl();
-        return executePutRequest(uri, request)
-                .compose(this::handleAddSpacesToDeleteQueue);
-    }
-
-    @Override
-    public Future<TtDeleteQueueResponse> executeDeleteQueue(TtDeleteTablesQueueRequest request) {
-        val uri = cartridgeProperties.getUrl() + cartridgeProperties.getTableBatchDeleteUrl() + "/"
-                + request.getBatchId();
-        return executeDeleteRequest(uri)
-                .compose(this::handleExecuteDeleteQueue);
-    }
-
-    @Override
-    public Future<TtDeleteQueueResponse> executeDeleteSpacesWithPrefix(TtDeleteTablesWithPrefixRequest request) {
-        val uri = cartridgeProperties.getUrl() + cartridgeProperties.getTableBatchDeleteUrl() + "/prefix/"
-                + request.getTablePrefix();
-        return executeDeleteRequest(uri)
-                .compose(this::handleExecuteDeleteQueue);
-    }
-
-    @Override
     public Future<Void> reverseHistoryTransfer(ReverseHistoryTransferRequest request) {
         val uri = cartridgeProperties.getUrl() + cartridgeProperties.getReverseHistoryTransferUrl();
         return executePostRequestAsJsonObject(uri, request)
@@ -155,14 +133,14 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
     }
 
     @Override
-    public Future<Void> executeDeleteSpacesQueued(TtDeleteTablesRequest request) {
+    public Future<Void> executeDeleteSpacesQueued(AdgDeleteTablesRequest request) {
         val uri = cartridgeProperties.getUrl() + cartridgeProperties.getTableQueuedDelete();
         return executeDeleteRequest(uri, request)
                 .compose(this::handleExecuteDeleteSpacesQueued);
     }
 
     @Override
-    public Future<Void> executeDeleteSpacesWithPrefixQueued(TtDeleteTablesWithPrefixRequest request) {
+    public Future<Void> executeDeleteSpacesWithPrefixQueued(AdgDeleteTablesWithPrefixRequest request) {
         val uri = cartridgeProperties.getUrl() + cartridgeProperties.getTableQueuedDelete() + "/prefix/" +
                 request.getTablePrefix();
         return executeDeleteRequest(uri, request)
@@ -194,12 +172,27 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
                 .compose(this::handleDeleteSpaceTuples);
     }
 
+    @Override
+    public Future<List<VersionInfo>> getCheckVersions() {
+        val uri = cartridgeProperties.getUrl() + cartridgeProperties.getCheckVersionsUrl();
+        return executeGetRequest(uri)
+                .compose(this::handleCheckVersionsTuples);
+    }
+
     @SneakyThrows
     private Future<ResOperation> executePostRequest(ReqOperation reqOperation) {
         final String uri = cartridgeProperties.getUrl() + cartridgeProperties.getAdminApiUrl();
         return circuitBreaker.execute(promise -> executePostRequest(uri, reqOperation)
                 .compose(this::handleResOperation)
                 .onComplete(promise));
+    }
+
+    private Future<HttpResponse<Buffer>> executeGetRequest(String uri) {
+        return Future.future(promise -> {
+            log.debug("send GET to [{}]", uri);
+            webClient.getAbs(uri)
+                    .send(promise);
+        });
     }
 
     private Future<HttpResponse<Buffer>> executePostRequest(String uri, Object request) {
@@ -235,15 +228,8 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
         });
     }
 
-    private Future<HttpResponse<Buffer>> executePutRequest(String uri, Object request) {
-        return Future.future(promise -> {
-            log.debug("send PUT to [{}] request [{}]", uri, request);
-            webClient.putAbs(uri)
-                    .sendJson(request, promise);
-        });
-    }
 
-    private Future<HttpResponse<Buffer>> executeGetTransferDataRequest(String uri, TtTransferDataEtlRequest request) {
+    private Future<HttpResponse<Buffer>> executeGetTransferDataRequest(String uri, AdgTransferDataEtlRequest request) {
         return Future.future(promise -> {
             log.debug("send to [{}] request [{}]", uri, request);
             val tableNames = request.getHelperTableNames();
@@ -364,38 +350,6 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
         });
     }
 
-    private Future<TtDeleteBatchResponse> handleAddSpacesToDeleteQueue(HttpResponse<Buffer> response) {
-        return Future.future(promise -> {
-            log.trace("handle [addSpacesToDeleteQueue] response [{}]", response);
-            val statusCode = response.statusCode();
-            if (statusCode == 200) {
-                val successResponse = response.bodyAsJson(TtDeleteBatchResponse.class);
-                promise.complete(successResponse);
-                log.debug("spaces added to delete queue successful");
-            } else if (statusCode == 500) {
-                promise.fail(response.bodyAsJson(AdgCartridgeError.class));
-            } else {
-                promise.fail(unexpectedResponse(response));
-            }
-        });
-    }
-
-    private Future<TtDeleteQueueResponse> handleExecuteDeleteQueue(HttpResponse<Buffer> response) {
-        return Future.future(promise -> {
-            log.trace("handle [executeDeleteQueue] response [{}]", response);
-            val statusCode = response.statusCode();
-            if (statusCode == 200) {
-                val successResponse = response.bodyAsJson(TtDeleteQueueResponse.class);
-                promise.complete(successResponse);
-                log.debug("spaces [{}] dropped successful", successResponse);
-            } else if (statusCode == 500) {
-                promise.fail(response.bodyAsJson(AdgCartridgeError.class));
-            } else {
-                promise.fail(unexpectedResponse(response));
-            }
-        });
-    }
-
     private Future<Void> handleReverseHistoryTransfer(HttpResponse<Buffer> response) {
         return Future.future(promise -> {
             log.trace("handle [reverse history transfer] response [{}]", response);
@@ -471,6 +425,20 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
                 promise.complete();
             } else {
                 promise.fail(new DataSourceException(jsonObject.getString("error")));
+            }
+        });
+    }
+
+    private Future<List<VersionInfo>> handleCheckVersionsTuples(HttpResponse<Buffer> response) {
+        return Future.future(promise -> {
+            log.trace("handle [checkVersions] response [{}]", response);
+            val statusCode = response.statusCode();
+            if (statusCode == 200) {
+                promise.complete(Arrays.asList(response.bodyAsJson(VersionInfo[].class)));
+            } else if (statusCode == 500) {
+                promise.fail(response.bodyAsJson(AdgCartridgeError.class));
+            } else {
+                promise.fail(unexpectedResponse(response));
             }
         });
     }

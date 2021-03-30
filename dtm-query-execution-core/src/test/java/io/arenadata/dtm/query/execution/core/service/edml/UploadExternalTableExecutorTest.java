@@ -1,28 +1,30 @@
 package io.arenadata.dtm.query.execution.core.service.edml;
 
+import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheService;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
+import io.arenadata.dtm.common.model.ddl.ExternalTableFormat;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
+import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDefinitionService;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.impl.DeltaServiceDaoImpl;
-import io.arenadata.dtm.common.exception.DtmException;
+import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.service.datasource.impl.DataSourcePluginServiceImpl;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadExternalTableExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadFailedExecutorImpl;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadKafkaExecutor;
-import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDefinitionService;
-import io.arenadata.dtm.query.execution.core.service.datasource.impl.DataSourcePluginServiceImpl;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import io.arenadata.dtm.query.execution.core.service.schema.impl.LogicalSchemaProviderImpl;
-import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.apache.calcite.sql.SqlInsert;
@@ -36,8 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class UploadExternalTableExecutorTest {
 
@@ -51,6 +52,8 @@ class UploadExternalTableExecutorTest {
     private CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private DefinitionService<SqlNode> definitionService =
             new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
+    private final EvictQueryTemplateCacheService evictQueryTemplateCacheService =
+            mock(EvictQueryTemplateCacheService.class);
     private QueryRequest queryRequest;
     private Set<SourceType> sourceTypes = new HashSet<>();
     private Entity sourceEntity;
@@ -64,7 +67,7 @@ class UploadExternalTableExecutorTest {
         sourceTypes.addAll(Arrays.asList(SourceType.ADB, SourceType.ADG));
         sourceEntity = Entity.builder()
                 .entityType(EntityType.UPLOAD_EXTERNAL_TABLE)
-                .externalTableFormat("avro")
+                .externalTableFormat(ExternalTableFormat.AVRO)
                 .externalTableLocationPath("kafka://kafka-1.dtm.local:9092/topic")
                 .externalTableLocationType(ExternalTableLocationType.KAFKA)
                 .externalTableUploadMessageLimit(1000)
@@ -79,15 +82,17 @@ class UploadExternalTableExecutorTest {
                 .destination(sourceTypes)
                 .build();
         when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
-        when(logicalSchemaProvider.getSchema(any())).thenReturn(Future.succeededFuture(Collections.EMPTY_LIST));
+        when(logicalSchemaProvider.getSchemaFromQuery(any(), any())).thenReturn(Future.succeededFuture(Collections.EMPTY_LIST));
+        doNothing().when(evictQueryTemplateCacheService).evictByDatamartName(anyString());
+        doNothing().when(evictQueryTemplateCacheService).evictByEntityName(anyString(), anyString());
     }
 
     @Test
     void executeKafkaSuccessWithSysCnExists() {
         Promise<QueryResult> promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
-        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
-                uploadFailedExecutor, uploadExecutors, pluginService, logicalSchemaProvider);
+        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao, uploadFailedExecutor,
+                uploadExecutors, pluginService, logicalSchemaProvider, evictQueryTemplateCacheService);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
@@ -96,7 +101,7 @@ class UploadExternalTableExecutorTest {
         final QueryResult queryResult = QueryResult.emptyResult();
         final Long sysCn = 1L;
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
         context.setSysCn(sysCn);
@@ -115,14 +120,16 @@ class UploadExternalTableExecutorTest {
 
         assertTrue(promise.future().succeeded());
         assertEquals(queryResult, promise.future().result());
+        verify(evictQueryTemplateCacheService, times(2))
+                .evictByDatamartName(destEntity.getSchema());
     }
 
     @Test
     void executeKafkaSuccessWithoutSysCn() {
         Promise<QueryResult> promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
-        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
-                uploadFailedExecutor, uploadExecutors, pluginService, logicalSchemaProvider);
+        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao, uploadFailedExecutor,
+                uploadExecutors, pluginService, logicalSchemaProvider, evictQueryTemplateCacheService);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
@@ -131,7 +138,7 @@ class UploadExternalTableExecutorTest {
         final QueryResult queryResult = QueryResult.emptyResult();
         final Long sysCn = 2L;
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
 
@@ -150,21 +157,23 @@ class UploadExternalTableExecutorTest {
         assertTrue(promise.future().succeeded());
         assertEquals(queryResult, promise.future().result());
         assertEquals(context.getSysCn(), sysCn);
+        verify(evictQueryTemplateCacheService, times(2))
+                .evictByDatamartName(destEntity.getSchema());
     }
 
     @Test
     void executeWriteNewOpError() {
         Promise<QueryResult> promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
-        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
-                uploadFailedExecutor, uploadExecutors, pluginService, logicalSchemaProvider);
+        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao, uploadFailedExecutor,
+                uploadExecutors, pluginService, logicalSchemaProvider, evictQueryTemplateCacheService);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
 
@@ -175,14 +184,15 @@ class UploadExternalTableExecutorTest {
                 .onComplete(promise);
 
         assertTrue(promise.future().failed());
+        verifyEvictCacheExecuted();
     }
 
     @Test
     void executeWriteOpSuccessError() {
         Promise<QueryResult> promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
-        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
-                uploadFailedExecutor, uploadExecutors, pluginService, logicalSchemaProvider);
+        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao, uploadFailedExecutor,
+                uploadExecutors, pluginService, logicalSchemaProvider, evictQueryTemplateCacheService);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
@@ -192,7 +202,7 @@ class UploadExternalTableExecutorTest {
         final QueryResult queryResult = QueryResult.emptyResult();
         final Long sysCn = 1L;
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
 
@@ -209,14 +219,15 @@ class UploadExternalTableExecutorTest {
                 .onComplete(promise);
 
         assertTrue(promise.future().failed());
+        verifyEvictCacheExecuted();
     }
 
     @Test
     void executeKafkaError() {
         Promise<QueryResult> promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
-        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
-                uploadFailedExecutor, uploadExecutors, pluginService, logicalSchemaProvider);
+        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao, uploadFailedExecutor,
+                uploadExecutors, pluginService, logicalSchemaProvider, evictQueryTemplateCacheService);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
@@ -225,7 +236,7 @@ class UploadExternalTableExecutorTest {
 
         final Long sysCn = 1L;
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
 
@@ -246,14 +257,15 @@ class UploadExternalTableExecutorTest {
                 .onComplete(promise);
 
         assertTrue(promise.future().failed());
+        verifyEvictCacheExecuted();
     }
 
     @Test
     void executeWriteOpError() {
         Promise<QueryResult> promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
-        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
-                uploadFailedExecutor, uploadExecutors, pluginService, logicalSchemaProvider);
+        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao, uploadFailedExecutor,
+                uploadExecutors, pluginService, logicalSchemaProvider, evictQueryTemplateCacheService);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
@@ -262,7 +274,7 @@ class UploadExternalTableExecutorTest {
 
         final Long sysCn = 1L;
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
 
@@ -279,14 +291,15 @@ class UploadExternalTableExecutorTest {
                 .onComplete(promise);
 
         assertTrue(promise.future().failed());
+        verifyEvictCacheExecuted();
     }
 
     @Test
     void executeUploadFailedError() {
         Promise<QueryResult> promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
-        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
-                uploadFailedExecutor, uploadExecutors, pluginService, logicalSchemaProvider);
+        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao, uploadFailedExecutor,
+                uploadExecutors, pluginService, logicalSchemaProvider, evictQueryTemplateCacheService);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
@@ -294,7 +307,7 @@ class UploadExternalTableExecutorTest {
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
         final Long sysCn = 1L;
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
 
@@ -314,21 +327,22 @@ class UploadExternalTableExecutorTest {
                 .onComplete(promise);
 
         assertTrue(promise.future().failed());
+        verifyEvictCacheExecuted();
     }
 
     @Test
     void executeWithNonexistingDestSource() {
         Promise<QueryResult> promise = Promise.promise();
         when(uploadExecutors.get(0).getUploadType()).thenReturn(ExternalTableLocationType.KAFKA);
-        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao,
-                uploadFailedExecutor, uploadExecutors, pluginService, logicalSchemaProvider);
+        uploadExternalTableExecutor = new UploadExternalTableExecutor(deltaServiceDao, uploadFailedExecutor,
+                uploadExecutors, pluginService, logicalSchemaProvider, evictQueryTemplateCacheService);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
         context.getDestinationEntity().setDestination(new HashSet<>(Arrays.asList(SourceType.ADB,
@@ -338,5 +352,11 @@ class UploadExternalTableExecutorTest {
                 .onComplete(promise);
 
         assertTrue(promise.future().failed());
+        verify(evictQueryTemplateCacheService, times(0)).evictByDatamartName(anyString());
+    }
+
+    private void verifyEvictCacheExecuted() {
+        verify(evictQueryTemplateCacheService, times(1))
+                .evictByDatamartName(destEntity.getSchema());
     }
 }

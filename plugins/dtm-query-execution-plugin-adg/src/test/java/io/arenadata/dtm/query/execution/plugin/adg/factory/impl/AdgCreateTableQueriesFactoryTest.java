@@ -1,16 +1,13 @@
 package io.arenadata.dtm.query.execution.plugin.adg.factory.impl;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.TarantoolDatabaseProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.dto.AdgTables;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.AdgSpace;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.Space;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.SpaceIndex;
 import io.arenadata.dtm.query.execution.plugin.adg.utils.TestUtils;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.factory.CreateTableQueriesFactory;
-import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -29,13 +26,10 @@ public class AdgCreateTableQueriesFactoryTest {
     @BeforeEach
     void setUp() {
         Entity entity = TestUtils.getEntity();
-        DdlRequestContext context = new DdlRequestContext(new DdlRequest(new QueryRequest(), entity));
-        context.getRequest().getQueryRequest().setEnvName("env");
-        context.getRequest().getQueryRequest().setDatamartMnemonic(entity.getSchema());
 
         CreateTableQueriesFactory<AdgTables<AdgSpace>> adgCreateTableQueriesFactory =
                 new AdgCreateTableQueriesFactory(new AdgTableEntitiesFactory(new TarantoolDatabaseProperties()));
-        adgTables = adgCreateTableQueriesFactory.create(context);
+        adgTables = adgCreateTableQueriesFactory.create(entity, "env");
         spaces = TestUtils.getSpaces(entity);
     }
 

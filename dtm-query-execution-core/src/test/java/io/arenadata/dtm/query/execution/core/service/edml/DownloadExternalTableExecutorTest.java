@@ -1,44 +1,41 @@
 package io.arenadata.dtm.query.execution.core.service.edml;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
+import io.arenadata.dtm.common.model.ddl.ExternalTableFormat;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
+import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
+import io.arenadata.dtm.query.calcite.core.dto.delta.DeltaQueryPreprocessorResponse;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
 import io.arenadata.dtm.query.calcite.core.service.impl.DeltaQueryPreprocessorImpl;
+import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDefinitionService;
 import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
-import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.dml.LogicViewReplacer;
 import io.arenadata.dtm.query.execution.core.service.dml.impl.LogicViewReplacerImpl;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.DownloadExternalTableExecutor;
 import io.arenadata.dtm.query.execution.core.service.edml.impl.DownloadKafkaExecutor;
-import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDefinitionService;
 import io.arenadata.dtm.query.execution.core.service.schema.LogicalSchemaProvider;
 import io.arenadata.dtm.query.execution.core.service.schema.impl.LogicalSchemaProviderImpl;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
-import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
-import io.vertx.core.AsyncResult;
+import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Promise;
-import io.vertx.core.json.JsonObject;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -66,11 +63,9 @@ class DownloadExternalTableExecutorTest {
         queryRequest.setDatamartMnemonic("test");
         queryRequest.setRequestId(UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"));
 
-        when(logicViewReplacer.replace(any(), any())).thenReturn(Future.succeededFuture(SELECT_SQL));
-
         destEntity = Entity.builder()
             .entityType(EntityType.DOWNLOAD_EXTERNAL_TABLE)
-            .externalTableFormat("avro")
+            .externalTableFormat(ExternalTableFormat.AVRO)
             .externalTableLocationPath("kafka://kafka-1.dtm.local:9092/topic")
             .externalTableLocationType(ExternalTableLocationType.KAFKA)
             .externalTableUploadMessageLimit(1000)
@@ -84,6 +79,10 @@ class DownloadExternalTableExecutorTest {
             .name("pso")
             .entityType(EntityType.TABLE)
             .build();
+
+        DeltaQueryPreprocessorResponse deltaQueryPreprocessorResponse = mock(DeltaQueryPreprocessorResponse.class);
+        when(deltaQueryPreprocessor.process(any()))
+                .thenReturn(Future.succeededFuture(deltaQueryPreprocessorResponse));
     }
 
     @Test
@@ -96,19 +95,21 @@ class DownloadExternalTableExecutorTest {
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
-
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
+        when(logicViewReplacer.replace(any(SqlNode.class), any())).thenReturn(Future.succeededFuture(sqlNode));
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
 
-        QueryRequest copyRequest = context.getRequest().getQueryRequest();
-        copyRequest.setDeltaInformations(Collections.emptyList());
 
-        when(logicalSchemaProvider.getSchema(any()))
+        when(logicalSchemaProvider.getSchemaFromQuery(any(), any()))
                 .thenReturn(Future.succeededFuture(schema));
 
+        when(logicalSchemaProvider.getSchemaFromDeltaInformations(any(), any()))
+                .thenReturn(Future.succeededFuture(schema));
+
+        DeltaQueryPreprocessorResponse deltaQueryPreprocessorResponse = mock(DeltaQueryPreprocessorResponse.class);
         when(deltaQueryPreprocessor.process(any()))
-            .thenReturn(Future.succeededFuture(copyRequest));
+            .thenReturn(Future.succeededFuture(deltaQueryPreprocessorResponse));
 
         when(downloadExecutors.get(0).execute(any()))
                 .thenReturn(Future.succeededFuture(QueryResult.emptyResult()));
@@ -116,7 +117,6 @@ class DownloadExternalTableExecutorTest {
         downloadExternalTableExecutor.execute(context)
                 .onComplete(promise);
         assertTrue(promise.future().succeeded());
-        assertNotNull(context.getRequest().getQueryRequest().getDeltaInformations());
     }
 
     @Test
@@ -129,15 +129,13 @@ class DownloadExternalTableExecutorTest {
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
+        when(logicViewReplacer.replace(any(SqlNode.class), any())).thenReturn(Future.succeededFuture(sqlNode));
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
 
-        QueryRequest copyRequest = context.getRequest().getQueryRequest();
-        copyRequest.setDeltaInformations(Collections.emptyList());
-
-        when(logicalSchemaProvider.getSchema(any()))
+        when(logicalSchemaProvider.getSchemaFromQuery(any(), any()))
         .thenReturn(Future.failedFuture(new DtmException("")));
 
         downloadExternalTableExecutor.execute(context)
@@ -155,15 +153,13 @@ class DownloadExternalTableExecutorTest {
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
+        when(logicViewReplacer.replace(any(SqlNode.class), any())).thenReturn(Future.succeededFuture(sqlNode));
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
 
-        QueryRequest copyRequest = context.getRequest().getQueryRequest();
-        copyRequest.setDeltaInformations(Collections.emptyList());
-
-        when(logicalSchemaProvider.getSchema(any()))
+        when(logicalSchemaProvider.getSchemaFromQuery(any(), any()))
                 .thenReturn(Future.succeededFuture(schema));
 
         when(deltaQueryPreprocessor.process(any()))
@@ -184,19 +180,14 @@ class DownloadExternalTableExecutorTest {
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
         SqlInsert sqlNode = (SqlInsert) definitionService.processingQuery(queryRequest.getSql());
+        when(logicViewReplacer.replace(any(SqlNode.class), any())).thenReturn(Future.succeededFuture(sqlNode));
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, sqlNode, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
 
-        QueryRequest copyRequest = context.getRequest().getQueryRequest();
-        copyRequest.setDeltaInformations(Collections.emptyList());
-
-        when(logicalSchemaProvider.getSchema(any()))
+        when(logicalSchemaProvider.getSchemaFromQuery(any(), any()))
                 .thenReturn(Future.succeededFuture(schema));
-
-        when(deltaQueryPreprocessor.process(any()))
-            .thenReturn(Future.succeededFuture(copyRequest));
 
         when(downloadExecutors.get(0).execute(any()))
                 .thenReturn(Future.failedFuture(new DtmException("")));

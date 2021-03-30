@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.core.calcite.eddl.parser;
 
-import io.arenadata.dtm.common.plugin.exload.Format;
+import io.arenadata.dtm.common.model.ddl.ExternalTableFormat;
 import io.arenadata.dtm.common.plugin.exload.Type;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
@@ -67,7 +67,7 @@ public class SqlEddlParserImplTest {
                 SqlNodeUtils.getOne(sqlCreateDownloadExternalTable, LocationOperator.class).getType());
         assertEquals("kafka://zookeeper_host:port/topic_UPPER_case",
                 SqlNodeUtils.getOne(sqlCreateDownloadExternalTable, LocationOperator.class).getLocation());
-        assertEquals(Format.AVRO,
+        assertEquals(ExternalTableFormat.AVRO,
                 SqlNodeUtils.getOne(sqlCreateDownloadExternalTable, FormatOperator.class).getFormat());
         assertEquals(10,
                 SqlNodeUtils.getOne(sqlCreateDownloadExternalTable, ChunkSizeOperator.class).getChunkSize());
@@ -123,7 +123,7 @@ public class SqlEddlParserImplTest {
                 SqlNodeUtils.getOne(sqlCreateDownloadExternalTable, LocationOperator.class).getType());
         assertEquals("kafka://zookeeper_host:port/topic",
                 SqlNodeUtils.getOne(sqlCreateDownloadExternalTable, LocationOperator.class).getLocation());
-        assertEquals(Format.AVRO,
+        assertEquals(ExternalTableFormat.AVRO,
                 SqlNodeUtils.getOne(sqlCreateDownloadExternalTable, FormatOperator.class).getFormat());
     }
 
@@ -156,9 +156,9 @@ public class SqlEddlParserImplTest {
                 SqlNodeUtils.getOne(sqlCreateUploadExternalTable, LocationOperator.class).getType());
         assertEquals("kafka://zookeeper_host:port/topic",
                 SqlNodeUtils.getOne(sqlCreateUploadExternalTable, LocationOperator.class).getLocation());
-        assertEquals(Format.AVRO,
+        assertEquals(ExternalTableFormat.AVRO,
                 SqlNodeUtils.getOne(sqlCreateUploadExternalTable, FormatOperator.class).getFormat());
-        assertNull(SqlNodeUtils.getOne((SqlCall) sqlNode, MassageLimitOperator.class).getMessageLimit());
+        assertNull(SqlNodeUtils.getOne((SqlCall) sqlNode, MessageLimitOperator.class).getMessageLimit());
     }
 
     @Test
@@ -189,9 +189,9 @@ public class SqlEddlParserImplTest {
                 SqlNodeUtils.getOne(sqlCreateUploadExternalTable, LocationOperator.class).getType());
         assertEquals("kafka://zookeeper_host:port/topic",
                 SqlNodeUtils.getOne(sqlCreateUploadExternalTable, LocationOperator.class).getLocation());
-        assertEquals(Format.AVRO,
+        assertEquals(ExternalTableFormat.AVRO,
                 SqlNodeUtils.getOne(sqlCreateUploadExternalTable, FormatOperator.class).getFormat());
-        assertEquals(1000, SqlNodeUtils.getOne((SqlCall) sqlNode, MassageLimitOperator.class).getMessageLimit());
+        assertEquals(1000, SqlNodeUtils.getOne((SqlCall) sqlNode, MessageLimitOperator.class).getMessageLimit());
     }
 
     @Test

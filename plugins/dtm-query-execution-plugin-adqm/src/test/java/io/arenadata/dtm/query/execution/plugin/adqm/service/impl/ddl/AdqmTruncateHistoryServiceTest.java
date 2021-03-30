@@ -4,15 +4,16 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.framework.DtmCalciteFramework;
-import io.arenadata.dtm.query.execution.plugin.adqm.factory.AdqmTruncateHistoryQueriesFactory;
-import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmTruncateHistoryQueriesFactoryImpl;
-import io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.CalciteConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
+import io.arenadata.dtm.query.execution.plugin.adqm.factory.AdqmTruncateHistoryQueriesFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmCreateTableQueriesFactoryTest;
+import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmTruncateHistoryQueriesFactoryImpl;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.query.AdqmQueryExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
+import io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants;
+import io.arenadata.dtm.query.execution.plugin.adqm.utils.TestUtils;
+import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TruncateHistoryService;
 import io.vertx.core.Future;
@@ -38,7 +39,7 @@ public class AdqmTruncateHistoryServiceTest {
             "SELECT %s, -1\n" +
             "FROM %s__%s.%s_actual t FINAL\n" +
             "WHERE sign = 1%s%s";
-    private final CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
+    private final CalciteConfiguration calciteConfiguration = TestUtils.CALCITE_CONFIGURATION;
     private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
     private final SqlParser.Config parserConfig = calciteConfiguration
             .configDdlParser(calciteCoreConfiguration.eddlParserImplFactory());
@@ -61,7 +62,7 @@ public class AdqmTruncateHistoryServiceTest {
         orderByColumns += String.format(", %s", Constants.SYS_FROM_FIELD);
         DdlProperties ddlProperties = new DdlProperties();
         ddlProperties.setCluster(CLUSTER);
-        queriesFactory = new AdqmTruncateHistoryQueriesFactoryImpl(calciteConfiguration.adgSqlDialect(), ddlProperties);
+        queriesFactory = new AdqmTruncateHistoryQueriesFactoryImpl(calciteConfiguration.adqmSqlDialect(), ddlProperties);
         adqmTruncateHistoryService = new AdqmTruncateHistoryService(adqmQueryExecutor,
                 queriesFactory);
         when(adqmQueryExecutor.execute(anyString())).thenReturn(Future.succeededFuture());
@@ -114,8 +115,13 @@ public class AdqmTruncateHistoryServiceTest {
                     }
                 })
                 .orElse(null);
-        TruncateHistoryParams params = new TruncateHistoryParams(null, null, sysCn, entity, ENV, sqlNode);
-        adqmTruncateHistoryService.truncateHistory(params);
+        TruncateHistoryRequest request = TruncateHistoryRequest.builder()
+                .sysCn(sysCn)
+                .entity(entity)
+                .envName(ENV)
+                .conditions(sqlNode)
+                .build();
+        adqmTruncateHistoryService.truncateHistory(request);
         verify(adqmQueryExecutor, times(1)).execute(expected);
         verify(adqmQueryExecutor, times(1)).execute(
                 String.format("SYSTEM FLUSH DISTRIBUTED %s__%s.%s_actual", ENV, entity.getSchema(), entity.getName()));

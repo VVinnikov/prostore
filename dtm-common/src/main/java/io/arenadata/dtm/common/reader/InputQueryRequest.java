@@ -5,8 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -37,7 +35,11 @@ public class InputQueryRequest {
     /**
      * Parameters (optional)
      */
-    private List<String> parameters;
+    private QueryParameters parameters;
+    /**
+     * Executable query or for caching
+     */
+    private boolean isExecutable = true;
 
     public InputQueryRequest copy() {
         InputQueryRequest newQueryRequest = new InputQueryRequest();
@@ -45,7 +47,7 @@ public class InputQueryRequest {
         newQueryRequest.setDatamartMnemonic(datamartMnemonic);
         newQueryRequest.setRequestId(requestId);
         if (parameters != null) {
-            newQueryRequest.setParameters(new ArrayList<>(parameters));
+            newQueryRequest.setParameters(parameters.copy());
         }
         return newQueryRequest;
     }

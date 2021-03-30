@@ -1,11 +1,8 @@
 package io.arenadata.dtm.query.execution.plugin.adg.factory.impl;
 
-import io.arenadata.dtm.common.metrics.RequestMetrics;
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.configuration.properties.AdgRollbackProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.dto.rollback.ReverseHistoryTransferRequest;
-import io.arenadata.dtm.query.execution.plugin.api.request.RollbackRequest;
-import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Test;
@@ -28,16 +25,13 @@ class ReverseHistoryTransferRequestFactoryImplTest {
                 new AdgHelperTableNamesFactoryImpl(),
                 new AdgRollbackProperties()
         );
-        val request = factory.create(new RollbackRequestContext(
-                new RequestMetrics(),
+        val request = factory.create(
                 RollbackRequest.builder()
                         .sysCn(11)
                         .destinationTable("tbl1")
-                        .datamart("dtm1")
-                        .queryRequest(QueryRequest.builder()
-                                .envName("env1")
-                                .build())
-                        .build()));
+                        .datamartMnemonic("dtm1")
+                        .envName("env1")
+                        .build());
         log.info(request.toString());
         assertEquals(EXPECTED_RQ, request);
     }

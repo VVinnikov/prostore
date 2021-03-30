@@ -604,6 +604,7 @@ SqlNode OrderedQueryOrExpr(ExprContext exprContext) :
     SqlNode start = null;
     SqlNode count = null;
     boolean isLimited = false;
+    SqlNode datasourceType = null;
 }
 {
     (
@@ -647,12 +648,13 @@ SqlNode OrderedQueryOrExpr(ExprContext exprContext) :
         <FETCH> ( <FIRST> | <NEXT> ) count = UnsignedNumericLiteralOrParam()
         ( <ROW> | <ROWS> ) <ONLY>
     ]
+    [ <DATASOURCE_TYPE> <EQ> datasourceType = StringLiteral() ]
     {
         if (orderBy != null || start != null || count != null) {
             if (orderBy == null) {
                 orderBy = SqlNodeList.EMPTY;
             }
-            e = new io.arenadata.dtm.query.calcite.core.extension.dml.LimitableSqlOrderBy(getPos(), e, orderBy, start, count, isLimited);
+            e = new io.arenadata.dtm.query.calcite.core.extension.dml.LimitableSqlOrderBy(getPos(), e, orderBy, start, count, isLimited, datasourceType);
 
         }
         return e;
@@ -1261,6 +1263,7 @@ SqlSelect SqlSelect() :
     final SqlNodeList groupBy;
     final SqlNode having;
     final SqlNodeList windowDecls;
+    SqlNode datasourceType = null;
     final List<SqlNode> hints = new ArrayList<SqlNode>();
     final Span s;
 }
@@ -1307,11 +1310,12 @@ SqlSelect SqlSelect() :
             windowDecls = null;
         }
     )
+    [ <DATASOURCE_TYPE> <EQ> datasourceType = StringLiteral() ]
     {
-        return new SqlSelect(s.end(this), keywordList,
+        return new io.arenadata.dtm.query.calcite.core.extension.dml.SqlSelectExt(s.end(this), keywordList,
             new SqlNodeList(selectList, Span.of(selectList).pos()),
             fromClause, where, groupBy, having, windowDecls, null, null, null,
-            new SqlNodeList(hints, getPos()));
+            new SqlNodeList(hints, getPos()), datasourceType);
     }
 }
 
@@ -2761,6 +2765,25 @@ SqlNode OrderItem() :
     )?
     {
         return e;
+    }
+}
+
+/**
+*  Parses a type in DATASOURCE_TYPE clause
+*/
+SqlNode DatasourceTypeIdentifier() :
+{
+    SqlNode node;
+}
+{
+    <EQ>
+    (
+        node = StringLiteral()
+        |
+        node = SimpleIdentifier()
+    )
+    {
+        return node;
     }
 }
 

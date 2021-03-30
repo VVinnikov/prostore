@@ -14,5 +14,6 @@ public class AdqmMppwProperties {
     private LoadType loadType;
     private String restStartLoadUrl;
     private String restStopLoadUrl;
+    private String versionUrl;
     private String restLoadConsumerGroup;
 }

@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.ddl.impl;
 
-import io.arenadata.dtm.common.exception.DtmException;
+import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.QueryResult;
@@ -10,13 +10,13 @@ import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
-import io.arenadata.dtm.query.execution.core.exception.table.TableAlreadyExistsException;
+import io.arenadata.dtm.query.execution.core.exception.table.ValidationDtmException;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.ddl.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlType;
+import io.arenadata.dtm.query.execution.core.dto.ddl.DdlRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.ddl.DdlType;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -58,29 +59,45 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
 
     private Future<QueryResult> createTable(DdlRequestContext context, String sqlNodeName) {
         return Future.future(promise -> {
-            val schema = getSchemaName(context.getRequest().getQueryRequest(), sqlNodeName);
-            context.getRequest().getQueryRequest().setDatamartMnemonic(schema);
+            val datamartName = getSchemaName(context.getDatamartName(), sqlNodeName);
+            context.getRequest().getQueryRequest().setDatamartMnemonic(datamartName);
             context.setDdlType(DdlType.CREATE_TABLE);
-            SqlCreateTable sqlCreate = (SqlCreateTable) context.getQuery();
+            SqlCreateTable sqlCreate = (SqlCreateTable) context.getSqlNode();
             val entity = metadataCalciteGenerator.generateTableMetadata(sqlCreate);
             entity.setEntityType(EntityType.TABLE);
-            Set<SourceType> requestDestination = ((SqlCreateTable) context.getQuery()).getDestination();
+            Set<SourceType> requestDestination = ((SqlCreateTable) context.getSqlNode()).getDestination();
             Set<SourceType> destination = Optional.ofNullable(requestDestination)
                     .orElse(dataSourcePluginService.getSourceTypes());
             entity.setDestination(destination);
-            checkRequiredKeys(entity.getFields());
-            context.getRequest().setEntity(entity);
-            context.setDatamartName(schema);
-            datamartDao.existsDatamart(schema)
+            validateFields(entity.getFields());
+            context.setEntity(entity);
+            context.setDatamartName(datamartName);
+            datamartDao.existsDatamart(datamartName)
                     .compose(isExistsDatamart -> isExistsDatamart ?
-                            entityDao.existsEntity(schema, entity.getName()) : getNotExistsDatamartFuture(schema))
-                    .onSuccess(isExistsEntity -> createTableIfNotExists(context, isExistsEntity)
-                            .onSuccess(success -> {
-                                promise.complete(QueryResult.emptyResult());
-                            })
+                            entityDao.existsEntity(datamartName, entity.getName()) : getNotExistsDatamartFuture(datamartName))
+                    .onSuccess(isExistsEntity -> createTable(context)
+                            .onSuccess(success -> promise.complete(QueryResult.emptyResult()))
                             .onFailure(promise::fail))
                     .onFailure(promise::fail);
         });
+    }
+
+    private void validateFields(List<EntityField> fields) {
+        checkRequiredKeys(fields);
+        checkVarcharSize(fields);
+    }
+
+    private void checkVarcharSize(List<EntityField> fields) {
+        List<String> notSetSizeFields = fields.stream()
+                .filter(field -> field.getType() == ColumnType.VARCHAR || field.getType() == ColumnType.CHAR)
+                .filter(field -> field.getSize() == null)
+                .map(EntityField::getName)
+                .collect(Collectors.toList());
+        if (!notSetSizeFields.isEmpty()) {
+            throw new ValidationDtmException(
+                    String.format("Specifying the size for columns%s with types[VARCHAR, CHAR] is required", notSetSizeFields)
+            );
+        }
     }
 
     private void checkRequiredKeys(List<EntityField> fields) {
@@ -98,34 +115,24 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
         }
 
         if (!notExistsKeys.isEmpty()) {
-            throw new DtmException(
+            throw new ValidationDtmException(
                     String.format("Primary keys and Sharding keys are required. The following keys do not exist: %s",
                             String.join(",", notExistsKeys)));
         }
     }
 
-    private Future<Boolean> getNotExistsDatamartFuture(String schema) {
-        return Future.failedFuture(new DatamartNotExistsException(schema));
-    }
-
-    private Future<Void> createTableIfNotExists(DdlRequestContext context,
-                                                Boolean isTableExists) {
-        if (isTableExists) {
-            return Future.failedFuture(
-                    new TableAlreadyExistsException(context.getRequest().getEntity().getNameWithSchema()));
-        } else {
-            return createTable(context);
-        }
+    private Future<Boolean> getNotExistsDatamartFuture(String datamartName) {
+        return Future.failedFuture(new DatamartNotExistsException(datamartName));
     }
 
     private Future<Void> createTable(DdlRequestContext context) {
         //creating tables in data sources through plugins
         return Future.future((Promise<Void> promise) -> {
             metadataExecutor.execute(context)
-                    .compose(v -> entityDao.createEntity(context.getRequest().getEntity()))
+                    .compose(v -> entityDao.createEntity(context.getEntity()))
                     .onSuccess(ar2 -> {
                         log.debug("Table [{}] in datamart [{}] successfully created",
-                                context.getRequest().getEntity().getName(),
+                                context.getEntity().getName(),
                                 context.getDatamartName());
                         promise.complete();
                     })

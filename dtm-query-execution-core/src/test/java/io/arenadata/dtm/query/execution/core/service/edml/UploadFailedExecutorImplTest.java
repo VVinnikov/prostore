@@ -1,26 +1,29 @@
 package io.arenadata.dtm.query.execution.core.service.edml;
 
+import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheService;
 import io.arenadata.dtm.common.exception.CrashException;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
+import io.arenadata.dtm.common.model.ddl.ExternalTableFormat;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.impl.DeltaServiceDaoImpl;
+import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
+import io.arenadata.dtm.query.execution.core.dto.request.RollbackRequest;
+import io.arenadata.dtm.query.execution.core.dto.rollback.RollbackRequestContext;
 import io.arenadata.dtm.query.execution.core.factory.RollbackRequestContextFactory;
 import io.arenadata.dtm.query.execution.core.factory.impl.RollbackRequestContextFactoryImpl;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
-import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadFailedExecutorImpl;
 import io.arenadata.dtm.query.execution.core.service.datasource.impl.DataSourcePluginServiceImpl;
-import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.request.DatamartRequest;
-import io.arenadata.dtm.query.execution.plugin.api.request.RollbackRequest;
-import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
+import io.arenadata.dtm.query.execution.core.service.edml.impl.UploadFailedExecutorImpl;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
+import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -38,6 +41,7 @@ import static org.mockito.Mockito.when;
 class UploadFailedExecutorImplTest {
 
     private final DeltaServiceDao deltaServiceDao = mock(DeltaServiceDaoImpl.class);
+    private final EvictQueryTemplateCacheService evictQueryTemplateCacheService = mock(EvictQueryTemplateCacheService.class);
     private final RollbackRequestContextFactory rollbackRequestContextFactory = mock(RollbackRequestContextFactoryImpl.class);
     private final DataSourcePluginService pluginService = mock(DataSourcePluginServiceImpl.class);
     private EdmlUploadFailedExecutor uploadFailedExecutor;
@@ -54,7 +58,7 @@ class UploadFailedExecutorImplTest {
         sourceTypes.addAll(Arrays.asList(SourceType.ADB, SourceType.ADG));
         sourceEntity = Entity.builder()
                 .entityType(EntityType.UPLOAD_EXTERNAL_TABLE)
-                .externalTableFormat("avro")
+                .externalTableFormat(ExternalTableFormat.AVRO)
                 .externalTableLocationPath("kafka://kafka-1.dtm.local:9092/topic")
                 .externalTableLocationType(ExternalTableLocationType.KAFKA)
                 .externalTableUploadMessageLimit(1000)
@@ -74,33 +78,36 @@ class UploadFailedExecutorImplTest {
     void executeSuccess() {
         Promise<Void> promise = Promise.promise();
         uploadFailedExecutor = new UploadFailedExecutorImpl(deltaServiceDao,
-                rollbackRequestContextFactory, pluginService);
+                rollbackRequestContextFactory, pluginService, evictQueryTemplateCacheService);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
         context.setSysCn(1L);
 
         final RollbackRequestContext rollbackRequestContext = new RollbackRequestContext(
                 new RequestMetrics(),
+                "test",
                 RollbackRequest.builder()
                         .queryRequest(context.getRequest().getQueryRequest())
                         .datamart(context.getSourceEntity().getName())
                         .destinationTable(context.getDestinationEntity().getName())
                         .sysCn(context.getSysCn())
                         .entity(context.getDestinationEntity())
-                        .build());
+                        .build(),
+                mock(SqlNode.class)
+        );
 
         when(rollbackRequestContextFactory.create(any()))
                 .thenReturn(rollbackRequestContext);
 
         when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
 
-        when(pluginService.rollback(any(), any()))
+        when(pluginService.rollback(any(), any(), any()))
                 .thenReturn(Future.succeededFuture());
 
         when(deltaServiceDao.deleteWriteOperation(eq(sourceEntity.getSchema()), eq(context.getSysCn())))
@@ -115,33 +122,35 @@ class UploadFailedExecutorImplTest {
     void executePluginRollbackError() {
         Promise<Void> promise = Promise.promise();
         uploadFailedExecutor = new UploadFailedExecutorImpl(deltaServiceDao,
-                rollbackRequestContextFactory, pluginService);
+                rollbackRequestContextFactory, pluginService, evictQueryTemplateCacheService);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
         context.setSysCn(1L);
-
         final RollbackRequestContext rollbackRequestContext = new RollbackRequestContext(
                 new RequestMetrics(),
+                "test",
                 RollbackRequest.builder()
                         .queryRequest(context.getRequest().getQueryRequest())
                         .datamart(context.getSourceEntity().getName())
                         .destinationTable(context.getDestinationEntity().getName())
                         .sysCn(context.getSysCn())
                         .entity(context.getDestinationEntity())
-                        .build());
+                        .build(),
+                mock(SqlNode.class)
+                );
 
         when(rollbackRequestContextFactory.create(any()))
                 .thenReturn(rollbackRequestContext);
 
         when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
 
-        when(pluginService.rollback(any(), any()))
+        when(pluginService.rollback(any(), any(), any()))
                 .thenReturn(Future.failedFuture(new DtmException("")));
 
         uploadFailedExecutor.execute(context)
@@ -154,20 +163,20 @@ class UploadFailedExecutorImplTest {
     void executeDeleteOperationError() {
         Promise<Void> promise = Promise.promise();
         uploadFailedExecutor = new UploadFailedExecutorImpl(deltaServiceDao,
-                rollbackRequestContextFactory, pluginService);
+                rollbackRequestContextFactory, pluginService, evictQueryTemplateCacheService);
         String selectSql = "(select id, lst_nam FROM test.upload_table)";
         String insertSql = "insert into test.pso " + selectSql;
         queryRequest.setSql(insertSql);
         DatamartRequest request = new DatamartRequest(queryRequest);
 
-        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null);
+        EdmlRequestContext context = new EdmlRequestContext(new RequestMetrics(), request, null, "env");
         context.setDestinationEntity(destEntity);
         context.setSourceEntity(sourceEntity);
         context.setSysCn(1L);
 
         when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
 
-        when(pluginService.rollback(any(), any()))
+        when(pluginService.rollback(any(), any(), any()))
                 .thenReturn(Future.succeededFuture());
 
         when(deltaServiceDao.deleteWriteOperation(eq(sourceEntity.getSchema()), eq(context.getSysCn())))

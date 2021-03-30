@@ -3,7 +3,10 @@ package io.arenadata.dtm.jdbc.ext;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.jdbc.core.BaseConnection;
 import io.arenadata.dtm.jdbc.core.Field;
+import io.arenadata.dtm.jdbc.core.FieldMetadata;
+import io.arenadata.dtm.jdbc.core.Tuple;
 import io.arenadata.dtm.jdbc.model.ColumnInfo;
+import io.arenadata.dtm.jdbc.model.SchemaInfo;
 import io.arenadata.dtm.jdbc.model.TableInfo;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 
@@ -12,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static io.arenadata.dtm.jdbc.util.DriverConstants.*;
@@ -42,37 +46,31 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public ResultSet getSchemas(String catalog, String schemaPattern) throws SQLException {
-        List<Field[]> result = Collections.singletonList(new Field[]{
-                new Field(SCHEMA_NAME_COLUMN, ""),
-                new Field(CATALOG_NAME_COLUMN, "")
-        });
+        Field[] fields = new Field[]{
+                new Field(SCHEMA_NAME_COLUMN, ColumnType.VARCHAR),
+                new Field(CATALOG_NAME_COLUMN, ColumnType.VARCHAR)
+        };
         try (DtmStatement dtmStatement = (DtmStatement) this.connection.createStatement()) {
-            return dtmStatement.createDriverResultSet(result, getMetadata(result));
+            List<Tuple> tuples = Collections.singletonList(new Tuple(new Object[]{"", ""}));
+            return dtmStatement.createDriverResultSet(fields, tuples);
         }
     }
 
     @Override
     public ResultSet getCatalogs() throws SQLException {
         if (catalogs == null) {
-            List<Field[]> result = connection.getQueryExecutor().getSchemas().stream()
-                    .map(schemaInfo -> new Field[]{new Field(CATALOG_NAME_COLUMN, schemaInfo.getMnemonic())})
-                    .collect(Collectors.toList());
+            final List<SchemaInfo> schemas = connection.getQueryExecutor().getSchemas();
+            final List<Tuple> tuples = new ArrayList<>();
+            final Field[] fields = new Field[]{new Field(CATALOG_NAME_COLUMN, ColumnType.VARCHAR)};
+            schemas.forEach(schemaInfo -> {
+                String schemaName = schemaInfo.getMnemonic();
+                tuples.add(new Tuple(new Object[]{schemaName}));
+            });
             try (DtmStatement dtmStatement = (DtmStatement) this.connection.createStatement()) {
-                this.catalogs = dtmStatement.createDriverResultSet(result, getMetadata(result));
+                this.catalogs = dtmStatement.createDriverResultSet(fields, tuples);
             }
         }
         return catalogs;
-    }
-
-    private List<ColumnMetadata> getMetadata(List<Field[]> result) {
-        if (result.isEmpty()) {
-            return Collections.emptyList();
-        } else {
-            Field[] fields = result.get(0);
-            return Stream.of(fields)
-                    .map(f -> new ColumnMetadata(f.getColumnLabel(), ColumnType.VARCHAR))
-                    .collect(Collectors.toList());
-        }
     }
 
     @Override
@@ -87,32 +85,48 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
             catalogNames = Collections.singletonList(catalog);
         }
         final List<TableInfo> databaseTables = this.connection.getQueryExecutor().getTables(catalog);
-        List<Field[]> result = catalogNames.stream()
+        final Field[] fields = createTablesFields(catalog);
+        List<Tuple> tuples = catalogNames.stream()
                 .flatMap(schemasName -> databaseTables.stream())
-                .map(tableInfo -> new Field[]{
-                        new Field(CATALOG_NAME_COLUMN, tableInfo.getDatamartMnemonic()),
-                        new Field(SCHEMA_NAME_COLUMN, ""),
-                        new Field(TABLE_NAME_COLUMN, tableInfo.getMnemonic()),
-                        new Field(TABLE_TYPE_COLUMN, TABLE_TYPE),
-                        new Field(REMARKS_COLUMN, ""),
-                        new Field(SELF_REFERENCING_COL_NAME_COLUMN, null),
-                        new Field(REF_GENERATION_COLUMN, null),
-                        new Field(TABLE_OWNER_COLUMN, getUserName())
-                }).collect(Collectors.toList());
+                .map(tableInfo -> new Tuple(new Object[]{
+                        tableInfo.getDatamartMnemonic(),
+                        "",
+                        tableInfo.getMnemonic(),
+                        TABLE_TYPE,
+                        "",
+                        null,
+                        null,
+                        getUserName()
+                })).collect(Collectors.toList());
         try (DtmStatement dtmStatement = (DtmStatement) this.connection.createStatement()) {
-            return dtmStatement.createDriverResultSet(result, getMetadata(result));
+            return dtmStatement.createDriverResultSet(fields, tuples);
         }
+    }
+
+    private Field[] createTablesFields(String schemaName) {
+        return new Field[]{
+                new Field(CATALOG_NAME_COLUMN, ColumnType.VARCHAR, new FieldMetadata(CATALOG_NAME_COLUMN, schemaName)),
+                new Field(SCHEMA_NAME_COLUMN, ColumnType.VARCHAR, new FieldMetadata(SCHEMA_NAME_COLUMN, schemaName)),
+                new Field(TABLE_NAME_COLUMN, ColumnType.VARCHAR, new FieldMetadata(TABLE_NAME_COLUMN, schemaName)),
+                new Field(TABLE_TYPE_COLUMN, ColumnType.VARCHAR, new FieldMetadata(TABLE_TYPE_COLUMN, schemaName)),
+                new Field(REMARKS_COLUMN, ColumnType.VARCHAR, new FieldMetadata(REMARKS_COLUMN, schemaName)),
+                new Field(SELF_REFERENCING_COL_NAME_COLUMN, ColumnType.VARCHAR, new FieldMetadata(SELF_REFERENCING_COL_NAME_COLUMN, schemaName)),
+                new Field(REF_GENERATION_COLUMN, ColumnType.VARCHAR, new FieldMetadata(REF_GENERATION_COLUMN, schemaName)),
+                new Field(TABLE_OWNER_COLUMN, ColumnType.VARCHAR, new FieldMetadata(TABLE_OWNER_COLUMN, schemaName))
+        };
     }
 
     @Override
     public ResultSet getTableTypes() throws SQLException {
-        List<Field[]> result = Collections.singletonList(new Field[]{
-                new Field(TABLE_TYPE_COLUMN, TABLE_TYPE),
-                new Field(TABLE_TYPE_COLUMN, SYSTEM_VIEW_TYPE),
-                new Field(TABLE_TYPE_COLUMN, VIEW_TYPE)
-        });
+        Field[] fields = new Field[]{
+                new Field(TABLE_NAME_COLUMN, ColumnType.VARCHAR)
+        };
+        List<Tuple> tuples = new ArrayList<>();
+        tuples.add(new Tuple(new Object[]{TABLE_TYPE}));
+        tuples.add(new Tuple(new Object[]{SYSTEM_VIEW_TYPE}));
+        tuples.add(new Tuple(new Object[]{VIEW_TYPE}));
         try (DtmStatement dtmStatement = (DtmStatement) this.connection.createStatement()) {
-            return dtmStatement.createDriverResultSet(result, getMetadata(result));
+            return dtmStatement.createDriverResultSet(fields, tuples);
         }
     }
 
@@ -137,38 +151,85 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
         } else {
             columns = this.connection.getQueryExecutor().getTableColumns(catalog, tableNamePattern);
         }
-        this.connection.getCachedFieldMetadata().clear();
-        this.connection.getCachedFieldMetadata().addAll(columns);
-        List<Field[]> result = columns.stream()
-                .map(columnInfo -> new Field[]{
-                        new Field(CATALOG_NAME_COLUMN, columnInfo.getDatamartMnemonic()),
-                        new Field(SCHEMA_NAME_COLUMN, null),
-                        new Field(TABLE_NAME_COLUMN, columnInfo.getEntityMnemonic()),
-                        new Field(COLUMN_NAME_COLUMN, columnInfo.getMnemonic()),
-                        new Field(DATA_TYPE_COLUMN, columnInfo.getDataType().getSqlType()),
-                        new Field(TYPE_NAME_COLUMN, columnInfo.getDataType().getAliases()[0].toUpperCase()),
-                        new Field(COLUMN_SIZE_COLUMN, columnInfo.getLength()),
-                        new Field(BUFFER_LENGTH_COLUMN, 0),
-                        new Field(DECIMAL_DIGITS_COLUMN, columnInfo.getAccuracy()),
-                        new Field(NUM_PREC_RADIX_COLUMN, null),
-                        new Field(NULLABLE_COLUMN, isNullable(columnInfo) ? 1 : 0),
-                        new Field(REMARKS_COLUMN, ""),
-                        new Field(COLUMN_DEF_COLUMN, ""),
-                        new Field(SQL_DATA_TYPE_COLUMN, 0),
-                        new Field(SQL_DATETIME_SUB_COLUMN, 0),
-                        new Field(CHAR_OCTET_LENGTH_COLUMN, null),
-                        new Field(ORDINAL_POSITION_COLUMN, columnInfo.getOrdinalPosition()),
-                        new Field(IS_NULLABLE_COLUMN, isNullable(columnInfo) ? "YES" : "NO"),
-                        new Field(SCOPE_CATALOG_COLUMN, null),
-                        new Field(SCOPE_SCHEMA_COLUMN, null),
-                        new Field(SCOPE_TABLE_COLUMN, null),
-                        new Field(SOURCE_DATA_TYPE_COLUMN, null),
-                        new Field(IS_AUTOINCREMENT_COLUMN, "NO"),
-                        new Field(IS_GENERATEDCOLUMN_COLUMN, "NO")
-                }).collect(Collectors.toList());
+        List<Tuple> tuples = columns.stream()
+                .map(columnInfo -> new Tuple(new Object[]{
+                        columnInfo.getDatamartMnemonic(),
+                        null,
+                        columnInfo.getEntityMnemonic(),
+                        columnInfo.getMnemonic(),
+                        columnInfo.getDataType().getSqlType(),
+                        columnInfo.getDataType().getAliases()[0].toUpperCase(),
+                        getColumnSize(columnInfo),
+                        null,
+                        getColumnScale(columnInfo),
+                        null,
+                        isNullable(columnInfo) ? 1 : 0,
+                        null,
+                        null,
+                        null,
+                        null,
+                        getColumnSize(columnInfo),
+                        columnInfo.getOrdinalPosition() + 1,
+                        isNullable(columnInfo) ? "YES" : "NO",
+                        null,
+                        null,
+                        null,
+                        columnInfo.getDataType().getSqlType(),
+                        "NO",
+                        "NO"
+                })).collect(Collectors.toList());
         try (DtmStatement dtmStatement = (DtmStatement) this.connection.createStatement()) {
-            return dtmStatement.createDriverResultSet(result, getMetadata(result));
+            return dtmStatement.createDriverResultSet(createColumnFields(), tuples);
         }
+    }
+
+    private Integer getColumnSize(ColumnInfo columnInfo) {
+        switch (columnInfo.getDataType()) {
+            case TIME:
+            case TIMESTAMP:
+                return columnInfo.getAccuracy();
+            default:
+                return columnInfo.getLength() == null ? -1 : columnInfo.getLength();
+        }
+    }
+
+    private Integer getColumnScale(ColumnInfo columnInfo) {
+        switch (columnInfo.getDataType()) {
+            case TIME:
+            case TIMESTAMP:
+                return 0;
+            default:
+                return columnInfo.getAccuracy() == null ? 0 : columnInfo.getAccuracy();
+        }
+    }
+
+    private Field[] createColumnFields() {
+        return new Field[]{
+                new Field(CATALOG_NAME_COLUMN, ColumnType.VARCHAR),
+                new Field(SCHEMA_NAME_COLUMN, ColumnType.VARCHAR),
+                new Field(TABLE_NAME_COLUMN, ColumnType.VARCHAR),
+                new Field(COLUMN_NAME_COLUMN, ColumnType.VARCHAR),
+                new Field(DATA_TYPE_COLUMN, ColumnType.INT),
+                new Field(TYPE_NAME_COLUMN, ColumnType.VARCHAR),
+                new Field(COLUMN_SIZE_COLUMN, ColumnType.INT),
+                new Field(BUFFER_LENGTH_COLUMN, ColumnType.VARCHAR),
+                new Field(DECIMAL_DIGITS_COLUMN, ColumnType.INT),
+                new Field(NUM_PREC_RADIX_COLUMN, ColumnType.INT),
+                new Field(NULLABLE_COLUMN, ColumnType.INT),
+                new Field(REMARKS_COLUMN, ColumnType.VARCHAR),
+                new Field(COLUMN_DEF_COLUMN, ColumnType.VARCHAR),
+                new Field(SQL_DATA_TYPE_COLUMN, ColumnType.INT),
+                new Field(SQL_DATETIME_SUB_COLUMN, ColumnType.INT),
+                new Field(CHAR_OCTET_LENGTH_COLUMN, ColumnType.INT),
+                new Field(ORDINAL_POSITION_COLUMN, ColumnType.INT),
+                new Field(IS_NULLABLE_COLUMN, ColumnType.VARCHAR),
+                new Field(SCOPE_CATALOG_COLUMN, ColumnType.VARCHAR),
+                new Field(SCOPE_SCHEMA_COLUMN, ColumnType.VARCHAR),
+                new Field(SCOPE_TABLE_COLUMN, ColumnType.VARCHAR),
+                new Field(SOURCE_DATA_TYPE_COLUMN, ColumnType.INT),
+                new Field(IS_AUTOINCREMENT_COLUMN, ColumnType.VARCHAR),
+                new Field(IS_GENERATEDCOLUMN_COLUMN, ColumnType.VARCHAR)
+        };
     }
 
     private boolean isNullable(ColumnInfo columnInfo) {
@@ -811,7 +872,19 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public ResultSet getPrimaryKeys(String catalog, String schema, String table) throws SQLException {
-        return DtmResultSet.createEmptyResultSet();
+        String sql = "SELECT CONSTRAINT_CATALOG, TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, ORDINAL_POSITION, CONSTRAINT_NAME" +
+                " FROM information_schema.key_column_usage" +
+                " WHERE true";
+        if (catalog != null) {
+            sql += String.format(" AND CONSTRAINT_CATALOG = '%s'", catalog);
+        }
+        if (schema != null) {
+            sql += String.format(" AND TABLE_SCHEMA = '%s'", schema);
+        }
+        if (table != null) {
+            sql += String.format(" AND TABLE_NAME = '%s'", table);
+        }
+        return createMetaDataStatement().executeQuery(sql);
     }
 
     @Override
@@ -836,37 +909,6 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public ResultSet getTypeInfo() throws SQLException {
-        //FIXME
-        /* Реализованы 3 основных типа, как оказалось, для исправления в рамках DTM-98
-        не потребовалось, но в последствии типы БД могут потребоваться, поэтому оставлю это здесь.
-        String[] columnNames = new String[]{
-                TYPE_NAME_COLUMN,
-                DATA_TYPE_COLUMN,
-                "PRECISION",
-                "LITERAL_PREFIX",
-                "LITERAL_SUFFIX",
-                "CREATE_PARAMS",
-                NULLABLE_COLUMN,
-                "CASE_SENSITIVE",
-                "SEARCHABLE",
-                "UNSIGNED_ATTRIBUTE",
-                "FIXED_PREC_SCALE",
-                "AUTO_INCREMENT",
-                "LOCAL_TYPE_NAME",
-                "MINIMUM_SCALE",
-                "MAXIMUM_SCALE",
-                SQL_DATA_TYPE_COLUMN,
-                SQL_DATETIME_SUB_COLUMN,
-                NUM_PREC_RADIX_COLUMN};
-        Object[][] data = new Object[][]{
-                {"BIGINT", Types.BIGINT, 19, "", "", "", 1, false, 3, true, false, true, "BIGINT", 0, 0, 0, 0, 10},
-                {"INT", Types.INTEGER, 10, "", "", "", 1, false, 3, true, false, true, "INT", 0, 0, 0, 0, 10},
-                {"VARCHAR", Types.VARCHAR, 255, "'", "'", "(M)", 1, false, 3, false, false, false, "VARCHAR", 0, 0, 0, 0, 10}};
-        List<Field[]> result = new ArrayList<>();
-        for (int i=0; i<data.length; i++) {
-            result.add(valueArrayToFieldArray(columnNames, data[i]));
-        }
-        return new DtmResultSet(connection, result);*/
         return null;
     }
 
@@ -1096,11 +1138,19 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public <T> T unwrap(Class<T> iface) throws SQLException {
-        return null;
+        if (iface.isAssignableFrom(this.getClass())) {
+            return iface.cast(this);
+        } else {
+            throw new SQLException("Cannot unwrap to " + iface.getName());
+        }
     }
 
     @Override
     public boolean isWrapperFor(Class<?> iface) throws SQLException {
-        return false;
+        return iface.isAssignableFrom(this.getClass());
+    }
+
+    private Statement createMetaDataStatement() throws SQLException {
+        return connection.createStatement();
     }
 }

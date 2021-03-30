@@ -1,12 +1,12 @@
 package io.arenadata.dtm.query.execution.plugin.api.service;
 
 import io.arenadata.dtm.common.model.SqlProcessingType;
-import io.arenadata.dtm.query.execution.plugin.api.RequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.dto.PluginRequest;
 import io.vertx.core.Future;
 
-public interface DatamartExecutionService<Context extends RequestContext<?>, Result> {
+public interface DatamartExecutionService<RQ extends PluginRequest, RS> {
 
-    Future<Result> execute(Context context);
+    Future<RS> execute(RQ request);
 
     SqlProcessingType getSqlProcessingType();
 }

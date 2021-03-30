@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.eddl;
 
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.core.dto.eddl.EddlQuery;
+import io.arenadata.dtm.query.execution.core.dto.eddl.EddlRequestContext;
 import io.vertx.core.Future;
 
 /**
@@ -10,12 +10,9 @@ import io.vertx.core.Future;
 public interface EddlQueryParamExtractor {
 
     /**
-     * <p>exctract params</p>
-     *
-     * @param request            request
-     * @param asyncResultHandler async result handler
-     * @return future object
+     * @param context eddl request context
+     * @return
      */
-    Future<EddlQuery> extract(QueryRequest request);
+    Future<EddlQuery> extract(EddlRequestContext context);
 
 }

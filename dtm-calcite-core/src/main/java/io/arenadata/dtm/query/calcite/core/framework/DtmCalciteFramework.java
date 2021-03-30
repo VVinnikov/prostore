@@ -11,6 +11,7 @@ import org.apache.calcite.server.CalciteServerStatement;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlRexConvertletTable;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
 import org.apache.calcite.statistic.QuerySqlStatisticProvider;
@@ -40,6 +41,16 @@ public class DtmCalciteFramework {
         return new DtmCalciteFramework.ConfigBuilder(config);
     }
 
+    @FunctionalInterface
+    public interface BasePrepareAction<R> {
+        R apply(RelOptCluster var1, RelOptSchema var2, SchemaPlus var3, CalciteServerStatement var4);
+    }
+
+    @FunctionalInterface
+    public interface PlannerAction<R> {
+        R apply(RelOptCluster var1, RelOptSchema var2, SchemaPlus var3);
+    }
+
     static class StdFrameworkConfig implements FrameworkConfig {
         private final Context context;
         private final SqlRexConvertletTable convertletTable;
@@ -55,8 +66,23 @@ public class DtmCalciteFramework {
         private final boolean evolveLattice;
         private final SqlStatisticProvider statisticProvider;
         private final RelOptTable.ViewExpander viewExpander;
+        private final SqlValidator.Config validatorConfig;
 
-        StdFrameworkConfig(Context context, SqlRexConvertletTable convertletTable, SqlOperatorTable operatorTable, ImmutableList<Program> programs, ImmutableList<RelTraitDef> traitDefs, SqlParser.Config parserConfig, org.apache.calcite.sql2rel.SqlToRelConverter.Config sqlToRelConverterConfig, SchemaPlus defaultSchema, RelOptCostFactory costFactory, RelDataTypeSystem typeSystem, RexExecutor executor, boolean evolveLattice, SqlStatisticProvider statisticProvider, RelOptTable.ViewExpander viewExpander) {
+        StdFrameworkConfig(Context context,
+                           SqlRexConvertletTable convertletTable,
+                           SqlOperatorTable operatorTable,
+                           ImmutableList<Program> programs,
+                           ImmutableList<RelTraitDef> traitDefs,
+                           SqlParser.Config parserConfig,
+                           org.apache.calcite.sql2rel.SqlToRelConverter.Config sqlToRelConverterConfig,
+                           SchemaPlus defaultSchema,
+                           RelOptCostFactory costFactory,
+                           RelDataTypeSystem typeSystem,
+                           RexExecutor executor,
+                           boolean evolveLattice,
+                           SqlStatisticProvider statisticProvider,
+                           RelOptTable.ViewExpander viewExpander,
+                           SqlValidator.Config validatorConfig) {
             this.context = context;
             this.convertletTable = convertletTable;
             this.operatorTable = operatorTable;
@@ -71,10 +97,16 @@ public class DtmCalciteFramework {
             this.evolveLattice = evolveLattice;
             this.statisticProvider = statisticProvider;
             this.viewExpander = viewExpander;
+            this.validatorConfig = validatorConfig == null ? SqlValidator.Config.DEFAULT : validatorConfig;
         }
 
         public SqlParser.Config getParserConfig() {
             return this.parserConfig;
+        }
+
+        @Override
+        public SqlValidator.Config getSqlValidatorConfig() {
+            return this.validatorConfig;
         }
 
         public org.apache.calcite.sql2rel.SqlToRelConverter.Config getSqlToRelConverterConfig() {
@@ -145,6 +177,7 @@ public class DtmCalciteFramework {
         private boolean evolveLattice;
         private SqlStatisticProvider statisticProvider;
         private RelOptTable.ViewExpander viewExpander;
+        private SqlValidator.Config validatorConfig;
 
         private ConfigBuilder() {
             this.convertletTable = StandardConvertletTable.INSTANCE;
@@ -172,29 +205,44 @@ public class DtmCalciteFramework {
             this.typeSystem = config.getTypeSystem();
             this.evolveLattice = config.isEvolveLattice();
             this.statisticProvider = config.getStatisticProvider();
+            this.validatorConfig = config.getSqlValidatorConfig();
         }
 
         public FrameworkConfig build() {
-            return new DtmCalciteFramework.StdFrameworkConfig(this.context, this.convertletTable, this.operatorTable, this.programs, this.traitDefs, this.parserConfig, this.sqlToRelConverterConfig, this.defaultSchema, this.costFactory, this.typeSystem, this.executor, this.evolveLattice, this.statisticProvider, this.viewExpander);
+            return new DtmCalciteFramework.StdFrameworkConfig(this.context,
+                    this.convertletTable,
+                    this.operatorTable,
+                    this.programs,
+                    this.traitDefs,
+                    this.parserConfig,
+                    this.sqlToRelConverterConfig,
+                    this.defaultSchema,
+                    this.costFactory,
+                    this.typeSystem,
+                    this.executor,
+                    this.evolveLattice,
+                    this.statisticProvider,
+                    this.viewExpander,
+                    this.validatorConfig);
         }
 
         public DtmCalciteFramework.ConfigBuilder context(Context c) {
-            this.context = (Context) Objects.requireNonNull(c);
+            this.context = Objects.requireNonNull(c);
             return this;
         }
 
         public DtmCalciteFramework.ConfigBuilder executor(RexExecutor executor) {
-            this.executor = (RexExecutor) Objects.requireNonNull(executor);
+            this.executor = Objects.requireNonNull(executor);
             return this;
         }
 
         public DtmCalciteFramework.ConfigBuilder convertletTable(SqlRexConvertletTable convertletTable) {
-            this.convertletTable = (SqlRexConvertletTable) Objects.requireNonNull(convertletTable);
+            this.convertletTable = Objects.requireNonNull(convertletTable);
             return this;
         }
 
         public DtmCalciteFramework.ConfigBuilder operatorTable(SqlOperatorTable operatorTable) {
-            this.operatorTable = (SqlOperatorTable) Objects.requireNonNull(operatorTable);
+            this.operatorTable = Objects.requireNonNull(operatorTable);
             return this;
         }
 
@@ -214,12 +262,12 @@ public class DtmCalciteFramework {
         }
 
         public DtmCalciteFramework.ConfigBuilder parserConfig(SqlParser.Config parserConfig) {
-            this.parserConfig = (SqlParser.Config) Objects.requireNonNull(parserConfig);
+            this.parserConfig = Objects.requireNonNull(parserConfig);
             return this;
         }
 
         public DtmCalciteFramework.ConfigBuilder sqlToRelConverterConfig(org.apache.calcite.sql2rel.SqlToRelConverter.Config sqlToRelConverterConfig) {
-            this.sqlToRelConverterConfig = (org.apache.calcite.sql2rel.SqlToRelConverter.Config) Objects.requireNonNull(sqlToRelConverterConfig);
+            this.sqlToRelConverterConfig = Objects.requireNonNull(sqlToRelConverterConfig);
             return this;
         }
 
@@ -238,7 +286,7 @@ public class DtmCalciteFramework {
         }
 
         public DtmCalciteFramework.ConfigBuilder ruleSets(List<RuleSet> ruleSets) {
-            return this.programs(Programs.listOf((List) Objects.requireNonNull(ruleSets)));
+            return this.programs(Programs.listOf(Objects.requireNonNull(ruleSets)));
         }
 
         public DtmCalciteFramework.ConfigBuilder programs(List<Program> programs) {
@@ -252,7 +300,7 @@ public class DtmCalciteFramework {
         }
 
         public DtmCalciteFramework.ConfigBuilder typeSystem(RelDataTypeSystem typeSystem) {
-            this.typeSystem = (RelDataTypeSystem) Objects.requireNonNull(typeSystem);
+            this.typeSystem = Objects.requireNonNull(typeSystem);
             return this;
         }
 
@@ -262,7 +310,7 @@ public class DtmCalciteFramework {
         }
 
         public DtmCalciteFramework.ConfigBuilder statisticProvider(SqlStatisticProvider statisticProvider) {
-            this.statisticProvider = (SqlStatisticProvider) Objects.requireNonNull(statisticProvider);
+            this.statisticProvider = Objects.requireNonNull(statisticProvider);
             return this;
         }
 
@@ -270,15 +318,5 @@ public class DtmCalciteFramework {
             this.viewExpander = viewExpander;
             return this;
         }
-    }
-
-    @FunctionalInterface
-    public interface BasePrepareAction<R> {
-        R apply(RelOptCluster var1, RelOptSchema var2, SchemaPlus var3, CalciteServerStatement var4);
-    }
-
-    @FunctionalInterface
-    public interface PlannerAction<R> {
-        R apply(RelOptCluster var1, RelOptSchema var2, SchemaPlus var3);
     }
 }

@@ -1,27 +1,16 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.rollback;
 
-import io.arenadata.dtm.common.metrics.RequestMetrics;
-import io.arenadata.dtm.common.model.ddl.Entity;
-import io.arenadata.dtm.common.model.ddl.EntityType;
-import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.plugin.sql.PreparedStatementRequest;
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbRollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.factory.impl.AdbRollbackRequestFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.arenadata.dtm.query.execution.plugin.api.factory.RollbackRequestFactory;
-import io.arenadata.dtm.query.execution.plugin.api.request.RollbackRequest;
-import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Promise;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,70 +18,41 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class AdbRollbackServiceTest {
 
     private final RollbackRequestFactory<AdbRollbackRequest> rollbackRequestFactory = mock(AdbRollbackRequestFactory.class);
     private final AdbQueryExecutor adbQueryExecutor = mock(AdbQueryExecutor.class);
-    private AdbRollbackService adbRollbackService;
-    private Entity entity;
-
-    @BeforeEach
-    void setUp() {
-        adbRollbackService = new AdbRollbackService(rollbackRequestFactory, adbQueryExecutor);
-        entity = Entity.builder()
-            .entityType(EntityType.UPLOAD_EXTERNAL_TABLE)
-            .externalTableFormat("avro")
-            .externalTableLocationPath("kafka://kafka-1.dtm.local:9092/topic")
-            .externalTableLocationType(ExternalTableLocationType.KAFKA)
-            .externalTableUploadMessageLimit(1000)
-            .name("upload_table")
-            .schema("test")
-            .externalTableSchema("")
-            .build();
-    }
+    private AdbRollbackService adbRollbackService = new AdbRollbackService(rollbackRequestFactory, adbQueryExecutor);
 
     @Test
     void executeSuccess() {
         Promise promise = Promise.promise();
-        RollbackRequest rollbackRequest = RollbackRequest.builder()
-            .datamart("test")
-            .sysCn(1L)
-            .queryRequest(new QueryRequest())
-            .destinationTable("test_table")
-            .entity(entity)
-            .build();
-        RollbackRequestContext context = new RollbackRequestContext(new RequestMetrics(), rollbackRequest);
+        RollbackRequest rollbackRequest = RollbackRequest.builder().build();
         AdbRollbackRequest sqlList = new AdbRollbackRequest(
-            PreparedStatementRequest.onlySql("deleteFromActualSql"),
             PreparedStatementRequest.onlySql("deleteFromHistory"),
+            PreparedStatementRequest.onlySql("deleteFromActualSql"),
             PreparedStatementRequest.onlySql("truncateSql"),
             PreparedStatementRequest.onlySql("insertSql")
         );
         when(rollbackRequestFactory.create(any())).thenReturn(sqlList);
         Map<String, Integer> execCount = new HashMap<>();
         sqlList.getStatements().forEach(request -> execCount.put(request.getSql(), 0));
-        List<Map<String, Object>> resultSet = new ArrayList<>();
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<List<Map<String, Object>>>> handler = invocation.getArgument(2);
+        doAnswer(invocation -> {
             final String sql = invocation.getArgument(0);
             execCount.put(sql, 1);
-            handler.handle(Future.succeededFuture(resultSet));
-            return null;
-        }).when(adbQueryExecutor).execute(any(), any());
+            return Future.succeededFuture();
+        }).when(adbQueryExecutor).executeUpdate(any());
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<List<Map<String, Object>>>> handler = invocation.getArgument(1);
+        doAnswer(invocation -> {
             final List<PreparedStatementRequest> requests = invocation.getArgument(0);
             requests.forEach(r -> execCount.put(r.getSql(), 1));
-            handler.handle(Future.succeededFuture(resultSet));
-            return null;
+            return Future.succeededFuture();
         }).when(adbQueryExecutor).executeInTransaction(any());
 
-        adbRollbackService.execute(context);
+        adbRollbackService.execute(rollbackRequest).onComplete(promise);
         assertTrue(promise.future().succeeded());
         assertEquals(execCount.get(sqlList.getStatements().get(0).getSql()), 1);
         assertEquals(execCount.get(sqlList.getStatements().get(1).getSql()), 1);
@@ -103,35 +63,20 @@ class AdbRollbackServiceTest {
     @Test
     void executeError() {
         Promise promise = Promise.promise();
-        RollbackRequest rollbackRequest = RollbackRequest.builder()
-            .datamart("test")
-            .sysCn(1L)
-            .queryRequest(new QueryRequest())
-            .destinationTable("test_table")
-            .entity(entity)
-            .build();
-        RollbackRequestContext context = new RollbackRequestContext(new RequestMetrics(), rollbackRequest);
+        RollbackRequest rollbackRequest = RollbackRequest.builder().build();
 
         when(rollbackRequestFactory.create(any())).thenReturn(new AdbRollbackRequest(
-            PreparedStatementRequest.onlySql("deleteFromActualSql"),
             PreparedStatementRequest.onlySql("deleteFromHistory"),
+            PreparedStatementRequest.onlySql("deleteFromActualSql"),
             PreparedStatementRequest.onlySql("truncateSql"),
             PreparedStatementRequest.onlySql("insertSql")
         ));
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<List<Map<String, Object>>>> handler = invocation.getArgument(2);
-            handler.handle(Future.failedFuture(new DataSourceException("")));
-            return null;
-        }).when(adbQueryExecutor).execute(any(), any());
+        when(adbQueryExecutor.executeUpdate(any())).thenReturn(Future.failedFuture(new DataSourceException("")));
 
-        Mockito.doAnswer(invocation -> {
-            final Handler<AsyncResult<List<Map<String, Object>>>> handler = invocation.getArgument(1);
-            handler.handle(Future.failedFuture(new DataSourceException("")));
-            return null;
-        }).when(adbQueryExecutor).executeInTransaction(any());
+        when(adbQueryExecutor.executeInTransaction(any())).thenReturn(Future.failedFuture(new DataSourceException("")));
 
-        adbRollbackService.execute(context);
+        adbRollbackService.execute(rollbackRequest).onComplete(promise);
         assertTrue(promise.future().failed());
     }
 }

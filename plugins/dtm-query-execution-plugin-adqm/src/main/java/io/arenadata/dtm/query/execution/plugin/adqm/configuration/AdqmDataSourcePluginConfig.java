@@ -1,13 +1,14 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.configuration;
 
-import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adqm.AdqmDtmDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.api.service.*;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckDataService;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
+import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckVersionService;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TruncateHistoryService;
+import io.arenadata.dtm.query.execution.plugin.api.service.mppr.MpprService;
+import io.arenadata.dtm.query.execution.plugin.api.service.mppw.MppwService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,24 +20,24 @@ public class AdqmDataSourcePluginConfig {
     public AdqmDtmDataSourcePlugin adqmDataSourcePlugin(
             @Qualifier("adqmDdlService") DdlService<Void> ddlService,
             @Qualifier("adqmLlrService") LlrService<QueryResult> llrService,
-            @Qualifier("adqmMpprKafkaService") MpprKafkaService<QueryResult> mpprKafkaService,
-            @Qualifier("adqmMppwKafkaService") MppwKafkaService<QueryResult> mppwKafkaService,
-            @Qualifier("adqmQueryCostService") QueryCostService<Integer> queryCostService,
-            @Qualifier("adqmStatusService") StatusService<StatusQueryResult> statusService,
+            @Qualifier("adqmMpprService") MpprService mpprService,
+            @Qualifier("adqmMppwService") MppwService mppwService,
+            @Qualifier("adqmStatusService") StatusService statusService,
             @Qualifier("adqmRollbackService") RollbackService<Void> rollbackService,
             @Qualifier("adqmCheckTableService") CheckTableService checkTableService,
             @Qualifier("adqmCheckDataService") CheckDataService checkDataService,
-            @Qualifier("adqmTruncateHistoryService") TruncateHistoryService truncateHistoryService) {
+            @Qualifier("adqmTruncateHistoryService") TruncateHistoryService truncateHistoryService,
+            @Qualifier("adqmCheckVersionService") CheckVersionService checkVersionService) {
         return new AdqmDtmDataSourcePlugin(
                 ddlService,
                 llrService,
-                mpprKafkaService,
-                mppwKafkaService,
-                queryCostService,
+                mpprService,
+                mppwService,
                 statusService,
                 rollbackService,
                 checkTableService,
                 checkDataService,
-                truncateHistoryService);
+                truncateHistoryService,
+                checkVersionService);
     }
 }

@@ -5,22 +5,21 @@ import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.common.version.VersionInfo;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.service.metrics.MetricsService;
 import io.arenadata.dtm.query.execution.core.verticle.TaskVerticleExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
-import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
-import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountParams;
-import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Params;
-import io.arenadata.dtm.query.execution.plugin.api.dto.PluginParams;
-import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
-import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckVersionRequest;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
+import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
+import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +29,8 @@ import org.springframework.plugin.core.PluginRegistry;
 import org.springframework.plugin.core.config.EnablePluginRegistries;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -64,63 +65,63 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
 
     @Override
     public Set<SourceType> getSourceTypes() {
-        return sourceTypes;
+        return new HashSet<>(sourceTypes);
     }
 
     @Override
-    public Future<Void> ddl(SourceType sourceType, DdlRequestContext context) {
+    public Future<Void> ddl(SourceType sourceType, RequestMetrics metrics, DdlRequest request) {
         return executeWithMetrics(sourceType,
                 SqlProcessingType.DDL,
-                context.getMetrics(),
-                plugin -> plugin.ddl(context));
+                metrics,
+                plugin -> plugin.ddl(request));
     }
 
     @Override
-    public Future<QueryResult> llr(SourceType sourceType, LlrRequestContext context) {
+    public Future<QueryResult> llr(SourceType sourceType, RequestMetrics metrics, LlrRequest llrRequest) {
         return executeWithMetrics(sourceType,
                 SqlProcessingType.LLR,
-                context.getMetrics(),
-                plugin -> plugin.llr(context));
+                metrics,
+                plugin -> plugin.llr(llrRequest));
     }
 
     @Override
-    public Future<QueryResult> mppr(SourceType sourceType, MpprRequestContext context) {
+    public Future<Void> prepareLlr(SourceType sourceType, RequestMetrics metrics, LlrRequest llrRequest) {
+        return executeWithMetrics(sourceType,
+                SqlProcessingType.LLR,
+                metrics,
+                plugin -> plugin.prepareLlr(llrRequest));
+    }
+
+    @Override
+    public Future<QueryResult> mppr(SourceType sourceType, RequestMetrics metrics, MpprRequest request) {
         return executeWithMetrics(sourceType,
                 SqlProcessingType.MPPR,
-                context.getMetrics(),
-                plugin -> plugin.mppr(context));
+                metrics,
+                plugin -> plugin.mppr(request));
     }
 
     @Override
-    public Future<QueryResult> mppw(SourceType sourceType, MppwRequestContext context) {
+    public Future<QueryResult> mppw(SourceType sourceType, RequestMetrics metrics, MppwRequest request) {
         return executeWithMetrics(sourceType,
                 SqlProcessingType.MPPW,
-                context.getMetrics(),
-                plugin -> plugin.mppw(context));
+                metrics,
+                plugin -> plugin.mppw(request));
     }
 
     @Override
-    public Future<Integer> calcQueryCost(SourceType sourceType, QueryCostRequestContext context) {
-        return executeWithMetrics(sourceType,
-                SqlProcessingType.COST,
-                context.getMetrics(),
-                plugin -> plugin.calcQueryCost(context));
-    }
-
-    @Override
-    public Future<StatusQueryResult> status(SourceType sourceType, StatusRequestContext context) {
+    public Future<StatusQueryResult> status(SourceType sourceType, RequestMetrics metrics, String topic) {
         return executeWithMetrics(sourceType,
                 SqlProcessingType.STATUS,
-                context.getMetrics(),
-                plugin -> plugin.status(context));
+                metrics,
+                plugin -> plugin.status(topic));
     }
 
     @Override
-    public Future<Void> rollback(SourceType sourceType, RollbackRequestContext context) {
+    public Future<Void> rollback(SourceType sourceType, RequestMetrics metrics, RollbackRequest request) {
         return executeWithMetrics(sourceType,
                 SqlProcessingType.ROLLBACK,
-                context.getMetrics(),
-                plugin -> plugin.rollback(context));
+                metrics,
+                plugin -> plugin.rollback(request));
     }
 
     @Override
@@ -134,39 +135,54 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     }
 
     @Override
-    public Future<Void> checkTable(SourceType sourceType, CheckContext context) {
-        return check(new PluginParams(sourceType, context.getMetrics()),
-                plugin -> plugin.checkTable(context));
+    public Future<Void> checkTable(SourceType sourceType,
+                                   RequestMetrics metrics,
+                                   CheckTableRequest checkTableRequest) {
+        return executeWithMetrics(sourceType,
+                SqlProcessingType.CHECK,
+                metrics,
+                plugin -> plugin.checkTable(checkTableRequest));
     }
 
     @Override
-    public Future<Long> checkDataByCount(CheckDataByCountParams params) {
-        return check(params, plugin -> plugin.checkDataByCount(params));
+    public Future<Long> checkDataByCount(SourceType sourceType,
+                                         RequestMetrics metrics,
+                                         CheckDataByCountRequest request) {
+        return executeWithMetrics(sourceType,
+                SqlProcessingType.CHECK,
+                metrics,
+                plugin -> plugin.checkDataByCount(request));
     }
 
     @Override
-    public Future<Long> checkDataByHashInt32(CheckDataByHashInt32Params params) {
-        return check(params, plugin -> plugin.checkDataByHashInt32(params));
+    public Future<Long> checkDataByHashInt32(SourceType sourceType,
+                                             RequestMetrics metrics,
+                                             CheckDataByHashInt32Request request) {
+        return executeWithMetrics(
+                sourceType,
+                SqlProcessingType.CHECK,
+                metrics,
+                plugin -> plugin.checkDataByHashInt32(request));
     }
 
     @Override
-    public Future<Void> truncateHistory(TruncateHistoryParams params) {
-        return executeWithMetrics(SqlProcessingType.TRUNCATE,
-                params,
-                plugin -> plugin.truncateHistory(params));
+    public Future<List<VersionInfo>> checkVersion(SourceType sourceType, RequestMetrics metrics, CheckVersionRequest request) {
+        return executeWithMetrics(
+                sourceType,
+                SqlProcessingType.CHECK,
+                metrics,
+                plugin -> plugin.checkVersion(request));
     }
 
-    private <T> Future<T> check(PluginParams pluginParams,
-                                Function<DtmDataSourcePlugin, Future<T>> func) {
-        return executeWithMetrics(SqlProcessingType.CHECK, pluginParams, func);
-    }
-
-    private <T> Future<T> executeWithMetrics(SqlProcessingType sqlProcessingType,
-                                             PluginParams pluginParams,
-                                             Function<DtmDataSourcePlugin, Future<T>> func) {
-        SourceType sourceType = pluginParams.getSourceType();
-        RequestMetrics requestMetrics = pluginParams.getRequestMetrics();
-        return executeWithMetrics(sourceType, sqlProcessingType, requestMetrics, func);
+    @Override
+    public Future<Void> truncateHistory(SourceType sourceType,
+                                        RequestMetrics metrics,
+                                        TruncateHistoryRequest request) {
+        return executeWithMetrics(
+                sourceType,
+                SqlProcessingType.TRUNCATE,
+                metrics,
+                plugin -> plugin.truncateHistory(request));
     }
 
     private <T> Future<T> executeWithMetrics(SourceType sourceType,

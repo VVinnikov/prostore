@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.mock;
 
+import io.arenadata.dtm.common.reader.QueryParameters;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
@@ -50,6 +51,7 @@ public class MockDatabaseExecutor implements DatabaseExecutor {
             if (r.getLeft()) {
                 promise.complete();
             } else {
+                System.out.println(r.getRight());
                 promise.fail(new DataSourceException(r.getRight()));
             }
         });
@@ -68,7 +70,9 @@ public class MockDatabaseExecutor implements DatabaseExecutor {
     }
 
     @Override
-    public Future<?> executeWithParams(String sql, List<Object> params, List<ColumnMetadata> metadata) {
+    public Future<List<Map<String, Object>>> executeWithParams(String sql,
+                                                               QueryParameters params,
+                                                               List<ColumnMetadata> metadata) {
         return Future.future(promise -> {
             val r = call(sql);
             if (r.getLeft()) {

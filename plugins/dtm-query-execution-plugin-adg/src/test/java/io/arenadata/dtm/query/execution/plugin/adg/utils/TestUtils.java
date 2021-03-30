@@ -4,17 +4,25 @@ import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityFieldUtils;
+import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
+import io.arenadata.dtm.query.calcite.core.service.impl.CalciteDefinitionService;
+import io.arenadata.dtm.query.execution.plugin.adg.configuration.AdgCalciteConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.*;
+import org.apache.calcite.sql.SqlNode;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.arenadata.dtm.query.execution.plugin.adg.constants.ColumnFields.*;
-import static io.arenadata.dtm.query.execution.plugin.adg.constants.ColumnFields.SYS_OP_FIELD;
 import static io.arenadata.dtm.query.execution.plugin.adg.factory.impl.AdgTableEntitiesFactory.SEC_INDEX_PREFIX;
 
 public class TestUtils {
-    public static final List<String> spacePostfixes = Arrays.asList(ACTUAL_POSTFIX, HISTORY_POSTFIX, STAGING_POSTFIX);
+    public static final AdgCalciteConfiguration CALCITE_CONFIGURATION = new AdgCalciteConfiguration();
+    public static final DefinitionService<SqlNode> DEFINITION_SERVICE =
+            new CalciteDefinitionService(CALCITE_CONFIGURATION.configDdlParser(CALCITE_CONFIGURATION.ddlParserImplFactory())) {
+            };
+
+    public static final List<String> SPACE_POSTFIXES = Arrays.asList(ACTUAL_POSTFIX, HISTORY_POSTFIX, STAGING_POSTFIX);
 
     public static Entity getEntity() {
         List<EntityField> keyFields = Arrays.asList(
@@ -56,11 +64,15 @@ public class TestUtils {
                 .filter(field -> field.getPrimaryOrder() == null)
                 .map(TestUtils::createAttribute)
                 .collect(Collectors.toList());
-        return spacePostfixes.stream()
+        List<SpaceAttribute> stageLogAttrs = entity.getFields().stream()
+                .sorted(Comparator.comparing(EntityField::getOrdinalPosition))
+                .map(TestUtils::createAttribute)
+                .collect(Collectors.toList());
+        return SPACE_POSTFIXES.stream()
                 .collect(Collectors.toMap(
                         postfix -> String.format("env__%s__%s%s", entity.getSchema(), entity.getName(), postfix),
                         postfix -> Space.builder()
-                                .format(getAttrs(postfix, pkAttrs, logAttrs))
+                                .format(postfix.equalsIgnoreCase(STAGING_POSTFIX)? getAttrs(postfix, Collections.emptyList() ,stageLogAttrs): getAttrs(postfix, pkAttrs, logAttrs))
                                 .indexes(spaceIndexMap.get(postfix))
                                 .build()));
     }
@@ -88,20 +100,23 @@ public class TestUtils {
     public static List<SpaceAttribute> getAttrs(String postfix,
                                                 List<SpaceAttribute> pkAttrs,
                                                 List<SpaceAttribute> logAttrs) {
-        List<SpaceAttribute> result = new ArrayList<>(pkAttrs);
-        result.add(new SpaceAttribute(false, BUCKET_ID, SpaceAttributeTypes.UNSIGNED));
+        List<SpaceAttribute> result;
         switch (postfix) {
             case ACTUAL_POSTFIX:
             case HISTORY_POSTFIX:
+                result = new ArrayList<>(pkAttrs);
+                result.add(new SpaceAttribute(false, BUCKET_ID, SpaceAttributeTypes.UNSIGNED));
                 result.add(new SpaceAttribute(false, SYS_FROM_FIELD, SpaceAttributeTypes.NUMBER));
                 result.add(new SpaceAttribute(true, SYS_TO_FIELD, SpaceAttributeTypes.NUMBER));
                 result.add(new SpaceAttribute(false, SYS_OP_FIELD, SpaceAttributeTypes.NUMBER));
+                result.addAll(logAttrs);
                 break;
-            case STAGING_POSTFIX:
+            default:
+                result = new ArrayList<>(logAttrs);
                 result.add(new SpaceAttribute(false, SYS_OP_FIELD, SpaceAttributeTypes.NUMBER));
+                result.add(new SpaceAttribute(false, BUCKET_ID, SpaceAttributeTypes.UNSIGNED));
                 break;
         }
-        result.addAll(logAttrs);
         return result;
     }
 

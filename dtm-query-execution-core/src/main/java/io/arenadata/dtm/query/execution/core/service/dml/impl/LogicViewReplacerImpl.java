@@ -2,9 +2,11 @@ package io.arenadata.dtm.query.execution.core.service.dml.impl;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
+import io.arenadata.dtm.query.calcite.core.extension.snapshot.SqlDeltaSnapshot;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.calcite.core.node.SqlTreeNode;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
+import io.arenadata.dtm.query.calcite.core.util.SqlNodeUtil;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.service.dml.LogicViewReplacer;
 import io.vertx.core.CompositeFuture;
@@ -38,6 +40,7 @@ public class LogicViewReplacerImpl implements LogicViewReplacer {
 
     @SneakyThrows
     @Override
+    @Deprecated
     public Future<String> replace(String sql, String datamart) {
         return Future.future((Promise<String> promise) -> {
             log.debug("before replacing:\n{}", sql);
@@ -54,6 +57,26 @@ public class LogicViewReplacerImpl implements LogicViewReplacer {
                         promise.complete(replacedSql);
                     })
                     .onFailure(promise::fail);
+        });
+    }
+
+    @SneakyThrows
+    @Override
+    public Future<SqlNode> replace(SqlNode sql, String datamart) {
+        return Future.future((Promise<SqlNode> promise) -> {
+            log.debug("before replacing:\n{}", sql);
+            SqlNode rootSqlNode = SqlNodeUtil.copy(sql);
+            replace(rootSqlNode,
+                datamart,
+                null,
+                null,
+                null,
+                null)
+                .onSuccess(v -> {
+                    log.debug("after replacing: [{}]", rootSqlNode);
+                    promise.complete(rootSqlNode);
+                })
+                .onFailure(promise::fail);
         });
     }
 
@@ -80,10 +103,8 @@ public class LogicViewReplacerImpl implements LogicViewReplacer {
                                         entity);
                             } else {
                                 if (currSnapshot != null) {
-                                    SqlSnapshot parentSnapshot = parentNode.getNode();
-                                    SqlSnapshot childSnapshot = new SqlSnapshot(SqlParserPos.QUOTED_ZERO,
-                                            childNode.getNode(),
-                                            parentSnapshot.getPeriod());
+                                    SqlDeltaSnapshot parentSnapshot = parentNode.getNode();
+                                    SqlSnapshot childSnapshot = parentSnapshot.copy(childNode.getNode());
                                     childNode.getSqlNodeSetter().accept(childSnapshot);
                                 }
                                 return Future.succeededFuture();

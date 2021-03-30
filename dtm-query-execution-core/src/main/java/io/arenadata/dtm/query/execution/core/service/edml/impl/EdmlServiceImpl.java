@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.edml.impl;
 
 import io.arenadata.dtm.common.dto.TableInfo;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.QueryResult;
@@ -8,15 +9,16 @@ import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.edml.EdmlAction;
-import io.arenadata.dtm.common.exception.DtmException;
-import io.arenadata.dtm.query.execution.core.exception.table.ExternalTableNotExistsException;
+import io.arenadata.dtm.query.execution.core.dto.edml.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.core.service.edml.EdmlExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.edml.EdmlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.service.EdmlService;
-import io.vertx.core.*;
+import io.arenadata.dtm.query.execution.core.service.edml.EdmlService;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.SqlKind;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -43,9 +45,17 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
     }
 
     @Override
-    public Future<QueryResult> execute(EdmlRequestContext context) {
-        return defineTablesAndType(context)
-                .compose(edmlType -> executeInternal(context, edmlType));
+    public Future<QueryResult> execute(EdmlRequestContext request) {
+        return defineEdmlAction(request)
+                .compose(edmlType -> executeInternal(request, edmlType));
+    }
+
+    private Future<EdmlAction> defineEdmlAction(EdmlRequestContext context) {
+        if (context.getSqlNode().getKind() == SqlKind.ROLLBACK) {
+            return Future.succeededFuture(EdmlAction.ROLLBACK);
+        } else {
+            return defineTablesAndType(context);
+        }
     }
 
     private Future<EdmlAction> defineTablesAndType(EdmlRequestContext context) {
@@ -63,7 +73,7 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
                                 && destination.getEntityType() == EntityType.TABLE) {
                             edmlQueryPromise.complete(EdmlAction.UPLOAD);
                         } else {
-                            edmlQueryPromise.fail(new ExternalTableNotExistsException(
+                            edmlQueryPromise.fail(new DtmException(
                                     String.format("Can't determine external table from query [%s]",
                                             context.getSqlNode().toSqlString(SQL_DIALECT).toString())));
                         }

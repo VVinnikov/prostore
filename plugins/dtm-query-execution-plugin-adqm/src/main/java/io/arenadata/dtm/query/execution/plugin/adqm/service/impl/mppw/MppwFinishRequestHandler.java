@@ -13,7 +13,7 @@ import io.arenadata.dtm.query.execution.plugin.adqm.service.StatusReporter;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.RestLoadClient;
 import io.arenadata.dtm.query.execution.plugin.adqm.utils.DdlUtils;
 import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
-import io.arenadata.dtm.query.execution.plugin.api.request.MppwRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -38,22 +38,19 @@ import static java.lang.String.format;
 
 @Component("adqmMppwFinishRequestHandler")
 @Slf4j
-public class MppwFinishRequestHandler implements MppwRequestHandler {
+public class MppwFinishRequestHandler extends AbstractMppwRequestHandler {
     private static final String QUERY_TABLE_SETTINGS = "select %s from system.tables where database = '%s' and name = '%s'";
-    private static final String DROP_TEMPLATE = "DROP TABLE IF EXISTS %s ON CLUSTER %s";
     private static final String FLUSH_TEMPLATE = "SYSTEM FLUSH DISTRIBUTED %s";
     private static final String OPTIMIZE_TEMPLATE = "OPTIMIZE TABLE %s ON CLUSTER %s FINAL";
     private static final String INSERT_TEMPLATE = "INSERT INTO %s\n" +
             "  SELECT %s, a.sys_from, %d, b.sys_op_buffer, '%s', arrayJoin([-1, 1]) \n" +
             "  FROM %s a\n" +
-            "  ANY INNER JOIN %s b USING(%s)\n" +
+            "  SEMI LEFT JOIN %s b USING(%s)\n" +
             "  WHERE a.sys_from < %d\n" +
             "    AND a.sys_to > %d";
     private static final String SELECT_COLUMNS_QUERY = "select name from system.columns where database = '%s' and table = '%s'";
 
     private final RestLoadClient restLoadClient;
-    private final DatabaseExecutor databaseExecutor;
-    private final DdlProperties ddlProperties;
     private final AppConfiguration appConfiguration;
     private final StatusReporter statusReporter;
     private final DtmConfig dtmConfig;
@@ -65,23 +62,22 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
                                     final AppConfiguration appConfiguration,
                                     StatusReporter statusReporter,
                                     DtmConfig dtmConfig) {
+        super(databaseExecutor, ddlProperties);
         this.restLoadClient = restLoadClient;
-        this.databaseExecutor = databaseExecutor;
-        this.ddlProperties = ddlProperties;
         this.appConfiguration = appConfiguration;
         this.statusReporter = statusReporter;
         this.dtmConfig = dtmConfig;
     }
 
     @Override
-    public Future<QueryResult> execute(final MppwRequest request) {
+    public Future<QueryResult> execute(final MppwKafkaRequest request) {
         val err = DdlUtils.validateRequest(request);
         if (err.isPresent()) {
             return Future.failedFuture(err.get());
         }
 
         String fullName = DdlUtils.getQualifiedTableName(request, appConfiguration);
-        long sysCn = request.getKafkaParameter().getSysCn();
+        long sysCn = request.getSysCn();
 
         return sequenceAll(Arrays.asList(  // 1. drop shard tables
                 fullName + EXT_SHARD_POSTFIX,
@@ -99,22 +95,18 @@ public class MppwFinishRequestHandler implements MppwRequestHandler {
                 .compose(v -> optimizeTable(fullName + ACTUAL_SHARD_POSTFIX))// 6. merge shards
                 .compose(v -> {
                     final RestMppwKafkaStopRequest mppwKafkaStopRequest = new RestMppwKafkaStopRequest(
-                            request.getQueryRequest().getRequestId().toString(),
-                            request.getKafkaParameter().getTopic());
+                            request.getRequestId().toString(),
+                            request.getTopic());
                     log.debug("ADQM: Send mppw kafka stopping rest request {}", mppwKafkaStopRequest);
                     return restLoadClient.stopLoading(mppwKafkaStopRequest);
                 })
                 .compose(v -> {
-                    reportFinish(request.getKafkaParameter().getTopic());
+                    reportFinish(request.getTopic());
                     return Future.succeededFuture(QueryResult.emptyResult());
                 }, f -> {
-                    reportError(request.getKafkaParameter().getTopic());
+                    reportError(request.getTopic());
                     return Future.failedFuture(f);
                 });
-    }
-
-    private Future<Void> dropTable(@NonNull String table) {
-        return databaseExecutor.executeUpdate(format(DROP_TEMPLATE, table, ddlProperties.getCluster()));
     }
 
     private Future<Void> flushTable(@NonNull String table) {

@@ -9,7 +9,7 @@ import io.arenadata.dtm.query.execution.plugin.adg.factory.impl.AdgTruncateHisto
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.adg.service.impl.ddl.AdgTruncateHistoryService;
 import io.arenadata.dtm.query.execution.plugin.adg.utils.AdgUtils;
-import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
+import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.arenadata.dtm.query.execution.plugin.api.service.ddl.TruncateHistoryService;
 import io.vertx.core.Future;
@@ -23,7 +23,10 @@ import org.apache.calcite.util.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 import static io.arenadata.dtm.query.execution.plugin.adg.constants.ColumnFields.ACTUAL_POSTFIX;
 import static io.arenadata.dtm.query.execution.plugin.adg.constants.ColumnFields.HISTORY_POSTFIX;
@@ -97,7 +100,7 @@ public class AdgTruncateHistoryServiceTest {
                 .deleteSpaceTuples(anyString(), any());
     }
 
-    private TruncateHistoryParams getParams(Long sysCn, String conditions) {
+    private TruncateHistoryRequest getParams(Long sysCn, String conditions) {
         Entity entity = new Entity();
         entity.setSchema(SCHEMA);
         entity.setName(TABLE);
@@ -111,6 +114,11 @@ public class AdgTruncateHistoryServiceTest {
                     }
                 })
                 .orElse(null);
-        return new TruncateHistoryParams(null, null, sysCn, entity, ENV, sqlNode);
+        return TruncateHistoryRequest.builder()
+                .envName(ENV)
+                .sysCn(sysCn)
+                .entity(entity)
+                .conditions(sqlNode)
+                .build();
     }
 }

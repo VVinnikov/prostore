@@ -6,32 +6,30 @@ import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.common.version.VersionInfo;
 import io.arenadata.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
-import io.arenadata.dtm.query.execution.plugin.api.check.CheckContext;
-import io.arenadata.dtm.query.execution.plugin.api.cost.QueryCostRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlType;
-import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountParams;
-import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Params;
-import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryParams;
-import io.arenadata.dtm.query.execution.plugin.api.llr.LlrRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
+import io.arenadata.dtm.query.execution.plugin.api.check.CheckVersionRequest;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
+import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
+import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
-import io.arenadata.dtm.query.execution.plugin.api.rollback.RollbackRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
-import io.arenadata.dtm.query.execution.plugin.api.status.StatusRequestContext;
+import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
+import io.arenadata.dtm.query.execution.plugin.api.request.QueryCostRequest;
+import io.arenadata.dtm.query.execution.plugin.api.service.DdlService;
 import io.vertx.core.Future;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
+import org.apache.calcite.sql.SqlKind;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @SpringBootTest(classes = DtmTestConfiguration.class)
@@ -54,37 +52,37 @@ class AdbDtmDataSourcePluginIT {
         }
 
         @Override
-        public Future<Void> ddl(DdlRequestContext ddlRequest) {
+        public Future<Void> ddl(DdlRequest ddlRequest) {
             return ddlService.execute(ddlRequest);
         }
 
         @Override
-        public Future<QueryResult> llr(LlrRequestContext llrRequest) {
+        public Future<QueryResult> llr(LlrRequest llrRequest) {
             return null;
         }
 
         @Override
-        public Future<QueryResult> mppr(MpprRequestContext mpprRequest) {
+        public Future<Void> prepareLlr(LlrRequest request) {
             return null;
         }
 
         @Override
-        public Future<QueryResult> mppw(MppwRequestContext mppwRequest) {
+        public Future<QueryResult> mppr(MpprRequest request) {
             return null;
         }
 
         @Override
-        public Future<Integer> calcQueryCost(QueryCostRequestContext queryCostRequest) {
+        public Future<QueryResult> mppw(MppwRequest mppwRequest) {
             return null;
         }
 
         @Override
-        public Future<StatusQueryResult> status(StatusRequestContext context) {
+        public Future<StatusQueryResult> status(String topic) {
             return null;
         }
 
         @Override
-        public Future<Void> rollback(RollbackRequestContext context) {
+        public Future<Void> rollback(RollbackRequest request) {
             return null;
         }
 
@@ -94,22 +92,27 @@ class AdbDtmDataSourcePluginIT {
         }
 
         @Override
-        public Future<Void> checkTable(CheckContext context) {
+        public Future<Void> checkTable(CheckTableRequest request) {
             return null;
         }
 
         @Override
-        public Future<Long> checkDataByCount(CheckDataByCountParams params) {
+        public Future<Long> checkDataByCount(CheckDataByCountRequest request) {
             return null;
         }
 
         @Override
-        public Future<Long> checkDataByHashInt32(CheckDataByHashInt32Params params) {
+        public Future<Long> checkDataByHashInt32(CheckDataByHashInt32Request params) {
             return null;
         }
 
         @Override
-        public Future<Void> truncateHistory(TruncateHistoryParams params) {
+        public Future<List<VersionInfo>> checkVersion(CheckVersionRequest request) {
+            return null;
+        }
+
+        @Override
+        public Future<Void> truncateHistory(TruncateHistoryRequest params) {
             return null;
         }
     };
@@ -121,10 +124,12 @@ class AdbDtmDataSourcePluginIT {
                 new EntityField(1, "name", ColumnType.VARCHAR.name(), true, null, null, null),
                 new EntityField(2, "dt", ColumnType.TIMESTAMP.name(), true, null, null, null)
         ));
-        DdlRequest dto = new DdlRequest(null, entity);
-        DdlRequestContext context = new DdlRequestContext(dto);
-        context.setDdlType(DdlType.CREATE_TABLE);
-        plugin.ddl(context)
+        DdlRequest request = new DdlRequest(UUID.randomUUID(),
+                "test",
+                "test",
+                entity,
+                SqlKind.CREATE_TABLE);
+        plugin.ddl(request)
                 .onComplete(ar -> {
                     if (ar.succeeded()) {
                         testContext.completeNow();

@@ -1,11 +1,12 @@
 package io.arenadata.dtm.jdbc.ext;
 
+import io.arenadata.dtm.jdbc.core.BaseConnection;
 import io.arenadata.dtm.jdbc.core.BaseStatement;
 import io.arenadata.dtm.jdbc.core.ConnectionFactory;
-import io.arenadata.dtm.jdbc.core.BaseConnection;
 import io.arenadata.dtm.jdbc.core.QueryExecutor;
 import io.arenadata.dtm.jdbc.model.ColumnInfo;
 import io.arenadata.dtm.jdbc.util.DtmSqlException;
+import io.arenadata.dtm.jdbc.util.UrlConnectionParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +20,7 @@ import java.util.concurrent.Executor;
 
 public class DtmConnectionImpl implements BaseConnection {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger("io.arenadata.dtm.driver.jdbc.DtmDriver");
+    private static final Logger LOGGER = LoggerFactory.getLogger(DtmConnectionImpl.class);
     public static final ZoneId DEFAULT_TIME_ZONE = ZoneId.of("UTC");
     /**
      * Hold level of resultSet
@@ -93,12 +94,12 @@ public class DtmConnectionImpl implements BaseConnection {
 
     @Override
     public void commit() throws SQLException {
-        throw new UnsupportedOperationException();
+
     }
 
     @Override
     public void rollback() throws SQLException {
-        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -124,7 +125,7 @@ public class DtmConnectionImpl implements BaseConnection {
 
     @Override
     public void setReadOnly(boolean readOnly) throws SQLException {
-        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -144,7 +145,7 @@ public class DtmConnectionImpl implements BaseConnection {
 
     @Override
     public void setTransactionIsolation(int level) throws SQLException {
-        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -168,7 +169,7 @@ public class DtmConnectionImpl implements BaseConnection {
 
     @Override
     public void setTypeMap(Map<String, Class<?>> map) throws SQLException {
-        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -178,7 +179,7 @@ public class DtmConnectionImpl implements BaseConnection {
 
     @Override
     public void setHoldability(int holdability) throws SQLException {
-        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -193,7 +194,7 @@ public class DtmConnectionImpl implements BaseConnection {
 
     @Override
     public void rollback(Savepoint savepoint) throws SQLException {
-        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -258,7 +259,7 @@ public class DtmConnectionImpl implements BaseConnection {
 
     @Override
     public void setClientInfo(String name, String value) throws SQLClientInfoException {
-        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -273,7 +274,7 @@ public class DtmConnectionImpl implements BaseConnection {
 
     @Override
     public void setClientInfo(Properties properties) throws SQLClientInfoException {
-        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -293,7 +294,7 @@ public class DtmConnectionImpl implements BaseConnection {
 
     @Override
     public void setSchema(String schema) throws SQLException {
-        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -303,7 +304,7 @@ public class DtmConnectionImpl implements BaseConnection {
 
     @Override
     public void setNetworkTimeout(Executor executor, int milliseconds) throws SQLException {
-        throw new UnsupportedOperationException();
+
     }
 
     @Override

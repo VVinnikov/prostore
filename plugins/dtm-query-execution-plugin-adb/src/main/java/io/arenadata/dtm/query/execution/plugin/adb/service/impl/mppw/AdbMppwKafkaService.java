@@ -1,11 +1,12 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw;
 
+import io.arenadata.dtm.common.model.ddl.ExternalTableFormat;
+import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.executor.AdbMppwRequestExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.request.MppwRequest;
-import io.arenadata.dtm.query.execution.plugin.api.service.MppwKafkaService;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +18,7 @@ import java.util.Map;
 
 @Slf4j
 @Component("adbMppwKafkaService")
-public class AdbMppwKafkaService implements MppwKafkaService<QueryResult> {
+public class AdbMppwKafkaService implements AdbMppwExecutor {
 
     private static final Map<LoadType, AdbMppwRequestExecutor> mppwExecutors = new HashMap<>();
 
@@ -29,17 +30,25 @@ public class AdbMppwKafkaService implements MppwKafkaService<QueryResult> {
     }
 
     @Override
-    public Future<QueryResult> execute(MppwRequestContext context) {
+    public Future<QueryResult> execute(MppwRequest request) {
         return Future.future(promise -> {
-            MppwRequest request = context.getRequest();
             if (request == null) {
                 promise.fail(new MppwDatasourceException("MppwRequest should not be null"));
                 return;
             }
-            final LoadType loadType = LoadType.valueOf(context.getRequest().getIsLoadStart());
-            mppwExecutors.get(loadType).execute(context)
+            if (request.getUploadMetadata().getFormat() != ExternalTableFormat.AVRO) {
+                promise.fail(new MppwDatasourceException(String.format("Format %s not implemented",
+                        request.getUploadMetadata().getFormat())));
+            }
+            final LoadType loadType = LoadType.valueOf(request.getIsLoadStart());
+            mppwExecutors.get(loadType).execute((MppwKafkaRequest) request)
                     .onComplete(promise);
         });
+    }
+
+    @Override
+    public ExternalTableLocationType getType() {
+        return ExternalTableLocationType.KAFKA;
     }
 
     private enum LoadType {

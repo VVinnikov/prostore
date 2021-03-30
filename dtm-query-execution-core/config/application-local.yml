@@ -7,17 +7,26 @@ management:
   server:
     port: ${DTM_METRICS_PORT:8080}
   endpoints:
-    enabled-by-default: true
+    enabled-by-default: ${DTM_METRICS_ENABLED:true}
     web:
       exposure:
-        include: info, health, requests
+        include: ${DTM_METRICS_SCOPE:info, health, requests}
 
 core:
   plugins:
     active: ${CORE_PLUGINS_ACTIVE:ADG, ADB, ADQM}
+    category:
+      mapping:
+        RELATIONAL: ${DTM_CORE_PLUGINS_RELATIONAL:ADB, ADQM, ADG}
+        ANALYTICAL: ${DTM_CORE_PLUGINS_ANALYTICAL:ADQM, ADB, ADG}
+        DICTIONARY: ${DTM_CORE_PLUGINS_DICTIONARY:ADG, ADB, ADQM}
+        UNDEFINED:  ${DTM_CORE_PLUGINS_UNDEFINED:ADB, ADQM, ADG}
 
   http:
-    port: ${DTM_CORE_PORT:9090}
+    port: ${DTM_CORE_HTTP_PORT:9090}
+    tcpNoDelay: ${DTM_CORE_HTTP_TCP_NO_DELAY:true}
+    tcpFastOpen: ${DTM_CORE_HTTP_TCP_FAST_OPEN:true}
+    tcpQuickAck: ${DTM_CORE_HTTP_TCP_QUICK_ACK:true}
 
   env:
     name: ${DTM_NAME:local}
@@ -32,7 +41,6 @@ core:
     edml:
       sourceType: ${EDML_DATASOURCE:ADB}
       defaultChunkSize: ${EDML_DEFAULT_CHUNK_SIZE:1000}
-      defaultMessageLimit: ${EDML_DEFAULT_MESSAGE_LIMIT:1000}
       pluginStatusCheckPeriodMs: ${EDML_STATUS_CHECK_PERIOD_MS:1000}
       firstOffsetTimeoutMs: ${EDML_FIRST_OFFSET_TIMEOUT_MS:15000}
       changeOffsetTimeoutMs: ${EDML_CHANGE_OFFSET_TIMEOUT_MS:10000}
@@ -56,9 +64,16 @@ core:
     admin:
       inputStreamTimeoutMs: ${KAFKA_INPUT_STREAM_TIMEOUT_MS:2000}
     status.event.publish:
-      enabled: false
-      topic: status.event
-    statusMonitorUrl: ${STATUS_MONITOR_URL:http://127.0.0.1:9095/status}
+      enabled: ${KAFKA_STATUS_EVENT_ENABLED:false}
+      topic: ${KAFKA_STATUS_EVENT_TOPIC:status.event}
+    statusMonitor:
+      statusUrl: ${STATUS_MONITOR_URL:http://127.0.0.1:9095/status}
+      versionUrl: ${STATUS_MONITOR_VERSION_URL:http://127.0.0.1:9095/versions}
+
+  vertx:
+    pool:
+      task-pool: ${DTM_CORE_TASK_POOL_SIZE:10}
+      task-timeout: ${DTM_CORE_TASK_TIMEOUT:86400000}
 
   cache:
     initialCapacity: ${CACHE_INITIAL_CAPACITY:100000}
@@ -71,11 +86,10 @@ adb:
     password: ${ADB_PASS:gpadmin}
     host: ${ADB_HOST:10.92.3.61}
     port: ${ADB_PORT:5432}
-    maxSize: 20
+    maxSize: ${ADB_MAX_POOL_SIZE:20}
     fetchSize: ${ADB_FETCH_SIZE:1000}
 
   mppw:
-    startLoadUrl: ${ADB_START_LOAD_URL:http://adb-emulator:8090/newdata/adb/start}
     consumerGroup: ${ADB_LOAD_GROUP:adb-emulator-load-adb}
     poolSize: ${ADB_MPPW_POOL_SIZE:2}
     stopTimeoutMs: ${ADB_MPPW_STOP_TIMEOUT_MS:86400000}
@@ -97,17 +111,17 @@ adg:
   mppw:
     consumerGroup: ${ADG_CONSUMER_GROUP:tarantool-group-csv}
     kafka:
-      maxNumberOfMessagesPerPartition: 200
-      callbackFunctionSecIdle: 100
+      maxNumberOfMessagesPerPartition: {ADG_MAX_MSG_PER_PARTITION:200}
+      callbackFunctionSecIdle: {ADG_CB_FUNC_IDLE:100}
 
   rollback:
-    eraseOperationBatchSize: 300
+    eraseOperationBatchSize: ${ADG_ROLLBACK_OPERATION_BATCH_SIZE:300}
 
   circuitbreaker:
-    maxFailures: 5
-    timeout: 30000
-    fallbackOnFailure: false
-    resetTimeout: 10000
+    maxFailures: ${ADG_CIRCUIT_BREAKER_MAX_FAILURES:5}
+    timeout: ${ADG_CIRCUIT_BREAKER_TIMEOUT:30000}
+    fallbackOnFailure: ${ADG_CIRCUIT_BREAKER_FALLBACK_ON_FAILURE:false}
+    resetTimeout: ${ADG_CIRCUIT_BREAKER_RESET_TIMEOUT:10000}
 
   web-client:
     max-pool-size: ${ADG_WEB_CLIENT_MAX_POOL_SIZE:100}
@@ -123,13 +137,10 @@ adqm:
 
   ddl:
     cluster: ${ADQM_CLUSTER:default_cluster}
-    ttlSec: ${ADQM_TTL_SEC:3600}
-    archiveDisk: ${ADQM_ARCHIVE_DISK:default}
 
   mppr:
-    host: ${ADQM_MPPR_CONNECTOR_HOST:10.92.3.14}
-    port: ${ADQM_MPPR_CONNECTOR_PORT:8086}
-    url: ${ADQM_MPPR_CONNECTOR_URL:/query}
+    loadingUrl: ${ADQM_MPPR_CONNECTOR_URL:http://10.92.3.14:8086/query}
+    versionUrl: ${ADQM_MPPR_CONNECTOR_VERSION_URL:http://10.92.3.14:8086/versions}
 
   mppw:
     consumerGroup: ${ADQM_CONSUMER_GROUP:adqm}
@@ -137,6 +148,7 @@ adqm:
     loadType: ${ADQM_MPPW_LOAD_TYPE:REST}
     restStartLoadUrl: ${ADQM_REST_START_LOAD_URL:http://adb-emulator:8090/newdata/adqm/start}
     restStopLoadUrl: ${ADQM_REST_STOP_LOAD_URL:http://adb-emulator:8090/newdata/adqm/stop}
+    versionUrl: ${ADQM_MPPW_CONNECTOR_VERSION_URL:http://adb-emulator:8090/versions}
     restLoadConsumerGroup: ${ADQM_REST_LOAD_GROUP:adb-emulator-load-adqm}
 
   web-client:

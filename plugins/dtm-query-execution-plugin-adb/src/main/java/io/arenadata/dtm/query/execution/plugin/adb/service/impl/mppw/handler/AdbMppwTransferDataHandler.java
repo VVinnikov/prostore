@@ -1,7 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.handler;
 
-import io.arenadata.dtm.query.execution.plugin.adb.factory.MetadataSqlFactory;
-import io.arenadata.dtm.query.execution.plugin.adb.factory.impl.MetadataSqlFactoryImpl;
+import io.arenadata.dtm.query.execution.plugin.adb.factory.KafkaMppwSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.AdbMppwDataTransferService;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwKafkaLoadRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.mppw.dto.MppwKafkaRequestContext;
@@ -17,15 +16,15 @@ import org.springframework.stereotype.Component;
 public class AdbMppwTransferDataHandler implements AdbMppwHandler {
 
     private final AdbQueryExecutor adbQueryExecutor;
-    private final MetadataSqlFactory metadataSqlFactory;
+    private final KafkaMppwSqlFactory kafkaMppwSqlFactory;
     private final AdbMppwDataTransferService mppwDataTransferService;
 
     @Autowired
     public AdbMppwTransferDataHandler(AdbQueryExecutor adbQueryExecutor,
-                                      MetadataSqlFactory metadataSqlFactory,
+                                      KafkaMppwSqlFactory kafkaMppwSqlFactory,
                                       AdbMppwDataTransferService mppwDataTransferService) {
         this.adbQueryExecutor = adbQueryExecutor;
-        this.metadataSqlFactory = metadataSqlFactory;
+        this.kafkaMppwSqlFactory = kafkaMppwSqlFactory;
         this.mppwDataTransferService = mppwDataTransferService;
     }
 
@@ -39,9 +38,8 @@ public class AdbMppwTransferDataHandler implements AdbMppwHandler {
     private Future<Void> commitKafkaMessages(MppwKafkaRequestContext requestContext) {
         return Future.future(promise -> {
             val schema = requestContext.getMppwKafkaLoadRequest().getDatamart();
-            val table = MetadataSqlFactoryImpl.WRITABLE_EXT_TABLE_PREF +
-                    requestContext.getMppwKafkaLoadRequest().getRequestId().replace("-", "_");
-            val commitOffsetsSql = String.format(MetadataSqlFactoryImpl.COMMIT_OFFSETS, schema, table);
+            val table = kafkaMppwSqlFactory.getTableName(requestContext.getMppwKafkaLoadRequest().getRequestId());
+            val commitOffsetsSql = kafkaMppwSqlFactory.commitOffsetsSqlQuery(schema, table);
             adbQueryExecutor.executeUpdate(commitOffsetsSql)
                     .onComplete(promise);
         });
@@ -53,7 +51,7 @@ public class AdbMppwTransferDataHandler implements AdbMppwHandler {
             val columns = String.join(", ", request.getColumns());
             val extTable = request.getWritableExtTableName().replace("-", "_");
             val stagingTable = request.getTableName();
-            adbQueryExecutor.executeUpdate(metadataSqlFactory.insertIntoStagingTableSqlQuery(schema,
+            adbQueryExecutor.executeUpdate(kafkaMppwSqlFactory.insertIntoStagingTableSqlQuery(schema,
                     columns,
                     stagingTable,
                     extTable))

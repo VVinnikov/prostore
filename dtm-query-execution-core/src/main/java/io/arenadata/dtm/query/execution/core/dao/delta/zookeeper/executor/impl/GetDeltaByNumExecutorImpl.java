@@ -7,6 +7,7 @@ import io.arenadata.dtm.query.execution.core.exception.delta.DeltaException;
 import io.arenadata.dtm.query.execution.core.exception.delta.DeltaNotExistException;
 import io.arenadata.dtm.query.execution.core.exception.delta.DeltaNotFoundException;
 import io.arenadata.dtm.query.execution.core.dto.delta.OkDelta;
+import io.arenadata.dtm.query.execution.core.exception.delta.NegativeDeltaNumberException;
 import io.arenadata.dtm.query.execution.core.service.zookeeper.ZookeeperExecutor;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -29,6 +30,9 @@ public class GetDeltaByNumExecutorImpl extends DeltaServiceDaoExecutorHelper imp
 
     @Override
     public Future<OkDelta> execute(String datamart, Long deltaNum) {
+        if(deltaNum < 0) {
+            return Future.failedFuture(new NegativeDeltaNumberException());
+        }
         Promise<OkDelta> resultPromise = Promise.promise();
         executor.getData(getDeltaPath(datamart))
             .map(bytes -> {
@@ -49,7 +53,7 @@ public class GetDeltaByNumExecutorImpl extends DeltaServiceDaoExecutorHelper imp
                     datamart,
                     deltaNum);
                 if (error instanceof KeeperException.NoNodeException) {
-                    resultPromise.fail(new DeltaNotFoundException(error));
+                   resultPromise.fail(new DeltaNotFoundException(error));
                 } else if (error instanceof DeltaException) {
                     resultPromise.fail(error);
                 } else {

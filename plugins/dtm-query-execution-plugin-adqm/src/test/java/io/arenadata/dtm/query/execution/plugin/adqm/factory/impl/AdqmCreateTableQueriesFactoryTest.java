@@ -3,11 +3,8 @@ package io.arenadata.dtm.query.execution.plugin.adqm.factory.impl;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTables;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
-import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.factory.CreateTableQueriesFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,7 +15,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-
 public class AdqmCreateTableQueriesFactoryTest {
 
     private static final String EXPECTED_CREATE_SHARD_TABLE_QUERY = "CREATE TABLE " +
@@ -27,10 +23,9 @@ public class AdqmCreateTableQueriesFactoryTest {
             "CHAR_type Nullable(String), BIGINT_type Nullable(Int64), INT_type Nullable(Int64), " +
             "DOUBLE_type Nullable(Float64), FLOAT_type Nullable(Float32), DATE_type Nullable(Int64), " +
             "TIME_type Nullable(Int64), TIMESTAMP_type Nullable(Int64), BOOLEAN_type Nullable(UInt8), " +
-            "UUID_type Nullable(String), sys_from Int64, sys_to Int64, sys_op Int8, close_date DateTime, sign Int8)\n" +
+            "UUID_type Nullable(String), sys_from Int64, sys_to Int64, sys_op Int8, sys_close_date DateTime, sign Int8)\n" +
             "ENGINE = CollapsingMergeTree(sign)\n" +
-            "ORDER BY (id, pk2, sys_from)\n" +
-            "TTL close_date + INTERVAL 3600 SECOND TO DISK 'default'";
+            "ORDER BY (id, pk2, sys_from)";
 
     private static final String EXPECTED_CREATE_DISTRIBUTED_TABLE_QUERY = "CREATE TABLE " +
             "env__test_schema.test_table_actual ON CLUSTER test_arenadata\n" +
@@ -38,23 +33,20 @@ public class AdqmCreateTableQueriesFactoryTest {
             "CHAR_type Nullable(String), BIGINT_type Nullable(Int64), INT_type Nullable(Int64), " +
             "DOUBLE_type Nullable(Float64), FLOAT_type Nullable(Float32), DATE_type Nullable(Int64), " +
             "TIME_type Nullable(Int64), TIMESTAMP_type Nullable(Int64), BOOLEAN_type Nullable(UInt8), " +
-            "UUID_type Nullable(String), sys_from Int64, sys_to Int64, sys_op Int8, close_date DateTime, sign Int8)\n" +
-            "Engine = Distributed(test_arenadata, env__test_schema, test_table_actual_shard, id)";
+            "UUID_type Nullable(String), sys_from Int64, sys_to Int64, sys_op Int8, sys_close_date DateTime, sign Int8)\n" +
+            "Engine = Distributed(test_arenadata, env__test_schema, test_table_actual_shard, id+sk_key2+sk_key3)";
+    private static final String ENV = "env";
 
     private AdqmTables<String> adqmTables;
 
     @BeforeEach
     void setUp() {
         Entity entity = getEntity();
-        DdlRequestContext context = new DdlRequestContext(new DdlRequest(new QueryRequest(), entity));
-        context.getRequest().getQueryRequest().setEnvName("env");
         DdlProperties ddlProperties = new DdlProperties();
-        ddlProperties.setTtlSec(3600);
         ddlProperties.setCluster("test_arenadata");
-        ddlProperties.setArchiveDisk("default");
         CreateTableQueriesFactory<AdqmTables<String>> adqmCreateTableQueriesFactory =
                 new AdqmCreateTableQueriesFactory(ddlProperties, new AdqmTableEntitiesFactory());
-        adqmTables = adqmCreateTableQueriesFactory.create(context);
+        adqmTables = adqmCreateTableQueriesFactory.create(entity, ENV);
     }
 
     @Test

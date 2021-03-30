@@ -1,64 +1,46 @@
 package io.arenadata.dtm.query.execution.core.service.eddl.impl;
 
 import io.arenadata.dtm.common.dto.TableInfo;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.plugin.exload.Type;
-import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.kafka.core.configuration.kafka.KafkaZookeeperProperties;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.*;
-import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.execution.core.dto.eddl.*;
-import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.service.avro.AvroSchemaGenerator;
 import io.arenadata.dtm.query.execution.core.service.eddl.EddlQueryParamExtractor;
 import io.arenadata.dtm.query.execution.core.service.metadata.MetadataCalciteGenerator;
-import io.vertx.core.*;
+import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlNode;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
 public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
 
-    public static final String ERROR_PARSING_EDDL_QUERY = "Eddl request parsing error";
     public static final String START_LOCATION_TOKEN = "$";
     private static final int ZOOKEEPER_DEFAULT_PORT = 2181;
-    private final DefinitionService<SqlNode> definitionService;
     private final MetadataCalciteGenerator metadataCalciteGenerator;
     private final AvroSchemaGenerator avroSchemaGenerator;
     private final KafkaZookeeperProperties kafkaZookeeperProperties;
-    private final Vertx vertx;
 
     @Autowired
     public EddlQueryParamExtractorImpl(
-            @Qualifier("coreCalciteDefinitionService") DefinitionService<SqlNode> definitionService,
             MetadataCalciteGenerator metadataCalciteGenerator,
             AvroSchemaGenerator avroSchemaGenerator,
-            KafkaZookeeperProperties kafkaZookeeperProperties,
-            @Qualifier("coreVertx") Vertx vertx) {
-        this.definitionService = definitionService;
+            KafkaZookeeperProperties kafkaZookeeperProperties) {
         this.metadataCalciteGenerator = metadataCalciteGenerator;
         this.avroSchemaGenerator = avroSchemaGenerator;
         this.kafkaZookeeperProperties = kafkaZookeeperProperties;
-        this.vertx = vertx;
     }
 
     @Override
-    public Future<EddlQuery> extract(QueryRequest request) {
-        return processSqlQuery(request)
-                .compose(sqlNode -> extract(sqlNode, request.getDatamartMnemonic()));
-    }
-
-    private Future<SqlNode> processSqlQuery(QueryRequest request) {
-        return Future.future(promise -> vertx.executeBlocking(it -> {
-            SqlNode node = definitionService.processingQuery(request.getSql());
-            it.complete(node);
-        }, promise));
+    public Future<EddlQuery> extract(EddlRequestContext context) {
+        return extract(context.getSqlNode(), context.getRequest().getQueryRequest().getDatamartMnemonic());
     }
 
     private Future<EddlQuery> extract(SqlNode sqlNode, String defaultSchema) {
@@ -133,7 +115,7 @@ public class EddlQueryParamExtractorImpl implements EddlQueryParamExtractor {
             val avroSchema = avroSchemaGenerator.generateTableSchema(entity);
             val locationOperator = SqlNodeUtils.getOne(ddl, LocationOperator.class);
             val format = SqlNodeUtils.getOne(ddl, FormatOperator.class).getFormat();
-            val messageLimitOperator = SqlNodeUtils.getOne(ddl, MassageLimitOperator.class);
+            val messageLimitOperator = SqlNodeUtils.getOne(ddl, MessageLimitOperator.class);
             return CreateUploadExternalTableQuery.builder()
                     .schemaName(tableInfo.getSchemaName())
                     .tableName(tableInfo.getTableName())

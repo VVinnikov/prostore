@@ -3,7 +3,6 @@ package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
-import io.arenadata.dtm.query.execution.plugin.adqm.utils.DdlUtils;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.AdqmMppwProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
@@ -13,9 +12,10 @@ import io.arenadata.dtm.query.execution.plugin.adqm.factory.AdqmRestMppwKafkaReq
 import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.StatusReporter;
 import io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.*;
+import io.arenadata.dtm.query.execution.plugin.adqm.utils.DdlUtils;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
-import io.arenadata.dtm.query.execution.plugin.api.request.MppwRequest;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import lombok.Data;
@@ -30,29 +30,26 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants.*;
-import static io.arenadata.dtm.query.execution.plugin.adqm.utils.DdlUtils.avroTypeToNative;
-import static io.arenadata.dtm.query.execution.plugin.adqm.utils.DdlUtils.splitQualifiedTableName;
 import static io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.LoadType.KAFKA;
 import static io.arenadata.dtm.query.execution.plugin.adqm.service.impl.mppw.load.LoadType.REST;
+import static io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants.*;
+import static io.arenadata.dtm.query.execution.plugin.adqm.utils.DdlUtils.*;
 import static java.lang.String.format;
 
 @Component("adqmMppwStartRequestHandler")
 @Slf4j
-public class MppwStartRequestHandler implements MppwRequestHandler {
+public class MppwStartRequestHandler extends AbstractMppwRequestHandler {
     private static final String QUERY_TABLE_SETTINGS = "select %s from system.tables where database = '%s' and name = '%s'";
     private static final String BUFFER_SHARD_TEMPLATE =
-            "CREATE TABLE IF NOT EXISTS %s ON CLUSTER %s (%s, sys_op_buffer Nullable(Int8)) ENGINE = Join(ANY, INNER, %s)";
+            "CREATE TABLE IF NOT EXISTS %s ON CLUSTER %s (%s, sys_op_buffer Nullable(Int8)) ENGINE = Join(SEMI, LEFT, %s)";
     private static final String BUFFER_TEMPLATE =
             "CREATE TABLE IF NOT EXISTS %s ON CLUSTER %s AS %s ENGINE=%s";
     private static final String BUFFER_LOADER_TEMPLATE = "CREATE MATERIALIZED VIEW IF NOT EXISTS %s ON CLUSTER %s TO %s\n" +
             "  AS SELECT %s FROM %s";
     private static final String ACTUAL_LOADER_TEMPLATE = "CREATE MATERIALIZED VIEW IF NOT EXISTS %s ON CLUSTER %s TO %s\n" +
-            "AS SELECT %s, %d AS sys_from, 9223372036854775807 as sys_to, 0 as sys_op_load, '9999-12-31 00:00:00' as close_date, 1 AS sign " +
+            "AS SELECT %s, %d AS sys_from, 9223372036854775807 as sys_to, 0 as sys_op_load, '9999-12-31 00:00:00' as sys_close_date, 1 AS sign " +
             " FROM %s es WHERE es.sys_op <> 1";
 
-    private final DatabaseExecutor databaseExecutor;
-    private final DdlProperties ddlProperties;
     private final AppConfiguration appConfiguration;
     private final AdqmMppwProperties mppwProperties;
     private final StatusReporter statusReporter;
@@ -68,8 +65,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
                                    StatusReporter statusReporter,
                                    RestLoadClient restLoadClient,
                                    AdqmRestMppwKafkaRequestFactory restMppwKafkaRequestFactory) {
-        this.databaseExecutor = databaseExecutor;
-        this.ddlProperties = ddlProperties;
+        super(databaseExecutor, ddlProperties);
         this.appConfiguration = appConfiguration;
         this.mppwProperties = mppwProperties;
         this.statusReporter = statusReporter;
@@ -81,7 +77,7 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     }
 
     @Override
-    public Future<QueryResult> execute(MppwRequest request) {
+    public Future<QueryResult> execute(MppwKafkaRequest request) {
         MppwExtTableContext mppwExtTableCtx = new MppwExtTableContext();
 
         val err = DdlUtils.validateRequest(request);
@@ -90,25 +86,33 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         }
         try {
             mppwExtTableCtx.setSchema(new Schema.Parser()
-                    .parse(request.getKafkaParameter().getUploadMetadata().getExternalSchema()));
+                    .parse(request.getUploadMetadata().getExternalSchema()));
         } catch (Exception e) {
             return Future.failedFuture(new DataSourceException("Error in starting mppw request", e));
         }
 
         mppwExtTableCtx.setFullName(DdlUtils.getQualifiedTableName(request, appConfiguration));
-        reportStart(request.getKafkaParameter().getTopic(), mppwExtTableCtx.getFullName());
+        String fullName = mppwExtTableCtx.getFullName();
+        reportStart(request.getTopic(), fullName);
 
         // 1. Determine table engine (_actual_shard)
-        return getTableSetting(mppwExtTableCtx.getFullName() + ACTUAL_POSTFIX,
-                "engine_full",
-                createVarcharColumnMetadata("engine_full"))
+        return sequenceAll(Arrays.asList(  // 1. drop shard tables
+                fullName + EXT_SHARD_POSTFIX,
+                fullName + ACTUAL_LOADER_SHARD_POSTFIX,
+                fullName + BUFFER_LOADER_SHARD_POSTFIX,
+                fullName + BUFFER_POSTFIX,
+                fullName + BUFFER_SHARD_POSTFIX
+        ), this::dropTable)
+                .compose(v -> getTableSetting(fullName + ACTUAL_POSTFIX,
+                        "engine_full",
+                        createVarcharColumnMetadata("engine_full")))
                 .map(engineFull -> {
                     mppwExtTableCtx.setEngineFull(engineFull);
                     return engineFull;
                 })
                 .compose(engineFull ->
                         //2. Get sorting order (_actual)
-                        getTableSetting(mppwExtTableCtx.getFullName() + ACTUAL_SHARD_POSTFIX,
+                        getTableSetting(fullName + ACTUAL_SHARD_POSTFIX,
                                 "sorting_key",
                                 createVarcharColumnMetadata("sorting_key")))
                 .map(keys -> {
@@ -117,38 +121,38 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
                 })
                 .compose(k ->
                         // 3. Create _ext_shard based on schema from request
-                        createExternalTable(request.getKafkaParameter().getTopic(),
-                                mppwExtTableCtx.getFullName(),
+                        createExternalTable(request.getTopic(),
+                                fullName,
                                 mppwExtTableCtx.getSchema(),
                                 mppwExtTableCtx.getSortingKeys())
                 )
                 .compose(v ->
                         // 4. Create _buffer_shard
-                        createBufferShardTable(mppwExtTableCtx.getFullName() + BUFFER_SHARD_POSTFIX,
+                        createBufferShardTable(fullName + BUFFER_SHARD_POSTFIX,
                                 mppwExtTableCtx.getSortingKeys(),
                                 mppwExtTableCtx.getSchema())
                 )
                 .compose(v ->
                         // 5. Create _buffer
-                        createBufferTable(mppwExtTableCtx.getFullName() + BUFFER_POSTFIX,
+                        createBufferTable(fullName + BUFFER_POSTFIX,
                                 mppwExtTableCtx.getEngineFull())
                 )
                 .compose(v ->
                         // 6. Create _buffer_loader_shard
-                        createBufferLoaderTable(mppwExtTableCtx.getFullName() + BUFFER_LOADER_SHARD_POSTFIX,
+                        createBufferLoaderTable(fullName + BUFFER_LOADER_SHARD_POSTFIX,
                                 mppwExtTableCtx.getSortingKeys())
                 )
                 .compose(v ->
                         // 7. Create _actual_loader_shard
-                        createActualLoaderTable(mppwExtTableCtx.getFullName() + ACTUAL_LOADER_SHARD_POSTFIX,
+                        createActualLoaderTable(fullName + ACTUAL_LOADER_SHARD_POSTFIX,
                                 mppwExtTableCtx.getSchema(),
-                                request.getKafkaParameter().getSysCn())
+                                request.getSysCn())
                 )
                 .compose(v -> createRestInitiator(request))
                 .map(v -> QueryResult.emptyResult())
                 .onSuccess(Future::succeededFuture)
                 .onFailure(fail -> {
-                    reportError(request.getKafkaParameter().getTopic());
+                    reportError(request.getTopic());
                     Future.failedFuture(new DataSourceException(fail));
                 });
     }
@@ -249,14 +253,14 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
         return databaseExecutor.executeUpdate(query);
     }
 
-    private Future<Void> createRestInitiator(MppwRequest mppwRequest) {
+    private Future<Void> createRestInitiator(MppwKafkaRequest mppwPluginRequest) {
         LoadType loadType = mppwProperties.getLoadType();
         //it means that if we use KAFKA instead of REST load type of mppw, we shouldn't send rest request
         if (loadType == KAFKA) {
             return Future.succeededFuture();
         }
         try {
-            final RestMppwKafkaLoadRequest mppwKafkaLoadRequest = restMppwKafkaRequestFactory.create(mppwRequest);
+            final RestMppwKafkaLoadRequest mppwKafkaLoadRequest = restMppwKafkaRequestFactory.create(mppwPluginRequest);
             log.debug("ADQM: Send mppw kafka starting rest request {}", mppwKafkaLoadRequest);
             return restLoadClient.initiateLoading(mppwKafkaLoadRequest);
         } catch (Exception e) {
@@ -273,11 +277,6 @@ public class MppwStartRequestHandler implements MppwRequestHandler {
     private void reportStart(String topic, String fullName) {
         StatusReportDto start = new StatusReportDto(topic, getConsumerGroupName(fullName));
         statusReporter.onStart(start);
-    }
-
-    private void reportFinish(String topic) {
-        StatusReportDto start = new StatusReportDto(topic);
-        statusReporter.onFinish(start);
     }
 
     private void reportError(String topic) {

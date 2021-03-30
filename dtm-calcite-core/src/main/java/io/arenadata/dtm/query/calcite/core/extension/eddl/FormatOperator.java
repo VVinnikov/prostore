@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.calcite.core.extension.eddl;
 
-import io.arenadata.dtm.common.plugin.exload.Format;
+import io.arenadata.dtm.common.model.ddl.ExternalTableFormat;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.ImmutableNullableList;
@@ -11,11 +11,11 @@ public class FormatOperator extends SqlCall {
 
     private static final SqlOperator OPERATOR_FORMAT =
             new SqlSpecialOperator("FORMAT", SqlKind.OTHER_DDL);
-    private final Format format;
+    private final ExternalTableFormat format;
 
     FormatOperator(SqlParserPos pos, SqlCharStringLiteral format) {
         super(pos);
-        this.format = Format.findByName(format.getNlsString().getValue());
+        this.format = ExternalTableFormat.findByName(format.getNlsString().getValue());
 
     }
 
@@ -35,7 +35,7 @@ public class FormatOperator extends SqlCall {
         writer.keyword("'" + this.format.getName() + "'");
     }
 
-    public Format getFormat() {
+    public ExternalTableFormat getFormat() {
         return format;
     }
 }

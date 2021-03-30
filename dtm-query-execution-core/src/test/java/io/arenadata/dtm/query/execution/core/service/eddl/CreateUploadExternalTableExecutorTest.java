@@ -1,10 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.eddl;
 
-import io.arenadata.dtm.common.model.ddl.ColumnType;
-import io.arenadata.dtm.common.model.ddl.Entity;
-import io.arenadata.dtm.common.model.ddl.EntityField;
-import io.arenadata.dtm.common.model.ddl.EntityType;
-import io.arenadata.dtm.common.plugin.exload.Format;
+import io.arenadata.dtm.common.exception.DtmException;
+import io.arenadata.dtm.common.model.ddl.*;
 import io.arenadata.dtm.common.plugin.exload.Type;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.core.dao.ServiceDbFacade;
@@ -16,10 +13,8 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.Datama
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.impl.ServiceDbDaoImpl;
 import io.arenadata.dtm.query.execution.core.dto.eddl.CreateUploadExternalTableQuery;
-import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
-import io.arenadata.dtm.query.execution.core.exception.table.ExternalTableAlreadyExistsException;
-import io.arenadata.dtm.query.execution.core.exception.table.TableAlreadyExistsException;
+import io.arenadata.dtm.query.execution.core.exception.entity.EntityAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.service.avro.AvroSchemaGenerator;
 import io.arenadata.dtm.query.execution.core.service.avro.impl.AvroSchemaGeneratorImpl;
 import io.arenadata.dtm.query.execution.core.service.eddl.impl.CreateUploadExternalTableExecutor;
@@ -73,7 +68,7 @@ public class CreateUploadExternalTableExecutorTest {
                 entity,
                 Type.KAFKA_TOPIC,
                 locationPath,
-                Format.AVRO,
+                ExternalTableFormat.AVRO,
                 avroSchema.toString(),
                 messageSize);
 
@@ -85,9 +80,6 @@ public class CreateUploadExternalTableExecutorTest {
 
         Mockito.when(datamartDao.existsDatamart(eq(schema)))
                 .thenReturn(Future.succeededFuture(true));
-
-        Mockito.when(entityDao.existsEntity(eq(schema), eq(entity.getName())))
-                .thenReturn(Future.succeededFuture(false));
 
         Mockito.when(entityDao.createEntity(any()))
                 .thenReturn(Future.succeededFuture());
@@ -113,20 +105,20 @@ public class CreateUploadExternalTableExecutorTest {
     }
 
     @Test
-    void executeTableExists() {
+    void executeEntityExists() {
         Promise<QueryResult> promise = Promise.promise();
 
         Mockito.when(datamartDao.existsDatamart(eq(schema)))
                 .thenReturn(Future.succeededFuture(true));
 
-        Mockito.when(entityDao.existsEntity(eq(schema), eq(entity.getName())))
-                .thenReturn(Future.succeededFuture(true));
+        Mockito.when(entityDao.createEntity(any()))
+                .thenReturn(Future.failedFuture(new EntityAlreadyExistsException(entity.getNameWithSchema())));
 
         createUploadExteranlTableExecutor.execute(query)
                 .onComplete(promise);
 
         assertTrue(promise.future().failed());
-        assertTrue(promise.future().cause() instanceof ExternalTableAlreadyExistsException);
+        assertTrue(promise.future().cause() instanceof EntityAlreadyExistsException);
     }
 
     @Test
@@ -144,31 +136,11 @@ public class CreateUploadExternalTableExecutorTest {
     }
 
     @Test
-    void executeExistsEntityError() {
-        Promise<QueryResult> promise = Promise.promise();
-
-        Mockito.when(datamartDao.existsDatamart(eq(schema)))
-                .thenReturn(Future.succeededFuture(true));
-
-        Mockito.when(entityDao.existsEntity(eq(schema), eq(entity.getName())))
-                .thenReturn(Future.failedFuture(new DtmException("exists entity error")));
-
-        createUploadExteranlTableExecutor.execute(query)
-                .onComplete(promise);
-
-        assertTrue(promise.future().failed());
-        assertEquals("exists entity error", promise.future().cause().getMessage());
-    }
-
-    @Test
     void executeCreateEntityError() {
         Promise<QueryResult> promise = Promise.promise();
 
         Mockito.when(datamartDao.existsDatamart(eq(schema)))
                 .thenReturn(Future.succeededFuture(true));
-
-        Mockito.when(entityDao.existsEntity(eq(schema), eq(entity.getName())))
-                .thenReturn(Future.succeededFuture(false));
 
         Mockito.when(entityDao.createEntity(any()))
                 .thenReturn(Future.failedFuture(new DtmException("create entity error")));

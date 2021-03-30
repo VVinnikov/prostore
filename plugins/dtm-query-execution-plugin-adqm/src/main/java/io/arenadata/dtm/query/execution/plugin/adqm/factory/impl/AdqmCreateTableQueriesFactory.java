@@ -1,10 +1,10 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.factory.impl;
 
+import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTableColumn;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTableEntity;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTables;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.factory.CreateTableQueriesFactory;
 import io.arenadata.dtm.query.execution.plugin.api.factory.TableEntitiesFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,14 +19,13 @@ import static io.arenadata.dtm.query.execution.plugin.adqm.utils.DdlUtils.NULLAB
 @Service("adqmCreateTableQueriesFactory")
 public class AdqmCreateTableQueriesFactory implements CreateTableQueriesFactory<AdqmTables<String>> {
 
-    private final static String CREATE_SHARD_TABLE_TEMPLATE =
+    private static final String CREATE_SHARD_TABLE_TEMPLATE =
             "CREATE TABLE %s__%s.%s ON CLUSTER %s\n" +
                     "(%s)\n" +
                     "ENGINE = CollapsingMergeTree(sign)\n" +
-                    "ORDER BY (%s)\n" +
-                    "TTL close_date + INTERVAL %d SECOND TO DISK '%s'";
+                    "ORDER BY (%s)";
 
-    private final static String CREATE_DISTRIBUTED_TABLE_TEMPLATE =
+    private static final String CREATE_DISTRIBUTED_TABLE_TEMPLATE =
             "CREATE TABLE %s__%s.%s ON CLUSTER %s\n" +
                     "(%s)\n" +
                     "Engine = Distributed(%s, %s__%s, %s, %s)";
@@ -42,13 +41,10 @@ public class AdqmCreateTableQueriesFactory implements CreateTableQueriesFactory<
     }
 
     @Override
-    public AdqmTables<String> create(DdlRequestContext context) {
+    public AdqmTables<String> create(Entity entity, String envName) {
         String cluster = ddlProperties.getCluster();
-        Integer ttlSec = ddlProperties.getTtlSec();
-        String archiveDisk = ddlProperties.getArchiveDisk();
 
-        AdqmTables<AdqmTableEntity> tables = tableEntitiesFactory.create(context.getRequest().getEntity(),
-                context.getRequest().getQueryRequest().getEnvName());
+        AdqmTables<AdqmTableEntity> tables = tableEntitiesFactory.create(entity, envName);
         AdqmTableEntity shard = tables.getShard();
         AdqmTableEntity distributed = tables.getDistributed();
         return new AdqmTables<>(
@@ -58,9 +54,7 @@ public class AdqmCreateTableQueriesFactory implements CreateTableQueriesFactory<
                         shard.getName(),
                         cluster,
                         getColumnsQuery(shard.getColumns()),
-                        String.join(", ", shard.getSortedKeys()),
-                        ttlSec,
-                        archiveDisk),
+                        String.join(", ", shard.getSortedKeys())),
                 String.format(CREATE_DISTRIBUTED_TABLE_TEMPLATE,
                         distributed.getEnv(),
                         distributed.getSchema(),
@@ -71,7 +65,7 @@ public class AdqmCreateTableQueriesFactory implements CreateTableQueriesFactory<
                         distributed.getEnv(),
                         distributed.getSchema(),
                         shard.getName(),
-                        String.join(", ", distributed.getShardingKeys()))
+                        String.join("+", distributed.getShardingKeys()))
         );
     }
 

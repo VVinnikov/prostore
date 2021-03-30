@@ -36,7 +36,7 @@ public class AdqmSchemaExtenderImpl implements SchemaExtender {
             generateNewField(SYS_TO_FIELD, ColumnType.BIGINT),
             generateNewField(SYS_FROM_FIELD, ColumnType.BIGINT),
             generateNewField(SIGN_FIELD, ColumnType.INT),
-            generateNewField(CLOSE_DATE_FIELD, ColumnType.DATE)
+            generateNewField(SYS_CLOSE_DATE_FIELD, ColumnType.DATE)
         );
     }
 

@@ -1,13 +1,12 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.ddl;
 
 import io.arenadata.dtm.query.execution.plugin.adb.AdbDtmDataSourcePlugin;
-import io.arenadata.dtm.query.execution.plugin.api.ddl.DdlRequestContext;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DdlDatasourceException;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.service.ddl.DdlService;
+import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
+import io.arenadata.dtm.query.execution.plugin.api.service.DdlExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.service.DdlService;
 import io.vertx.core.Future;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlNode;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
@@ -20,21 +19,16 @@ public class AdbDdlService implements DdlService<Void> {
     private final Map<SqlKind, DdlExecutor<Void>> ddlExecutors = new HashMap<>();
 
     @Override
-    @CacheEvict(value = AdbDtmDataSourcePlugin.ADB_DATAMART_CACHE, key = "#context.getDatamartName()")
-    public Future<Void> execute(DdlRequestContext context) {
+    @CacheEvict(value = AdbDtmDataSourcePlugin.ADB_DATAMART_CACHE, key = "#request.getDatamartMnemonic()")
+    public Future<Void> execute(DdlRequest request) {
         return Future.future(promise -> {
-            SqlNode query = context.getQuery();
-            if (query == null) {
-                promise.fail(new DdlDatasourceException("Ddl query is null!"));
-                return;
-            }
-            if (ddlExecutors.containsKey(query.getKind())) {
-                ddlExecutors.get(query.getKind())
-                        .execute(context, query.getKind().lowerName)
+            SqlKind sqlKind = request.getSqlKind();
+            if (ddlExecutors.containsKey(sqlKind)) {
+                ddlExecutors.get(sqlKind)
+                        .execute(request)
                         .onComplete(promise);
             } else {
-                promise.fail(new DdlDatasourceException(String.format("Unknown DDL: %s",
-                        query)));
+                promise.fail(new DdlDatasourceException(String.format("Unknown DDL: %s", sqlKind)));
             }
         });
     }

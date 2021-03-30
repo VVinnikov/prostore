@@ -5,7 +5,6 @@ import io.arenadata.dtm.async.AsyncUtils;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.status.PublishStatusEventRequest;
 import io.arenadata.dtm.kafka.core.configuration.properties.PublishStatusEventProperties;
-import io.vertx.core.Future;
 import io.vertx.core.json.jackson.DatabindCodec;
 import io.vertx.kafka.client.producer.KafkaProducer;
 import io.vertx.kafka.client.producer.KafkaProducerRecord;
@@ -26,9 +25,8 @@ public class KafkaStatusEventPublisherImpl implements KafkaStatusEventPublisher 
     private final PublishStatusEventProperties properties;
 
     public KafkaStatusEventPublisherImpl(
-        @Qualifier("jsonCoreKafkaProducer") KafkaProducer<String, String> producer,
-        @Qualifier("publishStatusEventProperties") PublishStatusEventProperties properties
-    ) {
+            @Qualifier("jsonCoreKafkaProducer") KafkaProducer<String, String> producer,
+            @Qualifier("publishStatusEventProperties") PublishStatusEventProperties properties) {
         this.producer = producer;
         this.properties = properties;
     }

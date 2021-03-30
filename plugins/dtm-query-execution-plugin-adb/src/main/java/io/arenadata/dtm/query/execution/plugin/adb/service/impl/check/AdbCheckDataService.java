@@ -4,8 +4,8 @@ import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
-import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountParams;
-import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Params;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
+import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckDataService;
 import io.vertx.core.Future;
 import lombok.val;
@@ -54,14 +54,14 @@ public class AdbCheckDataService implements CheckDataService {
     }
 
     @Override
-    public Future<Long> checkDataByCount(CheckDataByCountParams params) {
+    public Future<Long> checkDataByCount(CheckDataByCountRequest request) {
         return Future.future(p -> {
             //TODO it's better to exclude generating sql query in separate factory class
             val sql = String.format(CHECK_DATA_BY_COUNT_TEMPLATE,
-                    params.getEntity().getSchema(), params.getEntity().getName(),
-                    params.getSysCn() - 1, params.getSysCn(),
-                    params.getEntity().getSchema(), params.getEntity().getName(),
-                    params.getSysCn());
+                    request.getEntity().getSchema(), request.getEntity().getName(),
+                    request.getSysCn() - 1, request.getSysCn(),
+                    request.getEntity().getSchema(), request.getEntity().getName(),
+                    request.getSysCn());
             ColumnMetadata metadata = new ColumnMetadata(COLUMN_NAME, ColumnType.BIGINT);
             queryExecutor.execute(sql, Collections.singletonList(metadata))
                     .onSuccess(result -> {
@@ -72,12 +72,12 @@ public class AdbCheckDataService implements CheckDataService {
     }
 
     @Override
-    public Future<Long> checkDataByHashInt32(CheckDataByHashInt32Params params) {
+    public Future<Long> checkDataByHashInt32(CheckDataByHashInt32Request request) {
         return queryExecutor.executeUpdate(CREATE_OR_REPLACE_FUNC)
-                .compose(v -> checkDataByHash(params));
+                .compose(v -> checkDataByHash(request));
     }
 
-    private Future<Long> checkDataByHash(CheckDataByHashInt32Params params) {
+    private Future<Long> checkDataByHash(CheckDataByHashInt32Request params) {
         return Future.future(p -> {
             Map<String, EntityField> fields = params.getEntity().getFields().stream()
                     .collect(Collectors.toMap(EntityField::getName, Function.identity()));
@@ -121,7 +121,7 @@ public class AdbCheckDataService implements CheckDataService {
                 break;
             case TIME:
             case TIMESTAMP:
-                result = String.format("extract(epoch from %s)*1000000::bigint", field.getName());
+                result = String.format("(extract(epoch from %s)*1000000)::bigint", field.getName());
                 break;
             default:
                 result = field.getName();

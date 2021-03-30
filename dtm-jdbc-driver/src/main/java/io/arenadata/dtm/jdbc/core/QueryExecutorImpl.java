@@ -1,13 +1,17 @@
 package io.arenadata.dtm.jdbc.core;
 
+import io.arenadata.dtm.common.model.ddl.SystemMetadata;
 import io.arenadata.dtm.jdbc.model.ColumnInfo;
 import io.arenadata.dtm.jdbc.model.SchemaInfo;
 import io.arenadata.dtm.jdbc.model.TableInfo;
 import io.arenadata.dtm.jdbc.protocol.Protocol;
 import io.arenadata.dtm.jdbc.protocol.http.HttpReaderService;
+import io.arenadata.dtm.jdbc.util.DtmSqlException;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -17,6 +21,8 @@ import java.util.*;
 import java.util.stream.IntStream;
 
 public class QueryExecutorImpl implements QueryExecutor {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(QueryExecutorImpl.class);
     /**
      * Host
      */
@@ -53,19 +59,19 @@ public class QueryExecutorImpl implements QueryExecutor {
         this.schema = schema;
         this.info = info;
         this.client = HttpClients.createDefault();
-        this.protocol = new HttpReaderService(this.client, this.host, this.schema);
+        this.protocol = new HttpReaderService(this.client, this.host);
     }
 
     @Override
-    public void execute(Query query, List<Object> parameters, ResultHandler resultHandler) {
+    public void execute(Query query, QueryParameters parameters, ResultHandler resultHandler) {
         executeInternal(query, parameters, resultHandler);
     }
 
     @Override
-    public void execute(List<Query> queries, List<List<Object>> parametersList, ResultHandler resultHandler) {
+    public void execute(List<Query> queries, List<QueryParameters> parametersList, ResultHandler resultHandler) {
         try {
             for (int i = 0; i < queries.size(); i++) {
-                List<Object> parameters = parametersList.isEmpty() ? Collections.emptyList() : parametersList.get(i);
+                QueryParameters parameters = parametersList.isEmpty() ? null : parametersList.get(i);
                 executeInternal(queries.get(i), parameters, resultHandler);
             }
         } catch (Exception e) {
@@ -73,27 +79,60 @@ public class QueryExecutorImpl implements QueryExecutor {
         }
     }
 
-    private void executeInternal(Query query, List<Object> parameters, ResultHandler resultHandler) {
+    @Override
+    public void prepareQuery(Query query, ResultHandler resultHandler) {
+        try {
+            QueryRequest queryRequest = prepareQueryRequest(query.getNativeSql(), null);
+            this.protocol.prepareQuery(queryRequest);
+        } catch (SQLException e) {
+            resultHandler.handleError(e);
+        }
+    }
+
+    private void executeInternal(Query query, QueryParameters parameters, ResultHandler resultHandler) {
         try {
             final QueryResult queryResult;
-            queryResult = this.protocol.executeQuery(query.getNativeSql());
+            QueryRequest queryRequest = prepareQueryRequest(query.getNativeSql(), parameters);
+            queryResult = this.protocol.executeQuery(queryRequest);
             if (queryResult.getResult() != null) {
-                List<Field[]> result = new ArrayList<>();
+                setUsedSchemaIfExists(queryResult);
                 List<Map<String, Object>> rows = queryResult.getResult();
                 List<ColumnMetadata> metadata = queryResult.getMetadata() == null ?
                         Collections.emptyList() : queryResult.getMetadata();
+                final Field[] fields = new Field[metadata.size()];
+                final List<Tuple> tuples = new ArrayList<>();
+                IntStream.range(0, metadata.size()).forEach(n -> {
+                    ColumnMetadata md = metadata.get(n);
+                    fields[n] = new Field(md.getName(), md.getSize(), md.getType(), null);
+                });
                 rows.forEach(row -> {
-                    Field[] resultFields = new Field[row.size()];
+                    Tuple tuple = new Tuple(metadata.size());
                     IntStream.range(0, queryResult.getMetadata().size()).forEach(key -> {
                         String columnName = queryResult.getMetadata().get(key).getName();
-                        resultFields[key] = new Field(columnName, row.get(columnName));
+                        tuple.set(key, row.get(columnName));
                     });
-                    result.add(resultFields);
+                    tuples.add(tuple);
                 });
-                resultHandler.handleResultRows(query, result, metadata, ZoneId.of(queryResult.getTimeZone()));
+                resultHandler.handleResultRows(query, fields, tuples, ZoneId.of(queryResult.getTimeZone()));
             }
         } catch (SQLException e) {
             resultHandler.handleError(e);
+        }
+    }
+
+    private void setUsedSchemaIfExists(QueryResult result) throws DtmSqlException {
+        if (result.getMetadata() != null && result.getMetadata().size() == 1
+                && SystemMetadata.SCHEMA == result.getMetadata().get(0).getSystemMetadata()) {
+            if (!result.isEmpty()) {
+                final Optional<Object> schemaOptional = result.getResult().get(0).values().stream().findFirst();
+                if (schemaOptional.isPresent()) {
+                    this.schema = schemaOptional.get().toString();
+                } else {
+                    throw new DtmSqlException("Schema value not found!");
+                }
+            } else {
+                throw new DtmSqlException("Empty result for using schema!");
+            }
         }
     }
 
@@ -134,7 +173,7 @@ public class QueryExecutorImpl implements QueryExecutor {
 
     @Override
     public String getServerVersion() {
-        return "3.3.0";
+        return "3.4.0";
     }
 
     @Override
@@ -159,7 +198,11 @@ public class QueryExecutorImpl implements QueryExecutor {
             client = null;
             protocol = null;
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error("Error in closing client connection", e);
         }
+    }
+
+    private QueryRequest prepareQueryRequest(String sql, QueryParameters parameters) {
+        return new QueryRequest(UUID.randomUUID(), this.schema, sql, parameters);
     }
 }

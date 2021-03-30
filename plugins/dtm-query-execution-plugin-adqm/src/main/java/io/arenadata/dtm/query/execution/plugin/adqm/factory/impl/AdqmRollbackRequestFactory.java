@@ -5,8 +5,9 @@ import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.plugin.sql.PreparedStatementRequest;
 import io.arenadata.dtm.query.execution.plugin.adqm.configuration.properties.DdlProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmRollbackRequest;
+import io.arenadata.dtm.query.execution.plugin.adqm.utils.Constants;
+import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.api.factory.RollbackRequestFactory;
-import io.arenadata.dtm.query.execution.plugin.api.request.RollbackRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.springframework.stereotype.Component;
@@ -21,13 +22,13 @@ public class AdqmRollbackRequestFactory implements RollbackRequestFactory<AdqmRo
     private static final String DROP_TABLE_TEMPLATE = "DROP TABLE IF EXISTS %s.%s_%s ON CLUSTER %s";
     private static final String SYSTEM_FLUSH_TEMPLATE = "SYSTEM FLUSH DISTRIBUTED %s.%s_actual";
     private static final String INSERT_INTO_TEMPLATE = "INSERT INTO <dbname>.<tablename>_actual\n" +
-        "  SELECT <fields>, sys_from, sys_to, sys_op, close_date, -1\n" +
+        "  SELECT <fields>, sys_from, sys_to, sys_op, sys_close_date, -1\n" +
         "  FROM <dbname>.<tablename>_actual FINAL\n" +
         "  WHERE sys_from = <sys_cn> AND sign = 1\n" +
         "  UNION ALL\n" +
-        "  SELECT <fields>, sys_from, toInt64(<maxLong>) AS sys_to, 0 AS sys_op, toDateTime('9999-12-31 00:00:00') AS close_date, arrayJoin([-1, 1])\n" +
-        "  FROM <dbname>.<tablename>_actual FINAL\n" +
-        "  WHERE sys_to = <prev_sys_cn> AND sign = 1";
+        "  SELECT <fields>, sys_from, toInt64(<maxLong>) AS sys_to, 0 AS sys_op, toDateTime('9999-12-31 00:00:00') AS sys_close_date, arrayJoin([-1, 1])\n" +
+        "  FROM <dbname>.<tablename>_actual a FINAL\n" +
+        "  WHERE a.sys_to = <prev_sys_cn> AND sign = 1";
     private static final String OPTIMIZE_TABLE_TEMPLATE = "OPTIMIZE TABLE %s.%s_actual_shard ON CLUSTER %s FINAL";
 
     private final DdlProperties ddlProperties;
@@ -37,11 +38,12 @@ public class AdqmRollbackRequestFactory implements RollbackRequestFactory<AdqmRo
         val cluster = ddlProperties.getCluster();
         Entity entity = rollbackRequest.getEntity();
         val entityName = entity.getName();
-        val dbName = getDbName(rollbackRequest);
+        val dbName = Constants.getDbName(rollbackRequest.getEnvName(), rollbackRequest.getDatamartMnemonic());
         val sysCn = rollbackRequest.getSysCn();
         return new AdqmRollbackRequest(
             Arrays.asList(
                 PreparedStatementRequest.onlySql(getDropTableSql(dbName, entityName, "ext_shard", cluster)),
+                PreparedStatementRequest.onlySql(getDropTableSql(dbName, entityName, "actual_loader_shard", cluster)),
                 PreparedStatementRequest.onlySql(getDropTableSql(dbName, entityName, "buffer_loader_shard", cluster)),
                 PreparedStatementRequest.onlySql(getDropTableSql(dbName, entityName, "buffer", cluster)),
                 PreparedStatementRequest.onlySql(getDropTableSql(dbName, entityName, "buffer_shard", cluster)),
@@ -51,10 +53,6 @@ public class AdqmRollbackRequestFactory implements RollbackRequestFactory<AdqmRo
                 PreparedStatementRequest.onlySql(String.format(OPTIMIZE_TABLE_TEMPLATE, dbName, entityName, cluster))
             )
         );
-    }
-
-    private String getDbName(RollbackRequest rollbackRequest) {
-        return rollbackRequest.getQueryRequest().getEnvName() + "__" + rollbackRequest.getDatamart();
     }
 
     private String gerInsertSql(String datamart, Entity entity, long sysCn) {

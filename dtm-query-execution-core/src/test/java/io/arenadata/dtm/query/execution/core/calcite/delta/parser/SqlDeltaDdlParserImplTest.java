@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.core.calcite.delta.parser;
 
-import io.arenadata.dtm.common.plugin.exload.Format;
+import io.arenadata.dtm.common.model.ddl.ExternalTableFormat;
 import io.arenadata.dtm.common.plugin.exload.Type;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
@@ -28,16 +28,13 @@ import org.apache.calcite.tools.Planner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 public class SqlDeltaDdlParserImplTest {
 
-    private CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
-    private CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
-    private SqlParser.Config parserConfig = calciteConfiguration.configEddlParser(
+    private final CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
+    private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
+    private final SqlParser.Config parserConfig = calciteConfiguration.configEddlParser(
             calciteCoreConfiguration.eddlParserImplFactory());
     private SqlDialect sqlDialect;
 
@@ -128,7 +125,7 @@ public class SqlDeltaDdlParserImplTest {
                 SqlNodeUtils.getOne(sqlCreateDownloadExternalTable, LocationOperator.class).getType());
         assertEquals("kafka://zookeeper_host:port/topic",
                 SqlNodeUtils.getOne(sqlCreateDownloadExternalTable, LocationOperator.class).getLocation());
-        assertEquals(Format.AVRO,
+        assertEquals(ExternalTableFormat.AVRO,
                 SqlNodeUtils.getOne(sqlCreateDownloadExternalTable, FormatOperator.class).getFormat());
     }
 

@@ -9,7 +9,10 @@ import io.arenadata.dtm.query.execution.plugin.adg.dto.rollback.ReverseHistoryTr
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.OperationFile;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.OperationYaml;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.request.*;
-import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.*;
+import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.AdgCartridgeError;
+import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.ResOperation;
+import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.TtLoadDataKafkaError;
+import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.response.TtLoadDataKafkaResponse;
 import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.Space;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
@@ -259,7 +262,7 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
 
     private Future<Void> handleUploadData(HttpResponse<Buffer> response) {
         return Future.future(promise -> {
-            log.trace("handle [UploadData] response [{}]", response);
+            log.trace("handle [UploadData] statusCode [{}] response [{}]", response.statusCode(), response.bodyAsString());
             val statusCode = response.statusCode();
             if (statusCode == 200) {
                 promise.complete();
@@ -274,7 +277,7 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
 
     private Future<Void> handleSubscription(HttpResponse<Buffer> response) {
         return Future.future(promise -> {
-            log.trace("handle [subscription] response [{}]", response);
+            log.trace("handle [subscription] statusCode [{}] response [{}]", response.statusCode(), response.bodyAsString());
             val statusCode = response.statusCode();
             if (statusCode == 200) {
                 log.debug("Subscription Successful");
@@ -289,7 +292,7 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
 
     private Future<Void> handleTransferData(HttpResponse<Buffer> response) {
         return Future.future(promise -> {
-            log.trace("handle [transfer data to scd table] response [{}]", response);
+            log.trace("handle [transfer data to scd table] statusCode [{}] response [{}]", response.statusCode(), response.bodyAsString());
             val statusCode = response.statusCode();
             if (statusCode == 200) {
                 promise.complete();
@@ -303,7 +306,7 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
 
     private Future<TtLoadDataKafkaResponse> handleLoadData(HttpResponse<Buffer> response) {
         return Future.future(promise -> {
-            log.trace("handle [load data] response [{}]", response);
+            log.trace("handle [load data] statusCode [{}] response [{}]", response.statusCode(), response.bodyAsString());
             val statusCode = response.statusCode();
             if (statusCode == 200) {
                 val successResponse = response.bodyAsJson(TtLoadDataKafkaResponse.class);
@@ -321,7 +324,7 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
 
     private Future<Void> handleCancelSubscription(HttpResponse<Buffer> response) {
         return Future.future(promise -> {
-            log.trace("handle [cancel subscription] response [{}]", response);
+            log.trace("handle [cancel subscription] statusCode [{}] response [{}]", response.statusCode(), response.bodyAsString());
             val statusCode = response.statusCode();
             if (statusCode == 200) {
                 promise.complete();
@@ -352,7 +355,7 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
 
     private Future<Void> handleReverseHistoryTransfer(HttpResponse<Buffer> response) {
         return Future.future(promise -> {
-            log.trace("handle [reverse history transfer] response [{}]", response);
+            log.trace("handle [reverse history transfer] statusCode [{}] response [{}]", response.statusCode(), response.bodyAsString());
             val statusCode = response.statusCode();
             if (statusCode == 200) {
                 promise.complete();
@@ -366,7 +369,7 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
 
     private Future<Void> handleExecuteCreateSpacesQueued(HttpResponse<Buffer> response) {
         return Future.future(promise -> {
-            log.trace("handle [executeCreateSpacesQueued] response [{}]", response);
+            log.trace("handle [executeCreateSpacesQueued] statusCode [{}] response [{}]", response.statusCode(), response.bodyAsString());
             val statusCode = response.statusCode();
             if (statusCode == 200) {
                 promise.complete();
@@ -380,7 +383,7 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
 
     private Future<Void> handleExecuteDeleteSpacesQueued(HttpResponse<Buffer> response) {
         return Future.future(promise -> {
-            log.trace("handle [executeDeleteSpacesQueued] response [{}]", response);
+            log.trace("handle [executeDeleteSpacesQueued] statusCode [{}] response [{}]", response.statusCode(), response.bodyAsString());
             val statusCode = response.statusCode();
             if (statusCode == 200) {
                 promise.complete();
@@ -394,7 +397,7 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
 
     private Future<Void> handleExecuteDeleteSpacesWithPrefixQueued(HttpResponse<Buffer> response) {
         return Future.future(promise -> {
-            log.trace("handle [executeDeleteSpacesWithPrefixQueued] response [{}]", response);
+            log.trace("handle [executeDeleteSpacesWithPrefixQueued] statusCode [{}] response [{}]", response.statusCode(), response.bodyAsString());
             val statusCode = response.statusCode();
             if (statusCode == 200) {
                 promise.complete();

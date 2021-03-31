@@ -10,13 +10,13 @@ import java.util.List;
 public interface AdgClient {
     void close();
 
-    Future<List<?>> eval(String expression, Object... args);
+    Future<List<Object>> eval(String expression, Object... args);
 
-    Future<List<?>> call(String function, Object... args);
+    Future<List<Object>> call(String function, Object... args);
 
-    Future<List<?>> callQuery(String sql, Object... params);
+    Future<List<Object>> callQuery(String sql, Object... params);
 
-    Future<List<?>> callLoadLines(String table, Object... rows);
+    Future<List<Object>> callLoadLines(String table, Object... rows);
 
     boolean isAlive();
 }

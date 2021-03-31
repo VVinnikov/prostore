@@ -4,12 +4,17 @@ package io.arenadata.dtm.async;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.function.Consumer;
 
 @Slf4j
 public class AsyncUtils {
+
+    private AsyncUtils() {
+    }
+
     public static <T, R> Handler<AsyncResult<T>> succeed(Handler<AsyncResult<R>> handler, Consumer<T> succeed) {
         return ar -> {
             if (ar.succeeded()) {
@@ -26,7 +31,12 @@ public class AsyncUtils {
         };
     }
 
-    public static <T> Future<Void> toEmptyVoidFuture(T any) {
+    public static Future<Void> toEmptyVoidFuture() {
         return Future.succeededFuture();
+    }
+
+    public static <T> Future<T> measureMs(Future<T> future, DurationListener durationListener) {
+        return Future.future((Promise<Long> p) -> p.complete(System.currentTimeMillis()))
+                .compose(startTime -> future.onSuccess(v -> durationListener.onDuration(System.currentTimeMillis() - startTime)));
     }
 }

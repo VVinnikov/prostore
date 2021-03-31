@@ -1,12 +1,12 @@
 package io.arenadata.dtm.query.execution.plugin.adg.service.impl;
 
+import io.arenadata.dtm.async.AsyncUtils;
 import io.arenadata.dtm.common.converter.SqlTypeConverter;
 import io.arenadata.dtm.common.reader.QueryParameters;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
-import io.arenadata.dtm.query.execution.plugin.adg.model.metadata.ColumnTypeUtil;
-import io.arenadata.dtm.query.execution.plugin.adg.service.QueryExecutorService;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgClient;
 import io.arenadata.dtm.query.execution.plugin.adg.service.AdgClientPool;
+import io.arenadata.dtm.query.execution.plugin.adg.service.QueryExecutorService;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -47,10 +47,11 @@ public class AdgQueryExecutorServiceImpl implements QueryExecutorService {
             try {
                 cl = adgClientPool.borrowObject();
                 List<Object> paramsList = createParamsList(queryParameters);
-                cl.callQuery(sql, paramsList.toArray())
+                log.debug("ADG. Execute query [{}]", sql);
+                AsyncUtils.measureMs(cl.callQuery(sql, paramsList.toArray()),
+                        duration -> log.debug("ADG. Query completed successfully: [{}] in [{}]ms", sql, duration))
                         .onComplete(ar -> {
                             if (ar.succeeded() && ar.result() != null && !ar.result().isEmpty()) {
-                                log.debug("ADG. execute query {}", sql);
                                 val map = (Map<?, ?>) ar.result().get(0);
                                 val dataSet = (List<List<?>>) map.get("rows");
                                 final List<Map<String, Object>> result = new ArrayList<>();
@@ -109,7 +110,9 @@ public class AdgQueryExecutorServiceImpl implements QueryExecutorService {
                 promise.fail(new DataSourceException("Error creating Tarantool client", e));
             }
             try {
-                cl.call(procedure, args)
+                log.debug("ADG. Execute procedure [{}] {}", procedure, args);
+                AsyncUtils.measureMs(cl.call(procedure, args),
+                        duration -> log.debug("ADG. Procedure completed successfully: [{}] in [{}]ms", procedure, duration))
                         .onComplete(ar -> {
                             if (ar.succeeded()) {
                                 promise.complete(ar.result());
@@ -118,24 +121,11 @@ public class AdgQueryExecutorServiceImpl implements QueryExecutorService {
                             }
                         });
             } finally {
-                log.debug("ADG. execute procedure {} {}", procedure, args);
                 if (cl != null) {
                     adgClientPool.returnObject(cl);
                 }
             }
         });
-    }
-
-    private List<ColumnMetadata> getMetadata(List<Map<String, String>> columns) {
-        return columns.stream().map(it -> {
-            if (!it.containsKey("name")) {
-                throw new DataSourceException("name is not specified");
-            }
-            if (!it.containsKey("type")) {
-                throw new DataSourceException("type is not specified");
-            }
-            return new ColumnMetadata(it.get("name"), ColumnTypeUtil.columnTypeFromTtColumnType(it.get("type")));
-        }).collect(Collectors.toList());
     }
 
 }

@@ -3,7 +3,6 @@ package io.arenadata.dtm.query.execution.plugin.adqm.service.impl.check;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTableColumn;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTableEntity;
 import io.arenadata.dtm.query.execution.plugin.adqm.dto.AdqmTables;
-import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmMetaTableEntityFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmTableEntitiesFactory;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckException;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
@@ -18,6 +17,8 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static io.arenadata.dtm.query.execution.plugin.adqm.factory.impl.AdqmMetaTableEntityFactory.DATA_TYPE;
 
 @Service("adqmCheckTableService")
 public class AdqmCheckTableService implements CheckTableService {
@@ -88,7 +89,7 @@ public class AdqmCheckTableService implements CheckTableService {
                 String type = column.getType();
                 if (!Objects.equals(type, realType)) {
                     errors.add(String.format("\tColumn `%s`:", column.getName()));
-                    errors.add(String.format(FIELD_ERROR_TEMPLATE, AdqmMetaTableEntityFactory.DATA_TYPE,
+                    errors.add(String.format(FIELD_ERROR_TEMPLATE, DATA_TYPE,
                             column.getType(), realColumn.getType()));
                 }
             }

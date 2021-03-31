@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.calcite.core.extension.delta;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
 import java.util.Collections;
@@ -22,5 +23,10 @@ public class SqlDeltaCall extends SqlCall {
     @Override
     public List<SqlNode> getOperandList() {
         return Collections.emptyList();
+    }
+
+    @Override
+    public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
+        writer.literal(getOperator() + "()");
     }
 }

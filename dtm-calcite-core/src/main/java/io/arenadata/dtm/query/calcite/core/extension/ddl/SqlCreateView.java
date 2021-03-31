@@ -29,6 +29,7 @@ public class SqlCreateView extends SqlCreate {
         return ImmutableNullableList.of(this.name, this.columnList, this.query);
     }
 
+    @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
         if (this.getReplace()) {
             writer.keyword("CREATE OR REPLACE");
@@ -40,10 +41,10 @@ public class SqlCreateView extends SqlCreate {
         this.name.unparse(writer, leftPrec, rightPrec);
         if (this.columnList != null) {
             SqlWriter.Frame frame = writer.startList("(", ")");
-            Iterator var5 = this.columnList.iterator();
+            Iterator<SqlNode> var5 = this.columnList.iterator();
 
             while (var5.hasNext()) {
-                SqlNode c = (SqlNode) var5.next();
+                SqlNode c = var5.next();
                 writer.sep(",");
                 c.unparse(writer, 0, 0);
             }

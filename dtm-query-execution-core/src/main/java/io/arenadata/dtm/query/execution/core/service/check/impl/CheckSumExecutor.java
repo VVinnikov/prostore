@@ -46,36 +46,42 @@ public class CheckSumExecutor implements CheckExecutor {
             val deltaNum = sqlCheckSum.getDeltaNum();
             val table = Optional.ofNullable(sqlCheckSum.getTable());
             val columns = sqlCheckSum.getColumns();
-
-            deltaServiceDao.getDeltaByNum(datamart, deltaNum)
-                    .compose(delta -> {
-                        if (table.isPresent()) {
-                            return entityDao.getEntity(datamart, table.get())
-                                    .map(e -> {
-                                        if (e.getEntityType() != EntityType.TABLE) {
-                                            throw new EntityNotExistsException(e.getName());
-                                        } else {
-                                            return e;
-                                        }
-                                    })
-                                    .compose(entity -> checkSumTableService.calcCheckSumTable(CheckSumRequestContext.builder()
-                                            .checkContext(context)
-                                            .datamart(datamart)
-                                            .delta(delta)
-                                            .entity(entity)
-                                            .columns(columns)
-                                            .build()));
+            val checkContext = CheckSumRequestContext.builder()
+                    .checkContext(context)
+                    .datamart(datamart)
+                    .columns(columns)
+                    .build();
+            deltaServiceDao.getDeltaHot(datamart)
+                    .compose(hotDelta -> {
+                        if (hotDelta == null || hotDelta.getDeltaNum() != deltaNum) {
+                            return deltaServiceDao.getDeltaByNum(datamart, deltaNum)
+                                    .compose(okDelta -> calculateCheckSum(table, checkContext, okDelta.getCnFrom(), okDelta.getCnTo()));
                         } else {
-                            return checkSumTableService.calcCheckSumForAllTables(CheckSumRequestContext.builder()
-                                    .checkContext(context)
-                                    .datamart(datamart)
-                                    .delta(delta)
-                                    .build());
+                            return calculateCheckSum(table, checkContext, hotDelta.getCnFrom(), hotDelta.getCnTo());
                         }
                     })
                     .onSuccess(sum -> promise.complete(createQueryResult(sum)))
                     .onFailure(promise::fail);
         });
+    }
+
+    private Future<Long> calculateCheckSum(Optional<String> table, CheckSumRequestContext checkContext, long cnFrom, long cnTo) {
+        checkContext.setCnFrom(cnFrom);
+        checkContext.setCnTo(cnTo);
+        if (table.isPresent()) {
+            return entityDao.getEntity(checkContext.getDatamart(), table.get())
+                    .map(e -> {
+                        if (e.getEntityType() != EntityType.TABLE) {
+                            throw new EntityNotExistsException(e.getName());
+                        } else {
+                            checkContext.setEntity(e);
+                            return e;
+                        }
+                    })
+                    .compose(entity -> checkSumTableService.calcCheckSumTable(checkContext));
+        } else {
+            return checkSumTableService.calcCheckSumForAllTables(checkContext);
+        }
     }
 
     private QueryResult createQueryResult(Long sum) {

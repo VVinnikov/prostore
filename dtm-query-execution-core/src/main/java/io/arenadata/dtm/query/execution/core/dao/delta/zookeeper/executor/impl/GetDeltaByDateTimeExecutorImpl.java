@@ -93,7 +93,9 @@ public class GetDeltaByDateTimeExecutorImpl extends DeltaServiceDaoExecutorHelpe
                                     }
                                 });
                     }
-                });
+                })
+                .compose(okDelta -> okDelta == null ?
+                        Future.failedFuture(new DeltaNotFoundException()) : Future.succeededFuture(okDelta));
     }
 
     private Future<List<LocalDate>> getDatamartDeltaDays(String datamart, LocalDate date) {

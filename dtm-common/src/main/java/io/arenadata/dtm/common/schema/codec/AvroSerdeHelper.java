@@ -13,6 +13,10 @@ import org.apache.avro.generic.GenericData;
 import org.apache.avro.specific.SpecificData;
 
 public abstract class AvroSerdeHelper {
+
+    protected AvroSerdeHelper() {
+    }
+
     static {
         GenericData.get().addLogicalTypeConversion(LocalDateConversion.getInstance());
         GenericData.get().addLogicalTypeConversion(LocalTimeConversion.getInstance());

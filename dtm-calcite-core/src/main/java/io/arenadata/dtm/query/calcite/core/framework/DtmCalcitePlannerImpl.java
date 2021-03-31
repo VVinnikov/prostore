@@ -55,7 +55,6 @@ public class DtmCalcitePlannerImpl implements Planner, RelOptTable.ViewExpander 
     private final org.apache.calcite.sql2rel.SqlToRelConverter.Config sqlToRelConverterConfig;
     private final SqlRexConvertletTable convertletTable;
     private DtmCalcitePlannerImpl.State state;
-    private boolean open;
     private SchemaPlus defaultSchema;
     private JavaTypeFactory typeFactory;
     private RelOptPlanner planner;
@@ -112,14 +111,12 @@ public class DtmCalcitePlannerImpl implements Planner, RelOptTable.ViewExpander 
     }
 
     public void close() {
-        this.open = false;
         this.typeFactory = null;
         this.state = DtmCalcitePlannerImpl.State.STATE_0_CLOSED;
     }
 
     public void reset() {
         this.ensure(DtmCalcitePlannerImpl.State.STATE_0_CLOSED);
-        this.open = true;
         this.state = DtmCalcitePlannerImpl.State.STATE_1_RESET;
     }
 
@@ -141,10 +138,10 @@ public class DtmCalcitePlannerImpl implements Planner, RelOptTable.ViewExpander 
                 this.planner.addRelTraitDef(RelCollationTraitDef.INSTANCE);
             }
         } else {
-            UnmodifiableIterator var2 = this.traitDefs.iterator();
+            UnmodifiableIterator<RelTraitDef> var2 = this.traitDefs.iterator();
 
             while (var2.hasNext()) {
-                RelTraitDef def = (RelTraitDef) var2.next();
+                RelTraitDef def = var2.next();
                 this.planner.addRelTraitDef(def);
             }
         }
@@ -219,19 +216,19 @@ public class DtmCalcitePlannerImpl implements Planner, RelOptTable.ViewExpander 
         try {
             sqlNode = parser.parseQuery();
         } catch (SqlParseException var16) {
-            throw new RuntimeException("parse failed", var16);
+            throw new DtmException("parse failed", var16);
         }
 
         CalciteCatalogReader catalogReader = this.createCatalogReader().withSchemaPath(schemaPath);
-        SqlValidator validator = this.createSqlValidator(catalogReader);
+        SqlValidator sqlValidator = this.createSqlValidator(catalogReader);
         RexBuilder rexBuilder = this.createRexBuilder();
         RelOptCluster cluster = RelOptCluster.create(this.planner, rexBuilder);
         org.apache.calcite.sql2rel.SqlToRelConverter.Config config = SqlToRelConverter.configBuilder().withConfig(this.sqlToRelConverterConfig).withTrimUnusedFields(false).build();
         SqlToRelConverter sqlToRelConverter = new DtmSqlToRelConverter(this, validator, catalogReader, cluster, this.convertletTable, config);
-        RelRoot root = sqlToRelConverter.convertQuery(sqlNode, true, false);
-        RelRoot root2 = root.withRel(sqlToRelConverter.flattenTypes(root.rel, true));
+        RelRoot root1 = sqlToRelConverter.convertQuery(sqlNode, true, false);
+        RelRoot root2 = root1.withRel(sqlToRelConverter.flattenTypes(root.rel, true));
         RelBuilder relBuilder = config.getRelBuilderFactory().create(cluster, (RelOptSchema) null);
-        return root2.withRel(RelDecorrelator.decorrelateQuery(root.rel, relBuilder));
+        return root2.withRel(RelDecorrelator.decorrelateQuery(root1.rel, relBuilder));
     }
 
     private CalciteCatalogReader createCatalogReader() {
@@ -272,17 +269,20 @@ public class DtmCalcitePlannerImpl implements Planner, RelOptTable.ViewExpander 
 
     private static enum State {
         STATE_0_CLOSED {
+            @Override
             void from(DtmCalcitePlannerImpl planner) {
                 planner.close();
             }
         },
         STATE_1_RESET {
+            @Override
             void from(DtmCalcitePlannerImpl planner) {
                 planner.ensure(STATE_0_CLOSED);
                 planner.reset();
             }
         },
         STATE_2_READY {
+            @Override
             void from(DtmCalcitePlannerImpl planner) {
                 STATE_1_RESET.from(planner);
                 planner.ready();

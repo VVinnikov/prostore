@@ -11,6 +11,10 @@ import java.util.function.Consumer;
 
 @Slf4j
 public class AsyncUtils {
+
+    private AsyncUtils() {
+    }
+
     public static <T, R> Handler<AsyncResult<T>> succeed(Handler<AsyncResult<R>> handler, Consumer<T> succeed) {
         return ar -> {
             if (ar.succeeded()) {
@@ -27,7 +31,7 @@ public class AsyncUtils {
         };
     }
 
-    public static <T> Future<Void> toEmptyVoidFuture(T any) {
+    public static Future<Void> toEmptyVoidFuture() {
         return Future.succeededFuture();
     }
 

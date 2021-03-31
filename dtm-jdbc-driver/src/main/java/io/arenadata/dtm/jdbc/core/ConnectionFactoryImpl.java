@@ -11,6 +11,6 @@ public class ConnectionFactoryImpl extends ConnectionFactory {
 
     @Override
     public QueryExecutor openConnectionImpl(String host, String user, String schema, String url, Properties info) throws SQLException {
-        return new QueryExecutorImpl(host, user, schema, info);
+        return new QueryExecutorImpl(host, user, schema);
     }
 }

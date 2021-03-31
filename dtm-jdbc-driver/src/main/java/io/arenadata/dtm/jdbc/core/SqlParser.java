@@ -19,7 +19,8 @@ public class SqlParser {
             return Collections.singletonList(new Query(query, true));
         }
 
-        for (int i = 0; i < aChars.length; ++i) {
+        int i = 0;
+        while (i < aChars.length) {
             char aChar = aChars[i];
             whitespaceOnly &= aChar == ';' || Character.isWhitespace(aChar);
             switch (aChar) {
@@ -40,7 +41,7 @@ public class SqlParser {
                             aChars, whitespaceOnly, nativeSql, fragmentStart, i);
                     fragmentStart = i + 1;
                     if (nativeQueries == null) {
-                        nativeQueries = new ArrayList();
+                        nativeQueries = new ArrayList<>();
                     }
                     nativeQueries.add(new Query(nativeSql.toString(), false));
                     nativeSql.setLength(0);
@@ -48,6 +49,7 @@ public class SqlParser {
                 default:
                     break;
             }
+            ++i;
         }
         return getQueries(aChars, whitespaceOnly, nativeQueries, nativeSql, fragmentStart);
     }

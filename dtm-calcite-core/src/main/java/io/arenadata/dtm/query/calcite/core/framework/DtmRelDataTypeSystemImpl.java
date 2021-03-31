@@ -9,6 +9,7 @@ public class DtmRelDataTypeSystemImpl extends RelDataTypeSystemImpl {
         super();
     }
 
+    @Override
     public int getDefaultPrecision(SqlTypeName typeName) {
         switch(typeName) {
             case DECIMAL:
@@ -60,6 +61,7 @@ public class DtmRelDataTypeSystemImpl extends RelDataTypeSystemImpl {
         }
     }
 
+    @Override
     public int getMaxPrecision(SqlTypeName typeName) {
         switch(typeName) {
             case DECIMAL:

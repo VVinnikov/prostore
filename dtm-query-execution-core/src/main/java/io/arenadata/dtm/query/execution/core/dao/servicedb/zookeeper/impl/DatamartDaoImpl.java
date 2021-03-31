@@ -60,7 +60,7 @@ public class DatamartDaoImpl implements DatamartDao {
                             name),
                             error);
                 })
-                .compose(AsyncUtils::toEmptyVoidFuture)
+                .compose(r -> AsyncUtils.toEmptyVoidFuture())
                 .onSuccess(s -> log.info("Datamart [{}] successfully created", name));
     }
 

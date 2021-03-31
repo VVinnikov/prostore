@@ -19,10 +19,10 @@ public class ResultSetWrapper {
     }
 
     public void append(ResultSetWrapper newResult) {
-        ResultSetWrapper tail;
-        for (tail = this; tail.next != null; tail = tail.next) {
+        ResultSetWrapper tail = this;
+        while (tail.next != null) {
+            tail = tail.next;
         }
-
         tail.next = newResult;
     }
 }

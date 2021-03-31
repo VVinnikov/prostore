@@ -4,28 +4,58 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /*
- * DTO ключевого сообщения
+ * Message request key DTO
  * */
 public class DataMessageRequestKey {
-    /*UUID запроса*/
+
+    /**
+     * Request UUID
+     */
     UUID requestId;
-    /*идентификатор сессии загрузки*/
+
+    /**
+     * Load session identifier
+     */
     UUID loadProcID;
-    /*временная метка выгрузки всего пакета данных*/
+
+    /**
+     * Load date of entire data chunk
+     */
     LocalDateTime loadDate;
-    /*признак удаленной записи. 1 - DELETE, по умолчанию - 0*/
+
+    /**
+     * System operation sign. 1 - DELETE, default - 0
+     */
     Integer sysOperation;
-    /*схема данных*/
+
+    /**
+     * Datamart mnemonic
+     */
     String datamartMnemonic;
-    /*имя таблицы данных*/
+
+    /**
+     * Table name
+     */
     String tableName;
-    /*номер потока выгрузки*/
+
+    /**
+     * Stream number
+     */
     Integer streamNumber;
-    /*номер потока выгрузки*/
+
+    /**
+     * Number of streams
+     */
     Integer streamTotal;
-    /*общее количество потоков выгрузки*/
+
+    /**
+     * Chunk number within stream
+     */
     Integer chunkNumber;
-    /*порядковый номер пакета в рамках потока*/
+
+    /**
+     * Is last chunk flag
+     */
     boolean isLastChunk;
 
 

@@ -3,6 +3,10 @@ package io.arenadata.dtm.common.model.ddl;
 import java.util.Optional;
 
 public class EntityTypeUtil {
+
+    private EntityTypeUtil() {
+    }
+
     public static String pgFromDtmType(EntityField field) {
         return pgFromDtmType(field.getType(), field.getSize());
     }

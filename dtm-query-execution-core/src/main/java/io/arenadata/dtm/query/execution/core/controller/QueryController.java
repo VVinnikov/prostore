@@ -2,6 +2,7 @@ package io.arenadata.dtm.query.execution.core.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.arenadata.dtm.async.AsyncUtils;
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.InputQueryRequest;
@@ -46,13 +47,13 @@ public class QueryController {
     }
 
     private void execute(RoutingContext context, InputQueryRequest inputQueryRequest) {
-        queryAnalyzer.analyzeAndExecute(inputQueryRequest)
+        AsyncUtils.measureMs(queryAnalyzer.analyzeAndExecute(inputQueryRequest),
+                duration -> log.info("Request succeeded: [{}] in [{}]ms", inputQueryRequest.getSql(), duration))
                 .onSuccess(queryResult -> {
                     if (queryResult.getRequestId() == null) {
                         queryResult.setRequestId(inputQueryRequest.getRequestId());
                     }
                     queryResult.setTimeZone(this.dtmSettings.getTimeZone().toString());
-                    log.info("Request completed: [{}]", inputQueryRequest.getSql());
                     sendResponse(context, queryResult);
                 })
                 .onFailure(fail -> {

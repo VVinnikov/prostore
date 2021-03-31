@@ -10,10 +10,10 @@ import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.check.CheckContext;
 import io.arenadata.dtm.query.execution.core.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.factory.CheckQueryResultFactory;
+import io.arenadata.dtm.query.execution.core.service.check.CheckExecutor;
 import io.arenadata.dtm.query.execution.core.service.datasource.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckException;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
-import io.arenadata.dtm.query.execution.core.service.check.CheckExecutor;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import org.apache.calcite.util.Pair;
@@ -128,7 +128,7 @@ public class CheckDatabaseExecutor implements CheckExecutor {
                 .onFailure(fail -> {
                     if (fail instanceof CheckException) {
                         promise.complete(Optional.of(
-                                String.format("\n`%s` entity :%s", context.getEntity().getName(),
+                                String.format("\n`%s` entity :%s", entity.getName(),
                                         fail.getMessage())));
                     } else {
                         promise.fail(fail);

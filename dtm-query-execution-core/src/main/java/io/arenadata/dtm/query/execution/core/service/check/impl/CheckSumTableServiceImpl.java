@@ -40,8 +40,8 @@ public class CheckSumTableServiceImpl implements CheckSumTableService {
     public Future<Long> calcCheckSumTable(CheckSumRequestContext request) {
         return Future.future(promise -> {
             List<String> sysCnHashList = new ArrayList<>();
-            long sysCnFrom = request.getDelta().getCnFrom();
-            long sysCnTo = request.getDelta().getCnTo();
+            long sysCnFrom = request.getCnFrom();
+            long sysCnTo = request.getCnTo();
 
             calcCheckSumInDataSources(sysCnFrom, sysCnTo, sysCnHashList, request)
                     .onSuccess(result -> promise.complete(convertCheckSumsToLong(sysCnHashList)))

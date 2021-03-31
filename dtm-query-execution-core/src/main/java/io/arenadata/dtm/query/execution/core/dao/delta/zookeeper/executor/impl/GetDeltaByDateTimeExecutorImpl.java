@@ -22,7 +22,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -75,21 +74,28 @@ public class GetDeltaByDateTimeExecutorImpl extends DeltaServiceDaoExecutorHelpe
 
     private Future<OkDelta> findByDays(String datamart, LocalDateTime targetDateTime) {
         val date = targetDateTime.toLocalDate();
-        Promise<OkDelta> resultPromise = Promise.promise();
-        getDatamartDeltaDays(datamart, date)
-                .onSuccess(days -> {
-                    if (days.size() > 0) {
-                        val dayIterator = days.iterator();
-                        findByDay(datamart,
-                                dayIterator,
-                                targetDateTime,
-                                resultPromise);
+        return getDatamartDeltaDays(datamart, date)
+                .compose(days -> {
+                    if (days.isEmpty()) {
+                        return Future.failedFuture(new DeltaNotFoundException());
                     } else {
-                        resultPromise.fail(new DeltaNotFoundException());
+                        val dayIterator = days.iterator();
+                        return getDeltaOkByMaxDeltaDateTime(datamart, dayIterator.next(), targetDateTime)
+                                .compose(okDelta -> {
+                                    if (okDelta != null) {
+                                        return Future.succeededFuture(okDelta);
+                                    } else {
+                                        if (dayIterator.hasNext()) {
+                                            return getDeltaOkByMaxDeltaDateTime(datamart, dayIterator.next());
+                                        } else {
+                                            return Future.failedFuture(new DeltaNotFoundException());
+                                        }
+                                    }
+                                });
                     }
                 })
-                .onFailure(resultPromise::fail);
-        return resultPromise.future();
+                .compose(okDelta -> okDelta == null ?
+                        Future.failedFuture(new DeltaNotFoundException()) : Future.succeededFuture(okDelta));
     }
 
     private Future<List<LocalDate>> getDatamartDeltaDays(String datamart, LocalDate date) {
@@ -101,24 +107,6 @@ public class GetDeltaByDateTimeExecutorImpl extends DeltaServiceDaoExecutorHelpe
                         .collect(Collectors.toList()));
     }
 
-    private void findByDay(String datamart,
-                           Iterator<LocalDate> dayIterator,
-                           LocalDateTime targetDateTime,
-                           Promise<OkDelta> resultPromise) {
-        val day = dayIterator.next();
-        getDeltaOkByMaxDeltaDateTime(datamart, day, targetDateTime)
-                .onSuccess(okDelta -> {
-                    if (okDelta != null) {
-                        resultPromise.complete(okDelta);
-                    } else if (dayIterator.hasNext()) {
-                        findByDay(datamart, dayIterator, targetDateTime, resultPromise);
-                    } else {
-                        resultPromise.fail(new DeltaNotExistException());
-                    }
-                })
-                .onFailure(resultPromise::fail);
-    }
-
     private Future<OkDelta> getDeltaOkByMaxDeltaDateTime(String datamart,
                                                          LocalDate day,
                                                          LocalDateTime targetDateTime) {
@@ -127,6 +115,19 @@ public class GetDeltaByDateTimeExecutorImpl extends DeltaServiceDaoExecutorHelpe
                         .map(LocalTime::parse)
                         .map(time -> LocalDateTime.of(day, time))
                         .filter(dateTime -> targetDateTime.isAfter(dateTime) || targetDateTime.equals(dateTime))
+                        .max(Comparator.naturalOrder()))
+                .compose(dateTimeOpt -> dateTimeOpt
+                        .map(dateTime -> executor.getData(getDeltaDateTimePath(datamart, dateTime)))
+                        .orElse(Future.succeededFuture()))
+                .map(this::getOkDelta);
+    }
+
+    private Future<OkDelta> getDeltaOkByMaxDeltaDateTime(String datamart,
+                                                         LocalDate day) {
+        return executor.getChildren(getDeltaDatePath(datamart, day))
+                .map(times -> times.stream()
+                        .map(LocalTime::parse)
+                        .map(time -> LocalDateTime.of(day, time))
                         .max(Comparator.naturalOrder()))
                 .compose(dateTimeOpt -> dateTimeOpt
                         .map(dateTime -> executor.getData(getDeltaDateTimePath(datamart, dateTime)))

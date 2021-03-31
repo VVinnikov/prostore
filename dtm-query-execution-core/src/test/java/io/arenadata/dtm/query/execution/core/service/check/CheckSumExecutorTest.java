@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.service.check;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
@@ -13,6 +14,7 @@ import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckSum;
 import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.check.CheckContext;
+import io.arenadata.dtm.query.execution.core.dto.delta.HotDelta;
 import io.arenadata.dtm.query.execution.core.dto.delta.OkDelta;
 import io.arenadata.dtm.query.execution.core.exception.check.CheckSumException;
 import io.arenadata.dtm.query.execution.core.exception.delta.DeltaNotFoundException;
@@ -73,7 +75,78 @@ class CheckSumExecutorTest {
     }
 
     @Test
-    void executeCheckSumTableSuccess() {
+    void executeNonEqualHotDelNum() {
+        Promise<QueryResult> promise = Promise.promise();
+        QueryRequest queryRequest = new QueryRequest();
+        queryRequest.setDatamartMnemonic(DATAMART_MNEMONIC);
+        long deltaNum = 0L;
+        Long hashSum = 12345L;
+        SqlCheckSum sqlCheckSum = mock(SqlCheckSum.class);
+        when(sqlCheckSum.getDeltaNum()).thenReturn(deltaNum);
+        when(sqlCheckSum.getTable()).thenReturn(entity.getName());
+        when(sqlCheckSum.getColumns()).thenReturn(null);
+        CheckContext checkContext = new CheckContext(new RequestMetrics(), "env",
+                new DatamartRequest(queryRequest), CheckType.SUM, sqlCheckSum);
+        OkDelta okDelta = OkDelta.builder()
+                .deltaNum(deltaNum)
+                .cnFrom(0)
+                .cnTo(1)
+                .build();
+        HotDelta hotDelta = HotDelta.builder()
+                .deltaNum(1)
+                .cnFrom(0L)
+                .cnTo(1L)
+                .build();
+
+        when(deltaServiceDao.getDeltaHot(DATAMART_MNEMONIC))
+                .thenReturn(Future.succeededFuture(hotDelta));
+
+        when(deltaServiceDao.getDeltaByNum(DATAMART_MNEMONIC, deltaNum))
+                .thenReturn(Future.succeededFuture(okDelta));
+
+        when(checkSumTableService.calcCheckSumTable(any())).thenReturn(Future.succeededFuture(hashSum));
+
+        checkSumExecutor.execute(checkContext)
+                .onComplete(promise);
+
+        assertTrue(promise.future().succeeded());
+        assertEquals(hashSum.toString(), promise.future().result().getResult().get(0).get("check_result"));
+    }
+
+    @Test
+    void executeEqualHotDelNum() {
+        Promise<QueryResult> promise = Promise.promise();
+        QueryRequest queryRequest = new QueryRequest();
+        queryRequest.setDatamartMnemonic(DATAMART_MNEMONIC);
+        long deltaNum = 0L;
+        Long hashSum = 12345L;
+        SqlCheckSum sqlCheckSum = mock(SqlCheckSum.class);
+        when(sqlCheckSum.getDeltaNum()).thenReturn(deltaNum);
+        when(sqlCheckSum.getTable()).thenReturn(entity.getName());
+        when(sqlCheckSum.getColumns()).thenReturn(null);
+        CheckContext checkContext = new CheckContext(new RequestMetrics(), "env",
+                new DatamartRequest(queryRequest), CheckType.SUM, sqlCheckSum);
+
+        HotDelta hotDelta = HotDelta.builder()
+                .deltaNum(0)
+                .cnFrom(0L)
+                .cnTo(1L)
+                .build();
+
+        when(deltaServiceDao.getDeltaHot(DATAMART_MNEMONIC))
+                .thenReturn(Future.succeededFuture(hotDelta));
+
+        when(checkSumTableService.calcCheckSumTable(any())).thenReturn(Future.succeededFuture(hashSum));
+
+        checkSumExecutor.execute(checkContext)
+                .onComplete(promise);
+
+        assertTrue(promise.future().succeeded());
+        assertEquals(hashSum.toString(), promise.future().result().getResult().get(0).get("check_result"));
+    }
+
+    @Test
+    void executeNullHotDelta() {
         Promise<QueryResult> promise = Promise.promise();
         QueryRequest queryRequest = new QueryRequest();
         queryRequest.setDatamartMnemonic(DATAMART_MNEMONIC);
@@ -91,7 +164,10 @@ class CheckSumExecutorTest {
                 .cnTo(1)
                 .build();
 
-        when(deltaServiceDao.getDeltaByNum(eq(DATAMART_MNEMONIC), eq(deltaNum)))
+        when(deltaServiceDao.getDeltaHot(DATAMART_MNEMONIC))
+                .thenReturn(Future.succeededFuture(null));
+
+        when(deltaServiceDao.getDeltaByNum(DATAMART_MNEMONIC, deltaNum))
                 .thenReturn(Future.succeededFuture(okDelta));
 
         when(checkSumTableService.calcCheckSumTable(any())).thenReturn(Future.succeededFuture(hashSum));
@@ -101,6 +177,28 @@ class CheckSumExecutorTest {
 
         assertTrue(promise.future().succeeded());
         assertEquals(hashSum.toString(), promise.future().result().getResult().get(0).get("check_result"));
+    }
+
+    @Test
+    void executeWithGetDeltaHotError() {
+        Promise<QueryResult> promise = Promise.promise();
+        QueryRequest queryRequest = new QueryRequest();
+        queryRequest.setDatamartMnemonic(DATAMART_MNEMONIC);
+        long deltaNum = 0L;
+        SqlCheckSum sqlCheckSum = mock(SqlCheckSum.class);
+        when(sqlCheckSum.getDeltaNum()).thenReturn(deltaNum);
+        when(sqlCheckSum.getTable()).thenReturn(entity.getName());
+        when(sqlCheckSum.getColumns()).thenReturn(null);
+        CheckContext checkContext = new CheckContext(new RequestMetrics(), "env",
+                new DatamartRequest(queryRequest), CheckType.SUM, sqlCheckSum);
+
+        when(deltaServiceDao.getDeltaHot(DATAMART_MNEMONIC))
+                .thenReturn(Future.failedFuture(new DtmException("")));
+
+        checkSumExecutor.execute(checkContext)
+                .onComplete(promise);
+
+        assertTrue(promise.future().failed());
     }
 
     @Test
@@ -121,7 +219,16 @@ class CheckSumExecutorTest {
                 .cnTo(1)
                 .build();
 
-        when(deltaServiceDao.getDeltaByNum(eq(DATAMART_MNEMONIC), eq(deltaNum)))
+        HotDelta hotDelta = HotDelta.builder()
+                .deltaNum(1)
+                .cnFrom(0L)
+                .cnTo(1L)
+                .build();
+
+        when(deltaServiceDao.getDeltaHot(DATAMART_MNEMONIC))
+                .thenReturn(Future.succeededFuture(hotDelta));
+
+        when(deltaServiceDao.getDeltaByNum(DATAMART_MNEMONIC, deltaNum))
                 .thenReturn(Future.succeededFuture(okDelta));
 
         when(checkSumTableService.calcCheckSumTable(any()))
@@ -153,7 +260,16 @@ class CheckSumExecutorTest {
                 .cnTo(1)
                 .build();
 
-        when(deltaServiceDao.getDeltaByNum(eq(DATAMART_MNEMONIC), eq(deltaNum)))
+        HotDelta hotDelta = HotDelta.builder()
+                .deltaNum(1)
+                .cnFrom(0L)
+                .cnTo(1L)
+                .build();
+
+        when(deltaServiceDao.getDeltaHot(DATAMART_MNEMONIC))
+                .thenReturn(Future.succeededFuture(hotDelta));
+
+        when(deltaServiceDao.getDeltaByNum(DATAMART_MNEMONIC, deltaNum))
                 .thenReturn(Future.succeededFuture(okDelta));
 
         when(checkSumTableService.calcCheckSumTable(any())).thenReturn(Future.succeededFuture(hashSum));
@@ -185,7 +301,16 @@ class CheckSumExecutorTest {
                 .cnTo(1)
                 .build();
 
-        when(deltaServiceDao.getDeltaByNum(eq(DATAMART_MNEMONIC), eq(deltaNum)))
+        HotDelta hotDelta = HotDelta.builder()
+                .deltaNum(1)
+                .cnFrom(0L)
+                .cnTo(1L)
+                .build();
+
+        when(deltaServiceDao.getDeltaHot(DATAMART_MNEMONIC))
+                .thenReturn(Future.succeededFuture(hotDelta));
+
+        when(deltaServiceDao.getDeltaByNum(DATAMART_MNEMONIC, deltaNum))
                 .thenReturn(Future.succeededFuture(okDelta));
 
         checkSumExecutor.execute(checkContext)
@@ -196,7 +321,7 @@ class CheckSumExecutorTest {
     }
 
     @Test
-    void executeWithGetDeltaError() {
+    void executeWithGetDeltaNumError() {
         Promise<QueryResult> promise = Promise.promise();
         QueryRequest queryRequest = new QueryRequest();
         queryRequest.setDatamartMnemonic(DATAMART_MNEMONIC);
@@ -208,7 +333,16 @@ class CheckSumExecutorTest {
         CheckContext checkContext = new CheckContext(new RequestMetrics(), "env",
                 new DatamartRequest(queryRequest), CheckType.SUM, sqlCheckSum);
 
-        when(deltaServiceDao.getDeltaByNum(eq(DATAMART_MNEMONIC), eq(deltaNum)))
+        HotDelta hotDelta = HotDelta.builder()
+                .deltaNum(1)
+                .cnFrom(0L)
+                .cnTo(1L)
+                .build();
+
+        when(deltaServiceDao.getDeltaHot(DATAMART_MNEMONIC))
+                .thenReturn(Future.succeededFuture(hotDelta));
+
+        when(deltaServiceDao.getDeltaByNum(DATAMART_MNEMONIC, deltaNum))
                 .thenReturn(Future.failedFuture(new DeltaNotFoundException()));
 
         checkSumExecutor.execute(checkContext)
@@ -236,7 +370,16 @@ class CheckSumExecutorTest {
                 .cnTo(1)
                 .build();
 
-        when(deltaServiceDao.getDeltaByNum(eq(DATAMART_MNEMONIC), eq(deltaNum)))
+        HotDelta hotDelta = HotDelta.builder()
+                .deltaNum(1)
+                .cnFrom(0L)
+                .cnTo(1L)
+                .build();
+
+        when(deltaServiceDao.getDeltaHot(DATAMART_MNEMONIC))
+                .thenReturn(Future.succeededFuture(hotDelta));
+
+        when(deltaServiceDao.getDeltaByNum(DATAMART_MNEMONIC, deltaNum))
                 .thenReturn(Future.succeededFuture(okDelta));
 
         when(checkSumTableService.calcCheckSumForAllTables(any())).thenReturn(Future.succeededFuture(hashSum));
@@ -266,7 +409,16 @@ class CheckSumExecutorTest {
                 .cnTo(1)
                 .build();
 
-        when(deltaServiceDao.getDeltaByNum(eq(DATAMART_MNEMONIC), eq(deltaNum)))
+        HotDelta hotDelta = HotDelta.builder()
+                .deltaNum(1)
+                .cnFrom(0L)
+                .cnTo(1L)
+                .build();
+
+        when(deltaServiceDao.getDeltaHot(DATAMART_MNEMONIC))
+                .thenReturn(Future.succeededFuture(hotDelta));
+
+        when(deltaServiceDao.getDeltaByNum(DATAMART_MNEMONIC, deltaNum))
                 .thenReturn(Future.succeededFuture(okDelta));
 
         when(checkSumTableService.calcCheckSumForAllTables(any()))

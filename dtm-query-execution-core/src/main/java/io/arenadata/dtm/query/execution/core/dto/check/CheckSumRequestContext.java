@@ -1,7 +1,6 @@
 package io.arenadata.dtm.query.execution.core.dto.check;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
-import io.arenadata.dtm.query.execution.core.dto.delta.OkDelta;
 import lombok.Builder;
 import lombok.Data;
 
@@ -12,7 +11,8 @@ import java.util.Set;
 public class CheckSumRequestContext {
     private CheckContext checkContext;
     private String datamart;
-    private OkDelta delta;
+    private long cnFrom;
+    private long cnTo;
     private Entity entity;
     private Set<String> columns;
 
@@ -20,7 +20,8 @@ public class CheckSumRequestContext {
         return CheckSumRequestContext.builder()
                 .checkContext(checkContext)
                 .datamart(datamart)
-                .delta(delta)
+                .cnFrom(cnFrom)
+                .cnTo(cnTo)
                 .entity(entity)
                 .columns(columns)
                 .build();

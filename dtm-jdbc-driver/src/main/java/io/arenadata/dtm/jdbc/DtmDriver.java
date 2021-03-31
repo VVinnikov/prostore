@@ -1,6 +1,7 @@
 package io.arenadata.dtm.jdbc;
 
 import io.arenadata.dtm.jdbc.ext.DtmConnectionImpl;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,17 +11,17 @@ import java.util.Properties;
 import static io.arenadata.dtm.jdbc.util.DriverConstants.*;
 import static io.arenadata.dtm.jdbc.util.UrlConnectionParser.parseURL;
 
+@Slf4j
 public class DtmDriver implements Driver {
 
     private static final Logger PARENT_LOGGER = LoggerFactory.getLogger("io.arenadata.dtm.driver.jdbc");
-    private static final Logger LOGGER = LoggerFactory.getLogger(DtmDriver.class);
 
     static {
         try {
             DriverManager.registerDriver(new DtmDriver());
-            LOGGER.info("Driver registered");
+            log.info("Driver registered");
         } catch (SQLException e) {
-            LOGGER.error("Error registering JDBC driver", e.getCause());
+            log.error("Error registering JDBC driver", e.getCause());
         }
     }
 

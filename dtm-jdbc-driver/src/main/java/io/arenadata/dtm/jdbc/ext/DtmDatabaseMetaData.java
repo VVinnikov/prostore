@@ -9,8 +9,6 @@ import io.arenadata.dtm.jdbc.model.ColumnInfo;
 import io.arenadata.dtm.jdbc.model.SchemaInfo;
 import io.arenadata.dtm.jdbc.model.TableInfo;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -22,9 +20,9 @@ import static io.arenadata.dtm.jdbc.util.DriverConstants.*;
 import static io.arenadata.dtm.jdbc.util.DriverInfo.*;
 import static org.apache.http.util.TextUtils.isEmpty;
 
+@Slf4j
 public class DtmDatabaseMetaData implements DatabaseMetaData {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DtmDatabaseMetaData.class);
     private final BaseConnection connection;
     private ResultSet catalogs;
 
@@ -138,15 +136,14 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                                 String columnNamePattern) throws SQLException {
         List<ColumnInfo> columns = new ArrayList<>();
         tableNamePattern = tableNamePattern.replace("\\", "");
-        LOGGER.info("Table name pattern: {}", tableNamePattern);
-        //Временный костыль что бы пофиксить возможный запрос всех полей в схеме.
+        log.info("Table name pattern: {}", tableNamePattern);
         if (tableNamePattern.indexOf('%') != -1) {
             ResultSet tables = this.getTables(catalog, schemaPattern, null, null);
             while (tables.next()) {
                 final List<ColumnInfo> databaseColumns = this.connection.getQueryExecutor().getTableColumns(
                         tables.getString(CATALOG_NAME_COLUMN),
                         tables.getString(TABLE_NAME_COLUMN));
-                LOGGER.info("Table name: {}", tables.getString(TABLE_NAME_COLUMN));
+                log.info("Table name: {}", tables.getString(TABLE_NAME_COLUMN));
                 columns.addAll(databaseColumns);
             }
         } else {

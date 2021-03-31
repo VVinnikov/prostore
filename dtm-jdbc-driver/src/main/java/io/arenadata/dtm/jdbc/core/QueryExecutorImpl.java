@@ -48,6 +48,10 @@ public class QueryExecutorImpl implements QueryExecutor {
      */
     private CloseableHttpClient client;
     /**
+     * Chain of accumulated warnings
+     */
+    private SQLWarning warnings;
+    /**
      * Protocol for receiving/sending data
      */
     protected Protocol protocol;
@@ -183,7 +187,9 @@ public class QueryExecutorImpl implements QueryExecutor {
 
     @Override
     public SQLWarning getWarnings() {
-        return null;
+        SQLWarning chain = warnings;
+        warnings = null;
+        return chain;
     }
 
     @Override

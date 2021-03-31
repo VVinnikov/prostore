@@ -6,7 +6,6 @@ import io.arenadata.dtm.jdbc.core.ConnectionFactory;
 import io.arenadata.dtm.jdbc.core.QueryExecutor;
 import io.arenadata.dtm.jdbc.model.ColumnInfo;
 import io.arenadata.dtm.jdbc.util.DtmSqlException;
-import io.arenadata.dtm.jdbc.util.UrlConnectionParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,9 +34,14 @@ public class DtmConnectionImpl implements BaseConnection {
      * Executor for query
      */
     private final QueryExecutor queryExecutor;
+    private final Properties clientInfo;
+    // Connection's readonly state.
+    private boolean readOnly = false;
+    private SQLWarning firstWarning;
 
     public DtmConnectionImpl(String dbHost, String user, String schema, Properties info, String url) throws SQLException {
         this.queryExecutor = ConnectionFactory.openConnection(dbHost, user, schema, url, info);
+        this.clientInfo = new Properties();
         LOGGER.info("Connection created host = {} schema = {} user = {}", dbHost, schema, user);
     }
 
@@ -76,7 +80,7 @@ public class DtmConnectionImpl implements BaseConnection {
 
     @Override
     public String nativeSQL(String sql) throws SQLException {
-        throw new SQLFeatureNotSupportedException();
+        return sql;
     }
 
     @Override
@@ -94,12 +98,12 @@ public class DtmConnectionImpl implements BaseConnection {
 
     @Override
     public void commit() throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public void rollback() throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
@@ -120,12 +124,12 @@ public class DtmConnectionImpl implements BaseConnection {
 
     @Override
     public boolean isReadOnly() throws SQLException {
-        return false;
+        return readOnly;
     }
 
     @Override
     public void setReadOnly(boolean readOnly) throws SQLException {
-
+        this.readOnly = readOnly;
     }
 
     @Override
@@ -145,16 +149,25 @@ public class DtmConnectionImpl implements BaseConnection {
 
     @Override
     public void setTransactionIsolation(int level) throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public SQLWarning getWarnings() throws SQLException {
-        return null;
+        checkClosed();
+        SQLWarning newWarnings = queryExecutor.getWarnings();
+        if (firstWarning == null) {
+            firstWarning = newWarnings;
+        } else if (newWarnings != null) {
+            firstWarning.setNextWarning(newWarnings);
+        }
+        return firstWarning;
     }
 
     @Override
     public void clearWarnings() throws SQLException {
+        checkClosed();
+        queryExecutor.getWarnings();
     }
 
     @Override
@@ -164,22 +177,23 @@ public class DtmConnectionImpl implements BaseConnection {
 
     @Override
     public Map<String, Class<?>> getTypeMap() throws SQLException {
-        return null;
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public void setTypeMap(Map<String, Class<?>> map) throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public int getHoldability() throws SQLException {
+        checkClosed();
         return rsHoldability;
     }
 
     @Override
     public void setHoldability(int holdability) throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
@@ -194,7 +208,7 @@ public class DtmConnectionImpl implements BaseConnection {
 
     @Override
     public void rollback(Savepoint savepoint) throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
@@ -234,67 +248,82 @@ public class DtmConnectionImpl implements BaseConnection {
 
     @Override
     public Clob createClob() throws SQLException {
-        return null;
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public Blob createBlob() throws SQLException {
-        return null;
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public NClob createNClob() throws SQLException {
-        return null;
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public SQLXML createSQLXML() throws SQLException {
-        return null;
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public boolean isValid(int timeout) throws SQLException {
-        return true;
+        if (timeout < 0) {
+            throw new DtmSqlException(String.format("Invalid timeout (%d<0).", timeout));
+        }
+        if (isClosed()) {
+            return false;
+        }
+        try {
+            PreparedStatement checkConnectionQuery = prepareStatement("CHECK_VERSIONS()");
+            checkConnectionQuery.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            LOGGER.error("Validating connection error.", e);
+        }
+        return false;
     }
 
     @Override
     public void setClientInfo(String name, String value) throws SQLClientInfoException {
-
-    }
-
-    @Override
-    public String getClientInfo(String name) throws SQLException {
-        return null;
-    }
-
-    @Override
-    public Properties getClientInfo() throws SQLException {
-        return null;
+        clientInfo.put(name, value);
     }
 
     @Override
     public void setClientInfo(Properties properties) throws SQLClientInfoException {
+        clientInfo.putAll(properties);
+    }
 
+    @Override
+    public String getClientInfo(String name) throws SQLException {
+        checkClosed();
+        return clientInfo.getProperty(name);
+    }
+
+    @Override
+    public Properties getClientInfo() throws SQLException {
+        checkClosed();
+        return clientInfo;
     }
 
     @Override
     public Array createArrayOf(String typeName, Object[] elements) throws SQLException {
-        return null;
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public Struct createStruct(String typeName, Object[] attributes) throws SQLException {
-        return null;
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public String getSchema() throws SQLException {
-        return "";
+        return this.getQueryExecutor().getDatabase();
     }
 
     @Override
     public void setSchema(String schema) throws SQLException {
-
+        this.getQueryExecutor().setDatabase(schema);
     }
 
     @Override
@@ -304,7 +333,7 @@ public class DtmConnectionImpl implements BaseConnection {
 
     @Override
     public void setNetworkTimeout(Executor executor, int milliseconds) throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override

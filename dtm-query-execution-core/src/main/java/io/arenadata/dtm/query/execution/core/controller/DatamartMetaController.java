@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.core.controller;
 
-import io.arenadata.dtm.query.execution.core.dto.request.RequestParam;
-import io.arenadata.dtm.query.execution.core.service.metadata.DatamartMetaService;
+import io.arenadata.dtm.query.execution.core.base.dto.RequestParam;
+import io.arenadata.dtm.query.execution.core.metadata.service.DatamartMetaService;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.http.HttpHeaders;

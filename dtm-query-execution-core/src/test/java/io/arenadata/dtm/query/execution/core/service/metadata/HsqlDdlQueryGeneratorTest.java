@@ -4,6 +4,8 @@ import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityType;
+import io.arenadata.dtm.query.execution.core.metadata.service.DdlQueryGenerator;
+import io.arenadata.dtm.query.execution.core.metadata.service.impl.HsqlDdlQueryGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

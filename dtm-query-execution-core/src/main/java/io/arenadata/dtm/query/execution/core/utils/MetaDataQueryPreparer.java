@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.core.utils;
 
 import io.arenadata.dtm.common.reader.InformationSchemaView;
-import io.arenadata.dtm.query.execution.core.dto.metadata.InformationSchemaViewPosition;
+import io.arenadata.dtm.query.execution.core.metadata.dto.InformationSchemaViewPosition;
 import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;

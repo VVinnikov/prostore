@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.core.service.impl;
 
 import io.arenadata.dtm.common.reader.QueryRequest;
-import io.arenadata.dtm.query.execution.core.service.query.impl.QuerySemicolonRemoverImpl;
+import io.arenadata.dtm.query.execution.core.query.service.impl.QuerySemicolonRemoverImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 

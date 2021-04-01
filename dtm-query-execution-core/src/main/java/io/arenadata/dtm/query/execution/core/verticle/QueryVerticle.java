@@ -1,13 +1,12 @@
 package io.arenadata.dtm.query.execution.core.verticle;
 
 import com.google.common.net.HttpHeaders;
-import io.arenadata.dtm.query.execution.core.configuration.http.CoreHttpProperties;
+import io.arenadata.dtm.query.execution.core.base.configuration.properties.CoreHttpProperties;
 import io.arenadata.dtm.query.execution.core.controller.DatamartMetaController;
 import io.arenadata.dtm.query.execution.core.controller.MetricsController;
 import io.arenadata.dtm.query.execution.core.controller.QueryController;
-import io.arenadata.dtm.query.execution.core.dto.request.RequestParam;
+import io.arenadata.dtm.query.execution.core.base.dto.RequestParam;
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;

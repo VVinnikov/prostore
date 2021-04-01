@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.core.verticle.starter;
 
-import io.arenadata.dtm.query.execution.core.configuration.http.CoreHttpProperties;
+import io.arenadata.dtm.query.execution.core.base.configuration.properties.CoreHttpProperties;
 import io.arenadata.dtm.query.execution.core.controller.DatamartMetaController;
 import io.arenadata.dtm.query.execution.core.controller.MetricsController;
 import io.arenadata.dtm.query.execution.core.controller.QueryController;

@@ -4,7 +4,7 @@ import io.arenadata.dtm.common.eventbus.DataHeader;
 import io.arenadata.dtm.common.eventbus.DataTopic;
 import io.arenadata.dtm.common.status.StatusEventCode;
 import io.arenadata.dtm.kafka.core.service.kafka.KafkaStatusEventPublisher;
-import io.arenadata.dtm.query.execution.core.registry.StatusEventFactoryRegistry;
+import io.arenadata.dtm.query.execution.core.status.service.StatusEventFactoryRegistry;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.eventbus.Message;
 import lombok.extern.slf4j.Slf4j;

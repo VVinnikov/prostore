@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.core.verticle.impl;
 
 import io.arenadata.dtm.common.eventbus.DataTopic;
-import io.arenadata.dtm.query.execution.core.configuration.properties.VertxPoolProperties;
+import io.arenadata.dtm.query.execution.core.verticle.configuration.properties.VertxPoolProperties;
 import io.arenadata.dtm.query.execution.core.verticle.TaskVerticle;
 import io.arenadata.dtm.query.execution.core.verticle.TaskVerticleExecutor;
 import io.vertx.core.*;

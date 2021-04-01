@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.core.controller;
 
-import io.arenadata.dtm.query.execution.core.service.metrics.MetricsManagementService;
+import io.arenadata.dtm.query.execution.core.metrics.service.MetricsManagementService;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.Json;

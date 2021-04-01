@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.core.verticle;
 
 import io.arenadata.dtm.common.metrics.MetricsTopic;
-import io.arenadata.dtm.query.execution.core.service.metrics.MetricsConsumer;
+import io.arenadata.dtm.query.execution.core.metrics.service.MetricsConsumer;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.eventbus.Message;
 import org.springframework.beans.factory.annotation.Autowired;

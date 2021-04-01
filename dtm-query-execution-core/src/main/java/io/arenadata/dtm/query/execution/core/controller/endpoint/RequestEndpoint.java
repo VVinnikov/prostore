@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.core.controller.endpoint;
 
-import io.arenadata.dtm.query.execution.core.dto.metrics.ResultMetrics;
-import io.arenadata.dtm.query.execution.core.service.metrics.MetricsProvider;
+import io.arenadata.dtm.query.execution.core.metrics.dto.ResultMetrics;
+import io.arenadata.dtm.query.execution.core.metrics.service.MetricsProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;

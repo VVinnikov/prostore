@@ -5,7 +5,7 @@ import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguratio
 import io.arenadata.dtm.query.calcite.core.dto.EnrichmentTemplateRequest;
 import io.arenadata.dtm.query.calcite.core.service.impl.AbstractQueryTemplateExtractor;
 import io.arenadata.dtm.query.calcite.core.service.impl.CalciteDefinitionService;
-import io.arenadata.dtm.query.execution.core.service.query.impl.CoreQueryTemplateExtractor;
+import io.arenadata.dtm.query.execution.core.calcite.service.CoreQueryTemplateExtractor;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.config.Lex;

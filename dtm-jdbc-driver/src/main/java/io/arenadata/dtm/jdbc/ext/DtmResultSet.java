@@ -26,6 +26,7 @@ public class DtmResultSet extends AbstractResultSet {
     private Tuple thisRow;
     private ResultSetMetaData rsMetaData;
     private Map<String, Integer> columnNameIndexMap;
+    protected boolean wasNullFlag = false;
 
     public DtmResultSet(BaseConnection connection, Field[] fields, List<Tuple> tuples, ZoneId timeZone) {
         this.connection = connection;
@@ -132,32 +133,38 @@ public class DtmResultSet extends AbstractResultSet {
         final Field field = this.fields[columnIndex - 1];
         if (this.getValue(columnIndex) == null) {
             return null;
-        }
-        switch (field.getDtmType()) {
-            case INT:
-            case BIGINT:
-                return this.getLong(columnIndex);
-            case VARCHAR:
-            case ANY:
-            case CHAR:
-            case UUID:
-            case BLOB:
-                return this.getString(columnIndex);
-            case FLOAT:
-                return this.getFloat(columnIndex);
-            case DOUBLE:
-                return this.getDouble(columnIndex);
-            case BOOLEAN:
-                return this.getBoolean(columnIndex);
-            case DATE:
-                return this.getDate(columnIndex);
-            case TIME:
-                return this.getTime(columnIndex);
-            case TIMESTAMP:
-                return this.getTimestamp(columnIndex);
-            default:
-                throw new SQLException(String.format("Column type %s for index %s not found!",
-                        field.getDtmType(), columnIndex));
+        } else {
+            if (field == null) {
+                this.wasNullFlag = true;
+                return null;
+            } else {
+                switch (field.getDtmType()) {
+                    case INT:
+                    case BIGINT:
+                        return this.getLong(columnIndex);
+                    case VARCHAR:
+                    case ANY:
+                    case CHAR:
+                    case UUID:
+                    case BLOB:
+                        return this.getString(columnIndex);
+                    case FLOAT:
+                        return this.getFloat(columnIndex);
+                    case DOUBLE:
+                        return this.getDouble(columnIndex);
+                    case BOOLEAN:
+                        return this.getBoolean(columnIndex);
+                    case DATE:
+                        return this.getDate(columnIndex);
+                    case TIME:
+                        return this.getTime(columnIndex);
+                    case TIMESTAMP:
+                        return this.getTimestamp(columnIndex);
+                    default:
+                        throw new SQLException(String.format("Column type %s for index %s not found!",
+                                field.getDtmType(), columnIndex));
+                }
+            }
         }
     }
 
@@ -177,6 +184,11 @@ public class DtmResultSet extends AbstractResultSet {
     @Override
     public void close() throws SQLException {
 
+    }
+
+    @Override
+    public boolean wasNull() throws SQLException {
+        return this.wasNullFlag;
     }
 
     @Override

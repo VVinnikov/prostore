@@ -8,6 +8,7 @@ import io.arenadata.dtm.query.execution.core.dao.delta.zookeeper.DeltaServiceDao
 import io.arenadata.dtm.query.execution.core.dao.servicedb.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.dto.check.CheckContext;
 import io.arenadata.dtm.query.execution.core.dto.check.CheckSumRequestContext;
+import io.arenadata.dtm.query.execution.core.exception.delta.DeltaIsEmptyException;
 import io.arenadata.dtm.query.execution.core.exception.entity.EntityNotExistsException;
 import io.arenadata.dtm.query.execution.core.factory.CheckQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.service.check.CheckExecutor;
@@ -48,6 +49,7 @@ public class CheckSumExecutor implements CheckExecutor {
             val columns = sqlCheckSum.getColumns();
             val checkContext = CheckSumRequestContext.builder()
                     .checkContext(context)
+                    .deltaNum(deltaNum)
                     .datamart(datamart)
                     .columns(columns)
                     .build();
@@ -65,7 +67,10 @@ public class CheckSumExecutor implements CheckExecutor {
         });
     }
 
-    private Future<Long> calculateCheckSum(Optional<String> table, CheckSumRequestContext checkContext, long cnFrom, long cnTo) {
+    private Future<Long> calculateCheckSum(Optional<String> table, CheckSumRequestContext checkContext, long cnFrom, Long cnTo) {
+        if (cnTo == null) {
+            return Future.failedFuture(new DeltaIsEmptyException(checkContext.getDeltaNum()));
+        }
         checkContext.setCnFrom(cnFrom);
         checkContext.setCnTo(cnTo);
         if (table.isPresent()) {

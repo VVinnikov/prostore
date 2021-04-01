@@ -5,7 +5,7 @@ import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.post.PostSqlActionType;
 import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.query.calcite.core.extension.delta.SqlDeltaCall;
-import io.arenadata.dtm.query.execution.core.base.dto.CoreRequestContext;
+import io.arenadata.dtm.query.execution.core.base.dto.request.CoreRequestContext;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;

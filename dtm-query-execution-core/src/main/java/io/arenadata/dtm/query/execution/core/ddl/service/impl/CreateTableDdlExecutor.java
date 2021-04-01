@@ -13,8 +13,8 @@ import io.arenadata.dtm.query.execution.core.base.exception.datamart.DatamartNot
 import io.arenadata.dtm.query.execution.core.base.exception.table.ValidationDtmException;
 import io.arenadata.dtm.query.execution.core.plugin.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.ddl.service.QueryResultDdlExecutor;
-import io.arenadata.dtm.query.execution.core.metadata.service.MetadataCalciteGenerator;
-import io.arenadata.dtm.query.execution.core.metadata.service.MetadataExecutor;
+import io.arenadata.dtm.query.execution.core.base.service.metadata.MetadataCalciteGenerator;
+import io.arenadata.dtm.query.execution.core.base.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.ddl.dto.DdlRequestContext;
 import io.arenadata.dtm.query.execution.core.ddl.dto.DdlType;
 import io.vertx.core.Future;

@@ -21,8 +21,8 @@ import io.arenadata.dtm.query.execution.core.dml.service.impl.LogicViewReplacerI
 import io.arenadata.dtm.query.execution.core.edml.mppr.service.impl.DownloadExternalTableExecutor;
 import io.arenadata.dtm.query.execution.core.edml.mppr.service.impl.DownloadKafkaExecutor;
 import io.arenadata.dtm.query.execution.core.edml.mppr.service.EdmlDownloadExecutor;
-import io.arenadata.dtm.query.execution.core.base.service.schema.LogicalSchemaProvider;
-import io.arenadata.dtm.query.execution.core.base.service.schema.impl.LogicalSchemaProviderImpl;
+import io.arenadata.dtm.query.execution.core.base.service.metadata.LogicalSchemaProvider;
+import io.arenadata.dtm.query.execution.core.base.service.metadata.impl.LogicalSchemaProviderImpl;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.core.edml.dto.EdmlRequestContext;
 import io.vertx.core.Future;

@@ -10,8 +10,8 @@ import io.arenadata.dtm.query.execution.core.dml.service.InformationSchemaExecut
 import io.arenadata.dtm.query.execution.core.dml.service.impl.InformationSchemaExecutorImpl;
 import io.arenadata.dtm.query.execution.core.base.service.hsql.HSQLClient;
 import io.arenadata.dtm.query.execution.core.base.service.hsql.impl.HSQLClientImpl;
-import io.arenadata.dtm.query.execution.core.base.service.schema.LogicalSchemaProvider;
-import io.arenadata.dtm.query.execution.core.base.service.schema.impl.LogicalSchemaProviderImpl;
+import io.arenadata.dtm.query.execution.core.base.service.metadata.LogicalSchemaProvider;
+import io.arenadata.dtm.query.execution.core.base.service.metadata.impl.LogicalSchemaProviderImpl;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.vertx.core.Future;

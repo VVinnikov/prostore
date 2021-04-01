@@ -11,7 +11,7 @@ import io.arenadata.dtm.query.execution.core.dml.dto.DmlRequestContext;
 import io.arenadata.dtm.query.execution.core.dml.dto.LlrRequestContext;
 import io.arenadata.dtm.query.execution.core.dml.factory.LlrRequestContextFactory;
 import io.arenadata.dtm.query.execution.core.dml.service.ColumnMetadataService;
-import io.arenadata.dtm.query.execution.core.base.service.schema.LogicalSchemaProvider;
+import io.arenadata.dtm.query.execution.core.base.service.metadata.LogicalSchemaProvider;
 import io.vertx.core.Future;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.core.delta.repository.zookeeper.impl;
 
-import io.arenadata.dtm.query.execution.core.cache.configuration.CacheConfiguration;
+import io.arenadata.dtm.query.execution.core.base.configuration.CacheConfiguration;
 import io.arenadata.dtm.query.execution.core.delta.repository.zookeeper.DeltaDaoExecutorRepository;
 import io.arenadata.dtm.query.execution.core.delta.repository.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.delta.dto.DeltaWriteOp;

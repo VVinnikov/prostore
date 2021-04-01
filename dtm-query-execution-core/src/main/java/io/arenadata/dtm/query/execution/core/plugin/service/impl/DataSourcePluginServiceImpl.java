@@ -8,7 +8,7 @@ import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.common.version.VersionInfo;
 import io.arenadata.dtm.query.execution.core.plugin.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.metrics.service.MetricsService;
-import io.arenadata.dtm.query.execution.core.verticle.TaskVerticleExecutor;
+import io.arenadata.dtm.query.execution.core.base.verticle.TaskVerticleExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckVersionRequest;

@@ -15,7 +15,7 @@ import io.arenadata.dtm.query.execution.core.base.exception.entity.EntityNotExis
 import io.arenadata.dtm.query.execution.core.check.factory.CheckQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.check.service.CheckExecutor;
 import io.arenadata.dtm.query.execution.core.plugin.service.DataSourcePluginService;
-import io.arenadata.dtm.query.execution.core.verticle.TaskVerticleExecutor;
+import io.arenadata.dtm.query.execution.core.base.verticle.TaskVerticleExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckException;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;

@@ -6,11 +6,11 @@ import io.arenadata.dtm.query.execution.core.init.service.CoreInitializationServ
 import io.arenadata.dtm.query.execution.core.plugin.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.plugin.service.impl.DataSourcePluginServiceImpl;
 import io.arenadata.dtm.query.execution.core.init.service.impl.CoreInitializationServiceImpl;
-import io.arenadata.dtm.query.execution.core.metadata.service.InformationSchemaService;
-import io.arenadata.dtm.query.execution.core.metadata.service.impl.InformationSchemaServiceImpl;
+import io.arenadata.dtm.query.execution.core.base.service.metadata.InformationSchemaService;
+import io.arenadata.dtm.query.execution.core.base.service.metadata.impl.InformationSchemaServiceImpl;
 import io.arenadata.dtm.query.execution.core.rollback.service.RestoreStateService;
 import io.arenadata.dtm.query.execution.core.rollback.service.impl.RestoreStateServiceImpl;
-import io.arenadata.dtm.query.execution.core.verticle.starter.QueryWorkerStarter;
+import io.arenadata.dtm.query.execution.core.query.verticle.starter.QueryWorkerStarter;
 import io.vertx.core.Future;
 import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;

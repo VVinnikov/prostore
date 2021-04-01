@@ -25,7 +25,7 @@ import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.impl.Data
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.impl.ServiceDbDaoImpl;
 import io.arenadata.dtm.query.execution.core.ddl.service.QueryResultDdlExecutor;
-import io.arenadata.dtm.query.execution.core.cache.dto.EntityKey;
+import io.arenadata.dtm.query.execution.core.base.dto.cache.EntityKey;
 import io.arenadata.dtm.query.execution.core.ddl.dto.DdlRequestContext;
 import io.arenadata.dtm.query.execution.core.base.exception.entity.EntityNotExistsException;
 import io.arenadata.dtm.query.execution.core.plugin.service.DataSourcePluginService;
@@ -33,8 +33,8 @@ import io.arenadata.dtm.query.execution.core.plugin.service.impl.DataSourcePlugi
 import io.arenadata.dtm.query.execution.core.ddl.service.impl.DropTableDdlExecutor;
 import io.arenadata.dtm.query.execution.core.base.service.hsql.HSQLClient;
 import io.arenadata.dtm.query.execution.core.base.service.hsql.impl.HSQLClientImpl;
-import io.arenadata.dtm.query.execution.core.metadata.service.MetadataExecutor;
-import io.arenadata.dtm.query.execution.core.metadata.service.impl.MetadataExecutorImpl;
+import io.arenadata.dtm.query.execution.core.base.service.metadata.MetadataExecutor;
+import io.arenadata.dtm.query.execution.core.base.service.metadata.impl.MetadataExecutorImpl;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;

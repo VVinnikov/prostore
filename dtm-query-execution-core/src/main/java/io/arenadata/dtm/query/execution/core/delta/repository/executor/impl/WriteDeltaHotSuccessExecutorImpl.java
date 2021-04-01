@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 
-import static io.arenadata.dtm.query.execution.core.utils.DeltaQueryUtil.DELTA_DATE_TIME_FORMATTER;
+import static io.arenadata.dtm.query.execution.core.delta.utils.DeltaQueryUtil.DELTA_DATE_TIME_FORMATTER;
 
 @Slf4j
 @Component

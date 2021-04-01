@@ -21,7 +21,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static io.arenadata.dtm.query.execution.core.utils.MetricsUtil.*;
+import static io.arenadata.dtm.query.execution.core.metrics.utils.MetricsUtil.*;
 
 @Component
 public class MetricsProviderImpl implements MetricsProvider {

@@ -6,7 +6,7 @@ import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.core.base.repository.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.EntityDao;
-import io.arenadata.dtm.query.execution.core.cache.dto.EntityKey;
+import io.arenadata.dtm.query.execution.core.base.dto.cache.EntityKey;
 import io.arenadata.dtm.query.execution.core.eddl.dto.DropUploadExternalTableQuery;
 import io.arenadata.dtm.query.execution.core.eddl.dto.EddlAction;
 import io.arenadata.dtm.query.execution.core.eddl.dto.EddlQuery;

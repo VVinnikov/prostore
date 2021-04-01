@@ -9,7 +9,7 @@ import io.arenadata.dtm.query.execution.core.edml.dto.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.core.dml.service.LogicViewReplacer;
 import io.arenadata.dtm.query.execution.core.edml.mppr.service.EdmlDownloadExecutor;
 import io.arenadata.dtm.query.execution.core.edml.service.EdmlExecutor;
-import io.arenadata.dtm.query.execution.core.base.service.schema.LogicalSchemaProvider;
+import io.arenadata.dtm.query.execution.core.base.service.metadata.LogicalSchemaProvider;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;

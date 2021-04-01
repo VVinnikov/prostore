@@ -11,7 +11,7 @@ import io.arenadata.dtm.query.calcite.core.extension.ddl.truncate.SqlBaseTruncat
 import io.arenadata.dtm.query.calcite.core.extension.delta.SqlDeltaCall;
 import io.arenadata.dtm.query.calcite.core.extension.dml.SqlDataSourceTypeGetter;
 import io.arenadata.dtm.query.execution.core.base.configuration.AppConfiguration;
-import io.arenadata.dtm.query.execution.core.base.dto.CoreRequestContext;
+import io.arenadata.dtm.query.execution.core.base.dto.request.CoreRequestContext;
 import io.arenadata.dtm.query.execution.core.check.dto.CheckContext;
 import io.arenadata.dtm.query.execution.core.config.dto.ConfigRequestContext;
 import io.arenadata.dtm.query.execution.core.ddl.dto.DdlRequestContext;

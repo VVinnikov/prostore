@@ -13,7 +13,7 @@ import io.arenadata.dtm.query.execution.core.delta.dto.query.CommitDeltaQuery;
 import io.arenadata.dtm.query.execution.core.delta.factory.DeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.delta.factory.impl.CommitDeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.delta.service.impl.CommitDeltaExecutor;
-import io.arenadata.dtm.query.execution.core.utils.DeltaQueryUtil;
+import io.arenadata.dtm.query.execution.core.delta.utils.DeltaQueryUtil;
 import io.arenadata.dtm.query.execution.core.utils.QueryResultUtils;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;

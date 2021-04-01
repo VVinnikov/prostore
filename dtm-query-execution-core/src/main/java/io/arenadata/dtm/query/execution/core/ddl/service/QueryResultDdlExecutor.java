@@ -3,7 +3,7 @@ package io.arenadata.dtm.query.execution.core.ddl.service;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.core.base.repository.ServiceDbFacade;
-import io.arenadata.dtm.query.execution.core.metadata.service.MetadataExecutor;
+import io.arenadata.dtm.query.execution.core.base.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.ddl.dto.DdlRequestContext;
 import lombok.AllArgsConstructor;
 

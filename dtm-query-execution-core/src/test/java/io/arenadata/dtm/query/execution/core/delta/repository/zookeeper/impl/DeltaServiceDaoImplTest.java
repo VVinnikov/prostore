@@ -2,7 +2,7 @@ package io.arenadata.dtm.query.execution.core.delta.repository.zookeeper.impl;
 
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.query.execution.core.base.configuration.AppConfiguration;
-import io.arenadata.dtm.query.execution.core.base.configuration.CoreDtmSettings;
+import io.arenadata.dtm.query.execution.core.base.configuration.properties.CoreDtmSettings;
 import io.arenadata.dtm.query.execution.core.base.configuration.properties.ServiceDbZookeeperProperties;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.impl.DatamartDaoImpl;

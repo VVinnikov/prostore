@@ -2,7 +2,7 @@ package io.arenadata.dtm.query.execution.core.rollback.dto;
 
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.SqlProcessingType;
-import io.arenadata.dtm.query.execution.core.base.dto.CoreRequestContext;
+import io.arenadata.dtm.query.execution.core.base.dto.request.CoreRequestContext;
 import org.apache.calcite.sql.SqlNode;
 
 public class RollbackRequestContext extends CoreRequestContext<RollbackRequest, SqlNode> {

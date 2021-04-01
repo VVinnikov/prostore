@@ -4,7 +4,7 @@ import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.request.DatamartRequest;
-import io.arenadata.dtm.query.execution.core.base.dto.CoreRequestContext;
+import io.arenadata.dtm.query.execution.core.base.dto.request.CoreRequestContext;
 import io.arenadata.dtm.query.execution.core.base.service.DatamartExecutionService;
 import io.arenadata.dtm.query.execution.core.query.service.QueryDispatcher;
 import io.vertx.core.Future;

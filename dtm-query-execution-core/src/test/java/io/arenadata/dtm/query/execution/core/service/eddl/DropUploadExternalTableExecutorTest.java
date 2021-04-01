@@ -15,7 +15,7 @@ import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.ServiceDb
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.impl.DatamartDaoImpl;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.impl.ServiceDbDaoImpl;
-import io.arenadata.dtm.query.execution.core.cache.dto.EntityKey;
+import io.arenadata.dtm.query.execution.core.base.dto.cache.EntityKey;
 import io.arenadata.dtm.query.execution.core.eddl.dto.DropUploadExternalTableQuery;
 import io.arenadata.dtm.query.execution.core.eddl.service.EddlExecutor;
 import io.arenadata.dtm.query.execution.core.base.exception.entity.EntityNotExistsException;

@@ -14,7 +14,7 @@ import io.arenadata.dtm.query.execution.core.dml.dto.DmlRequestContext;
 import io.arenadata.dtm.query.execution.core.base.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.dml.service.DmlExecutor;
 import io.arenadata.dtm.query.execution.core.metrics.service.MetricsService;
-import io.arenadata.dtm.query.execution.core.utils.ParseQueryUtils;
+import io.arenadata.dtm.query.execution.core.ddl.utils.ParseQueryUtils;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;

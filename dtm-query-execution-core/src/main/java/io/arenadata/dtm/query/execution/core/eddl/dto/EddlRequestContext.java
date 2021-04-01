@@ -3,7 +3,7 @@ package io.arenadata.dtm.query.execution.core.eddl.dto;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.request.DatamartRequest;
-import io.arenadata.dtm.query.execution.core.base.dto.CoreRequestContext;
+import io.arenadata.dtm.query.execution.core.base.dto.request.CoreRequestContext;
 import lombok.Builder;
 import lombok.ToString;
 import org.apache.calcite.sql.SqlNode;

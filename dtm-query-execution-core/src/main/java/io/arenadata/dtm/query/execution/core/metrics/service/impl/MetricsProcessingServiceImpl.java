@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.util.Objects;
 
-import static io.arenadata.dtm.query.execution.core.utils.MetricsUtil.*;
+import static io.arenadata.dtm.query.execution.core.metrics.utils.MetricsUtil.*;
 
 @Service
 @Slf4j

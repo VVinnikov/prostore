@@ -18,7 +18,7 @@ import io.arenadata.dtm.query.execution.core.delta.factory.DeltaQueryResultFacto
 import io.arenadata.dtm.query.execution.core.delta.factory.impl.CommitDeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.delta.service.impl.RollbackDeltaExecutor;
 import io.arenadata.dtm.query.execution.core.edml.mppw.service.EdmlUploadFailedExecutor;
-import io.arenadata.dtm.query.execution.core.utils.DeltaQueryUtil;
+import io.arenadata.dtm.query.execution.core.delta.utils.DeltaQueryUtil;
 import io.arenadata.dtm.query.execution.core.utils.QueryResultUtils;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;

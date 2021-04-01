@@ -5,7 +5,7 @@ import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.extension.dml.DmlType;
 import io.arenadata.dtm.query.calcite.core.extension.dml.SqlUseSchema;
-import io.arenadata.dtm.query.execution.core.base.dto.CoreRequestContext;
+import io.arenadata.dtm.query.execution.core.base.dto.request.CoreRequestContext;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;

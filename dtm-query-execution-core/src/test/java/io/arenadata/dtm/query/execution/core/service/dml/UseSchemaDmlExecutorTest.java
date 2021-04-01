@@ -20,7 +20,7 @@ import io.arenadata.dtm.query.execution.core.dml.dto.DmlRequestContext;
 import io.arenadata.dtm.query.execution.core.dml.service.impl.UseSchemaDmlExecutor;
 import io.arenadata.dtm.query.execution.core.metrics.service.MetricsService;
 import io.arenadata.dtm.query.execution.core.metrics.service.impl.MetricsServiceImpl;
-import io.arenadata.dtm.query.execution.core.utils.ParseQueryUtils;
+import io.arenadata.dtm.query.execution.core.ddl.utils.ParseQueryUtils;
 import io.arenadata.dtm.query.execution.core.utils.QueryResultUtils;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.vertx.core.Future;

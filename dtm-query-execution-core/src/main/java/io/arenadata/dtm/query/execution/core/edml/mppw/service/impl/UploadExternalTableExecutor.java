@@ -14,7 +14,7 @@ import io.arenadata.dtm.query.execution.core.edml.mppw.service.EdmlUploadExecuto
 import io.arenadata.dtm.query.execution.core.edml.mppw.service.EdmlUploadFailedExecutor;
 import io.arenadata.dtm.query.execution.core.plugin.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.edml.service.EdmlExecutor;
-import io.arenadata.dtm.query.execution.core.base.service.schema.LogicalSchemaProvider;
+import io.arenadata.dtm.query.execution.core.base.service.metadata.LogicalSchemaProvider;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;

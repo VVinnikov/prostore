@@ -15,7 +15,7 @@ import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.kafka.core.configuration.properties.KafkaProperties;
-import io.arenadata.dtm.query.execution.core.base.configuration.CoreDtmSettings;
+import io.arenadata.dtm.query.execution.core.base.configuration.properties.CoreDtmSettings;
 import io.arenadata.dtm.query.execution.core.edml.configuration.EdmlProperties;
 import io.arenadata.dtm.query.execution.core.edml.dto.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.core.edml.mppw.factory.MppwKafkaRequestFactory;

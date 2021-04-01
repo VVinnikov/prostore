@@ -7,7 +7,7 @@ import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.execution.core.calcite.service.CoreCalciteDefinitionService;
 import io.arenadata.dtm.query.execution.core.base.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.core.calcite.configuration.CalciteConfiguration;
-import io.arenadata.dtm.query.execution.core.base.configuration.CoreDtmSettings;
+import io.arenadata.dtm.query.execution.core.base.configuration.properties.CoreDtmSettings;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlNode;
 

@@ -4,7 +4,7 @@ import io.arenadata.dtm.async.AsyncUtils;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.delta.dto.Delta;
-import io.arenadata.dtm.query.execution.core.metadata.dto.DatamartInfo;
+import io.arenadata.dtm.query.execution.core.base.dto.metadata.DatamartInfo;
 import io.arenadata.dtm.query.execution.core.base.exception.datamart.DatamartAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.base.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.base.service.zookeeper.ZookeeperExecutor;

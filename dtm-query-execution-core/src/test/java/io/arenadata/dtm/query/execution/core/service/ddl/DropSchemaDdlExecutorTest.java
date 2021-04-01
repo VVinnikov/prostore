@@ -19,13 +19,13 @@ import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.DatamartD
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.ServiceDbDao;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.impl.DatamartDaoImpl;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.impl.ServiceDbDaoImpl;
-import io.arenadata.dtm.query.execution.core.cache.dto.EntityKey;
+import io.arenadata.dtm.query.execution.core.base.dto.cache.EntityKey;
 import io.arenadata.dtm.query.execution.core.ddl.dto.DdlRequestContext;
 import io.arenadata.dtm.query.execution.core.delta.dto.HotDelta;
 import io.arenadata.dtm.query.execution.core.delta.dto.OkDelta;
 import io.arenadata.dtm.query.execution.core.ddl.service.impl.DropSchemaDdlExecutor;
-import io.arenadata.dtm.query.execution.core.metadata.service.MetadataExecutor;
-import io.arenadata.dtm.query.execution.core.metadata.service.impl.MetadataExecutorImpl;
+import io.arenadata.dtm.query.execution.core.base.service.metadata.MetadataExecutor;
+import io.arenadata.dtm.query.execution.core.base.service.metadata.impl.MetadataExecutorImpl;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.apache.calcite.sql.SqlNode;

@@ -17,8 +17,8 @@ import io.arenadata.dtm.query.execution.core.eddl.dto.CreateDownloadExternalTabl
 import io.arenadata.dtm.query.execution.core.eddl.service.EddlExecutor;
 import io.arenadata.dtm.query.execution.core.base.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.base.exception.entity.EntityAlreadyExistsException;
-import io.arenadata.dtm.query.execution.core.avro.service.AvroSchemaGenerator;
-import io.arenadata.dtm.query.execution.core.avro.service.impl.AvroSchemaGeneratorImpl;
+import io.arenadata.dtm.query.execution.core.base.service.avro.AvroSchemaGenerator;
+import io.arenadata.dtm.query.execution.core.base.service.avro.impl.AvroSchemaGeneratorImpl;
 import io.arenadata.dtm.query.execution.core.eddl.service.download.CreateDownloadExternalTableExecutor;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;

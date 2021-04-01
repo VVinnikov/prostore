@@ -5,9 +5,9 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import io.arenadata.dtm.async.AsyncUtils;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
-import io.arenadata.dtm.query.execution.core.cache.configuration.CacheConfiguration;
+import io.arenadata.dtm.query.execution.core.base.configuration.CacheConfiguration;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.EntityDao;
-import io.arenadata.dtm.query.execution.core.metadata.dto.DatamartEntity;
+import io.arenadata.dtm.query.execution.core.base.dto.metadata.DatamartEntity;
 import io.arenadata.dtm.query.execution.core.base.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.base.exception.entity.EntityAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.base.exception.entity.EntityNotExistsException;
@@ -49,7 +49,7 @@ public class EntityDaoImpl implements EntityDao {
     @Override
     @CacheEvict(
             value = CacheConfiguration.ENTITY_CACHE,
-            key = "new io.arenadata.dtm.query.execution.core.cache.dto.EntityKey(#entity.getSchema(), #entity.getName())"
+            key = "new io.arenadata.dtm.query.execution.core.base.dto.cache.EntityKey(#entity.getSchema(), #entity.getName())"
     )
     public Future<Void> createEntity(Entity entity) {
         try {
@@ -74,7 +74,7 @@ public class EntityDaoImpl implements EntityDao {
     @Override
     @CacheEvict(
             value = CacheConfiguration.ENTITY_CACHE,
-            key = "new io.arenadata.dtm.query.execution.core.cache.dto.EntityKey(#entity.getSchema(), #entity.getName())"
+            key = "new io.arenadata.dtm.query.execution.core.base.dto.cache.EntityKey(#entity.getSchema(), #entity.getName())"
     )
     public Future<Void> updateEntity(Entity entity) {
         try {
@@ -104,7 +104,7 @@ public class EntityDaoImpl implements EntityDao {
     @Override
     @CacheEvict(
             value = CacheConfiguration.ENTITY_CACHE,
-            key = "new io.arenadata.dtm.query.execution.core.cache.dto.EntityKey(#datamartMnemonic, #entityName)"
+            key = "new io.arenadata.dtm.query.execution.core.base.dto.cache.EntityKey(#datamartMnemonic, #entityName)"
     )
     public Future<Void> deleteEntity(String datamartMnemonic, String entityName) {
         val nameWithSchema = getNameWithSchema(datamartMnemonic, entityName);
@@ -122,7 +122,7 @@ public class EntityDaoImpl implements EntityDao {
     @Override
     @Cacheable(
             value = CacheConfiguration.ENTITY_CACHE,
-            key = "new io.arenadata.dtm.query.execution.core.cache.dto.EntityKey(#datamartMnemonic, #entityName)"
+            key = "new io.arenadata.dtm.query.execution.core.base.dto.cache.EntityKey(#datamartMnemonic, #entityName)"
     )
     public Future<Entity> getEntity(String datamartMnemonic, String entityName) {
         val nameWithSchema = getNameWithSchema(datamartMnemonic, entityName);

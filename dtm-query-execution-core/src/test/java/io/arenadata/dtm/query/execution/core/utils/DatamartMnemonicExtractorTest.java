@@ -5,8 +5,9 @@ import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguratio
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.calcite.core.service.impl.DeltaInformationExtractorImpl;
 import io.arenadata.dtm.query.execution.core.calcite.configuration.CalciteConfiguration;
-import io.arenadata.dtm.query.execution.core.base.configuration.CoreDtmSettings;
+import io.arenadata.dtm.query.execution.core.base.configuration.properties.CoreDtmSettings;
 import io.arenadata.dtm.query.execution.core.calcite.service.CoreCalciteDefinitionService;
+import io.arenadata.dtm.query.execution.core.query.utils.DatamartMnemonicExtractor;
 import lombok.val;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;

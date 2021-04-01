@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.schema.codec.AvroEncoder;
+import io.arenadata.dtm.query.execution.core.base.configuration.properties.CoreDtmSettings;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.jackson.DatabindCodec;
 import io.vertx.ext.web.client.WebClient;

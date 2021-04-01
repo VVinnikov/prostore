@@ -16,8 +16,8 @@ import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.impl.Serv
 import io.arenadata.dtm.query.execution.core.ddl.service.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.ddl.dto.DdlRequestContext;
 import io.arenadata.dtm.query.execution.core.ddl.service.impl.CreateSchemaDdlExecutor;
-import io.arenadata.dtm.query.execution.core.metadata.service.MetadataExecutor;
-import io.arenadata.dtm.query.execution.core.metadata.service.impl.MetadataExecutorImpl;
+import io.arenadata.dtm.query.execution.core.base.service.metadata.MetadataExecutor;
+import io.arenadata.dtm.query.execution.core.base.service.metadata.impl.MetadataExecutorImpl;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.apache.calcite.sql.SqlNode;

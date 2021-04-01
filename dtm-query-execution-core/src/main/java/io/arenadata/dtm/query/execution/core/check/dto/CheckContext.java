@@ -5,7 +5,7 @@ import io.arenadata.dtm.common.model.SqlProcessingType;
 import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.query.calcite.core.extension.check.CheckType;
 import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckCall;
-import io.arenadata.dtm.query.execution.core.base.dto.CoreRequestContext;
+import io.arenadata.dtm.query.execution.core.base.dto.request.CoreRequestContext;
 import lombok.Builder;
 
 public class CheckContext extends CoreRequestContext<DatamartRequest, SqlCheckCall> {

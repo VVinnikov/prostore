@@ -19,7 +19,7 @@ import io.arenadata.dtm.query.execution.core.check.factory.impl.CheckQueryResult
 import io.arenadata.dtm.query.execution.core.check.service.impl.CheckDataExecutor;
 import io.arenadata.dtm.query.execution.core.plugin.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.plugin.service.impl.DataSourcePluginServiceImpl;
-import io.arenadata.dtm.query.execution.core.verticle.TaskVerticleExecutor;
+import io.arenadata.dtm.query.execution.core.base.verticle.TaskVerticleExecutor;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;

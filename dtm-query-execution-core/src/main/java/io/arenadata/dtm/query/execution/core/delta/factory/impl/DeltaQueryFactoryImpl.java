@@ -20,8 +20,8 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 
-import static io.arenadata.dtm.query.execution.core.utils.DeltaQueryUtil.DELTA_DATE_TIME_FORMATTER;
-import static io.arenadata.dtm.query.execution.core.utils.DeltaQueryUtil.DELTA_DATE_TIME_PATTERN;
+import static io.arenadata.dtm.query.execution.core.delta.utils.DeltaQueryUtil.DELTA_DATE_TIME_FORMATTER;
+import static io.arenadata.dtm.query.execution.core.delta.utils.DeltaQueryUtil.DELTA_DATE_TIME_PATTERN;
 
 @Component
 @Slf4j

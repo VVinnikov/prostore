@@ -5,7 +5,7 @@ import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.core.delta.dto.DeltaRecord;
 import io.arenadata.dtm.query.execution.core.delta.factory.DeltaQueryResultFactory;
-import io.arenadata.dtm.query.execution.core.utils.DeltaQueryUtil;
+import io.arenadata.dtm.query.execution.core.delta.utils.DeltaQueryUtil;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;

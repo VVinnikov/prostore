@@ -25,8 +25,8 @@ import io.arenadata.dtm.query.execution.core.edml.mppw.service.impl.UploadFailed
 import io.arenadata.dtm.query.execution.core.edml.mppw.service.impl.UploadKafkaExecutor;
 import io.arenadata.dtm.query.execution.core.plugin.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.plugin.service.impl.DataSourcePluginServiceImpl;
-import io.arenadata.dtm.query.execution.core.base.service.schema.LogicalSchemaProvider;
-import io.arenadata.dtm.query.execution.core.base.service.schema.impl.LogicalSchemaProviderImpl;
+import io.arenadata.dtm.query.execution.core.base.service.metadata.LogicalSchemaProvider;
+import io.arenadata.dtm.query.execution.core.base.service.metadata.impl.LogicalSchemaProviderImpl;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.apache.calcite.sql.SqlInsert;

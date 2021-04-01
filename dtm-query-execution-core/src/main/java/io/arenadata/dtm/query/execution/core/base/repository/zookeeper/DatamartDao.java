@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.core.base.repository.zookeeper;
 
-import io.arenadata.dtm.query.execution.core.metadata.dto.DatamartInfo;
+import io.arenadata.dtm.query.execution.core.base.dto.metadata.DatamartInfo;
 import io.vertx.core.Future;
 
 import java.util.List;

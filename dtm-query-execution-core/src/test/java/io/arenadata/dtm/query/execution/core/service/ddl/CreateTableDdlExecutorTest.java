@@ -25,10 +25,10 @@ import io.arenadata.dtm.query.execution.core.base.exception.datamart.DatamartNot
 import io.arenadata.dtm.query.execution.core.plugin.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.plugin.service.impl.DataSourcePluginServiceImpl;
 import io.arenadata.dtm.query.execution.core.ddl.service.impl.CreateTableDdlExecutor;
-import io.arenadata.dtm.query.execution.core.metadata.service.MetadataCalciteGenerator;
-import io.arenadata.dtm.query.execution.core.metadata.service.MetadataExecutor;
-import io.arenadata.dtm.query.execution.core.metadata.service.impl.MetadataCalciteGeneratorImpl;
-import io.arenadata.dtm.query.execution.core.metadata.service.impl.MetadataExecutorImpl;
+import io.arenadata.dtm.query.execution.core.base.service.metadata.MetadataCalciteGenerator;
+import io.arenadata.dtm.query.execution.core.base.service.metadata.MetadataExecutor;
+import io.arenadata.dtm.query.execution.core.base.service.metadata.impl.MetadataCalciteGeneratorImpl;
+import io.arenadata.dtm.query.execution.core.base.service.metadata.impl.MetadataExecutorImpl;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.apache.calcite.sql.SqlNode;

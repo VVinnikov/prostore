@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.core.factory.impl;
 
 import io.arenadata.dtm.kafka.core.configuration.kafka.KafkaZookeeperProperties;
-import io.arenadata.dtm.query.execution.core.utils.LocationUriParser;
+import io.arenadata.dtm.query.execution.core.edml.service.LocationUriParser;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 

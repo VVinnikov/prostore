@@ -6,7 +6,7 @@ import io.arenadata.dtm.query.execution.core.base.repository.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.base.exception.datamart.DatamartAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.ddl.service.QueryResultDdlExecutor;
-import io.arenadata.dtm.query.execution.core.metadata.service.MetadataExecutor;
+import io.arenadata.dtm.query.execution.core.base.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.ddl.dto.DdlRequestContext;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;

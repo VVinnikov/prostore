@@ -7,6 +7,7 @@ import io.arenadata.dtm.common.reader.QuerySourceRequest;
 import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
 import io.arenadata.dtm.query.execution.core.service.dml.InformationSchemaExecutor;
 import io.arenadata.dtm.query.execution.core.service.hsql.HSQLClient;
+import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import lombok.val;
@@ -15,7 +16,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 public class InformationSchemaExecutorImpl implements InformationSchemaExecutor {
@@ -43,7 +47,7 @@ public class InformationSchemaExecutorImpl implements InformationSchemaExecutor 
                     .onSuccess(query -> client.getQueryResult(query)
                             .onSuccess(resultSet -> {
                                 val result = resultSet.getRows().stream()
-                                        .map(JsonObject::getMap)
+                                        .map(row -> toResultRow(resultSet.getColumnNames(), row, request.getMetadata()))
                                         .collect(Collectors.toList());
                                 promise.complete(
                                         QueryResult.builder()
@@ -57,10 +61,17 @@ public class InformationSchemaExecutorImpl implements InformationSchemaExecutor 
         });
     }
 
+    private Map<String, Object> toResultRow(List<String> columnNames, JsonObject row, List<ColumnMetadata> metadata) {
+        Map<String, Object> map = row.getMap();
+        return IntStream.range(0, metadata.size())
+                .boxed()
+                .collect(Collectors.toMap(i -> metadata.get(i).getName(), i -> map.get(columnNames.get(i))));
+    }
+
     private Future<String> getEnrichmentQuerySql(QuerySourceRequest request) {
         return Future.future(p -> {
                     toUpperCase(request);
-            val parserRequest = new QueryParserRequest(request.getQuery(), request.getLogicalSchema());
+                    val parserRequest = new QueryParserRequest(request.getQuery(), request.getLogicalSchema());
                     parserService.parse(parserRequest)
                             .map(response -> {
                                 val enrichmentNode = response.getSqlNode();

@@ -1,7 +1,9 @@
 package io.arenadata.dtm.query.execution.plugin.adb.factory.impl;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
-import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbTables;
+import io.arenadata.dtm.query.execution.plugin.adb.base.dto.AdbTables;
+import io.arenadata.dtm.query.execution.plugin.adb.base.factory.metadata.AdbCreateTableQueriesFactory;
+import io.arenadata.dtm.query.execution.plugin.adb.base.factory.metadata.AdbTableEntitiesFactory;
 import io.arenadata.dtm.query.execution.plugin.api.factory.CreateTableQueriesFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

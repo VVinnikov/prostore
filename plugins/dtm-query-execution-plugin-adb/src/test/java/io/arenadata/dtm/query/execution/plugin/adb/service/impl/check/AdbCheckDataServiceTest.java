@@ -1,7 +1,8 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.check;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
-import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
+import io.arenadata.dtm.query.execution.plugin.adb.check.service.AdbCheckDataService;
+import io.arenadata.dtm.query.execution.plugin.adb.base.service.query.impl.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
 import io.vertx.core.Future;

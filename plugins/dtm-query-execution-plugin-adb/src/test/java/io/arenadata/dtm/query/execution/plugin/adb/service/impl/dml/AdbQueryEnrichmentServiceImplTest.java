@@ -8,14 +8,17 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
-import io.arenadata.dtm.query.execution.plugin.adb.calcite.AdbCalciteContextProvider;
-import io.arenadata.dtm.query.execution.plugin.adb.calcite.AdbCalciteSchemaFactory;
-import io.arenadata.dtm.query.execution.plugin.adb.configuration.CalciteConfiguration;
-import io.arenadata.dtm.query.execution.plugin.adb.dto.EnrichQueryRequest;
-import io.arenadata.dtm.query.execution.plugin.adb.factory.impl.AdbSchemaFactory;
-import io.arenadata.dtm.query.execution.plugin.adb.service.QueryEnrichmentService;
-import io.arenadata.dtm.query.execution.plugin.adb.service.QueryExtendService;
-import io.arenadata.dtm.query.execution.plugin.adb.service.impl.enrichment.*;
+import io.arenadata.dtm.query.execution.plugin.adb.base.service.enrichment.*;
+import io.arenadata.dtm.query.execution.plugin.adb.base.service.enrichment.impl.AdbDmlQueryExtendServiceImpl;
+import io.arenadata.dtm.query.execution.plugin.adb.base.service.enrichment.impl.AdbQueryEnrichmentServiceImpl;
+import io.arenadata.dtm.query.execution.plugin.adb.base.service.enrichment.impl.AdbQueryGeneratorImpl;
+import io.arenadata.dtm.query.execution.plugin.adb.base.service.enrichment.impl.AdbSchemaExtenderImpl;
+import io.arenadata.dtm.query.execution.plugin.adb.calcite.service.AdbCalciteContextProvider;
+import io.arenadata.dtm.query.execution.plugin.adb.calcite.factory.AdbCalciteSchemaFactory;
+import io.arenadata.dtm.query.execution.plugin.adb.calcite.service.AdbCalciteDMLQueryParserService;
+import io.arenadata.dtm.query.execution.plugin.adb.calcite.configuration.CalciteConfiguration;
+import io.arenadata.dtm.query.execution.plugin.adb.base.dto.EnrichQueryRequest;
+import io.arenadata.dtm.query.execution.plugin.adb.calcite.factory.AdbSchemaFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.utils.TestUtils;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
@@ -47,7 +50,7 @@ public class AdbQueryEnrichmentServiceImplTest {
     QueryEnrichmentService adbQueryEnrichmentService;
 
     public AdbQueryEnrichmentServiceImplTest() {
-        QueryExtendService queryExtender = new AdbCalciteDmlQueryExtendServiceImpl();
+        QueryExtendService queryExtender = new AdbDmlQueryExtendServiceImpl();
 
         CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
         SqlParser.Config parserConfig = calciteConfiguration.configDdlParser(

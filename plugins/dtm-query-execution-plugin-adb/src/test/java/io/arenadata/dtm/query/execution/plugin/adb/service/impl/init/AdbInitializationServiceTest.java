@@ -1,8 +1,9 @@
 package io.arenadata.dtm.query.execution.plugin.adb.service.impl.init;
 
-import io.arenadata.dtm.query.execution.plugin.adb.factory.AdbHashFunctionFactory;
-import io.arenadata.dtm.query.execution.plugin.adb.factory.impl.AdbHashFunctionFactoryImpl;
-import io.arenadata.dtm.query.execution.plugin.adb.service.impl.query.AdbQueryExecutor;
+import io.arenadata.dtm.query.execution.plugin.adb.base.factory.hash.AdbHashFunctionFactory;
+import io.arenadata.dtm.query.execution.plugin.adb.base.factory.hash.impl.AdbHashFunctionFactoryImpl;
+import io.arenadata.dtm.query.execution.plugin.adb.base.service.query.impl.AdbQueryExecutor;
+import io.arenadata.dtm.query.execution.plugin.adb.init.service.AdbInitializationService;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.vertx.core.Future;
 import org.junit.jupiter.api.Test;

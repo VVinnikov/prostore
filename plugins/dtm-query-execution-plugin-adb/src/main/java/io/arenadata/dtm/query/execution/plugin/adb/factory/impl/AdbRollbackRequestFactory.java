@@ -2,7 +2,7 @@ package io.arenadata.dtm.query.execution.plugin.adb.factory.impl;
 
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.plugin.sql.PreparedStatementRequest;
-import io.arenadata.dtm.query.execution.plugin.adb.dto.AdbRollbackRequest;
+import io.arenadata.dtm.query.execution.plugin.adb.rollback.dto.AdbRollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.api.factory.RollbackRequestFactory;
 import org.springframework.stereotype.Component;

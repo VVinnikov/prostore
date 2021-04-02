@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.exception.delta;
+package io.arenadata.dtm.query.execution.core.delta.exception;
 
 public class DeltaIsEmptyException extends DeltaException {
 

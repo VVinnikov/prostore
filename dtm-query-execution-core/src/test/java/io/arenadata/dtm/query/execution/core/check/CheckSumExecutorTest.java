@@ -18,6 +18,7 @@ import io.arenadata.dtm.query.execution.core.check.dto.CheckContext;
 import io.arenadata.dtm.query.execution.core.delta.dto.HotDelta;
 import io.arenadata.dtm.query.execution.core.delta.dto.OkDelta;
 import io.arenadata.dtm.query.execution.core.check.exception.CheckSumException;
+import io.arenadata.dtm.query.execution.core.exception.delta.DeltaIsEmptyException;
 import io.arenadata.dtm.query.execution.core.delta.exception.DeltaNotFoundException;
 import io.arenadata.dtm.query.execution.core.base.exception.entity.EntityNotExistsException;
 import io.arenadata.dtm.query.execution.core.check.factory.CheckQueryResultFactory;
@@ -178,6 +179,46 @@ class CheckSumExecutorTest {
 
         assertTrue(promise.future().succeeded());
         assertEquals(hashSum.toString(), promise.future().result().getResult().get(0).get("check_result"));
+    }
+
+    @Test
+    void executeNullCnToDelNum() {
+        Promise<QueryResult> promise = Promise.promise();
+        QueryRequest queryRequest = new QueryRequest();
+        queryRequest.setDatamartMnemonic(DATAMART_MNEMONIC);
+        long deltaNum = 0L;
+        Long hashSum = 12345L;
+        SqlCheckSum sqlCheckSum = mock(SqlCheckSum.class);
+        when(sqlCheckSum.getDeltaNum()).thenReturn(deltaNum);
+        when(sqlCheckSum.getTable()).thenReturn(entity.getName());
+        when(sqlCheckSum.getColumns()).thenReturn(null);
+        CheckContext checkContext = new CheckContext(new RequestMetrics(), "env",
+                new DatamartRequest(queryRequest), CheckType.SUM, sqlCheckSum);
+        OkDelta okDelta = OkDelta.builder()
+                .deltaNum(deltaNum)
+                .cnFrom(0)
+                .cnTo(1)
+                .build();
+        HotDelta hotDelta = HotDelta.builder()
+                .deltaNum(0)
+                .cnFrom(0L)
+                .build();
+
+        when(deltaServiceDao.getDeltaHot(DATAMART_MNEMONIC))
+                .thenReturn(Future.succeededFuture(hotDelta));
+
+        when(deltaServiceDao.getDeltaByNum(DATAMART_MNEMONIC, deltaNum))
+                .thenReturn(Future.succeededFuture(okDelta));
+
+        when(checkSumTableService.calcCheckSumTable(any()))
+                .thenReturn(Future.succeededFuture(hashSum));
+
+        checkSumExecutor.execute(checkContext)
+                .onComplete(promise);
+
+        assertTrue(promise.future().failed());
+        assertTrue(promise.future().cause() instanceof DeltaIsEmptyException);
+        assertEquals(new DeltaIsEmptyException(0).getMessage(), promise.future().cause().getMessage());
     }
 
     @Test

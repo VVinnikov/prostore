@@ -11,6 +11,7 @@ import java.util.Set;
 public class CheckSumRequestContext {
     private CheckContext checkContext;
     private String datamart;
+    private Long deltaNum;
     private long cnFrom;
     private long cnTo;
     private Entity entity;
@@ -20,6 +21,7 @@ public class CheckSumRequestContext {
         return CheckSumRequestContext.builder()
                 .checkContext(checkContext)
                 .datamart(datamart)
+                .deltaNum(deltaNum)
                 .cnFrom(cnFrom)
                 .cnTo(cnTo)
                 .entity(entity)

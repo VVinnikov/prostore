@@ -2,7 +2,7 @@ package io.arenadata.dtm.query.execution.plugin.adb.rollback;
 
 import io.arenadata.dtm.common.plugin.sql.PreparedStatementRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.rollback.dto.AdbRollbackRequest;
-import io.arenadata.dtm.query.execution.plugin.adb.factory.impl.AdbRollbackRequestFactory;
+import io.arenadata.dtm.query.execution.plugin.adb.rollback.factory.AdbRollbackRequestFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.query.service.impl.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.adb.rollback.service.AdbRollbackService;
 import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;

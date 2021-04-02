@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.plugin.adb.factory.impl;
+package io.arenadata.dtm.query.execution.plugin.adb.rollback.factory;
 
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.plugin.sql.PreparedStatementRequest;

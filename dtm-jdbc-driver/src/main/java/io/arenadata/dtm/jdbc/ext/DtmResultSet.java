@@ -7,7 +7,6 @@ import io.arenadata.dtm.jdbc.core.Field;
 import io.arenadata.dtm.jdbc.core.Tuple;
 import io.arenadata.dtm.jdbc.util.DtmSqlException;
 import lombok.SneakyThrows;
-import org.apache.commons.lang3.SerializationUtils;
 
 import java.io.*;
 import java.math.BigDecimal;
@@ -145,36 +144,38 @@ public class DtmResultSet extends AbstractResultSet {
         final Field field = this.fields[columnIndex - 1];
         if (this.getValue(columnIndex) == null) {
             return null;
-        }
-        if (field == null) {
-            wasNullFlag = true;
-            return null;
-        }
-        switch (field.getDtmType()) {
-            case INT:
-            case BIGINT:
-                return this.getLong(columnIndex);
-            case VARCHAR:
-            case ANY:
-            case CHAR:
-            case UUID:
-            case BLOB:
-                return this.getString(columnIndex);
-            case FLOAT:
-                return this.getFloat(columnIndex);
-            case DOUBLE:
-                return this.getDouble(columnIndex);
-            case BOOLEAN:
-                return this.getBoolean(columnIndex);
-            case DATE:
-                return this.getDate(columnIndex);
-            case TIME:
-                return this.getTime(columnIndex);
-            case TIMESTAMP:
-                return this.getTimestamp(columnIndex);
-            default:
-                throw new SQLException(String.format("Column type %s for index %s not found!",
-                        field.getDtmType(), columnIndex));
+        } else {
+            if (field == null) {
+                this.wasNullFlag = true;
+                return null;
+            } else {
+                switch (field.getDtmType()) {
+                    case INT:
+                    case BIGINT:
+                        return this.getLong(columnIndex);
+                    case VARCHAR:
+                    case ANY:
+                    case CHAR:
+                    case UUID:
+                    case BLOB:
+                        return this.getString(columnIndex);
+                    case FLOAT:
+                        return this.getFloat(columnIndex);
+                    case DOUBLE:
+                        return this.getDouble(columnIndex);
+                    case BOOLEAN:
+                        return this.getBoolean(columnIndex);
+                    case DATE:
+                        return this.getDate(columnIndex);
+                    case TIME:
+                        return this.getTime(columnIndex);
+                    case TIMESTAMP:
+                        return this.getTimestamp(columnIndex);
+                    default:
+                        throw new SQLException(String.format("Column type %s for index %s not found!",
+                                field.getDtmType(), columnIndex));
+                }
+            }
         }
     }
 
@@ -355,8 +356,6 @@ public class DtmResultSet extends AbstractResultSet {
     public byte[] getBytes(String columnLabel) throws SQLException {
         return this.getBytes(this.findColumn(columnLabel));
     }
-
-
 
     @Override
     public Date getDate(String columnLabel) throws SQLException {

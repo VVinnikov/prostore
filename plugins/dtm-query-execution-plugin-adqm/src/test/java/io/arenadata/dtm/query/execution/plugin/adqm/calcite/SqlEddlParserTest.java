@@ -3,7 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adqm.calcite;
 
 import io.arenadata.dtm.calcite.adqm.configuration.AdqmCalciteConfiguration;
 import io.arenadata.dtm.query.calcite.core.framework.DtmCalciteFramework;
-import io.arenadata.dtm.query.execution.plugin.adqm.configuration.CalciteConfiguration;
+import io.arenadata.dtm.query.execution.plugin.adqm.calcite.configuration.CalciteConfiguration;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.parser.SqlParseException;

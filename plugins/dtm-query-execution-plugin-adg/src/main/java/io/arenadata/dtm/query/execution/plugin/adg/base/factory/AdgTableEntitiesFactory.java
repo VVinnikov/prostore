@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.arenadata.dtm.query.execution.plugin.adg.base.constants.ColumnFields.*;
+import static io.arenadata.dtm.query.execution.plugin.adg.base.utils.ColumnFields.*;
 
 @Service("adgTableEntitiesFactory")
 public class AdgTableEntitiesFactory implements TableEntitiesFactory<AdgTables<Space>> {

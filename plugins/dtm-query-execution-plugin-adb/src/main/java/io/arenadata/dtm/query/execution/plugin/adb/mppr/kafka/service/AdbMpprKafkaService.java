@@ -2,11 +2,11 @@ package io.arenadata.dtm.query.execution.plugin.adb.mppr.kafka.service;
 
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.reader.QueryResult;
-import io.arenadata.dtm.query.execution.plugin.adb.base.dto.EnrichQueryRequest;
+import io.arenadata.dtm.query.execution.plugin.adb.enrichment.dto.EnrichQueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.mppr.kafka.factory.KafkaMpprSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.mppr.AdbMpprExecutor;
-import io.arenadata.dtm.query.execution.plugin.adb.base.service.enrichment.QueryEnrichmentService;
-import io.arenadata.dtm.query.execution.plugin.adb.base.service.query.impl.AdbQueryExecutor;
+import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.QueryEnrichmentService;
+import io.arenadata.dtm.query.execution.plugin.adb.query.service.impl.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.exception.MpprDatasourceException;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.kafka.MpprKafkaRequest;

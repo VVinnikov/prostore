@@ -6,7 +6,7 @@ import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adb.check.factory.AdbVersionInfoFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.check.factory.AdbVersionQueriesFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.check.factory.impl.AdbVersionQueriesFactoryImpl;
-import io.arenadata.dtm.query.execution.plugin.adb.base.service.query.DatabaseExecutor;
+import io.arenadata.dtm.query.execution.plugin.adb.query.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckVersionRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckVersionService;
 import io.vertx.core.CompositeFuture;

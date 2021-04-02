@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adb.init.service;
 
 import io.arenadata.dtm.query.execution.plugin.adb.base.factory.hash.AdbHashFunctionFactory;
-import io.arenadata.dtm.query.execution.plugin.adb.base.service.query.DatabaseExecutor;
+import io.arenadata.dtm.query.execution.plugin.adb.query.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.PluginInitializationService;
 import io.vertx.core.Future;
 import org.springframework.beans.factory.annotation.Autowired;

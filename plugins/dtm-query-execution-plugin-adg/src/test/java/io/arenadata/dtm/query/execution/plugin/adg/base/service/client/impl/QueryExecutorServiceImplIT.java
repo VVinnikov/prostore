@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adg.base.service.client.impl;
 
-import io.arenadata.dtm.query.execution.plugin.adg.base.service.query.QueryExecutorService;
+import io.arenadata.dtm.query.execution.plugin.adg.query.service.QueryExecutorService;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import org.junit.jupiter.api.Test;

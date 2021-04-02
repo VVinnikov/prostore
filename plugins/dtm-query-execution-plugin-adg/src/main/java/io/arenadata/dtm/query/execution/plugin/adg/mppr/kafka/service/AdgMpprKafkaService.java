@@ -2,11 +2,11 @@ package io.arenadata.dtm.query.execution.plugin.adg.mppr.kafka.service;
 
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
 import io.arenadata.dtm.common.reader.QueryResult;
-import io.arenadata.dtm.query.execution.plugin.adg.base.dto.EnrichQueryRequest;
+import io.arenadata.dtm.query.execution.plugin.adg.enrichment.dto.EnrichQueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.base.model.cartridge.request.AdgUploadDataKafkaRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.base.service.client.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.adg.mppr.AdgMpprExecutor;
-import io.arenadata.dtm.query.execution.plugin.adg.base.service.enrichment.QueryEnrichmentService;
+import io.arenadata.dtm.query.execution.plugin.adg.enrichment.service.QueryEnrichmentService;
 import io.arenadata.dtm.query.execution.plugin.api.exception.MpprDatasourceException;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.kafka.DownloadExternalEntityMetadata;

@@ -3,7 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adg.base.factory;
 import io.arenadata.dtm.query.execution.plugin.adg.base.dto.AdgHelperTableNames;
 import org.springframework.stereotype.Component;
 
-import static io.arenadata.dtm.query.execution.plugin.adg.base.constants.ColumnFields.*;
+import static io.arenadata.dtm.query.execution.plugin.adg.base.utils.ColumnFields.*;
 
 @Component
 public class AdgHelperTableNamesFactoryImpl implements AdgHelperTableNamesFactory {

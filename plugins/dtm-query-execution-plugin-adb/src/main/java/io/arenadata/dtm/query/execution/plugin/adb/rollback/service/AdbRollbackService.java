@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adb.rollback.service;
 
 import io.arenadata.dtm.query.execution.plugin.adb.rollback.dto.AdbRollbackRequest;
-import io.arenadata.dtm.query.execution.plugin.adb.base.service.query.impl.AdbQueryExecutor;
+import io.arenadata.dtm.query.execution.plugin.adb.query.service.impl.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.api.factory.RollbackRequestFactory;
 import io.arenadata.dtm.query.execution.plugin.api.service.RollbackService;

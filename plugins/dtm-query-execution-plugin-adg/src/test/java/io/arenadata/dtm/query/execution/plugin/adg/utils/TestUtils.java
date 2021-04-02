@@ -13,7 +13,7 @@ import org.apache.calcite.sql.SqlNode;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.arenadata.dtm.query.execution.plugin.adg.base.constants.ColumnFields.*;
+import static io.arenadata.dtm.query.execution.plugin.adg.base.utils.ColumnFields.*;
 import static io.arenadata.dtm.query.execution.plugin.adg.base.factory.AdgTableEntitiesFactory.SEC_INDEX_PREFIX;
 
 public class TestUtils {

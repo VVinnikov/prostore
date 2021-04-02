@@ -5,7 +5,7 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.execution.plugin.adg.base.configuration.properties.TarantoolDatabaseProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.check.service.AdgCheckTableService;
-import io.arenadata.dtm.query.execution.plugin.adg.base.factory.AdgCreateTableQueriesFactory;
+import io.arenadata.dtm.query.execution.plugin.adg.ddl.factory.AdgCreateTableQueriesFactory;
 import io.arenadata.dtm.query.execution.plugin.adg.base.factory.AdgTableEntitiesFactory;
 import io.arenadata.dtm.query.execution.plugin.adg.base.model.cartridge.schema.Space;
 import io.arenadata.dtm.query.execution.plugin.adg.base.service.client.AdgCartridgeClient;
@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-import static io.arenadata.dtm.query.execution.plugin.adg.base.constants.ColumnFields.ACTUAL_POSTFIX;
+import static io.arenadata.dtm.query.execution.plugin.adg.base.utils.ColumnFields.ACTUAL_POSTFIX;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertTrue;

@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adg.base.service.client.impl;
 
-import io.arenadata.dtm.query.execution.plugin.adg.base.service.query.AdgTemplateParameterConverter;
+import io.arenadata.dtm.query.execution.plugin.adg.base.service.converter.AdgTemplateParameterConverter;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParserPos;

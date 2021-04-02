@@ -10,7 +10,7 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.base.dto.AdgTables;
-import io.arenadata.dtm.query.execution.plugin.adg.base.factory.AdgCreateTableQueriesFactory;
+import io.arenadata.dtm.query.execution.plugin.adg.ddl.factory.AdgCreateTableQueriesFactory;
 import io.arenadata.dtm.query.execution.plugin.adg.base.model.cartridge.OperationYaml;
 import io.arenadata.dtm.query.execution.plugin.adg.base.model.cartridge.schema.AdgSpace;
 import io.arenadata.dtm.query.execution.plugin.adg.base.model.cartridge.schema.Space;

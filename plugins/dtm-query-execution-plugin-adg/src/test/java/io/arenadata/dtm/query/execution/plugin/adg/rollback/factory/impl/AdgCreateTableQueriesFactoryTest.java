@@ -3,7 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adg.rollback.factory.impl;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.query.execution.plugin.adg.base.configuration.properties.TarantoolDatabaseProperties;
 import io.arenadata.dtm.query.execution.plugin.adg.base.dto.AdgTables;
-import io.arenadata.dtm.query.execution.plugin.adg.base.factory.AdgCreateTableQueriesFactory;
+import io.arenadata.dtm.query.execution.plugin.adg.ddl.factory.AdgCreateTableQueriesFactory;
 import io.arenadata.dtm.query.execution.plugin.adg.base.factory.AdgTableEntitiesFactory;
 import io.arenadata.dtm.query.execution.plugin.adg.base.model.cartridge.schema.AdgSpace;
 import io.arenadata.dtm.query.execution.plugin.adg.base.model.cartridge.schema.Space;

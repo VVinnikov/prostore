@@ -5,9 +5,9 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityFieldUtils;
 import io.arenadata.dtm.common.model.ddl.EntityTypeUtil;
-import io.arenadata.dtm.query.execution.plugin.adb.base.dto.AdbTableColumn;
-import io.arenadata.dtm.query.execution.plugin.adb.base.dto.AdbTableEntity;
-import io.arenadata.dtm.query.execution.plugin.adb.base.dto.AdbTables;
+import io.arenadata.dtm.query.execution.plugin.adb.base.dto.metadata.AdbTableColumn;
+import io.arenadata.dtm.query.execution.plugin.adb.base.dto.metadata.AdbTableEntity;
+import io.arenadata.dtm.query.execution.plugin.adb.base.dto.metadata.AdbTables;
 import io.arenadata.dtm.query.execution.plugin.api.factory.TableEntitiesFactory;
 import org.springframework.stereotype.Service;
 

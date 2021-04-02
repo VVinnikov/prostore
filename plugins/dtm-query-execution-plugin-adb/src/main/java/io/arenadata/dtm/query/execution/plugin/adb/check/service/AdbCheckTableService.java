@@ -1,8 +1,8 @@
 package io.arenadata.dtm.query.execution.plugin.adb.check.service;
 
-import io.arenadata.dtm.query.execution.plugin.adb.base.dto.AdbTableColumn;
-import io.arenadata.dtm.query.execution.plugin.adb.base.dto.AdbTableEntity;
-import io.arenadata.dtm.query.execution.plugin.adb.base.dto.AdbTables;
+import io.arenadata.dtm.query.execution.plugin.adb.base.dto.metadata.AdbTableColumn;
+import io.arenadata.dtm.query.execution.plugin.adb.base.dto.metadata.AdbTableEntity;
+import io.arenadata.dtm.query.execution.plugin.adb.base.dto.metadata.AdbTables;
 import io.arenadata.dtm.query.execution.plugin.adb.base.factory.metadata.AdbMetaTableEntityFactory;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckException;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;

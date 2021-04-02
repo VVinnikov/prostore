@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adb.ddl.service;
 
 import io.arenadata.dtm.query.execution.plugin.adb.ddl.factory.DdlSqlFactory;
-import io.arenadata.dtm.query.execution.plugin.adb.base.service.query.impl.AdbQueryExecutor;
+import io.arenadata.dtm.query.execution.plugin.adb.query.service.impl.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.DdlExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.DdlService;

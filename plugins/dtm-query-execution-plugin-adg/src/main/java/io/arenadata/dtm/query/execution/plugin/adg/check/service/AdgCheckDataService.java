@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adg.check.service;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
-import io.arenadata.dtm.query.execution.plugin.adg.base.constants.ColumnFields;
+import io.arenadata.dtm.query.execution.plugin.adg.base.utils.ColumnFields;
 import io.arenadata.dtm.query.execution.plugin.adg.base.service.client.AdgCartridgeClient;
 import io.arenadata.dtm.query.execution.plugin.adg.base.utils.AdgUtils;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;

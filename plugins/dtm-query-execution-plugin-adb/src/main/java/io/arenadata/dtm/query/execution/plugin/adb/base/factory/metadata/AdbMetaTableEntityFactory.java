@@ -1,8 +1,8 @@
 package io.arenadata.dtm.query.execution.plugin.adb.base.factory.metadata;
 
-import io.arenadata.dtm.query.execution.plugin.adb.base.dto.AdbTableColumn;
-import io.arenadata.dtm.query.execution.plugin.adb.base.dto.AdbTableEntity;
-import io.arenadata.dtm.query.execution.plugin.adb.base.service.query.DatabaseExecutor;
+import io.arenadata.dtm.query.execution.plugin.adb.base.dto.metadata.AdbTableColumn;
+import io.arenadata.dtm.query.execution.plugin.adb.base.dto.metadata.AdbTableEntity;
+import io.arenadata.dtm.query.execution.plugin.adb.query.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.factory.MetaTableEntityFactory;
 import io.vertx.core.Future;
 import org.springframework.beans.factory.annotation.Autowired;

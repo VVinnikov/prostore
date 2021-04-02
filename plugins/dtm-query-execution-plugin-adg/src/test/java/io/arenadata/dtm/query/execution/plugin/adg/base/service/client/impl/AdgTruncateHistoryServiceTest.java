@@ -28,8 +28,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static io.arenadata.dtm.query.execution.plugin.adg.base.constants.ColumnFields.ACTUAL_POSTFIX;
-import static io.arenadata.dtm.query.execution.plugin.adg.base.constants.ColumnFields.HISTORY_POSTFIX;
+import static io.arenadata.dtm.query.execution.plugin.adg.base.utils.ColumnFields.ACTUAL_POSTFIX;
+import static io.arenadata.dtm.query.execution.plugin.adg.base.utils.ColumnFields.HISTORY_POSTFIX;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 

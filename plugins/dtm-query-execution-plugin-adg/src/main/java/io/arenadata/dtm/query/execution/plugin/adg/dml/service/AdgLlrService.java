@@ -6,9 +6,9 @@ import io.arenadata.dtm.common.cache.QueryTemplateValue;
 import io.arenadata.dtm.common.reader.QueryParameters;
 import io.arenadata.dtm.query.calcite.core.service.QueryTemplateExtractor;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
-import io.arenadata.dtm.query.execution.plugin.adg.base.dto.EnrichQueryRequest;
-import io.arenadata.dtm.query.execution.plugin.adg.base.service.enrichment.QueryEnrichmentService;
-import io.arenadata.dtm.query.execution.plugin.adg.base.service.query.QueryExecutorService;
+import io.arenadata.dtm.query.execution.plugin.adg.enrichment.dto.EnrichQueryRequest;
+import io.arenadata.dtm.query.execution.plugin.adg.enrichment.service.QueryEnrichmentService;
+import io.arenadata.dtm.query.execution.plugin.adg.query.service.QueryExecutorService;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.QueryResultCacheableLlrService;
 import io.arenadata.dtm.query.execution.plugin.api.service.TemplateParameterConverter;
@@ -25,7 +25,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import static io.arenadata.dtm.query.execution.plugin.adg.base.constants.ColumnFields.*;
+import static io.arenadata.dtm.query.execution.plugin.adg.base.utils.ColumnFields.*;
 
 @Slf4j
 @Service("adgLlrService")

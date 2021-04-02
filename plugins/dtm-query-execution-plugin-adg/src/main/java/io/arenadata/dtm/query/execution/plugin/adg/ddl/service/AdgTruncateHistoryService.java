@@ -12,8 +12,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
 
-import static io.arenadata.dtm.query.execution.plugin.adg.base.constants.ColumnFields.ACTUAL_POSTFIX;
-import static io.arenadata.dtm.query.execution.plugin.adg.base.constants.ColumnFields.HISTORY_POSTFIX;
+import static io.arenadata.dtm.query.execution.plugin.adg.base.utils.ColumnFields.ACTUAL_POSTFIX;
+import static io.arenadata.dtm.query.execution.plugin.adg.base.utils.ColumnFields.HISTORY_POSTFIX;
 
 @Service("adgTruncateHistoryService")
 public class AdgTruncateHistoryService implements TruncateHistoryService {

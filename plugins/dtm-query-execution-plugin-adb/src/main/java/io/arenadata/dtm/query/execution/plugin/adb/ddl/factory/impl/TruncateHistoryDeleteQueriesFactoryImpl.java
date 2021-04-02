@@ -2,7 +2,7 @@ package io.arenadata.dtm.query.execution.plugin.adb.ddl.factory.impl;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.query.execution.plugin.adb.ddl.factory.TruncateHistoryDeleteQueriesFactory;
-import io.arenadata.dtm.query.execution.plugin.adb.base.dto.AdbTables;
+import io.arenadata.dtm.query.execution.plugin.adb.base.dto.metadata.AdbTables;
 import io.arenadata.dtm.query.execution.plugin.api.dto.TruncateHistoryRequest;
 import org.apache.calcite.sql.SqlDialect;
 import org.springframework.beans.factory.annotation.Autowired;

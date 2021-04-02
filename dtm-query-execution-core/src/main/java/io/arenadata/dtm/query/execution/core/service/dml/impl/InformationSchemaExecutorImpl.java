@@ -65,8 +65,9 @@ public class InformationSchemaExecutorImpl implements InformationSchemaExecutor 
     private Map<String, Object> toResultRow(List<String> columnNames, JsonObject row, List<ColumnMetadata> metadata) {
         Map<String, Object> map = row.getMap();
         Map<String, Object> resultRow = new HashMap<>();
-        IntStream.range(0, metadata.size())
-                .forEach(i -> resultRow.put(metadata.get(i).getName(), map.get(columnNames.get(i))));
+        for (int i = 0; i < metadata.size(); i++) {
+            resultRow.put(metadata.get(i).getName(), map.get(columnNames.get(i)));
+        }
         return resultRow;
     }
 

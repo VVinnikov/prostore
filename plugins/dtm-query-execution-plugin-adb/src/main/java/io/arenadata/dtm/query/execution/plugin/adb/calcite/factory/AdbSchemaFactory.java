@@ -3,7 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adb.calcite.factory;
 import io.arenadata.dtm.query.calcite.core.factory.impl.DtmSchemaFactory;
 import io.arenadata.dtm.query.calcite.core.schema.dialect.DtmConvention;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
-import io.arenadata.dtm.query.execution.plugin.adb.calcite.dto.schema.dialect.AdbDtmConvention;
+import io.arenadata.dtm.query.execution.plugin.adb.calcite.model.schema.dialect.AdbDtmConvention;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.springframework.stereotype.Service;
 

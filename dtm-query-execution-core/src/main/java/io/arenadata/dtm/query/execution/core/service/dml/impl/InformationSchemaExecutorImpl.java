@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -63,9 +64,11 @@ public class InformationSchemaExecutorImpl implements InformationSchemaExecutor 
 
     private Map<String, Object> toResultRow(List<String> columnNames, JsonObject row, List<ColumnMetadata> metadata) {
         Map<String, Object> map = row.getMap();
-        return IntStream.range(0, metadata.size())
-                .boxed()
-                .collect(Collectors.toMap(i -> metadata.get(i).getName(), i -> map.get(columnNames.get(i))));
+        Map<String, Object> resultRow = new HashMap<>();
+        for (int i = 0; i < metadata.size(); i++) {
+            resultRow.put(metadata.get(i).getName(), map.get(columnNames.get(i)));
+        }
+        return resultRow;
     }
 
     private Future<String> getEnrichmentQuerySql(QuerySourceRequest request) {

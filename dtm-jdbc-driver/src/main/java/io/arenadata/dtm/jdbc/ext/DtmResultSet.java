@@ -2,13 +2,17 @@ package io.arenadata.dtm.jdbc.ext;
 
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.jdbc.core.BaseConnection;
+import io.arenadata.dtm.jdbc.core.BaseStatement;
 import io.arenadata.dtm.jdbc.core.Field;
 import io.arenadata.dtm.jdbc.core.Tuple;
 import io.arenadata.dtm.jdbc.util.DtmSqlException;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.SerializationUtils;
 
+import java.io.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.charset.StandardCharsets;
 import java.sql.Date;
 import java.sql.*;
 import java.time.Instant;
@@ -20,15 +24,23 @@ import java.util.*;
 public class DtmResultSet extends AbstractResultSet {
     private final Field[] fields;
     private final BaseConnection connection;
+    private final BaseStatement statement;
     private final ZoneId zoneId;
     protected List<Tuple> rows;
+    protected SQLWarning warnings = null;
+    /**
+     * True if the last obtained column value was SQL NULL
+     */
+    protected boolean wasNullFlag = false;
+    protected int fetchSize = 0;
     private int currentRow = -1;
     private Tuple thisRow;
     private ResultSetMetaData rsMetaData;
     private Map<String, Integer> columnNameIndexMap;
 
-    public DtmResultSet(BaseConnection connection, Field[] fields, List<Tuple> tuples, ZoneId timeZone) {
+    public DtmResultSet(BaseConnection connection, BaseStatement statement, Field[] fields, List<Tuple> tuples, ZoneId timeZone) {
         this.connection = connection;
+        this.statement = statement;
         this.fields = fields;
         this.rows = tuples;
         this.thisRow = (tuples == null || tuples.isEmpty()) ?
@@ -38,6 +50,7 @@ public class DtmResultSet extends AbstractResultSet {
 
     public static DtmResultSet createEmptyResultSet() {
         return new DtmResultSet(null,
+                null,
                 new Field[]{new Field("", ColumnType.VARCHAR)},
                 Collections.emptyList(),
                 DtmConnectionImpl.DEFAULT_TIME_ZONE);
@@ -133,6 +146,10 @@ public class DtmResultSet extends AbstractResultSet {
         if (this.getValue(columnIndex) == null) {
             return null;
         }
+        if (field == null) {
+            wasNullFlag = true;
+            return null;
+        }
         switch (field.getDtmType()) {
             case INT:
             case BIGINT:
@@ -176,7 +193,7 @@ public class DtmResultSet extends AbstractResultSet {
 
     @Override
     public void close() throws SQLException {
-
+        rows = null;
     }
 
     @Override
@@ -339,9 +356,16 @@ public class DtmResultSet extends AbstractResultSet {
         return this.getBytes(this.findColumn(columnLabel));
     }
 
+
+
     @Override
     public Date getDate(String columnLabel) throws SQLException {
         return this.getDate(this.findColumn(columnLabel));
+    }
+
+    @Override
+    public Date getDate(String columnLabel, Calendar cal) throws SQLException {
+        return this.getDate(columnLabel);
     }
 
     @Override
@@ -382,7 +406,16 @@ public class DtmResultSet extends AbstractResultSet {
 
     @Override
     public Time getTime(int columnIndex, Calendar cal) throws SQLException {
-        return this.getTime(columnIndex);
+        Object value = this.getValue(columnIndex);
+        if (value != null) {
+            long longValue = ((Number) value).longValue();
+            long epochSeconds = longValue / 1000000;
+            return new Time(Timestamp.valueOf(LocalDateTime.ofInstant(Instant.ofEpochSecond(epochSeconds,
+                    getNanos(columnIndex, longValue)
+            ), cal.getTimeZone().toZoneId())).getTime());
+        } else {
+            return null;
+        }
     }
 
     @Override
@@ -392,7 +425,15 @@ public class DtmResultSet extends AbstractResultSet {
 
     @Override
     public Timestamp getTimestamp(int columnIndex, Calendar cal) throws SQLException {
-        return this.getTimestamp(columnIndex);
+        final Object value = this.getValue(columnIndex);
+        if (value == null) {
+            return null;
+        } else {
+            Number numberValue = (Number) value;
+            int nanos = getNanos(columnIndex, numberValue);
+            long epochSeconds = numberValue.longValue() / 1000000;
+            return Timestamp.valueOf(LocalDateTime.ofInstant(Instant.ofEpochSecond(epochSeconds, nanos), cal.getTimeZone().toZoneId()));
+        }
     }
 
     @Override
@@ -414,4 +455,73 @@ public class DtmResultSet extends AbstractResultSet {
         return iface != null && iface.isAssignableFrom(getClass());
     }
 
+    @Override
+    public boolean wasNull() throws SQLException {
+        return wasNullFlag;
+    }
+
+    @Override
+    public SQLWarning getWarnings() throws SQLException {
+        return warnings;
+    }
+
+    @Override
+    public void clearWarnings() throws SQLException {
+        warnings = null;
+    }
+
+    @Override
+    public int getFetchSize() throws SQLException {
+        return fetchSize;
+    }
+
+    @Override
+    public void setFetchSize(int rows) throws SQLException {
+        if (rows >= 0) {
+            fetchSize = rows;
+        };
+    }
+
+    @Override
+    public boolean isClosed() throws SQLException {
+        return (rows == null);
+    }
+
+    @Override
+    public Statement getStatement() throws SQLException {
+        return statement;
+    }
+
+    @Override
+    public InputStream getAsciiStream(int columnIndex) throws SQLException {
+        Object value = getValue(columnIndex);
+        if (value == null) {
+            return null;
+        }
+        String stringValue = getString(columnIndex);
+        return new ByteArrayInputStream(stringValue.getBytes(StandardCharsets.US_ASCII));
+    }
+
+    @Override
+    public InputStream getAsciiStream(String columnLabel) throws SQLException {
+        return getAsciiStream(findColumn(columnLabel));
+    }
+
+    @Override
+    public InputStream getBinaryStream(int columnIndex) throws SQLException {
+        Object value = getValue(columnIndex);
+        if (value == null) {
+            return null;
+        }
+        byte[] b = getBytes(columnIndex);
+        if (b != null) {
+            return new ByteArrayInputStream(b);
+        }
+        return null;
+    }
+
+    @Override
+    public InputStream getBinaryStream(String columnLabel) throws SQLException {
+        return getBinaryStream(findColumnIndex(columnLabel));
+    }
 }

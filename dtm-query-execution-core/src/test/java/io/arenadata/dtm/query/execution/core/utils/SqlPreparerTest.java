@@ -1,8 +1,9 @@
 package io.arenadata.dtm.query.execution.core.utils;
 
+import io.arenadata.dtm.query.execution.core.ddl.utils.SqlPreparer;
 import org.junit.jupiter.api.Test;
 
-import static io.arenadata.dtm.query.execution.core.utils.SqlPreparer.getTableWithSchema;
+import static io.arenadata.dtm.query.execution.core.ddl.utils.SqlPreparer.getTableWithSchema;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;

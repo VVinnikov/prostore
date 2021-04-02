@@ -3,13 +3,12 @@ package io.arenadata.dtm.query.execution.plugin.adb.converter;
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.converter.SqlTypeConverter;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
-import io.arenadata.dtm.query.execution.plugin.adb.configuration.ConverterConfiguration;
+import io.arenadata.dtm.query.execution.plugin.adb.base.service.converter.AdbTypeToSqlTypeConverter;
+import io.arenadata.dtm.query.execution.plugin.adb.base.configuration.ConverterConfiguration;
 import io.vertx.core.json.JsonObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.sql.Date;
-import java.sql.Timestamp;
 import java.time.*;
 import java.util.HashMap;
 import java.util.Map;

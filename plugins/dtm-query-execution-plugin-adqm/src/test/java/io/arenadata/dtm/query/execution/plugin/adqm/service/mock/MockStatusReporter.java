@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.service.mock;
 
-import io.arenadata.dtm.query.execution.plugin.adqm.dto.StatusReportDto;
-import io.arenadata.dtm.query.execution.plugin.adqm.service.StatusReporter;
+import io.arenadata.dtm.query.execution.plugin.adqm.status.dto.StatusReportDto;
+import io.arenadata.dtm.query.execution.plugin.adqm.status.service.StatusReporter;
 import lombok.NonNull;
 
 import java.util.HashMap;

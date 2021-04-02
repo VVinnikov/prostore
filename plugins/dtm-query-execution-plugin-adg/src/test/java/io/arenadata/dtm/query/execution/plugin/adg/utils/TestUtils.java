@@ -6,15 +6,15 @@ import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityFieldUtils;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.calcite.core.service.impl.CalciteDefinitionService;
-import io.arenadata.dtm.query.execution.plugin.adg.configuration.AdgCalciteConfiguration;
-import io.arenadata.dtm.query.execution.plugin.adg.model.cartridge.schema.*;
+import io.arenadata.dtm.query.execution.plugin.adg.base.model.cartridge.schema.*;
+import io.arenadata.dtm.query.execution.plugin.adg.calcite.configuration.AdgCalciteConfiguration;
 import org.apache.calcite.sql.SqlNode;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.arenadata.dtm.query.execution.plugin.adg.constants.ColumnFields.*;
-import static io.arenadata.dtm.query.execution.plugin.adg.factory.impl.AdgTableEntitiesFactory.SEC_INDEX_PREFIX;
+import static io.arenadata.dtm.query.execution.plugin.adg.base.utils.ColumnFields.*;
+import static io.arenadata.dtm.query.execution.plugin.adg.base.factory.AdgTableEntitiesFactory.SEC_INDEX_PREFIX;
 
 public class TestUtils {
     public static final AdgCalciteConfiguration CALCITE_CONFIGURATION = new AdgCalciteConfiguration();

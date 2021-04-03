@@ -610,73 +610,61 @@ public abstract class AbstractResultSet implements ResultSet {
     @Override
     public Ref getRef(String columnLabel) throws SQLException {
         throw new SQLFeatureNotSupportedException();
-
     }
 
     @Override
     public Blob getBlob(String columnLabel) throws SQLException {
         throw new SQLFeatureNotSupportedException();
-
     }
 
     @Override
     public Clob getClob(String columnLabel) throws SQLException {
         throw new SQLFeatureNotSupportedException();
-
     }
 
     @Override
     public Array getArray(String columnLabel) throws SQLException {
         throw new SQLFeatureNotSupportedException();
-
     }
 
     @Override
     public Date getDate(int columnIndex, Calendar cal) throws SQLException {
         throw new SQLFeatureNotSupportedException();
-
     }
 
     @Override
     public Date getDate(String columnLabel, Calendar cal) throws SQLException {
         throw new SQLFeatureNotSupportedException();
-
     }
 
     @Override
     public Time getTime(int columnIndex, Calendar cal) throws SQLException {
         throw new SQLFeatureNotSupportedException();
-
     }
 
     @Override
     public Time getTime(String columnLabel, Calendar cal) throws SQLException {
         throw new SQLFeatureNotSupportedException();
-
     }
 
     @Override
     public Timestamp getTimestamp(int columnIndex, Calendar cal) throws SQLException {
         throw new SQLFeatureNotSupportedException();
-
     }
 
     @Override
     public Timestamp getTimestamp(String columnLabel, Calendar cal) throws SQLException {
         throw new SQLFeatureNotSupportedException();
-
     }
 
     @Override
     public URL getURL(int columnIndex) throws SQLException {
         throw new SQLFeatureNotSupportedException();
-
     }
 
     @Override
     public URL getURL(String columnLabel) throws SQLException {
         throw new SQLFeatureNotSupportedException();
-
     }
 
     @Override
@@ -972,19 +960,16 @@ public abstract class AbstractResultSet implements ResultSet {
     @Override
     public <T> T getObject(int columnIndex, Class<T> type) throws SQLException {
         throw new SQLFeatureNotSupportedException();
-
     }
 
     @Override
     public <T> T getObject(String columnLabel, Class<T> type) throws SQLException {
         throw new SQLFeatureNotSupportedException();
-
     }
 
     @Override
     public <T> T unwrap(Class<T> iface) throws SQLException {
         throw new SQLFeatureNotSupportedException();
-
     }
 
     @Override

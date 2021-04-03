@@ -349,7 +349,7 @@ public class DtmStatement implements BaseStatement {
     }
 
     private DtmResultSet createResultSet(Field[] fields, List<Tuple> tuples, ZoneId timeZone) {
-        return new DtmResultSet(this.connection, fields, tuples, timeZone);
+        return new DtmResultSet(this.connection, this, fields, tuples, timeZone);
     }
 
     public class DtmResultHandler extends ResultHandlerBase {

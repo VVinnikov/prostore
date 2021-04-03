@@ -6,7 +6,7 @@ import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguratio
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.*;
 import io.arenadata.dtm.query.calcite.core.framework.DtmCalciteFramework;
-import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
+import io.arenadata.dtm.query.execution.core.calcite.configuration.CalciteConfiguration;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.apache.calcite.sql.parser.SqlParseException;

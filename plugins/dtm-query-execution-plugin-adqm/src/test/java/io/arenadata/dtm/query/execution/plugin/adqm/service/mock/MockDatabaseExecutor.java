@@ -2,7 +2,7 @@ package io.arenadata.dtm.query.execution.plugin.adqm.service.mock;
 
 import io.arenadata.dtm.common.reader.QueryParameters;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
-import io.arenadata.dtm.query.execution.plugin.adqm.service.DatabaseExecutor;
+import io.arenadata.dtm.query.execution.plugin.adqm.query.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.vertx.core.Future;
 import lombok.val;

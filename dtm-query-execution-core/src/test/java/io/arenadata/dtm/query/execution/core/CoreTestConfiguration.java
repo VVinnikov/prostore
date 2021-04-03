@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.core;
 
-import io.arenadata.dtm.query.execution.core.utils.BeanNameGenerator;
+import io.arenadata.dtm.query.execution.core.base.utils.BeanNameGenerator;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.admin.SpringApplicationAdminJmxAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;

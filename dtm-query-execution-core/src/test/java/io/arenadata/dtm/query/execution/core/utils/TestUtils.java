@@ -4,10 +4,10 @@ import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.dialect.LimitSqlDialect;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
-import io.arenadata.dtm.query.execution.core.calcite.CoreCalciteDefinitionService;
-import io.arenadata.dtm.query.execution.core.configuration.AppConfiguration;
-import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
-import io.arenadata.dtm.query.execution.core.configuration.properties.CoreDtmSettings;
+import io.arenadata.dtm.query.execution.core.calcite.service.CoreCalciteDefinitionService;
+import io.arenadata.dtm.query.execution.core.base.configuration.AppConfiguration;
+import io.arenadata.dtm.query.execution.core.calcite.configuration.CalciteConfiguration;
+import io.arenadata.dtm.query.execution.core.base.configuration.properties.CoreDtmSettings;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlNode;
 

@@ -3,7 +3,7 @@ package io.arenadata.dtm.query.execution.core.calcite.config.parser;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.extension.config.function.SqlConfigStorageAdd;
 import io.arenadata.dtm.query.calcite.core.framework.DtmCalciteFramework;
-import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
+import io.arenadata.dtm.query.execution.core.calcite.configuration.CalciteConfiguration;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;

@@ -46,6 +46,7 @@ public class LimitableSqlOrderBy extends SqlOrderBy implements SqlDataSourceType
         return fetch.getValueAs(BigDecimal.class);
     }
 
+    @Override
     public List<SqlNode> getOperandList() {
         return ImmutableNullableList.of(query,
                 orderList,
@@ -96,6 +97,8 @@ public class LimitableSqlOrderBy extends SqlOrderBy implements SqlDataSourceType
             case 4:
                 setOperand(((SqlLiteral)operand).booleanValue(), "isLimited");
                 break;
+            default:
+                break;
         }
     }
 
@@ -120,10 +123,12 @@ public class LimitableSqlOrderBy extends SqlOrderBy implements SqlDataSourceType
             super("ORDER BY", SqlKind.ORDER_BY, 0);
         }
 
+        @Override
         public SqlSyntax getSyntax() {
             return SqlSyntax.POSTFIX;
         }
 
+        @Override
         public void unparse(
                 SqlWriter writer,
                 SqlCall call,

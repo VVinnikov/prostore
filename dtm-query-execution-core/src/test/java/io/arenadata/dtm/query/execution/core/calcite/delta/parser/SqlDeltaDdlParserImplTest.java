@@ -15,7 +15,7 @@ import io.arenadata.dtm.query.calcite.core.extension.eddl.LocationOperator;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.SqlCreateDownloadExternalTable;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.SqlNodeUtils;
 import io.arenadata.dtm.query.calcite.core.framework.DtmCalciteFramework;
-import io.arenadata.dtm.query.execution.core.configuration.calcite.CalciteConfiguration;
+import io.arenadata.dtm.query.execution.core.calcite.configuration.CalciteConfiguration;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class SqlDeltaDdlParserImplTest {
+class SqlDeltaDdlParserImplTest {
 
     private final CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
     private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();

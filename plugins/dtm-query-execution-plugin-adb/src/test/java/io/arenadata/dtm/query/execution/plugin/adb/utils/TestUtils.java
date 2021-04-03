@@ -1,8 +1,8 @@
 package io.arenadata.dtm.query.execution.plugin.adb.utils;
 
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
-import io.arenadata.dtm.query.execution.plugin.adb.calcite.AdbCalciteDefinitionService;
-import io.arenadata.dtm.query.execution.plugin.adb.configuration.CalciteConfiguration;
+import io.arenadata.dtm.query.execution.plugin.adb.calcite.service.AdbCalciteDefinitionService;
+import io.arenadata.dtm.query.execution.plugin.adb.calcite.configuration.CalciteConfiguration;
 import org.apache.calcite.sql.SqlNode;
 
 public class TestUtils {

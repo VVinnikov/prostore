@@ -40,10 +40,6 @@ public class QueryExecutorImpl implements QueryExecutor {
      */
     private String url;
     /**
-     * Properties of current connection
-     */
-    private Properties info;
-    /**
      * Http client for rest
      */
     private CloseableHttpClient client;
@@ -57,11 +53,10 @@ public class QueryExecutorImpl implements QueryExecutor {
     protected Protocol protocol;
 
 
-    public QueryExecutorImpl(String host, String user, String schema, Properties info) {
+    public QueryExecutorImpl(String host, String user, String schema) {
         this.host = host;
         this.user = user;
         this.schema = schema;
-        this.info = info;
         this.client = HttpClients.createDefault();
         this.protocol = new HttpReaderService(this.client, this.host);
     }

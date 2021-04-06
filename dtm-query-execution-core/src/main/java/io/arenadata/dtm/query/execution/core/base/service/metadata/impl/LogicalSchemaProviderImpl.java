@@ -33,7 +33,7 @@ public class LogicalSchemaProviderImpl implements LogicalSchemaProvider {
 
     @Override
     public Future<List<Datamart>> getSchemaFromQuery(SqlNode query, String datamart) {
-        return logicalSchemaService.createSchemaFromQuery(query)
+        return logicalSchemaService.createSchemaFromQuery(query, datamart)
                 .map(schemaMap -> {
                     log.trace("Received data schema on request: {}; {}", query, schemaMap);
                     return getDatamartsSchemas(datamart, schemaMap);

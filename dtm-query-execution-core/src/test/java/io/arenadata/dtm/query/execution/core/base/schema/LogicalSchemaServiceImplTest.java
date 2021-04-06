@@ -10,7 +10,6 @@ import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguratio
 import io.arenadata.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import io.arenadata.dtm.query.calcite.core.service.DeltaInformationExtractor;
 import io.arenadata.dtm.query.calcite.core.service.impl.DeltaInformationExtractorImpl;
-import io.arenadata.dtm.query.execution.core.calcite.configuration.CalciteConfiguration;
 import io.arenadata.dtm.query.execution.core.base.configuration.properties.CoreDtmSettings;
 import io.arenadata.dtm.query.execution.core.base.repository.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.base.repository.ServiceDbFacadeImpl;
@@ -20,6 +19,7 @@ import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.impl.Enti
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.impl.ServiceDbDaoImpl;
 import io.arenadata.dtm.query.execution.core.base.service.metadata.LogicalSchemaService;
 import io.arenadata.dtm.query.execution.core.base.service.metadata.impl.LogicalSchemaServiceImpl;
+import io.arenadata.dtm.query.execution.core.calcite.configuration.CalciteConfiguration;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.apache.calcite.sql.SqlNode;
@@ -129,8 +129,79 @@ class LogicalSchemaServiceImplTest {
                                         .name(TABLE_DOC)
                                         .build())
                 );
-        logicalSchemaService.createSchemaFromQuery(query)
+        logicalSchemaService.createSchemaFromQuery(query, DATAMART)
                 .onComplete(promise);
+        Map<DatamartSchemaKey, Entity> schemaMap = promise.future().result();
+        assertNotNull(schemaMap);
+        schemaMap.forEach((k, v) -> {
+            assertEquals(resultSchemaMap.get(k).getName(), v.getName());
+            assertEquals(resultSchemaMap.get(k).getName(), v.getName());
+            assertEquals(resultSchemaMap.get(k).getFields().get(0).getName(), v.getFields().get(0).getName());
+            assertEquals(resultSchemaMap.get(k).getFields().get(0).getType(), v.getFields().get(0).getType());
+            assertEquals(resultSchemaMap.get(k).getFields().get(0).getPrimaryOrder(), v.getFields().get(0).getPrimaryOrder());
+            assertEquals(resultSchemaMap.get(k).getFields().get(0).getShardingOrder(), v.getFields().get(0).getShardingOrder());
+        });
+    }
+
+    @Test
+    void createSchemaWithDefaultDatmart() throws SqlParseException {
+        Promise<Map<DatamartSchemaKey, Entity>> promise = Promise.promise();
+        final Map<DatamartSchemaKey, Entity> resultSchemaMap = new HashMap<>();
+        query = planner.parse("select t1.id, cast(t2.id as varchar(10)) as tt from pso t1 \n" +
+                " join doc t2 on t1.id = t2.id");
+        Entity pso = Entity.builder()
+                .schema(DATAMART)
+                .name(TABLE_PSO)
+                .build();
+
+        EntityField entityField = EntityField.builder()
+                .name("id")
+                .type(ColumnType.INT)
+                .ordinalPosition(0)
+                .shardingOrder(1)
+                .nullable(false)
+                .primaryOrder(1)
+                .accuracy(0)
+                .size(0)
+                .build();
+        List<EntityField> psoAttrs = Collections.singletonList(entityField);
+        pso.setFields(psoAttrs);
+
+        Entity doc = Entity.builder()
+                .schema(DATAMART)
+                .name(TABLE_DOC)
+                .build();
+        List<EntityField> docAttrs = Collections.singletonList(entityField);
+        doc.setFields(docAttrs);
+
+        resultSchemaMap.put(new DatamartSchemaKey(DATAMART, TABLE_PSO), pso);
+        resultSchemaMap.put(new DatamartSchemaKey(DATAMART, TABLE_DOC), doc);
+
+        Entity.EntityBuilder builder = Entity.builder()
+                .schema(DATAMART)
+                .entityType(EntityType.TABLE)
+                .fields(Collections.singletonList(
+                        EntityField.builder()
+                                .name("id")
+                                .accuracy(0)
+                                .size(0)
+                                .ordinalPosition(0)
+                                .nullable(false)
+                                .shardingOrder(1)
+                                .primaryOrder(1)
+                                .type(ColumnType.INT)
+                                .build()
+                ));
+
+        when(entityDao.getEntity(DATAMART, TABLE_PSO))
+                .thenReturn(Future.succeededFuture(builder.name(TABLE_PSO).build()));
+
+        when(entityDao.getEntity(DATAMART, TABLE_DOC))
+                .thenReturn(Future.succeededFuture(builder.name(TABLE_DOC).build()));
+
+        logicalSchemaService.createSchemaFromQuery(query, DATAMART)
+                .onComplete(promise);
+
         Map<DatamartSchemaKey, Entity> schemaMap = promise.future().result();
         assertNotNull(schemaMap);
         schemaMap.forEach((k, v) -> {
@@ -152,7 +223,7 @@ class LogicalSchemaServiceImplTest {
         Mockito.when(entityDao.getEntity(any(), any()))
                 .thenReturn(Future.failedFuture(new DtmException("Error getting entities!")));
 
-        logicalSchemaService.createSchemaFromQuery(query)
+        logicalSchemaService.createSchemaFromQuery(query, DATAMART)
                 .onComplete(promise);
         assertNotNull(promise.future().cause());
     }

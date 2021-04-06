@@ -38,9 +38,9 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
     }
 
     @Override
-    public Future<Map<DatamartSchemaKey, Entity>> createSchemaFromQuery(SqlNode query) {
+    public Future<Map<DatamartSchemaKey, Entity>> createSchemaFromQuery(SqlNode query, String defaultDatamart) {
         return Future.future(promise -> {
-            final List<DatamartInfo> datamartInfoList = getDatamartInfoListFromQuery(query);
+            final List<DatamartInfo> datamartInfoList = getDatamartInfoListFromQuery(query, defaultDatamart);
             createSchema(promise, datamartInfoList);
         });
     }
@@ -53,7 +53,7 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
         });
     }
 
-    private List<DatamartInfo> getDatamartInfoListFromQuery(SqlNode query) {
+    private List<DatamartInfo> getDatamartInfoListFromQuery(SqlNode query, String defaultDatamart) {
         val tree = new SqlSelectTree(query);
         val datamartMap = new HashMap<String, DatamartInfo>();
         tree.findAllTableAndSnapshots().stream()
@@ -61,13 +61,17 @@ public class LogicalSchemaServiceImpl implements LogicalSchemaService {
                 .filter(Objects::nonNull)
                 .forEach(node -> {
                     //it is assumed that at this stage, the request will already contain defaultDatamart where required
-                    String schemaName = node.getSchemaName();
+                    String schemaName = getSchemaName(node, defaultDatamart);
                     String tableName = node.getTableName();
                     DatamartInfo datamartInfo = datamartMap.getOrDefault(schemaName, new DatamartInfo(schemaName, new HashSet<>()));
                     datamartInfo.getTables().add(tableName);
                     datamartMap.putIfAbsent(datamartInfo.getSchemaName(), datamartInfo);
                 });
         return new ArrayList<>(datamartMap.values());
+    }
+
+    private String getSchemaName(DeltaInformation node, String defaultDatamart) {
+        return (node.getSchemaName() == null || node.getSchemaName().isEmpty()) ? defaultDatamart : node.getSchemaName();
     }
 
     private List<DatamartInfo> getDatamartInfoListFromDeltaInformations(List<DeltaInformation> deltaInformations) {

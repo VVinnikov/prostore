@@ -84,7 +84,7 @@ class LogicalSchemaProviderImplTest {
         dm.setMnemonic(DATAMART);
         dm.setEntities(Arrays.asList(table2, table1));
         datamarts.add(dm);
-        when(logicalSchemaService.createSchemaFromQuery(any()))
+        when(logicalSchemaService.createSchemaFromQuery(any(), any()))
                 .thenReturn(Future.succeededFuture(datamartTableMap));
 
         logicalSchemaProvider.getSchemaFromQuery(query, DATAMART)
@@ -96,7 +96,7 @@ class LogicalSchemaProviderImplTest {
     @Test
     void createSchemaWithServiceError() {
         Promise<List<Datamart>> promise = Promise.promise();
-        when(logicalSchemaService.createSchemaFromQuery(any()))
+        when(logicalSchemaService.createSchemaFromQuery(any(), any()))
                 .thenReturn(Future.failedFuture(new DtmException("Ошибка создания схемы!")));
 
         logicalSchemaProvider.getSchemaFromQuery(query, DATAMART)

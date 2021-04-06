@@ -10,6 +10,7 @@ import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.framework.DtmCalciteFramework;
+import io.arenadata.dtm.query.execution.core.base.utils.InformationSchemaUtils;
 import io.arenadata.dtm.query.execution.core.calcite.configuration.CalciteConfiguration;
 import io.arenadata.dtm.query.execution.core.base.repository.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.base.repository.ServiceDbFacadeImpl;
@@ -45,6 +46,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -120,6 +122,38 @@ class CreateTableDdlExecutorTest {
         createTableDdlExecutor.execute(context, entity.getName())
                 .onComplete(promise);
         assertNotNull(promise.future().result());
+    }
+
+    @Test
+    void executeWithInformationSchema() throws SqlParseException {
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
+        FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
+        final QueryRequest queryRequest = new QueryRequest();
+        queryRequest.setRequestId(UUID.randomUUID());
+        String schema = InformationSchemaUtils.INFORMATION_SCHEMA;
+        queryRequest.setDatamartMnemonic(schema);
+        queryRequest.setSql("create table information_schema.accounts (id integer, name varchar(100))");
+        SqlNode sqlNode = planner.parse(queryRequest.getSql());
+        context = new DdlRequestContext(null, new DatamartRequest(queryRequest), sqlNode, null, null);
+        context.setDatamartName(schema);
+        Promise<QueryResult> promise = Promise.promise();
+        when(metadataCalciteGenerator.generateTableMetadata(any())).thenReturn(entity);
+
+        when(datamartDao.existsDatamart(eq(schema)))
+                .thenReturn(Future.succeededFuture(true));
+
+        when(entityDao.existsEntity(eq(schema), eq(entity.getName())))
+                .thenReturn(Future.succeededFuture(false));
+
+        when(metadataExecutor.execute(any())).thenReturn(Future.succeededFuture());
+
+        when(entityDao.createEntity(any()))
+                .thenReturn(Future.succeededFuture());
+
+        createTableDdlExecutor.execute(context, entity.getName())
+                .onComplete(promise);
+        assertTrue(promise.future().failed());
     }
 
     @Test

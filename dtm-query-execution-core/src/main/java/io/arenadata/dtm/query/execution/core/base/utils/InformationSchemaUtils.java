@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.core.base.utils;
 
 public class InformationSchemaUtils {
-
+    public static final String INFORMATION_SCHEMA = "information_schema";
     public static final String LOGIC_SCHEMA_KEY_COLUMN_USAGE =
         "CREATE VIEW IF NOT EXISTS DTM.logic_schema_key_column_usage AS \n" +
             "SELECT constraint_catalog, constraint_schema, constraint_name, table_schema, table_name, column_name, ordinal_position\n" +

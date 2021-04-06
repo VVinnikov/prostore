@@ -166,6 +166,7 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     }
 
     private String createInitEntitiesQuery() {
+        //TODO move to separate factory class
         return String.format("SELECT TABLE_NAME, ORDINAL_POSITION, COLUMN_NAME," +
                         "  case" +
                         "    when DATA_TYPE = 'DOUBLE PRECISION' then 'DOUBLE'" +

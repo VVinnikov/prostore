@@ -2,12 +2,11 @@ package io.arenadata.dtm.jdbc.ext;
 
 import io.arenadata.dtm.jdbc.core.*;
 import io.arenadata.dtm.jdbc.util.DtmSqlException;
-import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.*;
 import java.time.ZoneId;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -36,10 +35,21 @@ public class DtmStatement implements BaseStatement {
      * Result set wrapper
      */
     protected ResultSetWrapper result;
+    protected boolean replaceProcessingEnabled = true;
+    protected int fetchdirection = ResultSet.FETCH_FORWARD;
+    protected int maxFieldSize = 0;
+    protected ArrayList<Query> batchStatements = null;
+    protected SQLWarning warnings = null;
+    protected int fetchDirection = ResultSet.FETCH_FORWARD;
+    /**
+     * Timeout (in seconds) for a query.
+     */
+    protected int timeout = 0;
     /**
      * Is connection closed
      */
     private boolean isClosed;
+    private boolean poolable;
 
     public DtmStatement(BaseConnection c, int rsType, int rsConcurrency) {
         this.connection = c;
@@ -128,7 +138,11 @@ public class DtmStatement implements BaseStatement {
 
     @Override
     public void setMaxFieldSize(int max) throws SQLException {
-
+        checkClosed();
+        if (max < 0) {
+            throw new SQLException("The maximum field size must be a value greater than or equal to 0.");
+        }
+        maxFieldSize = max;
     }
 
     @Override
@@ -143,37 +157,41 @@ public class DtmStatement implements BaseStatement {
 
     @Override
     public void setEscapeProcessing(boolean enable) throws SQLException {
-
+        checkClosed();
+        replaceProcessingEnabled = enable;
     }
 
     @Override
     public int getQueryTimeout() throws SQLException {
-        return 0;
+        return timeout;
     }
 
     @Override
     public void setQueryTimeout(int seconds) throws SQLException {
-
+        if (seconds < 0) {
+            throw new SQLException("Query timeout must be a value greater than or equals to 0.");
+        }
+        timeout = seconds;
     }
 
     @Override
     public void cancel() throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public SQLWarning getWarnings() throws SQLException {
-        return null;
+        return warnings;
     }
 
     @Override
     public void clearWarnings() throws SQLException {
-
+        warnings = null;
     }
 
     @Override
     public void setCursorName(String name) throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
@@ -184,30 +202,36 @@ public class DtmStatement implements BaseStatement {
 
     @Override
     public int getUpdateCount() throws SQLException {
-        return -1;
+        checkClosed();
+        if (result == null || result.getResultSet() != null) {
+            return -1;
+        }
+
+        long count = result.getUpdateCount();
+        return count > Integer.MAX_VALUE ? Statement.SUCCESS_NO_INFO : (int) count;
     }
 
     @Override
     public boolean getMoreResults() throws SQLException {
-        this.checkClosed();
-        if (this.result != null && this.result.getResultSet() != null) {
-            this.result.getResultSet().close();
-        }
-
-        if (this.result != null) {
-            this.result = this.result.getNext();
-        }
-        return this.result != null && this.result.getResultSet() != null;
+        return getMoreResults(CLOSE_CURRENT_RESULT);
     }
 
     @Override
     public void setFetchDirection(int direction) throws SQLException {
-
+        switch (direction) {
+            case ResultSet.FETCH_FORWARD:
+            case ResultSet.FETCH_REVERSE:
+            case ResultSet.FETCH_UNKNOWN:
+                fetchdirection = direction;
+                break;
+            default:
+                throw new SQLException("Invalid fetch direction constant: {0}.");
+        }
     }
 
     @Override
     public int getFetchDirection() throws SQLException {
-        return this.fetchSize;
+        return fetchDirection;
     }
 
     @Override
@@ -224,12 +248,12 @@ public class DtmStatement implements BaseStatement {
 
     @Override
     public int getFetchSize() throws SQLException {
-        return 0;
+        return fetchSize;
     }
 
     @Override
     public int getResultSetConcurrency() throws SQLException {
-        return 0;
+        return concurrency;
     }
 
     @Override
@@ -239,17 +263,44 @@ public class DtmStatement implements BaseStatement {
 
     @Override
     public void addBatch(String sql) throws SQLException {
+        checkClosed();
+        ArrayList<Query> batchStatements = this.batchStatements;
+        if (batchStatements == null) {
+            this.batchStatements = batchStatements = new ArrayList<>();
+        }
 
+        List<Query> query = connection.getQueryExecutor().createQuery(sql);
+        batchStatements.addAll(query);
     }
 
     @Override
     public void clearBatch() throws SQLException {
-
+        if (batchStatements != null) {
+            batchStatements.clear();
+        }
     }
 
     @Override
     public int[] executeBatch() throws SQLException {
-        return new int[0];
+        checkClosed();
+        List<Long> updateCounts = new ArrayList<>();
+
+        if (batchStatements == null || batchStatements.isEmpty()) {
+            return new int[0];
+        }
+
+        DtmResultHandler resultHandler =  new DtmResultHandler();
+        connection.getQueryExecutor().execute(batchStatements, null, resultHandler);
+
+        ResultSetWrapper currentResult = resultHandler.getResult();
+        while (currentResult != null) {
+            updateCounts.add(currentResult.getUpdateCount());
+            currentResult = currentResult.getNext();
+        }
+
+        return updateCounts.stream()
+                .mapToInt(count -> count > Integer.MAX_VALUE ? Statement.SUCCESS_NO_INFO : count.intValue())
+                .toArray();
     }
 
     @Override
@@ -259,27 +310,39 @@ public class DtmStatement implements BaseStatement {
 
     @Override
     public boolean getMoreResults(int current) throws SQLException {
-        return false;
+        if (current == KEEP_CURRENT_RESULT || current == CLOSE_ALL_RESULTS) {
+            throw new SQLFeatureNotSupportedException();
+        }
+        this.checkClosed();
+        if (current == Statement.CLOSE_CURRENT_RESULT && result != null
+                && result.getResultSet() != null) {
+            result.getResultSet().close();
+        }
+
+        if (result != null) {
+            result = result.getNext();
+        }
+        return result != null && result.getResultSet() != null;
     }
 
     @Override
     public ResultSet getGeneratedKeys() throws SQLException {
-        return null;
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public int executeUpdate(String sql, int autoGeneratedKeys) throws SQLException {
-        return 0;
+        return executeUpdate(sql);
     }
 
     @Override
     public int executeUpdate(String sql, int[] columnIndexes) throws SQLException {
-        return 0;
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public int executeUpdate(String sql, String[] columnNames) throws SQLException {
-        return 0;
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
@@ -315,7 +378,8 @@ public class DtmStatement implements BaseStatement {
 
     @Override
     public void setPoolable(boolean poolable) throws SQLException {
-
+        checkClosed();
+        this.poolable = poolable;
     }
 
     @Override

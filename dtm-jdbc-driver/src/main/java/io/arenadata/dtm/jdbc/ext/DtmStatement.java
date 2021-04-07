@@ -35,8 +35,10 @@ public class DtmStatement implements BaseStatement {
      * Result set wrapper
      */
     protected ResultSetWrapper result;
-    protected boolean replaceProcessingEnabled = true;
-    protected int fetchdirection = ResultSet.FETCH_FORWARD;
+    /**
+     * Is escape substitution enabled
+     */
+    protected boolean escapeProcessingEnabled = true;
     protected int maxFieldSize = 0;
     protected ArrayList<Query> batchStatements = null;
     protected SQLWarning warnings = null;
@@ -158,7 +160,7 @@ public class DtmStatement implements BaseStatement {
     @Override
     public void setEscapeProcessing(boolean enable) throws SQLException {
         checkClosed();
-        replaceProcessingEnabled = enable;
+        escapeProcessingEnabled = enable;
     }
 
     @Override
@@ -222,7 +224,7 @@ public class DtmStatement implements BaseStatement {
             case ResultSet.FETCH_FORWARD:
             case ResultSet.FETCH_REVERSE:
             case ResultSet.FETCH_UNKNOWN:
-                fetchdirection = direction;
+                fetchDirection = direction;
                 break;
             default:
                 throw new SQLException("Invalid fetch direction constant: {0}.");

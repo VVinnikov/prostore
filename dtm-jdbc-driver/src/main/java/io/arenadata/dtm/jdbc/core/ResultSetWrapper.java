@@ -4,10 +4,12 @@ import io.arenadata.dtm.jdbc.ext.DtmResultSet;
 
 public class ResultSetWrapper {
     private final DtmResultSet resultSet;
+    private final long updateCount;
     private ResultSetWrapper next;
 
     public ResultSetWrapper(DtmResultSet resultSet) {
         this.resultSet = resultSet;
+        this.updateCount = resultSet.getRowsSize();
     }
 
     public DtmResultSet getResultSet() {
@@ -24,5 +26,9 @@ public class ResultSetWrapper {
             tail = tail.next;
         }
         tail.next = newResult;
+    }
+
+    public long getUpdateCount() {
+        return updateCount;
     }
 }

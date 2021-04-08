@@ -523,4 +523,8 @@ public class DtmResultSet extends AbstractResultSet {
     public InputStream getBinaryStream(String columnLabel) throws SQLException {
         return getBinaryStream(findColumnIndex(columnLabel));
     }
+
+    public int getRowsSize(){
+        return rows.size();
+    }
 }

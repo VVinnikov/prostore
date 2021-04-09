@@ -5,7 +5,6 @@ import io.arenadata.dtm.jdbc.util.ColumnTypeUtil;
 import io.arenadata.dtm.jdbc.util.DtmSqlException;
 
 import java.math.BigDecimal;
-import java.sql.Date;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;

@@ -1,9 +1,6 @@
 package io.arenadata.dtm.jdbc.core;
 
-import io.arenadata.dtm.jdbc.model.ColumnInfo;
-
 import java.sql.Connection;
-import java.util.List;
 
 public interface BaseConnection extends Connection {
 
@@ -13,8 +10,8 @@ public interface BaseConnection extends Connection {
 
     String getDBVersionNumber();
 
-    List<ColumnInfo> getCachedFieldMetadata();
-
     QueryExecutor getQueryExecutor();
+
+    TypeInfo getTypeInfo();
 
 }

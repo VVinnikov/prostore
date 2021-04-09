@@ -68,7 +68,17 @@ public class DtmResultSetMetaData implements ResultSetMetaData {
 
     @Override
     public boolean isSigned(int column) throws SQLException {
-        return false;
+        Field field = this.fields[column - 1];
+        ColumnType type = field.getDtmType();
+        switch (type) {
+            case BIGINT:
+            case DOUBLE:
+            case FLOAT:
+            case INT:
+                return true;
+            default:
+                return false;
+        }
     }
 
     @Override

@@ -33,6 +33,7 @@ public enum ColumnType {
         this.clazz = clazz;
     }
 
+    //FIXME need to remove this class and all other enum fields, and use TypeInfo instead
     public static ColumnType fromTypeString(String typeString) {
         String s = typeString.trim();
         ColumnType[] types = values();

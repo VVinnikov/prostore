@@ -1,5 +1,6 @@
 package io.arenadata.dtm.jdbc.ext;
 
+import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.jdbc.core.BaseConnection;
 import io.arenadata.dtm.jdbc.core.ParameterList;
 import io.arenadata.dtm.jdbc.core.QueryParameters;
@@ -15,6 +16,7 @@ import java.sql.SQLXML;
 import java.sql.*;
 import java.time.ZoneId;
 import java.util.Calendar;
+import java.util.List;
 
 import static java.sql.Types.*;
 
@@ -241,7 +243,11 @@ public class DtmPreparedStatement extends DtmStatement implements PreparedStatem
 
     @Override
     public ParameterMetaData getParameterMetaData() throws SQLException {
-        return null;
+        return createParameterMetaData(connection, parameters.getTypes());
+    }
+
+    public ParameterMetaData createParameterMetaData(BaseConnection conn, List<ColumnType> paramTypes) throws SQLException {
+        return new DtmParameterMetadata(conn, paramTypes);
     }
 
     @Override

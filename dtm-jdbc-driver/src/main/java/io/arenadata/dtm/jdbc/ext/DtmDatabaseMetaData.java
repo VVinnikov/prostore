@@ -108,10 +108,11 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                 new Field(SCHEMA_NAME_COLUMN, ColumnType.VARCHAR, new FieldMetadata(SCHEMA_NAME_COLUMN, schemaName)),
                 new Field(TABLE_NAME_COLUMN, ColumnType.VARCHAR, new FieldMetadata(TABLE_NAME_COLUMN, schemaName)),
                 new Field(TABLE_TYPE_COLUMN, ColumnType.VARCHAR, new FieldMetadata(TABLE_TYPE_COLUMN, schemaName)),
+                //3 field
                 new Field(REMARKS_COLUMN, ColumnType.VARCHAR, new FieldMetadata(REMARKS_COLUMN, schemaName)),
                 new Field(SELF_REFERENCING_COL_NAME_COLUMN, ColumnType.VARCHAR, new FieldMetadata(SELF_REFERENCING_COL_NAME_COLUMN, schemaName)),
                 new Field(REF_GENERATION_COLUMN, ColumnType.VARCHAR, new FieldMetadata(REF_GENERATION_COLUMN, schemaName)),
-                new Field(TABLE_OWNER_COLUMN, ColumnType.VARCHAR, new FieldMetadata(TABLE_OWNER_COLUMN, schemaName))
+                //new Field(TABLE_OWNER_COLUMN, ColumnType.VARCHAR, new FieldMetadata(TABLE_OWNER_COLUMN, schemaName))
         };
     }
 
@@ -451,7 +452,7 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public boolean supportsGroupBy() throws SQLException {
-        return false;
+        return true;
     }
 
     @Override
@@ -1027,7 +1028,22 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                                    String schemaPattern,
                                    String typeNamePattern,
                                    String attributeNamePattern) throws SQLException {
-        return DtmResultSet.createEmptyResultSet();
+        String sql = "SELECT TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, IS_NULLABLE, ORDINAL_POSITION, CHARACTER_MAXIMUM_LENGTH, DATETIME_PRECISION, DATA_TYPE" +
+                " FROM information_schema.columns" +
+                " WHERE true";
+        if (catalog != null && !catalog.isEmpty()) {
+            sql += String.format(" AND TABLE_CATALOG = '%s'", catalog);
+        }
+        if (schemaPattern != null && !schemaPattern.isEmpty()) {
+            sql += String.format(" AND TABLE_SCHEMA = '%s'", schemaPattern);
+        }
+        if (typeNamePattern != null && !typeNamePattern.isEmpty()) {
+            sql += String.format(" AND DATA_TYPE = '%s'", typeNamePattern);
+        }
+        if (attributeNamePattern != null && !attributeNamePattern.isEmpty()) {
+            sql += String.format(" AND COLUMN_NAME = '%s'", attributeNamePattern);
+        }
+        return createMetaDataStatement().executeQuery(sql);
     }
 
     @Override
@@ -1072,7 +1088,7 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public int getSQLStateType() throws SQLException {
-        return 0;
+        return 2;
     }
 
     @Override

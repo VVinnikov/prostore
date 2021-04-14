@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.core.delta.repository.executor.impl;
 
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
+import io.arenadata.dtm.query.execution.core.base.configuration.properties.CoreDtmSettings;
 import io.arenadata.dtm.query.execution.core.delta.repository.executor.DeltaDaoExecutor;
 import io.arenadata.dtm.query.execution.core.delta.repository.executor.DeltaServiceDaoExecutorHelper;
 import io.arenadata.dtm.query.execution.core.delta.repository.executor.WriteDeltaHotSuccessExecutor;
@@ -100,9 +101,9 @@ public class WriteDeltaHotSuccessExecutorImpl extends DeltaServiceDaoExecutorHel
         if (deltaHotDate != null && deltaHotDate.isBefore(delta.getOk().getDeltaDate())) {
             return Future.failedFuture(
                     new DeltaUnableSetDateTimeException(DELTA_DATE_TIME_FORMATTER.format(deltaHotDate), DELTA_DATE_TIME_FORMATTER.format(delta.getOk().getDeltaDate())));
-        } else if (deltaHotDate == null && LocalDateTime.now(ZoneOffset.UTC).isBefore(delta.getOk().getDeltaDate())) {
+        } else if (deltaHotDate == null && LocalDateTime.now(dtmSettings.getTimeZone()).isBefore(delta.getOk().getDeltaDate())) {
             return Future.failedFuture(
-                    new DeltaUnableSetDateTimeException(DELTA_DATE_TIME_FORMATTER.format(LocalDateTime.now(ZoneOffset.UTC)), DELTA_DATE_TIME_FORMATTER.format(delta.getOk().getDeltaDate())));
+                    new DeltaUnableSetDateTimeException(DELTA_DATE_TIME_FORMATTER.format(LocalDateTime.now(dtmSettings.getTimeZone())), DELTA_DATE_TIME_FORMATTER.format(delta.getOk().getDeltaDate())));
         } else {
             return createDelta(datamart, delta);
         }

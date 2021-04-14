@@ -1,14 +1,13 @@
 package io.arenadata.dtm.query.execution.core.delta.repository.executor.impl;
 
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
-import io.arenadata.dtm.query.execution.core.base.configuration.properties.CoreDtmSettings;
-import io.arenadata.dtm.query.execution.core.delta.repository.executor.DeltaDaoExecutor;
-import io.arenadata.dtm.query.execution.core.delta.repository.executor.DeltaServiceDaoExecutorHelper;
-import io.arenadata.dtm.query.execution.core.delta.repository.executor.WriteDeltaHotSuccessExecutor;
+import io.arenadata.dtm.query.execution.core.base.service.zookeeper.ZookeeperExecutor;
 import io.arenadata.dtm.query.execution.core.delta.dto.Delta;
 import io.arenadata.dtm.query.execution.core.delta.dto.OkDelta;
 import io.arenadata.dtm.query.execution.core.delta.exception.*;
-import io.arenadata.dtm.query.execution.core.base.service.zookeeper.ZookeeperExecutor;
+import io.arenadata.dtm.query.execution.core.delta.repository.executor.DeltaDaoExecutor;
+import io.arenadata.dtm.query.execution.core.delta.repository.executor.DeltaServiceDaoExecutorHelper;
+import io.arenadata.dtm.query.execution.core.delta.repository.executor.WriteDeltaHotSuccessExecutor;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +21,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.Arrays;
 
 import static io.arenadata.dtm.query.execution.core.delta.utils.DeltaQueryUtil.DELTA_DATE_TIME_FORMATTER;

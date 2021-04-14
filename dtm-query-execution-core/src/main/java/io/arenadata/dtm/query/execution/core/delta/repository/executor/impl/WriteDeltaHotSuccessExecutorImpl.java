@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 
 import static io.arenadata.dtm.query.execution.core.delta.utils.DeltaQueryUtil.DELTA_DATE_TIME_FORMATTER;
@@ -98,7 +99,10 @@ public class WriteDeltaHotSuccessExecutorImpl extends DeltaServiceDaoExecutorHel
     private Future<Delta> createDeltaPaths(String datamart, LocalDateTime deltaHotDate, Delta delta) {
         if (deltaHotDate != null && deltaHotDate.isBefore(delta.getOk().getDeltaDate())) {
             return Future.failedFuture(
-                    new DeltaUnableSetDateTimeException(DELTA_DATE_TIME_FORMATTER.format(delta.getOk().getDeltaDate())));
+                    new DeltaUnableSetDateTimeException(DELTA_DATE_TIME_FORMATTER.format(deltaHotDate), DELTA_DATE_TIME_FORMATTER.format(delta.getOk().getDeltaDate())));
+        } else if (deltaHotDate == null && LocalDateTime.now(ZoneOffset.UTC).isBefore(delta.getOk().getDeltaDate())) {
+            return Future.failedFuture(
+                    new DeltaUnableSetDateTimeException(DELTA_DATE_TIME_FORMATTER.format(LocalDateTime.now(ZoneOffset.UTC)), DELTA_DATE_TIME_FORMATTER.format(delta.getOk().getDeltaDate())));
         } else {
             return createDelta(datamart, delta);
         }

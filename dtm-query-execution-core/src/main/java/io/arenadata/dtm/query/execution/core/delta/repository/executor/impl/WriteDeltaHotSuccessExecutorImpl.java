@@ -1,13 +1,13 @@
 package io.arenadata.dtm.query.execution.core.delta.repository.executor.impl;
 
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
-import io.arenadata.dtm.query.execution.core.delta.repository.executor.DeltaDaoExecutor;
-import io.arenadata.dtm.query.execution.core.delta.repository.executor.DeltaServiceDaoExecutorHelper;
-import io.arenadata.dtm.query.execution.core.delta.repository.executor.WriteDeltaHotSuccessExecutor;
+import io.arenadata.dtm.query.execution.core.base.service.zookeeper.ZookeeperExecutor;
 import io.arenadata.dtm.query.execution.core.delta.dto.Delta;
 import io.arenadata.dtm.query.execution.core.delta.dto.OkDelta;
 import io.arenadata.dtm.query.execution.core.delta.exception.*;
-import io.arenadata.dtm.query.execution.core.base.service.zookeeper.ZookeeperExecutor;
+import io.arenadata.dtm.query.execution.core.delta.repository.executor.DeltaDaoExecutor;
+import io.arenadata.dtm.query.execution.core.delta.repository.executor.DeltaServiceDaoExecutorHelper;
+import io.arenadata.dtm.query.execution.core.delta.repository.executor.WriteDeltaHotSuccessExecutor;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
@@ -98,7 +98,10 @@ public class WriteDeltaHotSuccessExecutorImpl extends DeltaServiceDaoExecutorHel
     private Future<Delta> createDeltaPaths(String datamart, LocalDateTime deltaHotDate, Delta delta) {
         if (deltaHotDate != null && deltaHotDate.isBefore(delta.getOk().getDeltaDate())) {
             return Future.failedFuture(
-                    new DeltaUnableSetDateTimeException(DELTA_DATE_TIME_FORMATTER.format(delta.getOk().getDeltaDate())));
+                    new DeltaUnableSetDateTimeException(DELTA_DATE_TIME_FORMATTER.format(deltaHotDate), DELTA_DATE_TIME_FORMATTER.format(delta.getOk().getDeltaDate())));
+        } else if (deltaHotDate == null && LocalDateTime.now(dtmSettings.getTimeZone()).isBefore(delta.getOk().getDeltaDate())) {
+            return Future.failedFuture(
+                    new DeltaUnableSetDateTimeException(DELTA_DATE_TIME_FORMATTER.format(LocalDateTime.now(dtmSettings.getTimeZone())), DELTA_DATE_TIME_FORMATTER.format(delta.getOk().getDeltaDate())));
         } else {
             return createDelta(datamart, delta);
         }

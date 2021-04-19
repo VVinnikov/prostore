@@ -275,9 +275,13 @@ public class DtmConnectionImpl implements BaseConnection {
             return false;
         }
         try {
-            PreparedStatement checkConnectionQuery = prepareStatement("CHECK_VERSIONS()");
-            checkConnectionQuery.executeUpdate();
-            return true;
+            BaseStatement statement = createStatement();
+            ResultSet rs = statement.executeQuery("select 1 from information_schema.schemata limit 1");
+            if (rs.getInt(1) == 1) {
+                return true;
+            } else {
+                return false;
+            }
         } catch (SQLException e) {
             LOGGER.error("Validating connection error.", e);
         }

@@ -275,7 +275,7 @@ public class DtmConnectionImpl implements BaseConnection {
             return false;
         }
         try {
-            PreparedStatement checkConnectionQuery = prepareStatement("CHECK_VERSIONS()");
+            PreparedStatement checkConnectionQuery = prepareStatement("select 1 from information_schema.schemata limit 1");
             checkConnectionQuery.executeUpdate();
             return true;
         } catch (SQLException e) {

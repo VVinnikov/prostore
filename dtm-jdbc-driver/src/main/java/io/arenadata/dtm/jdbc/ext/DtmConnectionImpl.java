@@ -277,7 +277,7 @@ public class DtmConnectionImpl implements BaseConnection {
         try {
             BaseStatement statement = createStatement();
             ResultSet rs = statement.executeQuery("select 1 from information_schema.schemata limit 1");
-            if (rs.getInt("EXPR$0") == 1) {
+            if (rs.getInt(1) == 1) {
                 return true;
             } else {
                 return false;

@@ -96,15 +96,19 @@ public class WriteDeltaHotSuccessExecutorImpl extends DeltaServiceDaoExecutorHel
     }
 
     private Future<Delta> createDeltaPaths(String datamart, LocalDateTime deltaHotDate, Delta delta) {
-        if (deltaHotDate != null && deltaHotDate.isBefore(delta.getOk().getDeltaDate())) {
+        if (deltaHotDate != null && isBeforeOrEqual(deltaHotDate, delta.getOk().getDeltaDate())) {
             return Future.failedFuture(
                     new DeltaUnableSetDateTimeException(DELTA_DATE_TIME_FORMATTER.format(deltaHotDate), DELTA_DATE_TIME_FORMATTER.format(delta.getOk().getDeltaDate())));
-        } else if (deltaHotDate == null && LocalDateTime.now(dtmSettings.getTimeZone()).isBefore(delta.getOk().getDeltaDate())) {
+        } else if (deltaHotDate == null && isBeforeOrEqual(LocalDateTime.now(dtmSettings.getTimeZone()), delta.getOk().getDeltaDate())) {
             return Future.failedFuture(
                     new DeltaUnableSetDateTimeException(DELTA_DATE_TIME_FORMATTER.format(LocalDateTime.now(dtmSettings.getTimeZone())), DELTA_DATE_TIME_FORMATTER.format(delta.getOk().getDeltaDate())));
         } else {
             return createDelta(datamart, delta);
         }
+    }
+
+    private boolean isBeforeOrEqual(LocalDateTime deltaHotDate, LocalDateTime actualOkDeltaDate) {
+        return deltaHotDate.isBefore(actualOkDeltaDate) || deltaHotDate.isEqual(actualOkDeltaDate);
     }
 
     private Future<Delta> createDelta(String datamart, Delta delta) {

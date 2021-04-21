@@ -64,13 +64,14 @@ public class HsqlDdlQueryGenerator implements DdlQueryGenerator {
 
     private String getColumnType(EntityField field) {
         switch (field.getType()) {
+            case INT32:
             case INT:
                 return "INTEGER";
             case UUID:
                 return "VARCHAR(36)";
             case CHAR:
             case VARCHAR:
-                return getFieldTypeWithSize(field.getSize(), field.getType());
+                return field.getSize() == null ? "LONGVARCHAR" : getFieldTypeWithSize(field.getSize(), field.getType());
             case TIME:
             case TIMESTAMP:
                 return getFieldTypeWithSize(field.getAccuracy(), field.getType());

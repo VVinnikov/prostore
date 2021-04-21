@@ -61,10 +61,10 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
             return Future.failedFuture(new DtmException(String.format("Creating tables in schema [%s] is not supported",
                     InformationSchemaUtils.INFORMATION_SCHEMA)));
         }
-        return createTable(context, sqlNodeName, datamartName);
+        return createTable(context, datamartName);
     }
 
-    private Future<QueryResult> createTable(DdlRequestContext context, String sqlNodeName, String datamartName) {
+    private Future<QueryResult> createTable(DdlRequestContext context, String datamartName) {
         return Future.future(promise -> {
             context.getRequest().getQueryRequest().setDatamartMnemonic(datamartName);
             context.setDdlType(DdlType.CREATE_TABLE);
@@ -95,7 +95,7 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
 
     private void checkVarcharSize(List<EntityField> fields) {
         List<String> notSetSizeFields = fields.stream()
-                .filter(field -> field.getType() == ColumnType.VARCHAR || field.getType() == ColumnType.CHAR)
+                .filter(field -> field.getType() == ColumnType.CHAR)
                 .filter(field -> field.getSize() == null)
                 .map(EntityField::getName)
                 .collect(Collectors.toList());

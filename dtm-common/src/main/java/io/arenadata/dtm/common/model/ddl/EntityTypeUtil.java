@@ -28,6 +28,8 @@ public class EntityTypeUtil {
             case INT:
             case BIGINT:
                 return "int8";
+            case INT32:
+                return "int4";
             case CHAR:
             case VARCHAR:
                 return "varchar" + getVarcharSize(size);

@@ -24,9 +24,10 @@ public class AdqmCreateTableQueriesFactoryTest {
             "env__test_schema.test_table_actual_shard ON CLUSTER test_arenadata\n" +
             "(id Int64, sk_key2 Int64, pk2 Int64, sk_key3 Int64, VARCHAR_type Nullable(String), " +
             "CHAR_type Nullable(String), BIGINT_type Nullable(Int64), INT_type Nullable(Int64), " +
-            "DOUBLE_type Nullable(Float64), FLOAT_type Nullable(Float32), DATE_type Nullable(Int64), " +
-            "TIME_type Nullable(Int64), TIMESTAMP_type Nullable(Int64), BOOLEAN_type Nullable(UInt8), " +
-            "UUID_type Nullable(String), sys_from Int64, sys_to Int64, sys_op Int8, sys_close_date DateTime, sign Int8)\n" +
+            "INT32_type Nullable(Int32), DOUBLE_type Nullable(Float64), FLOAT_type Nullable(Float32), " +
+            "DATE_type Nullable(Int64), TIME_type Nullable(Int64), TIMESTAMP_type Nullable(Int64), " +
+            "BOOLEAN_type Nullable(UInt8), UUID_type Nullable(String), " +
+            "sys_from Int64, sys_to Int64, sys_op Int8, sys_close_date DateTime, sign Int8)\n" +
             "ENGINE = CollapsingMergeTree(sign)\n" +
             "ORDER BY (id, pk2, sys_from)";
 
@@ -34,9 +35,10 @@ public class AdqmCreateTableQueriesFactoryTest {
             "env__test_schema.test_table_actual ON CLUSTER test_arenadata\n" +
             "(id Int64, sk_key2 Int64, pk2 Int64, sk_key3 Int64, VARCHAR_type Nullable(String), " +
             "CHAR_type Nullable(String), BIGINT_type Nullable(Int64), INT_type Nullable(Int64), " +
-            "DOUBLE_type Nullable(Float64), FLOAT_type Nullable(Float32), DATE_type Nullable(Int64), " +
-            "TIME_type Nullable(Int64), TIMESTAMP_type Nullable(Int64), BOOLEAN_type Nullable(UInt8), " +
-            "UUID_type Nullable(String), sys_from Int64, sys_to Int64, sys_op Int8, sys_close_date DateTime, sign Int8)\n" +
+            "INT32_type Nullable(Int32), DOUBLE_type Nullable(Float64), FLOAT_type Nullable(Float32), " +
+            "DATE_type Nullable(Int64), TIME_type Nullable(Int64), TIMESTAMP_type Nullable(Int64), " +
+            "BOOLEAN_type Nullable(UInt8), UUID_type Nullable(String), " +
+            "sys_from Int64, sys_to Int64, sys_op Int8, sys_close_date DateTime, sign Int8)\n" +
             "Engine = Distributed(test_arenadata, env__test_schema, test_table_actual_shard, id+sk_key2+sk_key3)";
     private static final String ENV = "env";
 

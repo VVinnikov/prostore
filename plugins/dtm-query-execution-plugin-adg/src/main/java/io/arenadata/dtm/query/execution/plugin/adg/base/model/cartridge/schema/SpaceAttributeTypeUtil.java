@@ -17,6 +17,7 @@ public class SpaceAttributeTypeUtil {
             case DATE:
             case TIME:
             case TIMESTAMP:
+            case INT32:
             case INT:
             case BIGINT:
                 return SpaceAttributeTypes.INTEGER;

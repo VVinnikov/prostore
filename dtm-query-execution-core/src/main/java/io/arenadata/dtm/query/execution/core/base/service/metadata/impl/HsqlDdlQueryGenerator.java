@@ -64,6 +64,7 @@ public class HsqlDdlQueryGenerator implements DdlQueryGenerator {
 
     private String getColumnType(EntityField field) {
         switch (field.getType()) {
+            case INT32:
             case INT:
                 return "INTEGER";
             case UUID:

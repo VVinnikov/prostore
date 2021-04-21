@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Configuration;
 @ConditionalOnProperty(name = "adb.with-history-table", havingValue = "false", matchIfMissing = true)
 public class WithoutHistoryTableConfiguration {
 
-    public WithoutHistoryTableConfiguration(@Value("${adb.with-history-table}") String v) {
+    public WithoutHistoryTableConfiguration() {
         log.info("Without history table");
     }
 

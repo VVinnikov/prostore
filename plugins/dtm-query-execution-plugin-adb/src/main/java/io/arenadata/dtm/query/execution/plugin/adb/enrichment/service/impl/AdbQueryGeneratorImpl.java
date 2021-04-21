@@ -57,7 +57,7 @@ public class AdbQueryGeneratorImpl implements QueryGenerator {
                     resultRelNode = calciteContext.getPlanner()
                             .transform(0, extendedQuery.getTraitSet().replace(EnumerableConvention.INSTANCE),
                                     extendedQuery);
-                } catch (RelConversionException e) {
+                } catch (Exception e) {
                     promise.fail(new DtmException("Error in converting rel node", e));
                 }
             }

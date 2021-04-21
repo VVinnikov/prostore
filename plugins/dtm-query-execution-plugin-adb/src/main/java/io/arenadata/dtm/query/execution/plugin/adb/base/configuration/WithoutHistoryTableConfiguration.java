@@ -7,7 +7,6 @@ import io.arenadata.dtm.query.execution.plugin.adb.rollback.dto.AdbRollbackReque
 import io.arenadata.dtm.query.execution.plugin.adb.rollback.factory.RollbackWithoutHistoryTableRequestFactory;
 import io.arenadata.dtm.query.execution.plugin.api.factory.RollbackRequestFactory;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

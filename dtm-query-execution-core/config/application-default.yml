@@ -94,6 +94,8 @@ adb:
     defaultMessageLimit: ${ADB_MPPW_DEFAULT_MESSAGE_LIMIT:100}
     fdwTimeoutMs: ${ADB_MPPW_FDW_TIMEOUT_MS:1000}
 
+  with-history-table: ${ADB_WITH_HISTORY_TABLE:false}
+
 adg:
   tarantool:
     db:

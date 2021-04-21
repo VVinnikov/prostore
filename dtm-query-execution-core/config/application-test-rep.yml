@@ -93,6 +93,8 @@ adb:
     poolSize: ${ADB_MPPW_POOL_SIZE:2}
     stopTimeoutMs: ${ADB_MPPW_STOP_TIMEOUT_MS:86400000}
 
+  with-history-table: ${ADB_WITH_HISTORY_TABLE:false}
+
 adg:
   tarantool:
     db:

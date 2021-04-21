@@ -4,7 +4,6 @@ import io.arenadata.dtm.common.plugin.sql.PreparedStatementRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.mppw.kafka.dto.AdbKafkaMppwTransferRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.mppw.kafka.dto.MppwTransferDataRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.mppw.kafka.factory.MppwRequestFactory;
-import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
@@ -12,25 +11,7 @@ import java.util.stream.Collectors;
 
 import static io.arenadata.dtm.query.execution.plugin.adb.base.factory.Constants.SYS_FROM_ATTR;
 
-@Component
-public class MppwRequestFactoryImpl implements MppwRequestFactory<AdbKafkaMppwTransferRequest> {
-
-    private static final String INSERT_HISTORY_SQL = "INSERT INTO %s.%s_history (%s)\n" +
-            "SELECT %s\n" +
-            "FROM %s.%s_actual a\n" +
-            "         INNER JOIN (SELECT DISTINCT * FROM %s.%s_staging) s ON\n" +
-            "    %s";
-
-    private static final String DELETE_ACTUAL_SQL = "DELETE\n" +
-            "FROM %s.%s_actual a USING %s.%s_staging s\n" +
-            "WHERE %s";
-
-    private static final String INSERT_ACTUAL_SQL = "INSERT INTO %s.%s_actual (%s)\n" +
-            "SELECT DISTINCT %s\n" +
-            "FROM %s.%s_staging\n" +
-            "WHERE %s.%s_staging.sys_op <> 1";
-
-    private static final String TRUNCATE_STAGING_SQL = "TRUNCATE %s.%s_staging";
+public abstract class AbstractMppwRequestFactory implements MppwRequestFactory<AdbKafkaMppwTransferRequest> {
 
     @Override
     public AdbKafkaMppwTransferRequest create(MppwTransferDataRequest request) {
@@ -51,26 +32,26 @@ public class MppwRequestFactoryImpl implements MppwRequestFactory<AdbKafkaMppwTr
 
         String columnsString = String.join(",", request.getColumnList());
 
-        String insertHistorySql = String.format(INSERT_HISTORY_SQL,
+        String insertHistorySql = String.format(getInsertHistorySql(),
                 request.getDatamart(), request.getTableName(), columnsString,
                 actualColumns,
                 request.getDatamart(), request.getTableName(),
                 request.getDatamart(), request.getTableName(),
                 joinConditionInsert);
 
-        String deleteActualSql = String.format(DELETE_ACTUAL_SQL,
+        String deleteActualSql = String.format(getDeleteActualSql(),
                 request.getDatamart(), request.getTableName(), request.getDatamart(), request.getTableName(),
                 joinConditionDelete);
 
         String stagingColumnsString = String.join(",", getStagingColumnList(request));
 
-        String insertActualSql = String.format(INSERT_ACTUAL_SQL,
+        String insertActualSql = String.format(getInsertActualSql(),
                 request.getDatamart(), request.getTableName(), columnsString,
                 stagingColumnsString,
                 request.getDatamart(), request.getTableName(),
                 request.getDatamart(), request.getTableName());
 
-        String truncateStagingSql = String.format(TRUNCATE_STAGING_SQL,
+        String truncateStagingSql = String.format(getTruncateStagingSql(),
                 request.getDatamart(), request.getTableName());
 
         return new AdbKafkaMppwTransferRequest(
@@ -83,6 +64,14 @@ public class MppwRequestFactoryImpl implements MppwRequestFactory<AdbKafkaMppwTr
                 )
         );
     }
+
+    protected abstract String getTruncateStagingSql();
+
+    protected abstract String getInsertActualSql();
+
+    protected abstract String getDeleteActualSql();
+
+    protected abstract String getInsertHistorySql();
 
     private List<String> getStagingColumnList(MppwTransferDataRequest request) {
         return request.getColumnList().stream()

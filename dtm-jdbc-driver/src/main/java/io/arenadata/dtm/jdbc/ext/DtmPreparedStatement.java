@@ -1,20 +1,23 @@
 package io.arenadata.dtm.jdbc.ext;
 
-import io.arenadata.dtm.jdbc.core.BaseConnection;
-import io.arenadata.dtm.jdbc.core.ParameterList;
-import io.arenadata.dtm.jdbc.core.QueryParameters;
-import io.arenadata.dtm.jdbc.core.SimpleParameterList;
+import io.arenadata.dtm.jdbc.core.*;
 import io.arenadata.dtm.jdbc.util.DtmSqlException;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.BufferedReader;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLXML;
 import java.sql.*;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static java.sql.Types.*;
 
@@ -115,18 +118,22 @@ public class DtmPreparedStatement extends DtmStatement implements PreparedStatem
     }
 
     @Override
-    public void setAsciiStream(int parameterIndex, InputStream x, int length) throws SQLException {
-
+    public void setAsciiStream(int parameterIndex, InputStream inputStream, int length) throws SQLException {
+        String value = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.US_ASCII))
+                .lines()
+                .collect(Collectors.joining(""))
+                .substring(0, length);
+        parameters.setString(parameterIndex, value, VARCHAR);
     }
 
     @Override
     public void setUnicodeStream(int parameterIndex, InputStream x, int length) throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
-    public void setBinaryStream(int parameterIndex, InputStream x, int length) throws SQLException {
-
+    public void setBinaryStream(int parameterIndex, InputStream inputStream, int length) throws SQLException {
+        setAsciiStream(parameterIndex, inputStream, length);
     }
 
     @Override
@@ -181,32 +188,42 @@ public class DtmPreparedStatement extends DtmStatement implements PreparedStatem
 
     @Override
     public void addBatch() throws SQLException {
-
+        checkClosed();
+        ArrayList<Query> batchStatements = this.batchStatements;
+        if (batchStatements == null) {
+            this.batchStatements = batchStatements = new ArrayList<>();
+        }
+        List<Query> queries = connection.getQueryExecutor().createQuery(sql);
+        batchStatements.addAll(queries);
     }
 
     @Override
     public void setCharacterStream(int parameterIndex, Reader reader, int length) throws SQLException {
-
+        String value = new BufferedReader(reader)
+                .lines()
+                .collect(Collectors.joining(""))
+                .substring(0, length);
+        parameters.setString(parameterIndex, value, VARCHAR);
     }
 
     @Override
     public void setRef(int parameterIndex, Ref x) throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public void setBlob(int parameterIndex, Blob x) throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public void setClob(int parameterIndex, Clob x) throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public void setArray(int parameterIndex, Array x) throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
@@ -216,27 +233,30 @@ public class DtmPreparedStatement extends DtmStatement implements PreparedStatem
 
     @Override
     public void setDate(int parameterIndex, Date x, Calendar cal) throws SQLException {
-
+        long epochDay = x.toInstant().atZone(cal.getTimeZone().toZoneId()).toLocalDate().toEpochDay();
+        parameters.setDate(parameterIndex, epochDay, DATE);
     }
 
     @Override
     public void setTime(int parameterIndex, Time x, Calendar cal) throws SQLException {
-
+        long nanoOfDay = x.toInstant().atZone(cal.getTimeZone().toZoneId()).toLocalTime().toNanoOfDay();
+        parameters.setTime(parameterIndex, nanoOfDay, TIME);
     }
 
     @Override
-    public void setTimestamp(int parameterIndex, Timestamp x, Calendar cal) throws SQLException {
-
+    public void setTimestamp(int parameterIndex, Timestamp value, Calendar cal) throws SQLException {
+        long epochMilli = value.toLocalDateTime().atZone(cal.getTimeZone().toZoneId()).toInstant().toEpochMilli();
+        parameters.setTimestamp(parameterIndex, epochMilli, TIMESTAMP);
     }
 
     @Override
     public void setNull(int parameterIndex, int sqlType, String typeName) throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public void setURL(int parameterIndex, URL x) throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
@@ -246,42 +266,42 @@ public class DtmPreparedStatement extends DtmStatement implements PreparedStatem
 
     @Override
     public void setRowId(int parameterIndex, RowId x) throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public void setNString(int parameterIndex, String value) throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public void setNCharacterStream(int parameterIndex, Reader value, long length) throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public void setNClob(int parameterIndex, NClob value) throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public void setClob(int parameterIndex, Reader reader, long length) throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public void setBlob(int parameterIndex, InputStream inputStream, long length) throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public void setNClob(int parameterIndex, Reader reader, long length) throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public void setSQLXML(int parameterIndex, SQLXML xmlObject) throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
@@ -327,51 +347,51 @@ public class DtmPreparedStatement extends DtmStatement implements PreparedStatem
 
     @Override
     public void setAsciiStream(int parameterIndex, InputStream x, long length) throws SQLException {
-
+        setAsciiStream(parameterIndex, x, (int) length);
     }
 
     @Override
     public void setBinaryStream(int parameterIndex, InputStream x, long length) throws SQLException {
-
+        setAsciiStream(parameterIndex, x, (int) length);
     }
 
     @Override
     public void setCharacterStream(int parameterIndex, Reader reader, long length) throws SQLException {
-
+        setCharacterStream(parameterIndex, reader, (int) length);
     }
 
     @Override
     public void setAsciiStream(int parameterIndex, InputStream x) throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public void setBinaryStream(int parameterIndex, InputStream x) throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public void setCharacterStream(int parameterIndex, Reader reader) throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public void setNCharacterStream(int parameterIndex, Reader value) throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public void setClob(int parameterIndex, Reader reader) throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public void setBlob(int parameterIndex, InputStream inputStream) throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public void setNClob(int parameterIndex, Reader reader) throws SQLException {
-
+        throw new SQLFeatureNotSupportedException();
     }
 }

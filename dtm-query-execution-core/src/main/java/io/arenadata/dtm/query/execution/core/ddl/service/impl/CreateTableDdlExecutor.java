@@ -95,7 +95,7 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
 
     private void checkVarcharSize(List<EntityField> fields) {
         List<String> notSetSizeFields = fields.stream()
-                .filter(field -> field.getType() == ColumnType.VARCHAR || field.getType() == ColumnType.CHAR)
+                .filter(field -> field.getType() == ColumnType.CHAR)
                 .filter(field -> field.getSize() == null)
                 .map(EntityField::getName)
                 .collect(Collectors.toList());

@@ -61,6 +61,8 @@ public class DdlUtils {
             case CHAR:
             case VARCHAR:
                 return "String";
+            case INT32:
+                return "Int32";
             case INT:
             case BIGINT:
             case DATE:
@@ -106,14 +108,6 @@ public class DdlUtils {
             default:
                 return "";
         }
-    }
-
-    public static String classFieldToString(@NonNull EntityField f) {
-        String name = f.getName();
-        String type = classTypeToNative(f.getType());
-        String template = f.getNullable() ? NULLABLE_FIELD : NOT_NULLABLE_FIELD;
-
-        return String.format(template, name, type);
     }
 
     public static String avroFieldToString(@NonNull Schema.Field f) {

@@ -25,7 +25,10 @@ public class InformationSchemaUtils {
                 "       c.column_name,\n" +
                 "       c.is_nullable,\n" +
                 "       c.ordinal_position,\n" +
-                "       c.character_maximum_length,\n" +
+                "       case c.character_maximum_length" +
+                "           when 16777216 then NULL " +
+                "           else c.character_maximum_length " +
+                "           end as character_maximum_length,\n" +
                 "       case when c.datetime_precision != 0 then c.datetime_precision " +
                 "       else NULL end as datetime_precision,\n" +
                 "       case\n" +

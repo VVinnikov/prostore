@@ -1,6 +1,10 @@
 package io.arenadata.dtm.query.execution.plugin.adb.check;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
+import io.arenadata.dtm.query.execution.plugin.adb.check.factory.AdbCheckDataByHashFieldValueFactory;
+import io.arenadata.dtm.query.execution.plugin.adb.check.factory.impl.AdbCheckDataByHashFieldValueFactoryImpl;
+import io.arenadata.dtm.query.execution.plugin.adb.check.factory.impl.AdbCheckDataWithHistoryFactory;
+import io.arenadata.dtm.query.execution.plugin.adb.check.factory.impl.AdbCheckDataWithoutHistoryFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.check.service.AdbCheckDataService;
 import io.arenadata.dtm.query.execution.plugin.adb.query.service.impl.AdbQueryExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
@@ -19,7 +23,8 @@ import static org.mockito.Mockito.*;
 class AdbCheckDataServiceTest {
     private final static Long RESULT = 1L;
     private final AdbQueryExecutor adbQueryExecutor = mock(AdbQueryExecutor.class);
-    private final AdbCheckDataService adbCheckDataService = new AdbCheckDataService(adbQueryExecutor);
+    private final AdbCheckDataService adbCheckDataService = new AdbCheckDataService(
+            new AdbCheckDataWithHistoryFactory(new AdbCheckDataByHashFieldValueFactoryImpl()), adbQueryExecutor);
 
     @BeforeEach
     void setUp() {

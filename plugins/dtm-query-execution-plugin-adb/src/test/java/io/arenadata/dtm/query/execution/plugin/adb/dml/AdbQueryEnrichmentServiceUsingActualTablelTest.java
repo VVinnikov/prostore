@@ -26,6 +26,7 @@ import io.vertx.ext.unit.report.ReportOptions;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -44,22 +45,19 @@ class AdbQueryEnrichmentServiceUsingActualTablelTest {
     public static final String SHARES_2_SCHEMA_NAME = "shares_2";
     public static final String TEST_DATAMART_SCHEMA_NAME = "test_datamart";
     public static final String ENV_NAME = "test";
-    QueryEnrichmentService adbQueryEnrichmentService;
+    private final CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
+    private final QueryExtendService queryExtender = new AdbDmlQueryExtendServiceWithActualTableOnly();
+    private final AdbCalciteContextProvider contextProvider = new AdbCalciteContextProvider(
+            calciteConfiguration.configDdlParser(
+                    calciteConfiguration.ddlParserImplFactory()
+            ),
+            new AdbCalciteSchemaFactory(new AdbSchemaFactory()));
+    private final AdbQueryGeneratorImpl adbQueryGeneratorimpl = new AdbQueryGeneratorImpl(queryExtender, calciteConfiguration.adbSqlDialect());
+    private final QueryParserService queryParserService = new AdbCalciteDMLQueryParserService(contextProvider, Vertx.vertx());
+    private QueryEnrichmentService adbQueryEnrichmentService;
 
-    public AdbQueryEnrichmentServiceUsingActualTablelTest() {
-        QueryExtendService queryExtender = new AdbDmlQueryExtendServiceUsingActualTableOnly();
-
-        CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
-        SqlParser.Config parserConfig = calciteConfiguration.configDdlParser(
-                calciteConfiguration.ddlParserImplFactory()
-        );
-
-        AdbCalciteContextProvider contextProvider = new AdbCalciteContextProvider(
-                parserConfig,
-                new AdbCalciteSchemaFactory(new AdbSchemaFactory()));
-
-        AdbQueryGeneratorImpl adbQueryGeneratorimpl = new AdbQueryGeneratorImpl(queryExtender, calciteConfiguration.adbSqlDialect());
-        QueryParserService queryParserService = new AdbCalciteDMLQueryParserService(contextProvider, Vertx.vertx());
+    @BeforeEach
+    void setUp() {
         adbQueryEnrichmentService = new AdbQueryEnrichmentServiceImpl(
                 queryParserService,
                 adbQueryGeneratorimpl,

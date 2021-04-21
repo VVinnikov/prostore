@@ -31,7 +31,7 @@ public class AdbQueryGeneratorImpl implements QueryGenerator {
     private final SqlDialect sqlDialect;
 
     @Autowired
-    public AdbQueryGeneratorImpl(@Qualifier("adbDmlQueryExtendServiceUsingActualTableOnly") QueryExtendService queryExtendService,
+    public AdbQueryGeneratorImpl(QueryExtendService queryExtendService,
                                  @Qualifier("adbSqlDialect") SqlDialect sqlDialect) {
         this.queryExtendService = queryExtendService;
         this.sqlDialect = sqlDialect;

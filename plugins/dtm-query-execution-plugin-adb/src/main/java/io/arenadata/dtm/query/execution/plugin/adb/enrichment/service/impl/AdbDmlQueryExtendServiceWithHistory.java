@@ -36,9 +36,8 @@ import java.util.stream.IntStream;
 
 import static io.arenadata.dtm.query.execution.plugin.adb.base.factory.Constants.*;
 
-@Service("adbDmlQueryExtendService")
 @Slf4j
-public class AdbDmlQueryExtendServiceImpl implements QueryExtendService {
+public class AdbDmlQueryExtendServiceWithHistory implements QueryExtendService {
 
     public static final String TABLE_PREFIX = "_";
 

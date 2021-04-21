@@ -31,7 +31,7 @@ public class AdbQueryGeneratorImpl implements QueryGenerator {
     private final SqlDialect sqlDialect;
 
     @Autowired
-    public AdbQueryGeneratorImpl(QueryExtendService queryExtendService,
+    public AdbQueryGeneratorImpl(@Qualifier("adbDmlQueryExtendServiceUsingActualTableOnly") QueryExtendService queryExtendService,
                                  @Qualifier("adbSqlDialect") SqlDialect sqlDialect) {
         this.queryExtendService = queryExtendService;
         this.sqlDialect = sqlDialect;
@@ -57,7 +57,7 @@ public class AdbQueryGeneratorImpl implements QueryGenerator {
                     resultRelNode = calciteContext.getPlanner()
                             .transform(0, extendedQuery.getTraitSet().replace(EnumerableConvention.INSTANCE),
                                     extendedQuery);
-                } catch (RelConversionException e) {
+                } catch (Exception e) {
                     promise.fail(new DtmException("Error in converting rel node", e));
                 }
             }

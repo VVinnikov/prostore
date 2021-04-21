@@ -40,26 +40,29 @@ public class AdbSchemaExtenderImpl implements SchemaExtender {
 
     private Entity getExtendedSchema(Entity entity, String tablePostfix) {
         return entity.toBuilder()
-            .fields(entity.getFields().stream()
-                .map(ef -> ef.toBuilder().build())
-                .collect(Collectors.toList()))
-            .name(entity.getName() + tablePostfix)
-            .build();
+                .fields(entity.getFields().stream()
+                        .map(ef -> ef.toBuilder().build())
+                        .collect(Collectors.toList()))
+                .name(entity.getName() + tablePostfix)
+                .build();
     }
 
     private List<EntityField> getExtendedColumns() {
         List<EntityField> tableAttributeList = new ArrayList<>();
-        tableAttributeList.add(generateNewField(SYS_OP_ATTR));
-        tableAttributeList.add(generateNewField(SYS_TO_ATTR));
-        tableAttributeList.add(generateNewField(SYS_FROM_ATTR));
+        tableAttributeList.add(generateNewField(SYS_OP_ATTR, false));
+        tableAttributeList.add(generateNewField(SYS_TO_ATTR, true));
+        tableAttributeList.add(generateNewField(SYS_FROM_ATTR, false));
         return tableAttributeList;
     }
 
-    private EntityField generateNewField(String name) {
+    private EntityField generateNewField(String name, boolean isNullable) {
         return EntityField.builder()
-            .type(ColumnType.INT)
-            .name(name)
-            .build();
+                .type(ColumnType.BIGINT)
+                .name(name)
+                .nullable(isNullable)
+                .build();
     }
+
+
 
 }

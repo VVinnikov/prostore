@@ -8,15 +8,15 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
+import io.arenadata.dtm.query.execution.plugin.adb.calcite.configuration.CalciteConfiguration;
+import io.arenadata.dtm.query.execution.plugin.adb.calcite.factory.AdbCalciteSchemaFactory;
+import io.arenadata.dtm.query.execution.plugin.adb.calcite.factory.AdbSchemaFactory;
+import io.arenadata.dtm.query.execution.plugin.adb.calcite.service.AdbCalciteContextProvider;
+import io.arenadata.dtm.query.execution.plugin.adb.calcite.service.AdbCalciteDMLQueryParserService;
+import io.arenadata.dtm.query.execution.plugin.adb.enrichment.dto.EnrichQueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.QueryEnrichmentService;
 import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.QueryExtendService;
 import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.impl.*;
-import io.arenadata.dtm.query.execution.plugin.adb.calcite.service.AdbCalciteContextProvider;
-import io.arenadata.dtm.query.execution.plugin.adb.calcite.factory.AdbCalciteSchemaFactory;
-import io.arenadata.dtm.query.execution.plugin.adb.calcite.service.AdbCalciteDMLQueryParserService;
-import io.arenadata.dtm.query.execution.plugin.adb.calcite.configuration.CalciteConfiguration;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.dto.EnrichQueryRequest;
-import io.arenadata.dtm.query.execution.plugin.adb.calcite.factory.AdbSchemaFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.utils.TestUtils;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
@@ -35,11 +35,10 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-class AdbQueryEnrichmentServiceImplTest {
+class AdbQueryEnrichmentServiceUsingActualTablelTest {
 
     public static final String SHARES_SCHEMA_NAME = "shares";
     public static final String SHARES_2_SCHEMA_NAME = "shares_2";
@@ -47,8 +46,8 @@ class AdbQueryEnrichmentServiceImplTest {
     public static final String ENV_NAME = "test";
     QueryEnrichmentService adbQueryEnrichmentService;
 
-    public AdbQueryEnrichmentServiceImplTest() {
-        QueryExtendService queryExtender = new AdbDmlQueryExtendServiceImpl();
+    public AdbQueryEnrichmentServiceUsingActualTablelTest() {
+        QueryExtendService queryExtender = new AdbDmlQueryExtendServiceUsingActualTableOnly();
 
         CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
         SqlParser.Config parserConfig = calciteConfiguration.configDdlParser(
@@ -66,7 +65,6 @@ class AdbQueryEnrichmentServiceImplTest {
                 adbQueryGeneratorimpl,
                 contextProvider,
                 new AdbSchemaExtenderImpl());
-
     }
 
     private static void assertGrep(String data, String regexp) {
@@ -116,13 +114,14 @@ class AdbQueryEnrichmentServiceImplTest {
                     .onComplete(ar -> {
                         if (ar.succeeded()) {
                             result[0] = ar.result();
-                            assertGrep(result[0], "sys_from <= 1 AND sys_to >= 1");
+                            assertGrep(result[0], "sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1");
                         }
                         async.complete();
                     });
             async.awaitSuccess(10000);
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+        assertFalse(result[0].isEmpty());
     }
 
     @Test
@@ -139,7 +138,7 @@ class AdbQueryEnrichmentServiceImplTest {
                         if (ar.succeeded()) {
                             result[0] = ar.result();
                             assertEquals(
-                                    "SELECT account_id FROM shares.accounts_history WHERE sys_to >= 0 AND (sys_to <= 0 AND sys_op = 1)",
+                                    "SELECT account_id FROM shares.accounts_actual WHERE COALESCE(sys_to, 9223372036854775807) >= 0 AND (COALESCE(sys_to, 9223372036854775807) <= 0 AND sys_op = 1)",
                                     result[0]
                             );
                         }
@@ -165,11 +164,11 @@ class AdbQueryEnrichmentServiceImplTest {
                         if (ar.succeeded()) {
                             result[0] = ar.result();
                             assertGrep(result[0], "CASE WHEN account_type = 'D' THEN 'ok' ELSE 'not ok' END AS ss");
-                            assertGrep(result[0], "sys_from <= 1 AND sys_to >= 1");
+                            assertGrep(result[0], "sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1");
                         }
                         async.complete();
                     });
-            async.awaitSuccess();
+            async.awaitSuccess(5000);
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
     }
@@ -195,8 +194,8 @@ class AdbQueryEnrichmentServiceImplTest {
                         if (ar.succeeded()) {
                             result[0] = ar.result();
                             assertGrep(result[0], "sys_from >= 1 AND sys_from <= 5");
-                            assertGrep(result[0], "sys_to <= 3 AND sys_op = 1");
-                            assertGrep(result[0], "sys_to >= 2");
+                            assertGrep(result[0], "COALESCE(sys_to, 9223372036854775807) <= 3 AND sys_op = 1");
+                            assertGrep(result[0], "COALESCE(sys_to, 9223372036854775807) >= 2");
                         }
                         async.complete();
                     });
@@ -293,11 +292,8 @@ class AdbQueryEnrichmentServiceImplTest {
                     .onComplete(ar -> {
                         if (ar.succeeded()) {
                             result[0] = ar.result();
-                            assertGrep(result[0], "shares.accounts_history WHERE sys_from <= 1 AND sys_to >= 1");
                             assertGrep(result[0], "shares.accounts_actual WHERE sys_from <= 1");
-                            assertGrep(result[0], "shares_2.accounts_history WHERE sys_from <= 1 AND sys_to >= 1");
                             assertGrep(result[0], "shares_2.accounts_actual WHERE sys_from <= 1");
-                            assertGrep(result[0], "test_datamart.transactions_history WHERE sys_from <= 1 AND sys_to >= 1");
                             assertGrep(result[0], "test_datamart.transactions_actual WHERE sys_from <= 1");
                         }
                         async.complete();

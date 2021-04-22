@@ -1,5 +1,8 @@
 package io.arenadata.dtm.query.execution.plugin.adb.base.configuration;
 
+import io.arenadata.dtm.query.execution.plugin.adb.check.factory.AdbCheckDataByHashFieldValueFactory;
+import io.arenadata.dtm.query.execution.plugin.adb.check.factory.AdbCheckDataQueryFactory;
+import io.arenadata.dtm.query.execution.plugin.adb.check.factory.impl.AdbCheckDataWithHistoryFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.QueryExtendService;
 import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.impl.AdbDmlQueryExtendServiceWithHistory;
 import io.arenadata.dtm.query.execution.plugin.adb.mppw.kafka.dto.AdbKafkaMppwTransferRequest;
@@ -35,6 +38,11 @@ public class WithHistoryTableConfiguration {
     @Bean
     public QueryExtendService adbDmlExtendService() {
         return new AdbDmlQueryExtendServiceWithHistory();
+    }
+
+    @Bean
+    public AdbCheckDataQueryFactory adbCheckDataFactory(AdbCheckDataByHashFieldValueFactory checkDataByHashFieldValueFactory) {
+        return new AdbCheckDataWithHistoryFactory(checkDataByHashFieldValueFactory);
     }
 
 }

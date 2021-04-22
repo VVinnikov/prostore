@@ -56,16 +56,16 @@ public class TruncateDdlExecutor extends QueryResultDdlExecutor {
             context.setDatamartName(schema);
             val table = getTableName(sqlNodeName);
             val sqlTruncateHistory = (SqlTruncateHistory) context.getSqlCall();
-            CompositeFuture.join(getTableEntity(schema, table), calcCnTo(schema, sqlTruncateHistory))
-                    .compose(entityCnTo -> CompositeFuture.join(executeTruncate(entityCnTo, context, sqlTruncateHistory)))
+            CompositeFuture.join(getTableEntity(schema, table), calcSysCn(schema, sqlTruncateHistory))
+                    .compose(entitySysCn -> CompositeFuture.join(executeTruncate(entitySysCn, context, sqlTruncateHistory)))
                     .onSuccess(success -> promise.complete(QueryResult.emptyResult()))
                     .onFailure(promise::fail);
         });
     }
 
-    private List<Future> executeTruncate(CompositeFuture entityCnTo, DdlRequestContext context, SqlTruncateHistory sqlTruncateHistory) {
-        val entity = (Entity) entityCnTo.resultAt(0);
-        val cnTo = (Long) entityCnTo.resultAt(1);
+    private List<Future> executeTruncate(CompositeFuture entitySysCn, DdlRequestContext context, SqlTruncateHistory sqlTruncateHistory) {
+        val entity = (Entity) entitySysCn.resultAt(0);
+        val sysCn = (Long) entitySysCn.resultAt(1);
         return entity.getDestination().stream()
                 .map(sourceType -> {
                     val truncateHistoryRequest = TruncateHistoryRequest.builder()
@@ -74,7 +74,7 @@ public class TruncateDdlExecutor extends QueryResultDdlExecutor {
                             .entity(entity)
                             .envName(context.getEnvName())
                             .requestId(context.getRequest().getQueryRequest().getRequestId())
-                            .sysCn(cnTo)
+                            .sysCn(sysCn)
                             .build();
                     return dataSourcePluginService.truncateHistory(sourceType, context.getMetrics(), truncateHistoryRequest);
                 })
@@ -93,13 +93,13 @@ public class TruncateDdlExecutor extends QueryResultDdlExecutor {
                 .onFailure(p::fail));
     }
 
-    private Future<Long> calcCnTo(String schema, SqlTruncateHistory truncateHistory) {
+    private Future<Long> calcSysCn(String schema, SqlTruncateHistory truncateHistory) {
         return Future.future(p -> {
             if (truncateHistory.isInfinite()) {
-                p.complete(null);
+                p.complete();
             } else {
                 deltaServiceDao.getDeltaByDateTime(schema, truncateHistory.getDateTime())
-                        .onSuccess(okDelta -> p.complete(okDelta.getCnTo()))
+                        .onSuccess(delta -> p.complete(delta.getCnFrom()))
                         .onFailure(p::fail);
             }
         });

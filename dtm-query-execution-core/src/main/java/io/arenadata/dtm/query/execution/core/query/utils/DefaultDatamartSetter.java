@@ -14,7 +14,7 @@ public class DefaultDatamartSetter {
 
     public SqlNode set(SqlNode sqlNode, String datamart) {
         SqlSelectTree selectTree = new SqlSelectTree(sqlNode);
-        selectTree.findAllTableAndSnapshots().forEach(n -> setDatamart(n, datamart));
+        selectTree.findAllTableAndSnapshotWithChildren().forEach(n -> setDatamart(n, datamart));
         return sqlNode;
     }
 
@@ -32,7 +32,7 @@ public class DefaultDatamartSetter {
 
     private void setDatamartToIdentifier(SqlTreeNode n, String defaultDatamart) {
         SqlIdentifier identifier = getSqlIdentifier(defaultDatamart, n.getNode());
-        n.getSqlNodeSetter().accept(identifier);
+        ((SqlIdentifier) n.getNode()).assignNamesFrom(identifier);
     }
 
     private SqlIdentifier getSqlIdentifier(String defaultDatamart, SqlIdentifier node) {

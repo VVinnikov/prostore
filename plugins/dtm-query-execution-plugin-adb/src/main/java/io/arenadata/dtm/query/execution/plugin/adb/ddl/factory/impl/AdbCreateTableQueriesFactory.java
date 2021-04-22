@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.plugin.adb.ddl.factory;
+package io.arenadata.dtm.query.execution.plugin.adb.ddl.factory.impl;
 
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.query.execution.plugin.adb.base.dto.metadata.AdbTableColumn;

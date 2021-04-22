@@ -96,7 +96,7 @@ public class TruncateDdlExecutor extends QueryResultDdlExecutor {
     private Future<Long> calcSysCn(String schema, SqlTruncateHistory truncateHistory) {
         return Future.future(p -> {
             if (truncateHistory.isInfinite()) {
-                p.complete(null);
+                p.complete();
             } else {
                 deltaServiceDao.getDeltaByDateTime(schema, truncateHistory.getDateTime())
                         .onSuccess(delta -> p.complete(delta.getCnFrom()))

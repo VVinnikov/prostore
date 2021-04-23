@@ -21,16 +21,13 @@ public class AdbDdlService implements DdlService<Void> {
     @Override
     @CacheEvict(value = AdbDtmDataSourcePlugin.ADB_DATAMART_CACHE, key = "#request.getDatamartMnemonic()")
     public Future<Void> execute(DdlRequest request) {
-        return Future.future(promise -> {
-            SqlKind sqlKind = request.getSqlKind();
-            if (ddlExecutors.containsKey(sqlKind)) {
-                ddlExecutors.get(sqlKind)
-                        .execute(request)
-                        .onComplete(promise);
-            } else {
-                promise.fail(new DdlDatasourceException(String.format("Unknown DDL: %s", sqlKind)));
-            }
-        });
+        SqlKind sqlKind = request.getSqlKind();
+        if (ddlExecutors.containsKey(sqlKind)) {
+            return ddlExecutors.get(sqlKind)
+                    .execute(request);
+        } else {
+            return Future.failedFuture(new DdlDatasourceException(String.format("Unknown DDL: %s", sqlKind)));
+        }
     }
 
     @Override

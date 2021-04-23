@@ -36,8 +36,9 @@ public class AdbDmlQueryExtendServiceWithActualTableOnly implements QueryExtendS
         context.getRelBuilder().clear();
         Map<LogicalProject, TableFilter> filterMap = new HashMap<>();
         var relNode = iterateTree(context, context.getRelNode().rel);
-        initTableFilterMap(filterMap, relNode);
-        relNode = addSysFieldConfitions(context, filterMap, relNode);
+        Map<TableScan, DeltaInformation> deltasMap = new HashMap<>();
+        initTableFilterMap(filterMap, relNode, deltasMap, context.getDeltaIterator());
+        relNode = addSysFieldConfitions(context, filterMap, relNode, deltasMap);
         context.getRelBuilder().clear();
         return relNode;
     }
@@ -62,13 +63,24 @@ public class AdbDmlQueryExtendServiceWithActualTableOnly implements QueryExtendS
         return relBuilder.build();
     }
 
-    private void initTableFilterMap(Map<LogicalProject, TableFilter> filterMap, RelNode relNode) {
+    private void initTableFilterMap(Map<LogicalProject, TableFilter> filterMap,
+                                    RelNode relNode,
+                                    Map<TableScan, DeltaInformation> deltasMap,
+                                    Iterator<DeltaInformation> deltaIt) {
         AtomicInteger index = new AtomicInteger(0);
         relNode.accept(new RelHomogeneousShuttle() {
+
+            @Override
+            public RelNode visit(TableScan scan) {
+                deltasMap.put(scan, deltaIt.next());
+                return super.visit(scan);
+            }
+
             @Override
             public RelNode visit(LogicalProject project) {
                 TableFilter tableFilter = new TableFilter();
-                tableFilter.setIndex(index.incrementAndGet());
+                tableFilter.setIndex(index.get());
+                index.incrementAndGet();
                 project.accept(new RelHomogeneousShuttle() {
                     @Override
                     public RelNode visit(LogicalFilter filter) {
@@ -90,21 +102,23 @@ public class AdbDmlQueryExtendServiceWithActualTableOnly implements QueryExtendS
         });
 
         List<TableFilter> tableFilters = filterMap.values().stream()
-                .sorted(Comparator.comparing(TableFilter::getIndex))
+                .sorted((i1, i2) -> Integer.compare(i2.getIndex(), i1.getIndex()))
                 .collect(Collectors.toList());
 
         Iterator<TableFilter> it = tableFilters.iterator();
-        TableFilter prevFilter = it.next();
+        Set<TableScan> ts = new HashSet<>(it.next().getTables());
 
         while (it.hasNext()) {
             TableFilter currentFilter = it.next();
-            prevFilter.getTables().removeAll(currentFilter.getTables());
-            prevFilter = currentFilter;
+            currentFilter.getTables().removeAll(ts);
+            ts.addAll(currentFilter.getTables());
         }
     }
 
-    private RelNode addSysFieldConfitions(QueryGeneratorContext context, Map<LogicalProject, TableFilter> filterMap, RelNode relNode) {
-        List<DeltaInformation> deltas = getDeltaInformations(context);
+    private RelNode addSysFieldConfitions(QueryGeneratorContext context,
+                                          Map<LogicalProject, TableFilter> filterMap,
+                                          RelNode relNode,
+                                          Map<TableScan, DeltaInformation> deltasMap) {
         return relNode.accept(new RelHomogeneousShuttle() {
 
             @Override
@@ -118,7 +132,7 @@ public class AdbDmlQueryExtendServiceWithActualTableOnly implements QueryExtendS
                                 RelBuilder builder = context.getRelBuilder()
                                         .push(tableFilter.getFilter().getInput());
                                 RexNode[] resFilterNodes = new RexNode[tableFilter.getTables().size() + 1];
-                                RexNode[] rexNodes = createRexNodeDeltaFilters(deltas,
+                                RexNode[] rexNodes = createRexNodeDeltaFilters(deltasMap,
                                         builder,
                                         tableFilter);
                                 System.arraycopy(rexNodes, 0, resFilterNodes, 1, rexNodes.length);
@@ -135,21 +149,13 @@ public class AdbDmlQueryExtendServiceWithActualTableOnly implements QueryExtendS
                     }));
                 } else {
                     RelBuilder builder = context.getRelBuilder().push(project.getInput());
-                    RexNode[] rexNodes = createRexNodeDeltaFilters(deltas,
+                    RexNode[] rexNodes = createRexNodeDeltaFilters(deltasMap,
                             builder,
                             tableFilter);
                     return builder.filter(rexNodes).project(project.getChildExps()).build();
                 }
             }
         });
-    }
-
-    private List<DeltaInformation> getDeltaInformations(QueryGeneratorContext context) {
-        List<DeltaInformation> deltas = new ArrayList<>();
-        while (context.getDeltaIterator().hasNext()) {
-            deltas.add(context.getDeltaIterator().next());
-        }
-        return deltas;
     }
 
     RelNode insertModifiedTableScan(RelBuilder parentBuilder, RelNode tableScan) {
@@ -175,12 +181,12 @@ public class AdbDmlQueryExtendServiceWithActualTableOnly implements QueryExtendS
         mutableQualifiedName.set(mutableQualifiedName.size() - 1, name + TABLE_PREFIX + ACTUAL_TABLE);
     }
 
-    private RexNode[] createRexNodeDeltaFilters(List<DeltaInformation> deltas,
+    private RexNode[] createRexNodeDeltaFilters(Map<TableScan, DeltaInformation> deltas,
                                                 RelBuilder relBuilder,
                                                 TableFilter filter) {
         RexNode[] rexNodes = new RexNode[filter.getTables().size()];
         for (int i = 0; i < filter.getTables().size(); i++) {
-            DeltaInformation deltaInformation = deltas.get(filter.getIndex() + i);
+            DeltaInformation deltaInformation = deltas.get(filter.getTables().get(i));
             rexNodes[i] = getRexNode(relBuilder, i, deltaInformation);
         }
         return rexNodes;

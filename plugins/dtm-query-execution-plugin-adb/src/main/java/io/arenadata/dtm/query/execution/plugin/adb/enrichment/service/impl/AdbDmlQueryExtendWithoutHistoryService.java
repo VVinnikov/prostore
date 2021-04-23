@@ -14,6 +14,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalProject;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
@@ -152,7 +153,12 @@ public class AdbDmlQueryExtendWithoutHistoryService implements QueryExtendServic
                     RexNode[] rexNodes = createRexNodeDeltaFilters(deltasMap,
                             builder,
                             tableFilter);
-                    return builder.filter(rexNodes).project(project.getChildExps()).build();
+                    return builder
+                            .filter(rexNodes)
+                            .project(project.getChildExps(), project.getRowType().getFieldList().stream()
+                                    .map(RelDataTypeField::getName)
+                                    .collect(Collectors.toList()))
+                            .build();
                 }
             }
         });

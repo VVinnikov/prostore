@@ -95,6 +95,10 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
                 .collect(Collectors.toList());
         val destinationTable = tableInfos.get(0);
         val sourceTable = tableInfos.get(1);
+        if (!destinationTable.getSchemaName().equals(sourceTable.getSchemaName())) {
+            return Future.failedFuture(new DtmException(String.format("Unsupported operation for tables in different datamarts: [%s] and [%s]",
+                    destinationTable.getSchemaName(), sourceTable.getSchemaName())));
+        }
         return Future.future(p -> CompositeFuture.join(
                 entityDao.getEntity(destinationTable.getSchemaName(),
                         destinationTable.getTableName()),

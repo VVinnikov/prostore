@@ -63,11 +63,11 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
 
     @Override
     public Future<QueryResult> execute(MppwKafkaRequest request) {
+        val format = request.getUploadMetadata().getFormat();
+        if (!ExternalTableFormat.AVRO.equals(format)) {
+            return Future.failedFuture(new MppwDatasourceException(String.format("Format %s not implemented", format)));
+        }
         return Future.future((Promise<QueryResult> promise) -> {
-            val format = request.getUploadMetadata().getFormat();
-            if (!ExternalTableFormat.AVRO.equals(format)) {
-                promise.fail(new MppwDatasourceException(String.format("Format %s not implemented", format)));
-            }
             List<KafkaBrokerInfo> brokers = request.getBrokers();
             getOrCreateServer(brokers, dbName)
                     .compose(server -> createWritableExternalTable(request, server))

@@ -24,7 +24,6 @@ import io.vertx.ext.unit.TestOptions;
 import io.vertx.ext.unit.TestSuite;
 import io.vertx.ext.unit.report.ReportOptions;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,7 +45,7 @@ class AdbQueryEnrichmentServiceUsingActualTablelTest {
     public static final String TEST_DATAMART_SCHEMA_NAME = "test_datamart";
     public static final String ENV_NAME = "test";
     private final CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
-    private final QueryExtendService queryExtender = new AdbDmlQueryExtendServiceWithActualTableOnly();
+    private final QueryExtendService queryExtender = new AdbDmlQueryExtendWithoutHistoryService();
     private final AdbCalciteContextProvider contextProvider = new AdbCalciteContextProvider(
             calciteConfiguration.configDdlParser(
                     calciteConfiguration.ddlParserImplFactory()

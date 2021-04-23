@@ -6,7 +6,7 @@ import io.arenadata.dtm.query.execution.plugin.adb.check.factory.impl.AdbCheckDa
 import io.arenadata.dtm.query.execution.plugin.adb.ddl.factory.TruncateHistoryDeleteQueriesFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.ddl.factory.impl.TruncateHistoryDeleteQueriesWithHistoryFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.QueryExtendService;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.impl.AdbDmlQueryExtendServiceWithHistory;
+import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.impl.AdbDmlQueryExtendWithHistoryService;
 import io.arenadata.dtm.query.execution.plugin.adb.mppw.kafka.dto.AdbKafkaMppwTransferRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.mppw.kafka.factory.MppwRequestFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.mppw.kafka.factory.impl.MppwWithHistoryTableRequestFactory;
@@ -41,7 +41,7 @@ public class WithHistoryTableConfiguration {
 
     @Bean
     public QueryExtendService adbDmlExtendService() {
-        return new AdbDmlQueryExtendServiceWithHistory();
+        return new AdbDmlQueryExtendWithHistoryService();
     }
 
     @Bean

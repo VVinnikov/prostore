@@ -26,7 +26,7 @@ import java.util.stream.IntStream;
 import static io.arenadata.dtm.query.execution.plugin.adb.base.factory.Constants.*;
 
 @Slf4j
-public class AdbDmlQueryExtendServiceWithActualTableOnly implements QueryExtendService {
+public class AdbDmlQueryExtendWithoutHistoryService implements QueryExtendService {
 
     public static final String TABLE_PREFIX = "_";
     public static final long SYS_TO_MAX_VALUE = 9223372036854775807L;

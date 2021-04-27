@@ -8,14 +8,14 @@ import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.extension.check.CheckType;
 import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckData;
-import io.arenadata.dtm.query.execution.core.delta.repository.zookeeper.DeltaServiceDao;
-import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.EntityDao;
-import io.arenadata.dtm.query.execution.core.check.dto.CheckContext;
 import io.arenadata.dtm.query.execution.core.base.exception.entity.EntityNotExistsException;
+import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.EntityDao;
+import io.arenadata.dtm.query.execution.core.base.verticle.TaskVerticleExecutor;
+import io.arenadata.dtm.query.execution.core.check.dto.CheckContext;
 import io.arenadata.dtm.query.execution.core.check.factory.CheckQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.check.service.CheckExecutor;
+import io.arenadata.dtm.query.execution.core.delta.repository.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.plugin.service.DataSourcePluginService;
-import io.arenadata.dtm.query.execution.core.base.verticle.TaskVerticleExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckException;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByHashInt32Request;
@@ -80,8 +80,9 @@ public class CheckDataExecutor implements CheckExecutor {
                 .onSuccess(result -> promise.complete(
                         String.format("Table '%s.%s' (%s) checksum for delta %s is Ok.",
                                 entity.getSchema(), entity.getName(),
-                                entity.getDestination().stream()
-                                        .map(SourceType::name)
+                            entity.getDestination().stream()
+                                .map(SourceType::name)
+                                .sorted()
                                         .collect(Collectors.joining(", ")),
                                 sqlCheckData.getDeltaNum())))
                 .onFailure(exception -> {

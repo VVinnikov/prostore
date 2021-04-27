@@ -41,6 +41,7 @@ public final class CalciteUtil {
         switch (type) {
             case BOOLEAN:
                 return BOOLEAN;
+            case INT32:
             case INT:
                 return INTEGER;
             case BIGINT:

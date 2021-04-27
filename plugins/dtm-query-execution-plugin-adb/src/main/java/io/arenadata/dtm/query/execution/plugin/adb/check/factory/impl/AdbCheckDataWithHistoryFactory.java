@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adb.check.factory.impl;
 
 import io.arenadata.dtm.common.model.ddl.EntityField;
+import io.arenadata.dtm.query.execution.plugin.adb.base.factory.Constants;
 import io.arenadata.dtm.query.execution.plugin.adb.check.factory.AdbCheckDataByHashFieldValueFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.check.factory.AdbCheckDataQueryFactory;
 import io.arenadata.dtm.query.execution.plugin.api.dto.CheckDataByCountRequest;
@@ -17,22 +18,22 @@ public class AdbCheckDataWithHistoryFactory implements AdbCheckDataQueryFactory 
 
     private static final String CHECK_DATA_BY_COUNT_TEMPLATE = "SELECT count(1) as %s FROM " +
             "(SELECT 1 " +
-            "FROM %s.%s_history " +
+            "FROM %s.%s_%s " +
             "WHERE (sys_to = %d AND sys_op = 1) OR sys_from = %d" +
             "UNION ALL " +
             "SELECT 1 " +
-            "FROM %s.%s_actual " +
+            "FROM %s.%s_%s " +
             "WHERE sys_from = %d) AS tmp";
 
     private static final String CHECK_DATA_BY_HASH_TEMPLATE =
             "SELECT sum(dtmInt32Hash(MD5(concat(%s))::bytea)) as %s FROM\n" +
                     "(\n" +
                     "  SELECT %s \n" +
-                    "  FROM %s.%s_history \n" +
+                    "  FROM %s.%s_%s \n" +
                     "  WHERE (sys_to = %d AND sys_op = 1) OR sys_from = %d \n" +
                     "  UNION ALL \n" +
                     "  SELECT %s \n" +
-                    "  FROM %s.%s_actual \n" +
+                    "  FROM %s.%s_%s \n" +
                     "  WHERE sys_from = %d\n" +
                     ") AS tmp";
 
@@ -47,10 +48,12 @@ public class AdbCheckDataWithHistoryFactory implements AdbCheckDataQueryFactory 
                 resultColumnName,
                 request.getEntity().getSchema(),
                 request.getEntity().getName(),
+                Constants.HISTORY_TABLE,
                 request.getSysCn() - 1,
                 request.getSysCn(),
                 request.getEntity().getSchema(),
                 request.getEntity().getName(),
+                Constants.ACTUAL_TABLE,
                 request.getSysCn());
     }
 
@@ -67,16 +70,18 @@ public class AdbCheckDataWithHistoryFactory implements AdbCheckDataQueryFactory 
         val table = request.getEntity().getName();
         val sysCn = request.getSysCn();
         return String.format(CHECK_DATA_BY_HASH_TEMPLATE,
-                resultColumnName,
                 fieldsConcatenationList,
+                resultColumnName,
                 columnsList,
                 datamart,
                 table,
+                Constants.HISTORY_TABLE,
                 sysCn - 1,
                 sysCn,
                 columnsList,
                 datamart,
                 table,
+                Constants.ACTUAL_TABLE,
                 sysCn);
     }
 }

@@ -6,9 +6,9 @@ import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.common.version.VersionInfo;
-import io.arenadata.dtm.query.execution.core.plugin.service.DataSourcePluginService;
-import io.arenadata.dtm.query.execution.core.metrics.service.MetricsService;
 import io.arenadata.dtm.query.execution.core.base.verticle.TaskVerticleExecutor;
+import io.arenadata.dtm.query.execution.core.metrics.service.MetricsService;
+import io.arenadata.dtm.query.execution.core.plugin.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.plugin.api.DtmDataSourcePlugin;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckVersionRequest;
@@ -29,7 +29,9 @@ import org.springframework.plugin.core.PluginRegistry;
 import org.springframework.plugin.core.config.EnablePluginRegistries;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -63,7 +65,7 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
 
     @Override
     public Set<SourceType> getSourceTypes() {
-        return new TreeSet<>(sourceTypes);
+        return new HashSet<>(sourceTypes);
     }
 
     @Override

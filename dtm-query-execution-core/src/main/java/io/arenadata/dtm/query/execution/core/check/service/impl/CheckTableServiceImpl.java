@@ -36,11 +36,12 @@ public class CheckTableServiceImpl implements CheckTableService {
                 .onSuccess(result -> {
                     List<Pair<SourceType, Optional<String>>> list = result.list();
                     if (list.stream().map(Pair::getValue).noneMatch(Optional::isPresent)) {
-                        promise.complete(String.format("Table %s.%s (%s) is ok.",
-                                entity.getSchema(), entity.getName(),
-                                list.stream()
-                                        .map(pair -> pair.getKey().name())
-                                        .collect(Collectors.joining(", "))));
+                        promise.complete(String.format("Table %s.%s (%s) is ok",
+                            entity.getSchema(), entity.getName(),
+                            list.stream()
+                                .map(pair -> pair.getKey().name())
+                                .sorted()
+                                .collect(Collectors.joining(", "))));
                     } else {
                         String errors = list.stream()
                                 .map(pair -> String.format("%s : %s", pair.getKey(), pair.getValue().orElse("ok")))

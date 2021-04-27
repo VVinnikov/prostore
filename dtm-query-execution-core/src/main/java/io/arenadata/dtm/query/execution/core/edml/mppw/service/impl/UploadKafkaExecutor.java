@@ -98,18 +98,24 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                                              MppwKafkaRequest kafkaRequest) {
         return Future.future((Promise<MppwStopFuture> promise) -> pluginService.mppw(ds, metrics, kafkaRequest)
                 .onComplete(ar -> {
+                    val mppwRequestWrapper = MppwRequestWrapper.builder()
+                            .sourceType(ds)
+                            .metrics(metrics)
+                            .request(kafkaRequest)
+                            .topic(kafkaRequest.getTopic())
+                            .build();
                     if (ar.succeeded()) {
                         log.debug("A request has been sent for the plugin: {} to start mppw download: {}", ds, kafkaRequest);
-                        String topic = kafkaRequest.getTopic();
                         val mppwLoadStatusResult = MppwLoadStatusResult.builder()
                                 .lastOffsetTime(LocalDateTime.now(dtmSettings.getTimeZone()))
                                 .lastOffset(0L)
                                 .build();
-                        sendStatusPeriodicaly(ds, metrics, kafkaRequest, promise, topic, mppwLoadStatusResult);
+                        mppwRequestWrapper.setLoadStatusResult(mppwLoadStatusResult);
+                        sendStatusPeriodicaly(mppwRequestWrapper, promise);
                     } else {
                         MppwStopFuture stopFuture = MppwStopFuture.builder()
                                 .sourceType(ds)
-                                .future(stopMppw(ds, metrics, kafkaRequest))
+                                .future(stopMppw(mppwRequestWrapper))
                                 .cause(new DtmException(String.format("Error starting loading mppw for plugin: %s", ds),
                                         ar.cause()))
                                 .stopReason(MppwStopReason.ERROR_RECEIVED)
@@ -119,76 +125,80 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                 }));
     }
 
-    private void sendStatusPeriodicaly(SourceType ds,
-                                       RequestMetrics metrics,
-                                       MppwKafkaRequest kafkaRequest,
-                                       Promise<MppwStopFuture> promise,
-                                       String topic,
-                                       MppwLoadStatusResult mppwLoadStatusResult) {
+    private void sendStatusPeriodicaly(MppwRequestWrapper mppwRequestWrapper,
+                                       Promise<MppwStopFuture> promise) {
         vertx.setTimer(edmlProperties.getPluginStatusCheckPeriodMs(), timerId -> {
-            log.trace("Plugin status request: {} mppw downloads", ds);
-            getMppwLoadingStatus(ds, metrics, topic)
-                    .onSuccess(statusQueryResult -> {
-                        //todo: Add error checking (try catch and so on)
-                        updateMppwLoadStatus(mppwLoadStatusResult, statusQueryResult);
-                        if (isMppwLoadedSuccess(statusQueryResult)) {
-                            vertx.cancelTimer(timerId);
-                            MppwStopFuture stopFuture = MppwStopFuture.builder()
-                                    .sourceType(ds)
-                                    .future(stopMppw(ds, metrics, kafkaRequest))
-                                    .offset(statusQueryResult.getPartitionInfo().getOffset())
-                                    .stopReason(MppwStopReason.OFFSET_RECEIVED)
-                                    .build();
-                            try {
-                                promise.complete(stopFuture);
-                            } catch (Exception e) {
-                                log.error("Error mppw ds {}", ds, e);
-                                promise.complete(stopFuture);
-                            }
-                        } else if (isMppwLoadingInitFailure(mppwLoadStatusResult)) {
-                            vertx.cancelTimer(timerId);
-                            MppwStopFuture stopFuture = MppwStopFuture.builder()
-                                    .sourceType(ds)
-                                    .future(stopMppw(ds, metrics, kafkaRequest))
-                                    .cause(new DtmException(String.format("Plugin %s consumer failed to start", ds)))
-                                    .stopReason(MppwStopReason.ERROR_RECEIVED)
-                                    .build();
-                            promise.complete(stopFuture);
-                        } else if (isLastOffsetNotIncrease(mppwLoadStatusResult)) {
-                            vertx.cancelTimer(timerId);
-                            MppwStopFuture stopFuture = MppwStopFuture.builder()
-                                    .sourceType(ds)
-                                    .future(stopMppw(ds, metrics, kafkaRequest))
-                                    .cause(new DtmException(String.format("Plugin %s consumer offset stopped dead", ds)))
-                                    .stopReason(MppwStopReason.ERROR_RECEIVED)
-                                    .build();
-                            promise.complete(stopFuture);
-                        } else {
-                            sendStatusPeriodicaly(ds,
-                                    metrics,
-                                    kafkaRequest,
-                                    promise,
-                                    topic,
-                                    mppwLoadStatusResult);
-                        }
-                    })
+            log.trace("Plugin status request: {} mppw downloads", mppwRequestWrapper.getSourceType());
+            getMppwLoadingStatus(mppwRequestWrapper)
+                    .onSuccess(statusQueryResult -> processMppwLoad(timerId, promise, mppwRequestWrapper, statusQueryResult))
                     .onFailure(fail -> {
                         vertx.cancelTimer(timerId);
                         promise.fail(new DtmException(
-                                String.format("Error getting plugin status: %s", ds),
+                                String.format("Error getting plugin status: %s", mppwRequestWrapper.getSourceType()),
                                 fail));
                     });
         });
     }
 
-    private Future<StatusQueryResult> getMppwLoadingStatus(SourceType ds, RequestMetrics metrics, String topic) {
+    private void processMppwLoad(Long timerId,
+                                 Promise<MppwStopFuture> promise,
+                                 MppwRequestWrapper mppwRequestWrapper,
+                                 StatusQueryResult statusQueryResult) {
+        try {
+            updateMppwLoadStatus(mppwRequestWrapper.getLoadStatusResult(), statusQueryResult);
+            if (isMppwLoadedSuccess(statusQueryResult)) {
+                vertx.cancelTimer(timerId);
+                MppwStopFuture stopFuture = MppwStopFuture.builder()
+                        .sourceType(mppwRequestWrapper.getSourceType())
+                        .future(stopMppw(mppwRequestWrapper))
+                        .offset(statusQueryResult.getPartitionInfo().getOffset())
+                        .stopReason(MppwStopReason.OFFSET_RECEIVED)
+                        .build();
+                promise.complete(stopFuture);
+            } else if (isMppwLoadingInitFailure(mppwRequestWrapper.getLoadStatusResult())) {
+                vertx.cancelTimer(timerId);
+                MppwStopFuture stopFuture = MppwStopFuture.builder()
+                        .sourceType(mppwRequestWrapper.getSourceType())
+                        .future(stopMppw(mppwRequestWrapper))
+                        .cause(new DtmException(String.format("Plugin %s consumer failed to start",
+                                mppwRequestWrapper.getSourceType())))
+                        .stopReason(MppwStopReason.ERROR_RECEIVED)
+                        .build();
+                promise.complete(stopFuture);
+            } else if (isLastOffsetNotIncrease(mppwRequestWrapper.getLoadStatusResult())) {
+                vertx.cancelTimer(timerId);
+                MppwStopFuture stopFuture = MppwStopFuture.builder()
+                        .sourceType(mppwRequestWrapper.getSourceType())
+                        .future(stopMppw(mppwRequestWrapper))
+                        .cause(new DtmException(String.format("Plugin %s consumer offset stopped dead",
+                                mppwRequestWrapper.getSourceType())))
+                        .stopReason(MppwStopReason.ERROR_RECEIVED)
+                        .build();
+                promise.complete(stopFuture);
+            } else {
+                sendStatusPeriodicaly(mppwRequestWrapper, promise);
+            }
+        } catch (Exception e) {
+            vertx.cancelTimer(timerId);
+            MppwStopFuture stopFuture = MppwStopFuture.builder()
+                    .sourceType(mppwRequestWrapper.getSourceType())
+                    .future(stopMppw(mppwRequestWrapper))
+                    .cause(new DtmException(String.format("Error in processing mppw by plugin %s",
+                            mppwRequestWrapper.getSourceType()), e))
+                    .stopReason(MppwStopReason.ERROR_RECEIVED)
+                    .build();
+            promise.complete(stopFuture);
+        }
+    }
+
+    private Future<StatusQueryResult> getMppwLoadingStatus(MppwRequestWrapper mppwRequestWrapper) {
         return Future.future((Promise<StatusQueryResult> promise) ->
-                pluginService.status(ds, metrics, topic)
+                pluginService.status(mppwRequestWrapper.getSourceType(), mppwRequestWrapper.getMetrics(), mppwRequestWrapper.getTopic())
                         .onSuccess(queryResult -> {
                             log.trace("Plugin status received: {} mppw downloads: {}, on topic: {}",
-                                    ds,
+                                    mppwRequestWrapper.getSourceType(),
                                     queryResult,
-                                    topic);
+                                    mppwRequestWrapper.getTopic());
                             promise.complete(queryResult);
                         })
                         .onFailure(promise::fail));
@@ -260,15 +270,15 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                 });
     }
 
-    private Future<QueryResult> stopMppw(SourceType ds, RequestMetrics metrics, MppwKafkaRequest kafkaRequest) {
+    private Future<QueryResult> stopMppw(MppwRequestWrapper mppwRequestWrapper) {
         return Future.future((Promise<QueryResult> promise) -> {
-            kafkaRequest.setIsLoadStart(false);
+            mppwRequestWrapper.getRequest().setIsLoadStart(false);
             log.debug("A request has been sent for the plugin: {} to stop loading mppw: {}",
-                    ds,
-                    kafkaRequest);
-            pluginService.mppw(ds, metrics, kafkaRequest)
+                    mppwRequestWrapper.getSourceType(),
+                    mppwRequestWrapper.getRequest());
+            pluginService.mppw(mppwRequestWrapper.getSourceType(), mppwRequestWrapper.getMetrics(), mppwRequestWrapper.getRequest())
                     .onSuccess(queryResult -> {
-                        log.debug("Completed stopping mppw loading by plugin: {}", ds);
+                        log.debug("Completed stopping mppw loading by plugin: {}", mppwRequestWrapper.getSourceType());
                         promise.complete(queryResult);
                     })
                     .onFailure(promise::fail);
@@ -325,6 +335,16 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
     private static class MppwLoadStatusResult {
         private Long lastOffset;
         private LocalDateTime lastOffsetTime;
+    }
+
+    @Data
+    @Builder
+    private static class MppwRequestWrapper {
+        private SourceType sourceType;
+        private RequestMetrics metrics;
+        private MppwKafkaRequest request;
+        private String topic;
+        private MppwLoadStatusResult loadStatusResult;
     }
 
 }

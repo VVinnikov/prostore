@@ -32,15 +32,16 @@ public class AdbMppwKafkaService implements AdbMppwExecutor {
 
     @Override
     public Future<QueryResult> execute(MppwRequest request) {
+        if (request == null) {
+            return Future.failedFuture(new MppwDatasourceException("MppwRequest should not be null"));
+        }
+
+        if (request.getUploadMetadata().getFormat() != ExternalTableFormat.AVRO) {
+            return Future.failedFuture(new MppwDatasourceException(String.format("Format %s not implemented",
+                    request.getUploadMetadata().getFormat())));
+        }
+
         return Future.future(promise -> {
-            if (request == null) {
-                promise.fail(new MppwDatasourceException("MppwRequest should not be null"));
-                return;
-            }
-            if (request.getUploadMetadata().getFormat() != ExternalTableFormat.AVRO) {
-                promise.fail(new MppwDatasourceException(String.format("Format %s not implemented",
-                        request.getUploadMetadata().getFormat())));
-            }
             final LoadType loadType = LoadType.valueOf(request.getIsLoadStart());
             mppwExecutors.get(loadType).execute((MppwKafkaRequest) request)
                     .onComplete(promise);

@@ -47,14 +47,13 @@ public class AdbMppwStopRequestExecutorImpl implements AdbMppwRequestExecutor {
                 ar -> dropExtTable(request)
                         .onSuccess(v -> {
                             if (ar.succeeded()) {
-                                promise.complete();
+                                log.debug("Mppw kafka stopped successfully");
+                                promise.complete(QueryResult.emptyResult());
                             } else {
                                 promise.fail(new MppwDatasourceException("Error stopping mppw kafka", ar.cause()));
                             }
                         })
-                        .onFailure(error -> promise.fail(new MppwDatasourceException("Error stopping mppw kafka", error)))))
-                .map(v -> QueryResult.emptyResult())
-                .onSuccess(v -> log.debug("Mppw kafka stopped successfully"));
+                        .onFailure(error -> promise.fail(new MppwDatasourceException("Error stopping mppw kafka", error)))));
     }
 
     private Future<Void> dropExtTable(MppwRequest request) {

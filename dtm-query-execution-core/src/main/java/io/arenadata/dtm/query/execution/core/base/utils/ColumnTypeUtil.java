@@ -44,6 +44,8 @@ public class ColumnTypeUtil {
             case "int":
             case "integer":
                 return INT;
+            case "int32":
+                return INT32;
             case "double":
                 return DOUBLE;
             case "float":

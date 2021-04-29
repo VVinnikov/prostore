@@ -7,19 +7,19 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static io.arenadata.dtm.common.model.ddl.ColumnType.*;
-import static javafx.scene.input.TransferMode.ANY;
 
 public class TypeInfoCache implements TypeInfo {
 
     private final BaseConnection conn;
-    private Map<ColumnType, String> dtmTypeToJavaClassMap;
-    private Map<ColumnType, Integer> dtmTypeToSqlTypeMap;
-    private Map<ColumnType, String> dtmTypeToAliasTypeMap;
+    private final Map<ColumnType, String> dtmTypeToJavaClassMap;
+    private final Map<ColumnType, Integer> dtmTypeToSqlTypeMap;
+    private final Map<ColumnType, String> dtmTypeToAliasTypeMap;
     private static final Object[][] types = new Object[][]{
             {VARCHAR, Types.VARCHAR, "java.lang.String", "varchar"},
             {CHAR, Types.CHAR, "java.lang.String", "char"},
             {BIGINT, Types.BIGINT, "java.lang.Long", "bigint"},
-            {INT, Types.INTEGER, "java.lang.Long", "int"},
+            {INT, Types.BIGINT, "java.lang.Long", "bigint"},
+            {INT32, Types.INTEGER, "java.lang.Integer", "int32"},
             {DOUBLE, Types.DOUBLE, "java.lang.Double", "double"},
             {FLOAT, Types.FLOAT, "java.lang.Float", "float"},
             {DATE, Types.DATE, "java.sql.Date", "date"},

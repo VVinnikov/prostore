@@ -8,6 +8,7 @@ public enum ColumnType {
     CHAR,
     BIGINT,
     INT,
+    INT32,
     DOUBLE,
     FLOAT,
     DATE,

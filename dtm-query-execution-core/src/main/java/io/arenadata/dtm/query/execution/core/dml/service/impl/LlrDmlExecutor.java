@@ -211,16 +211,19 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                         .build()));
         if (sourceQueryTemplateValueOpt.isPresent()) {
             val queryTemplateValue = sourceQueryTemplateValueOpt.get();
-            deltaResponseOpt.ifPresent(deltaResponse -> context.setSqlNode(templateExtractor
-                    .extract(deltaResponse.getSqlNode())
-                    .getTemplateNode()));
             log.debug("Found query template cache value by key [{}]", templateResult.getTemplate());
-            return llrRequestContextFactory.create(context, queryTemplateValue)
-                    .map(llrRequestContext -> {
-                        llrRequestContext.getSourceRequest().setQueryTemplate(templateResult);
-                        llrRequestContext.setOriginalQuery(originalQuery);
-                        deltaResponseOpt.ifPresent(d -> llrRequestContext.setDeltaInformations(d.getDeltaInformations()));
-                        return llrRequestContext;
+            return deltaQueryPreprocessor.process(templateResult.getTemplateNode())
+                    .compose(delta -> {
+                        context.setSqlNode(templateExtractor
+                                .extract(delta.getSqlNode())
+                                .getTemplateNode());
+                        return llrRequestContextFactory.create(context, queryTemplateValue)
+                                .map(llrRequestContext -> {
+                                    llrRequestContext.getSourceRequest().setQueryTemplate(templateResult);
+                                    llrRequestContext.setOriginalQuery(originalQuery);
+                                    deltaResponseOpt.ifPresent(d -> llrRequestContext.setDeltaInformations(d.getDeltaInformations()));
+                                    return llrRequestContext;
+                                });
                     });
         } else {
             if (deltaResponseOpt.isPresent()) {
@@ -240,6 +243,7 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                 return llrRequestContextFactory.create(context)
                         .map(llrRequestContext -> {
                             llrRequestContext.getSourceRequest().setQueryTemplate(templateResult);
+                            llrRequestContext.setOriginalQuery(originalQuery);
                             return llrRequestContext;
                         })
                         .compose(this::cacheQueryTemplateValue);

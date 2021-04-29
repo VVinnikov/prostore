@@ -1,5 +1,6 @@
 package io.arenadata.dtm.jdbc.ext;
 
+import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.jdbc.core.*;
 import io.arenadata.dtm.jdbc.util.DtmSqlException;
 import lombok.extern.slf4j.Slf4j;
@@ -261,7 +262,11 @@ public class DtmPreparedStatement extends DtmStatement implements PreparedStatem
 
     @Override
     public ParameterMetaData getParameterMetaData() throws SQLException {
-        return null;
+        return createParameterMetaData(connection, parameters.getTypes());
+    }
+
+    public ParameterMetaData createParameterMetaData(BaseConnection conn, List<ColumnType> paramTypes) throws SQLException {
+        return new DtmParameterMetadata(conn, paramTypes);
     }
 
     @Override

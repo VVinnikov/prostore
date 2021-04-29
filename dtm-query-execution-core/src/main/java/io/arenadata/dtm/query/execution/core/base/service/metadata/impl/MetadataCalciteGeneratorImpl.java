@@ -87,7 +87,7 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
         val typeName = sqlDataTypeSpec.getTypeName().getSimple().toUpperCase();
         val sqlType = SqlTypeName.get(typeName);
         if (sqlType == null) {
-            return ColumnType.fromTypeString(typeName);
+            return ColumnTypeUtil.fromTypeString(typeName);
         } else {
             return ColumnTypeUtil.valueOf(sqlType);
         }

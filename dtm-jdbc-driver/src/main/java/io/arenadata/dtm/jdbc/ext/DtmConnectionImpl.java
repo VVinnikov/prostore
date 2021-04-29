@@ -1,18 +1,12 @@
 package io.arenadata.dtm.jdbc.ext;
 
-import io.arenadata.dtm.jdbc.core.BaseConnection;
-import io.arenadata.dtm.jdbc.core.BaseStatement;
-import io.arenadata.dtm.jdbc.core.ConnectionFactory;
-import io.arenadata.dtm.jdbc.core.QueryExecutor;
-import io.arenadata.dtm.jdbc.model.ColumnInfo;
+import io.arenadata.dtm.jdbc.core.*;
 import io.arenadata.dtm.jdbc.util.DtmSqlException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
@@ -24,12 +18,12 @@ public class DtmConnectionImpl implements BaseConnection {
     /**
      * Hold level of resultSet
      */
-    private int rsHoldability = ResultSet.CLOSE_CURSORS_AT_COMMIT;
+    private final int rsHoldability = ResultSet.CLOSE_CURSORS_AT_COMMIT;
     /**
      * Autocommit permission state on connection
      */
     private boolean autoCommit = true;
-    private List<ColumnInfo> cachedFieldMetadata = new ArrayList<>();   //TODO need to update after changing table metadata
+    private final TypeInfo typeInfoCache;
     /**
      * Executor for query
      */
@@ -42,6 +36,7 @@ public class DtmConnectionImpl implements BaseConnection {
     public DtmConnectionImpl(String dbHost, String user, String schema, Properties info, String url) throws SQLException {
         this.queryExecutor = ConnectionFactory.openConnection(dbHost, user, schema, url, info);
         this.clientInfo = new Properties();
+        this.typeInfoCache = new TypeInfoCache(this);
         LOGGER.info("Connection created host = {} schema = {} user = {}", dbHost, schema, user);
     }
 
@@ -374,12 +369,12 @@ public class DtmConnectionImpl implements BaseConnection {
     }
 
     @Override
-    public List<ColumnInfo> getCachedFieldMetadata() {
-        return this.cachedFieldMetadata;
+    public QueryExecutor getQueryExecutor() {
+        return queryExecutor;
     }
 
     @Override
-    public QueryExecutor getQueryExecutor() {
-        return queryExecutor;
+    public TypeInfo getTypeInfo() {
+        return typeInfoCache;
     }
 }

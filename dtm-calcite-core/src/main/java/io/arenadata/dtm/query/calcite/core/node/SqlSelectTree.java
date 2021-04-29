@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class SqlSelectTree {
     public static final String IS_TABLE_OR_SNAPSHOTS_PATTERN = "(?i).*(^\\w+|JOIN(|\\[\\d+\\])|SELECT)\\.(|AS\\.)(SNAPSHOT|IDENTIFIER)$";
+    public static final String IS_TABLE_OR_SNAPSHOTS_WITH_CHILD_PATTERN = "(?i).*(^\\w+|JOIN(|\\[\\d+\\])|SELECT)\\.(|AS\\.)(SNAPSHOT|IDENTIFIER)(|\\.IDENTIFIER)$";
     public static final String SELECT_AS_SNAPSHOT = "SNAPSHOT";
     private static final String QUERY_FIELD = "query";
     private static final String COLUMN_LIST_FIELD = "columnList";
@@ -51,9 +52,7 @@ public class SqlSelectTree {
     }
 
     public List<SqlTreeNode> findNodesByPathRegex(String regex) {
-        return filterChild(nodeMap.values().stream()
-                .filter(n -> n.getKindPath().matches(regex))
-                .collect(Collectors.toList()));
+        return filterChild(findAllNodesByPathRegex(regex));
     }
 
     public List<SqlTreeNode> findNodesByPath(String pathPostfix) {
@@ -66,6 +65,12 @@ public class SqlSelectTree {
         return filterChild(nodeMap.values().stream()
                 .filter(predicate)
                 .collect(Collectors.toList()));
+    }
+
+    private List<SqlTreeNode> findAllNodesByPathRegex(String regex) {
+        return nodeMap.values().stream()
+                .filter(n -> n.getKindPath().matches(regex))
+                .collect(Collectors.toList());
     }
 
     private List<SqlTreeNode> filterChild(List<SqlTreeNode> nodeList) {
@@ -219,6 +224,12 @@ public class SqlSelectTree {
 
     public List<SqlTreeNode> findAllTableAndSnapshots() {
         return this.findNodesByPathRegex(IS_TABLE_OR_SNAPSHOTS_PATTERN).stream()
+                .sorted()
+                .collect(Collectors.toList());
+    }
+
+    public List<SqlTreeNode> findAllTableAndSnapshotWithChildren() {
+        return this.findAllNodesByPathRegex(IS_TABLE_OR_SNAPSHOTS_WITH_CHILD_PATTERN).stream()
                 .sorted()
                 .collect(Collectors.toList());
     }

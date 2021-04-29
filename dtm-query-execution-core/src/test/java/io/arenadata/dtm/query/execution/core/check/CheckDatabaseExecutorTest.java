@@ -12,7 +12,9 @@ import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.EntityDao
 import io.arenadata.dtm.query.execution.core.check.dto.CheckContext;
 import io.arenadata.dtm.query.execution.core.check.factory.CheckQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.check.factory.impl.CheckQueryResultFactoryImpl;
+import io.arenadata.dtm.query.execution.core.check.service.CheckTableService;
 import io.arenadata.dtm.query.execution.core.check.service.impl.CheckDatabaseExecutor;
+import io.arenadata.dtm.query.execution.core.check.service.impl.CheckTableServiceImpl;
 import io.arenadata.dtm.query.execution.core.plugin.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.plugin.service.impl.DataSourcePluginServiceImpl;
 import io.vertx.core.Future;
@@ -37,15 +39,16 @@ public class CheckDatabaseExecutorTest {
     private final EntityDao entityDao = mock(EntityDao.class);
     private final DatamartDao datamartDao = mock(DatamartDao.class);
     private final CheckQueryResultFactory queryResultFactory = mock(CheckQueryResultFactoryImpl.class);
-    private final CheckDatabaseExecutor checkDatabaseExecutor = new CheckDatabaseExecutor(dataSourcePluginService,
-            entityDao, datamartDao, queryResultFactory);
+    private final CheckTableService checkTableService = mock(CheckTableServiceImpl.class);
+    private final CheckDatabaseExecutor checkDatabaseExecutor = new CheckDatabaseExecutor(
+            entityDao, datamartDao, queryResultFactory, checkTableService);
 
     @BeforeEach
     void setUp() {
         when(dataSourcePluginService.getSourceTypes()).thenReturn(SOURCE_TYPES);
         when(dataSourcePluginService.checkTable(any(), any(), any())).thenReturn(Future.succeededFuture());
         when(datamartDao.getDatamart(DATAMART_MNEMONIC)).thenReturn(Future.succeededFuture(new byte[10]));
-
+        when(checkTableService.checkEntity(any(), any())).thenReturn(Future.succeededFuture("Table is ok"));
         Entity entity1 = Entity.builder()
                 .schema(DATAMART_MNEMONIC)
                 .entityType(EntityType.TABLE)
@@ -71,13 +74,6 @@ public class CheckDatabaseExecutorTest {
                 new DatamartRequest(queryRequest), CheckType.DATABASE, null);
         checkDatabaseExecutor.execute(checkContext)
                 .onComplete(ar -> assertTrue(ar.succeeded()));
-        SOURCE_TYPES.forEach(sourceType -> {
-            verify(dataSourcePluginService, times(1)).checkTable(eq(sourceType), any(),
-                    argThat(request -> request.getEntity().getName().equals("entity1")));
-            verify(dataSourcePluginService, times(1)).checkTable(eq(sourceType), any(),
-                    argThat(request -> request.getEntity().getName().equals("entity2")));
-        });
-        verify(dataSourcePluginService, times(SOURCE_TYPES.size() * 2))
-                .checkTable(any(), any(), any());
+        verify(checkTableService, times(2)).checkEntity(any(), any());
     }
 }

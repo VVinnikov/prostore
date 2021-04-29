@@ -2,8 +2,8 @@ package io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.impl;
 
 import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.delta.DeltaType;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.QueryExtendService;
 import io.arenadata.dtm.query.execution.plugin.adb.enrichment.dto.QueryGeneratorContext;
+import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.QueryExtendService;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -12,7 +12,6 @@ import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
-import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,9 +20,8 @@ import java.util.stream.IntStream;
 
 import static io.arenadata.dtm.query.execution.plugin.adb.base.factory.Constants.*;
 
-@Service
 @Slf4j
-public class AdbDmlQueryExtendServiceImpl implements QueryExtendService {
+public class AdbDmlQueryExtendWithHistoryService implements QueryExtendService {
 
     public static final String TABLE_PREFIX = "_";
 

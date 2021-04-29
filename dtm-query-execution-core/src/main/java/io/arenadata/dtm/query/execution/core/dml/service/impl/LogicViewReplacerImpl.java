@@ -53,7 +53,7 @@ public class LogicViewReplacerImpl implements LogicViewReplacer {
                     null)
                     .onSuccess(v -> {
                         String replacedSql = rootSqlNode.toSqlString(SQL_DIALECT).getSql();
-                        log.debug("after replacing: [{}]", replacedSql);
+                        log.debug("after replacing:\n{}", replacedSql);
                         promise.complete(replacedSql);
                     })
                     .onFailure(promise::fail);

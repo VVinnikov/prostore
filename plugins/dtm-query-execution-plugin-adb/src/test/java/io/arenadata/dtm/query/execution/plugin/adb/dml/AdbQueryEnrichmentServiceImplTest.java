@@ -10,10 +10,7 @@ import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.QueryEnrichmentService;
 import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.QueryExtendService;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.impl.AdbDmlQueryExtendServiceImpl;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.impl.AdbQueryEnrichmentServiceImpl;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.impl.AdbQueryGeneratorImpl;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.impl.AdbSchemaExtenderImpl;
+import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.impl.*;
 import io.arenadata.dtm.query.execution.plugin.adb.calcite.service.AdbCalciteContextProvider;
 import io.arenadata.dtm.query.execution.plugin.adb.calcite.factory.AdbCalciteSchemaFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.calcite.service.AdbCalciteDMLQueryParserService;
@@ -27,8 +24,8 @@ import io.vertx.ext.unit.TestOptions;
 import io.vertx.ext.unit.TestSuite;
 import io.vertx.ext.unit.report.ReportOptions;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -42,34 +39,30 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
-public class AdbQueryEnrichmentServiceImplTest {
+class AdbQueryEnrichmentServiceImplTest {
 
     public static final String SHARES_SCHEMA_NAME = "shares";
     public static final String SHARES_2_SCHEMA_NAME = "shares_2";
     public static final String TEST_DATAMART_SCHEMA_NAME = "test_datamart";
     public static final String ENV_NAME = "test";
-    QueryEnrichmentService adbQueryEnrichmentService;
+    private final CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
+    private final QueryExtendService queryExtender = new AdbDmlQueryExtendWithoutHistoryService();
+    private final AdbCalciteContextProvider contextProvider = new AdbCalciteContextProvider(
+            calciteConfiguration.configDdlParser(
+                    calciteConfiguration.ddlParserImplFactory()
+            ),
+            new AdbCalciteSchemaFactory(new AdbSchemaFactory()));
+    private final AdbQueryGeneratorImpl adbQueryGeneratorimpl = new AdbQueryGeneratorImpl(queryExtender, calciteConfiguration.adbSqlDialect());
+    private final QueryParserService queryParserService = new AdbCalciteDMLQueryParserService(contextProvider, Vertx.vertx());
+    private QueryEnrichmentService adbQueryEnrichmentService;
 
-    public AdbQueryEnrichmentServiceImplTest() {
-        QueryExtendService queryExtender = new AdbDmlQueryExtendServiceImpl();
-
-        CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
-        SqlParser.Config parserConfig = calciteConfiguration.configDdlParser(
-                calciteConfiguration.ddlParserImplFactory()
-        );
-
-        AdbCalciteContextProvider contextProvider = new AdbCalciteContextProvider(
-                parserConfig,
-                new AdbCalciteSchemaFactory(new AdbSchemaFactory()));
-
-        AdbQueryGeneratorImpl adbQueryGeneratorimpl = new AdbQueryGeneratorImpl(queryExtender, calciteConfiguration.adbSqlDialect());
-        QueryParserService queryParserService = new AdbCalciteDMLQueryParserService(contextProvider, Vertx.vertx());
+    @BeforeEach
+    void setUp() {
         adbQueryEnrichmentService = new AdbQueryEnrichmentServiceImpl(
                 queryParserService,
                 adbQueryGeneratorimpl,
                 contextProvider,
                 new AdbSchemaExtenderImpl());
-
     }
 
     private static void assertGrep(String data, String regexp) {

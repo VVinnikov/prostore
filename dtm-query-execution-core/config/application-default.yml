@@ -94,6 +94,8 @@ adb:
     defaultMessageLimit: ${ADB_MPPW_DEFAULT_MESSAGE_LIMIT:100}
     fdwTimeoutMs: ${ADB_MPPW_FDW_TIMEOUT_MS:1000}
 
+  with-history-table: ${ADB_WITH_HISTORY_TABLE:false}
+
 adg:
   tarantool:
     db:
@@ -103,6 +105,7 @@ adg:
       password: ${TARANTOOL_DB_PASS:memstorage-cluster-cookie}
       operationTimeout: ${TARANTOOL_DB_OPER_TIMEOUT:60000}
       retryCount: ${TARANTOOL_DB_RETRY_COUNT:0}
+      engine: ${TARANTOOL_DEFAULT_ENGINE:MEMTX}
     cartridge:
       url: ${TARANTOOL_CATRIDGE_URL:http://10.92.3.120:8086}
 

@@ -94,8 +94,7 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                         TABLE_TYPE,
                         "",
                         null,
-                        null,
-                        getUserName()
+                        null
                 })).collect(Collectors.toList());
         try (DtmStatement dtmStatement = (DtmStatement) this.connection.createStatement()) {
             return dtmStatement.createDriverResultSet(fields, tuples);
@@ -156,8 +155,8 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                         null,
                         columnInfo.getEntityMnemonic(),
                         columnInfo.getMnemonic(),
-                        columnInfo.getDataType().getSqlType(),
-                        columnInfo.getDataType().getAliases()[0].toUpperCase(),
+                        connection.getTypeInfo().getSqlType(columnInfo.getDataType()),
+                        connection.getTypeInfo().getAlias(columnInfo.getDataType()).toUpperCase(),
                         getColumnSize(columnInfo),
                         null,
                         getColumnScale(columnInfo),
@@ -173,7 +172,7 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                         null,
                         null,
                         null,
-                        columnInfo.getDataType().getSqlType(),
+                        connection.getTypeInfo().getSqlType(columnInfo.getDataType()),
                         "NO",
                         "NO"
                 })).collect(Collectors.toList());
@@ -537,7 +536,7 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public String getSchemaTerm() throws SQLException {
-        return "";
+        return "schema";
     }
 
     @Override
@@ -829,7 +828,20 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
     public ResultSet getProcedures(String catalog,
                                    String schemaPattern,
                                    String procedureNamePattern) throws SQLException {
-        return DtmResultSet.createEmptyResultSet();
+        Field[] fields = {
+                new Field("PROCEDURE_CAT", ColumnType.VARCHAR),
+                new Field("PROCEDURE_SCHEM", ColumnType.VARCHAR),
+                new Field("PROCEDURE_NAME", ColumnType.VARCHAR),
+                new Field("", ColumnType.VARCHAR),
+                new Field("", ColumnType.VARCHAR),
+                new Field("", ColumnType.VARCHAR),
+                new Field("REMARKS", ColumnType.VARCHAR),
+                new Field("PROCEDURE_TYPE", ColumnType.INT),
+                new Field("SPECIFIC_NAME", ColumnType.VARCHAR)
+        };
+        try (DtmStatement dtmStatement = (DtmStatement) this.connection.createStatement()) {
+            return dtmStatement.createDriverResultSet(fields, new ArrayList<>());
+        }
     }
 
     @Override
@@ -837,7 +849,31 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                                          String schemaPattern,
                                          String procedureNamePattern,
                                          String columnNamePattern) throws SQLException {
-        return DtmResultSet.createEmptyResultSet();
+        Field[] fields = {
+                new Field("PROCEDURE_CAT", ColumnType.VARCHAR),
+                new Field("PROCEDURE_SCHEM", ColumnType.VARCHAR),
+                new Field("PROCEDURE_NAME", ColumnType.VARCHAR),
+                new Field("COLUMN_NAME", ColumnType.VARCHAR),
+                new Field("COLUMN_TYPE", ColumnType.INT),
+                new Field("DATA_TYPE", ColumnType.INT),
+                new Field("TYPE_NAME", ColumnType.VARCHAR),
+                new Field("PRECISION", ColumnType.INT),
+                new Field("LENGTH", ColumnType.INT),
+                new Field("SCALE", ColumnType.INT),
+                new Field("RADIX", ColumnType.INT),
+                new Field("NULLABLE", ColumnType.INT),
+                new Field("REMARKS", ColumnType.VARCHAR),
+                new Field("COLUMN_DEF", ColumnType.VARCHAR),
+                new Field("SQL_DATA_TYPE", ColumnType.INT),
+                new Field("SQL_DATETIME_SUB", ColumnType.INT),
+                new Field("CHAR_OCTET_LENGTH", ColumnType.INT),
+                new Field("ORDINAL_POSITION", ColumnType.INT),
+                new Field("IS_NULLABLE", ColumnType.VARCHAR),
+                new Field("SPECIFIC_NAME", ColumnType.VARCHAR)
+        };
+        try (DtmStatement dtmStatement = (DtmStatement) this.connection.createStatement()) {
+            return dtmStatement.createDriverResultSet(fields, new ArrayList<>());
+        }
     }
 
     @Override
@@ -845,14 +881,31 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                                          String schema,
                                          String table,
                                          String columnNamePattern) throws SQLException {
-        return DtmResultSet.createEmptyResultSet();
+        try (DtmStatement dtmStatement = (DtmStatement) this.connection.createStatement()) {
+            return dtmStatement.createDriverResultSet(getPrivilegesMetadata(), new ArrayList<>());
+        }
     }
 
     @Override
     public ResultSet getTablePrivileges(String catalog,
                                         String schemaPattern,
                                         String tableNamePattern) throws SQLException {
-        return DtmResultSet.createEmptyResultSet();
+        try (DtmStatement dtmStatement = (DtmStatement) this.connection.createStatement()) {
+            return dtmStatement.createDriverResultSet(getPrivilegesMetadata(), new ArrayList<>());
+        }
+    }
+
+    private Field[] getPrivilegesMetadata() {
+        return new Field[]{
+                new Field("TABLE_CAT", ColumnType.VARCHAR),
+                new Field("TABLE_SCHEM", ColumnType.VARCHAR),
+                new Field("TABLE_NAME", ColumnType.VARCHAR),
+                new Field("COLUMN_NAME", ColumnType.VARCHAR),
+                new Field("GRANTOR", ColumnType.VARCHAR),
+                new Field("GRANTEE", ColumnType.VARCHAR),
+                new Field("PRIVILEGE", ColumnType.VARCHAR),
+                new Field("IS_GRANTABLE", ColumnType.VARCHAR)
+        };
     }
 
     @Override
@@ -861,12 +914,31 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                                           String table,
                                           int scope,
                                           boolean nullable) throws SQLException {
-        return DtmResultSet.createEmptyResultSet();
+        Field[] fields = getVersionColumnsMetadata();
+        try (DtmStatement dtmStatement = (DtmStatement) this.connection.createStatement()) {
+            return dtmStatement.createDriverResultSet(fields, new ArrayList<>());
+        }
     }
 
     @Override
     public ResultSet getVersionColumns(String catalog, String schema, String table) throws SQLException {
-        return DtmResultSet.createEmptyResultSet();
+        Field[] fields = getVersionColumnsMetadata();
+        try (DtmStatement dtmStatement = (DtmStatement) this.connection.createStatement()) {
+            return dtmStatement.createDriverResultSet(fields, new ArrayList<>());
+        }
+    }
+
+    private Field[] getVersionColumnsMetadata() {
+        return new Field[]{
+                new Field("SCOPE", ColumnType.INT),
+                new Field("COLUMN_NAME", ColumnType.VARCHAR),
+                new Field("DATA_TYPE", ColumnType.INT),
+                new Field("TYPE_NAME", ColumnType.BOOLEAN),
+                new Field("COLUMN_SIZE", ColumnType.INT),
+                new Field("BUFFER_LENGTH", ColumnType.INT),
+                new Field("DECIMAL_DIGITS", ColumnType.INT),
+                new Field("PSEUDO_COLUMN", ColumnType.INT),
+        };
     }
 
     @Override
@@ -888,12 +960,35 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public ResultSet getImportedKeys(String catalog, String schema, String table) throws SQLException {
-        return DtmResultSet.createEmptyResultSet();
+        Field[] fields = getImportedKeysMetadata();
+        try (DtmStatement dtmStatement = (DtmStatement) this.connection.createStatement()) {
+            return dtmStatement.createDriverResultSet(fields, new ArrayList<>());
+        }
     }
 
     @Override
     public ResultSet getExportedKeys(String catalog, String schema, String table) throws SQLException {
-        return DtmResultSet.createEmptyResultSet();
+        Field[] fields = getImportedKeysMetadata();
+        try (DtmStatement dtmStatement = (DtmStatement) this.connection.createStatement()) {
+            return dtmStatement.createDriverResultSet(fields, new ArrayList<>());
+        }
+    }
+
+    private Field[] getImportedKeysMetadata() {
+        return new Field[]{
+                new Field("PKTABLE_CAT", ColumnType.VARCHAR),
+                new Field("PKTABLE_SCHEM", ColumnType.VARCHAR),
+                new Field("PKTABLE_NAME", ColumnType.VARCHAR),
+                new Field("PKCOLUMN_NAME", ColumnType.VARCHAR),
+                new Field("FKTABLE_CAT", ColumnType.VARCHAR),
+                new Field("FKTABLE_SCHEM", ColumnType.VARCHAR),
+                new Field("FKTABLE_NAME", ColumnType.VARCHAR),
+                new Field("FKCOLUMN_NAME", ColumnType.VARCHAR),
+                new Field("KEY_SEQ", ColumnType.VARCHAR),
+                new Field("UPDATE_RULE", ColumnType.VARCHAR),
+                new Field("DELETE_RULE", ColumnType.VARCHAR),
+                new Field("DEFERRABILITY", ColumnType.INT)
+        };
     }
 
     @Override
@@ -903,12 +998,37 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                                        String foreignCatalog,
                                        String foreignSchema,
                                        String foreignTable) throws SQLException {
-        return DtmResultSet.createEmptyResultSet();
+        Field[] fields = getImportedKeysMetadata();
+        try (DtmStatement dtmStatement = (DtmStatement) this.connection.createStatement()) {
+            return dtmStatement.createDriverResultSet(fields, new ArrayList<>());
+        }
     }
 
     @Override
     public ResultSet getTypeInfo() throws SQLException {
-        return null;
+        Field[] fields = new Field[]{
+                new Field("TYPE_NAME", ColumnType.VARCHAR),
+                new Field("DATA_TYPE", ColumnType.INT),
+                new Field("PRECISION", ColumnType.INT),
+                new Field("LITERAL_PREFIX", ColumnType.VARCHAR),
+                new Field("LITERAL_SUFFIX", ColumnType.VARCHAR),
+                new Field("CREATE_PARAMS", ColumnType.INT),
+                new Field("NULLABLE", ColumnType.INT),
+                new Field("CASE_SENSITIVE", ColumnType.BOOLEAN),
+                new Field("SEARCHABLE", ColumnType.INT),
+                new Field("UNSIGNED_ATTRIBUTE", ColumnType.BOOLEAN),
+                new Field("FIXED_PREC_SCALE", ColumnType.BOOLEAN),
+                new Field("AUTO_INCREMENT", ColumnType.BOOLEAN),
+                new Field("LOCAL_TYPE_NAME", ColumnType.VARCHAR),
+                new Field("MINIMUM_SCALE", ColumnType.INT),
+                new Field("MAXIMUM_SCALE", ColumnType.INT),
+                new Field("SQL_DATA_TYPE", ColumnType.INT),
+                new Field("SQL_DATETIME_SUB", ColumnType.INT),
+                new Field("NUM_PREC_RADIX", ColumnType.INT),
+        };
+        try (DtmStatement dtmStatement = (DtmStatement) this.connection.createStatement()) {
+            return dtmStatement.createDriverResultSet(fields, new ArrayList<>());
+        }
     }
 
     @Override
@@ -917,7 +1037,25 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                                   String table,
                                   boolean unique,
                                   boolean approximate) throws SQLException {
-        return DtmResultSet.createEmptyResultSet();
+        Field[] fields = new Field[]{
+                new Field("TABLE_CAT", ColumnType.VARCHAR),
+                new Field("TABLE_SCHEM", ColumnType.VARCHAR),
+                new Field("NON_UNIQUE", ColumnType.VARCHAR),
+                new Field("INDEX_QUALIFIER", ColumnType.VARCHAR),
+                new Field("INDEX_NAME", ColumnType.VARCHAR),
+                new Field("TYPE", ColumnType.INT),
+                new Field("ORDINAL_POSITION", ColumnType.INT),
+                new Field("CARDINALITY", ColumnType.VARCHAR),
+                new Field("PAGES", ColumnType.VARCHAR),
+                new Field("FILTER_CONDITION", ColumnType.VARCHAR),
+                new Field("CI_OID", ColumnType.VARCHAR),
+                new Field("I_INDOPTION", ColumnType.VARCHAR),
+                new Field("AM_NAME", ColumnType.VARCHAR),
+
+        };
+        try (DtmStatement dtmStatement = (DtmStatement) this.connection.createStatement()) {
+            return dtmStatement.createDriverResultSet(fields, new ArrayList<>());
+        }
     }
 
     @Override
@@ -985,7 +1123,16 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                              String schemaPattern,
                              String typeNamePattern,
                              int[] types) throws SQLException {
-        return DtmResultSet.createEmptyResultSet();
+        Field[] fields = {
+                new Field("TYPE_CAT", ColumnType.VARCHAR),
+                new Field("TYPE_SCHEM", ColumnType.VARCHAR),
+                new Field("TYPE_NAME", ColumnType.VARCHAR),
+                new Field("CLASS_NAME", ColumnType.VARCHAR),
+                new Field("REMARKS", ColumnType.VARCHAR)
+        };
+        try (DtmStatement dtmStatement = (DtmStatement) this.connection.createStatement()) {
+            return dtmStatement.createDriverResultSet(fields, new ArrayList<>());
+        }
     }
 
     @Override
@@ -1015,12 +1162,12 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public ResultSet getSuperTypes(String catalog, String schemaPattern, String typeNamePattern) throws SQLException {
-        return DtmResultSet.createEmptyResultSet();
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
     public ResultSet getSuperTables(String catalog, String schemaPattern, String tableNamePattern) throws SQLException {
-        return DtmResultSet.createEmptyResultSet();
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override
@@ -1119,14 +1266,32 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public ResultSet getClientInfoProperties() throws SQLException {
-        return DtmResultSet.createEmptyResultSet();
+        Field[] fields = {
+                new Field("NAME", ColumnType.VARCHAR),
+                new Field("MAX_LEN", ColumnType.INT),
+                new Field("DEFAULT_VALUE", ColumnType.VARCHAR),
+                new Field("DESCRIPTION", ColumnType.VARCHAR)
+        };
+        try (DtmStatement dtmStatement = (DtmStatement) this.connection.createStatement()) {
+            return dtmStatement.createDriverResultSet(fields, new ArrayList<>());
+        }
     }
 
     @Override
     public ResultSet getFunctions(String catalog,
                                   String schemaPattern,
                                   String functionNamePattern) throws SQLException {
-        return DtmResultSet.createEmptyResultSet();
+        Field[] fields = {
+                new Field("FUNCTION_CAT", ColumnType.VARCHAR),
+                new Field("FUNCTION_SCHEM", ColumnType.VARCHAR),
+                new Field("FUNCTION_NAME", ColumnType.VARCHAR),
+                new Field("REMARKS", ColumnType.VARCHAR),
+                new Field("FUNCTION_TYPE", ColumnType.VARCHAR),
+                new Field("SPECIFIC_NAME", ColumnType.VARCHAR)
+        };
+        try (DtmStatement dtmStatement = (DtmStatement) this.connection.createStatement()) {
+            return dtmStatement.createDriverResultSet(fields, new ArrayList<>());
+        }
     }
 
     @Override
@@ -1134,7 +1299,28 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                                         String schemaPattern,
                                         String functionNamePattern,
                                         String columnNamePattern) throws SQLException {
-        return DtmResultSet.createEmptyResultSet();
+        Field[] fields = {
+                new Field("FUNCTION_CAT", ColumnType.VARCHAR),
+                new Field("FUNCTION_SCHEM", ColumnType.VARCHAR),
+                new Field("FUNCTION_NAME", ColumnType.VARCHAR),
+                new Field("COLUMN_NAME", ColumnType.VARCHAR),
+                new Field("COLUMN_TYPE", ColumnType.INT),
+                new Field("DATA_TYPE", ColumnType.INT),
+                new Field("TYPE_NAME", ColumnType.VARCHAR),
+                new Field("PRECISION", ColumnType.INT),
+                new Field("LENGTH", ColumnType.INT),
+                new Field("SCALE", ColumnType.INT),
+                new Field("RADIX", ColumnType.INT),
+                new Field("NULLABLE", ColumnType.INT),
+                new Field("REMARKS", ColumnType.VARCHAR),
+                new Field("CHAR_OCTET_LENGTH", ColumnType.INT),
+                new Field("ORDINAL_POSITION", ColumnType.INT),
+                new Field("IS_NULLABLE", ColumnType.VARCHAR),
+                new Field("SPECIFIC_NAME", ColumnType.VARCHAR)
+        };
+        try (DtmStatement dtmStatement = (DtmStatement) this.connection.createStatement()) {
+            return dtmStatement.createDriverResultSet(fields, new ArrayList<>());
+        }
     }
 
     @Override
@@ -1142,7 +1328,7 @@ public class DtmDatabaseMetaData implements DatabaseMetaData {
                                       String schemaPattern,
                                       String tableNamePattern,
                                       String columnNamePattern) throws SQLException {
-        return null;
+        throw new SQLFeatureNotSupportedException();
     }
 
     @Override

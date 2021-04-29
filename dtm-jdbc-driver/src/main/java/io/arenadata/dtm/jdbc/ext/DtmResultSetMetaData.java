@@ -155,7 +155,7 @@ public class DtmResultSetMetaData implements ResultSetMetaData {
 
     @Override
     public String getColumnClassName(int column) throws SQLException {
-        return this.fields[column - 1].getDtmType().getClazz().getName();
+        return connection.getTypeInfo().getJavaClass(this.fields[column - 1].getDtmType());
     }
 
     @Override

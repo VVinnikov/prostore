@@ -72,7 +72,8 @@ public class DtmParameterMetadata implements ParameterMetaData {
 
     private void checkParamIndex(int param) throws SQLException {
         if (param < 1 || param > this.paramTypes.size()) {
-            throw new SQLException(String.format("The parameter index is out of range: %d, number of parameters", this.paramTypes.size()));
+            throw new SQLException(String.format("The parameter index is out of range: %d, number of parameters",
+                    this.paramTypes.size()));
         }
     }
 

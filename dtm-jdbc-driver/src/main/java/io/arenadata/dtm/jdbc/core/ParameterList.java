@@ -41,7 +41,7 @@ public interface ParameterList {
 
     void clear();
 
-    List<Object> getValues();
+    Object[] getValues();
 
-    List<ColumnType> getTypes();
+    ColumnType[] getTypes();
 }

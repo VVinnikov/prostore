@@ -11,14 +11,15 @@ import java.sql.*;
 public class DtmDriverCases {
 
     public static void main(String[] args) throws SQLException {
-        String host = "localhost:9090";
+        String host = "10.92.3.86:9094";
         String user = "";
         String schema = "";
         String url = String.format("jdbc:adtm://%s/", host);
         BaseConnection conn = new DtmConnectionImpl(host, user, schema, null, url);
-        DtmStatement stmnt = (DtmStatement) conn.createStatement();
-        DatabaseMetaData metaData = conn.getMetaData();
-        ResultSet resultSet = stmnt.executeQuery("use dtm_1106");
+        ResultSet resultSet = conn.prepareStatement("select * from information_schema.schemata").executeQuery();
+//        DtmStatement stmnt = (DtmStatement) conn.createStatement();
+//        DatabaseMetaData metaData = conn.getMetaData();
+//        ResultSet resultSet = stmnt.executeQuery("use dtm_1106");
         //ResultSet resultSet = metaData.getSchemas();
         //ResultSet resultSet = metaData.getColumns("dtm_1012", "", "accounts_all", null);
         final ResultSet resultSet2 = testPrepareStmnt(conn);

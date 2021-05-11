@@ -3,7 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adb.mppw.kafka.factory.impl;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
-import io.arenadata.dtm.common.model.ddl.EntityTypeUtil;
+import io.arenadata.dtm.query.execution.plugin.adb.base.utils.AdbTypeUtil;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.plugin.adb.mppw.configuration.properties.MppwProperties;
 import io.arenadata.dtm.query.execution.plugin.adb.mppw.kafka.factory.KafkaMppwSqlFactory;
@@ -132,7 +132,7 @@ public class KafkaMppwSqlFactoryImpl implements KafkaMppwSqlFactory {
         val sb = new StringBuilder();
         sb.append(field.getName())
                 .append(" ")
-                .append(EntityTypeUtil.pgFromDtmType(field))
+                .append(AdbTypeUtil.adbTypeFromDtmType(field))
                 .append(" ");
         if (!field.getNullable()) {
             sb.append("NOT NULL");

@@ -326,6 +326,7 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
             case DOUBLE:
             case FLOAT:
             case INT32:
+            case LINK:
             case INT:
             case VARCHAR:
             case UUID:

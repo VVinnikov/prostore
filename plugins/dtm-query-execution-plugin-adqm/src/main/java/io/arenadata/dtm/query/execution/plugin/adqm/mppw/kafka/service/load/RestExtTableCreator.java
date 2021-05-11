@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.mppw.kafka.service.load;
 
-import io.arenadata.dtm.query.execution.plugin.adqm.base.utils.DdlUtils;
+import io.arenadata.dtm.query.execution.plugin.adqm.base.utils.AdqmDdlUtil;
 import io.arenadata.dtm.query.execution.plugin.adqm.ddl.configuration.properties.DdlProperties;
 import lombok.NonNull;
 import org.apache.avro.Schema;
@@ -30,7 +30,7 @@ public class RestExtTableCreator implements ExtTableCreator {
         String columns = schema.getFields().stream()
                 .map(f -> {
                     boolean isNullable = !sortingKey.contains(f.name());
-                    return DdlUtils.avroFieldToString(f, isNullable);
+                    return AdqmDdlUtil.avroFieldToString(f, isNullable);
                 })
                 .collect(Collectors.joining(", "));
 

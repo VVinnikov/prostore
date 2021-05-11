@@ -1,7 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adb.mppr.kafka.factory.impl;
 
 import io.arenadata.dtm.common.dto.KafkaBrokerInfo;
-import io.arenadata.dtm.common.model.ddl.EntityTypeUtil;
+import io.arenadata.dtm.query.execution.plugin.adb.base.utils.AdbTypeUtil;
 import io.arenadata.dtm.query.execution.plugin.adb.mppr.kafka.factory.KafkaMpprSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.kafka.DownloadExternalEntityMetadata;
 import io.arenadata.dtm.query.execution.plugin.api.mppr.kafka.MpprKafkaRequest;
@@ -25,7 +25,7 @@ public class KafkaMpprSqlFactoryImpl implements KafkaMpprSqlFactory {
         val schema =request.getDatamartMnemonic();
         val table = getTableName(request.getRequestId().toString());
         val columns = request.getDestinationEntity().getFields().stream()
-                .map(field -> field.getName() + " " + EntityTypeUtil.pgFromDtmType(field)).collect(Collectors.toList());
+                .map(field -> field.getName() + " " + AdbTypeUtil.adbTypeFromDtmType(field)).collect(Collectors.toList());
         val topic = request.getTopic();
         val brokers = request.getBrokers().stream()
                 .map(KafkaBrokerInfo::getAddress)

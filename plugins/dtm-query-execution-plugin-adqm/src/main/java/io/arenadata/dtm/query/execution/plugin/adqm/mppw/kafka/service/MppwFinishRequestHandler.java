@@ -11,7 +11,7 @@ import io.arenadata.dtm.query.execution.plugin.adqm.mppw.kafka.dto.RestMppwKafka
 import io.arenadata.dtm.query.execution.plugin.adqm.query.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.status.service.StatusReporter;
 import io.arenadata.dtm.query.execution.plugin.adqm.mppw.kafka.service.load.RestLoadClient;
-import io.arenadata.dtm.query.execution.plugin.adqm.base.utils.DdlUtils;
+import io.arenadata.dtm.query.execution.plugin.adqm.base.utils.AdqmDdlUtil;
 import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 import io.vertx.core.CompositeFuture;
@@ -32,8 +32,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static io.arenadata.dtm.query.execution.plugin.adqm.base.utils.Constants.*;
-import static io.arenadata.dtm.query.execution.plugin.adqm.base.utils.DdlUtils.sequenceAll;
-import static io.arenadata.dtm.query.execution.plugin.adqm.base.utils.DdlUtils.splitQualifiedTableName;
+import static io.arenadata.dtm.query.execution.plugin.adqm.base.utils.AdqmDdlUtil.sequenceAll;
+import static io.arenadata.dtm.query.execution.plugin.adqm.base.utils.AdqmDdlUtil.splitQualifiedTableName;
 import static java.lang.String.format;
 
 @Component("adqmMppwFinishRequestHandler")
@@ -71,12 +71,12 @@ public class MppwFinishRequestHandler extends AbstractMppwRequestHandler {
 
     @Override
     public Future<QueryResult> execute(final MppwKafkaRequest request) {
-        val err = DdlUtils.validateRequest(request);
+        val err = AdqmDdlUtil.validateRequest(request);
         if (err.isPresent()) {
             return Future.failedFuture(err.get());
         }
 
-        String fullName = DdlUtils.getQualifiedTableName(request, appConfiguration);
+        String fullName = AdqmDdlUtil.getQualifiedTableName(request, appConfiguration);
         long sysCn = request.getSysCn();
 
         return sequenceAll(Arrays.asList(  // 1. drop shard tables

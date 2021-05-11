@@ -8,7 +8,7 @@ import io.arenadata.dtm.query.execution.plugin.adqm.base.factory.AdqmMetaTableEn
 import io.arenadata.dtm.query.execution.plugin.adqm.base.factory.AdqmTableEntitiesFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.query.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.query.service.AdqmQueryExecutor;
-import io.arenadata.dtm.query.execution.plugin.adqm.base.utils.DdlUtils;
+import io.arenadata.dtm.query.execution.plugin.adqm.base.utils.AdqmDdlUtil;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
 import io.arenadata.dtm.query.execution.plugin.api.factory.MetaTableEntityFactory;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckTableService;
@@ -155,7 +155,7 @@ public class AdqmCheckTableServiceTest {
                 .map(sortKeyFunc)
                 .orElse(0));
         result.put(AdqmMetaTableEntityFactory.COLUMN_NAME, field.getName());
-        result.put(AdqmMetaTableEntityFactory.DATA_TYPE, DdlUtils.classTypeToNative(field.getType()));
+        result.put(AdqmMetaTableEntityFactory.DATA_TYPE, AdqmDdlUtil.classTypeToNative(field.getType()));
         return result;
     }
 

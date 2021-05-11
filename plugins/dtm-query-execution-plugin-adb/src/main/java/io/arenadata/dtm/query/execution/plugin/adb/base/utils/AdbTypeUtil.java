@@ -1,17 +1,20 @@
-package io.arenadata.dtm.common.model.ddl;
+package io.arenadata.dtm.query.execution.plugin.adb.base.utils;
+
+import io.arenadata.dtm.common.model.ddl.ColumnType;
+import io.arenadata.dtm.common.model.ddl.EntityField;
 
 import java.util.Optional;
 
-public class EntityTypeUtil {
+public class AdbTypeUtil {
 
-    private EntityTypeUtil() {
+    private AdbTypeUtil() {
     }
 
-    public static String pgFromDtmType(EntityField field) {
-        return pgFromDtmType(field.getType(), field.getSize());
+    public static String adbTypeFromDtmType(EntityField field) {
+        return adbTypeFromDtmType(field.getType(), field.getSize());
     }
 
-    public static String pgFromDtmType(ColumnType type, Integer size) {
+    public static String adbTypeFromDtmType(ColumnType type, Integer size) {
         switch (type) {
             case DATE:
                 return "date";
@@ -35,6 +38,8 @@ public class EntityTypeUtil {
                 return "varchar" + getVarcharSize(size);
             case UUID:
                 return "varchar(36)";
+            case LINK:
+                return "varchar";
             default:
                 throw new UnsupportedOperationException(String.format("Unsupported type: %s", type));
         }

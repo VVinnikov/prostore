@@ -4,7 +4,7 @@ import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityFieldUtils;
-import io.arenadata.dtm.common.model.ddl.EntityTypeUtil;
+import io.arenadata.dtm.query.execution.plugin.adb.base.utils.AdbTypeUtil;
 import io.arenadata.dtm.query.execution.plugin.adb.base.dto.metadata.AdbTableColumn;
 import io.arenadata.dtm.query.execution.plugin.adb.base.dto.metadata.AdbTableEntity;
 import io.arenadata.dtm.query.execution.plugin.adb.base.dto.metadata.AdbTables;
@@ -87,6 +87,6 @@ public class AdbTableEntitiesFactory implements TableEntitiesFactory<AdbTables<A
     }
 
     private AdbTableColumn transformColumn(EntityField field) {
-        return new AdbTableColumn(field.getName(), EntityTypeUtil.pgFromDtmType(field), field.getNullable());
+        return new AdbTableColumn(field.getName(), AdbTypeUtil.adbTypeFromDtmType(field), field.getNullable());
     }
 }

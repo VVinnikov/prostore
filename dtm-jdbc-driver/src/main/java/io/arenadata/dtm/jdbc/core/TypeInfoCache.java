@@ -28,6 +28,7 @@ public class TypeInfoCache implements TypeInfo {
             {BOOLEAN, Types.BOOLEAN, "java.lang.Boolean", "boolean"},
             {BLOB, Types.BLOB, "java.lang.Object", "blob"},
             {UUID, Types.OTHER, "java.lang.String", "uuid"},
+            {LINK, Types.VARCHAR, "java.lang.String", "link"},
             {ANY, Types.OTHER, "java.lang.Object", "any"}
     };
 

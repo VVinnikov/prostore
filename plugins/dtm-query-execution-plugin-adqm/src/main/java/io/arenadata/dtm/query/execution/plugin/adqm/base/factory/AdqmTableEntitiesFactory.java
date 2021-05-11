@@ -6,7 +6,7 @@ import io.arenadata.dtm.query.execution.plugin.adqm.base.dto.metadata.AdqmTableC
 import io.arenadata.dtm.query.execution.plugin.adqm.base.dto.metadata.AdqmTableEntity;
 import io.arenadata.dtm.query.execution.plugin.adqm.base.dto.metadata.AdqmTables;
 import io.arenadata.dtm.query.execution.plugin.adqm.base.utils.Constants;
-import io.arenadata.dtm.query.execution.plugin.adqm.base.utils.DdlUtils;
+import io.arenadata.dtm.query.execution.plugin.adqm.base.utils.AdqmDdlUtil;
 import io.arenadata.dtm.query.execution.plugin.api.factory.TableEntitiesFactory;
 import org.springframework.stereotype.Service;
 
@@ -62,7 +62,7 @@ public class AdqmTableEntitiesFactory implements TableEntitiesFactory<AdqmTables
     }
 
     private AdqmTableColumn transformColumn(EntityField field) {
-        return new AdqmTableColumn(field.getName(), DdlUtils.classTypeToNative(field.getType()), field.getNullable());
+        return new AdqmTableColumn(field.getName(), AdqmDdlUtil.classTypeToNative(field.getType()), field.getNullable());
     }
 
     private List<String> getSortedKeys(List<EntityField> fields) {

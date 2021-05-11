@@ -1,7 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.base.utils;
 
 import io.arenadata.dtm.common.model.ddl.ColumnType;
-import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.execution.plugin.adqm.base.configuration.AppConfiguration;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
 import io.vertx.core.Future;
@@ -17,11 +16,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class DdlUtils {
+public class AdqmDdlUtil {
     public final static String NULLABLE_FIELD = "%s Nullable(%s)";
     public final static String NOT_NULLABLE_FIELD = "%s %s";
 
-    private DdlUtils() {
+    private AdqmDdlUtil() {
     }
 
     public static Optional<String> validateRequest(MppwRequest request) {
@@ -59,6 +58,7 @@ public class DdlUtils {
             case UUID:
             case ANY:
             case CHAR:
+            case LINK:
             case VARCHAR:
                 return "String";
             case INT32:
@@ -85,7 +85,7 @@ public class DdlUtils {
         switch (f.getType()) {
             case UNION:
                 val fields = f.getTypes();
-                val types = fields.stream().map(DdlUtils::avroTypeToNative).collect(Collectors.toList());
+                val types = fields.stream().map(AdqmDdlUtil::avroTypeToNative).collect(Collectors.toList());
                 if (types.size() == 2) { // We support only union (null, type)
                     int realTypeIdx = types.get(0).equalsIgnoreCase("NULL") ? 1 : 0;
                     return avroTypeToNative(fields.get(realTypeIdx));

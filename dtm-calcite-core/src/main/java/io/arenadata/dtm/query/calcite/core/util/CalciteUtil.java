@@ -60,6 +60,7 @@ public final class CalciteUtil {
                 return CHAR;
             case VARCHAR:
             case UUID:
+            case LINK:
                 return VARCHAR;
             default:
                 return ANY;

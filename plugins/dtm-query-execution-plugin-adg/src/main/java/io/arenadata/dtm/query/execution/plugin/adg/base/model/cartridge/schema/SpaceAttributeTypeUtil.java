@@ -12,6 +12,7 @@ public class SpaceAttributeTypeUtil {
             case UUID:
             case CHAR:
             case VARCHAR:
+            case LINK:
             case ANY:
                 return SpaceAttributeTypes.STRING;
             case DATE:

@@ -17,7 +17,7 @@ class MppwWithoutHistoryTableRequestFactoryTest {
         "  sys_op = staging.sys_op\n" +
         "FROM (SELECT DISTINCT ON (id1, id2) id1, id2, sys_op FROM datamart.tbl1_staging) staging\n" +
         "WHERE staging.id1=actual.id1 AND staging.id2=actual.id2 AND\n" +
-        "      actual.sys_from < 55";
+        "      actual.sys_from < 55 AND actual.sys_to IS NULL";
 
     private static final String EXPECTED_INSERT = "INSERT INTO datamart.tbl1_actual (id1, id2, c, sys_from, sys_op)\n" +
         "  SELECT DISTINCT ON (staging.id1, staging.id2) staging.id1, staging.id2, staging.c, 55 AS sys_from, 0 AS sys_op FROM datamart.tbl1_staging staging\n" +

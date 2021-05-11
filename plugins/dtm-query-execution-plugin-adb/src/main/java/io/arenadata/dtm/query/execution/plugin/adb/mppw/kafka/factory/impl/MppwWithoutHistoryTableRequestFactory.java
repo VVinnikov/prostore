@@ -20,7 +20,7 @@ public class MppwWithoutHistoryTableRequestFactory extends AbstractMppwRequestFa
         "  sys_op = staging.sys_op\n" +
         "FROM (SELECT DISTINCT ON (${primaryKeyFields}) ${primaryKeyFields}, sys_op FROM ${datamart}.${table}_staging) staging\n" +
         "WHERE ${primaryKeysCondition} AND\n" +
-        "      actual.sys_from < ${sysCn}";
+        "      actual.sys_from < ${sysCn} AND actual.sys_to IS NULL";
     private static final String INSERT_ACTUAL_SQL = "INSERT INTO ${datamart}.${table}_actual (${allFields})\n" +
         "  SELECT DISTINCT ON (${primaryKeyStageFields}) ${allStagingFields}, ${sysCn} AS sys_from, 0 AS sys_op FROM ${datamart}.${table}_staging staging\n" +
         "    LEFT JOIN ${datamart}.${table}_actual actual ON ${primaryKeysCondition} AND actual.sys_from = ${sysCn}\n" +

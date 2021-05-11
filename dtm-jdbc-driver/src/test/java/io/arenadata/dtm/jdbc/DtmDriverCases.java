@@ -11,15 +11,14 @@ import java.sql.*;
 public class DtmDriverCases {
 
     public static void main(String[] args) throws SQLException {
-        String host = "10.92.3.86:9094";
+        String host = "localhost:9090";
         String user = "";
         String schema = "";
         String url = String.format("jdbc:adtm://%s/", host);
         BaseConnection conn = new DtmConnectionImpl(host, user, schema, null, url);
-        ResultSet resultSet = conn.prepareStatement("select * from information_schema.schemata").executeQuery();
-//        DtmStatement stmnt = (DtmStatement) conn.createStatement();
-//        DatabaseMetaData metaData = conn.getMetaData();
-//        ResultSet resultSet = stmnt.executeQuery("use dtm_1106");
+        DtmStatement stmnt = (DtmStatement) conn.createStatement();
+        DatabaseMetaData metaData = conn.getMetaData();
+        ResultSet resultSet = stmnt.executeQuery("use dtm_1106");
         //ResultSet resultSet = metaData.getSchemas();
         //ResultSet resultSet = metaData.getColumns("dtm_1012", "", "accounts_all", null);
         final ResultSet resultSet2 = testPrepareStmnt(conn);
@@ -35,7 +34,7 @@ public class DtmDriverCases {
 
     private static ResultSet testPrepareStmnt(BaseConnection conn) throws SQLException {
         final String sql = "select t1.account_id as id6 from dtm_1106.accounts t1 " +
-                "where t1.account_id = ? datasource_type = 'adb'";
+            "where t1.account_id = ? datasource_type = 'adb'";
 
         DtmPreparedStatement stmnt = (DtmPreparedStatement) conn.prepareStatement(sql);
         stmnt.setLong(0, 1);

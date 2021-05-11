@@ -99,7 +99,7 @@ public class TruncateDdlExecutor extends QueryResultDdlExecutor {
                 p.complete();
             } else {
                 deltaServiceDao.getDeltaByDateTime(schema, truncateHistory.getDateTime())
-                        .onSuccess(delta -> p.complete(delta.getCnFrom()))
+                        .onSuccess(delta -> p.complete(delta.getCnTo()))
                         .onFailure(p::fail);
             }
         });

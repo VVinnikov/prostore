@@ -67,6 +67,8 @@ public class HsqlDdlQueryGenerator implements DdlQueryGenerator {
             case INT32:
             case INT:
                 return "INTEGER";
+            case LINK:
+                return "LONGVARCHAR";
             case UUID:
                 return "VARCHAR(36)";
             case CHAR:

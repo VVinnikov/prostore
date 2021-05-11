@@ -3,7 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adb.check;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
-import io.arenadata.dtm.common.model.ddl.EntityTypeUtil;
+import io.arenadata.dtm.query.execution.plugin.adb.base.utils.AdbTypeUtil;
 import io.arenadata.dtm.query.execution.plugin.adb.check.service.AdbCheckTableService;
 import io.arenadata.dtm.query.execution.plugin.adb.base.dto.metadata.AdbTables;
 import io.arenadata.dtm.query.execution.plugin.adb.base.factory.metadata.AdbMetaTableEntityFactory;
@@ -194,7 +194,7 @@ public class AdbCheckTableServiceTest {
         }
         result.put(AdbMetaTableEntityFactory.DATETIME_PRECISION, field.getAccuracy());
         result.put(AdbMetaTableEntityFactory.COLUMN_NAME, field.getName());
-        result.put(AdbMetaTableEntityFactory.DATA_TYPE, EntityTypeUtil.pgFromDtmType(field));
+        result.put(AdbMetaTableEntityFactory.DATA_TYPE, AdbTypeUtil.adbTypeFromDtmType(field));
         result.put(AdbMetaTableEntityFactory.CHARACTER_MAXIMUM_LENGTH, field.getSize());
         return result;
     }

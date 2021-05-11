@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.mppw.kafka.service.load;
 
-import io.arenadata.dtm.query.execution.plugin.adqm.base.utils.DdlUtils;
+import io.arenadata.dtm.query.execution.plugin.adqm.base.utils.AdqmDdlUtil;
 import io.arenadata.dtm.query.execution.plugin.adqm.ddl.configuration.properties.DdlProperties;
 import io.arenadata.dtm.query.execution.plugin.adqm.mppw.configuration.properties.AdqmMppwProperties;
 import lombok.NonNull;
@@ -37,7 +37,7 @@ public class KafkaExtTableCreator implements ExtTableCreator {
         String kafkaSettings = genKafkaEngine(topic, table);
 
         String columns = schema.getFields().stream()
-                .map(DdlUtils::avroFieldToString)
+                .map(AdqmDdlUtil::avroFieldToString)
                 .collect(Collectors.joining(", "));
         return format(EXT_SHARD_TEMPLATE, table + EXT_SHARD_POSTFIX, ddlProperties.getCluster(), columns, kafkaSettings);
     }

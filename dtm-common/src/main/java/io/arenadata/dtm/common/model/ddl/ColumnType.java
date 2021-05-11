@@ -17,5 +17,6 @@ public enum ColumnType {
     BOOLEAN,
     BLOB,
     UUID,
+    LINK,
     ANY;
 }

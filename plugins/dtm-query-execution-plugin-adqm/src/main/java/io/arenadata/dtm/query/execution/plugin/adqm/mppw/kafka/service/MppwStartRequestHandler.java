@@ -12,7 +12,7 @@ import io.arenadata.dtm.query.execution.plugin.adqm.mppw.kafka.factory.AdqmRestM
 import io.arenadata.dtm.query.execution.plugin.adqm.query.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adqm.status.service.StatusReporter;
 import io.arenadata.dtm.query.execution.plugin.adqm.mppw.kafka.service.load.*;
-import io.arenadata.dtm.query.execution.plugin.adqm.base.utils.DdlUtils;
+import io.arenadata.dtm.query.execution.plugin.adqm.base.utils.AdqmDdlUtil;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 import static io.arenadata.dtm.query.execution.plugin.adqm.mppw.kafka.service.load.LoadType.KAFKA;
 import static io.arenadata.dtm.query.execution.plugin.adqm.mppw.kafka.service.load.LoadType.REST;
 import static io.arenadata.dtm.query.execution.plugin.adqm.base.utils.Constants.*;
-import static io.arenadata.dtm.query.execution.plugin.adqm.base.utils.DdlUtils.*;
+import static io.arenadata.dtm.query.execution.plugin.adqm.base.utils.AdqmDdlUtil.*;
 import static java.lang.String.format;
 
 @Component("adqmMppwStartRequestHandler")
@@ -80,7 +80,7 @@ public class MppwStartRequestHandler extends AbstractMppwRequestHandler {
     public Future<QueryResult> execute(MppwKafkaRequest request) {
         MppwExtTableContext mppwExtTableCtx = new MppwExtTableContext();
 
-        val err = DdlUtils.validateRequest(request);
+        val err = AdqmDdlUtil.validateRequest(request);
         if (err.isPresent()) {
             return Future.failedFuture(new DataSourceException(err.get()));
         }
@@ -91,7 +91,7 @@ public class MppwStartRequestHandler extends AbstractMppwRequestHandler {
             return Future.failedFuture(new DataSourceException("Error in starting mppw request", e));
         }
 
-        mppwExtTableCtx.setFullName(DdlUtils.getQualifiedTableName(request, appConfiguration));
+        mppwExtTableCtx.setFullName(AdqmDdlUtil.getQualifiedTableName(request, appConfiguration));
         String fullName = mppwExtTableCtx.getFullName();
         reportStart(request.getTopic(), fullName);
 

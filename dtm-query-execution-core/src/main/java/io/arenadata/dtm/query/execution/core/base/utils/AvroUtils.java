@@ -28,6 +28,7 @@ public class AvroUtils {
         switch (columnType) {
             case UUID:
             case VARCHAR:
+            case LINK:
             case CHAR:
                 schema = Schema.create(Schema.Type.STRING);
                 GenericData.setStringType(schema, GenericData.StringType.String);

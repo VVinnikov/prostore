@@ -3,8 +3,6 @@ package io.arenadata.dtm.jdbc.core;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.jdbc.util.ColumnTypeUtil;
 import io.arenadata.dtm.jdbc.util.DtmSqlException;
-import lombok.AllArgsConstructor;
-import lombok.Data;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
@@ -124,13 +122,5 @@ public class SimpleParameterList implements ParameterList {
     @Override
     public ColumnType[] getTypes() {
         return paramTypes;
-    }
-
-    @Data
-    @AllArgsConstructor
-    private static final class Param {
-        private int index;
-        private Object value;
-        private ColumnType columnType;
     }
 }

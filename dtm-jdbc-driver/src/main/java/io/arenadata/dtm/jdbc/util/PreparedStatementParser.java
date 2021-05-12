@@ -28,18 +28,6 @@ public final class PreparedStatementParser {
         }
     }
 
-    private static String typeTransformParameterValue(String paramValue) {
-        if (paramValue == null) {
-            return null;
-        } else if (Boolean.TRUE.toString().equalsIgnoreCase(paramValue)) {
-            return "1";
-        } else if (Boolean.FALSE.toString().equalsIgnoreCase(paramValue)) {
-            return "0";
-        } else {
-            return "NULL".equalsIgnoreCase(paramValue) ? "\\N" : paramValue;
-        }
-    }
-
     public List<List<String>> getParameters() {
         return Collections.unmodifiableList(this.parameters);
     }
@@ -123,7 +111,7 @@ public final class PreparedStatementParser {
                     ++i;
                 } else if (c == ',') {
                     if (this.valuesMode && idxEnd > idxStart) {
-                        currentParamList.add(typeTransformParameterValue(sql.substring(idxStart, idxEnd)));
+                        currentParamList.add(sql.substring(idxStart, idxEnd));
                         this.parts.add(sql.substring(partStart, idxStart));
                         partStart = idxEnd;
                         idxEnd = i;
@@ -140,7 +128,7 @@ public final class PreparedStatementParser {
                     --currentParensLevel;
                     if (this.valuesMode && currentParensLevel == 0) {
                         if (idxEnd > idxStart) {
-                            currentParamList.add(typeTransformParameterValue(sql.substring(idxStart, idxEnd)));
+                            currentParamList.add(sql.substring(idxStart, idxEnd));
                             this.parts.add(sql.substring(partStart, idxStart));
                             partStart = idxEnd;
                             idxEnd = i;
@@ -171,7 +159,7 @@ public final class PreparedStatementParser {
             this.parameters.add(currentParamList);
         }
 
-        String lastPart = sql.substring(partStart, sql.length());
+        String lastPart = sql.substring(partStart);
         this.parts.add(lastPart);
     }
 }

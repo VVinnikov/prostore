@@ -22,11 +22,11 @@ public class SimpleParameterList implements ParameterList {
     }
 
     private void bind(int index, Object value, int sqlType) throws DtmSqlException {
-        if (index > 0) {
-            int normalIndex = index - 1;
+        int normalIndex = index - 1;
+        try {
             paramValues[normalIndex] = value;
             paramTypes[normalIndex] = ColumnTypeUtil.getColumnType(sqlType);
-        } else {
+        } catch (ArrayIndexOutOfBoundsException e) {
             throw new DtmSqlException(String.format("The column index is out of range: %d, number of columns: %d",
                 index, paramValues.length));
         }

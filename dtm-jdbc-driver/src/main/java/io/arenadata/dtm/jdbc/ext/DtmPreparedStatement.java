@@ -71,7 +71,7 @@ public class DtmPreparedStatement extends DtmStatement implements PreparedStatem
 
     @Override
     public void setByte(int parameterIndex, byte value) throws SQLException {
-        setShort(parameterIndex, (short) value);
+        setShort(parameterIndex, value);
     }
 
     @Override
@@ -180,7 +180,7 @@ public class DtmPreparedStatement extends DtmStatement implements PreparedStatem
         } else if (x instanceof Double) {
             this.setDouble(parameterIndex, (Double) x);
         } else if (x instanceof byte[]) {
-            this.setBytes(parameterIndex, (byte[]) ((byte[]) x));
+            this.setBytes(parameterIndex, (byte[]) x);
         } else if (x instanceof Date) {
             this.setDate(parameterIndex, (Date) x);
         } else if (x instanceof Time) {

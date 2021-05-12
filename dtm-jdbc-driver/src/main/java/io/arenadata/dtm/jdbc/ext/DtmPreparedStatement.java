@@ -3,6 +3,7 @@ package io.arenadata.dtm.jdbc.ext;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.jdbc.core.*;
 import io.arenadata.dtm.jdbc.util.DtmSqlException;
+import io.arenadata.dtm.jdbc.util.PreparedStatementParser;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedReader;
@@ -24,14 +25,27 @@ import static java.sql.Types.*;
 
 @Slf4j
 public class DtmPreparedStatement extends DtmStatement implements PreparedStatement {
-    private final String sql;
     protected final ParameterList parameters;
+    private final String sql;
 
     public DtmPreparedStatement(BaseConnection c, int rsType, int rsConcurrency, String sql) throws SQLException {
         super(c, rsType, rsConcurrency);
         this.sql = sql;
-        this.parameters = new SimpleParameterList();
+        this.parameters = new SimpleParameterList(countNonConstantParams(sql));
         super.prepareQuery(sql);
+    }
+
+    private int countNonConstantParams(String sql) {
+        int count = 0;
+        List<List<String>> parameterList = PreparedStatementParser.parse(sql).getParameters();
+        for (List<String> pList : parameterList) {
+            for (String s : pList) {
+                if ("?".equals(s)) {
+                    ++count;
+                }
+            }
+        }
+        return count;
     }
 
     @Override
@@ -57,7 +71,7 @@ public class DtmPreparedStatement extends DtmStatement implements PreparedStatem
 
     @Override
     public void setByte(int parameterIndex, byte value) throws SQLException {
-        setShort(parameterIndex, (short) value);
+        setShort(parameterIndex, value);
     }
 
     @Override
@@ -121,9 +135,9 @@ public class DtmPreparedStatement extends DtmStatement implements PreparedStatem
     @Override
     public void setAsciiStream(int parameterIndex, InputStream inputStream, int length) throws SQLException {
         String value = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.US_ASCII))
-                .lines()
-                .collect(Collectors.joining(""))
-                .substring(0, length);
+            .lines()
+            .collect(Collectors.joining(""))
+            .substring(0, length);
         parameters.setString(parameterIndex, value, VARCHAR);
     }
 
@@ -166,7 +180,7 @@ public class DtmPreparedStatement extends DtmStatement implements PreparedStatem
         } else if (x instanceof Double) {
             this.setDouble(parameterIndex, (Double) x);
         } else if (x instanceof byte[]) {
-            this.setBytes(parameterIndex, (byte[]) ((byte[]) x));
+            this.setBytes(parameterIndex, (byte[]) x);
         } else if (x instanceof Date) {
             this.setDate(parameterIndex, (Date) x);
         } else if (x instanceof Time) {
@@ -201,9 +215,9 @@ public class DtmPreparedStatement extends DtmStatement implements PreparedStatem
     @Override
     public void setCharacterStream(int parameterIndex, Reader reader, int length) throws SQLException {
         String value = new BufferedReader(reader)
-                .lines()
-                .collect(Collectors.joining(""))
-                .substring(0, length);
+            .lines()
+            .collect(Collectors.joining(""))
+            .substring(0, length);
         parameters.setString(parameterIndex, value, VARCHAR);
     }
 
@@ -265,7 +279,7 @@ public class DtmPreparedStatement extends DtmStatement implements PreparedStatem
         return createParameterMetaData(connection, parameters.getTypes());
     }
 
-    public ParameterMetaData createParameterMetaData(BaseConnection conn, List<ColumnType> paramTypes) throws SQLException {
+    public ParameterMetaData createParameterMetaData(BaseConnection conn, ColumnType[] paramTypes) throws SQLException {
         return new DtmParameterMetadata(conn, paramTypes);
     }
 

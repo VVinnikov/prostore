@@ -5,21 +5,20 @@ import io.arenadata.dtm.jdbc.core.BaseConnection;
 
 import java.sql.ParameterMetaData;
 import java.sql.SQLException;
-import java.util.List;
 
 public class DtmParameterMetadata implements ParameterMetaData {
 
     private final BaseConnection connection;
-    private final List<ColumnType> paramTypes;
+    private final ColumnType[] paramTypes;
 
-    public DtmParameterMetadata(BaseConnection connection, List<ColumnType> paramTypes) {
+    public DtmParameterMetadata(BaseConnection connection, ColumnType[] paramTypes) {
         this.connection = connection;
         this.paramTypes = paramTypes;
     }
 
     @Override
     public int getParameterCount() throws SQLException {
-        return paramTypes.size();
+        return paramTypes.length;
     }
 
     @Override
@@ -31,7 +30,7 @@ public class DtmParameterMetadata implements ParameterMetaData {
     @Override
     public boolean isSigned(int param) throws SQLException {
         this.checkParamIndex(param);
-        return connection.getTypeInfo().isSigned(paramTypes.get(param - 1));
+        return connection.getTypeInfo().isSigned(paramTypes[param - 1]);
     }
 
     @Override
@@ -49,19 +48,19 @@ public class DtmParameterMetadata implements ParameterMetaData {
     @Override
     public int getParameterType(int param) throws SQLException {
         this.checkParamIndex(param);
-        return connection.getTypeInfo().getSqlType(paramTypes.get(param - 1));
+        return connection.getTypeInfo().getSqlType(paramTypes[param - 1]);
     }
 
     @Override
     public String getParameterTypeName(int param) throws SQLException {
         this.checkParamIndex(param);
-        return connection.getTypeInfo().getAlias(paramTypes.get(param - 1));
+        return connection.getTypeInfo().getAlias(paramTypes[param - 1]);
     }
 
     @Override
     public String getParameterClassName(int param) throws SQLException {
         this.checkParamIndex(param);
-        return connection.getTypeInfo().getJavaClass(paramTypes.get(param - 1));
+        return connection.getTypeInfo().getJavaClass(paramTypes[param - 1]);
     }
 
     @Override
@@ -71,9 +70,9 @@ public class DtmParameterMetadata implements ParameterMetaData {
     }
 
     private void checkParamIndex(int param) throws SQLException {
-        if (param < 1 || param > this.paramTypes.size()) {
+        if (param < 1 || param > this.paramTypes.length) {
             throw new SQLException(String.format("The parameter index is out of range: %d, number of parameters",
-                    this.paramTypes.size()));
+                this.paramTypes.length));
         }
     }
 

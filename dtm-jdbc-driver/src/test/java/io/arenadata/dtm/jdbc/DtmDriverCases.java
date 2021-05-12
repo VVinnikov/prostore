@@ -34,7 +34,7 @@ public class DtmDriverCases {
 
     private static ResultSet testPrepareStmnt(BaseConnection conn) throws SQLException {
         final String sql = "select t1.account_id as id6 from dtm_1106.accounts t1 " +
-                "where t1.account_id = ? datasource_type = 'adb'";
+            "where t1.account_id = ? datasource_type = 'adb'";
 
         DtmPreparedStatement stmnt = (DtmPreparedStatement) conn.prepareStatement(sql);
         stmnt.setLong(0, 1);

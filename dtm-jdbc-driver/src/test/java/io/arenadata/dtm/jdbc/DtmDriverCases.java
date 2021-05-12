@@ -10,7 +10,7 @@ import java.sql.*;
 public class DtmDriverCases {
 
     public static void main(String[] args) throws SQLException {
-        String host = "localhost:9094";
+        String host = "localhost:9090";
         String user = "";
         String schema = "";
         String url = String.format("jdbc:adtm://%s/", host);

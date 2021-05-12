@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adqm.base.service.converter;
 
 import io.arenadata.dtm.query.execution.plugin.api.service.TemplateParameterConverter;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNumericLiteral;
@@ -33,6 +34,9 @@ public class AdqmTemplateParameterConverter implements TemplateParameterConverte
     }
 
     protected SqlNode convertParam(SqlNode param, SqlTypeName typeName) {
+        if (SqlKind.DYNAMIC_PARAM.equals(param.getKind())) {
+            return param;
+        }
         switch (typeName) {
             case BOOLEAN:
                 Boolean aBoolean = ((SqlLiteral) param).getValueAs(Boolean.class);

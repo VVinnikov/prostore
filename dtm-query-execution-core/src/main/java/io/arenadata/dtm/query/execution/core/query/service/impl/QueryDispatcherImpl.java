@@ -33,6 +33,10 @@ public class QueryDispatcherImpl implements QueryDispatcher {
     @Override
     public Future<QueryResult> dispatch(CoreRequestContext<?, ?> context) {
         try {
+            if (context.getRequest().getQueryRequest().isPrepare()
+                && context.getProcessingType() != SqlProcessingType.DML) {
+                return Future.failedFuture(new DtmException("PreparedStatement can only be used for SQL+ DML SELECT queries"));
+            }
             return serviceMap.get(context.getProcessingType()).execute(context);
         } catch (Exception e) {
             return Future.failedFuture(new DtmException("An error occurred while dispatching the request", e));

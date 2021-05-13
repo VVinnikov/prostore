@@ -1,23 +1,13 @@
 package io.arenadata.dtm.jdbc.core;
 
 import io.arenadata.dtm.common.model.ddl.ColumnType;
+import lombok.Data;
+import lombok.Getter;
 
 import java.util.List;
 
+@Data
 public class QueryParameters {
-    private final List<Object> values;
-    private final List<ColumnType> types;
-
-    public QueryParameters(List<Object> values, List<ColumnType> types) {
-        this.values = values;
-        this.types = types;
-    }
-
-    public List<Object> getValues() {
-        return values;
-    }
-
-    public List<ColumnType> getTypes() {
-        return types;
-    }
+    private final Object[] values;
+    private final ColumnType[] types;
 }

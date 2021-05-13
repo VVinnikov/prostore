@@ -81,14 +81,8 @@ public class DtmStatement implements BaseStatement {
 
     protected void prepareQuery(String sql) throws SQLException {
         List<Query> queries = this.connection.getQueryExecutor().createQuery(sql);
-        DtmResultHandler resultHandler = new DtmResultHandler();
-        if (queries.size() == 1) {
-            this.connection.getQueryExecutor().prepareQuery(queries.get(0),  resultHandler);
-        } else {
+        if (queries.size() > 1) {
             throw new DtmSqlException("Multiple prepared statement query doesn't support");
-        }
-        if (resultHandler.getException() != null) {
-            throw new SQLException(resultHandler.getException());
         }
     }
 
@@ -219,6 +213,11 @@ public class DtmStatement implements BaseStatement {
     }
 
     @Override
+    public int getFetchDirection() throws SQLException {
+        return fetchDirection;
+    }
+
+    @Override
     public void setFetchDirection(int direction) throws SQLException {
         switch (direction) {
             case ResultSet.FETCH_FORWARD:
@@ -232,8 +231,8 @@ public class DtmStatement implements BaseStatement {
     }
 
     @Override
-    public int getFetchDirection() throws SQLException {
-        return fetchDirection;
+    public int getFetchSize() throws SQLException {
+        return fetchSize;
     }
 
     @Override
@@ -246,11 +245,6 @@ public class DtmStatement implements BaseStatement {
             return;
         }
         this.fetchSize = rows;
-    }
-
-    @Override
-    public int getFetchSize() throws SQLException {
-        return fetchSize;
     }
 
     @Override
@@ -291,7 +285,7 @@ public class DtmStatement implements BaseStatement {
             return new int[0];
         }
 
-        DtmResultHandler resultHandler =  new DtmResultHandler();
+        DtmResultHandler resultHandler = new DtmResultHandler();
         connection.getQueryExecutor().execute(batchStatements, null, resultHandler);
 
         ResultSetWrapper currentResult = resultHandler.getResult();
@@ -301,8 +295,8 @@ public class DtmStatement implements BaseStatement {
         }
 
         return updateCounts.stream()
-                .mapToInt(count -> count > Integer.MAX_VALUE ? Statement.SUCCESS_NO_INFO : count.intValue())
-                .toArray();
+            .mapToInt(count -> count > Integer.MAX_VALUE ? Statement.SUCCESS_NO_INFO : count.intValue())
+            .toArray();
     }
 
     @Override
@@ -317,7 +311,7 @@ public class DtmStatement implements BaseStatement {
         }
         this.checkClosed();
         if (current == Statement.CLOSE_CURRENT_RESULT && result != null
-                && result.getResultSet() != null) {
+            && result.getResultSet() != null) {
             result.getResultSet().close();
         }
 
@@ -379,14 +373,14 @@ public class DtmStatement implements BaseStatement {
     }
 
     @Override
-    public void setPoolable(boolean poolable) throws SQLException {
-        checkClosed();
-        this.poolable = poolable;
+    public boolean isPoolable() throws SQLException {
+        return false;
     }
 
     @Override
-    public boolean isPoolable() throws SQLException {
-        return false;
+    public void setPoolable(boolean poolable) throws SQLException {
+        checkClosed();
+        this.poolable = poolable;
     }
 
     @Override

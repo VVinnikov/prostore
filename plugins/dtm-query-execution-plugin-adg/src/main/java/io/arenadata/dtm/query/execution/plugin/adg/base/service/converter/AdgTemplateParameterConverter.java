@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adg.base.service.converter;
 
 import io.arenadata.dtm.query.execution.plugin.api.service.TemplateParameterConverter;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNumericLiteral;
@@ -33,6 +34,9 @@ public class AdgTemplateParameterConverter implements TemplateParameterConverter
     }
 
     protected SqlNode convertParam(SqlNode param, SqlTypeName typeName) {
+        if (SqlKind.DYNAMIC_PARAM.equals(param.getKind())) {
+            return param;
+        }
         switch (typeName) {
             case TIME:
                 LocalTime time = LocalTime.parse(((SqlLiteral) param).getValueAs(String.class));
@@ -40,7 +44,7 @@ public class AdgTemplateParameterConverter implements TemplateParameterConverter
                 return SqlLiteral.createExactNumeric(String.valueOf(nanoOfDay / 1000), param.getParserPosition());
             case DATE:
                 long epochDay = LocalDate.parse(((SqlLiteral) param).getValueAs(String.class), DateTimeFormatter.ISO_LOCAL_DATE)
-                        .toEpochDay();
+                    .toEpochDay();
                 return SqlLiteral.createExactNumeric(String.valueOf(epochDay), param.getParserPosition());
             case TIMESTAMP:
                 LocalDateTime dateTime = LocalDateTime.parse(((SqlLiteral) param).getValueAs(String.class), TIMESTAMP_FORMATTER);

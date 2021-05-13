@@ -266,21 +266,7 @@ public class DtmConnectionImpl implements BaseConnection {
         if (timeout < 0) {
             throw new DtmSqlException(String.format("Invalid timeout (%d<0).", timeout));
         }
-        if (isClosed()) {
-            return false;
-        }
-        try {
-            BaseStatement statement = createStatement();
-            ResultSet rs = statement.executeQuery("select 1 from information_schema.schemata limit 1");
-            if (rs.getInt(1) == 1) {
-                return true;
-            } else {
-                return false;
-            }
-        } catch (SQLException e) {
-            LOGGER.error("Validating connection error.", e);
-        }
-        return false;
+        return !isClosed();
     }
 
     @Override

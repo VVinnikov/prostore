@@ -43,9 +43,9 @@ public class AdbQueryTemplateExtractor extends AbstractQueryTemplateExtractor {
             param = paramIterator.next();
             if (param.getKind() == SqlKind.DYNAMIC_PARAM) {
                 param = new SqlDynamicLiteral(paramNum, SqlTypeName.ANY, param.getParserPosition());
+                paramNum++;
             }
             dynamicNode.getSqlNodeSetter().accept(param);
-            paramNum++;
         }
         if (paramIterator.hasNext()) {
             throw new DtmException("The number of passed parameters and parameters in the template does not match");

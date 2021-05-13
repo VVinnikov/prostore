@@ -2,7 +2,9 @@ package io.arenadata.dtm.query.execution.core.query.service.impl;
 
 import io.arenadata.dtm.async.AsyncUtils;
 import io.arenadata.dtm.common.exception.DtmException;
-import io.arenadata.dtm.common.reader.*;
+import io.arenadata.dtm.common.reader.InputQueryRequest;
+import io.arenadata.dtm.common.reader.QueryRequest;
+import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.query.calcite.core.extension.check.SqlCheckCall;
 import io.arenadata.dtm.query.calcite.core.extension.config.function.SqlConfigStorageAdd;
@@ -84,13 +86,7 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
         return Future.future(promise -> vertx.executeBlocking(it -> {
             try {
                 val request = querySemicolonRemover.remove(queryRequestFactory.create(inputQueryRequest));
-                SqlNode node;
-                if (request.getParameters() != null) {
-                    log.debug("Try to get prepared query by request [{}]", request);
-                    node = queryPreparedService.getPreparedQuery(request);
-                } else {
-                    node = definitionService.processingQuery(request.getSql());
-                }
+                SqlNode node = definitionService.processingQuery(request.getSql());
                 it.complete(new ParsedQueryResponse(request, node));
             } catch (Exception e) {
                 it.fail(new DtmException("Error parsing query", e));

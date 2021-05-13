@@ -28,12 +28,12 @@ public class DtmDriver implements Driver {
 
     @Override
     public Connection connect(String url, Properties info) throws SQLException {
-        if (!acceptsURL(url)) {
+        Properties props = new Properties(info);
+        if ((props = parseURL(url, props)) == null) {
             return null;
         }
-        parseURL(url, info);
 
-        return makeConnection(url, info);
+        return makeConnection(url, props);
     }
 
     private static Connection makeConnection(String url, Properties info) throws SQLException {
@@ -54,7 +54,7 @@ public class DtmDriver implements Driver {
 
     @Override
     public boolean acceptsURL(String url) {
-        return url.startsWith(CONNECT_URL_PREFIX);
+        return parseURL(url, null) != null;
     }
 
     @Override

@@ -115,7 +115,7 @@ class LogicViewReplacerImplTest {
         replacer.replace(sql, "datamart")
                 .onComplete(sqlResult -> {
                     if (sqlResult.succeeded()) {
-                        assertEquals(EXPECTED_WITHOUT_JOIN, sqlResult.result());
+                        assertThat(sqlResult.result()).isEqualToNormalizingNewlines(EXPECTED_WITHOUT_JOIN);
                         testContext.completeNow();
                     } else {
                         testContext.failNow(sqlResult.cause());
@@ -149,7 +149,7 @@ class LogicViewReplacerImplTest {
         replacer.replace(sql, "datamart")
                 .onComplete(sqlResult -> {
                     if (sqlResult.succeeded()) {
-                        assertEquals(EXPECTED_WITH_DATAMART, sqlResult.result());
+                        assertThat(sqlResult.result()).isEqualToNormalizingNewlines(EXPECTED_WITH_DATAMART);
                         testContext.completeNow();
                     } else {
                         testContext.failNow(sqlResult.cause());
@@ -183,7 +183,7 @@ class LogicViewReplacerImplTest {
         replacer.replace(sql, "datamart")
                 .onComplete(sqlResult -> {
                     if (sqlResult.succeeded()) {
-                        assertEquals(EXPECTED_WITH_JOIN_WITHOUT_ALIAS, sqlResult.result());
+                        assertThat(sqlResult.result()).isEqualToNormalizingNewlines(EXPECTED_WITH_JOIN_WITHOUT_ALIAS);
                         testContext.completeNow();
                     } else {
                         testContext.failNow(sqlResult.cause());
@@ -223,7 +223,7 @@ class LogicViewReplacerImplTest {
         replacer.replace(sql, "datamart")
                 .onComplete(sqlResult -> {
                     if (sqlResult.succeeded()) {
-                        assertEquals(EXPECTED_WITH_JOIN, sqlResult.result());
+                        assertThat(sqlResult.result()).isEqualToNormalizingNewlines(EXPECTED_WITH_JOIN);
                         testContext.completeNow();
                     } else {
                         testContext.failNow(sqlResult.cause());
@@ -274,7 +274,7 @@ class LogicViewReplacerImplTest {
         replacer.replace(sql, "datamart")
                 .onComplete(sqlResult -> {
                     if (sqlResult.succeeded()) {
-                        assertEquals(EXPECTED_WITH_JOIN_AND_WHERE, sqlResult.result());
+                        assertThat(sqlResult.result()).isEqualToNormalizingNewlines(EXPECTED_WITH_JOIN_AND_WHERE);
                         testContext.completeNow();
                     } else {
                         testContext.failNow(sqlResult.cause());
@@ -312,7 +312,7 @@ class LogicViewReplacerImplTest {
         replacer.replace(sql, "datamart")
                 .onComplete(sqlResult -> {
                     if (sqlResult.succeeded()) {
-                        assertEquals(EXPECTED_WITH_SELECT, sqlResult.result());
+                        assertThat(sqlResult.result()).isEqualToNormalizingNewlines(EXPECTED_WITH_SELECT);
                         testContext.completeNow();
                     } else {
                         testContext.failNow(sqlResult.cause());

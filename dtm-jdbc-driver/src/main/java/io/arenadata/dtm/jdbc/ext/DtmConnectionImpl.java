@@ -336,7 +336,7 @@ public class DtmConnectionImpl implements BaseConnection {
 
     @Override
     public boolean isWrapperFor(Class<?> iface) throws SQLException {
-        return iface.isAssignableFrom(getClass());
+        return iface != null && iface.isAssignableFrom(getClass());
     }
 
     @Override

@@ -27,9 +27,8 @@ public class UrlConnectionParser {
         if (port < 1 || port > 65535) {
             log.error("JDBC URL port: {} not valid (1:65535) ", port);
             return null;
-        } else {
-            host += ":" + uri.getPort();
         }
+        host += ":" + uri.getPort();
 
         urlProperties.setProperty(SCHEMA_PROPERTY, getSchema(uri));
         urlProperties.setProperty(HOST_PROPERTY, host);

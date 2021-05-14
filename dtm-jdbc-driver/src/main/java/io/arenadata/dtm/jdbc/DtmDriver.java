@@ -28,12 +28,8 @@ public class DtmDriver implements Driver {
 
     @Override
     public Connection connect(String url, Properties info) throws SQLException {
-        Properties props = new Properties(info);
-        if ((props = parseURL(url, props)) == null) {
-            return null;
-        }
-
-        return makeConnection(url, props);
+        Properties props = parseURL(url, info);
+        return props == null ? null : makeConnection(url, props);
     }
 
     private static Connection makeConnection(String url, Properties info) throws SQLException {

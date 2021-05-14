@@ -478,7 +478,6 @@ public class DtmResultSet extends AbstractResultSet {
         if (rows >= 0) {
             fetchSize = rows;
         }
-        ;
     }
 
     @Override

@@ -72,7 +72,7 @@ public class DtmParameterMetadata implements ParameterMetaData {
     private void checkParamIndex(int param) throws SQLException {
         if (param < 1 || param > this.paramTypes.length) {
             throw new SQLException(String.format("The parameter index is out of range: %d, number of parameters",
-                this.paramTypes.length));
+                    this.paramTypes.length));
         }
     }
 
@@ -80,9 +80,8 @@ public class DtmParameterMetadata implements ParameterMetaData {
     public <T> T unwrap(Class<T> iface) throws SQLException {
         if (isWrapperFor(iface)) {
             return iface.cast(this);
-        } else {
-            throw new SQLException("Cannot unwrap to " + iface.getName());
         }
+        throw new SQLException("Cannot unwrap to " + iface.getName());
     }
 
     @Override

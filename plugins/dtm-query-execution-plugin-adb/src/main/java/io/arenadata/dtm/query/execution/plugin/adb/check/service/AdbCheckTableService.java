@@ -3,7 +3,6 @@ package io.arenadata.dtm.query.execution.plugin.adb.check.service;
 import io.arenadata.dtm.query.execution.plugin.adb.base.dto.metadata.AdbTableColumn;
 import io.arenadata.dtm.query.execution.plugin.adb.base.dto.metadata.AdbTableEntity;
 import io.arenadata.dtm.query.execution.plugin.adb.base.dto.metadata.AdbTables;
-import io.arenadata.dtm.query.execution.plugin.adb.base.factory.metadata.AdbMetaTableEntityFactory;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckException;
 import io.arenadata.dtm.query.execution.plugin.api.check.CheckTableRequest;
 import io.arenadata.dtm.query.execution.plugin.api.factory.MetaTableEntityFactory;
@@ -18,6 +17,8 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static io.arenadata.dtm.query.execution.plugin.api.factory.MetaTableEntityFactory.DATA_TYPE;
 
 @Service("adbCheckTableService")
 public class AdbCheckTableService implements CheckTableService {
@@ -85,14 +86,14 @@ public class AdbCheckTableService implements CheckTableService {
                 String type = column.getType();
                 if (!Objects.equals(type, realType)) {
                     errors.add(String.format("\tColumn `%s`:", column.getName()));
-                    errors.add(String.format(FIELD_ERROR_TEMPLATE, AdbMetaTableEntityFactory.DATA_TYPE,
+                    errors.add(String.format(FIELD_ERROR_TEMPLATE, DATA_TYPE,
                             column.getType(), realColumn.getType()));
                 }
             }
         });
         return errors.isEmpty()
                 ? Optional.empty()
-                : Optional.of(String.format("Table `%s.%s`:\n%s", expTableEntity.getSchema(),
+                : Optional.of(String.format("Table `%s.%s`:%n%s", expTableEntity.getSchema(),
                 expTableEntity.getName(), String.join("\n", errors)));
     }
 }

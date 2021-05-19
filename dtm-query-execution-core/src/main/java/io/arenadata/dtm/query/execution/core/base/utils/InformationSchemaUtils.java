@@ -1,6 +1,10 @@
 package io.arenadata.dtm.query.execution.core.base.utils;
 
 public class InformationSchemaUtils {
+
+    private InformationSchemaUtils() {
+    }
+
     public static final String INFORMATION_SCHEMA = "information_schema";
 
     public static final String LOGIC_SCHEMA_KEY_COLUMN_USAGE =
@@ -71,8 +75,8 @@ public class InformationSchemaUtils {
                 "       si.table_name,\n" +
                 "       case\n" +
                 "           when si.INDEX_NAME like 'SK_%' then 'sharding key'\n" +
-                "           when si.INDEX_NAME like 'SYS_IDX_PK_%' then 'primary key'\n" +
-                "           else '-'\n" +
+                "           when si.INDEX_NAME like 'SYS_IDX_PK_%' then cast('primary key' AS VARCHAR(12))\n" +
+                "           else cast('-' AS VARCHAR(1))\n" +
                 "           end       as constraint_type\n" +
                 "FROM information_schema.SYSTEM_INDEXSTATS si\n" +
                 "     left join information_schema.SYSTEM_KEY_INDEX_USAGE siu\n" +

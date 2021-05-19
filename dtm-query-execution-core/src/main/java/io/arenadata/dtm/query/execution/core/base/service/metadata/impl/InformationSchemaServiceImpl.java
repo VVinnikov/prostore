@@ -45,18 +45,21 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     private final DatamartDao datamartDao;
     private final EntityDao entityDao;
     private final HSQLClient client;
+    private final DataTypeMapper dataTypeMapper;
 
     @Autowired
     public InformationSchemaServiceImpl(HSQLClient client,
                                         DatamartDao datamartDao,
                                         EntityDao entityDao,
                                         DdlQueryGenerator ddlQueryGenerator,
-                                        ApplicationContext applicationContext) {
+                                        ApplicationContext applicationContext,
+                                        DataTypeMapper dataTypeMapper) {
         this.applicationContext = applicationContext;
         this.ddlQueryGenerator = ddlQueryGenerator;
         this.datamartDao = datamartDao;
         this.entityDao = entityDao;
         this.client = client;
+        this.dataTypeMapper = dataTypeMapper;
     }
 
     @Override
@@ -166,15 +169,9 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     }
 
     private String createInitEntitiesQuery() {
-        //TODO move to separate factory class
-        return String.format("SELECT TABLE_NAME, ORDINAL_POSITION, COLUMN_NAME," +
-                        "  case" +
-                        "    when DATA_TYPE = 'DOUBLE PRECISION' then 'DOUBLE'" +
-                        "    when DATA_TYPE = 'CHARACTER VARYING' then 'VARCHAR'" +
-                        "    when DATA_TYPE = 'INTEGER' then 'INT'" +
-                        "    when DATA_TYPE = 'CHARACTER' then 'CHAR'" +
-                        "    else DATA_TYPE end as DATA_TYPE," +
-                        " IS_NULLABLE" +
+        return String.format("SELECT TABLE_NAME, ORDINAL_POSITION, COLUMN_NAME, " +
+                        dataTypeMapper.selectDataType() +
+                        ", IS_NULLABLE" +
                         " FROM information_schema.columns WHERE TABLE_SCHEMA = '%s' and TABLE_NAME in (%s);",
                 InformationSchemaView.DTM_SCHEMA_NAME,
                 Arrays.stream(InformationSchemaView.values())

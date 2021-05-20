@@ -1,11 +1,11 @@
-package io.arenadata.dtm.query.execution.core.delta.service.impl;
+package io.arenadata.dtm.query.execution.core.base.service.delta.impl;
 
 import io.arenadata.dtm.common.delta.SelectOnInterval;
 import io.arenadata.dtm.common.exception.DeltaRangeInvalidException;
-import io.arenadata.dtm.common.service.DeltaService;
 import io.arenadata.dtm.query.execution.core.base.repository.ServiceDbFacade;
-import io.arenadata.dtm.query.execution.core.delta.repository.zookeeper.DeltaServiceDao;
+import io.arenadata.dtm.query.execution.core.base.service.delta.DeltaInformationService;
 import io.arenadata.dtm.query.execution.core.delta.dto.OkDelta;
+import io.arenadata.dtm.query.execution.core.delta.repository.zookeeper.DeltaServiceDao;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import lombok.val;
@@ -15,12 +15,12 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 
 @Service
-public class DeltaServiceExternalImpl implements DeltaService {
+public class DeltaInformationServiceImpl implements DeltaInformationService {
 
     private final DeltaServiceDao deltaServiceDao;
 
     @Autowired
-    public DeltaServiceExternalImpl(ServiceDbFacade serviceDbFacade) {
+    public DeltaInformationServiceImpl(ServiceDbFacade serviceDbFacade) {
         this.deltaServiceDao = serviceDbFacade.getDeltaServiceDao();
     }
 
@@ -71,5 +71,11 @@ public class DeltaServiceExternalImpl implements DeltaService {
                     val ex = new DeltaRangeInvalidException(String.format("Invalid delta range [%d, %d]", deltaFrom, deltaTo), err);
                     handler.handle(Future.failedFuture(ex));
                 }));
+    }
+
+    @Override
+    public Future<Long> getCnToDeltaOk(String datamart) {
+        return deltaServiceDao.getDeltaOk(datamart)
+                .map(OkDelta::getCnTo);
     }
 }

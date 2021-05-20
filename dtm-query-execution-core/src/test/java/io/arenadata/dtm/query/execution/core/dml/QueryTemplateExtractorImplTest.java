@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Collections;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class QueryTemplateExtractorImplTest {
@@ -176,11 +177,11 @@ class QueryTemplateExtractorImplTest {
         QueryTemplateResult templateResult = excludeColumns.isEmpty() ?
                 extractor.extract(sql) : extractor.extract(sql, excludeColumns);
         assertEquals(paramsSize, templateResult.getParams().size());
-        assertEquals(template, templateResult.getTemplate());
+        assertThat(templateResult.getTemplate()).isEqualToNormalizingNewlines(template);
         SqlNode enrichTemplate = extractor.enrichTemplate(
                 new EnrichmentTemplateRequest(templateResult.getTemplateNode(), templateResult.getParams())
         );
         System.out.println(enrichTemplate.toString());
-        assertEquals(sql, enrichTemplate.toSqlString(SqlDialect.CALCITE).toString());
+        assertThat(enrichTemplate.toSqlString(SqlDialect.CALCITE).toString()).isEqualToNormalizingNewlines(sql);
     }
 }

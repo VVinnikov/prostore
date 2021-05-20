@@ -2,7 +2,7 @@ package io.arenadata.dtm.query.execution.core.delta;
 
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.delta.SelectOnInterval;
-import io.arenadata.dtm.common.service.DeltaService;
+import io.arenadata.dtm.query.execution.core.base.service.delta.DeltaInformationService;
 import io.arenadata.dtm.query.execution.core.base.configuration.properties.CoreDtmSettings;
 import io.arenadata.dtm.query.execution.core.base.repository.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.base.repository.ServiceDbFacadeImpl;
@@ -11,7 +11,7 @@ import io.arenadata.dtm.query.execution.core.delta.repository.zookeeper.impl.Del
 import io.arenadata.dtm.query.execution.core.delta.dto.HotDelta;
 import io.arenadata.dtm.query.execution.core.delta.dto.OkDelta;
 import io.arenadata.dtm.common.exception.DtmException;
-import io.arenadata.dtm.query.execution.core.delta.service.impl.DeltaServiceExternalImpl;
+import io.arenadata.dtm.query.execution.core.base.service.delta.impl.DeltaInformationServiceImpl;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,11 +27,11 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class DeltaServiceExternalImplTest {
+class DeltaInformationServiceExternalImplTest {
 
     private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
     private final DeltaServiceDao deltaServiceDao = mock(DeltaServiceDaoImpl.class);
-    private DeltaService deltaService;
+    private DeltaInformationService deltaService;
     private final DtmConfig dtmSettings = mock(CoreDtmSettings.class);
     private ZoneId timeZone;
 
@@ -39,7 +39,7 @@ class DeltaServiceExternalImplTest {
     void setUp() {
         when(serviceDbFacade.getDeltaServiceDao()).thenReturn(deltaServiceDao);
         when(dtmSettings.getTimeZone()).thenReturn(ZoneId.of("UTC"));
-        deltaService = new DeltaServiceExternalImpl(serviceDbFacade);
+        deltaService = new DeltaInformationServiceImpl(serviceDbFacade);
         timeZone = dtmSettings.getTimeZone();
     }
 

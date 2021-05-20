@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.dml.service.impl;
 
+import io.arenadata.dtm.async.AsyncUtils;
 import io.arenadata.dtm.cache.service.CacheService;
 import io.arenadata.dtm.common.cache.PreparedQueryKey;
 import io.arenadata.dtm.common.cache.PreparedQueryValue;
@@ -13,7 +14,7 @@ import io.arenadata.dtm.common.reader.QueryTemplateResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.dto.delta.DeltaQueryPreprocessorResponse;
 import io.arenadata.dtm.query.calcite.core.extension.dml.DmlType;
-import io.arenadata.dtm.query.calcite.core.service.DeltaQueryPreprocessor;
+import io.arenadata.dtm.query.execution.core.base.service.delta.DeltaQueryPreprocessor;
 import io.arenadata.dtm.query.calcite.core.service.QueryTemplateExtractor;
 import io.arenadata.dtm.query.calcite.core.util.SqlNodeUtil;
 import io.arenadata.dtm.query.execution.core.dml.dto.DmlRequestContext;
@@ -89,15 +90,17 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
         this.parametersTypeExtractor = parametersTypeExtractor;
     }
 
+    @Override
     public Future<QueryResult> execute(DmlRequestContext context) {
         return Future.future((Promise<QueryResult> promise) -> {
             val queryRequest = context.getRequest().getQueryRequest();
             val sqlNode = context.getSqlNode();
             if (queryRequest.isPrepare()) {
                 prepareQuery(context, queryRequest)
-                    .onComplete(promise);
+                        .onComplete(promise);
             } else {
-                replaceViews(queryRequest, sqlNode)
+                AsyncUtils.measureMs(replaceViews(queryRequest, sqlNode),
+                        duration -> log.debug("Replaced views in request [{}] in [{}]ms", queryRequest.getSql(), duration))
                     .map(sqlNodeWithoutViews -> {
                         queryRequest.setSql(sqlNodeWithoutViews.toSqlString(sqlDialect).toString());
                         return sqlNodeWithoutViews;
@@ -153,7 +156,9 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
             val originalQuery = context.getSqlNode();
             val withSnapshots = SqlNodeUtil.copy(withoutViewsQuery);
             context.setSqlNode(withoutViewsQuery);
-            deltaQueryPreprocessor.process(context.getSqlNode())
+            AsyncUtils.measureMs(deltaQueryPreprocessor.process(context.getSqlNode()),
+                    duration -> log.debug("Extracted deltas from query [{}] in [{}]ms",
+                            context.getRequest().getQueryRequest().getSql(), duration))
                 .compose(deltaResponse -> {
                     if (infoSchemaDefService.isInformationSchemaRequest(deltaResponse.getDeltaInformations())) {
                         return executeInformationSchemaRequest(context, originalQuery, deltaResponse);
@@ -202,7 +207,9 @@ public class LlrDmlExecutor implements DmlExecutor<QueryResult> {
                                                   SqlNode originalQuery,
                                                   DeltaQueryPreprocessorResponse deltaResponse) {
         return createLlrRequestContext(Optional.of(deltaResponse), withoutViewsQuery, originalQuery, context)
-            .compose(this::initQuerySourceTypeAndUpdateQueryCacheIfNeeded)
+            .compose(llrContext -> AsyncUtils.measureMs(initQuerySourceTypeAndUpdateQueryCacheIfNeeded(llrContext),
+                        duration -> log.debug("Initialized query type for query [{}] in [{}]ms",
+                                llrContext.getQueryTemplateValue().getSql(), duration)))
             .compose(llrRequestContext -> dataSourcePluginService.llr(defineSourceType(llrRequestContext),
                 llrRequestContext.getDmlRequestContext().getMetrics(),
                 createLlrRequest(llrRequestContext)));

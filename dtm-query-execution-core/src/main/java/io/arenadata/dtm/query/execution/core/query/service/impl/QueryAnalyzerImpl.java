@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.query.service.impl;
 
+import io.arenadata.dtm.async.AsyncUtils;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.InputQueryRequest;
 import io.arenadata.dtm.common.reader.QueryRequest;
@@ -74,8 +75,11 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
 
     @Override
     public Future<QueryResult> analyzeAndExecute(InputQueryRequest execQueryRequest) {
-        return getParsedQuery(execQueryRequest)
-                .compose(this::dispatchQuery);
+        return AsyncUtils.measureMs(getParsedQuery(execQueryRequest),
+                duration -> log.debug("Request parsed [{}] in [{}]ms", execQueryRequest.getSql(), duration))
+                .compose(parsedQuery -> AsyncUtils.measureMs(createRequestContext(parsedQuery),
+                        duration -> log.debug("Created request context [{}] in [{}]ms", execQueryRequest.getSql(), duration)))
+                .compose(queryDispatcher::dispatch);
     }
 
     private Future<ParsedQueryResponse> getParsedQuery(InputQueryRequest inputQueryRequest) {
@@ -90,7 +94,7 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
         }, promise));
     }
 
-    private Future<QueryResult> dispatchQuery(ParsedQueryResponse parsedQueryResponse) {
+    private Future<CoreRequestContext> createRequestContext(ParsedQueryResponse parsedQueryResponse) {
         return Future.future(promise -> {
             SqlNode sqlNode = parsedQueryResponse.getSqlNode();
             QueryRequest queryRequest = parsedQueryResponse.getQueryRequest();
@@ -103,8 +107,7 @@ public class QueryAnalyzerImpl implements QueryAnalyzer {
                 }
             }
             val requestContext = requestContextFactory.create(queryRequest, sqlNode);
-            queryDispatcher.dispatch(requestContext)
-                    .onComplete(promise);
+            promise.complete(requestContext);
         });
     }
 

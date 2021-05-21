@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.core.base.service.metadata.impl;
 
 import io.arenadata.dtm.common.model.ddl.ColumnType;
+import lombok.Getter;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -8,12 +9,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Component
+@Getter
 public class DataTypeMapper {
 
-    private final Map<String, String> typesMapping;
+    private final Map<String, String> hsqlToLogicalSchemaMapping;
 
     public DataTypeMapper() {
-        this.typesMapping = new HashMap<>();
+        Map<String, String> typesMapping = new HashMap<>();
 
         typesMapping.put("CHARACTER VARYING", ColumnType.VARCHAR.name());
         typesMapping.put("CHARACTER", ColumnType.CHAR.name());
@@ -25,10 +27,8 @@ public class DataTypeMapper {
         typesMapping.put("DECIMAL", ColumnType.DOUBLE.name());
         typesMapping.put("DEC", ColumnType.DOUBLE.name());
         typesMapping.put("NUMERIC", ColumnType.DOUBLE.name());
-    }
 
-    public Map<String, String> getHsqlToLogicalSchemaMapping() {
-        return Collections.unmodifiableMap(typesMapping);
+        hsqlToLogicalSchemaMapping = Collections.unmodifiableMap(typesMapping);
     }
 
 }

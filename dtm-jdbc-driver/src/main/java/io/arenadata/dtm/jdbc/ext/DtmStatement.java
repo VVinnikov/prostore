@@ -119,7 +119,7 @@ public class DtmStatement implements BaseStatement {
     public int executeUpdate(String sql) throws SQLException {
         log.debug("executeUpdate: {}", sql);
         execute(sql);
-        return 1;
+        return getUpdateCount();
     }
 
     @Override

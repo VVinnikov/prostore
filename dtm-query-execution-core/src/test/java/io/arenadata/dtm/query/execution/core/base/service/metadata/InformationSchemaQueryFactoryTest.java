@@ -1,17 +1,26 @@
 package io.arenadata.dtm.query.execution.core.base.service.metadata;
 
 import io.arenadata.dtm.query.execution.core.base.service.metadata.impl.DataTypeMapper;
+import io.arenadata.dtm.query.execution.core.base.service.metadata.impl.InformationSchemaQueryFactory;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
 
-public class DataTypeMapperTest {
+public class InformationSchemaQueryFactoryTest {
 
-    private DataTypeMapper dataTypeMapper = new DataTypeMapper();
+    private DataTypeMapper dataTypeMapper;
+    private InformationSchemaQueryFactory informationSchemaQueryFactory;
+
+    @Before
+    public void setUp() {
+        dataTypeMapper = new DataTypeMapper();
+        informationSchemaQueryFactory = new InformationSchemaQueryFactory(dataTypeMapper);
+    }
 
     @Test
     public void testDataTypeMapping() {
-        String mappedTypes = dataTypeMapper.selectDataType().toUpperCase();
+        String mappedTypes = informationSchemaQueryFactory.createInitEntitiesQuery().toUpperCase();
 
         assertTrue(mappedTypes.contains("WHEN DATA_TYPE = 'CHARACTER' THEN 'CHAR'"));
         assertTrue(mappedTypes.contains("WHEN DATA_TYPE = 'CHARACTER VARYING' THEN 'VARCHAR'"));

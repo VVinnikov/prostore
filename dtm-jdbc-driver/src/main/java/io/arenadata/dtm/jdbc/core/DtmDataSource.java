@@ -50,7 +50,7 @@ public class DtmDataSource implements DataSource {
 
     public void setServerNames(String[] serverNames) {
         if (serverNames == null || serverNames.length == 0) {
-            this.serverNames = new String[] {"localhost"};
+            this.serverNames = new String[]{"localhost"};
         } else {
             serverNames = serverNames.clone();
             for (int i = 0; i < serverNames.length; i++) {
@@ -99,7 +99,7 @@ public class DtmDataSource implements DataSource {
     }
 
     public void setPortNumber(int portNumber) {
-        setPortNumbers(new int[] { portNumber });
+        setPortNumbers(new int[]{portNumber});
     }
 
     public void setPortNumbers(int[] portNumbers) {
@@ -155,11 +155,14 @@ public class DtmDataSource implements DataSource {
 
     @Override
     public <T> T unwrap(Class<T> iface) throws SQLException {
-        return null;
+        if (isWrapperFor(iface)) {
+            return iface.cast(this);
+        }
+        throw new SQLException("Cannot unwrap to " + iface.getName());
     }
 
     @Override
     public boolean isWrapperFor(Class<?> iface) throws SQLException {
-        return false;
+        return iface != null && iface.isAssignableFrom(getClass());
     }
 }

@@ -8,16 +8,16 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 
 import java.util.List;
 
-public class SqlDropTable extends SqlDrop {
+public class SqlDropMaterializedView extends SqlDrop {
 
-    private static final SqlOperator OPERATOR = new SqlSpecialOperator("DROP TABLE", SqlKind.DROP_TABLE);
+    private static final SqlOperator OPERATOR = new SqlSpecialOperator("DROP MATERIALIZED VIEW", SqlKind.DROP_MATERIALIZED_VIEW);
     private final SourceType destination;
     private final SqlIdentifier name;
 
-    public SqlDropTable(SqlParserPos pos,
-                        boolean ifExists,
-                        SqlIdentifier name,
-                        SqlNode destination) {
+    public SqlDropMaterializedView(SqlParserPos pos,
+                                   boolean ifExists,
+                                   SqlIdentifier name,
+                                   SqlNode destination) {
         super(OPERATOR, pos, ifExists);
         this.name = name;
         this.destination = SqlNodeUtil.extractSourceType(destination);

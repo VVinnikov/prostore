@@ -45,15 +45,7 @@ public class DeltaInformationServiceImpl implements DeltaInformationService {
                     if (deltaHot != null && deltaHot.getCnTo() != null && deltaHot.getCnTo() >= 0) {
                         handler.handle(Future.succeededFuture(deltaHot.getCnTo()));
                     } else {
-                        deltaServiceDao.getDeltaOk(datamart)
-                                .onSuccess(okDelta -> {
-                                    if (okDelta != null) {
-                                        handler.handle(Future.succeededFuture(okDelta.getCnTo()));
-                                    } else {
-                                        handler.handle(Future.succeededFuture(-1L));
-                                    }
-                                })
-                                .onFailure(handler::fail);
+                        handler.handle(getCnToDeltaOk(datamart));
                     }
                 })
                 .onFailure(handler::fail));
@@ -75,7 +67,13 @@ public class DeltaInformationServiceImpl implements DeltaInformationService {
 
     @Override
     public Future<Long> getCnToDeltaOk(String datamart) {
-        return deltaServiceDao.getDeltaOk(datamart)
-                .map(OkDelta::getCnTo);
+        return Future.future(handler -> {
+            deltaServiceDao.getDeltaOk(datamart)
+                    .onSuccess(okDelta -> {
+                        Long cnTo = okDelta != null ? okDelta.getCnTo() : -1L;
+                        handler.handle(Future.succeededFuture(cnTo));
+                    })
+                    .onFailure(handler::fail);
+        });
     }
 }

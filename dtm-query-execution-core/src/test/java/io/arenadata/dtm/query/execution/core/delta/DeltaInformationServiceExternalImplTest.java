@@ -44,7 +44,7 @@ class DeltaInformationServiceExternalImplTest {
     }
 
     @Test
-    void getCnToDeltaHotgetDeltaHotSuccess(){
+    void getCnToDeltaHotGetDeltaHotSuccess(){
         Promise<Long> promise = Promise.promise();
         String datamart = "datamart";
         Long cnTo = 1L;
@@ -60,7 +60,7 @@ class DeltaInformationServiceExternalImplTest {
     }
 
     @Test
-    void getCnToDeltaHotgetDeltaOkSuccess(){
+    void getCnToDeltaHotGetDeltaOkSuccess(){
         Promise<Long> promise = Promise.promise();
         String datamart = "datamart";
         long cnTo = 1L;
@@ -89,6 +89,37 @@ class DeltaInformationServiceExternalImplTest {
                 .onFailure(promise::fail);
 
         assertEquals(-1L, promise.future().result());
+    }
+
+    @Test
+    void getCnDeltaOkSuccess() {
+        Promise<Long> promise = Promise.promise();
+        String datamart = "datamart";
+
+        long cnTo = 1L;
+        OkDelta okDelta = OkDelta.builder().cnTo(cnTo).build();
+
+        when(deltaServiceDao.getDeltaOk(eq(datamart))).thenReturn(Future.succeededFuture(okDelta));
+
+        deltaService.getCnToDeltaOk(datamart)
+                .onSuccess(promise::complete)
+                .onFailure(promise::fail);
+
+        assertEquals(cnTo, promise.future().result());
+    }
+
+    @Test
+    void getCnDeltaOkDefaultValueSuccess() {
+        Promise<Long> promise = Promise.promise();
+        String datamart = "datamart";
+
+        when(deltaServiceDao.getDeltaOk(eq(datamart))).thenReturn(Future.succeededFuture(null));
+
+        deltaService.getCnToDeltaOk(datamart)
+                .onSuccess(promise::complete)
+                .onFailure(promise::fail);
+
+        assertEquals(-1, promise.future().result());
     }
 
     @Test

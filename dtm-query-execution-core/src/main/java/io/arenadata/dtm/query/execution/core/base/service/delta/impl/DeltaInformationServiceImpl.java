@@ -8,6 +8,7 @@ import io.arenadata.dtm.query.execution.core.delta.dto.OkDelta;
 import io.arenadata.dtm.query.execution.core.delta.repository.zookeeper.DeltaServiceDao;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -45,7 +46,7 @@ public class DeltaInformationServiceImpl implements DeltaInformationService {
                     if (deltaHot != null && deltaHot.getCnTo() != null && deltaHot.getCnTo() >= 0) {
                         handler.handle(Future.succeededFuture(deltaHot.getCnTo()));
                     } else {
-                        handler.handle(getCnToDeltaOk(datamart));
+                        handleDeltaOk(datamart, handler);
                     }
                 })
                 .onFailure(handler::fail));
@@ -67,13 +68,15 @@ public class DeltaInformationServiceImpl implements DeltaInformationService {
 
     @Override
     public Future<Long> getCnToDeltaOk(String datamart) {
-        return Future.future(handler -> {
-            deltaServiceDao.getDeltaOk(datamart)
-                    .onSuccess(okDelta -> {
-                        Long cnTo = okDelta != null ? okDelta.getCnTo() : -1L;
-                        handler.handle(Future.succeededFuture(cnTo));
-                    })
-                    .onFailure(handler::fail);
-        });
+        return Future.future(handler -> handleDeltaOk(datamart, handler));
+    }
+
+    private Future<OkDelta> handleDeltaOk(String datamart, Promise<Long> handler) {
+        return deltaServiceDao.getDeltaOk(datamart)
+                .onSuccess(okDelta -> {
+                    Long cnTo = okDelta != null ? okDelta.getCnTo() : -1L;
+                    handler.handle(Future.succeededFuture(cnTo));
+                })
+                .onFailure(handler::fail);
     }
 }

@@ -128,8 +128,8 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
         }
     }
 
-    private Future<Void> getEntityAlreadyExistsFuture(String datamartNameWithSchema) {
-        return Future.failedFuture(new EntityAlreadyExistsException(datamartNameWithSchema));
+    private Future<Void> getEntityAlreadyExistsFuture(String entityNameWithSchema) {
+        return Future.failedFuture(new EntityAlreadyExistsException(entityNameWithSchema));
     }
 
     private Future<Boolean> getNotExistsDatamartFuture(String datamartName) {

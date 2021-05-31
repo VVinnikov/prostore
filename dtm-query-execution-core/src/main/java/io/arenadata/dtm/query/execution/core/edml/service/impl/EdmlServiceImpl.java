@@ -22,8 +22,7 @@ import org.apache.calcite.sql.SqlKind;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -34,6 +33,9 @@ import java.util.stream.Collectors;
 public class EdmlServiceImpl implements EdmlService<QueryResult> {
 
     private static final SqlDialect SQL_DIALECT = new SqlDialect(SqlDialect.EMPTY_CONTEXT);
+    private static final Set<EntityType> DOWNLOAD_SOURCES = EnumSet.of(EntityType.TABLE, EntityType.VIEW, EntityType.MATERIALIZED_VIEW);
+    private static final Set<EntityType> UPLOAD_DESTINATIONS = EnumSet.of(EntityType.TABLE);
+
     private final EntityDao entityDao;
     private final Map<EdmlAction, EdmlExecutor> executors;
 
@@ -66,11 +68,22 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
                         val source = entities.get(1);
                         context.setDestinationEntity(destination);
                         context.setSourceEntity(source);
-                        if (destination.getEntityType() == EntityType.DOWNLOAD_EXTERNAL_TABLE
-                                && checkSourceType(source)) {
+
+                        if (destination.getEntityType() == EntityType.DOWNLOAD_EXTERNAL_TABLE) {
+                            if (!DOWNLOAD_SOURCES.contains(source.getEntityType())) {
+                                edmlQueryPromise.fail(new DtmException(String.format("DOWNLOAD_EXTERNAL_TABLE source entity type mismatch. %s found, but %s expected.",
+                                        source.getEntityType(), DOWNLOAD_SOURCES)));
+                                return;
+                            }
+
                             edmlQueryPromise.complete(EdmlAction.DOWNLOAD);
-                        } else if (source.getEntityType() == EntityType.UPLOAD_EXTERNAL_TABLE
-                                && destination.getEntityType() == EntityType.TABLE) {
+                        } else if (source.getEntityType() == EntityType.UPLOAD_EXTERNAL_TABLE) {
+                            if (!UPLOAD_DESTINATIONS.contains(destination.getEntityType())) {
+                                edmlQueryPromise.fail(new DtmException(String.format("UPLOAD_EXTERNAL_TABLE destination entity type mismatch. %s found, but %s expected.",
+                                        destination.getEntityType(), UPLOAD_DESTINATIONS)));
+                                return;
+                            }
+
                             edmlQueryPromise.complete(EdmlAction.UPLOAD);
                         } else {
                             edmlQueryPromise.fail(new DtmException(
@@ -80,10 +93,6 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
                     })
                     .onFailure(edmlQueryPromise::fail);
         });
-    }
-
-    private boolean checkSourceType(Entity source) {
-        return source.getEntityType() == EntityType.TABLE || source.getEntityType() == EntityType.VIEW;
     }
 
     private Future<List<Entity>> getDestinationAndSourceEntities(EdmlRequestContext context) {

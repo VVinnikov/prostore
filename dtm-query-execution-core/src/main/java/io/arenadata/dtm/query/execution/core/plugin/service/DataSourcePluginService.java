@@ -34,6 +34,13 @@ public interface DataSourcePluginService {
     Set<SourceType> getSourceTypes();
 
     /**
+     * <p>Checks sourceType exists</p>
+     *
+     * @return true if exist, false otherwise
+     */
+    boolean hasSourceType(SourceType sourceType);
+
+    /**
      * <p>execute DDL operation</p>
      *
      * @param sourceType Data source type

@@ -23,7 +23,7 @@ public class SqlCreateMaterializedView extends SqlCreate {
                     SqlKind.CREATE_MATERIALIZED_VIEW);
 
     /**
-     * Creates a SqlCreateView.
+     * Creates a SqlCreateMaterializedView.
      */
     public SqlCreateMaterializedView(SqlParserPos pos,
                                      SqlIdentifier name,

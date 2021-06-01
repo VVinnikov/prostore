@@ -38,6 +38,7 @@ import io.vertx.core.Future;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.calcite.sql.SqlCharStringLiteral;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
@@ -103,9 +104,11 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
             val datamartName = context.getDatamartName();
             val sqlNode = (SqlCreateMaterializedView) context.getSqlNode();
 
-            SourceType querySourceType = getQuerySourceType(sqlNode.getQuery())
-                    .filter(dataSourcePluginService::hasSourceType)
-                    .orElseThrow(() -> MaterializedViewValidationException.queryDataSourceInvalid(sqlNode.getName().toString()));
+            SourceType querySourceType = getQuerySourceType(sqlNode.getQuery());
+            if (querySourceType == null) {
+                throw MaterializedViewValidationException.queryDataSourceInvalid(sqlNode.getName().toString());
+            }
+
             context.setSourceType(querySourceType);
 
             Set<SourceType> destination = sqlNode.getDestination();
@@ -159,12 +162,22 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
         });
     }
 
-    private Optional<SourceType> getQuerySourceType(SqlNode sqlNode) {
-        if (sqlNode instanceof SqlDataSourceTypeGetter) {
-            return Optional.ofNullable(((SqlDataSourceTypeGetter) sqlNode).getDatasourceType())
-                    .map(dsTypeNode -> SourceType.valueOfAvailable(dsTypeNode.getNlsString().getValue()));
+    private SourceType getQuerySourceType(SqlNode sqlNode) {
+        if (!(sqlNode instanceof SqlDataSourceTypeGetter)) {
+            return null;
         }
-        return Optional.empty();
+
+        SqlCharStringLiteral datasourceType = ((SqlDataSourceTypeGetter) sqlNode).getDatasourceType();
+        if (datasourceType == null) {
+            return null;
+        }
+
+        SourceType sourceType = SourceType.valueOfAvailable(datasourceType.getNlsString().getValue());
+        if (!dataSourcePluginService.hasSourceType(sourceType)) {
+            return null;
+        }
+
+        return sourceType;
     }
 
     private SqlNode getParsedSelect(SqlNode originalSqlNode, QueryParserResponse response) {
@@ -227,12 +240,10 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
             if (schema.isPresent()) {
                 datamartName = schema.get();
             }
-            if (table.isPresent()) {
-                tableName = table.get();
-            } else {
-                throw new DtmException(String.format("Can't extract table name from query %s",
-                        sqlNode.toSqlString(sqlDialect).toString()));
-            }
+
+            tableName = table.orElseThrow(() -> new DtmException(String.format("Can't extract table name from query %s",
+                    sqlNode.toSqlString(sqlDialect).toString())));
+
             entityCacheService.remove(new EntityKey(datamartName, tableName));
             entityFutures.add(entityDao.getEntity(datamartName, tableName));
         });

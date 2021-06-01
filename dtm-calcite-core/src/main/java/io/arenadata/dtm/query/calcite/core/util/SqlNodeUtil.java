@@ -8,7 +8,6 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlSelect;
 
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -36,16 +35,20 @@ public final class SqlNodeUtil {
     }
 
     public static Set<SourceType> extractSourceTypes(SqlNodeList sourceTypesSqlList) {
-        return Optional.ofNullable(sourceTypesSqlList)
-                .map(nodeList -> nodeList.getList().stream()
-                        .map(node -> SourceType.valueOfAvailable(node.toString()))
-                        .collect(Collectors.toSet()))
-                .orElse(null);
+        if (sourceTypesSqlList == null) {
+            return null;
+        }
+
+        return sourceTypesSqlList.getList().stream()
+                .map(node -> SourceType.valueOfAvailable(node.toString()))
+                .collect(Collectors.toSet());
     }
 
     public static SourceType extractSourceType(SqlNode destination) {
-        return Optional.ofNullable(destination)
-                .map(node -> SourceType.valueOfAvailable(node.toString().replace("'", "")))
-                .orElse(null);
+        if (destination == null) {
+            return null;
+        }
+
+        return SourceType.valueOfAvailable(destination.toString().replace("'", ""));
     }
 }

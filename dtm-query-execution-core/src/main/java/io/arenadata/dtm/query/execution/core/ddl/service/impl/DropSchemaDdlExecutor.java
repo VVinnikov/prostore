@@ -23,6 +23,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
+import java.util.Set;
+
 import static io.arenadata.dtm.query.execution.core.ddl.dto.DdlType.DROP_SCHEMA;
 
 @Slf4j
@@ -106,7 +109,7 @@ public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
     }
 
     @Override
-    public SqlKind getSqlKind() {
-        return SqlKind.DROP_SCHEMA;
+    public Set<SqlKind> getSqlKinds() {
+        return Collections.singleton(SqlKind.DROP_SCHEMA);
     }
 }

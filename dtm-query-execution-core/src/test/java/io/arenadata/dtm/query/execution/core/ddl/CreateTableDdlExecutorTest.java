@@ -45,8 +45,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -108,10 +107,10 @@ class CreateTableDdlExecutorTest {
         Promise<QueryResult> promise = Promise.promise();
         when(metadataCalciteGenerator.generateTableMetadata(any())).thenReturn(entity);
 
-        when(datamartDao.existsDatamart(eq(schema)))
+        when(datamartDao.existsDatamart(schema))
                 .thenReturn(Future.succeededFuture(true));
 
-        when(entityDao.existsEntity(eq(schema), eq(entity.getName())))
+        when(entityDao.existsEntity(schema, entity.getName()))
                 .thenReturn(Future.succeededFuture(false));
 
         when(metadataExecutor.execute(any())).thenReturn(Future.succeededFuture());
@@ -140,10 +139,10 @@ class CreateTableDdlExecutorTest {
         Promise<QueryResult> promise = Promise.promise();
         when(metadataCalciteGenerator.generateTableMetadata(any())).thenReturn(entity);
 
-        when(datamartDao.existsDatamart(eq(schema)))
+        when(datamartDao.existsDatamart(schema))
                 .thenReturn(Future.succeededFuture(true));
 
-        when(entityDao.existsEntity(eq(schema), eq(entity.getName())))
+        when(entityDao.existsEntity(schema, entity.getName()))
                 .thenReturn(Future.succeededFuture(false));
 
         when(metadataExecutor.execute(any())).thenReturn(Future.succeededFuture());
@@ -154,6 +153,7 @@ class CreateTableDdlExecutorTest {
         createTableDdlExecutor.execute(context, entity.getName())
                 .onComplete(promise);
         assertTrue(promise.future().failed());
+        assertEquals("Creating tables in schema [information_schema] is not supported", promise.future().cause().getMessage());
     }
 
     @Test
@@ -162,12 +162,13 @@ class CreateTableDdlExecutorTest {
 
         when(metadataCalciteGenerator.generateTableMetadata(any())).thenReturn(entity);
 
-        when(datamartDao.existsDatamart(eq(schema)))
+        when(datamartDao.existsDatamart(schema))
                 .thenReturn(Future.failedFuture(new DatamartNotExistsException(schema)));
 
         createTableDdlExecutor.execute(context, entity.getName())
                 .onComplete(promise);
         assertNotNull(promise.future().cause());
+        assertEquals(String.format("Database %s does not exist", schema), promise.future().cause().getMessage());
     }
 
     @Test
@@ -176,12 +177,13 @@ class CreateTableDdlExecutorTest {
 
         when(metadataCalciteGenerator.generateTableMetadata(any())).thenReturn(entity);
 
-        when(datamartDao.existsDatamart(eq(schema)))
+        when(datamartDao.existsDatamart(schema))
                 .thenReturn(Future.succeededFuture(false));
 
         createTableDdlExecutor.execute(context, entity.getName())
                 .onComplete(promise);
         assertNotNull(promise.future().cause());
+        assertEquals(String.format("Database %s does not exist", schema), promise.future().cause().getMessage());
     }
 
     @Test
@@ -189,15 +191,16 @@ class CreateTableDdlExecutorTest {
         Promise<QueryResult> promise = Promise.promise();
         when(metadataCalciteGenerator.generateTableMetadata(any())).thenReturn(entity);
 
-        when(datamartDao.existsDatamart(eq(schema)))
+        when(datamartDao.existsDatamart(schema))
                 .thenReturn(Future.succeededFuture(true));
 
-        when(entityDao.existsEntity(eq(schema), eq(entity.getName())))
+        when(entityDao.existsEntity(schema, entity.getName()))
                 .thenReturn(Future.succeededFuture(true));
 
         createTableDdlExecutor.execute(context, entity.getName())
                 .onComplete(promise);
         assertNotNull(promise.future().cause());
+        assertEquals(String.format("Entity %s.%s already exists", schema, entity.getName()), promise.future().cause().getMessage());
     }
 
     @Test
@@ -205,15 +208,16 @@ class CreateTableDdlExecutorTest {
         Promise<QueryResult> promise = Promise.promise();
         when(metadataCalciteGenerator.generateTableMetadata(any())).thenReturn(entity);
 
-        when(datamartDao.existsDatamart(eq(schema)))
+        when(datamartDao.existsDatamart(schema))
                 .thenReturn(Future.succeededFuture(true));
 
-        when(entityDao.existsEntity(eq(schema), eq(entity.getName())))
+        when(entityDao.existsEntity(schema, entity.getName()))
                 .thenReturn(Future.failedFuture(new DtmException("exists entity error")));
 
         createTableDdlExecutor.execute(context, entity.getName())
                 .onComplete(promise);
         assertNotNull(promise.future().cause());
+        assertEquals("exists entity error", promise.future().cause().getMessage());
     }
 
     @Test
@@ -221,17 +225,19 @@ class CreateTableDdlExecutorTest {
         Promise<QueryResult> promise = Promise.promise();
         when(metadataCalciteGenerator.generateTableMetadata(any())).thenReturn(entity);
 
-        when(datamartDao.existsDatamart(eq(schema)))
+        when(datamartDao.existsDatamart(schema))
                 .thenReturn(Future.succeededFuture(true));
 
-        when(entityDao.existsEntity(eq(schema), eq(entity.getName())))
+        when(entityDao.existsEntity(schema, entity.getName()))
                 .thenReturn(Future.succeededFuture(false));
 
-        when(metadataExecutor.execute(any())).thenReturn(Future.failedFuture(new DtmException("")));
+        when(metadataExecutor.execute(any()))
+                .thenReturn(Future.failedFuture(new DtmException("metadata executor error")));
 
         createTableDdlExecutor.execute(context, entity.getName())
                 .onComplete(promise);
         assertNotNull(promise.future().cause());
+        assertEquals("metadata executor error", promise.future().cause().getMessage());
     }
 
     @Test
@@ -239,10 +245,10 @@ class CreateTableDdlExecutorTest {
         Promise<QueryResult> promise = Promise.promise();
         when(metadataCalciteGenerator.generateTableMetadata(any())).thenReturn(entity);
 
-        when(datamartDao.existsDatamart(eq(schema)))
+        when(datamartDao.existsDatamart(schema))
                 .thenReturn(Future.succeededFuture(true));
 
-        when(entityDao.existsEntity(eq(schema), eq(entity.getName())))
+        when(entityDao.existsEntity(schema, entity.getName()))
                 .thenReturn(Future.succeededFuture(false));
 
         when(metadataExecutor.execute(any())).thenReturn(Future.succeededFuture());
@@ -253,16 +259,19 @@ class CreateTableDdlExecutorTest {
         createTableDdlExecutor.execute(context, entity.getName())
                 .onComplete(promise);
         assertNotNull(promise.future().cause());
+        assertEquals("create entity error", promise.future().cause().getMessage());
     }
 
     @Test
     void executeWithMetadataGeneratorError() {
         Promise<QueryResult> promise = Promise.promise();
 
-        when(metadataCalciteGenerator.generateTableMetadata(any())).thenThrow(new DtmException(""));
+        when(metadataCalciteGenerator.generateTableMetadata(any()))
+                .thenThrow(new DtmException("metadata generator error"));
 
         createTableDdlExecutor.execute(context, entity.getName())
                 .onComplete(promise);
         assertNotNull(promise.future().cause());
+        assertEquals("metadata generator error", promise.future().cause().getMessage());
     }
 }

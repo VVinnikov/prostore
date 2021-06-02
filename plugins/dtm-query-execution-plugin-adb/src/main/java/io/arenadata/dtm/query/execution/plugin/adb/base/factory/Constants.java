@@ -1,6 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adb.base.factory;
 
-public class Constants {
+public final class Constants {
     public static final String ACTUAL_TABLE = "actual";
     public static final String STAGING_TABLE = "staging";
     public static final String HISTORY_TABLE = "history";

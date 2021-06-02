@@ -100,7 +100,7 @@ class DropSchemaDdlExecutorTest {
         dropSchemaDdlExecutor.execute(context, null)
                 .onComplete(promise);
         assertTrue(promise.future().succeeded());
-        verify(evictQueryTemplateCacheService, times(1)).evictByDatamartName(schema);
+        verify(evictQueryTemplateCacheService).evictByDatamartName(schema);
     }
 
     @Test
@@ -115,7 +115,7 @@ class DropSchemaDdlExecutorTest {
         dropSchemaDdlExecutor.execute(context, null)
                 .onComplete(promise);
         assertTrue(promise.future().failed());
-        verify(evictQueryTemplateCacheService, times(1)).evictByDatamartName(any());
+        verify(evictQueryTemplateCacheService).evictByDatamartName(any());
     }
 
     @Test
@@ -133,7 +133,7 @@ class DropSchemaDdlExecutorTest {
         dropSchemaDdlExecutor.execute(context, null)
                 .onComplete(promise);
         assertTrue(promise.future().failed());
-        verify(evictQueryTemplateCacheService, times(1)).evictByDatamartName(any());
+        verify(evictQueryTemplateCacheService).evictByDatamartName(any());
     }
 
     @Test

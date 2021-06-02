@@ -13,18 +13,18 @@ import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.calcite.core.node.SqlTreeNode;
 import io.arenadata.dtm.query.calcite.core.rel2sql.NullNotCastableRelToSqlConverter;
 import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
-import io.arenadata.dtm.query.execution.core.base.repository.ServiceDbFacade;
-import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.base.dto.cache.EntityKey;
-import io.arenadata.dtm.query.execution.core.ddl.dto.DdlRequestContext;
 import io.arenadata.dtm.query.execution.core.base.exception.entity.EntityAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.base.exception.entity.EntityNotExistsException;
 import io.arenadata.dtm.query.execution.core.base.exception.view.ViewDisalowedOrDirectiveException;
-import io.arenadata.dtm.query.execution.core.ddl.service.QueryResultDdlExecutor;
-import io.arenadata.dtm.query.execution.core.dml.service.ColumnMetadataService;
-import io.arenadata.dtm.query.execution.core.base.service.metadata.MetadataExecutor;
+import io.arenadata.dtm.query.execution.core.base.repository.ServiceDbFacade;
+import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.base.service.metadata.LogicalSchemaProvider;
+import io.arenadata.dtm.query.execution.core.base.service.metadata.MetadataExecutor;
+import io.arenadata.dtm.query.execution.core.ddl.dto.DdlRequestContext;
+import io.arenadata.dtm.query.execution.core.ddl.service.QueryResultDdlExecutor;
 import io.arenadata.dtm.query.execution.core.ddl.utils.SqlPreparer;
+import io.arenadata.dtm.query.execution.core.dml.service.ColumnMetadataService;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.vertx.core.CompositeFuture;
@@ -42,9 +42,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -259,8 +257,8 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
     }
 
     @Override
-    public SqlKind getSqlKind() {
-        return SqlKind.CREATE_VIEW;
+    public Set<SqlKind> getSqlKinds() {
+        return Collections.singleton(SqlKind.CREATE_VIEW);
     }
 
     @Data

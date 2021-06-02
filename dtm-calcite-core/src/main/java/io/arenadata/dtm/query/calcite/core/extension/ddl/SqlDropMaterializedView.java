@@ -3,21 +3,23 @@ package io.arenadata.dtm.query.calcite.core.extension.ddl;
 import com.google.common.collect.ImmutableList;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.util.SqlNodeUtil;
+import lombok.Getter;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
 import java.util.List;
 
-public class SqlDropTable extends SqlDrop {
+@Getter
+public class SqlDropMaterializedView extends SqlDrop {
 
-    private static final SqlOperator OPERATOR = new SqlSpecialOperator("DROP TABLE", SqlKind.DROP_TABLE);
+    private static final SqlOperator OPERATOR = new SqlSpecialOperator("DROP MATERIALIZED VIEW", SqlKind.DROP_MATERIALIZED_VIEW);
     private final SourceType destination;
     private final SqlIdentifier name;
 
-    public SqlDropTable(SqlParserPos pos,
-                        boolean ifExists,
-                        SqlIdentifier name,
-                        SqlNode destination) {
+    public SqlDropMaterializedView(SqlParserPos pos,
+                                   boolean ifExists,
+                                   SqlIdentifier name,
+                                   SqlNode destination) {
         super(OPERATOR, pos, ifExists);
         this.name = name;
         this.destination = SqlNodeUtil.extractSourceType(destination);
@@ -26,10 +28,6 @@ public class SqlDropTable extends SqlDrop {
     @Override
     public List<SqlNode> getOperandList() {
         return ImmutableList.of(name);
-    }
-
-    public SourceType getDestination() {
-        return destination;
     }
 
     @Override

@@ -78,7 +78,7 @@ public class UploadFailedExecutorImpl implements EdmlUploadFailedExecutor {
         return Future.future(rbPromise -> {
             List<Future> futures = new ArrayList<>();
             final Set<SourceType> destination = context.getRequest().getEntity().getDestination().stream()
-                    .filter(type -> dataSourcePluginService.getSourceTypes().contains(type))
+                    .filter(dataSourcePluginService::hasSourceType)
                     .collect(Collectors.toSet());
             destination.forEach(sourceType ->
                     futures.add(Future.future(p -> dataSourcePluginService.rollback(

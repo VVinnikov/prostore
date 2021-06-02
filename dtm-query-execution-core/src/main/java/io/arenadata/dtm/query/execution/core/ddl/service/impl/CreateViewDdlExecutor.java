@@ -249,11 +249,10 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
     }
 
     protected Future<Void> checkEntityType(Entity entity) {
-        if (EntityType.VIEW == entity.getEntityType()) {
-            return Future.succeededFuture();
-        } else {
-            return Future.failedFuture(new EntityNotExistsException(entity.getName()));
+        if (EntityType.VIEW != entity.getEntityType()) {
+            throw new EntityNotExistsException(entity.getName());
         }
+        return Future.succeededFuture();
     }
 
     @Override

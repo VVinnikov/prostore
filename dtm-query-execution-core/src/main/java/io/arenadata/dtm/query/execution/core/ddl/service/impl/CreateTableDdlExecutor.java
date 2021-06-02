@@ -7,6 +7,7 @@ import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
 import io.arenadata.dtm.query.execution.core.base.exception.datamart.DatamartNotExistsException;
+import io.arenadata.dtm.query.execution.core.base.exception.entity.EntityAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.base.repository.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.EntityDao;
@@ -81,9 +82,9 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
             datamartDao.existsDatamart(datamartName)
                     .compose(isExistsDatamart -> isExistsDatamart ?
                             entityDao.existsEntity(datamartName, entity.getName()) : getNotExistsDatamartFuture(datamartName))
-                    .onSuccess(isExistsEntity -> createTable(context)
-                            .onSuccess(success -> promise.complete(QueryResult.emptyResult()))
-                            .onFailure(promise::fail))
+                    .compose(isExistsEntity -> isExistsEntity ?
+                            getEntityAlreadyExistsFuture(entity.getNameWithSchema()) : createTable(context))
+                    .onSuccess(success -> promise.complete(QueryResult.emptyResult()))
                     .onFailure(promise::fail);
         });
     }
@@ -91,6 +92,10 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
     private void validateFields(List<EntityField> fields) {
         checkRequiredKeys(fields);
         checkVarcharSize(fields);
+    }
+
+    private Future<Void> getEntityAlreadyExistsFuture(String entityNameWithSchema) {
+        return Future.failedFuture(new EntityAlreadyExistsException(entityNameWithSchema));
     }
 
     private Future<Boolean> getNotExistsDatamartFuture(String datamartName) {

@@ -69,6 +69,11 @@ public class DataSourcePluginServiceImpl implements DataSourcePluginService {
     }
 
     @Override
+    public boolean hasSourceType(SourceType sourceType) {
+        return sourceTypes.contains(sourceType);
+    }
+
+    @Override
     public Future<Void> ddl(SourceType sourceType, RequestMetrics metrics, DdlRequest request) {
         return executeWithMetrics(sourceType,
                 SqlProcessingType.DDL,

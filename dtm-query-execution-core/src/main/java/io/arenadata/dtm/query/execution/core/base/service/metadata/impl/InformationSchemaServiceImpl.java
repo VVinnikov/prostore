@@ -25,13 +25,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -45,6 +39,7 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     private static final int DATA_TYPE_COLUMN_INDEX = 3;
     private static final int IS_NULLABLE_COLUMN_INDEX = 4;
     private static final String IS_NULLABLE_COLUMN_TRUE = "YES";
+    private static final String MATERIALIZED_VIEW_PREFIX = "sys_";
 
     private final ApplicationContext applicationContext;
     private final DdlQueryGenerator ddlQueryGenerator;
@@ -84,6 +79,10 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
                 return createView(entity);
             case DROP_VIEW:
                 return dropView(entity);
+            case CREATE_MATERIALIZED_VIEW:
+                return createMaterializedView(entity);
+            case DROP_MATERIALIZED_VIEW:
+                return dropMaterializedView(entity);
             default:
                 throw new DtmException(String.format("Sql type not supported: %s", sqlKind));
         }
@@ -105,6 +104,19 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
                 .onFailure(this::shutdown);
     }
 
+    private Future<Void> dropMaterializedView(Entity entity) {
+        return Future.future(promise -> {
+            Future<Void> dropTable = client.executeQuery(String.format(InformationSchemaUtils.DROP_TABLE, entity.getSchema(), entity.getName()));
+            Future<Void> dropView = client.executeQuery(String.format(InformationSchemaUtils.DROP_VIEW, entity.getSchema(), MATERIALIZED_VIEW_PREFIX + entity.getName()));
+            CompositeFuture.join(dropView, dropTable)
+                    .onSuccess(v -> promise.complete())
+                    .onFailure(e -> {
+                        shutdown(e);
+                        promise.fail(e);
+                    });
+        });
+    }
+
     private Future<Void> createSchema(String datamart) {
         return client.executeQuery(String.format(InformationSchemaUtils.CREATE_SCHEMA, datamart))
                 .onFailure(this::shutdown);
@@ -123,6 +135,11 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     private Future<Void> createView(Entity entity) {
         return dropView(entity)
                 .compose(v -> client.executeBatch(getEntitiesCreateQueries(Collections.singletonList(entity))))
+                .onFailure(this::shutdown);
+    }
+
+    private Future<Void> createMaterializedView(Entity entity) {
+        return client.executeBatch(getEntitiesCreateQueries(Collections.singletonList(entity)))
                 .onFailure(this::shutdown);
     }
 
@@ -282,11 +299,14 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
         List<String> commentQueries = new ArrayList<>();
         List<String> createShardingKeys = new ArrayList<>();
         entities.forEach(entity -> {
-            if (EntityType.VIEW.equals(entity.getEntityType())) {
-                viewEntities.add(ddlQueryGenerator.generateCreateViewQuery(entity));
+            if (EntityType.VIEW.equals(entity.getEntityType()) ||
+                    EntityType.MATERIALIZED_VIEW.equals(entity.getEntityType())) {
+                String prefix = EntityType.MATERIALIZED_VIEW == entity.getEntityType() ? MATERIALIZED_VIEW_PREFIX : "";
+                viewEntities.add(ddlQueryGenerator.generateCreateViewQuery(entity, prefix));
                 commentQueries.addAll(getCommentQueries(entity));
             }
-            if (EntityType.TABLE.equals(entity.getEntityType())) {
+            if (EntityType.TABLE.equals(entity.getEntityType()) ||
+                    EntityType.MATERIALIZED_VIEW.equals(entity.getEntityType())) {
                 tableEntities.add(ddlQueryGenerator.generateCreateTableQuery(entity));
                 commentQueries.addAll(getCommentQueries(entity));
                 val shardingKeyColumns = entity.getFields().stream()

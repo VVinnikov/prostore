@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.ddl.service.impl;
+package io.arenadata.dtm.query.execution.core.ddl.service.impl.post;
 
 import io.arenadata.dtm.common.post.PostSqlActionType;
 import io.arenadata.dtm.query.execution.core.base.service.metadata.InformationSchemaService;

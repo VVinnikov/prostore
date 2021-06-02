@@ -1,7 +1,6 @@
 package io.arenadata.dtm.query.execution.core.ddl.service.impl;
 
 import io.arenadata.dtm.common.exception.DtmException;
-import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.QueryResult;
@@ -9,7 +8,6 @@ import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
 import io.arenadata.dtm.query.execution.core.base.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.base.exception.entity.EntityAlreadyExistsException;
-import io.arenadata.dtm.query.execution.core.base.exception.table.ValidationDtmException;
 import io.arenadata.dtm.query.execution.core.base.repository.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.EntityDao;
@@ -28,11 +26,13 @@ import org.apache.calcite.sql.SqlKind;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
+
+import static io.arenadata.dtm.query.execution.core.ddl.utils.ValidationUtils.checkRequiredKeys;
+import static io.arenadata.dtm.query.execution.core.ddl.utils.ValidationUtils.checkVarcharSize;
 
 @Slf4j
 @Component
@@ -94,40 +94,6 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
         checkVarcharSize(fields);
     }
 
-    private void checkVarcharSize(List<EntityField> fields) {
-        List<String> notSetSizeFields = fields.stream()
-                .filter(field -> field.getType() == ColumnType.CHAR)
-                .filter(field -> field.getSize() == null)
-                .map(EntityField::getName)
-                .collect(Collectors.toList());
-        if (!notSetSizeFields.isEmpty()) {
-            throw new ValidationDtmException(
-                    String.format("Specifying the size for columns%s with types[VARCHAR, CHAR] is required", notSetSizeFields)
-            );
-        }
-    }
-
-    private void checkRequiredKeys(List<EntityField> fields) {
-        val notExistsKeys = new ArrayList<String>();
-        val notExistsPrimaryKeys = fields.stream()
-                .noneMatch(f -> f.getPrimaryOrder() != null);
-        if (notExistsPrimaryKeys) {
-            notExistsKeys.add("primary key(s)");
-        }
-
-        val notExistsShardingKey = fields.stream()
-                .noneMatch(f -> f.getShardingOrder() != null);
-        if (notExistsShardingKey) {
-            notExistsKeys.add("sharding key(s)");
-        }
-
-        if (!notExistsKeys.isEmpty()) {
-            throw new ValidationDtmException(
-                    String.format("Primary keys and Sharding keys are required. The following keys do not exist: %s",
-                            String.join(",", notExistsKeys)));
-        }
-    }
-
     private Future<Void> getEntityAlreadyExistsFuture(String entityNameWithSchema) {
         return Future.failedFuture(new EntityAlreadyExistsException(entityNameWithSchema));
     }
@@ -152,7 +118,7 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
     }
 
     @Override
-    public SqlKind getSqlKind() {
-        return SqlKind.CREATE_TABLE;
+    public Set<SqlKind> getSqlKinds() {
+        return Collections.singleton(SqlKind.CREATE_TABLE);
     }
 }

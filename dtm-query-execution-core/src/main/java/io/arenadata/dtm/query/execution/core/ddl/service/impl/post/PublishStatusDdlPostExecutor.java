@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.core.ddl.service.impl;
+package io.arenadata.dtm.query.execution.core.ddl.service.impl.post;
 
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.eventbus.DataHeader;

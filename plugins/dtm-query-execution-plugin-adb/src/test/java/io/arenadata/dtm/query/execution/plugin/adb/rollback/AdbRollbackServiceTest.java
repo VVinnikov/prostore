@@ -12,6 +12,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,10 +33,9 @@ class AdbRollbackServiceTest {
         Promise promise = Promise.promise();
         RollbackRequest rollbackRequest = RollbackRequest.builder().build();
         AdbRollbackRequest sqlList = new AdbRollbackRequest(
-            PreparedStatementRequest.onlySql("deleteFromHistory"),
-            PreparedStatementRequest.onlySql("deleteFromActualSql"),
-            PreparedStatementRequest.onlySql("truncateSql"),
-            PreparedStatementRequest.onlySql("insertSql")
+                PreparedStatementRequest.onlySql("truncateSql"),
+                PreparedStatementRequest.onlySql("deleteFromActualSql"),
+                Arrays.asList(PreparedStatementRequest.onlySql("eraseSql"))
         );
         when(rollbackRequestFactory.create(any())).thenReturn(sqlList);
         Map<String, Integer> execCount = new HashMap<>();
@@ -55,10 +55,7 @@ class AdbRollbackServiceTest {
 
         adbRollbackService.execute(rollbackRequest).onComplete(promise);
         assertTrue(promise.future().succeeded());
-        assertEquals(execCount.get(sqlList.getStatements().get(0).getSql()), 1);
-        assertEquals(execCount.get(sqlList.getStatements().get(1).getSql()), 1);
-        assertEquals(execCount.get(sqlList.getStatements().get(2).getSql()), 1);
-        assertEquals(execCount.get(sqlList.getStatements().get(3).getSql()), 1);
+        sqlList.getStatements().forEach(statement -> assertEquals(execCount.get(statement.getSql()), 1));
     }
 
     @Test
@@ -67,10 +64,9 @@ class AdbRollbackServiceTest {
         RollbackRequest rollbackRequest = RollbackRequest.builder().build();
 
         when(rollbackRequestFactory.create(any())).thenReturn(new AdbRollbackRequest(
-            PreparedStatementRequest.onlySql("deleteFromHistory"),
-            PreparedStatementRequest.onlySql("deleteFromActualSql"),
-            PreparedStatementRequest.onlySql("truncateSql"),
-            PreparedStatementRequest.onlySql("insertSql")
+                PreparedStatementRequest.onlySql("truncateSql"),
+                PreparedStatementRequest.onlySql("deleteFromActualSql"),
+                Arrays.asList(PreparedStatementRequest.onlySql("eraseSql"))
         ));
 
         when(adbQueryExecutor.executeUpdate(any())).thenReturn(Future.failedFuture(new DataSourceException("")));

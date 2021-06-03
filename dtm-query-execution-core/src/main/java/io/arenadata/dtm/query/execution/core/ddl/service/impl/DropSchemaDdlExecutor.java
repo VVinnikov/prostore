@@ -54,42 +54,34 @@ public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
 
     @Override
     public Future<QueryResult> execute(DdlRequestContext context, String sqlNodeName) {
-        return dropSchema(context);
+        String datamartName = ((DropDatabase) context.getSqlNode()).getName().getSimple();
+        if (InformationSchemaView.SCHEMA_NAME.equalsIgnoreCase(datamartName)) {
+            return Future.failedFuture(new DtmException(String.format("System database %s is non-deletable", InformationSchemaView.SCHEMA_NAME)));
+        }
+        return dropSchema(context, datamartName);
     }
 
-    private Future<QueryResult> dropSchema(DdlRequestContext context) {
+    private Future<QueryResult> dropSchema(DdlRequestContext context, String datamartName) {
         return Future.future(promise -> {
-            String datamartName = ((DropDatabase) context.getSqlNode()).getName().getSimple();
-            if (InformationSchemaView.SCHEMA_NAME.equalsIgnoreCase(datamartName)) {
-                promise.fail(new DtmException("System database INFORMATION_SCHEMA is non-deletable"));
-            } else {
-                clearCacheByDatamartName(datamartName);
-                context.getRequest().getQueryRequest().setDatamartMnemonic(datamartName);
-                context.setDatamartName(datamartName);
-                datamartDao.existsDatamart(datamartName)
-                        .compose(isExists -> {
-                            if (isExists) {
-                                try {
-                                    evictQueryTemplateCacheService.evictByDatamartName(datamartName);
-                                    return dropDatamartInPlugins(context);
-                                } catch (Exception e) {
-                                    return Future.failedFuture(new DtmException("Evict cache error"));
-                                }
-                            } else {
-                                return getNotExistsDatamartFuture(datamartName);
-                            }
-                        })
-                        .compose(r -> dropDatamart(datamartName))
-                        .onSuccess(success -> {
+            clearCacheByDatamartName(datamartName);
+            context.getRequest().getQueryRequest().setDatamartMnemonic(datamartName);
+            context.setDatamartName(datamartName);
+            datamartDao.existsDatamart(datamartName)
+                    .compose(isExists -> {
+                        if (isExists) {
                             try {
                                 evictQueryTemplateCacheService.evictByDatamartName(datamartName);
-                                promise.complete(QueryResult.emptyResult());
+                                return dropDatamartInPlugins(context);
                             } catch (Exception e) {
-                                promise.fail(new DtmException("Evict cache error"));
+                                return Future.failedFuture(new DtmException("Evict cache error", e));
                             }
-                        })
-                        .onFailure(promise::fail);
-            }
+                        } else {
+                            return getNotExistsDatamartFuture(datamartName);
+                        }
+                    })
+                    .compose(r -> dropDatamart(datamartName))
+                    .onSuccess(success -> promise.complete(QueryResult.emptyResult()))
+                    .onFailure(promise::fail);
         });
     }
 
@@ -104,14 +96,10 @@ public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
     }
 
     private Future<Void> dropDatamartInPlugins(DdlRequestContext context) {
-        try {
-            context.getRequest().setQueryRequest(replaceDatabaseInSql(context.getRequest().getQueryRequest()));
-            context.setDdlType(DROP_SCHEMA);
-            log.debug("Delete physical objects in plugins for datamart: [{}]", context.getDatamartName());
-            return metadataExecutor.execute(context);
-        } catch (Exception e) {
-            return Future.failedFuture(new DtmException("Error generating drop datamart request", e));
-        }
+        context.getRequest().setQueryRequest(replaceDatabaseInSql(context.getRequest().getQueryRequest()));
+        context.setDdlType(DROP_SCHEMA);
+        log.debug("Delete physical objects in plugins for datamart: [{}]", context.getDatamartName());
+        return metadataExecutor.execute(context);
     }
 
     private Future<Void> dropDatamart(String datamartName) {

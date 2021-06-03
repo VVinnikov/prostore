@@ -27,8 +27,7 @@ import io.arenadata.dtm.query.execution.core.ddl.utils.SqlPreparer;
 import io.arenadata.dtm.query.execution.core.dml.service.ColumnMetadataService;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
-import io.vertx.core.CompositeFuture;
-import io.vertx.core.Future;
+import io.vertx.core.*;
 import lombok.Builder;
 import lombok.Data;
 import lombok.SneakyThrows;
@@ -135,12 +134,20 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
         val viewEntity = ctx.getViewEntity();
         entityCacheService.remove(new EntityKey(viewEntity.getSchema(), viewEntity.getName()));
         return Future.future(p -> entityDao.createEntity(viewEntity)
-                .onSuccess(success -> p.complete(QueryResult.emptyResult()))
-                .onFailure(error -> p.handle(checkCreateOrReplace(ctx, error)
-                        .compose(r -> entityDao.getEntity(viewEntity.getSchema(), viewEntity.getName()))
-                        .compose(this::checkEntityType)
-                        .compose(r -> entityDao.updateEntity(viewEntity))
-                        .map(v -> QueryResult.emptyResult()))));
+                .onSuccess(ar -> p.complete(QueryResult.emptyResult()))
+                .onFailure(error -> {
+                    if (checkCreateOrReplace(ctx.isCreateOrReplace(), error)) {
+                        entityDao.getEntity(viewEntity.getSchema(), viewEntity.getName())
+                                .compose(this::checkEntityType)
+                                .compose(r -> entityDao.updateEntity(viewEntity))
+                                .map(v -> QueryResult.emptyResult())
+                                .onSuccess(p::complete)
+                                .onFailure(p::fail);
+                    } else {
+                        p.fail(error);
+                    }
+                })
+        );
     }
 
     private Future<Void> checkSnapshotNotExist(SqlNode sqlNode) {
@@ -239,14 +246,10 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
     }
 
     @SneakyThrows
-    private Future<Void> checkCreateOrReplace(CreateViewContext ctx, Throwable error) {
-        if (error instanceof EntityAlreadyExistsException && ctx.isCreateOrReplace()) {
-            // if there is an exception <entity already exists> and <orReplace> is true
-            // then continue
-            return Future.succeededFuture();
-        } else {
-            return Future.failedFuture(error);
-        }
+    private boolean checkCreateOrReplace(boolean isCreateOrReplace, Throwable error) {
+        // if there is an exception <entity already exists> and <orReplace> is true
+        // then continue
+        return error instanceof EntityAlreadyExistsException && isCreateOrReplace;
     }
 
     protected Future<Void> checkEntityType(Entity entity) {
@@ -263,7 +266,7 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
 
     @Data
     @Builder
-    protected final static class CreateViewContext {
+    protected static final class CreateViewContext {
         private final boolean createOrReplace;
         private final Entity viewEntity;
     }

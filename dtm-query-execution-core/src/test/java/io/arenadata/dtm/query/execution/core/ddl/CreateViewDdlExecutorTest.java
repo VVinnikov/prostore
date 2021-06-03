@@ -10,14 +10,13 @@ import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
-import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlAlterView;
+import io.arenadata.dtm.query.calcite.core.dialect.LimitSqlDialect;
+import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateView;
 import io.arenadata.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import io.arenadata.dtm.query.calcite.core.provider.CalciteContextProvider;
 import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
-import io.arenadata.dtm.query.execution.core.calcite.service.CoreCalciteContextProvider;
-import io.arenadata.dtm.query.execution.core.calcite.service.CoreCalciteDMLQueryParserService;
-import io.arenadata.dtm.query.execution.core.calcite.factory.CoreCalciteSchemaFactory;
-import io.arenadata.dtm.query.execution.core.calcite.configuration.CalciteConfiguration;
+import io.arenadata.dtm.query.execution.core.base.dto.cache.EntityKey;
+import io.arenadata.dtm.query.execution.core.base.exception.entity.EntityAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.base.repository.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.base.repository.ServiceDbFacadeImpl;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.DatamartDao;
@@ -26,22 +25,25 @@ import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.ServiceDb
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.impl.DatamartDaoImpl;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.impl.ServiceDbDaoImpl;
-import io.arenadata.dtm.query.execution.core.base.dto.cache.EntityKey;
-import io.arenadata.dtm.query.execution.core.ddl.dto.DdlRequestContext;
-import io.arenadata.dtm.query.execution.core.base.exception.entity.EntityNotExistsException;
-import io.arenadata.dtm.query.execution.core.calcite.factory.CoreSchemaFactory;
-import io.arenadata.dtm.query.execution.core.ddl.service.impl.AlterViewDdlExecutor;
-import io.arenadata.dtm.query.execution.core.dml.service.ColumnMetadataService;
-import io.arenadata.dtm.query.execution.core.base.service.metadata.MetadataExecutor;
-import io.arenadata.dtm.query.execution.core.base.service.metadata.impl.MetadataExecutorImpl;
 import io.arenadata.dtm.query.execution.core.base.service.metadata.LogicalSchemaProvider;
+import io.arenadata.dtm.query.execution.core.base.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.base.service.metadata.impl.LogicalSchemaProviderImpl;
+import io.arenadata.dtm.query.execution.core.base.service.metadata.impl.MetadataExecutorImpl;
+import io.arenadata.dtm.query.execution.core.calcite.configuration.CalciteConfiguration;
+import io.arenadata.dtm.query.execution.core.calcite.factory.CoreCalciteSchemaFactory;
+import io.arenadata.dtm.query.execution.core.calcite.factory.CoreSchemaFactory;
+import io.arenadata.dtm.query.execution.core.calcite.service.CoreCalciteContextProvider;
+import io.arenadata.dtm.query.execution.core.calcite.service.CoreCalciteDMLQueryParserService;
+import io.arenadata.dtm.query.execution.core.ddl.dto.DdlRequestContext;
+import io.arenadata.dtm.query.execution.core.ddl.service.impl.CreateViewDdlExecutor;
+import io.arenadata.dtm.query.execution.core.dml.service.ColumnMetadataService;
 import io.arenadata.dtm.query.execution.model.metadata.ColumnMetadata;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.tools.FrameworkConfig;
@@ -63,7 +65,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class AlterViewDdlExecutorTest {
+public class CreateViewDdlExecutorTest {
+
+
+    private static final LimitSqlDialect SQL_DIALECT = new LimitSqlDialect(CalciteSqlDialect.DEFAULT_CONTEXT);
 
     private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
     private final ServiceDbDao serviceDbDao = mock(ServiceDbDaoImpl.class);
@@ -82,7 +87,7 @@ class AlterViewDdlExecutorTest {
     private final CoreCalciteSchemaFactory coreSchemaFactory = new CoreCalciteSchemaFactory(new CoreSchemaFactory());
     private final CalciteContextProvider contextProvider = new CoreCalciteContextProvider(parserConfig, coreSchemaFactory);
 
-    private AlterViewDdlExecutor alterViewDdlExecutor;
+    private CreateViewDdlExecutor createViewDdlExecutor;
     private String sqlNodeName;
     private String schema;
     private final List<Entity> entityList = new ArrayList<>();
@@ -94,7 +99,7 @@ class AlterViewDdlExecutorTest {
         when(serviceDbDao.getEntityDao()).thenReturn(entityDao);
         when(serviceDbDao.getDatamartDao()).thenReturn(datamartDao);
 
-        alterViewDdlExecutor = new AlterViewDdlExecutor(entityCacheService,
+        createViewDdlExecutor = new CreateViewDdlExecutor(entityCacheService,
                 metadataExecutor,
                 logicalSchemaProvider,
                 columnMetadataService,
@@ -123,13 +128,13 @@ class AlterViewDdlExecutorTest {
         final QueryRequest queryRequest = new QueryRequest();
         queryRequest.setRequestId(UUID.randomUUID());
         queryRequest.setDatamartMnemonic(schema);
-        queryRequest.setSql(String.format("ALTER VIEW %s.%s AS SELECT * FROM %s.%s",
+        queryRequest.setSql(String.format("CREATE VIEW %s.%s AS SELECT * FROM %s.%s",
                 schema, entityList.get(0).getName(), schema, entityList.get(1).getName()));
         SqlNode sqlNode = planner.parse(queryRequest.getSql());
         DdlRequestContext context = new DdlRequestContext(null, new DatamartRequest(queryRequest), sqlNode, null, null);
 
         when(parserService.parse(any()))
-                .thenReturn(Future.succeededFuture(parse(contextProvider, new QueryParserRequest(((SqlAlterView) sqlNode).getQuery(), logicSchema))));
+                .thenReturn(Future.succeededFuture(parse(contextProvider, new QueryParserRequest(((SqlCreateView) sqlNode).getQuery(), logicSchema))));
 
         when(columnMetadataService.getColumnMetadata(any(QueryParserRequest.class)))
                 .thenReturn(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()
@@ -143,16 +148,16 @@ class AlterViewDdlExecutorTest {
         when(entityDao.getEntity(eq(schema), eq(entityList.get(0).getName())))
                 .thenReturn(Future.succeededFuture(entityList.get(0)));
 
-        when(entityDao.updateEntity(any()))
+        when(entityDao.createEntity(any()))
                 .thenReturn(Future.succeededFuture());
 
-        alterViewDdlExecutor.execute(context, sqlNodeName)
+        createViewDdlExecutor.execute(context, sqlNodeName)
                 .onComplete(promise);
         assertTrue(promise.future().succeeded());
     }
 
     @Test
-    void executeWrongEntityTypeError() throws SqlParseException {
+    void executeReplaceSuccess() throws SqlParseException {
         Promise<QueryResult> promise = Promise.promise();
         DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
         FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
@@ -161,54 +166,153 @@ class AlterViewDdlExecutorTest {
         final QueryRequest queryRequest = new QueryRequest();
         queryRequest.setRequestId(UUID.randomUUID());
         queryRequest.setDatamartMnemonic(schema);
-        queryRequest.setSql(String.format("ALTER VIEW %s.%s AS SELECT * FROM %s.%s",
+        queryRequest.setSql(String.format("CREATE OR REPLACE VIEW %s.%s AS SELECT * FROM %s.%s",
+                schema, entityList.get(0).getName(), schema, entityList.get(1).getName()));
+        SqlNode sqlNode = planner.parse(queryRequest.getSql());
+        DdlRequestContext context = new DdlRequestContext(null, new DatamartRequest(queryRequest), sqlNode, null, null);
+
+        when(parserService.parse(any()))
+                .thenReturn(Future.succeededFuture(parse(contextProvider, new QueryParserRequest(((SqlCreateView) sqlNode).getQuery(), logicSchema))));
+
+        when(columnMetadataService.getColumnMetadata(any(QueryParserRequest.class)))
+                .thenReturn(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()
+                        .name("id")
+                        .type(ColumnType.BIGINT)
+                        .build())));
+
+        when(entityDao.getEntity(eq(schema), eq(entityList.get(1).getName())))
+                .thenReturn(Future.succeededFuture(entityList.get(1)))
+                .thenReturn(Future.succeededFuture(entityList.get(1)));
+
+        when(entityDao.getEntity(eq(schema), eq(entityList.get(0).getName())))
+                .thenReturn(Future.succeededFuture(entityList.get(0)));
+
+        when(entityDao.createEntity(any()))
+                .thenReturn(Future.failedFuture(new EntityAlreadyExistsException("")));
+
+        when(entityDao.updateEntity(any()))
+                .thenReturn(Future.succeededFuture());
+
+        createViewDdlExecutor.execute(context, sqlNodeName)
+                .onComplete(promise);
+        assertTrue(promise.future().succeeded());
+    }
+
+    @Test
+    void executeCreateEntityError() throws SqlParseException {
+        Promise<QueryResult> promise = Promise.promise();
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
+        FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
+
+        final QueryRequest queryRequest = new QueryRequest();
+        queryRequest.setRequestId(UUID.randomUUID());
+        queryRequest.setDatamartMnemonic(schema);
+        queryRequest.setSql(String.format("CREATE VIEW %s.%s AS SELECT * FROM %s.%s",
+                schema, entityList.get(0).getName(), schema, entityList.get(1).getName()));
+        SqlNode sqlNode = planner.parse(queryRequest.getSql());
+        DdlRequestContext context = new DdlRequestContext(null, new DatamartRequest(queryRequest), sqlNode, null, null);
+
+        when(parserService.parse(any()))
+                .thenReturn(Future.succeededFuture(parse(contextProvider, new QueryParserRequest(((SqlCreateView) sqlNode).getQuery(), logicSchema))));
+
+        when(columnMetadataService.getColumnMetadata(any(QueryParserRequest.class)))
+                .thenReturn(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()
+                        .name("id")
+                        .type(ColumnType.BIGINT)
+                        .build())));
+
+        when(entityDao.getEntity(eq(schema), eq(entityList.get(1).getName())))
+                .thenReturn(Future.succeededFuture(entityList.get(1)));
+
+        when(entityDao.getEntity(eq(schema), eq(entityList.get(0).getName())))
+                .thenReturn(Future.succeededFuture(entityList.get(0)));
+
+        when(entityDao.createEntity(any()))
+                .thenReturn(Future.failedFuture(new DtmException("create entity error")));
+
+        createViewDdlExecutor.execute(context, sqlNodeName)
+                .onComplete(promise);
+        assertTrue(promise.future().failed());
+        assertEquals("create entity error", promise.future().cause().getMessage());
+    }
+
+    @Test
+    void executeInvalidViewError() throws SqlParseException {
+        Promise<QueryResult> promise = Promise.promise();
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
+        FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
+
+        final QueryRequest queryRequest = new QueryRequest();
+        queryRequest.setRequestId(UUID.randomUUID());
+        queryRequest.setDatamartMnemonic(schema);
+        queryRequest.setSql(String.format("CREATE VIEW %s.%s AS SELECT * FROM %s.%s",
+                schema, entityList.get(0).getName(), schema, entityList.get(0).getName()));
+        SqlNode sqlNode = planner.parse(queryRequest.getSql());
+        DdlRequestContext context = new DdlRequestContext(null, new DatamartRequest(queryRequest), sqlNode, null, null);
+
+        createViewDdlExecutor.execute(context, sqlNodeName)
+                .onComplete(promise);
+        assertTrue(promise.future().failed());
+    }
+
+    @Test
+    void executeEntityAlreadyExistError() throws SqlParseException {
+        Promise<QueryResult> promise = Promise.promise();
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
+        FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
+
+        final QueryRequest queryRequest = new QueryRequest();
+        queryRequest.setRequestId(UUID.randomUUID());
+        queryRequest.setDatamartMnemonic(schema);
+        queryRequest.setSql(String.format("CREATE VIEW %s.%s AS SELECT * FROM %s.%s",
+                schema, entityList.get(0).getName(), schema, entityList.get(1).getName()));
+        SqlNode sqlNode = planner.parse(queryRequest.getSql());
+        DdlRequestContext context = new DdlRequestContext(null, new DatamartRequest(queryRequest), sqlNode, null, null);
+
+        when(parserService.parse(any()))
+                .thenReturn(Future.succeededFuture(parse(contextProvider, new QueryParserRequest(((SqlCreateView) sqlNode).getQuery(), logicSchema))));
+
+        when(columnMetadataService.getColumnMetadata(any(QueryParserRequest.class)))
+                .thenReturn(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()
+                        .name("id")
+                        .type(ColumnType.BIGINT)
+                        .build())));
+
+        when(entityDao.getEntity(eq(schema), eq(entityList.get(1).getName())))
+                .thenReturn(Future.succeededFuture(entityList.get(1)));
+
+        when(entityDao.getEntity(eq(schema), eq(entityList.get(0).getName())))
+                .thenReturn(Future.succeededFuture(entityList.get(0)));
+
+        when(entityDao.createEntity(any()))
+                .thenReturn(Future.failedFuture(new EntityAlreadyExistsException("entity already exist")));
+
+        createViewDdlExecutor.execute(context, sqlNodeName)
+                .onComplete(promise);
+        assertTrue(promise.future().failed());
+        assertTrue(promise.future().cause() instanceof EntityAlreadyExistsException);
+    }
+
+    @Test
+    void executeReplaceWrongEntityTypeError() throws SqlParseException {
+        Promise<QueryResult> promise = Promise.promise();
+        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
+        FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
+        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
+
+        final QueryRequest queryRequest = new QueryRequest();
+        queryRequest.setRequestId(UUID.randomUUID());
+        queryRequest.setDatamartMnemonic(schema);
+        queryRequest.setSql(String.format("CREATE OR REPLACE VIEW %s.%s AS SELECT * FROM %s.%s",
                 schema, entityList.get(1).getName(), schema, entityList.get(2).getName()));
         SqlNode sqlNode = planner.parse(queryRequest.getSql());
         DdlRequestContext context = new DdlRequestContext(null, new DatamartRequest(queryRequest), sqlNode, null, null);
 
         when(parserService.parse(any()))
-                .thenReturn(Future.succeededFuture(parse(contextProvider, new QueryParserRequest(((SqlAlterView) sqlNode).getQuery(), logicSchema))));
-
-        when(columnMetadataService.getColumnMetadata(any(QueryParserRequest.class)))
-                .thenReturn(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()
-                        .name("id")
-                        .type(ColumnType.BIGINT)
-                        .build())));
-
-        when(entityDao.getEntity(eq(schema), eq(entityList.get(1).getName())))
-                .thenReturn(Future.succeededFuture(entityList.get(1)));
-
-        when(entityDao.getEntity(eq(schema), eq(entityList.get(2).getName())))
-                .thenReturn(Future.succeededFuture(entityList.get(2)));
-
-        alterViewDdlExecutor.execute(context, sqlNodeName)
-                .onComplete(promise);
-        assertTrue(promise.future().failed());
-        assertEquals(String.format("Entity %s does not exist", entityList.get(1).getName()), promise.future().cause().getMessage());
-    }
-
-    @Test
-    void executeSuccessWithJoinQuery() throws SqlParseException {
-        Promise<QueryResult> promise = Promise.promise();
-        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
-        FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
-
-        final QueryRequest queryRequest = new QueryRequest();
-        queryRequest.setRequestId(UUID.randomUUID());
-        queryRequest.setDatamartMnemonic(schema);
-        queryRequest.setSql(String.format("ALTER VIEW %s.%s AS SELECT * " +
-                        "FROM (select a.id FROM %s a " +
-                        "JOIN %s.%s t on t.id = a.id)",
-                schema, entityList.get(0).getName(), entityList.get(2).getName(),
-                schema, entityList.get(3).getName()));
-
-        SqlNode sqlNode = planner.parse(queryRequest.getSql());
-        DdlRequestContext context = new DdlRequestContext(null, new DatamartRequest(queryRequest), sqlNode, null, null);
-        context.setDatamartName(schema);
-
-        when(parserService.parse(any()))
-                .thenReturn(Future.succeededFuture(parse(contextProvider, new QueryParserRequest(((SqlAlterView) sqlNode).getQuery(), logicSchema))));
+                .thenReturn(Future.succeededFuture(parse(contextProvider, new QueryParserRequest(((SqlCreateView) sqlNode).getQuery(), logicSchema))));
 
         when(columnMetadataService.getColumnMetadata(any(QueryParserRequest.class)))
                 .thenReturn(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()
@@ -217,165 +321,18 @@ class AlterViewDdlExecutorTest {
                         .build())));
 
         when(entityDao.getEntity(eq(schema), eq(entityList.get(2).getName())))
+                .thenReturn(Future.succeededFuture(entityList.get(2)))
                 .thenReturn(Future.succeededFuture(entityList.get(2)));
 
-        when(entityDao.getEntity(eq(schema), eq(entityList.get(3).getName())))
-                .thenReturn(Future.succeededFuture(entityList.get(3)));
-
-        when(entityDao.getEntity(eq(schema), eq(entityList.get(0).getName())))
-                .thenReturn(Future.succeededFuture(entityList.get(0)));
-
-        when(entityDao.updateEntity(any()))
-                .thenReturn(Future.succeededFuture());
-
-        alterViewDdlExecutor.execute(context, sqlNodeName)
-                .onComplete(promise);
-        assertTrue(promise.future().succeeded());
-    }
-
-    @Test
-    void executeIsEntityExistsError() throws SqlParseException {
-        Promise<QueryResult> promise = Promise.promise();
-        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
-        FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
-
-        final QueryRequest queryRequest = new QueryRequest();
-        queryRequest.setRequestId(UUID.randomUUID());
-        queryRequest.setDatamartMnemonic(schema);
-        queryRequest.setSql(String.format("ALTER VIEW %s.%s AS SELECT * FROM %s.%s",
-                schema, entityList.get(0).getName(), schema, entityList.get(1).getName()));
-        SqlNode sqlNode = planner.parse(queryRequest.getSql());
-        DdlRequestContext context = new DdlRequestContext(null, new DatamartRequest(queryRequest), sqlNode, null, null);
-
         when(entityDao.getEntity(eq(schema), eq(entityList.get(1).getName())))
                 .thenReturn(Future.succeededFuture(entityList.get(1)));
 
-        when(columnMetadataService.getColumnMetadata(any(QueryParserRequest.class)))
-                .thenReturn(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()
-                        .name("id")
-                        .type(ColumnType.BIGINT)
-                        .build())));
+        when(entityDao.createEntity(any()))
+                .thenReturn(Future.failedFuture(new EntityAlreadyExistsException("")));
 
-        when(entityDao.getEntity(eq(schema), eq(entityList.get(0).getName())))
-                .thenReturn(Future.failedFuture(new EntityNotExistsException(entityList.get(0).getName())));
-
-        alterViewDdlExecutor.execute(context, sqlNodeName)
+        createViewDdlExecutor.execute(context, sqlNodeName)
                 .onComplete(promise);
         assertTrue(promise.future().failed());
-    }
-
-    @Test
-    void executeWithViewUpdateError() throws SqlParseException {
-        Promise<QueryResult> promise = Promise.promise();
-        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
-        FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
-
-        final QueryRequest queryRequest = new QueryRequest();
-        queryRequest.setRequestId(UUID.randomUUID());
-        queryRequest.setDatamartMnemonic(schema);
-        queryRequest.setSql(String.format("ALTER VIEW %s.%s AS SELECT * FROM %s.%s",
-                schema, entityList.get(0).getName(), schema, entityList.get(1).getName()));
-        SqlNode sqlNode = planner.parse(queryRequest.getSql());
-        DdlRequestContext context = new DdlRequestContext(null, new DatamartRequest(queryRequest), sqlNode, null, null);
-
-        when(entityDao.getEntity(eq(schema), eq(entityList.get(1).getName())))
-                .thenReturn(Future.succeededFuture(entityList.get(1)));
-
-        when(columnMetadataService.getColumnMetadata(any(QueryParserRequest.class)))
-                .thenReturn(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()
-                        .name("id")
-                        .type(ColumnType.BIGINT)
-                        .build())));
-
-        when(entityDao.getEntity(eq(schema), eq(entityList.get(0).getName())))
-                .thenReturn(Future.succeededFuture(entityList.get(0)));
-
-        when(entityDao.updateEntity(any()))
-                .thenReturn(Future.failedFuture(new DtmException("Update error")));
-
-        alterViewDdlExecutor.execute(context, sqlNodeName)
-                .onComplete(promise);
-        assertTrue(promise.future().failed());
-    }
-
-    @Test
-    void executeQueryContainsViewError() throws SqlParseException {
-        Promise<QueryResult> promise = Promise.promise();
-        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
-        FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
-
-        final QueryRequest queryRequest = new QueryRequest();
-        queryRequest.setRequestId(UUID.randomUUID());
-        queryRequest.setDatamartMnemonic(schema);
-        queryRequest.setSql(String.format("ALTER VIEW %s.%s AS SELECT * FROM %s.%s",
-                schema, entityList.get(0).getName(), schema, entityList.get(0).getName()));
-        SqlNode sqlNode = planner.parse(queryRequest.getSql());
-        DdlRequestContext context = new DdlRequestContext(null, new DatamartRequest(queryRequest), sqlNode, null, null);
-
-        when(columnMetadataService.getColumnMetadata(any(QueryParserRequest.class)))
-                .thenReturn(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()
-                        .name("id")
-                        .type(ColumnType.BIGINT)
-                        .build())));
-
-        when(entityDao.getEntity(eq(schema), eq(entityList.get(1).getName())))
-                .thenReturn(Future.succeededFuture(entityList.get(1)));
-
-        when(entityDao.getEntity(eq(schema), eq(entityList.get(1).getName())))
-                .thenReturn(Future.succeededFuture(entityList.get(1)));
-
-        alterViewDdlExecutor.execute(context, sqlNodeName)
-                .onComplete(promise);
-        assertTrue(promise.future().failed());
-    }
-
-    @Test
-    void executeSuccessColumnDuplication() throws SqlParseException {
-        Promise<QueryResult> promise = Promise.promise();
-        DtmCalciteFramework.ConfigBuilder configBuilder = DtmCalciteFramework.newConfigBuilder();
-        FrameworkConfig frameworkConfig = configBuilder.parserConfig(parserConfig).build();
-        Planner planner = DtmCalciteFramework.getPlanner(frameworkConfig);
-
-        final QueryRequest queryRequest = new QueryRequest();
-        queryRequest.setRequestId(UUID.randomUUID());
-        queryRequest.setDatamartMnemonic(schema);
-        queryRequest.setSql(String.format("ALTER VIEW %s.%s AS SELECT * " +
-                        "FROM %s.%s a " +
-                        "JOIN %s.%s t on t.id = a.id",
-                schema, entityList.get(0).getName(),
-                schema, entityList.get(4).getName(),
-                schema, entityList.get(5).getName()));
-
-        SqlNode sqlNode = planner.parse(queryRequest.getSql());
-        DdlRequestContext context = new DdlRequestContext(null, new DatamartRequest(queryRequest), sqlNode, null, null);
-        context.setDatamartName(schema);
-
-        when(parserService.parse(any()))
-                .thenReturn(Future.succeededFuture(parse(contextProvider, new QueryParserRequest(((SqlAlterView) sqlNode).getQuery(), logicSchema))));
-
-        when(columnMetadataService.getColumnMetadata(any(QueryParserRequest.class)))
-                .thenReturn(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()
-                        .name("id")
-                        .type(ColumnType.BIGINT)
-                        .build())));
-
-        when(entityDao.getEntity(eq(schema), eq(entityList.get(4).getName())))
-                .thenReturn(Future.succeededFuture(entityList.get(4)));
-
-        when(entityDao.getEntity(eq(schema), eq(entityList.get(5).getName())))
-                .thenReturn(Future.succeededFuture(entityList.get(5)));
-
-        when(entityDao.getEntity(eq(schema), eq(entityList.get(0).getName())))
-                .thenReturn(Future.succeededFuture(entityList.get(0)));
-
-        when(entityDao.updateEntity(any()))
-                .thenReturn(Future.succeededFuture());
-
-        alterViewDdlExecutor.execute(context, sqlNodeName)
-                .onComplete(promise);
-        assertTrue(promise.future().succeeded());
+        assertEquals(String.format("Entity %s does not exist" ,entityList.get(1).getName()), promise.future().cause().getMessage());
     }
 }

@@ -59,11 +59,9 @@ public class AlterViewDdlExecutor extends CreateViewDdlExecutor {
             val viewEntity = viewContext.getViewEntity();
             context.setDatamartName(viewEntity.getSchema());
             entityDao.getEntity(viewEntity.getSchema(), viewEntity.getName())
-                    .map(this::checkEntityType)
+                    .compose(this::checkEntityType)
                     .compose(r -> entityDao.updateEntity(viewEntity))
-                    .onSuccess(success -> {
-                        promise.complete(QueryResult.emptyResult());
-                    })
+                    .onSuccess(success -> promise.complete(QueryResult.emptyResult()))
                     .onFailure(promise::fail);
         });
     }

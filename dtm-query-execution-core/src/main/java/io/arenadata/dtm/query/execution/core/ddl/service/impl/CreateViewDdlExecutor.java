@@ -134,12 +134,13 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
     private Future<QueryResult> createOrReplaceEntity(CreateViewContext ctx) {
         val viewEntity = ctx.getViewEntity();
         entityCacheService.remove(new EntityKey(viewEntity.getSchema(), viewEntity.getName()));
-        return entityDao.createEntity(viewEntity)
-                .otherwise(error -> checkCreateOrReplace(ctx, error))
-                .compose(r -> entityDao.getEntity(viewEntity.getSchema(), viewEntity.getName()))
-                .map(this::checkEntityType)
-                .compose(r -> entityDao.updateEntity(viewEntity))
-                .map(v -> QueryResult.emptyResult());
+        return Future.future(p -> entityDao.createEntity(viewEntity)
+                .onSuccess(success -> p.complete(QueryResult.emptyResult()))
+                .onFailure(error -> p.handle(checkCreateOrReplace(ctx, error)
+                        .compose(r -> entityDao.getEntity(viewEntity.getSchema(), viewEntity.getName()))
+                        .compose(this::checkEntityType)
+                        .compose(r -> entityDao.updateEntity(viewEntity))
+                        .map(v -> QueryResult.emptyResult()))));
     }
 
     private Future<Void> checkSnapshotNotExist(SqlNode sqlNode) {
@@ -238,21 +239,21 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
     }
 
     @SneakyThrows
-    private Void checkCreateOrReplace(CreateViewContext ctx, Throwable error) {
+    private Future<Void> checkCreateOrReplace(CreateViewContext ctx, Throwable error) {
         if (error instanceof EntityAlreadyExistsException && ctx.isCreateOrReplace()) {
             // if there is an exception <entity already exists> and <orReplace> is true
             // then continue
-            return null;
+            return Future.succeededFuture();
         } else {
-            throw error;
+            return Future.failedFuture(error);
         }
     }
 
     protected Future<Void> checkEntityType(Entity entity) {
-        if (EntityType.VIEW != entity.getEntityType()) {
-            throw new EntityNotExistsException(entity.getName());
+        if (EntityType.VIEW == entity.getEntityType()) {
+            return Future.succeededFuture();
         }
-        return Future.succeededFuture();
+        return Future.failedFuture(new EntityNotExistsException(entity.getName()));
     }
 
     @Override

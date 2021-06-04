@@ -1,11 +1,11 @@
 package io.arenadata.dtm.query.execution.plugin.adb.rollback.factory;
 
-import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.plugin.sql.PreparedStatementRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.rollback.dto.AdbRollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.api.dto.RollbackRequest;
 import io.arenadata.dtm.query.execution.plugin.api.factory.RollbackRequestFactory;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 public abstract class AdbRollbackRequestFactory implements RollbackRequestFactory<AdbRollbackRequest> {
@@ -16,21 +16,15 @@ public abstract class AdbRollbackRequestFactory implements RollbackRequestFactor
             rollbackRequest.getDatamartMnemonic(), rollbackRequest.getDestinationTable());
         String deleteFromActualSql = String.format(getDeleteFromActualSql(), rollbackRequest.getDatamartMnemonic(),
             rollbackRequest.getDestinationTable(), rollbackRequest.getSysCn());
-        String fields = rollbackRequest.getEntity().getFields().stream()
-            .map(EntityField::getName)
-            .collect(Collectors.joining(","));
-        long sysTo = rollbackRequest.getSysCn() - 1;
-        String insertSql = String.format(getInsertActualSql(), rollbackRequest.getDatamartMnemonic(),
-            rollbackRequest.getDestinationTable(), fields, fields,
-            rollbackRequest.getDatamartMnemonic(), rollbackRequest.getDestinationTable(), sysTo);
-        String deleteFromHistory = String.format(getDeleteFromHistorySql(), rollbackRequest.getDatamartMnemonic(),
-            rollbackRequest.getDestinationTable(), sysTo);
+        List<PreparedStatementRequest> eraseOps = getEraseSql(rollbackRequest)
+                .stream()
+                .map(sql -> PreparedStatementRequest.onlySql(sql))
+                .collect(Collectors.toList());
 
         return new AdbRollbackRequest(
-            PreparedStatementRequest.onlySql(deleteFromHistory),
-            PreparedStatementRequest.onlySql(deleteFromActualSql),
             PreparedStatementRequest.onlySql(truncateSql),
-            PreparedStatementRequest.onlySql(insertSql)
+            PreparedStatementRequest.onlySql(deleteFromActualSql),
+            eraseOps
         );
     }
 
@@ -38,7 +32,6 @@ public abstract class AdbRollbackRequestFactory implements RollbackRequestFactor
 
     protected abstract String getDeleteFromActualSql();
 
-    protected abstract String getInsertActualSql();
+    protected abstract List<String> getEraseSql(RollbackRequest rollbackRequest);
 
-    protected abstract String getDeleteFromHistorySql();
 }

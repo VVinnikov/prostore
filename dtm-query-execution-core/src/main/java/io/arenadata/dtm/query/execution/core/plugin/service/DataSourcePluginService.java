@@ -16,6 +16,7 @@ import io.arenadata.dtm.query.execution.plugin.api.mppr.MpprRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.request.LlrRequest;
+import io.arenadata.dtm.query.execution.plugin.api.synchronize.SynchronizeRequest;
 import io.vertx.core.Future;
 
 import java.util.List;
@@ -148,6 +149,12 @@ public interface DataSourcePluginService {
      * @return void
      */
     Future<Void> truncateHistory(SourceType sourceType, RequestMetrics metrics, TruncateHistoryRequest request);
+
+    /**
+     * @param request SynchronizeRequest
+     * @return deltaNum
+     */
+    Future<Long> synchronize(SourceType sourceType, RequestMetrics metrics, SynchronizeRequest request);
 
     /**
      * <p>initialize plugin by source type</p>

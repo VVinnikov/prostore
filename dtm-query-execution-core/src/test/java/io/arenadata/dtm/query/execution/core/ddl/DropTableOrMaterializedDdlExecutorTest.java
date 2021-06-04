@@ -14,6 +14,7 @@ import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import io.arenadata.dtm.query.execution.core.base.dto.cache.EntityKey;
+import io.arenadata.dtm.query.execution.core.base.dto.cache.MaterializedViewCacheValue;
 import io.arenadata.dtm.query.execution.core.base.exception.entity.EntityNotExistsException;
 import io.arenadata.dtm.query.execution.core.base.repository.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.DatamartDao;
@@ -72,6 +73,8 @@ class DropTableOrMaterializedDdlExecutorTest {
     @Mock
     private CacheService<EntityKey, Entity> cacheService;
     @Mock
+    private CacheService<EntityKey, MaterializedViewCacheValue> materializedViewCacheService;
+    @Mock
     private ServiceDbFacade serviceDbFacade;
     @Mock
     private ServiceDbDao serviceDbDao;
@@ -91,11 +94,11 @@ class DropTableOrMaterializedDdlExecutorTest {
     private DdlRequestContext context;
 
     @BeforeEach
-    void setUp() throws SqlParseException {
+    void setUp() {
         lenient().when(serviceDbFacade.getServiceDbDao()).thenReturn(serviceDbDao);
         lenient().when(serviceDbDao.getDatamartDao()).thenReturn(datamartDao);
         lenient().when(serviceDbDao.getEntityDao()).thenReturn(entityDao);
-        dropTableDdlExecutor = new DropTableOrMaterializedDdlExecutor(cacheService, metadataExecutor, serviceDbFacade, pluginService, hsqlClient,
+        dropTableDdlExecutor = new DropTableOrMaterializedDdlExecutor(cacheService, metadataExecutor, serviceDbFacade, pluginService, materializedViewCacheService, hsqlClient,
                 evictQueryTemplateCacheService);
         lenient().doNothing().when(evictQueryTemplateCacheService).evictByEntityName(anyString(), anyString());
     }
@@ -106,9 +109,9 @@ class DropTableOrMaterializedDdlExecutorTest {
         prepareContext("drop table accounts", EntityType.TABLE);
         Promise<QueryResult> promise = Promise.promise();
         Entity entity = context.getEntity();
-        when(pluginService.getSourceTypes()).thenReturn(new HashSet<>(Arrays.asList(SourceType.ADB)));
+        when(pluginService.getSourceTypes()).thenReturn(Collections.singleton(SourceType.ADB));
 
-        when(entityDao.getEntity(eq(SCHEMA), eq(entity.getName())))
+        when(entityDao.getEntity(SCHEMA, entity.getName()))
                 .thenReturn(Future.succeededFuture(entity));
 
         when(hsqlClient.getQueryResult(any()))
@@ -117,7 +120,7 @@ class DropTableOrMaterializedDdlExecutorTest {
         when(metadataExecutor.execute(any()))
                 .thenReturn(Future.succeededFuture());
 
-        when(entityDao.deleteEntity(eq(SCHEMA), eq(entity.getName())))
+        when(entityDao.deleteEntity(SCHEMA, entity.getName()))
                 .thenReturn(Future.succeededFuture());
 
         // act
@@ -129,8 +132,9 @@ class DropTableOrMaterializedDdlExecutorTest {
         verify(evictQueryTemplateCacheService, times(1))
                 .evictByEntityName(entity.getSchema(), entity.getName());
         verify(metadataExecutor).execute(contextArgumentCaptor.capture());
+        verifyNoInteractions(materializedViewCacheService);
         DdlRequestContext value = contextArgumentCaptor.getValue();
-        assertSame(value.getDdlType(), DdlType.DROP_TABLE);
+        assertSame(DdlType.DROP_TABLE, value.getDdlType());
         assertNull(value.getSourceType());
     }
 
@@ -144,9 +148,9 @@ class DropTableOrMaterializedDdlExecutorTest {
 
         Promise<QueryResult> promise = Promise.promise();
 
-        when(pluginService.getSourceTypes()).thenReturn(new HashSet<>(Arrays.asList(SourceType.ADB)));
+        when(pluginService.getSourceTypes()).thenReturn(Collections.singleton(SourceType.ADB));
 
-        when(entityDao.getEntity(eq(SCHEMA), eq(entity.getName())))
+        when(entityDao.getEntity(SCHEMA, entity.getName()))
                 .thenReturn(Future.succeededFuture(entity));
 
         when(hsqlClient.getQueryResult(any()))
@@ -155,7 +159,7 @@ class DropTableOrMaterializedDdlExecutorTest {
         when(metadataExecutor.execute(any()))
                 .thenReturn(Future.succeededFuture());
 
-        when(entityDao.deleteEntity(eq(SCHEMA), eq(entity.getName())))
+        when(entityDao.deleteEntity(SCHEMA, entity.getName()))
                 .thenReturn(Future.succeededFuture());
 
         // act
@@ -167,8 +171,9 @@ class DropTableOrMaterializedDdlExecutorTest {
         verify(evictQueryTemplateCacheService, times(1))
                 .evictByEntityName(entity.getSchema(), entity.getName());
         verify(metadataExecutor).execute(contextArgumentCaptor.capture());
+        verify(materializedViewCacheService).remove(any());
         DdlRequestContext value = contextArgumentCaptor.getValue();
-        assertSame(value.getDdlType(), DdlType.DROP_MATERIALIZED_VIEW);
+        assertSame(DdlType.DROP_MATERIALIZED_VIEW, value.getDdlType());
         assertNull(value.getSourceType());
     }
 
@@ -179,7 +184,7 @@ class DropTableOrMaterializedDdlExecutorTest {
         Promise<QueryResult> promise = Promise.promise();
         Entity entity = context.getEntity();
         entity.setEntityType(EntityType.MATERIALIZED_VIEW);
-        when(entityDao.getEntity(eq(SCHEMA), eq(entity.getName())))
+        when(entityDao.getEntity(SCHEMA, entity.getName()))
                 .thenReturn(Future.succeededFuture(entity));
 
         // act
@@ -189,7 +194,7 @@ class DropTableOrMaterializedDdlExecutorTest {
         // assert
         assertTrue(promise.future().failed());
         TestUtils.assertException(EntityNotExistsException.class, "does not exist", promise.future().cause());
-        verifyNoInteractions(pluginService, hsqlClient, metadataExecutor);
+        verifyNoInteractions(pluginService, hsqlClient, metadataExecutor, materializedViewCacheService);
     }
 
     @Test
@@ -199,7 +204,7 @@ class DropTableOrMaterializedDdlExecutorTest {
         Promise<QueryResult> promise = Promise.promise();
         Entity entity = context.getEntity();
 
-        when(entityDao.getEntity(eq(SCHEMA), eq(entity.getName())))
+        when(entityDao.getEntity(SCHEMA, entity.getName()))
                 .thenReturn(Future.succeededFuture(Entity.builder()
                         .schema(SCHEMA)
                         .name(entity.getName())
@@ -214,7 +219,7 @@ class DropTableOrMaterializedDdlExecutorTest {
         assertNotNull(promise.future().cause());
         verify(evictQueryTemplateCacheService, never())
                 .evictByEntityName(entity.getSchema(), entity.getName());
-        verifyNoInteractions(pluginService, hsqlClient);
+        verifyNoInteractions(pluginService, hsqlClient, materializedViewCacheService);
     }
 
     @Test
@@ -225,7 +230,7 @@ class DropTableOrMaterializedDdlExecutorTest {
         Entity entity = context.getEntity();
         context.getRequest().getQueryRequest().setSql("DROP TABLE IF EXISTS accounts");
         String entityName = entity.getName();
-        when(entityDao.getEntity(eq(SCHEMA), eq(entityName)))
+        when(entityDao.getEntity(SCHEMA, entityName))
                 .thenReturn(Future.failedFuture(new EntityNotExistsException(entityName)));
 
         // act
@@ -236,8 +241,7 @@ class DropTableOrMaterializedDdlExecutorTest {
         assertNotNull(promise.future().result());
         verify(evictQueryTemplateCacheService, never())
                 .evictByEntityName(entity.getSchema(), entity.getName());
-        verifyNoInteractions(hsqlClient);
-        verifyNoInteractions(pluginService);
+        verifyNoInteractions(pluginService, hsqlClient, materializedViewCacheService);
     }
 
     @Test
@@ -246,8 +250,8 @@ class DropTableOrMaterializedDdlExecutorTest {
         prepareContext("drop table accounts", EntityType.TABLE);
         Promise<QueryResult> promise = Promise.promise();
         Entity entity = context.getEntity();
-        when(pluginService.getSourceTypes()).thenReturn(new HashSet<>(Arrays.asList(SourceType.ADB)));
-        when(entityDao.getEntity(eq(SCHEMA), eq(entity.getName())))
+        when(pluginService.getSourceTypes()).thenReturn(Collections.singleton(SourceType.ADB));
+        when(entityDao.getEntity(SCHEMA, entity.getName()))
                 .thenReturn(Future.succeededFuture(entity));
 
         when(hsqlClient.getQueryResult(any()))
@@ -264,6 +268,7 @@ class DropTableOrMaterializedDdlExecutorTest {
         assertNotNull(promise.future().cause());
         verify(evictQueryTemplateCacheService, times(1))
                 .evictByEntityName(entity.getSchema(), entity.getName());
+        verifyNoInteractions(materializedViewCacheService);
     }
 
     @Test
@@ -272,8 +277,8 @@ class DropTableOrMaterializedDdlExecutorTest {
         prepareContext("drop table accounts", EntityType.TABLE);
         Promise<QueryResult> promise = Promise.promise();
         Entity entity = context.getEntity();
-        when(pluginService.getSourceTypes()).thenReturn(new HashSet<>(Arrays.asList(SourceType.ADB)));
-        when(entityDao.getEntity(eq(SCHEMA), eq(entity.getName())))
+        when(pluginService.getSourceTypes()).thenReturn(Collections.singleton(SourceType.ADB));
+        when(entityDao.getEntity(SCHEMA, entity.getName()))
                 .thenReturn(Future.succeededFuture(context.getEntity()));
 
         when(hsqlClient.getQueryResult(any()))
@@ -282,7 +287,7 @@ class DropTableOrMaterializedDdlExecutorTest {
         when(metadataExecutor.execute(any()))
                 .thenReturn(Future.succeededFuture());
 
-        when(entityDao.deleteEntity(eq(SCHEMA), eq(entity.getName())))
+        when(entityDao.deleteEntity(SCHEMA, entity.getName()))
                 .thenReturn(Future.failedFuture(new DtmException("delete entity error")));
 
         // act
@@ -293,6 +298,7 @@ class DropTableOrMaterializedDdlExecutorTest {
         assertNotNull(promise.future().cause());
         verify(evictQueryTemplateCacheService, times(1))
                 .evictByEntityName(entity.getSchema(), entity.getName());
+        verifyNoInteractions(materializedViewCacheService);
     }
 
     @Test
@@ -303,7 +309,7 @@ class DropTableOrMaterializedDdlExecutorTest {
         String viewName = "VIEWNAME";
         String expectedMessage = String.format("View ‘%s’ using the '%s' must be dropped first", viewName, context.getEntity().getName().toUpperCase());
 
-        when(entityDao.getEntity(eq(SCHEMA), eq(context.getEntity().getName())))
+        when(entityDao.getEntity(SCHEMA, context.getEntity().getName()))
                 .thenReturn(Future.succeededFuture(context.getEntity()));
 
         when(hsqlClient.getQueryResult(any()))
@@ -315,7 +321,7 @@ class DropTableOrMaterializedDdlExecutorTest {
 
         // assert
         assertEquals(expectedMessage, promise.future().cause().getMessage());
-        verifyNoInteractions(pluginService);
+        verifyNoInteractions(pluginService, materializedViewCacheService);
     }
 
     @Test
@@ -325,9 +331,9 @@ class DropTableOrMaterializedDdlExecutorTest {
         Entity entity = context.getEntity();
         Promise<QueryResult> promise = Promise.promise();
 
-        when(pluginService.getSourceTypes()).thenReturn(new HashSet<>(Arrays.asList(SourceType.ADB)));
+        when(pluginService.getSourceTypes()).thenReturn(Collections.singleton(SourceType.ADB));
 
-        when(entityDao.getEntity(eq(SCHEMA), eq(entity.getName())))
+        when(entityDao.getEntity(SCHEMA, entity.getName()))
                 .thenReturn(Future.succeededFuture(entity));
 
         when(hsqlClient.getQueryResult(any()))
@@ -336,7 +342,7 @@ class DropTableOrMaterializedDdlExecutorTest {
         when(metadataExecutor.execute(any()))
                 .thenReturn(Future.succeededFuture());
 
-        when(entityDao.deleteEntity(eq(SCHEMA), eq(entity.getName())))
+        when(entityDao.deleteEntity(SCHEMA, entity.getName()))
                 .thenReturn(Future.succeededFuture());
 
         // act
@@ -346,9 +352,10 @@ class DropTableOrMaterializedDdlExecutorTest {
         // assert
         assertTrue(promise.future().succeeded());
         verify(metadataExecutor).execute(contextArgumentCaptor.capture());
+        verify(materializedViewCacheService).remove(any());
         DdlRequestContext value = contextArgumentCaptor.getValue();
-        assertSame(value.getDdlType(), DdlType.DROP_MATERIALIZED_VIEW);
-        assertSame(value.getSourceType(), SourceType.ADB);
+        assertSame(DdlType.DROP_MATERIALIZED_VIEW, value.getDdlType());
+        assertSame(SourceType.ADB, value.getSourceType());
     }
 
     @Test
@@ -359,9 +366,9 @@ class DropTableOrMaterializedDdlExecutorTest {
 
         Promise<QueryResult> promise = Promise.promise();
 
-        when(pluginService.getSourceTypes()).thenReturn(new HashSet<>(Arrays.asList(SourceType.ADB)));
+        when(pluginService.getSourceTypes()).thenReturn(Collections.singleton(SourceType.ADB));
 
-        when(entityDao.getEntity(eq(SCHEMA), eq(entity.getName())))
+        when(entityDao.getEntity(SCHEMA, entity.getName()))
                 .thenReturn(Future.succeededFuture(entity));
 
         when(hsqlClient.getQueryResult(any()))
@@ -370,7 +377,7 @@ class DropTableOrMaterializedDdlExecutorTest {
         when(metadataExecutor.execute(any()))
                 .thenReturn(Future.succeededFuture());
 
-        when(entityDao.deleteEntity(eq(SCHEMA), eq(entity.getName())))
+        when(entityDao.deleteEntity(SCHEMA, entity.getName()))
                 .thenReturn(Future.succeededFuture());
 
         // act
@@ -380,9 +387,10 @@ class DropTableOrMaterializedDdlExecutorTest {
         // assert
         assertTrue(promise.future().succeeded());
         verify(metadataExecutor).execute(contextArgumentCaptor.capture());
+        verifyNoInteractions(materializedViewCacheService);
         DdlRequestContext value = contextArgumentCaptor.getValue();
-        assertSame(value.getDdlType(), DdlType.DROP_TABLE);
-        assertSame(value.getSourceType(), SourceType.ADB);
+        assertSame(DdlType.DROP_TABLE, value.getDdlType());
+        assertSame(SourceType.ADB, value.getSourceType());
     }
 
     private void prepareContext(String s, EntityType materializedView) throws SqlParseException {

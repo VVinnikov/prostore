@@ -18,6 +18,7 @@ import io.arenadata.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import io.arenadata.dtm.query.calcite.core.provider.CalciteContextProvider;
 import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
 import io.arenadata.dtm.query.execution.core.base.dto.cache.EntityKey;
+import io.arenadata.dtm.query.execution.core.base.dto.cache.MaterializedViewCacheValue;
 import io.arenadata.dtm.query.execution.core.base.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.base.exception.entity.EntityAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.base.exception.materializedview.MaterializedViewValidationException;
@@ -100,6 +101,8 @@ class CreateMaterializedViewDdlExecutorTest {
     @Mock
     private CacheService<EntityKey, Entity> entityCacheService;
     @Mock
+    private CacheService<EntityKey, MaterializedViewCacheValue> materializedViewCacheService;
+    @Mock
     private QueryParserService parserService;
     @InjectMocks
     private ColumnMetadataServiceImpl columnMetadataService;
@@ -123,7 +126,7 @@ class CreateMaterializedViewDdlExecutorTest {
         lenient().when(dataSourcePluginService.getSourceTypes()).thenReturn(sourceTypes);
         lenient().when(dataSourcePluginService.hasSourceType(Mockito.any(SourceType.class))).thenAnswer(invocationOnMock -> sourceTypes.contains(invocationOnMock.getArgument(0, SourceType.class)));
         createTableDdlExecutor = new CreateMaterializedViewDdlExecutor(metadataExecutor, serviceDbFacade, new SqlDialect(SqlDialect.EMPTY_CONTEXT), entityCacheService,
-                logicalSchemaProvider, columnMetadataService, parserService, metadataCalciteGenerator, dataSourcePluginService);
+                materializedViewCacheService, logicalSchemaProvider, columnMetadataService, parserService, metadataCalciteGenerator, dataSourcePluginService);
 
         tblEntity = Entity.builder()
                 .name(TBL_ENTITY_NAME)
@@ -167,14 +170,15 @@ class CreateMaterializedViewDdlExecutorTest {
         // arrange
         DdlRequestContext context = getContext("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar(100), enddate timestamp(5), PRIMARY KEY(id))\n" +
                 "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM tbldatamart.tbl DATASOURCE_TYPE = 'ADB'");
+        context.setEntity(tblEntity);
 
         Promise<QueryResult> promise = Promise.promise();
 
-        when(datamartDao.existsDatamart(eq(SCHEMA)))
+        when(datamartDao.existsDatamart(SCHEMA))
                 .thenReturn(Future.succeededFuture(true));
-        when(entityDao.existsEntity(eq(SCHEMA), eq(MAT_VIEW_ENTITY_NAME)))
+        when(entityDao.existsEntity(SCHEMA, MAT_VIEW_ENTITY_NAME))
                 .thenReturn(Future.succeededFuture(false));
-        when(entityDao.getEntity(eq(TBL_SCHEMA), eq(tblEntity.getName())))
+        when(entityDao.getEntity(TBL_SCHEMA, tblEntity.getName()))
                 .thenReturn(Future.succeededFuture(tblEntity));
         when(metadataExecutor.execute(any())).thenReturn(Future.succeededFuture());
         when(entityDao.createEntity(any()))
@@ -188,6 +192,7 @@ class CreateMaterializedViewDdlExecutorTest {
         if (promise.future().cause() != null) {
             fail(promise.future().cause());
         }
+        verify(materializedViewCacheService).put(any(), any());
         assertTrue(promise.future().succeeded());
         assertNotNull(promise.future().result());
     }
@@ -197,14 +202,15 @@ class CreateMaterializedViewDdlExecutorTest {
         // arrange
         DdlRequestContext context = getContext("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar(100), PRIMARY KEY(id))\n" +
                 "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT id, name FROM tbldatamart.tbl DATASOURCE_TYPE = 'ADB'");
+        context.setEntity(tblEntity);
 
         Promise<QueryResult> promise = Promise.promise();
 
-        when(datamartDao.existsDatamart(eq(SCHEMA)))
+        when(datamartDao.existsDatamart(SCHEMA))
                 .thenReturn(Future.succeededFuture(true));
-        when(entityDao.existsEntity(eq(SCHEMA), eq(MAT_VIEW_ENTITY_NAME)))
+        when(entityDao.existsEntity(SCHEMA, MAT_VIEW_ENTITY_NAME))
                 .thenReturn(Future.succeededFuture(false));
-        when(entityDao.getEntity(eq(TBL_SCHEMA), eq(tblEntity.getName())))
+        when(entityDao.getEntity(TBL_SCHEMA, tblEntity.getName()))
                 .thenReturn(Future.succeededFuture(tblEntity));
         when(metadataExecutor.execute(any())).thenReturn(Future.succeededFuture());
         when(entityDao.createEntity(any()))
@@ -218,28 +224,16 @@ class CreateMaterializedViewDdlExecutorTest {
         if (promise.future().cause() != null) {
             fail(promise.future().cause());
         }
+        verify(materializedViewCacheService).put(any(), any());
         assertTrue(promise.future().succeeded());
         assertNotNull(promise.future().result());
     }
 
     @Test
     void shouldFailWhenNoQuerySourceType() {
-        // arrange
-        DdlRequestContext context = getContext("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar(100), enddate timestamp(5), PRIMARY KEY(id))\n" +
-                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM tbldatamart.tbl");
-
-        Promise<QueryResult> promise = Promise.promise();
-
-        // act
-        createTableDdlExecutor.execute(context, MAT_VIEW_ENTITY_NAME)
-                .onComplete(promise);
-
-        // assert
-        verifyNoInteractions(parserService);
-        verifyNoInteractions(datamartDao);
-        verifyNoInteractions(entityDao);
-        assertTrue(promise.future().failed());
-        assertException(MaterializedViewValidationException.class, "DATASOURCE_TYPE not specified or invalid", promise.future().cause());
+        testFailDatasourceType("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar(100), enddate timestamp(5), PRIMARY KEY(id))\n" +
+                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM tbldatamart.tbl",
+                "DATASOURCE_TYPE not specified or invalid");
     }
 
     @Test
@@ -255,51 +249,23 @@ class CreateMaterializedViewDdlExecutorTest {
                 .onComplete(promise);
 
         // assert
-        verifyNoInteractions(parserService);
-        verifyNoInteractions(datamartDao);
-        verifyNoInteractions(entityDao);
+        verifyNoInteractions(parserService, datamartDao, entityDao, materializedViewCacheService);
         assertTrue(promise.future().failed());
         assertException(InvalidSourceTypeException.class, "isn't a valid datasource type, please use one of the following:", promise.future().cause());
     }
 
     @Test
     void shouldFailWhenDisabledQuerySourceType() {
-        // arrange
-        DdlRequestContext context = getContext("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar(100), enddate timestamp(5), PRIMARY KEY(id))\n" +
-                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM tbldatamart.tbl DATASOURCE_TYPE = 'ADQM'");
-
-        Promise<QueryResult> promise = Promise.promise();
-
-        // act
-        createTableDdlExecutor.execute(context, MAT_VIEW_ENTITY_NAME)
-                .onComplete(promise);
-
-        // assert
-        verifyNoInteractions(parserService);
-        verifyNoInteractions(datamartDao);
-        verifyNoInteractions(entityDao);
-        assertTrue(promise.future().failed());
-        assertException(MaterializedViewValidationException.class, "DATASOURCE_TYPE not specified or invalid", promise.future().cause());
+        testFailDatasourceType("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar(100), enddate timestamp(5), PRIMARY KEY(id))\n" +
+                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM tbldatamart.tbl DATASOURCE_TYPE = 'ADQM'",
+                "DATASOURCE_TYPE not specified or invalid");
     }
 
     @Test
     void shouldFailWhenDisabledDestination() {
-        // arrange
-        DdlRequestContext context = getContext("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar(100), enddate timestamp(5), PRIMARY KEY(id))\n" +
-                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADQM) AS SELECT * FROM tbldatamart.tbl DATASOURCE_TYPE = 'ADB'");
-
-        Promise<QueryResult> promise = Promise.promise();
-
-        // act
-        createTableDdlExecutor.execute(context, MAT_VIEW_ENTITY_NAME)
-                .onComplete(promise);
-
-        // assert
-        verifyNoInteractions(parserService);
-        verifyNoInteractions(datamartDao);
-        verifyNoInteractions(entityDao);
-        assertTrue(promise.future().failed());
-        assertException(MaterializedViewValidationException.class, "DATASOURCE_TYPE has non exist items:", promise.future().cause());
+        testFailDatasourceType("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar(100), enddate timestamp(5), PRIMARY KEY(id))\n" +
+                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADQM) AS SELECT * FROM tbldatamart.tbl DATASOURCE_TYPE = 'ADB'",
+                "DATASOURCE_TYPE has non exist items:");
     }
 
     @Test
@@ -315,9 +281,7 @@ class CreateMaterializedViewDdlExecutorTest {
                 .onComplete(promise);
 
         // assert
-        verifyNoInteractions(parserService);
-        verifyNoInteractions(datamartDao);
-        verifyNoInteractions(entityDao);
+        verifyNoInteractions(parserService, datamartDao, entityDao, materializedViewCacheService);
         assertTrue(promise.future().failed());
         assertException(ViewDisalowedOrDirectiveException.class, "Disallowed view or directive in a subquery", promise.future().cause());
     }
@@ -337,7 +301,7 @@ class CreateMaterializedViewDdlExecutorTest {
         for (EntityType entityType : disallowedEntityTypes) {
             // arrange 2
             reset(entityDao);
-            when(entityDao.getEntity(eq(TBL_SCHEMA), eq(tblEntity.getName())))
+            when(entityDao.getEntity(TBL_SCHEMA, tblEntity.getName()))
                     .thenReturn(Future.succeededFuture(tblEntity));
             tblEntity.setEntityType(entityType);
             Promise<QueryResult> promise = Promise.promise();
@@ -351,6 +315,7 @@ class CreateMaterializedViewDdlExecutorTest {
             verifyNoMoreInteractions(entityDao);
             verifyNoInteractions(parserService);
             verifyNoInteractions(datamartDao);
+            verifyNoInteractions(materializedViewCacheService);
             assertTrue(promise.future().failed());
             assertException(ViewDisalowedOrDirectiveException.class, "Disallowed view or directive in a subquery", promise.future().cause());
         }
@@ -358,183 +323,58 @@ class CreateMaterializedViewDdlExecutorTest {
 
     @Test
     void shouldFailWhenNoPrimaryKey() {
-        // arrange
-        DdlRequestContext context = getContext("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar(100), enddate timestamp(5))\n" +
-                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM tbldatamart.tbl DATASOURCE_TYPE = 'ADB'");
-
-
-        Promise<QueryResult> promise = Promise.promise();
-
-        when(entityDao.getEntity(eq(TBL_SCHEMA), eq(tblEntity.getName())))
-                .thenReturn(Future.succeededFuture(tblEntity));
-
-        // act
-        createTableDdlExecutor.execute(context, MAT_VIEW_ENTITY_NAME)
-                .onComplete(promise);
-
-        // assert
-        verifyNoInteractions(datamartDao);
-        verify(entityDao).getEntity(eq(TBL_SCHEMA), eq(tblEntity.getName()));
-        verifyNoMoreInteractions(entityDao);
-        verifyNoInteractions(metadataExecutor);
-
-        assertTrue(promise.future().failed());
-        assertException(ValidationDtmException.class, "Primary keys and Sharding keys are required", promise.future().cause());
+        testFailOnValidation("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar(100), enddate timestamp(5))\n" +
+                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM tbldatamart.tbl DATASOURCE_TYPE = 'ADB'",
+                "Primary keys and Sharding keys are required",
+                ValidationDtmException.class);
     }
 
     @Test
     void shouldFailWhenNoShardingKey() {
-        // arrange
-        DdlRequestContext context = getContext("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar(100), enddate timestamp(5), PRIMARY KEY(id))\n" +
-                "DATASOURCE_TYPE (ADG) AS SELECT * FROM tbldatamart.tbl DATASOURCE_TYPE = 'ADB'");
-
-
-        Promise<QueryResult> promise = Promise.promise();
-
-        when(entityDao.getEntity(eq(TBL_SCHEMA), eq(tblEntity.getName())))
-                .thenReturn(Future.succeededFuture(tblEntity));
-
-        // act
-        createTableDdlExecutor.execute(context, MAT_VIEW_ENTITY_NAME)
-                .onComplete(promise);
-
-        // assert
-        verifyNoInteractions(datamartDao);
-        verify(entityDao).getEntity(eq(TBL_SCHEMA), eq(tblEntity.getName()));
-        verifyNoMoreInteractions(entityDao);
-        verifyNoInteractions(metadataExecutor);
-
-        assertTrue(promise.future().failed());
-        assertException(ValidationDtmException.class, "Primary keys and Sharding keys are required", promise.future().cause());
+        testFailOnValidation("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar(100), enddate timestamp(5), PRIMARY KEY(id))\n" +
+                "DATASOURCE_TYPE (ADG) AS SELECT * FROM tbldatamart.tbl DATASOURCE_TYPE = 'ADB'",
+                "Primary keys and Sharding keys are required",
+                ValidationDtmException.class);
     }
 
     @Test
     void shouldFailWhenCharColumnHasNoSize() {
-        // arrange
-        DdlRequestContext context = getContext("CREATE MATERIALIZED VIEW mat_view (id bigint, name char, enddate timestamp(5), PRIMARY KEY(id))\n" +
-                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM tbldatamart.tbl DATASOURCE_TYPE = 'ADB'");
-
-
-        Promise<QueryResult> promise = Promise.promise();
-
-        when(entityDao.getEntity(eq(TBL_SCHEMA), eq(tblEntity.getName())))
-                .thenReturn(Future.succeededFuture(tblEntity));
-
-        // act
-        createTableDdlExecutor.execute(context, MAT_VIEW_ENTITY_NAME)
-                .onComplete(promise);
-
-        // assert
-        verifyNoInteractions(datamartDao);
-        verify(entityDao).getEntity(eq(TBL_SCHEMA), eq(tblEntity.getName()));
-        verifyNoMoreInteractions(entityDao);
-        verifyNoInteractions(metadataExecutor);
-
-        assertTrue(promise.future().failed());
-        assertException(ValidationDtmException.class, "Specifying the size for columns[name] with types[CHAR] is required", promise.future().cause());
+        testFailOnValidation("CREATE MATERIALIZED VIEW mat_view (id bigint, name char, enddate timestamp(5), PRIMARY KEY(id))\n" +
+                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM tbldatamart.tbl DATASOURCE_TYPE = 'ADB'",
+                "Specifying the size for columns[name] with types[CHAR] is required",
+                ValidationDtmException.class);
     }
 
     @Test
     void shouldFailWhenQueryColumnsCountDifferWithView() {
-        // arrange
-        DdlRequestContext context = getContext("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar(100), enddate timestamp(5), num float, PRIMARY KEY(id))\n" +
-                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM tbldatamart.tbl DATASOURCE_TYPE = 'ADB'");
-
-        Promise<QueryResult> promise = Promise.promise();
-
-        when(entityDao.getEntity(eq(TBL_SCHEMA), eq(tblEntity.getName())))
-                .thenReturn(Future.succeededFuture(tblEntity));
-
-        // act
-        createTableDdlExecutor.execute(context, MAT_VIEW_ENTITY_NAME)
-                .onComplete(promise);
-
-        // assert
-        verifyNoInteractions(datamartDao);
-        verify(entityDao).getEntity(eq(TBL_SCHEMA), eq(tblEntity.getName()));
-        verifyNoMoreInteractions(entityDao);
-        verifyNoInteractions(metadataExecutor);
-
-        assertTrue(promise.future().failed());
-        assertException(MaterializedViewValidationException.class, "has conflict with query columns wrong count", promise.future().cause());
+        testFailOnValidation("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar(100), enddate timestamp(5), num float, PRIMARY KEY(id))\n" +
+                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM tbldatamart.tbl DATASOURCE_TYPE = 'ADB'",
+                "has conflict with query columns wrong count",
+                MaterializedViewValidationException.class);
     }
 
     @Test
     void shouldFailWhenQueryColumnsTypeNotMatch() {
-        // arrange
-        DdlRequestContext context = getContext("CREATE MATERIALIZED VIEW mat_view (id bigint, name char(100), enddate timestamp(5), PRIMARY KEY(id))\n" +
-                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM tbldatamart.tbl DATASOURCE_TYPE = 'ADB'");
-
-
-        Promise<QueryResult> promise = Promise.promise();
-
-        when(entityDao.getEntity(eq(TBL_SCHEMA), eq(tblEntity.getName())))
-                .thenReturn(Future.succeededFuture(tblEntity));
-
-        // act
-        createTableDdlExecutor.execute(context, MAT_VIEW_ENTITY_NAME)
-                .onComplete(promise);
-
-        // assert
-        verifyNoInteractions(datamartDao);
-        verify(entityDao).getEntity(eq(TBL_SCHEMA), eq(tblEntity.getName()));
-        verifyNoMoreInteractions(entityDao);
-        verifyNoInteractions(metadataExecutor);
-
-        assertTrue(promise.future().failed());
-        assertException(MaterializedViewValidationException.class, "has conflict with query types not equal for", promise.future().cause());
+        testFailOnValidation("CREATE MATERIALIZED VIEW mat_view (id bigint, name char(100), enddate timestamp(5), PRIMARY KEY(id))\n" +
+                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM tbldatamart.tbl DATASOURCE_TYPE = 'ADB'",
+                "has conflict with query types not equal for",
+                MaterializedViewValidationException.class);
     }
 
     @Test
     void shouldFailWhenQueryColumnsSizeNotMatch() {
-        // arrange
-        DdlRequestContext context = getContext("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar, enddate timestamp(5), PRIMARY KEY(id))\n" +
-                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM tbldatamart.tbl DATASOURCE_TYPE = 'ADB'");
-
-
-        Promise<QueryResult> promise = Promise.promise();
-
-        when(entityDao.getEntity(eq(TBL_SCHEMA), eq(tblEntity.getName())))
-                .thenReturn(Future.succeededFuture(tblEntity));
-
-        // act
-        createTableDdlExecutor.execute(context, MAT_VIEW_ENTITY_NAME)
-                .onComplete(promise);
-
-        // assert
-        verifyNoInteractions(datamartDao);
-        verify(entityDao).getEntity(eq(TBL_SCHEMA), eq(tblEntity.getName()));
-        verifyNoMoreInteractions(entityDao);
-        verifyNoInteractions(metadataExecutor);
-
-        assertTrue(promise.future().failed());
-        assertException(MaterializedViewValidationException.class, "has conflict with query columns type size not equal for", promise.future().cause());
+        testFailOnValidation("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar, enddate timestamp(5), PRIMARY KEY(id))\n" +
+                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM tbldatamart.tbl DATASOURCE_TYPE = 'ADB'",
+                "has conflict with query columns type size not equal for",
+                MaterializedViewValidationException.class);
     }
 
     @Test
     void shouldFailWhenQueryColumnsPrecisionNotMatch() {
-        // arrange
-        DdlRequestContext context = getContext("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar(100), enddate timestamp, PRIMARY KEY(id))\n" +
-                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM tbldatamart.tbl DATASOURCE_TYPE = 'ADB'");
-
-
-        Promise<QueryResult> promise = Promise.promise();
-
-        when(entityDao.getEntity(eq(TBL_SCHEMA), eq(tblEntity.getName())))
-                .thenReturn(Future.succeededFuture(tblEntity));
-
-        // act
-        createTableDdlExecutor.execute(context, MAT_VIEW_ENTITY_NAME)
-                .onComplete(promise);
-
-        // assert
-        verifyNoInteractions(datamartDao);
-        verify(entityDao).getEntity(eq(TBL_SCHEMA), eq(tblEntity.getName()));
-        verifyNoMoreInteractions(entityDao);
-        verifyNoInteractions(metadataExecutor);
-
-        assertTrue(promise.future().failed());
-        assertException(MaterializedViewValidationException.class, "has conflict with query columns type accuracy not equal for", promise.future().cause());
+        testFailOnValidation("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar(100), enddate timestamp, PRIMARY KEY(id))\n" +
+                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM tbldatamart.tbl DATASOURCE_TYPE = 'ADB'",
+                "has conflict with query columns type accuracy not equal for",
+                MaterializedViewValidationException.class);
     }
 
     @Test
@@ -545,9 +385,9 @@ class CreateMaterializedViewDdlExecutorTest {
 
         Promise<QueryResult> promise = Promise.promise();
 
-        when(entityDao.getEntity(eq(TBL_SCHEMA), eq(tblEntity.getName())))
+        when(entityDao.getEntity(TBL_SCHEMA, tblEntity.getName()))
                 .thenReturn(Future.succeededFuture(tblEntity));
-        when(datamartDao.existsDatamart(eq(SCHEMA)))
+        when(datamartDao.existsDatamart(SCHEMA))
                 .thenReturn(Future.failedFuture(new DatamartNotExistsException(SCHEMA)));
 
         // act
@@ -555,9 +395,9 @@ class CreateMaterializedViewDdlExecutorTest {
                 .onComplete(promise);
 
         // assert
-        verify(entityDao).getEntity(eq(TBL_SCHEMA), eq(tblEntity.getName()));
+        verify(entityDao).getEntity(TBL_SCHEMA, tblEntity.getName());
         verifyNoMoreInteractions(entityDao);
-        verifyNoInteractions(metadataExecutor);
+        verifyNoInteractions(metadataExecutor, materializedViewCacheService);
 
         assertTrue(promise.future().failed());
         assertException(DatamartNotExistsException.class, "Database " + SCHEMA + " does not exist", promise.future().cause());
@@ -571,9 +411,9 @@ class CreateMaterializedViewDdlExecutorTest {
 
         Promise<QueryResult> promise = Promise.promise();
 
-        when(entityDao.getEntity(eq(TBL_SCHEMA), eq(tblEntity.getName())))
+        when(entityDao.getEntity(TBL_SCHEMA, tblEntity.getName()))
                 .thenReturn(Future.succeededFuture(tblEntity));
-        when(datamartDao.existsDatamart(eq(SCHEMA)))
+        when(datamartDao.existsDatamart(SCHEMA))
                 .thenReturn(Future.succeededFuture(false));
 
         // act
@@ -581,9 +421,9 @@ class CreateMaterializedViewDdlExecutorTest {
                 .onComplete(promise);
 
         // assert
-        verify(entityDao).getEntity(eq(TBL_SCHEMA), eq(tblEntity.getName()));
+        verify(entityDao).getEntity(TBL_SCHEMA, tblEntity.getName());
         verifyNoMoreInteractions(entityDao);
-        verifyNoInteractions(metadataExecutor);
+        verifyNoInteractions(metadataExecutor, materializedViewCacheService);
 
         assertTrue(promise.future().failed());
         assertException(DatamartNotExistsException.class, "Database " + SCHEMA + " does not exist", promise.future().cause());
@@ -597,23 +437,63 @@ class CreateMaterializedViewDdlExecutorTest {
 
         Promise<QueryResult> promise = Promise.promise();
 
-        when(entityDao.getEntity(eq(TBL_SCHEMA), eq(tblEntity.getName())))
+        when(entityDao.getEntity(TBL_SCHEMA, tblEntity.getName()))
                 .thenReturn(Future.succeededFuture(tblEntity));
-        when(datamartDao.existsDatamart(eq(SCHEMA)))
+        when(datamartDao.existsDatamart(SCHEMA))
                 .thenReturn(Future.succeededFuture(true));
-        when(entityDao.existsEntity(eq(SCHEMA), eq(MAT_VIEW_ENTITY_NAME))).thenReturn(Future.succeededFuture(true));
+        when(entityDao.existsEntity(SCHEMA, MAT_VIEW_ENTITY_NAME)).thenReturn(Future.succeededFuture(true));
 
         // act
         createTableDdlExecutor.execute(context, MAT_VIEW_ENTITY_NAME)
                 .onComplete(promise);
 
         // assert
-        verify(entityDao).getEntity(eq(TBL_SCHEMA), eq(tblEntity.getName()));
+        verify(entityDao).getEntity(TBL_SCHEMA, tblEntity.getName());
         verifyNoMoreInteractions(entityDao);
-        verifyNoInteractions(metadataExecutor);
+        verifyNoInteractions(metadataExecutor, materializedViewCacheService);
 
         assertTrue(promise.future().failed());
         assertException(EntityAlreadyExistsException.class, "Entity " + MAT_VIEW_ENTITY_NAME + " already exists", promise.future().cause());
+    }
+
+    private void testFailDatasourceType(String sql, String errorMessage) {
+        // arrange
+        DdlRequestContext context = getContext(sql);
+
+        Promise<QueryResult> promise = Promise.promise();
+
+        // act
+        createTableDdlExecutor.execute(context, MAT_VIEW_ENTITY_NAME)
+                .onComplete(promise);
+
+        // assert
+        verifyNoInteractions(parserService, datamartDao, entityDao, materializedViewCacheService);
+        assertTrue(promise.future().failed());
+        assertException(MaterializedViewValidationException.class, errorMessage, promise.future().cause());
+    }
+
+    private void testFailOnValidation(String sql, String errorMessage, Class<? extends Exception> exceptionClass) {
+        // arrange
+        DdlRequestContext context = getContext(sql);
+
+
+        Promise<QueryResult> promise = Promise.promise();
+
+        when(entityDao.getEntity(TBL_SCHEMA, tblEntity.getName()))
+                .thenReturn(Future.succeededFuture(tblEntity));
+
+        // act
+        createTableDdlExecutor.execute(context, MAT_VIEW_ENTITY_NAME)
+                .onComplete(promise);
+
+        // assert
+        verifyNoInteractions(datamartDao);
+        verify(entityDao).getEntity(TBL_SCHEMA, tblEntity.getName());
+        verifyNoMoreInteractions(entityDao);
+        verifyNoInteractions(metadataExecutor, materializedViewCacheService);
+
+        assertTrue(promise.future().failed());
+        assertException(exceptionClass, errorMessage, promise.future().cause());
     }
 
     @SneakyThrows

@@ -7,6 +7,7 @@ import io.arenadata.dtm.cache.service.EvictQueryTemplateCacheServiceImpl;
 import io.arenadata.dtm.common.cache.*;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.query.execution.core.base.dto.cache.EntityKey;
+import io.arenadata.dtm.query.execution.core.base.dto.cache.MaterializedViewCacheValue;
 import io.arenadata.dtm.query.execution.core.delta.dto.HotDelta;
 import io.arenadata.dtm.query.execution.core.delta.dto.OkDelta;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -26,6 +27,7 @@ public class CacheConfiguration {
     public static final String ENTITY_CACHE = "entity";
     public static final String HOT_DELTA_CACHE = "hotDelta";
     public static final String OK_DELTA_CACHE = "okDelta";
+    public static final String MATERIALIZED_VIEW_CACHE = "materializedView";
 
     @Bean("entityCacheService")
     public CacheService<EntityKey, Entity> entityCacheService(@Qualifier("coffeineCacheManager")
@@ -46,6 +48,13 @@ public class CacheConfiguration {
                                                                      CacheManager cacheManager) {
         return new CaffeineCacheServiceFactory<String, OkDelta>(cacheManager)
                 .create(OK_DELTA_CACHE);
+    }
+
+    @Bean("materializedViewCacheService")
+    public CacheService<EntityKey, MaterializedViewCacheValue> materializedViewCacheService(@Qualifier("coffeineCacheManager")
+                                                                                                    CacheManager cacheManager) {
+        return new CaffeineCacheServiceFactory<EntityKey, MaterializedViewCacheValue>(cacheManager)
+                .create(MATERIALIZED_VIEW_CACHE);
     }
 
     @Bean("coreQueryTemplateCacheService")

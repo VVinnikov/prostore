@@ -28,7 +28,8 @@ public class AdqmDataSourcePluginConfig {
             @Qualifier("adqmCheckDataService") CheckDataService checkDataService,
             @Qualifier("adqmTruncateHistoryService") TruncateHistoryService truncateHistoryService,
             @Qualifier("adqmCheckVersionService") CheckVersionService checkVersionService,
-            @Qualifier("adqmInitializationService") PluginInitializationService initializationService) {
+            @Qualifier("adqmInitializationService") PluginInitializationService initializationService,
+            @Qualifier("adqmSynchronizeService") SynchronizeService synchronizeService) {
         return new AdqmDtmDataSourcePlugin(
                 ddlService,
                 llrService,
@@ -40,6 +41,7 @@ public class AdqmDataSourcePluginConfig {
                 checkDataService,
                 truncateHistoryService,
                 checkVersionService,
-                initializationService);
+                initializationService,
+                synchronizeService);
     }
 }

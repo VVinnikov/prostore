@@ -56,7 +56,8 @@ public class DropTableOrMaterializedDdlExecutor extends QueryResultDdlExecutor {
                                               MetadataExecutor<DdlRequestContext> metadataExecutor,
                                               ServiceDbFacade serviceDbFacade,
                                               DataSourcePluginService dataSourcePluginService,
-                                              @Qualifier("materializedViewCacheService") CacheService<EntityKey, MaterializedViewCacheValue> materializedViewCacheService, HSQLClient hsqlClient,
+                                              @Qualifier("materializedViewCacheService") CacheService<EntityKey, MaterializedViewCacheValue> materializedViewCacheService,
+                                              HSQLClient hsqlClient,
                                               EvictQueryTemplateCacheService evictQueryTemplateCacheService) {
         super(metadataExecutor, serviceDbFacade);
         this.entityCacheService = entityCacheService;

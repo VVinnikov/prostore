@@ -192,7 +192,7 @@ class CreateMaterializedViewDdlExecutorTest {
         if (promise.future().cause() != null) {
             fail(promise.future().cause());
         }
-        verify(materializedViewCacheService).put(any(), any());
+        verify(materializedViewCacheService).put(any(EntityKey.class), any(MaterializedViewCacheValue.class));
         assertTrue(promise.future().succeeded());
         assertNotNull(promise.future().result());
     }
@@ -224,7 +224,7 @@ class CreateMaterializedViewDdlExecutorTest {
         if (promise.future().cause() != null) {
             fail(promise.future().cause());
         }
-        verify(materializedViewCacheService).put(any(), any());
+        verify(materializedViewCacheService).put(any(EntityKey.class), any(MaterializedViewCacheValue.class));
         assertTrue(promise.future().succeeded());
         assertNotNull(promise.future().result());
     }

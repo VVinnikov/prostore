@@ -30,42 +30,42 @@ public class CacheConfiguration {
     public static final String MATERIALIZED_VIEW_CACHE = "materializedView";
 
     @Bean("entityCacheService")
-    public CacheService<EntityKey, Entity> entityCacheService(@Qualifier("coffeineCacheManager")
+    public CacheService<EntityKey, Entity> entityCacheService(@Qualifier("caffeineCacheManager")
                                                                       CacheManager cacheManager) {
         return new CaffeineCacheServiceFactory<EntityKey, Entity>(cacheManager)
                 .create(ENTITY_CACHE);
     }
 
     @Bean("hotDeltaCacheService")
-    public CacheService<String, HotDelta> hotDeltaCacheService(@Qualifier("coffeineCacheManager")
+    public CacheService<String, HotDelta> hotDeltaCacheService(@Qualifier("caffeineCacheManager")
                                                                        CacheManager cacheManager) {
         return new CaffeineCacheServiceFactory<String, HotDelta>(cacheManager)
                 .create(HOT_DELTA_CACHE);
     }
 
     @Bean("okDeltaCacheService")
-    public CacheService<String, OkDelta> okDeltaCacheService(@Qualifier("coffeineCacheManager")
+    public CacheService<String, OkDelta> okDeltaCacheService(@Qualifier("caffeineCacheManager")
                                                                      CacheManager cacheManager) {
         return new CaffeineCacheServiceFactory<String, OkDelta>(cacheManager)
                 .create(OK_DELTA_CACHE);
     }
 
     @Bean("materializedViewCacheService")
-    public CacheService<EntityKey, MaterializedViewCacheValue> materializedViewCacheService(@Qualifier("coffeineCacheManager")
+    public CacheService<EntityKey, MaterializedViewCacheValue> materializedViewCacheService(@Qualifier("caffeineCacheManager")
                                                                                                     CacheManager cacheManager) {
         return new CaffeineCacheServiceFactory<EntityKey, MaterializedViewCacheValue>(cacheManager)
                 .create(MATERIALIZED_VIEW_CACHE);
     }
 
     @Bean("coreQueryTemplateCacheService")
-    public CacheService<QueryTemplateKey, SourceQueryTemplateValue> queryCacheService(@Qualifier("coffeineCacheManager")
+    public CacheService<QueryTemplateKey, SourceQueryTemplateValue> queryCacheService(@Qualifier("caffeineCacheManager")
                                                                                               CacheManager cacheManager) {
         return new CaffeineCacheServiceFactory<QueryTemplateKey, SourceQueryTemplateValue>(cacheManager)
                 .create(CORE_QUERY_TEMPLATE_CACHE);
     }
 
     @Bean("corePreparedQueryCacheService")
-    public CacheService<PreparedQueryKey, PreparedQueryValue> preparedQueryCacheService(@Qualifier("coffeineCacheManager")
+    public CacheService<PreparedQueryKey, PreparedQueryValue> preparedQueryCacheService(@Qualifier("caffeineCacheManager")
                                                                                                 CacheManager cacheManager) {
         return new CaffeineCacheServiceFactory<PreparedQueryKey, PreparedQueryValue>(cacheManager)
                 .create(CORE_PREPARED_QUERY_CACHE);

@@ -12,7 +12,7 @@ import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.EntityDao
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.ServiceDbDao;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.impl.ServiceDbDaoImpl;
-import io.arenadata.dtm.query.execution.core.dml.service.impl.LogicViewReplacerImpl;
+import io.arenadata.dtm.query.execution.core.dml.service.view.LogicViewReplacer;
 import io.vertx.core.Future;
 import io.vertx.junit5.VertxTestContext;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +30,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @Slf4j
-class LogicViewReplacerImplTest {
+class LogicViewReplacerTest {
 
     public static final String EXPECTED_WITHOUT_JOIN = "SELECT v.col1 AS c, v.col2 AS r\n" +
             "FROM (SELECT col4, col5\n" +
@@ -109,7 +109,7 @@ class LogicViewReplacerImplTest {
                                 .name("tblX")
                                 .build())
                 );
-        val replacer = new LogicViewReplacerImpl(definitionService, serviceDbDao.getEntityDao());
+        val replacer = new LogicViewReplacer(definitionService);
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
                 "FROM test.view FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' v";
         replacer.replace(sql, "datamart")
@@ -143,7 +143,7 @@ class LogicViewReplacerImplTest {
                                 .build())
                 );
 
-        val replacer = new LogicViewReplacerImpl(definitionService, serviceDbDao.getEntityDao());
+        val replacer = new LogicViewReplacer(definitionService);
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
                 "FROM test.view v";
         replacer.replace(sql, "datamart")
@@ -177,7 +177,7 @@ class LogicViewReplacerImplTest {
                                 .build())
                 );
 
-        val replacer = new LogicViewReplacerImpl(definitionService, serviceDbDao.getEntityDao());
+        val replacer = new LogicViewReplacer(definitionService);
         val sql = "SELECT view.Col1 as c, view.Col2 r\n" +
                 "FROM view";
         replacer.replace(sql, "datamart")
@@ -215,7 +215,7 @@ class LogicViewReplacerImplTest {
                                 .name("tblX")
                                 .build())
                 );
-        val replacer = new LogicViewReplacerImpl(definitionService, serviceDbDao.getEntityDao());
+        val replacer = new LogicViewReplacer(definitionService);
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
                 "FROM tbl FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' t\n" +
                 "JOIN view FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59' v\n" +
@@ -265,7 +265,7 @@ class LogicViewReplacerImplTest {
                                 .build())
                 );
 
-        val replacer = new LogicViewReplacerImpl(definitionService, serviceDbDao.getEntityDao());
+        val replacer = new LogicViewReplacer(definitionService);
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
                 "FROM tbl FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' t\n" +
                 "JOIN view FOR SYSTEM_TIME AS OF '2018-07-29 23:59:59' v\n" +
@@ -306,7 +306,7 @@ class LogicViewReplacerImplTest {
                                 .name("tblX")
                                 .build())
                 );
-        val replacer = new LogicViewReplacerImpl(definitionService, serviceDbDao.getEntityDao());
+        val replacer = new LogicViewReplacer(definitionService);
         val sql = "SELECT t.Col1 as c, (select id from view limit 1) r\n" +
                 "FROM tblt t";
         replacer.replace(sql, "datamart")
@@ -346,7 +346,7 @@ class LogicViewReplacerImplTest {
                                 .name("tblC")
                                 .build())
                 );
-        val replacer = new LogicViewReplacerImpl(definitionService, serviceDbDao.getEntityDao());
+        val replacer = new LogicViewReplacer(definitionService);
         val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
                 "FROM view FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' v";
         replacer.replace(sql, "datamart").onComplete(sqlResult -> {

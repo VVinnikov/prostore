@@ -16,6 +16,7 @@ import io.arenadata.dtm.query.calcite.core.node.SqlTreeNode;
 import io.arenadata.dtm.query.calcite.core.rel2sql.NullNotCastableRelToSqlConverter;
 import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
 import io.arenadata.dtm.query.execution.core.base.dto.cache.EntityKey;
+import io.arenadata.dtm.query.execution.core.base.dto.cache.MaterializedViewCacheValue;
 import io.arenadata.dtm.query.execution.core.base.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.base.exception.entity.EntityAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.base.exception.materializedview.MaterializedViewValidationException;
@@ -62,6 +63,7 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
     private final DatamartDao datamartDao;
     private final EntityDao entityDao;
     private final CacheService<EntityKey, Entity> entityCacheService;
+    private final CacheService<EntityKey, MaterializedViewCacheValue> materializedViewCacheService;
     private final LogicalSchemaProvider logicalSchemaProvider;
     private final QueryParserService parserService;
     private final ColumnMetadataService columnMetadataService;
@@ -73,6 +75,7 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
                                              ServiceDbFacade serviceDbFacade,
                                              @Qualifier("coreSqlDialect") SqlDialect sqlDialect,
                                              @Qualifier("entityCacheService") CacheService<EntityKey, Entity> entityCacheService,
+                                             @Qualifier("materializedViewCacheService") CacheService<EntityKey, MaterializedViewCacheValue> materializedViewCacheService,
                                              LogicalSchemaProvider logicalSchemaProvider,
                                              ColumnMetadataService columnMetadataService,
                                              @Qualifier("coreCalciteDMLQueryParserService") QueryParserService parserService,
@@ -83,6 +86,7 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
         this.datamartDao = serviceDbFacade.getServiceDbDao().getDatamartDao();
         this.entityDao = serviceDbFacade.getServiceDbDao().getEntityDao();
         this.entityCacheService = entityCacheService;
+        this.materializedViewCacheService = materializedViewCacheService;
         this.logicalSchemaProvider = logicalSchemaProvider;
         this.columnMetadataService = columnMetadataService;
         this.parserService = parserService;
@@ -140,7 +144,11 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
                     .compose(this::checkEntityNotExists)
                     .compose(e -> metadataExecutor.execute(context))
                     .compose(v -> entityDao.createEntity(context.getEntity()))
-                    .onSuccess(v -> p.complete(QueryResult.emptyResult()))
+                    .onSuccess(v -> {
+                        materializedViewCacheService.put(new EntityKey(context.getEntity().getSchema(), context.getEntity().getName()),
+                                new MaterializedViewCacheValue(context.getEntity()));
+                        p.complete(QueryResult.emptyResult());
+                    })
                     .onFailure(p::fail);
         });
     }

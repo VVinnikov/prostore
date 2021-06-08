@@ -101,6 +101,8 @@ public class LogicViewReplacerImpl implements LogicViewReplacer {
                                         childNode,
                                         currSnapshot,
                                         entity);
+                            } else if (entity.getEntityType() == EntityType.MATERIALIZED_VIEW) {
+                                return processMatView(entity, datamart, childNode, currSnapshot, tree);
                             } else {
                                 if (currSnapshot != null) {
                                     SqlDeltaSnapshot parentSnapshot = parentNode.getNode();
@@ -123,6 +125,19 @@ public class LogicViewReplacerImpl implements LogicViewReplacer {
                     }
                 })
                 .mapEmpty();
+    }
+
+    private Future<Void> processMatView(Entity entity, String datamart, SqlTreeNode childNode, SqlSnapshot currSnapshot, SqlSelectTree tree) {
+        List<SqlTreeNode> nodes = tree.findNodesByPath(SqlSelectTree.SELECT_AS_SNAPSHOT);
+        if (nodes.isEmpty()) {
+            return Future.succeededFuture();
+        }
+        return replace(definitionService.processingQuery(entity.getViewQuery()),
+                datamart,
+                tree,
+                childNode,
+                currSnapshot,
+                entity);
     }
 
     private SqlSnapshot getSqlSnapshot(SqlTreeNode parentNode, SqlSnapshot sqlSnapshot) {

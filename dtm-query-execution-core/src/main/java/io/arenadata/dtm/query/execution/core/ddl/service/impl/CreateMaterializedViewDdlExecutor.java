@@ -4,6 +4,7 @@ import io.arenadata.dtm.cache.service.CacheService;
 import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.dto.QueryParserResponse;
 import io.arenadata.dtm.common.exception.DtmException;
+import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityType;
@@ -59,6 +60,7 @@ import static io.arenadata.dtm.query.execution.core.ddl.utils.ValidationUtils.ch
 public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
     private static final String VIEW_AND_TABLE_PATTERN = "(?i).*(JOIN|SELECT)\\.(|AS\\.)(SNAPSHOT|IDENTIFIER)$";
     private static final String ALL_COLUMNS = "*";
+    private static final int UUID_SIZE = 36;
     private final SqlDialect sqlDialect;
     private final DatamartDao datamartDao;
     private final EntityDao entityDao;
@@ -313,7 +315,7 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
             EntityField entityField = viewFields.get(i);
             ColumnMetadata columnMetadata = queryColumns.get(i);
 
-            if (entityField.getType() != columnMetadata.getType()) {
+            if (!isCompatibleTypes(entityField, columnMetadata)) {
                 throw MaterializedViewValidationException.columnTypesConflict(entity.getName(), entityField.getName(), entityField.getType(), columnMetadata.getType());
             }
 
@@ -324,6 +326,11 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
                         throw MaterializedViewValidationException.columnTypeAccuracyConflict(entity.getName(), entityField.getName(), entityField.getSize(), columnMetadata.getSize());
                     }
                     break;
+                case UUID:
+                    if (isMismatched(UUID_SIZE, columnMetadata)) {
+                        throw MaterializedViewValidationException.columnTypeSizeConflict(entity.getName(), entityField.getName(), UUID_SIZE, columnMetadata.getSize());
+                    }
+                    break;
                 default:
                     if (isMismatched(entityField.getSize(), columnMetadata)) {
                         throw MaterializedViewValidationException.columnTypeSizeConflict(entity.getName(), entityField.getName(), entityField.getSize(), columnMetadata.getSize());
@@ -331,6 +338,26 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
                     break;
             }
         }
+    }
+
+    private boolean isCompatibleTypes(EntityField entityField, ColumnMetadata columnMetadata) {
+        if (entityField.getType() == columnMetadata.getType()) {
+            return true;
+        }
+
+        if (entityField.getType() == ColumnType.INT32 && columnMetadata.getType() == ColumnType.INT) {
+            return true;
+        }
+
+        if (entityField.getType() == ColumnType.UUID && columnMetadata.getType() == ColumnType.VARCHAR) {
+            return true;
+        }
+
+        if (entityField.getType() == ColumnType.LINK && columnMetadata.getType() == ColumnType.VARCHAR) {
+            return true;
+        }
+
+        return false;
     }
 
     private boolean isMismatched(Integer sizeOrAccuracy, ColumnMetadata columnMetadata) {

@@ -198,6 +198,99 @@ class CreateMaterializedViewDdlExecutorTest {
     }
 
     @Test
+    void shouldSuccessWhenStarQueryAndAllTypes() {
+        // arrange
+        ArrayList<EntityField> fields = new ArrayList<>();
+        fields.add(EntityField.builder()
+                .ordinalPosition(0)
+                .name("id")
+                .type(ColumnType.BIGINT)
+                .nullable(false)
+                .primaryOrder(1)
+                .shardingOrder(1)
+                .build());
+
+        int pos = 1;
+        for (ColumnType columnType : ColumnType.values()) {
+            if (columnType == ColumnType.ANY || columnType == ColumnType.BLOB) continue;
+
+            EntityField field = EntityField.builder()
+                    .ordinalPosition(pos++)
+                    .name("col_" + columnType.name().toLowerCase())
+                    .type(columnType)
+                    .nullable(true)
+                    .build();
+
+            switch (columnType) {
+                case TIME:
+                case TIMESTAMP:
+                    field.setAccuracy(5);
+                    break;
+                case CHAR:
+                case VARCHAR:
+                    field.setSize(100);
+                    break;
+                case UUID:
+                    field.setSize(36);
+                    break;
+            }
+
+            fields.add(field);
+        }
+
+        tblEntity = Entity.builder()
+                .name(TBL_ENTITY_NAME)
+                .schema(SCHEMA)
+                .entityType(EntityType.TABLE)
+                .fields(fields)
+                .build();
+
+        Datamart tblDatamart = new Datamart(TBL_SCHEMA, false, Arrays.asList(tblEntity));
+        List<Datamart> logicSchema = Arrays.asList(tblDatamart);
+        lenient().when(logicalSchemaProvider.getSchemaFromQuery(any(), anyString())).thenReturn(Future.succeededFuture(logicSchema));
+
+        DdlRequestContext context = getContext("CREATE MATERIALIZED VIEW mat_view (id bigint,\n" +
+                "        col_varchar varchar(100),\n" +
+                "        col_char char(100),\n" +
+                "        col_bigint bigint,\n" +
+                "        col_int int,\n" +
+                "        col_int32 int32,\n" +
+                "        col_double double,\n" +
+                "        col_float float,\n" +
+                "        col_date date,\n" +
+                "        col_time time(5),\n" +
+                "        col_timestamp timestamp(5),\n" +
+                "        col_boolean boolean,\n" +
+                "        col_uuid uuid,\n" +
+                "        col_link link,\n" +
+                "        PRIMARY KEY(id))\n" +
+                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM tbldatamart.tbl DATASOURCE_TYPE = 'ADB'");
+
+        Promise<QueryResult> promise = Promise.promise();
+
+        when(datamartDao.existsDatamart(eq(SCHEMA)))
+                .thenReturn(Future.succeededFuture(true));
+        when(entityDao.existsEntity(eq(SCHEMA), eq(MAT_VIEW_ENTITY_NAME)))
+                .thenReturn(Future.succeededFuture(false));
+        when(entityDao.getEntity(eq(TBL_SCHEMA), eq(tblEntity.getName())))
+                .thenReturn(Future.succeededFuture(tblEntity));
+        when(metadataExecutor.execute(any())).thenReturn(Future.succeededFuture());
+        when(entityDao.createEntity(any()))
+                .thenReturn(Future.succeededFuture());
+
+        // act
+        createTableDdlExecutor.execute(context, MAT_VIEW_ENTITY_NAME)
+                .onComplete(promise);
+
+        // assert
+        if (promise.future().cause() != null) {
+            fail(promise.future().cause());
+        }
+        assertTrue(promise.future().succeeded());
+        assertNotNull(promise.future().result());
+    }
+
+    @Test
     void shouldSuccessWhenExplicitQuery() {
         // arrange
         DdlRequestContext context = getContext("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar(100), PRIMARY KEY(id))\n" +

@@ -40,6 +40,10 @@ public class SqlTreeNode implements Comparable<SqlTreeNode> {
         return (this.kindPath == null ? "" : this.kindPath) + childPosPath + "." + node.getKind();
     }
 
+    public String getKindPath() {
+        return kindPath;
+    }
+
     public void resetChildPos() {
         childPos = 0;
     }

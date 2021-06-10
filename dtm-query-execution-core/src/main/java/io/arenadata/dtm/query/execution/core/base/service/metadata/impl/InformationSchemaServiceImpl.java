@@ -1,11 +1,14 @@
 package io.arenadata.dtm.query.execution.core.base.service.metadata.impl;
 
+import io.arenadata.dtm.cache.service.CacheService;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityType;
 import io.arenadata.dtm.common.reader.InformationSchemaView;
+import io.arenadata.dtm.query.execution.core.base.dto.cache.EntityKey;
+import io.arenadata.dtm.query.execution.core.base.dto.cache.MaterializedViewCacheValue;
 import io.arenadata.dtm.query.execution.core.base.exception.datamart.DatamartAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.base.exception.entity.EntityNotExistsException;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.DatamartDao;
@@ -47,6 +50,7 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     private final EntityDao entityDao;
     private final HSQLClient client;
     private final InformationSchemaQueryFactory informationSchemaQueryFactory;
+    private final CacheService<EntityKey, MaterializedViewCacheValue> materializedViewCacheService;
 
     @Autowired
     public InformationSchemaServiceImpl(HSQLClient client,
@@ -54,13 +58,15 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
                                         EntityDao entityDao,
                                         DdlQueryGenerator ddlQueryGenerator,
                                         ApplicationContext applicationContext,
-                                        InformationSchemaQueryFactory informationSchemaQueryFactory) {
+                                        InformationSchemaQueryFactory informationSchemaQueryFactory,
+                                        CacheService<EntityKey, MaterializedViewCacheValue> materializedViewCacheService) {
         this.applicationContext = applicationContext;
         this.ddlQueryGenerator = ddlQueryGenerator;
         this.datamartDao = datamartDao;
         this.entityDao = entityDao;
         this.client = client;
         this.informationSchemaQueryFactory = informationSchemaQueryFactory;
+        this.materializedViewCacheService = materializedViewCacheService;
     }
 
     @Override
@@ -153,8 +159,8 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     }
 
     @Override
-    public Future<Void> createInformationSchemaViews() {
-        log.info("Information schema initialized start");
+    public Future<Void> initInformationSchema() {
+        log.info("Information schema initialization started");
         return client.executeBatch(informationSchemaViewsQueries())
                 .compose(v -> createSchemasFromDatasource())
                 .compose(v -> initEntities())
@@ -284,13 +290,11 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
     }
 
     private Future<List<Entity>> getEntitiesByNames(String datamart, List<String> entitiesNames) {
-        return Future.future(promise -> {
-            CompositeFuture.join(entitiesNames.stream()
-                    .map(entity -> entityDao.getEntity(datamart, entity))
-                    .collect(Collectors.toList()))
-                    .onSuccess(entityResult -> promise.complete(entityResult.list()))
-                    .onFailure(promise::fail);
-        });
+        return Future.future(promise -> CompositeFuture.join(entitiesNames.stream()
+                .map(entity -> entityDao.getEntity(datamart, entity))
+                .collect(Collectors.toList()))
+                .onSuccess(entityResult -> promise.complete(entityResult.list()))
+                .onFailure(promise::fail));
     }
 
     private List<String> getEntitiesCreateQueries(List<Entity> entities) {
@@ -299,21 +303,29 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
         List<String> commentQueries = new ArrayList<>();
         List<String> createShardingKeys = new ArrayList<>();
         entities.forEach(entity -> {
-            if (EntityType.VIEW.equals(entity.getEntityType()) ||
-                    EntityType.MATERIALIZED_VIEW.equals(entity.getEntityType())) {
-                String prefix = EntityType.MATERIALIZED_VIEW == entity.getEntityType() ? MATERIALIZED_VIEW_PREFIX : "";
-                viewEntities.add(ddlQueryGenerator.generateCreateViewQuery(entity, prefix));
+            if (EntityType.VIEW.equals(entity.getEntityType())) {
+                viewEntities.add(ddlQueryGenerator.generateCreateViewQuery(entity, ""));
                 commentQueries.addAll(getCommentQueries(entity));
             }
-            if (EntityType.TABLE.equals(entity.getEntityType()) ||
-                    EntityType.MATERIALIZED_VIEW.equals(entity.getEntityType())) {
+            if (EntityType.TABLE.equals(entity.getEntityType())) {
                 tableEntities.add(ddlQueryGenerator.generateCreateTableQuery(entity));
-                commentQueries.addAll(getCommentQueries(entity));
                 val shardingKeyColumns = entity.getFields().stream()
                         .filter(field -> field.getShardingOrder() != null)
                         .map(EntityField::getName)
                         .collect(Collectors.toList());
                 createShardingKeys.add(createShardingKeyIndex(entity.getName(), entity.getNameWithSchema(), shardingKeyColumns));
+                commentQueries.addAll(getCommentQueries(entity));
+            }
+            if (EntityType.MATERIALIZED_VIEW.equals(entity.getEntityType())) {
+                viewEntities.add(ddlQueryGenerator.generateCreateViewQuery(entity, MATERIALIZED_VIEW_PREFIX));
+                tableEntities.add(ddlQueryGenerator.generateCreateTableQuery(entity));
+                val shardingKeyColumns = entity.getFields().stream()
+                        .filter(field -> field.getShardingOrder() != null)
+                        .map(EntityField::getName)
+                        .collect(Collectors.toList());
+                createShardingKeys.add(createShardingKeyIndex(entity.getName(), entity.getNameWithSchema(), shardingKeyColumns));
+                commentQueries.addAll(getCommentQueries(entity));
+                materializedViewCacheService.put(new EntityKey(entity.getSchema(), entity.getName()), new MaterializedViewCacheValue(entity));
             }
         });
         return Stream.of(tableEntities, viewEntities, commentQueries, createShardingKeys)

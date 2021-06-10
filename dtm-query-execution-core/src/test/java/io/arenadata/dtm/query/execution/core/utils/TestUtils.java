@@ -20,7 +20,10 @@ import lombok.val;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;
+import org.apache.commons.io.IOUtils;
 
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -146,5 +149,13 @@ public class TestUtils {
                 request.getSchema(),
                 relQuery,
                 validatedQuery);
+    }
+
+    @SneakyThrows
+    public static String loadTextFromFile(String path) {
+        try (InputStream inputStream = TestUtils.class.getClassLoader().getResourceAsStream(path)) {
+            assert inputStream != null;
+            return IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+        }
     }
 }

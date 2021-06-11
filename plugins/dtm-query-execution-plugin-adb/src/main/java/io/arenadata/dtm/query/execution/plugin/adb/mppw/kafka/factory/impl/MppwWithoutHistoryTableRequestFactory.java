@@ -19,7 +19,7 @@ public class MppwWithoutHistoryTableRequestFactory extends AbstractMppwRequestFa
             "  sys_to = ${sysFrom},\n" +
             "  sys_op = staging.sys_op\n" +
             "FROM (\n" +
-            "  SELECT ${primaryKeyFields}, MAX(sys_op)\n" +
+            "  SELECT ${primaryKeyFields}, MAX(sys_op) as sys_op\n" +
             "  FROM ${datamart}.${table}_staging\n" +
             "  GROUP BY ${primaryKeyFields}\n" +
             ") staging\n" +

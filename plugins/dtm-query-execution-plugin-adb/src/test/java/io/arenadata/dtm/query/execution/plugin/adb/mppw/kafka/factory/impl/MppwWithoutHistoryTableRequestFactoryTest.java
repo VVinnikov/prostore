@@ -16,7 +16,7 @@ class MppwWithoutHistoryTableRequestFactoryTest {
             "  sys_to = 54,\n" +
             "  sys_op = staging.sys_op\n" +
             "FROM (\n" +
-            "  SELECT id1, id2, MAX(sys_op)\n" +
+            "  SELECT id1, id2, MAX(sys_op) as sys_op\n" +
             "  FROM datamart.tbl1_staging\n" +
             "  GROUP BY id1, id2\n" +
             ") staging\n" +

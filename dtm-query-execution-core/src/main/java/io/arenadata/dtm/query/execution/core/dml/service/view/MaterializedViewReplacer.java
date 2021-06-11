@@ -30,10 +30,5 @@ public class MaterializedViewReplacer implements ViewReplacer {
         return replacerService.replace(context);
     }
 
-    @Override
-    public Future<String> replace(String sql, String datamart) {
-        // TODO delete this method from the interface. No usages in project, only in tests
-        return null;
-    }
 }
 

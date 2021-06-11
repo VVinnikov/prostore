@@ -19,12 +19,6 @@ public class LogicViewReplacer implements ViewReplacer {
     }
 
     @Override
-    public Future<String> replace(String sql, String datamart) {
-        // TODO Remove
-        return null;
-    }
-
-    @Override
     public Future<Void> replace(ViewReplaceContext context) {
         ViewReplacerService replacerService = context.getViewReplacerService();
         context.setViewQueryNode(definitionService.processingQuery(context.getEntity().getViewQuery()));

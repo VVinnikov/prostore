@@ -1,10 +1,15 @@
 package io.arenadata.dtm.query.calcite.core.util;
 
+import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.extension.dml.LimitableSqlOrderBy;
 import io.arenadata.dtm.query.calcite.core.extension.parser.ParseException;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlSelect;
+
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class SqlNodeUtil {
     private SqlNodeUtil() {
@@ -27,5 +32,23 @@ public final class SqlNodeUtil {
         } else {
             throw new ParseException(String.format("Type %s of query does not support!", query.getClass().getName()));
         }
+    }
+
+    public static Set<SourceType> extractSourceTypes(SqlNodeList sourceTypesSqlList) {
+        if (sourceTypesSqlList == null) {
+            return null;
+        }
+
+        return sourceTypesSqlList.getList().stream()
+                .map(node -> SourceType.valueOfAvailable(node.toString()))
+                .collect(Collectors.toSet());
+    }
+
+    public static SourceType extractSourceType(SqlNode destination) {
+        if (destination == null) {
+            return null;
+        }
+
+        return SourceType.valueOfAvailable(destination.toString().replace("'", ""));
     }
 }

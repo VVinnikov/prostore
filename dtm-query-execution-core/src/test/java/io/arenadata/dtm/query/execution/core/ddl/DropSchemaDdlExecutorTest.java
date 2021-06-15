@@ -12,20 +12,20 @@ import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.framework.DtmCalciteFramework;
-import io.arenadata.dtm.query.execution.core.calcite.configuration.CalciteConfiguration;
+import io.arenadata.dtm.query.execution.core.base.dto.cache.EntityKey;
 import io.arenadata.dtm.query.execution.core.base.repository.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.base.repository.ServiceDbFacadeImpl;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.DatamartDao;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.ServiceDbDao;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.impl.DatamartDaoImpl;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.impl.ServiceDbDaoImpl;
-import io.arenadata.dtm.query.execution.core.base.dto.cache.EntityKey;
-import io.arenadata.dtm.query.execution.core.ddl.dto.DdlRequestContext;
-import io.arenadata.dtm.query.execution.core.delta.dto.HotDelta;
-import io.arenadata.dtm.query.execution.core.delta.dto.OkDelta;
-import io.arenadata.dtm.query.execution.core.ddl.service.impl.DropSchemaDdlExecutor;
 import io.arenadata.dtm.query.execution.core.base.service.metadata.MetadataExecutor;
 import io.arenadata.dtm.query.execution.core.base.service.metadata.impl.MetadataExecutorImpl;
+import io.arenadata.dtm.query.execution.core.calcite.configuration.CalciteConfiguration;
+import io.arenadata.dtm.query.execution.core.ddl.dto.DdlRequestContext;
+import io.arenadata.dtm.query.execution.core.ddl.service.impl.DropSchemaDdlExecutor;
+import io.arenadata.dtm.query.execution.core.delta.dto.HotDelta;
+import io.arenadata.dtm.query.execution.core.delta.dto.OkDelta;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import org.apache.calcite.sql.SqlNode;
@@ -40,7 +40,6 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 class DropSchemaDdlExecutorTest {
@@ -89,25 +88,25 @@ class DropSchemaDdlExecutorTest {
     @Test
     void executeSuccess() {
         Promise<QueryResult> promise = Promise.promise();
-        when(datamartDao.existsDatamart(eq(schema)))
+        when(datamartDao.existsDatamart(schema))
                 .thenReturn(Future.succeededFuture(true));
 
         when(metadataExecutor.execute(any()))
                 .thenReturn(Future.succeededFuture());
 
-        when(datamartDao.deleteDatamart(eq(schema)))
+        when(datamartDao.deleteDatamart(schema))
                 .thenReturn(Future.succeededFuture());
 
         dropSchemaDdlExecutor.execute(context, null)
                 .onComplete(promise);
         assertTrue(promise.future().succeeded());
-        verify(evictQueryTemplateCacheService, times(2)).evictByDatamartName(schema);
+        verify(evictQueryTemplateCacheService).evictByDatamartName(schema);
     }
 
     @Test
     void executeWithDropSchemaError() {
         Promise<QueryResult> promise = Promise.promise();
-        when(datamartDao.existsDatamart(eq(schema)))
+        when(datamartDao.existsDatamart(schema))
                 .thenReturn(Future.succeededFuture(true));
 
         when(metadataExecutor.execute(any()))
@@ -116,35 +115,35 @@ class DropSchemaDdlExecutorTest {
         dropSchemaDdlExecutor.execute(context, null)
                 .onComplete(promise);
         assertTrue(promise.future().failed());
-        verify(evictQueryTemplateCacheService, times(1)).evictByDatamartName(any());
+        verify(evictQueryTemplateCacheService).evictByDatamartName(any());
     }
 
     @Test
     void executeWithDropDatamartError() {
         Promise<QueryResult> promise = Promise.promise();
-        when(datamartDao.existsDatamart(eq(schema)))
+        when(datamartDao.existsDatamart(schema))
                 .thenReturn(Future.succeededFuture(true));
 
         when(metadataExecutor.execute(any()))
                 .thenReturn(Future.succeededFuture());
 
-        when(datamartDao.deleteDatamart(eq(schema)))
+        when(datamartDao.deleteDatamart(schema))
                 .thenReturn(Future.failedFuture("delete datamart error"));
 
         dropSchemaDdlExecutor.execute(context, null)
                 .onComplete(promise);
         assertTrue(promise.future().failed());
-        verify(evictQueryTemplateCacheService, times(1)).evictByDatamartName(any());
+        verify(evictQueryTemplateCacheService).evictByDatamartName(any());
     }
 
     @Test
     void executeDropInformationSchema() {
         schema = InformationSchemaView.SCHEMA_NAME.toLowerCase();
-        when(datamartDao.existsDatamart(eq(schema)))
+        when(datamartDao.existsDatamart(schema))
                 .thenReturn(Future.succeededFuture(true));
         when(metadataExecutor.execute(any()))
                 .thenReturn(Future.succeededFuture());
-        when(datamartDao.deleteDatamart(eq(schema)))
+        when(datamartDao.deleteDatamart(schema))
                 .thenReturn(Future.succeededFuture());
         dropSchemaDdlExecutor.execute(context, null)
                 .onComplete(ar -> assertTrue(ar.failed()));

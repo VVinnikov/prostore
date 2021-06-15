@@ -153,9 +153,13 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
         return String.format(InformationSchemaUtils.COMMENT_ON_COLUMN, schemaTable, column, comment);
     }
 
-    private String createShardingKeyIndex(String table, String schemaTable, List<String> columns) {
+    private String createShardingKeyIndex(Entity entity) {
+        val shardingKeyColumns = entity.getFields().stream()
+                .filter(field -> field.getShardingOrder() != null)
+                .map(EntityField::getName)
+                .collect(Collectors.toList());
         return String.format(InformationSchemaUtils.CREATE_SHARDING_KEY_INDEX,
-                table, schemaTable, String.join(", ", columns));
+                entity.getName(), entity.getNameWithSchema(), String.join(", ", shardingKeyColumns));
     }
 
     @Override
@@ -309,21 +313,13 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
             }
             if (EntityType.TABLE.equals(entity.getEntityType())) {
                 tableEntities.add(ddlQueryGenerator.generateCreateTableQuery(entity));
-                val shardingKeyColumns = entity.getFields().stream()
-                        .filter(field -> field.getShardingOrder() != null)
-                        .map(EntityField::getName)
-                        .collect(Collectors.toList());
-                createShardingKeys.add(createShardingKeyIndex(entity.getName(), entity.getNameWithSchema(), shardingKeyColumns));
+                createShardingKeys.add(createShardingKeyIndex(entity));
                 commentQueries.addAll(getCommentQueries(entity));
             }
             if (EntityType.MATERIALIZED_VIEW.equals(entity.getEntityType())) {
                 viewEntities.add(ddlQueryGenerator.generateCreateViewQuery(entity, MATERIALIZED_VIEW_PREFIX));
                 tableEntities.add(ddlQueryGenerator.generateCreateTableQuery(entity));
-                val shardingKeyColumns = entity.getFields().stream()
-                        .filter(field -> field.getShardingOrder() != null)
-                        .map(EntityField::getName)
-                        .collect(Collectors.toList());
-                createShardingKeys.add(createShardingKeyIndex(entity.getName(), entity.getNameWithSchema(), shardingKeyColumns));
+                createShardingKeys.add(createShardingKeyIndex(entity));
                 commentQueries.addAll(getCommentQueries(entity));
                 materializedViewCacheService.put(new EntityKey(entity.getSchema(), entity.getName()), new MaterializedViewCacheValue(entity));
             }

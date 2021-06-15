@@ -39,6 +39,8 @@ import static java.lang.String.format;
 @Service
 public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChangesService {
     private static final String COLUMN_SELECT = "SELECT.OTHER$";
+    private static final int SYS_OP_MODIFIED = 0;
+    private static final int SYS_OP_DELETED = 1;
 
     private final QueryParserService parserService;
     private final SqlDialect sqlDialect;
@@ -46,7 +48,7 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
 
     public PrepareQueriesOfChangesServiceImpl(@Qualifier("adbCalciteDMLQueryParserService") QueryParserService parserService,
                                               @Qualifier("adbSqlDialect") SqlDialect sqlDialect,
-                                              @Qualifier("adbQueryEnrichmentServiceImpl") QueryEnrichmentService queryEnrichmentService) {
+                                              QueryEnrichmentService queryEnrichmentService) {
         this.parserService = parserService;
         this.sqlDialect = sqlDialect;
         this.queryEnrichmentService = queryEnrichmentService;
@@ -54,12 +56,9 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
 
     @Override
     public Future<PrepareRequestOfChangesResult> prepare(PrepareRequestOfChangesRequest request) {
-        return Future.future(promise -> {
-            parserService.parse(new QueryParserRequest(request.getViewQuery(), request.getDatamart()))
-                    .compose(this::replaceTimeBasedColumns)
-                    .compose(sqlNode -> prepareQueriesOfChanges(sqlNode, request))
-                    .onComplete(promise);
-        });
+        return parserService.parse(new QueryParserRequest(request.getViewQuery(), request.getDatamart()))
+                .compose(this::replaceTimeBasedColumns)
+                .compose(sqlNode -> prepareQueriesOfChanges(sqlNode, request));
     }
 
     private Future<PrepareRequestOfChangesResult> prepareQueriesOfChanges(SqlNode sqlNode, PrepareRequestOfChangesRequest request) {
@@ -74,11 +73,11 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
 
             List<Future> futures = new ArrayList<>(2);
             if (allTableAndSnapshots.size() > 1) {
-                futures.add(prepareMultipleRecordsQuery(sqlNode, request, request.getDeltaNumToBe(), request.getDeltaNumToBe() - 1, 0));
-                futures.add(prepareMultipleRecordsQuery(sqlNode, request, request.getDeltaNumToBe() - 1, request.getDeltaNumToBe(), 1));
+                futures.add(prepareMultipleRecordsQuery(sqlNode, request, request.getDeltaNumToBe(), request.getDeltaNumToBe() - 1, SYS_OP_MODIFIED));
+                futures.add(prepareMultipleRecordsQuery(sqlNode, request, request.getDeltaNumToBe() - 1, request.getDeltaNumToBe(), SYS_OP_DELETED));
             } else {
-                futures.add(enrichQueryWithDelta(sqlNode, request, request.getDeltaNumToBe(), DeltaType.STARTED_IN, 0));
-                futures.add(enrichQueryWithDelta(sqlNode, request, request.getDeltaNumToBe(), DeltaType.FINISHED_IN, 1));
+                futures.add(enrichQueryWithDelta(sqlNode, request, request.getDeltaNumToBe(), DeltaType.STARTED_IN, SYS_OP_MODIFIED));
+                futures.add(enrichQueryWithDelta(sqlNode, request, request.getDeltaNumToBe(), DeltaType.FINISHED_IN, SYS_OP_DELETED));
             }
 
             CompositeFuture.join(futures)
@@ -90,11 +89,11 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
         });
     }
 
-    private Future<String> prepareMultipleRecordsQuery(SqlNode sqlNode, PrepareRequestOfChangesRequest request, long deltaNumLeft, long deltaNumRight, int sysOp) {
+    private Future<String> prepareMultipleRecordsQuery(SqlNode sqlNode, PrepareRequestOfChangesRequest request, long deltaNumCurrent, long deltaNumPrevious, int sysOp) {
         return Future.future(promise -> {
-            Future<String> leftQuery = enrichQueryWithDelta(sqlNode, request, deltaNumLeft, DeltaType.NUM, sysOp);
-            Future<String> rightQuery = enrichQueryWithDelta(sqlNode, request, deltaNumRight, DeltaType.NUM, sysOp);
-            List<Future> futures = Arrays.asList(leftQuery, rightQuery);
+            Future<String> currentStateQuery = enrichQueryWithDelta(sqlNode, request, deltaNumCurrent, DeltaType.NUM, sysOp);
+            Future<String> previousStateQuery = enrichQueryWithDelta(sqlNode, request, deltaNumPrevious, DeltaType.NUM, sysOp);
+            List<Future> futures = Arrays.asList(currentStateQuery, previousStateQuery);
             CompositeFuture.join(futures)
                     .onSuccess(event -> {
                         List<String> result = event.list();
@@ -161,7 +160,8 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
             sqlDeltaNum = deltaNumSqlLiteral;
             period = SqlLiteral.createNull(parserPos);
         } else {
-            throw new DtmException(format("Unexpected delta type: %s, expected one of: %s", deltaType, Arrays.asList(DeltaType.STARTED_IN, DeltaType.FINISHED_IN)));
+            throw new DtmException(format("Unexpected delta type: %s, expected one of: %s",
+                    deltaType, Arrays.asList(DeltaType.STARTED_IN, DeltaType.FINISHED_IN, DeltaType.NUM)));
         }
 
         SqlDeltaSnapshot sqlDeltaSnapshot = new SqlDeltaSnapshot(parserPos, tableSqlNode, period, startedOperator, finishedOperator, sqlDeltaNum, null);

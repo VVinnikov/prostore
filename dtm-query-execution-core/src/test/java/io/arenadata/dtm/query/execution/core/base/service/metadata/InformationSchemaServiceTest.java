@@ -91,7 +91,7 @@ class InformationSchemaServiceTest {
         when(datamartDao.getDatamarts()).thenReturn(Future.succeededFuture(Collections.emptyList()));
         when(informationSchemaQueryFactory.createInitEntitiesQuery()).thenReturn("");
         val results = DatabindCodec.mapper()
-                .readValue(loadTextFromFile("schema/results.json"), new TypeReference<List<List<Object>>>() {
+                .readValue(loadTextFromFile("schema/system_views_column_metadata.json"), new TypeReference<List<List<Object>>>() {
                 }).stream()
                 .map(JsonArray::new)
                 .collect(Collectors.toList());
@@ -118,7 +118,7 @@ class InformationSchemaServiceTest {
         when(datamartDao.getDatamarts()).thenReturn(Future.succeededFuture(Collections.emptyList()));
         when(informationSchemaQueryFactory.createInitEntitiesQuery()).thenReturn("");
         val results = DatabindCodec.mapper()
-                .readValue(loadTextFromFile("schema/results.json"), new TypeReference<List<List<Object>>>() {
+                .readValue(loadTextFromFile("schema/system_views_column_metadata.json"), new TypeReference<List<List<Object>>>() {
                 }).stream()
                 .map(JsonArray::new)
                 .collect(Collectors.toList());
@@ -156,7 +156,7 @@ class InformationSchemaServiceTest {
 
         when(informationSchemaQueryFactory.createInitEntitiesQuery()).thenReturn("");
         val results = DatabindCodec.mapper()
-                .readValue(loadTextFromFile("schema/results.json"), new TypeReference<List<List<Object>>>() {
+                .readValue(loadTextFromFile("schema/system_views_column_metadata.json"), new TypeReference<List<List<Object>>>() {
                 }).stream()
                 .map(JsonArray::new)
                 .collect(Collectors.toList());

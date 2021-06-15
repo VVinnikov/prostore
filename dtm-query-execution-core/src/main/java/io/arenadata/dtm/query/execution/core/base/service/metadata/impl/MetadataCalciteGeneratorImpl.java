@@ -1,11 +1,12 @@
 package io.arenadata.dtm.query.execution.core.base.service.metadata.impl;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
+import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateMaterializedView;
 import io.arenadata.dtm.query.calcite.core.extension.ddl.SqlCreateTable;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.SqlNodeUtils;
-import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.execution.core.base.service.metadata.MetadataCalciteGenerator;
 import io.arenadata.dtm.query.execution.core.base.utils.ColumnTypeUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -135,14 +136,23 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
     }
 
     private void initDistributedKeyColumns(SqlCreate sqlCreate, Map<String, EntityField> fieldMap) {
-        if (sqlCreate instanceof SqlCreateTable) {
+        if (!(sqlCreate instanceof SqlCreateTable || sqlCreate instanceof SqlCreateMaterializedView)) {
+            return;
+        }
+
+        SqlNodeList distributedBy;
+        if(sqlCreate instanceof SqlCreateTable) {
             SqlCreateTable createTable = (SqlCreateTable) sqlCreate;
-            SqlNodeList distributedBy = createTable.getDistributedBy().getDistributedBy();
-            if (distributedBy != null) {
-                List<SqlNode> distrColumnList = distributedBy.getList();
-                if (distrColumnList != null) {
-                    initDistributedOrderAttr(distrColumnList, fieldMap);
-                }
+            distributedBy = createTable.getDistributedBy().getDistributedBy();
+        } else {
+            SqlCreateMaterializedView createTable = (SqlCreateMaterializedView) sqlCreate;
+            distributedBy = createTable.getDistributedBy().getDistributedBy();
+        }
+
+        if (distributedBy != null) {
+            List<SqlNode> distrColumnList = distributedBy.getList();
+            if (distrColumnList != null) {
+                initDistributedOrderAttr(distrColumnList, fieldMap);
             }
         }
     }

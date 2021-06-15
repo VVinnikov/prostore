@@ -55,7 +55,7 @@ public class EntityDaoImpl implements EntityDao {
         try {
             byte[] entityData = DatabindCodec.mapper().writeValueAsBytes(entity);
             return executor.createPersistentPath(getTargetPath(entity), entityData)
-                    .compose(r -> AsyncUtils.toEmptyVoidFuture())
+                    .compose(AsyncUtils::toEmptyVoidFuture)
                     .otherwise(error -> {
                         if (error instanceof KeeperException.NoNodeException) {
                             throw new DatamartNotExistsException(entity.getSchema(), error);
@@ -80,7 +80,7 @@ public class EntityDaoImpl implements EntityDao {
         try {
             byte[] entityData = DatabindCodec.mapper().writeValueAsBytes(entity);
             return executor.setData(getTargetPath(entity), entityData, -1)
-                    .compose(r -> AsyncUtils.toEmptyVoidFuture())
+                    .compose(AsyncUtils::toEmptyVoidFuture)
                     .otherwise(error -> {
                         if (error instanceof KeeperException.NoNodeException) {
                             throw warn(new EntityNotExistsException(entity.getNameWithSchema()));
@@ -109,7 +109,7 @@ public class EntityDaoImpl implements EntityDao {
     public Future<Void> deleteEntity(String datamartMnemonic, String entityName) {
         val nameWithSchema = getNameWithSchema(datamartMnemonic, entityName);
         return executor.delete(getTargetPath(datamartMnemonic, entityName), -1)
-                .compose(r -> AsyncUtils.toEmptyVoidFuture())
+                .compose(AsyncUtils::toEmptyVoidFuture)
                 .otherwise(error -> {
                     if (error instanceof KeeperException.NoNodeException) {
                         throw warn(new EntityNotExistsException(nameWithSchema));

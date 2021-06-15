@@ -6,6 +6,7 @@ import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.caffeine.CaffeineCache;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -30,6 +31,13 @@ public class CaffeineCacheService<K, V> implements CacheService<K, V> {
         } else {
             return ((Future<V>) valueWrapper.get()).result();
         }
+    }
+
+    @Override
+    public Map<K, V> asMap() {
+        final com.github.benmanes.caffeine.cache.Cache<Object, Object> nativeCache = ((CaffeineCache) cache).getNativeCache();
+        return nativeCache.asMap().entrySet().stream()
+                .collect(Collectors.toMap(e -> (K) e.getKey(), e -> ((Future<V>) e.getValue()).result()));
     }
 
     @Override

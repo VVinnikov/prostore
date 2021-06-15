@@ -2,6 +2,7 @@ package io.arenadata.dtm.query.execution.core.init;
 
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.query.execution.core.base.service.MaterializedViewSyncService;
 import io.arenadata.dtm.query.execution.core.base.service.metadata.InformationSchemaService;
 import io.arenadata.dtm.query.execution.core.base.service.metadata.impl.InformationSchemaServiceImpl;
 import io.arenadata.dtm.query.execution.core.init.service.CoreInitializationService;
@@ -29,6 +30,7 @@ class CoreInitializationServiceImplTest {
     private final Set<SourceType> sourceTypes = new HashSet<>(Arrays.asList(SourceType.ADB, SourceType.ADG, SourceType.ADQM));
     private CoreInitializationService initializationService;
     private final InformationSchemaService informationSchemaService = mock(InformationSchemaServiceImpl.class);
+    private final MaterializedViewSyncService materializedViewSyncService = mock(MaterializedViewSyncService.class);
     private final RestoreStateService restoreStateService = mock(RestoreStateServiceImpl.class);
     private final QueryWorkerStarter queryWorkerStarter = mock(QueryWorkerStarter.class);
     private final Vertx vertx = mock(Vertx.class);
@@ -38,6 +40,7 @@ class CoreInitializationServiceImplTest {
         List<Verticle> verticles = new ArrayList<>();
         initializationService = new CoreInitializationServiceImpl(pluginService,
                 informationSchemaService,
+                materializedViewSyncService,
                 restoreStateService,
                 vertx,
                 queryWorkerStarter,
@@ -65,6 +68,7 @@ class CoreInitializationServiceImplTest {
                     verify(informationSchemaService).initInformationSchema();
                     verify(restoreStateService).restoreState();
                     verify(queryWorkerStarter).start(vertx);
+                    verify(materializedViewSyncService).startPeriodicalSync();
                 });
     }
 
@@ -88,6 +92,7 @@ class CoreInitializationServiceImplTest {
                     verify(informationSchemaService).initInformationSchema();
                     verify(restoreStateService).restoreState();
                     verify(queryWorkerStarter).start(vertx);
+                    verify(materializedViewSyncService).startPeriodicalSync();
                 });
     }
 
@@ -109,6 +114,7 @@ class CoreInitializationServiceImplTest {
                     verifyNoInteractions(pluginService);
                     verifyNoInteractions(restoreStateService);
                     verifyNoInteractions(queryWorkerStarter);
+                    verifyNoInteractions(materializedViewSyncService);
                 });
     }
 
@@ -133,6 +139,7 @@ class CoreInitializationServiceImplTest {
                     verify(pluginService, times(3)).initialize(any());
                     verify(restoreStateService).restoreState();
                     verify(queryWorkerStarter).start(vertx);
+                    verifyNoInteractions(materializedViewSyncService);
                 });
     }
 
@@ -155,6 +162,7 @@ class CoreInitializationServiceImplTest {
                     verify(pluginService, times(3)).initialize(any());
                     verifyNoInteractions(restoreStateService);
                     verifyNoInteractions(queryWorkerStarter);
+                    verifyNoInteractions(materializedViewSyncService);
                 });
     }
 

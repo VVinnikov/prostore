@@ -48,7 +48,7 @@ public class CoreInitializationServiceImpl implements CoreInitializationService 
 
     @Override
     public Future<Void> execute() {
-        return informationSchemaService.createInformationSchemaViews()
+        return informationSchemaService.initInformationSchema()
                 .compose(v -> deployVerticles(vertx, verticles))
                 .compose(v -> initPlugins())
                 .compose(v -> {

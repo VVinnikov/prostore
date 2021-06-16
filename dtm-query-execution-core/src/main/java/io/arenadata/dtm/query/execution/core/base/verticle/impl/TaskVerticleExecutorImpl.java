@@ -26,28 +26,31 @@ public class TaskVerticleExecutorImpl extends AbstractVerticle implements TaskVe
     @Override
     public void start() throws Exception {
         val options = new DeploymentOptions()
-            .setWorkerPoolSize(vertxPoolProperties.getTaskPool())
-            .setWorker(true);
+                .setWorkerPoolSize(vertxPoolProperties.getTaskPool())
+                .setWorkerPoolName("task-verticle-pool")
+                .setWorker(true);
         for (int i = 0; i < vertxPoolProperties.getTaskPool(); i++) {
             vertx.deployVerticle(new TaskVerticle(taskMap, resultMap), options);
         }
     }
 
     @Override
-    public <T> void execute(Handler<Promise<T>> codeHandler, Handler<AsyncResult<T>> resultHandler) {
-        String taskId = UUID.randomUUID().toString();
-        taskMap.put(taskId, (Handler) codeHandler);
-        vertx.eventBus().request(
-            DataTopic.START_WORKER_TASK.getValue(),
-            taskId,
-            new DeliveryOptions().setSendTimeout(vertxPoolProperties.getTaskTimeout()),
-            ar -> {
-                if (ar.succeeded()) {
-                    resultHandler.handle((AsyncResult<T>) resultMap.remove(ar.result().body().toString()));
-                } else {
-                    taskMap.remove(taskId);
-                    resultHandler.handle(Future.failedFuture(ar.cause()));
-                }
-            });
+    public <T> Future<T> execute(Handler<Promise<T>> codeHandler) {
+        return Future.future(promise -> {
+            String taskId = UUID.randomUUID().toString();
+            taskMap.put(taskId, (Handler) codeHandler);
+            vertx.eventBus().request(
+                    DataTopic.START_WORKER_TASK.getValue(),
+                    taskId,
+                    new DeliveryOptions().setSendTimeout(vertxPoolProperties.getTaskTimeout()),
+                    ar -> {
+                        taskMap.remove(taskId);
+                        if (ar.succeeded()) {
+                            promise.complete((T) resultMap.remove(ar.result().body().toString()).result());
+                        } else {
+                            promise.fail(ar.cause());
+                        }
+                    });
+        });
     }
 }

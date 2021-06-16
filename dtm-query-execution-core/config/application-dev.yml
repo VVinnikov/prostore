@@ -51,6 +51,8 @@ core:
 
   vertx:
     pool:
+      worker-pool: ${DTM_CORE_WORKER_POOL_SIZE:20}
+      event-loop-pool: ${DTM_CORE_EVENT_LOOP_POOL_SIZE:20}
       task-pool: ${DTM_CORE_TASK_POOL_SIZE:10}
       task-timeout: ${DTM_CORE_TASK_TIMEOUT:86400000}
 

@@ -20,8 +20,8 @@ public class MaterializedViewReplacer implements ViewReplacer {
     }
 
     public Future<Void> replace(ViewReplaceContext context) {
-        List<SqlTreeNode> nodes = context.getAllNodes().findNodesByPath(SqlSelectTree.SELECT_AS_SNAPSHOT);
-        if (nodes.isEmpty()) {
+        List<SqlTreeNode> snapshots = context.getAllNodes().findNodesByPath(SqlSelectTree.SELECT_AS_SNAPSHOT);
+        if (snapshots.isEmpty()) {
             return Future.succeededFuture();
         }
 

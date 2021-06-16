@@ -380,4 +380,70 @@ class ViewReplacerServiceTest {
 
         assertThat(testContext.awaitCompletion(5, TimeUnit.SECONDS)).isTrue();
     }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void testMatViewNotReplaced() throws InterruptedException {
+        val testContext = new VertxTestContext();
+
+        when(entityDao.getEntity(any(), any()))
+                .thenReturn(
+                        Future.succeededFuture(Entity.builder()
+                                .entityType(EntityType.MATERIALIZED_VIEW)
+                                .name("mat_view")
+                                .build())
+                );
+
+        val sql = "SELECT * FROM mat_view v";
+        SqlNode sqlNode = definitionService.processingQuery(sql);
+
+        viewReplacerService.replace(sqlNode, "datamart")
+                .onComplete(sqlResult -> {
+                    if (sqlResult.succeeded()) {
+                        assertThat(sqlResult.result().toString()).isEqualToNormalizingNewlines("SELECT *\nFROM `mat_view` AS `v`");
+                        testContext.completeNow();
+                    } else {
+                        testContext.failNow(sqlResult.cause());
+                    }
+                });
+
+        assertThat(testContext.awaitCompletion(5, TimeUnit.SECONDS)).isTrue();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void testMatViewReplaced() throws InterruptedException {
+        val testContext = new VertxTestContext();
+
+        when(entityDao.getEntity(any(), any()))
+                .thenReturn(
+                        Future.succeededFuture(Entity.builder()
+                                .entityType(EntityType.MATERIALIZED_VIEW)
+                                .name("mat_view")
+                                .viewQuery("SELECT Col4, Col5 \n" +
+                                        "FROM tblX \n" +
+                                        "WHERE tblX.Col6 = 0")
+                                .build()),
+                        Future.succeededFuture(Entity.builder()
+                                .entityType(EntityType.TABLE)
+                                .name("tblX")
+                                .build())
+                );
+
+        val sql = "SELECT v.Col1 as c, v.Col2 r\n" +
+                "FROM mat_view FOR SYSTEM_TIME AS OF '2019-12-23 15:15:14' v";
+        SqlNode sqlNode = definitionService.processingQuery(sql);
+
+        viewReplacerService.replace(sqlNode, "datamart")
+                .onComplete(sqlResult -> {
+                    if (sqlResult.succeeded()) {
+                        assertThat(sqlResult.result().toString()).isEqualToNormalizingNewlines(EXPECTED_WITHOUT_JOIN);
+                        testContext.completeNow();
+                    } else {
+                        testContext.failNow(sqlResult.cause());
+                    }
+                });
+
+        assertThat(testContext.awaitCompletion(5, TimeUnit.SECONDS)).isTrue();
+    }
 }

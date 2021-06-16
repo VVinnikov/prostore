@@ -162,6 +162,8 @@ class DropTableOrMaterializedDdlExecutorTest {
         when(entityDao.deleteEntity(SCHEMA, entity.getName()))
                 .thenReturn(Future.succeededFuture());
 
+        when(materializedViewCacheService.get(any())).thenReturn(new MaterializedViewCacheValue(entity));
+
         // act
         dropTableDdlExecutor.execute(context, context.getEntity().getName())
                 .onComplete(promise);
@@ -171,7 +173,7 @@ class DropTableOrMaterializedDdlExecutorTest {
         verify(evictQueryTemplateCacheService, times(1))
                 .evictByEntityName(entity.getSchema(), entity.getName());
         verify(metadataExecutor).execute(contextArgumentCaptor.capture());
-        verify(materializedViewCacheService).remove(any());
+        verify(materializedViewCacheService).get(any());
         DdlRequestContext value = contextArgumentCaptor.getValue();
         assertSame(DdlType.DROP_MATERIALIZED_VIEW, value.getDdlType());
         assertNull(value.getSourceType());
@@ -345,6 +347,8 @@ class DropTableOrMaterializedDdlExecutorTest {
         when(entityDao.deleteEntity(SCHEMA, entity.getName()))
                 .thenReturn(Future.succeededFuture());
 
+        when(materializedViewCacheService.get(any())).thenReturn(new MaterializedViewCacheValue(entity));
+
         // act
         dropTableDdlExecutor.execute(context, context.getEntity().getName())
                 .onComplete(promise);
@@ -352,7 +356,7 @@ class DropTableOrMaterializedDdlExecutorTest {
         // assert
         assertTrue(promise.future().succeeded());
         verify(metadataExecutor).execute(contextArgumentCaptor.capture());
-        verify(materializedViewCacheService).remove(any());
+        verify(materializedViewCacheService).get(any());
         DdlRequestContext value = contextArgumentCaptor.getValue();
         assertSame(DdlType.DROP_MATERIALIZED_VIEW, value.getDdlType());
         assertSame(SourceType.ADB, value.getSourceType());

@@ -86,7 +86,7 @@ public class DropTableOrMaterializedDdlExecutor extends QueryResultDdlExecutor {
             dropTable(context, containsIfExistsCheck(context.getRequest().getQueryRequest().getSql()))
                     .onSuccess(r -> {
                         if (DdlType.DROP_MATERIALIZED_VIEW == context.getDdlType()) {
-                            materializedViewCacheService.get(new EntityKey(datamartName, tableName)).setUuid(null);
+                            materializedViewCacheService.get(new EntityKey(datamartName, tableName)).markForDeletion();
                         }
                         promise.complete(QueryResult.emptyResult());
                     })

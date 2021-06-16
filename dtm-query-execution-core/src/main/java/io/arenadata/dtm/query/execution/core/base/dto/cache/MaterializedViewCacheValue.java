@@ -9,19 +9,23 @@ import java.util.UUID;
 @Data
 @AllArgsConstructor
 public class MaterializedViewCacheValue {
-    private Entity entity;
+    private final Entity entity;
     private UUID uuid;
     private long failsCount;
-    private int status;
+    private MaterializedViewSyncStatus status;
 
     public MaterializedViewCacheValue(Entity entity) {
         this.entity = entity;
         this.uuid = UUID.randomUUID();
-        this.status = 0;
+        this.status = MaterializedViewSyncStatus.READY;
         this.failsCount = 0;
     }
 
     public void incrementFailsCount() {
         failsCount++;
+    }
+
+    public void markForDeletion() {
+        this.uuid = null;
     }
 }

@@ -9,6 +9,7 @@ import io.arenadata.dtm.query.execution.core.base.configuration.AppConfiguration
 import io.arenadata.dtm.query.execution.core.base.configuration.properties.MatViewSyncProperties;
 import io.arenadata.dtm.query.execution.core.base.dto.cache.EntityKey;
 import io.arenadata.dtm.query.execution.core.base.dto.cache.MaterializedViewCacheValue;
+import io.arenadata.dtm.query.execution.core.base.dto.cache.MaterializedViewSyncStatus;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.delta.repository.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.plugin.exception.SuitablePluginNotExistsException;
@@ -25,7 +26,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -59,10 +59,10 @@ public class MaterializedViewSyncService {
     }
 
     public long startPeriodicalSync() {
+        log.info("Materialized view cache synchronization iteration started");
         return vertx.setTimer(periodMs, timerId -> {
-            Map<EntityKey, MaterializedViewCacheValue> cacheMap = materializedViewCacheService.asMap();
             List<Future> futures = new ArrayList<>();
-            cacheMap.forEach((key, value) -> futures.add(getSyncFuture(key, value)));
+            materializedViewCacheService.iterateOverMap((key, value) -> futures.add(getSyncFuture(key, value)));
             CompositeFuture.join(futures)
                     .onComplete(ar -> startPeriodicalSync());
         });
@@ -76,63 +76,47 @@ public class MaterializedViewSyncService {
             if (origUUID == null) {
                 materializedViewCacheService.remove(key);
                 promise.complete();
-            } else {
-                isReadyForSync(datamart, value.getStatus(), entity.getMaterializedDeltaNum(), value.getFailsCount())
-                        .onSuccess(isReady -> {
-                            if (isReady) {
-                                runSync(datamart, value, origUUID)
-                                        .onSuccess(v -> {
-                                            log.info("Materialized view {} synchronized", entity.getNameWithSchema());
-                                            promise.complete();
-                                        })
-                                        .onFailure(error -> {
-                                            log.error("Failed to sync materialized view {}, fails count {}/{}", entity.getNameWithSchema(), value.getFailsCount() + 1, retryCount, error);
-                                            if (origUUID.equals(value.getUuid())) {
-                                                value.incrementFailsCount();
-                                                value.setStatus(0);
-                                            }
-                                            promise.complete();
-                                        });
-                            } else {
-                                promise.complete();
-                            }
-                        })
-                        .onFailure(error -> {
-                            log.warn("Can't start materialized view sync cause can't get delta ok for datamart {}", datamart, error);
-                            promise.complete();
-                        });
+                return;
             }
+            isReadyForSync(datamart, value.getStatus(), entity.getMaterializedDeltaNum(), value.getFailsCount())
+                    .onSuccess(isReady -> {
+                        if (isReady) {
+                            log.info("Started sync process for {}", value);
+                            runSync(datamart, value, origUUID)
+                                    .onSuccess(v -> {
+                                        log.info("Materialized view {} synchronized", entity.getNameWithSchema());
+                                        promise.complete();
+                                    })
+                                    .onFailure(error -> {
+                                        log.error("Failed to sync materialized view {}, fails count {}/{}", entity.getNameWithSchema(), value.getFailsCount() + 1, retryCount, error);
+                                        if (origUUID.equals(value.getUuid())) {
+                                            value.incrementFailsCount();
+                                            value.setStatus(MaterializedViewSyncStatus.READY);
+                                        }
+                                        promise.complete();
+                                    });
+                        } else {
+                            promise.complete();
+                        }
+                    })
+                    .onFailure(error -> {
+                        log.warn("Can't start materialized view sync cause can't get delta ok for datamart {}", datamart, error);
+                        promise.complete();
+                    });
         });
     }
 
-    private Future<Void> updateEntity(long deltaNum, MaterializedViewCacheValue cacheValue) {
-        val entity = cacheValue.getEntity();
-        val oldDeltaNum = entity.getMaterializedDeltaNum();
-        if (oldDeltaNum != deltaNum) {
-            entity.setMaterializedDeltaNum(deltaNum);
-            return entityDao.updateEntity(entity)
-                    .map(v -> {
-                        cacheValue.setEntity(entity);
-                        cacheValue.setFailsCount(0);
-                        cacheValue.setStatus(0);
-                        return v;
-                    });
+    private Future<Boolean> isReadyForSync(String datamart, MaterializedViewSyncStatus matViewStatus, Long matViewDeltaNum, long matViewRetryCount) {
+        if (MaterializedViewSyncStatus.READY != matViewStatus || matViewRetryCount >= retryCount) {
+            return Future.succeededFuture(false);
         }
-        return Future.failedFuture(new DtmException(String.format("DeltaNum for materialized view %s has not been changed; old value [%d], new value [%d]",
-                entity.getNameWithSchema(), oldDeltaNum, deltaNum)));
-    }
-
-    private Future<Boolean> isReadyForSync(String datamart, int matViewStatus, Long matViewDeltaNum, long matViewRetryCount) {
         return deltaServiceDao.getDeltaOk(datamart)
                 .map(okDelta -> ((okDelta != null && okDelta.getDeltaNum() >= 0)
-                        && matViewStatus == 0
-                        && (matViewDeltaNum == null || matViewDeltaNum < okDelta.getDeltaNum())
-                        && matViewRetryCount < retryCount));
-
+                        && (matViewDeltaNum == null || matViewDeltaNum < okDelta.getDeltaNum())));
     }
 
     private Future<Void> runSync(String datamart, MaterializedViewCacheValue value, UUID origUUID) {
-        value.setStatus(1);
+        value.setStatus(MaterializedViewSyncStatus.RUN);
         return synchronize(datamart, value.getEntity())
                 .compose(deltaNum -> origUUID.equals(value.getUuid()) ? updateEntity(deltaNum, value) : Future.succeededFuture());
     }
@@ -144,6 +128,22 @@ public class MaterializedViewSyncService {
         val uuid = UUID.randomUUID();
         return dataSourcePluginService.synchronize(matViewEntity.getMaterializedDataSource(),
                 createRequestMetrics(uuid), new SynchronizeRequest(uuid, appConfiguration.getEnvName(), datamart, matViewEntity));
+    }
+
+    private Future<Void> updateEntity(long deltaNum, MaterializedViewCacheValue cacheValue) {
+        val entity = cacheValue.getEntity();
+        val oldDeltaNum = entity.getMaterializedDeltaNum();
+        if (oldDeltaNum != deltaNum) {
+            entity.setMaterializedDeltaNum(deltaNum);
+            return entityDao.updateEntity(entity)
+                    .map(v -> {
+                        cacheValue.setFailsCount(0);
+                        cacheValue.setStatus(MaterializedViewSyncStatus.READY);
+                        return v;
+                    });
+        }
+        return Future.failedFuture(new DtmException(String.format("DeltaNum for materialized view %s has not been changed; old value [%d], new value [%d]",
+                entity.getNameWithSchema(), oldDeltaNum, deltaNum)));
     }
 
     private RequestMetrics createRequestMetrics(UUID uuid) {

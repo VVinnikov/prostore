@@ -8,6 +8,7 @@ import org.springframework.cache.caffeine.CaffeineCache;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -34,10 +35,21 @@ public class CaffeineCacheService<K, V> implements CacheService<K, V> {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Map<K, V> asMap() {
         final com.github.benmanes.caffeine.cache.Cache<Object, Object> nativeCache = ((CaffeineCache) cache).getNativeCache();
         return nativeCache.asMap().entrySet().stream()
                 .collect(Collectors.toMap(e -> (K) e.getKey(), e -> ((Future<V>) e.getValue()).result()));
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public void iterateOverMap(BiConsumer<K, V> consumer) {
+        ((CaffeineCache) cache).getNativeCache().asMap().forEach((k, v) -> {
+            val key = (K) k;
+            val value = ((Future<V>) v).result();
+            consumer.accept(key, value);
+        });
     }
 
     @Override

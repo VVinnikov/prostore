@@ -62,7 +62,7 @@ public class MaterializedViewSyncService {
         log.info("Materialized view cache synchronization iteration started");
         return vertx.setTimer(periodMs, timerId -> {
             List<Future> futures = new ArrayList<>();
-            materializedViewCacheService.iterateOverMap((key, value) -> futures.add(getSyncFuture(key, value)));
+            materializedViewCacheService.forEach((key, value) -> futures.add(getSyncFuture(key, value)));
             CompositeFuture.join(futures)
                     .onComplete(ar -> startPeriodicalSync());
         });
@@ -73,7 +73,7 @@ public class MaterializedViewSyncService {
             val datamart = key.getDatamartName();
             val origUUID = value.getUuid();
             val entity = value.getEntity();
-            if (origUUID == null) {
+            if (value.isMarkedForDeletion()) {
                 materializedViewCacheService.remove(key);
                 promise.complete();
                 return;

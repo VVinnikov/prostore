@@ -28,4 +28,8 @@ public class MaterializedViewCacheValue {
     public void markForDeletion() {
         this.uuid = null;
     }
+
+    public boolean isMarkedForDeletion() {
+        return uuid == null;
+    }
 }

@@ -46,7 +46,7 @@ public class TaskVerticleExecutorImpl extends AbstractVerticle implements TaskVe
                     ar -> {
                         taskMap.remove(taskId);
                         if (ar.succeeded()) {
-                            promise.complete((T) resultMap.remove(ar.result().body().toString()).result());
+                            promise.handle((AsyncResult<T>) resultMap.remove(ar.result().body().toString()));
                         } else {
                             promise.fail(ar.cause());
                         }

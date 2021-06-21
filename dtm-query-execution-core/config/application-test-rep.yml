@@ -33,6 +33,10 @@ core:
   settings:
     timeZone: ${CORE_TIME_ZONE:UTC}
 
+  matviewsync:
+    periodMs: ${MATERIALIZED_VIEWS_SYNC_PERIOD_MS:5000}
+    retryCount: ${MATERIALIZED_VIEWS_RETRY_COUNT:10}
+
   metrics:
     isEnabled: ${DTM_CORE_METRICS_ENABLED:true}
 

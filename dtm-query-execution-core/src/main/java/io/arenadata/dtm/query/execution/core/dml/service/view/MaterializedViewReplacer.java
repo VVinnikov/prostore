@@ -30,16 +30,19 @@ public class MaterializedViewReplacer implements ViewReplacer {
     }
 
     public Future<Void> replace(ViewReplaceContext context) {
-        SqlSelectTree tree = new SqlSelectTree(context.getCurrentNode().getNode());
-        List<SqlTreeNode> snapshots = tree.findNodesByPath(SqlSelectTree.SELECT_AS_SNAPSHOT);
-        if (snapshots.isEmpty()) {
-            return Future.succeededFuture();
-        }
-
         DeltaInformation deltaInformation = deltaInformationExtractor.getDeltaInformation(context.getAllNodes(), context.getCurrentNode());
         switch (deltaInformation.getType()) {
             case DATETIME: {
-                return getDeltaByDateTime(context.getDatamart(), deltaInformation.getDeltaTimestamp()).onSuccess(deltaNum -> {
+                return handleDateTime(context, deltaInformation.getDeltaTimestamp());
+            }
+            default:
+                return Future.succeededFuture();
+        }
+    }
+
+    private Future<Void> handleDateTime(ViewReplaceContext context, String deltaTimestamp) {
+        return getDeltaByDateTime(context.getDatamart(), deltaTimestamp)
+                .onSuccess(deltaNum -> {
                     Long matViewDeltaNum = context.getEntity().getMaterializedDeltaNum();
                     if (matViewDeltaNum != null && deltaNum <= matViewDeltaNum) {
                         return;
@@ -49,10 +52,6 @@ public class MaterializedViewReplacer implements ViewReplacer {
                     context.setViewQueryNode(definitionService.processingQuery(context.getEntity().getViewQuery()));
                     replacerService.replace(context);
                 }).mapEmpty();
-            }
-        }
-
-        return Future.succeededFuture();
     }
 
     private Future<Long> getDeltaByDateTime(String datamart, String deltaTimestamp) {

@@ -84,7 +84,7 @@ class ViewReplacerServiceTest {
     private final DefinitionService<SqlNode> definitionService =
             new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
     private final LogicViewReplacer logicViewReplacer = new LogicViewReplacer(definitionService);
-    private final MaterializedViewReplacer materializedViewReplacer = new MaterializedViewReplacer(definitionService);
+    private final MaterializedViewReplacer materializedViewReplacer = new MaterializedViewReplacer(definitionService, null, null);
     private final ViewReplacerService viewReplacerService = new ViewReplacerService(entityDao, logicViewReplacer, materializedViewReplacer);
 
     @BeforeEach

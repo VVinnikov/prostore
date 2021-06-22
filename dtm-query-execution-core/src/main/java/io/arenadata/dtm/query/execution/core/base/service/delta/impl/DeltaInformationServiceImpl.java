@@ -33,6 +33,13 @@ public class DeltaInformationServiceImpl implements DeltaInformationService {
     }
 
     @Override
+    public Future<Long> getDeltaNumByDatetime(String datamart, LocalDateTime dateTime) {
+        return Future.future(handler -> deltaServiceDao.getDeltaByDateTime(datamart, dateTime)
+                .onSuccess(delta -> handler.handle(Future.succeededFuture(delta.getDeltaNum())))
+                .onFailure(err -> handler.handle(Future.succeededFuture(-1L))));
+    }
+
+    @Override
     public Future<Long> getCnToByDeltaNum(String datamart, long num) {
         return Future.future(handler -> deltaServiceDao.getDeltaByNum(datamart, num)
                 .onSuccess(delta -> handler.handle(Future.succeededFuture(delta.getCnTo())))

@@ -14,6 +14,7 @@ public class AdbProperties {
   private String password;
   private String host;
   private int port;
-  private int maxSize;
+  private int poolSize;
+  private int executorsCount;
   private int fetchSize = DEFAULT_FETCH_SIZE;
 }

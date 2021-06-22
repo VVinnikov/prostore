@@ -8,7 +8,6 @@ import io.vertx.core.*;
 import io.vertx.core.eventbus.DeliveryOptions;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -24,14 +23,16 @@ public class TaskVerticleExecutorImpl extends AbstractVerticle implements TaskVe
     private final VertxPoolProperties vertxPoolProperties;
 
     @Override
-    public void start() throws Exception {
-        val options = new DeploymentOptions()
-                .setWorkerPoolSize(vertxPoolProperties.getTaskPool())
-                .setWorkerPoolName("task-verticle-pool")
-                .setWorker(true);
-        for (int i = 0; i < vertxPoolProperties.getTaskPool(); i++) {
-            vertx.deployVerticle(new TaskVerticle(taskMap, resultMap), options);
-        }
+    public void start(Promise<Void> startPromise) throws Exception {
+        DeploymentOptions options = new DeploymentOptions()
+                .setInstances(vertxPoolProperties.getTaskPool());
+        vertx.deployVerticle(() -> new TaskVerticle(taskMap, resultMap), options, ar -> {
+            if (ar.succeeded()) {
+                startPromise.complete();
+            } else {
+                startPromise.fail(ar.cause());
+            }
+        });
     }
 
     @Override

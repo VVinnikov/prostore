@@ -2,6 +2,7 @@ package io.arenadata.dtm.query.execution.core.dml.service.view;
 
 import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.delta.DeltaType;
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
@@ -23,6 +24,7 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
@@ -67,7 +69,7 @@ public class MaterializedViewReplacerTest {
 
         val deltaInformation = new DeltaInformation(
                 "",
-                "",
+                null,
                 false,
                 DeltaType.WITHOUT_SNAPSHOT,
                 null,
@@ -163,6 +165,44 @@ public class MaterializedViewReplacerTest {
                     verify(viewReplacerService, never()).replace(any(ViewReplaceContext.class));
                 })
                 .onFailure(result -> Assert.fail("Error while replacing materialized view"));
+    }
+
+    @Test
+    public void testLatestUncommittedDeltaIsNotSupported() {
+        String sql = "SELECT * FROM datamart.mat_view";
+        SqlNode viewQuery = definitionService.processingQuery(sql);
+
+        ViewReplaceContext context = ViewReplaceContext.builder()
+                .viewReplacerService(viewReplacerService)
+                .allNodes(new SqlSelectTree(viewQuery))
+                .build();
+
+        val deltaInformation = new DeltaInformation(
+                "",
+                null,
+                true,
+                DeltaType.NUM,
+                null,
+                null,
+                "datamart",
+                "mat_view",
+                null
+        );
+
+        when(deltaInformationExtractor.getDeltaInformation(any(), any()))
+                .thenReturn(deltaInformation);
+
+        boolean thrown = false;
+        try {
+            viewReplacer.replace(context);
+        } catch (DtmException e) {
+            thrown = true;
+            verify(viewReplacerService, never()).replace(any());
+        }
+
+        if (!thrown) {
+            fail("DtmException was expected");
+        }
     }
 
 }

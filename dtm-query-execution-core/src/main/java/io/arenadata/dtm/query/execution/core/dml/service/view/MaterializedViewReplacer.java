@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.core.dml.service.view;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.calcite.core.util.CalciteUtil;
 import io.arenadata.dtm.query.execution.core.base.service.delta.DeltaInformationExtractor;
@@ -34,6 +35,9 @@ public class MaterializedViewReplacer implements ViewReplacer {
                 return handleDateTime(context, deltaInformation.getDeltaTimestamp());
             }
             case NUM: {
+                if (deltaInformation.isLatestUncommittedDelta()) {
+                    throw new DtmException("LATEST_UNCOMMITTED_DELTA is not supported for materialized views");
+                }
                 return handleDeltaNum(context, deltaInformation.getSelectOnNum());
             }
             case WITHOUT_SNAPSHOT:

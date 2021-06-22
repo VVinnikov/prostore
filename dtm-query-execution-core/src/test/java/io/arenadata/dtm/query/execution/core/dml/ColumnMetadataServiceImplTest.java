@@ -18,20 +18,17 @@ import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.jackson.DatabindCodec;
 import io.vertx.junit5.VertxTestContext;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParser;
-import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
 
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static io.arenadata.dtm.query.execution.core.utils.TestUtils.loadTextFromFile;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -78,13 +75,5 @@ class ColumnMetadataServiceImplTest {
                     }
                 });
         assertThat(testContext.awaitCompletion(5, TimeUnit.SECONDS)).isTrue();
-    }
-
-    @SneakyThrows
-    String loadTextFromFile(String path) {
-        try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(path)) {
-            assert inputStream != null;
-            return IOUtils.toString(inputStream, StandardCharsets.UTF_8);
-        }
     }
 }

@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.plugin.adb.synchronize.service;
+package io.arenadata.dtm.query.execution.plugin.adb.synchronize.service.impl;
 
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.plugin.adb.synchronize.executors.SynchronizeDestinationExecutorDelegate;

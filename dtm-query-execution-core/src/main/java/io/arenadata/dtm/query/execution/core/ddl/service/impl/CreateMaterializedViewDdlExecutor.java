@@ -4,6 +4,7 @@ import io.arenadata.dtm.cache.service.CacheService;
 import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.dto.QueryParserResponse;
 import io.arenadata.dtm.common.exception.DtmException;
+import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityType;
@@ -16,6 +17,7 @@ import io.arenadata.dtm.query.calcite.core.node.SqlTreeNode;
 import io.arenadata.dtm.query.calcite.core.rel2sql.NullNotCastableRelToSqlConverter;
 import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
 import io.arenadata.dtm.query.execution.core.base.dto.cache.EntityKey;
+import io.arenadata.dtm.query.execution.core.base.dto.cache.MaterializedViewCacheValue;
 import io.arenadata.dtm.query.execution.core.base.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.base.exception.entity.EntityAlreadyExistsException;
 import io.arenadata.dtm.query.execution.core.base.exception.materializedview.MaterializedViewValidationException;
@@ -58,10 +60,12 @@ import static io.arenadata.dtm.query.execution.core.ddl.utils.ValidationUtils.ch
 public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
     private static final String VIEW_AND_TABLE_PATTERN = "(?i).*(JOIN|SELECT)\\.(|AS\\.)(SNAPSHOT|IDENTIFIER)$";
     private static final String ALL_COLUMNS = "*";
+    private static final int UUID_SIZE = 36;
     private final SqlDialect sqlDialect;
     private final DatamartDao datamartDao;
     private final EntityDao entityDao;
     private final CacheService<EntityKey, Entity> entityCacheService;
+    private final CacheService<EntityKey, MaterializedViewCacheValue> materializedViewCacheService;
     private final LogicalSchemaProvider logicalSchemaProvider;
     private final QueryParserService parserService;
     private final ColumnMetadataService columnMetadataService;
@@ -73,6 +77,7 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
                                              ServiceDbFacade serviceDbFacade,
                                              @Qualifier("coreSqlDialect") SqlDialect sqlDialect,
                                              @Qualifier("entityCacheService") CacheService<EntityKey, Entity> entityCacheService,
+                                             @Qualifier("materializedViewCacheService") CacheService<EntityKey, MaterializedViewCacheValue> materializedViewCacheService,
                                              LogicalSchemaProvider logicalSchemaProvider,
                                              ColumnMetadataService columnMetadataService,
                                              @Qualifier("coreCalciteDMLQueryParserService") QueryParserService parserService,
@@ -83,6 +88,7 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
         this.datamartDao = serviceDbFacade.getServiceDbDao().getDatamartDao();
         this.entityDao = serviceDbFacade.getServiceDbDao().getEntityDao();
         this.entityCacheService = entityCacheService;
+        this.materializedViewCacheService = materializedViewCacheService;
         this.logicalSchemaProvider = logicalSchemaProvider;
         this.columnMetadataService = columnMetadataService;
         this.parserService = parserService;
@@ -140,7 +146,11 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
                     .compose(this::checkEntityNotExists)
                     .compose(e -> metadataExecutor.execute(context))
                     .compose(v -> entityDao.createEntity(context.getEntity()))
-                    .onSuccess(v -> p.complete(QueryResult.emptyResult()))
+                    .onSuccess(v -> {
+                        materializedViewCacheService.put(new EntityKey(context.getEntity().getSchema(), context.getEntity().getName()),
+                                new MaterializedViewCacheValue(context.getEntity()));
+                        p.complete(QueryResult.emptyResult());
+                    })
                     .onFailure(p::fail);
         });
     }
@@ -305,7 +315,7 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
             EntityField entityField = viewFields.get(i);
             ColumnMetadata columnMetadata = queryColumns.get(i);
 
-            if (entityField.getType() != columnMetadata.getType()) {
+            if (!isCompatibleTypes(entityField, columnMetadata)) {
                 throw MaterializedViewValidationException.columnTypesConflict(entity.getName(), entityField.getName(), entityField.getType(), columnMetadata.getType());
             }
 
@@ -316,6 +326,11 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
                         throw MaterializedViewValidationException.columnTypeAccuracyConflict(entity.getName(), entityField.getName(), entityField.getSize(), columnMetadata.getSize());
                     }
                     break;
+                case UUID:
+                    if (isMismatched(UUID_SIZE, columnMetadata)) {
+                        throw MaterializedViewValidationException.columnTypeSizeConflict(entity.getName(), entityField.getName(), UUID_SIZE, columnMetadata.getSize());
+                    }
+                    break;
                 default:
                     if (isMismatched(entityField.getSize(), columnMetadata)) {
                         throw MaterializedViewValidationException.columnTypeSizeConflict(entity.getName(), entityField.getName(), entityField.getSize(), columnMetadata.getSize());
@@ -323,6 +338,26 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
                     break;
             }
         }
+    }
+
+    private boolean isCompatibleTypes(EntityField entityField, ColumnMetadata columnMetadata) {
+        if (entityField.getType() == columnMetadata.getType()) {
+            return true;
+        }
+
+        if (entityField.getType() == ColumnType.INT32 && columnMetadata.getType() == ColumnType.INT) {
+            return true;
+        }
+
+        if (entityField.getType() == ColumnType.UUID && columnMetadata.getType() == ColumnType.VARCHAR) {
+            return true;
+        }
+
+        if (entityField.getType() == ColumnType.LINK && columnMetadata.getType() == ColumnType.VARCHAR) {
+            return true;
+        }
+
+        return false;
     }
 
     private boolean isMismatched(Integer sizeOrAccuracy, ColumnMetadata columnMetadata) {

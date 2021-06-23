@@ -10,6 +10,8 @@ import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.EntityDao
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.ServiceDbDao;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.impl.EntityDaoImpl;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.impl.ServiceDbDaoImpl;
+import io.arenadata.dtm.query.execution.core.base.service.delta.DeltaInformationExtractor;
+import io.arenadata.dtm.query.execution.core.base.service.delta.DeltaInformationService;
 import io.arenadata.dtm.query.execution.core.calcite.configuration.CalciteConfiguration;
 import io.arenadata.dtm.query.execution.core.calcite.service.CoreCalciteDefinitionService;
 import io.vertx.core.Future;
@@ -84,7 +86,9 @@ class ViewReplacerServiceTest {
     private final DefinitionService<SqlNode> definitionService =
             new CoreCalciteDefinitionService(config.configEddlParser(calciteCoreConfiguration.eddlParserImplFactory()));
     private final LogicViewReplacer logicViewReplacer = new LogicViewReplacer(definitionService);
-    private final MaterializedViewReplacer materializedViewReplacer = new MaterializedViewReplacer(definitionService, null, null);
+    private final DeltaInformationExtractor deltaInformationExtractor = mock(DeltaInformationExtractor.class);
+    private final DeltaInformationService deltaInformationService = mock(DeltaInformationService.class);
+    private final MaterializedViewReplacer materializedViewReplacer = new MaterializedViewReplacer(definitionService, deltaInformationExtractor, deltaInformationService);
     private final ViewReplacerService viewReplacerService = new ViewReplacerService(entityDao, logicViewReplacer, materializedViewReplacer);
 
     @BeforeEach
@@ -383,7 +387,7 @@ class ViewReplacerServiceTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void testMatViewNotReplaced() throws InterruptedException {
+    void testMatViewNotReplacedWhenNoHints() throws InterruptedException {
         val testContext = new VertxTestContext();
 
         when(entityDao.getEntity(any(), any()))
@@ -412,7 +416,7 @@ class ViewReplacerServiceTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void testMatViewReplaced() throws InterruptedException {
+    void testMatViewReplacedForSystemTime() throws InterruptedException {
         val testContext = new VertxTestContext();
 
         when(entityDao.getEntity(any(), any()))

@@ -1,6 +1,8 @@
 package io.arenadata.dtm.query.execution.core.dml.service.view;
 
+import io.arenadata.dtm.common.exception.DeltaRangeInvalidException;
 import io.arenadata.dtm.common.exception.DtmException;
+import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.calcite.core.util.CalciteUtil;
 import io.arenadata.dtm.query.execution.core.base.service.delta.DeltaInformationExtractor;
@@ -36,13 +38,18 @@ public class MaterializedViewReplacer implements ViewReplacer {
             }
             case NUM: {
                 if (deltaInformation.isLatestUncommittedDelta()) {
-                    throw new DtmException("LATEST_UNCOMMITTED_DELTA is not supported for materialized views");
+                    throw new DeltaRangeInvalidException("LATEST_UNCOMMITTED_DELTA is not supported for materialized views");
                 }
                 return handleDeltaNum(context, deltaInformation.getSelectOnNum());
             }
+            case STARTED_IN:
+            case FINISHED_IN: {
+                return handleDeltaInterval(context.getEntity(), deltaInformation.getSelectOnInterval().getSelectOnTo());
+            }
             case WITHOUT_SNAPSHOT:
-            default:
+            default: {
                 return Future.succeededFuture();
+            }
         }
     }
 
@@ -72,6 +79,18 @@ public class MaterializedViewReplacer implements ViewReplacer {
         }
 
         return replaceView(context);
+    }
+
+    private Future<Void> handleDeltaInterval(Entity matView, Long deltaTo) {
+        Long materializedViewDeltaNum = matView.getMaterializedDeltaNum();
+        if (!materializedViewIsSync(materializedViewDeltaNum, deltaTo)) {
+            log.error("Range invalid. Delta_to ({}) is greater than materialized view's delta ({})",
+                    deltaTo, materializedViewDeltaNum);
+            throw new DeltaRangeInvalidException(String.format("Invalid delta range for materialized view: [mat_view delta: %d, delta_to: %d]",
+                    materializedViewDeltaNum, deltaTo));
+        }
+
+        return Future.succeededFuture();
     }
 
     private boolean materializedViewIsSync(Long matViewDeltaNum, Long requestDeltaNum) {

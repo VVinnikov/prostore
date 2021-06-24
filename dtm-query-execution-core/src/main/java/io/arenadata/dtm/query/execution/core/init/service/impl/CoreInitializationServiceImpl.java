@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.core.init.service.impl;
 
 import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.query.execution.core.base.service.MaterializedViewSyncService;
 import io.arenadata.dtm.query.execution.core.plugin.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.init.service.CoreInitializationService;
 import io.arenadata.dtm.query.execution.core.base.service.metadata.InformationSchemaService;
@@ -26,6 +27,7 @@ public class CoreInitializationServiceImpl implements CoreInitializationService 
 
     private final DataSourcePluginService sourcePluginService;
     private final InformationSchemaService informationSchemaService;
+    private final MaterializedViewSyncService materializedViewSyncService;
     private final RestoreStateService restoreStateService;
     private final Vertx vertx;
     private final QueryWorkerStarter queryWorkerStarter;
@@ -34,12 +36,14 @@ public class CoreInitializationServiceImpl implements CoreInitializationService 
     @Autowired
     public CoreInitializationServiceImpl(DataSourcePluginService sourcePluginService,
                                          InformationSchemaService informationSchemaService,
+                                         MaterializedViewSyncService materializedViewSyncService,
                                          RestoreStateService restoreStateService,
                                          @Qualifier("coreVertx") Vertx vertx,
                                          QueryWorkerStarter queryWorkerStarter,
                                          List<Verticle> verticles) {
         this.sourcePluginService = sourcePluginService;
         this.informationSchemaService = informationSchemaService;
+        this.materializedViewSyncService = materializedViewSyncService;
         this.restoreStateService = restoreStateService;
         this.vertx = vertx;
         this.queryWorkerStarter = queryWorkerStarter;
@@ -55,6 +59,10 @@ public class CoreInitializationServiceImpl implements CoreInitializationService 
                     restoreStateService.restoreState()
                             .onFailure(fail -> log.error("Error in restoring state", fail));
                     return queryWorkerStarter.start(vertx);
+                })
+                .map(v -> {
+                    materializedViewSyncService.startPeriodicalSync();
+                    return v;
                 });
     }
 

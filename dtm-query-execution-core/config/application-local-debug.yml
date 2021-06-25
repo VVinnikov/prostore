@@ -114,6 +114,10 @@ adg:
       operationTimeout: ${TARANTOOL_DB_OPER_TIMEOUT:60000}
       retryCount: ${TARANTOOL_DB_RETRY_COUNT:0}
       engine: ${TARANTOOL_DEFAULT_ENGINE:MEMTX}
+      sync:
+        timeout_connect: ${TARANTOOL_DB_SYNC_CONNECTION_TIMEOUT:5000}
+        timeout_read: ${TARANTOOL_DB_SYNC_READ_TIMEOUT:5000}
+        timeout_request: ${TARANTOOL_DB_SYNC_REQUEST_TIMEOUT:5000}
     cartridge:
       url: ${TARANTOOL_CATRIDGE_URL:http://127.0.0.1:8081}
 

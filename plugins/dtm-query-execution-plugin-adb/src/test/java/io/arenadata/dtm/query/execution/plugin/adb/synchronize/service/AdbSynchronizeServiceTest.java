@@ -47,7 +47,8 @@ class AdbSynchronizeServiceTest {
         Entity entity = Entity.builder()
                 .destination(EnumSet.of(SourceType.ADB, SourceType.ADG, SourceType.ADQM))
                 .build();
-        SynchronizeRequest request = new SynchronizeRequest(UUID.randomUUID(), "dev", "datamart", entity);
+        SynchronizeRequest request = new SynchronizeRequest(UUID.randomUUID(), "dev", "datamart",
+                Collections.emptyList(), entity, null, null, null);
 
         when(executorDelegate.execute(Mockito.any(), Mockito.same(request))).thenReturn(Future.succeededFuture(SUCCEED_DELTA_NUM));
 
@@ -67,8 +68,7 @@ class AdbSynchronizeServiceTest {
                 verify(executorDelegate).execute(Mockito.eq(SourceType.ADQM), Mockito.same(request));
 
                 assertEquals(SUCCEED_DELTA_NUM, result.result());
-            });
-            ctx.completeNow();
+            }).completeNow();
         });
     }
 
@@ -78,7 +78,7 @@ class AdbSynchronizeServiceTest {
         Entity entity = Entity.builder()
                 .destination(EnumSet.of(SourceType.ADB, SourceType.ADG, SourceType.ADQM))
                 .build();
-        SynchronizeRequest request = new SynchronizeRequest(UUID.randomUUID(), "dev", "datamart", entity);
+        SynchronizeRequest request = new SynchronizeRequest(UUID.randomUUID(), "dev", "datamart", null, entity, null, null, null);
 
         when(executorDelegate.execute(Mockito.any(), Mockito.same(request))).thenReturn(Future.succeededFuture(SUCCEED_DELTA_NUM));
         when(executorDelegate.execute(Mockito.eq(SourceType.ADB), Mockito.same(request))).thenReturn(Future.succeededFuture(FAILED_DELTA_NUM));
@@ -100,8 +100,7 @@ class AdbSynchronizeServiceTest {
 
                 assertSame(SynchronizeDatasourceException.class, result.cause().getClass());
                 assertTrue(result.cause().getMessage().contains("result deltaNum not equal"));
-            });
-            ctx.completeNow();
+            }).completeNow();
         });
     }
 
@@ -111,7 +110,7 @@ class AdbSynchronizeServiceTest {
         Entity entity = Entity.builder()
                 .destination(EnumSet.of(SourceType.ADB, SourceType.ADG, SourceType.ADQM))
                 .build();
-        SynchronizeRequest request = new SynchronizeRequest(UUID.randomUUID(), "dev", "datamart", entity);
+        SynchronizeRequest request = new SynchronizeRequest(UUID.randomUUID(), "dev", "datamart", null, entity, null, null, null);
 
         when(executorDelegate.execute(Mockito.any(), Mockito.same(request))).thenReturn(Future.succeededFuture(SUCCEED_DELTA_NUM));
         when(executorDelegate.execute(Mockito.eq(SourceType.ADB), Mockito.same(request))).thenReturn(Future.failedFuture(new SynchronizeDatasourceException("Not implemented")));
@@ -133,8 +132,7 @@ class AdbSynchronizeServiceTest {
 
                 assertSame(SynchronizeDatasourceException.class, result.cause().getClass());
                 assertTrue(result.cause().getMessage().contains("Not implemented"));
-            });
-            ctx.completeNow();
+            }).completeNow();
         });
     }
 
@@ -144,7 +142,7 @@ class AdbSynchronizeServiceTest {
         Entity entity = Entity.builder()
                 .destination(Collections.emptySet())
                 .build();
-        SynchronizeRequest request = new SynchronizeRequest(UUID.randomUUID(), "dev", "datamart", entity);
+        SynchronizeRequest request = new SynchronizeRequest(UUID.randomUUID(), "dev", "datamart", null, entity, null, null, null);
 
 
         // act
@@ -160,8 +158,7 @@ class AdbSynchronizeServiceTest {
             ctx.verify(() -> {
                 assertSame(SynchronizeDatasourceException.class, result.cause().getClass());
                 assertTrue(result.cause().getMessage().contains("result deltaNum not equal"));
-            });
-            ctx.completeNow();
+            }).completeNow();
         });
     }
 

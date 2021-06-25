@@ -56,7 +56,7 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
 
     @Override
     public Future<PrepareRequestOfChangesResult> prepare(PrepareRequestOfChangesRequest request) {
-        return parserService.parse(new QueryParserRequest(request.getViewQuery(), request.getDatamart()))
+        return parserService.parse(new QueryParserRequest(request.getViewQuery(), request.getDatamarts()))
                 .compose(this::replaceTimeBasedColumns)
                 .compose(sqlNode -> prepareQueriesOfChanges(sqlNode, request));
     }
@@ -115,7 +115,7 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
 
             addSystemColumns(sqlNodesTree, sysOp);
 
-            queryEnrichmentService.enrich(new EnrichQueryRequest(deltaInformations, request.getDatamart(), request.getEnvName(), sqlNode))
+            queryEnrichmentService.enrich(new EnrichQueryRequest(deltaInformations, request.getDatamarts(), request.getEnvName(), sqlNode))
                     .onComplete(promise);
         });
     }

@@ -22,7 +22,8 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SynchronizeDestinationExecutorDelegateImplTest {
-    private static final SynchronizeRequest REQUEST = new SynchronizeRequest(UUID.randomUUID(), "dev", "test", Entity.builder().build());
+    private static final SynchronizeRequest REQUEST = new SynchronizeRequest(UUID.randomUUID(), "dev", "test", null, Entity.builder().build(),
+            null, null, null);
 
     @Mock
     private SynchronizeDestinationExecutor executor1;

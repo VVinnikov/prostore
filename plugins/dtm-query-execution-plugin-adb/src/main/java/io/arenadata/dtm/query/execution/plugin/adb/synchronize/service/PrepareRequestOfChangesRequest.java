@@ -8,7 +8,7 @@ import java.util.List;
 
 @Data
 public class PrepareRequestOfChangesRequest {
-    private final List<Datamart> datamart;
+    private final List<Datamart> datamarts;
     private final String envName;
     private final long deltaNumToBe;
     private final SqlNode viewQuery;

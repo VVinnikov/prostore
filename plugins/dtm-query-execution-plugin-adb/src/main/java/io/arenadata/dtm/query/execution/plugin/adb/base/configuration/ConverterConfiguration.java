@@ -25,8 +25,8 @@ public class ConverterConfiguration {
         transformerMap.put(ColumnType.INT, getTransformerMap(new AdbLongFromNumericTransformer()));
         transformerMap.put(ColumnType.INT32, getTransformerMap(new AdbLongFromNumericTransformer()));
         transformerMap.put(ColumnType.VARCHAR, getTransformerMap(new VarcharFromStringTransformer()));
-        transformerMap.put(ColumnType.LINK, transformerMap.get(ColumnType.VARCHAR));
-        transformerMap.put(ColumnType.CHAR, transformerMap.get(ColumnType.VARCHAR));
+        transformerMap.put(ColumnType.LINK, getTransformerMap(new VarcharFromStringTransformer()));
+        transformerMap.put(ColumnType.CHAR, getTransformerMap(new VarcharFromStringTransformer()));
         transformerMap.put(ColumnType.BIGINT, getTransformerMap(new AdbBigintFromNumberTransformer()));
         transformerMap.put(ColumnType.DOUBLE, getTransformerMap(new AdbDoubleFromNumberTransformer()));
         transformerMap.put(ColumnType.FLOAT, getTransformerMap(new AdbFloatFromNumberTransformer()));
@@ -50,8 +50,9 @@ public class ConverterConfiguration {
         transformerMap.put(ColumnType.INT, getTransformerMap(new NumberFromLongTransformer()));
         transformerMap.put(ColumnType.INT32, getTransformerMap(new NumberFromLongTransformer()));
         transformerMap.put(ColumnType.VARCHAR, getTransformerMap(new VarcharFromStringTransformer()));
-        transformerMap.put(ColumnType.CHAR, transformerMap.get(ColumnType.VARCHAR));
-        transformerMap.put(ColumnType.LINK, transformerMap.get(ColumnType.VARCHAR));
+        transformerMap.put(ColumnType.CHAR, getTransformerMap(new VarcharFromStringTransformer()));
+        transformerMap.put(ColumnType.LINK, getTransformerMap(new VarcharFromStringTransformer()));
+        transformerMap.put(ColumnType.UUID, getTransformerMap(new VarcharFromStringTransformer()));
         transformerMap.put(ColumnType.BIGINT, getTransformerMap(new NumberFromBigintTransformer()));
         transformerMap.put(ColumnType.DOUBLE, getTransformerMap(new NumberFromDoubleTransformer()));
         transformerMap.put(ColumnType.FLOAT, getTransformerMap(new NumberFromFloatTransformer()));

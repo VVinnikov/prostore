@@ -59,7 +59,7 @@ class ColumnMetadataServiceImplTest {
                 new ColumnMetadata("date_col", ColumnType.DATE),
                 new ColumnMetadata("timestamp_col", ColumnType.TIMESTAMP, 6),
                 new ColumnMetadata("time_col", ColumnType.TIME, 5),
-                new ColumnMetadata("uuid_col", ColumnType.VARCHAR, 36),
+                new ColumnMetadata("uuid_col", ColumnType.UUID, 36),
                 new ColumnMetadata("char_col", ColumnType.CHAR, 10),
                 new ColumnMetadata("int32_col", ColumnType.INT32),
                 new ColumnMetadata("link_col", ColumnType.LINK));

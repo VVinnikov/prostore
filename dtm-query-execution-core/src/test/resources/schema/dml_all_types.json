@@ -131,7 +131,7 @@
           {
             "ordinalPosition": 10,
             "name": "uuid_col",
-            "type": "VARCHAR",
+            "type": "UUID",
             "size": 36,
             "accuracy": null,
             "nullable": true,

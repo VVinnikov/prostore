@@ -19,8 +19,11 @@ public class ConverterConfiguration {
     public Map<ColumnType, Map<Class<?>, ColumnTransformer>> adgFromSqlTransformerMap(DtmConfig dtmSettings) {
         Map<ColumnType, Map<Class<?>, ColumnTransformer>> transformerMap = new HashMap<>();
         transformerMap.put(ColumnType.INT, getTransformerMap(new NumberFromLongTransformer()));
+        transformerMap.put(ColumnType.INT32, getTransformerMap(new NumberFromLongTransformer()));
         transformerMap.put(ColumnType.VARCHAR, getTransformerMap(new VarcharFromStringTransformer()));
-        transformerMap.put(ColumnType.CHAR, transformerMap.get(ColumnType.VARCHAR));
+        transformerMap.put(ColumnType.CHAR, getTransformerMap(new VarcharFromStringTransformer()));
+        transformerMap.put(ColumnType.LINK, getTransformerMap(new VarcharFromStringTransformer()));
+        transformerMap.put(ColumnType.UUID, getTransformerMap(new VarcharFromStringTransformer()));
         transformerMap.put(ColumnType.BIGINT, getTransformerMap(new NumberFromBigintTransformer()));
         transformerMap.put(ColumnType.DOUBLE, getTransformerMap(new NumberFromDoubleTransformer()));
         transformerMap.put(ColumnType.FLOAT, getTransformerMap(new NumberFromFloatTransformer()));

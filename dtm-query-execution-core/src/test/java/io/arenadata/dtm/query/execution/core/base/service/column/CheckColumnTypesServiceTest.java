@@ -59,7 +59,7 @@ class CheckColumnTypesServiceTest {
                 createEntityField(9, "date_col", ColumnType.DATE, null, null, null),
                 createEntityField(7, "timestamp_col", ColumnType.TIMESTAMP, 6, null, null),
                 createEntityField(8, "time_col", ColumnType.TIME, 5, null, null),
-                createEntityField(9, "uuid_col", ColumnType.VARCHAR, 36, null, null),
+                createEntityField(9, "uuid_col", ColumnType.UUID, 36, null, null),
                 createEntityField(9, "char_col", ColumnType.CHAR, 10, null, null),
                 createEntityField(9, "int32_col", ColumnType.INT32, null, null, null),
                 createEntityField(9, "link_col", ColumnType.LINK, null, null, null)
@@ -96,7 +96,7 @@ class CheckColumnTypesServiceTest {
                 createEntityField(9, "date_col", ColumnType.DATE, null, null, null),
                 createEntityField(7, "timestamp_col", ColumnType.TIMESTAMP, 6, null, null),
                 createEntityField(8, "time_col", ColumnType.TIME, 5, null, null),
-                createEntityField(9, "uuid_col", ColumnType.VARCHAR, 36, null, null),
+                createEntityField(9, "uuid_col", ColumnType.UUID, 36, null, null),
                 createEntityField(9, "char_col", ColumnType.CHAR, 10, null, null),
                 createEntityField(9, "int32_col", ColumnType.INT32, null, null, null)
         );

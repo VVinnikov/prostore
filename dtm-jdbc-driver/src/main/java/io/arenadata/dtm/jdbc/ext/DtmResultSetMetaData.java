@@ -124,7 +124,7 @@ public class DtmResultSetMetaData implements ResultSetMetaData {
         if (type == ColumnType.INT || type == ColumnType.INT32) {
             return JDBCType.INTEGER.getVendorTypeNumber();
         }
-        if (type == ColumnType.ANY || type == ColumnType.LINK) {
+        if (type == ColumnType.ANY || type == ColumnType.LINK || type == ColumnType.UUID) {
             return JDBCType.VARCHAR.getVendorTypeNumber();
         } else {
             return JDBCType

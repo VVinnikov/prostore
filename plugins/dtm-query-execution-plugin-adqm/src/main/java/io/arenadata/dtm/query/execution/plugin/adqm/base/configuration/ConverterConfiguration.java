@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.time.format.DateTimeFormatter;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,10 +23,10 @@ public class ConverterConfiguration {
     public Map<ColumnType, Map<Class<?>, ColumnTransformer>> transformerMap(DtmConfig dtmSettings) {
         Map<ColumnType, Map<Class<?>, ColumnTransformer>> transformerMap = new HashMap<>();
         transformerMap.put(ColumnType.INT, getTransformerMap(new LongFromNumberTransformer()));
-        transformerMap.put(ColumnType.INT32, transformerMap.get(ColumnType.INT));
+        transformerMap.put(ColumnType.INT32, getTransformerMap(new LongFromNumberTransformer()));
         transformerMap.put(ColumnType.VARCHAR, getTransformerMap(new VarcharFromStringTransformer()));
-        transformerMap.put(ColumnType.CHAR, transformerMap.get(ColumnType.VARCHAR));
-        transformerMap.put(ColumnType.LINK, transformerMap.get(ColumnType.VARCHAR));
+        transformerMap.put(ColumnType.CHAR, getTransformerMap(new VarcharFromStringTransformer()));
+        transformerMap.put(ColumnType.LINK, getTransformerMap(new VarcharFromStringTransformer()));
         transformerMap.put(ColumnType.BIGINT, getTransformerMap(new BigintFromNumberTransformer()));
         transformerMap.put(ColumnType.DOUBLE, getTransformerMap(new DoubleFromNumberTransformer()));
         transformerMap.put(ColumnType.FLOAT, getTransformerMap(new FloatFromNumberTransformer()));
@@ -43,11 +44,14 @@ public class ConverterConfiguration {
     }
 
     @Bean("adqmFromSqlTransformerMap")
-    public Map<ColumnType, Map<Class<?>, ColumnTransformer>> adqmFromSqlTransformerMap(DtmConfig dtmSettings) {
+    public Map<ColumnType, Map<Class<?>, ColumnTransformer>> adqmFromSqlTransformerMap() {
         Map<ColumnType, Map<Class<?>, ColumnTransformer>> transformerMap = new HashMap<>();
         transformerMap.put(ColumnType.INT, getTransformerMap(new NumberFromLongTransformer()));
+        transformerMap.put(ColumnType.INT32, getTransformerMap(new NumberFromLongTransformer()));
         transformerMap.put(ColumnType.VARCHAR, getTransformerMap(new VarcharFromStringTransformer()));
-        transformerMap.put(ColumnType.CHAR, transformerMap.get(ColumnType.VARCHAR));
+        transformerMap.put(ColumnType.CHAR, getTransformerMap(new VarcharFromStringTransformer()));
+        transformerMap.put(ColumnType.LINK, getTransformerMap(new VarcharFromStringTransformer()));
+        transformerMap.put(ColumnType.UUID, getTransformerMap(new UuidFromStringTransformer()));
         transformerMap.put(ColumnType.BIGINT, getTransformerMap(new NumberFromBigintTransformer()));
         transformerMap.put(ColumnType.DOUBLE, getTransformerMap(new NumberFromDoubleTransformer()));
         transformerMap.put(ColumnType.FLOAT, getTransformerMap(new NumberFromFloatTransformer()));

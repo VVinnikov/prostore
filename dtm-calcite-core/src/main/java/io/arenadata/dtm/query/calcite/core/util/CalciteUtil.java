@@ -60,8 +60,9 @@ public final class CalciteUtil {
             case CHAR:
                 return CHAR;
             case VARCHAR:
-            case UUID:
                 return VARCHAR;
+            case UUID:
+                return VARBINARY;
             case LINK:
                 return BINARY;
             default:
@@ -95,6 +96,8 @@ public final class CalciteUtil {
                 return ColumnType.CHAR;
             case BINARY:
                 return ColumnType.LINK;
+            case VARBINARY:
+                return ColumnType.UUID;
             default:
                 return ColumnType.ANY;
         }

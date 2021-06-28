@@ -59,13 +59,11 @@ public class AdbSynchronizeService implements SynchronizeService {
     }
 
     private Future<SynchronizeResult> execute(SourceType destination, Supplier<Future<Long>> executorCall) {
-        return Future.future(promise -> {
-            vertx.executeBlocking(vertxPromise -> {
-                executorCall.get()
-                        .onSuccess(deltaNum -> vertxPromise.complete(new SynchronizeResult(destination, deltaNum)))
-                        .onFailure(vertxPromise::fail);
-            }, promise);
-        });
+        return Future.future(promise -> vertx.executeBlocking(vertxPromise -> {
+            executorCall.get()
+                    .onSuccess(deltaNum -> vertxPromise.complete(new SynchronizeResult(destination, deltaNum)))
+                    .onFailure(vertxPromise::fail);
+        }, promise));
     }
 
     @Data

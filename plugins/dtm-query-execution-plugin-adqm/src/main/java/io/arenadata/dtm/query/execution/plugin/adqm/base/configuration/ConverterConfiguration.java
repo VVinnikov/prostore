@@ -22,8 +22,10 @@ public class ConverterConfiguration {
     public Map<ColumnType, Map<Class<?>, ColumnTransformer>> transformerMap(DtmConfig dtmSettings) {
         Map<ColumnType, Map<Class<?>, ColumnTransformer>> transformerMap = new HashMap<>();
         transformerMap.put(ColumnType.INT, getTransformerMap(new LongFromNumberTransformer()));
+        transformerMap.put(ColumnType.INT32, transformerMap.get(ColumnType.INT));
         transformerMap.put(ColumnType.VARCHAR, getTransformerMap(new VarcharFromStringTransformer()));
         transformerMap.put(ColumnType.CHAR, transformerMap.get(ColumnType.VARCHAR));
+        transformerMap.put(ColumnType.LINK, transformerMap.get(ColumnType.VARCHAR));
         transformerMap.put(ColumnType.BIGINT, getTransformerMap(new BigintFromNumberTransformer()));
         transformerMap.put(ColumnType.DOUBLE, getTransformerMap(new DoubleFromNumberTransformer()));
         transformerMap.put(ColumnType.FLOAT, getTransformerMap(new FloatFromNumberTransformer()));

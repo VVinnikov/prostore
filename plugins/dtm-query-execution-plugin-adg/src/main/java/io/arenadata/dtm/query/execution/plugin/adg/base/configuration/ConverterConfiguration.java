@@ -17,13 +17,14 @@ public class ConverterConfiguration {
     @Bean("adgFromSqlTransformerMap")
     public Map<ColumnType, Map<Class<?>, ColumnTransformer>> adgFromSqlTransformerMap() {
         Map<ColumnType, Map<Class<?>, ColumnTransformer>> transformerMap = new HashMap<>();
-        transformerMap.put(ColumnType.INT, getTransformerMap(new NumberFromLongTransformer()));
-        transformerMap.put(ColumnType.INT32, getTransformerMap(new NumberFromLongTransformer()));
-        VarcharFromStringTransformer varcharFromStringTransformer = new VarcharFromStringTransformer();
-        transformerMap.put(ColumnType.VARCHAR, getTransformerMap(varcharFromStringTransformer));
-        transformerMap.put(ColumnType.CHAR, getTransformerMap(varcharFromStringTransformer));
-        transformerMap.put(ColumnType.LINK, getTransformerMap(varcharFromStringTransformer));
-        transformerMap.put(ColumnType.UUID, getTransformerMap(varcharFromStringTransformer));
+        Map<Class<?>, ColumnTransformer> numberFromLongTransformerMap = getTransformerMap(new NumberFromLongTransformer());
+        transformerMap.put(ColumnType.INT, numberFromLongTransformerMap);
+        transformerMap.put(ColumnType.INT32, numberFromLongTransformerMap);
+        Map<Class<?>, ColumnTransformer> varcharFromStringTransformerMap = getTransformerMap(new VarcharFromStringTransformer());
+        transformerMap.put(ColumnType.VARCHAR, varcharFromStringTransformerMap);
+        transformerMap.put(ColumnType.CHAR, varcharFromStringTransformerMap);
+        transformerMap.put(ColumnType.LINK, varcharFromStringTransformerMap);
+        transformerMap.put(ColumnType.UUID, varcharFromStringTransformerMap);
         transformerMap.put(ColumnType.BIGINT, getTransformerMap(new NumberFromBigintTransformer()));
         transformerMap.put(ColumnType.DOUBLE, getTransformerMap(new NumberFromDoubleTransformer()));
         transformerMap.put(ColumnType.FLOAT, getTransformerMap(new NumberFromFloatTransformer()));

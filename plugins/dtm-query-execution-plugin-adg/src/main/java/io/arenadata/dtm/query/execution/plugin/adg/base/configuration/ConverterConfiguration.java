@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.plugin.adg.base.configuration;
 
-import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.converter.transformer.ColumnTransformer;
 import io.arenadata.dtm.common.converter.transformer.impl.*;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
@@ -16,14 +15,15 @@ import static io.arenadata.dtm.common.converter.transformer.ColumnTransformer.ge
 public class ConverterConfiguration {
 
     @Bean("adgFromSqlTransformerMap")
-    public Map<ColumnType, Map<Class<?>, ColumnTransformer>> adgFromSqlTransformerMap(DtmConfig dtmSettings) {
+    public Map<ColumnType, Map<Class<?>, ColumnTransformer>> adgFromSqlTransformerMap() {
         Map<ColumnType, Map<Class<?>, ColumnTransformer>> transformerMap = new HashMap<>();
         transformerMap.put(ColumnType.INT, getTransformerMap(new NumberFromLongTransformer()));
         transformerMap.put(ColumnType.INT32, getTransformerMap(new NumberFromLongTransformer()));
-        transformerMap.put(ColumnType.VARCHAR, getTransformerMap(new VarcharFromStringTransformer()));
-        transformerMap.put(ColumnType.CHAR, getTransformerMap(new VarcharFromStringTransformer()));
-        transformerMap.put(ColumnType.LINK, getTransformerMap(new VarcharFromStringTransformer()));
-        transformerMap.put(ColumnType.UUID, getTransformerMap(new VarcharFromStringTransformer()));
+        VarcharFromStringTransformer varcharFromStringTransformer = new VarcharFromStringTransformer();
+        transformerMap.put(ColumnType.VARCHAR, getTransformerMap(varcharFromStringTransformer));
+        transformerMap.put(ColumnType.CHAR, getTransformerMap(varcharFromStringTransformer));
+        transformerMap.put(ColumnType.LINK, getTransformerMap(varcharFromStringTransformer));
+        transformerMap.put(ColumnType.UUID, getTransformerMap(varcharFromStringTransformer));
         transformerMap.put(ColumnType.BIGINT, getTransformerMap(new NumberFromBigintTransformer()));
         transformerMap.put(ColumnType.DOUBLE, getTransformerMap(new NumberFromDoubleTransformer()));
         transformerMap.put(ColumnType.FLOAT, getTransformerMap(new NumberFromFloatTransformer()));

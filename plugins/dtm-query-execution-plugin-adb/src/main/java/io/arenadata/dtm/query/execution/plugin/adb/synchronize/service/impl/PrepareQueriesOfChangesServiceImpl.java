@@ -6,7 +6,6 @@ import io.arenadata.dtm.common.delta.SelectOnInterval;
 import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.dto.QueryParserResponse;
 import io.arenadata.dtm.common.exception.DtmException;
-import io.arenadata.dtm.query.calcite.core.extension.snapshot.SqlDeltaSnapshot;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.calcite.core.node.SqlTreeNode;
 import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
@@ -21,7 +20,19 @@ import io.vertx.core.Future;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.calcite.sql.*;
+import org.apache.calcite.sql.SqlBasicCall;
+import org.apache.calcite.sql.SqlBasicTypeNameSpec;
+import org.apache.calcite.sql.SqlDataTypeSpec;
+import org.apache.calcite.sql.SqlDateLiteral;
+import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlIntervalQualifier;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlLiteral;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.SqlNumericLiteral;
+import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -128,7 +139,6 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
 
         SqlNodeList node = nodesByPathRegex.get(0).getNode();
         node.add(SqlLiteral.createExactNumeric(Integer.toString(sysOp), SqlParserPos.ZERO));
-        node.add(SqlLiteral.createNull(node.getParserPosition()));
     }
 
     private DeltaInformation addDeltaToTableQuery(SqlSelectTree sqlNodesTree, SqlTreeNode sqlTreeNode, DeltaType deltaType, long deltaNum) {
@@ -163,9 +173,6 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
             throw new DtmException(format("Unexpected delta type: %s, expected one of: %s",
                     deltaType, Arrays.asList(DeltaType.STARTED_IN, DeltaType.FINISHED_IN, DeltaType.NUM)));
         }
-
-        SqlDeltaSnapshot sqlDeltaSnapshot = new SqlDeltaSnapshot(parserPos, tableSqlNode, period, startedOperator, finishedOperator, sqlDeltaNum, null);
-        tableTreeNode.getSqlNodeSetter().accept(sqlDeltaSnapshot);
 
         SelectOnInterval builderInterval = null;
         Long builderDeltaNum = null;

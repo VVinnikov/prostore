@@ -179,7 +179,7 @@ public class MaterializedViewSyncService {
     private Future<Void> updateEntity(long deltaNum, MaterializedViewCacheValue cacheValue) {
         val entity = cacheValue.getEntity();
         val oldDeltaNum = entity.getMaterializedDeltaNum();
-        if (oldDeltaNum != deltaNum) {
+        if (oldDeltaNum == null || oldDeltaNum != deltaNum) {
             entity.setMaterializedDeltaNum(deltaNum);
             return entityDao.updateEntity(entity)
                     .map(v -> {

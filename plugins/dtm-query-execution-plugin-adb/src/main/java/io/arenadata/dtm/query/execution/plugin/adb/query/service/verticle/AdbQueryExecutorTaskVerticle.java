@@ -45,6 +45,7 @@ public class AdbQueryExecutorTaskVerticle extends AbstractVerticle {
         poolOptions.setPassword(adbProperties.getPassword());
         poolOptions.setMaxSize(adbProperties.getPoolSize());
         poolOptions.setCachePreparedStatements(true);
+        poolOptions.setPipeliningLimit(1);
         PgPool pool = PgClient.pool(vertx, poolOptions);
         adbQueryExecutor = new AdbQueryExecutor(pool, adbProperties.getFetchSize(), typeConverter, sqlTypeConverter);
 

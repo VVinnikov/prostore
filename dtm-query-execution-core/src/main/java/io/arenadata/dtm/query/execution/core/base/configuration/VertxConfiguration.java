@@ -23,6 +23,7 @@ public class VertxConfiguration implements ApplicationListener<ApplicationReadyE
         VertxOptions options = new VertxOptions();
         options.setWorkerPoolSize(properties.getWorkerPool());
         options.setEventLoopPoolSize(properties.getEventLoopPool());
+        options.setPreferNativeTransport(true);
         return Vertx.vertx(options);
     }
 

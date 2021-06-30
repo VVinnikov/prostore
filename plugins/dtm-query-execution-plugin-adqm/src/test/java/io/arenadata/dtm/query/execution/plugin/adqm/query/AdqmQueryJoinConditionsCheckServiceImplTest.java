@@ -5,13 +5,13 @@ import io.arenadata.dtm.calcite.adqm.configuration.AdqmCalciteConfiguration;
 import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
-import io.arenadata.dtm.query.execution.plugin.adqm.calcite.service.AdqmCalciteContextProvider;
-import io.arenadata.dtm.query.execution.plugin.adqm.calcite.factory.AdqmCalciteSchemaFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.calcite.configuration.CalciteConfiguration;
-import io.arenadata.dtm.query.execution.plugin.adqm.query.dto.AdqmCheckJoinRequest;
+import io.arenadata.dtm.query.execution.plugin.adqm.calcite.factory.AdqmCalciteSchemaFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.calcite.factory.AdqmSchemaFactory;
-import io.arenadata.dtm.query.execution.plugin.adqm.query.service.AdqmQueryJoinConditionsCheckService;
+import io.arenadata.dtm.query.execution.plugin.adqm.calcite.service.AdqmCalciteContextProvider;
 import io.arenadata.dtm.query.execution.plugin.adqm.calcite.service.AdqmCalciteDMLQueryParserService;
+import io.arenadata.dtm.query.execution.plugin.adqm.query.dto.AdqmCheckJoinRequest;
+import io.arenadata.dtm.query.execution.plugin.adqm.query.service.AdqmQueryJoinConditionsCheckService;
 import io.arenadata.dtm.query.execution.plugin.adqm.query.service.AdqmQueryJoinConditionsCheckServiceImpl;
 import io.arenadata.dtm.query.execution.plugin.adqm.query.service.extractor.SqlJoinConditionExtractor;
 import io.arenadata.dtm.query.execution.plugin.adqm.query.service.extractor.SqlJoinConditionExtractorImpl;
@@ -214,7 +214,7 @@ class AdqmQueryJoinConditionsCheckServiceImplTest {
     void test(String sql, boolean expectedResult) {
         val testContext = new VertxTestContext();
         execute(sql, expectedResult, testContext);
-        assertThat(testContext.awaitCompletion(10, TimeUnit.SECONDS)).isTrue();
+        assertThat(testContext.awaitCompletion(30, TimeUnit.SECONDS)).isTrue();
         assertFalse(testContext.failed());
     }
 
@@ -222,7 +222,7 @@ class AdqmQueryJoinConditionsCheckServiceImplTest {
     void testWithExceptions(String sql) {
         val testContext = new VertxTestContext();
         execute(sql, false, testContext);
-        assertThat(testContext.awaitCompletion(10, TimeUnit.SECONDS)).isTrue();
+        assertThat(testContext.awaitCompletion(30, TimeUnit.SECONDS)).isTrue();
         assertTrue(testContext.failed());
     }
 

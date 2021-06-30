@@ -32,7 +32,6 @@ import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlNumericLiteral;
-import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -42,7 +41,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.lang.String.format;
@@ -56,6 +57,7 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
     private final QueryParserService parserService;
     private final SqlDialect sqlDialect;
     private final QueryEnrichmentService queryEnrichmentService;
+    private final Set<DeltaType> allowedDeltaTypes;
 
     public PrepareQueriesOfChangesServiceImpl(@Qualifier("adbCalciteDMLQueryParserService") QueryParserService parserService,
                                               @Qualifier("adbSqlDialect") SqlDialect sqlDialect,
@@ -63,6 +65,8 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
         this.parserService = parserService;
         this.sqlDialect = sqlDialect;
         this.queryEnrichmentService = queryEnrichmentService;
+
+        this.allowedDeltaTypes = EnumSet.of(DeltaType.STARTED_IN, DeltaType.FINISHED_IN, DeltaType.NUM);
     }
 
     @Override
@@ -142,34 +146,7 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
     }
 
     private DeltaInformation addDeltaToTableQuery(SqlSelectTree sqlNodesTree, SqlTreeNode sqlTreeNode, DeltaType deltaType, long deltaNum) {
-        SqlTreeNode tableTreeNode = sqlTreeNode;
-
-        String alias = "";
-        if (sqlTreeNode.getNode().getKind() == SqlKind.AS) {
-            List<SqlTreeNode> asNodes = sqlNodesTree.findNodesByParent(sqlTreeNode);
-            tableTreeNode = asNodes.get(0);
-            alias = ((SqlIdentifier) asNodes.get(1).getNode()).names.get(0);
-        }
-
-        SqlIdentifier tableSqlNode = tableTreeNode.getNode();
-        SqlParserPos parserPos = tableSqlNode.getParserPosition();
-
-        SqlNumericLiteral deltaNumSqlLiteral = SqlLiteral.createExactNumeric(Long.toString(deltaNum), parserPos);
-
-        SqlNode period;
-        SqlOperator startedOperator = null;
-        SqlOperator finishedOperator = null;
-        SqlNode sqlDeltaNum = null;
-        if (deltaType == DeltaType.STARTED_IN) {
-            startedOperator = SqlStdOperatorTable.IN;
-            period = new SqlBasicCall(SqlStdOperatorTable.ROW, new SqlNode[]{deltaNumSqlLiteral, deltaNumSqlLiteral}, parserPos);
-        } else if (deltaType == DeltaType.FINISHED_IN) {
-            finishedOperator = SqlStdOperatorTable.IN;
-            period = new SqlBasicCall(SqlStdOperatorTable.ROW, new SqlNode[]{deltaNumSqlLiteral, deltaNumSqlLiteral}, parserPos);
-        } else if (deltaType == DeltaType.NUM) {
-            sqlDeltaNum = deltaNumSqlLiteral;
-            period = SqlLiteral.createNull(parserPos);
-        } else {
+        if (!allowedDeltaTypes.contains(deltaType)) {
             throw new DtmException(format("Unexpected delta type: %s, expected one of: %s",
                     deltaType, Arrays.asList(DeltaType.STARTED_IN, DeltaType.FINISHED_IN, DeltaType.NUM)));
         }
@@ -182,6 +159,17 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
             builderDeltaNum = deltaNum;
         }
 
+        SqlTreeNode tableTreeNode = sqlTreeNode;
+
+        String alias = "";
+        if (sqlTreeNode.getNode().getKind() == SqlKind.AS) {
+            List<SqlTreeNode> asNodes = sqlNodesTree.findNodesByParent(sqlTreeNode);
+            tableTreeNode = asNodes.get(0);
+            alias = ((SqlIdentifier) asNodes.get(1).getNode()).names.get(0);
+        }
+
+        SqlIdentifier tableSqlNode = tableTreeNode.getNode();
+        SqlParserPos parserPos = tableSqlNode.getParserPosition();
 
         DeltaInformation.DeltaInformationBuilder latestUncommittedDelta = DeltaInformation.builder()
                 .pos(parserPos)
@@ -192,7 +180,6 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
                 .selectOnInterval(builderInterval)
                 .selectOnNum(builderDeltaNum)
                 .isLatestUncommittedDelta(false);
-
 
         return latestUncommittedDelta
                 .build();

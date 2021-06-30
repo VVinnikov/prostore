@@ -41,9 +41,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.lang.String.format;
@@ -57,7 +55,6 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
     private final QueryParserService parserService;
     private final SqlDialect sqlDialect;
     private final QueryEnrichmentService queryEnrichmentService;
-    private final Set<DeltaType> allowedDeltaTypes;
 
     public PrepareQueriesOfChangesServiceImpl(@Qualifier("adbCalciteDMLQueryParserService") QueryParserService parserService,
                                               @Qualifier("adbSqlDialect") SqlDialect sqlDialect,
@@ -65,8 +62,6 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
         this.parserService = parserService;
         this.sqlDialect = sqlDialect;
         this.queryEnrichmentService = queryEnrichmentService;
-
-        this.allowedDeltaTypes = EnumSet.of(DeltaType.STARTED_IN, DeltaType.FINISHED_IN, DeltaType.NUM);
     }
 
     @Override
@@ -146,11 +141,6 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
     }
 
     private DeltaInformation addDeltaToTableQuery(SqlSelectTree sqlNodesTree, SqlTreeNode sqlTreeNode, DeltaType deltaType, long deltaNum) {
-        if (!allowedDeltaTypes.contains(deltaType)) {
-            throw new DtmException(format("Unexpected delta type: %s, expected one of: %s",
-                    deltaType, Arrays.asList(DeltaType.STARTED_IN, DeltaType.FINISHED_IN, DeltaType.NUM)));
-        }
-
         SelectOnInterval builderInterval = null;
         Long builderDeltaNum = null;
         if (deltaType == DeltaType.FINISHED_IN || deltaType == DeltaType.STARTED_IN) {

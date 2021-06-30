@@ -99,7 +99,7 @@ public class ZookeeperExecutorImpl implements ZookeeperExecutor {
             } catch (Exception e) {
                 blockingPromise.fail(e);
             }
-        }, promise));
+        }, false, promise));
     }
 
     @Override

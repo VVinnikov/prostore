@@ -30,6 +30,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Component("adbMppwStartRequestExecutor")
@@ -69,7 +70,7 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
         }
         return Future.future((Promise<QueryResult> promise) -> {
             List<KafkaBrokerInfo> brokers = request.getBrokers();
-            getOrCreateServer(brokers, dbName)
+            getOrCreateServer(brokers, dbName, request.getRequestId())
                     .compose(server -> createWritableExternalTable(request, server))
                     .compose(server -> createMppwKafkaRequestContext(request, server))
                     .compose(kafkaContext -> moveOffsetsExtTable(request).map(v -> kafkaContext))
@@ -82,7 +83,7 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
         });
     }
 
-    private Future<String> getOrCreateServer(List<KafkaBrokerInfo> brokers, String currentDatabase) {
+    private Future<String> getOrCreateServer(List<KafkaBrokerInfo> brokers, String currentDatabase, UUID requestId) {
         return Future.future(promise -> {
             val columnMetadata = Collections.singletonList(
                     new ColumnMetadata("foreign_server_name", ColumnType.VARCHAR));
@@ -94,7 +95,7 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
             adbQueryExecutor.execute(serverSqlQuery, columnMetadata)
                     .compose(result -> {
                         if (result.isEmpty()) {
-                            return createServer(brokersList, currentDatabase);
+                            return createServer(brokersList, currentDatabase, requestId);
                         } else {
                             return Future.succeededFuture(result.get(0).get("foreign_server_name").toString());
                         }
@@ -103,9 +104,9 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
         });
     }
 
-    private Future<String> createServer(String brokersList, String currentDatabase) {
-        return adbQueryExecutor.execute(kafkaMppwSqlFactory.createServerSqlQuery(currentDatabase, brokersList), Collections.emptyList())
-                .map(v -> kafkaMppwSqlFactory.getServerName(currentDatabase));
+    private Future<String> createServer(String brokersList, String currentDatabase, UUID requestId) {
+        return adbQueryExecutor.executeUpdate(kafkaMppwSqlFactory.createServerSqlQuery(currentDatabase, requestId, brokersList))
+                .map(v -> kafkaMppwSqlFactory.getServerName(currentDatabase, requestId));
     }
 
     private Future<String> createWritableExternalTable(MppwKafkaRequest request, String server) {

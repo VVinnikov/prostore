@@ -1,6 +1,6 @@
-# Prostore 3.7.3, 2021-06-28
-### Changes
-* Updated vert.x connection pool internal parameter value in the ADB Plugin.
+# Prostore 3.7.3, 2021-06-30
+### Performance optimization
+* Optimized ADB sql client connection parameters to maximize requests throughput.
 * JDBC logging is off by default.
 * Query-execution-core new configuration parameters:
     * `executorsCount`: $\{ADB\_EXECUTORS\_COUNT:20\}

@@ -95,6 +95,7 @@ public class AdbQueryExecutor implements DatabaseExecutor {
                         promise.complete(result);
                     })
                     .onFailure(fail -> {
+                        log.error("ADB. Query failed to execute: [{}]", sql, fail);
                         if (connectionCtx.getConnection() != null) {
                             tryCloseConnect(connectionCtx.getConnection());
                         }

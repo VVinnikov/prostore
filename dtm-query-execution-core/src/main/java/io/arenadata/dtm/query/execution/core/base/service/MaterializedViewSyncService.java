@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Slf4j
@@ -122,7 +123,7 @@ public class MaterializedViewSyncService {
             return Future.succeededFuture(false);
         }
         return deltaServiceDao.getDeltaOk(datamart)
-                .map(okDelta -> ((okDelta != null && okDelta.getDeltaNum() >= 0)
+                .map(okDelta -> ((okDelta != null && okDelta.getDeltaNum() >= 0L)
                         && (matViewDeltaNum == null || matViewDeltaNum < okDelta.getDeltaNum())));
     }
 
@@ -179,7 +180,7 @@ public class MaterializedViewSyncService {
     private Future<Void> updateEntity(long deltaNum, MaterializedViewCacheValue cacheValue) {
         val entity = cacheValue.getEntity();
         val oldDeltaNum = entity.getMaterializedDeltaNum();
-        if (oldDeltaNum == null || oldDeltaNum != deltaNum) {
+        if (!Objects.equals(oldDeltaNum, deltaNum)) {
             entity.setMaterializedDeltaNum(deltaNum);
             return entityDao.updateEntity(entity)
                     .map(v -> {

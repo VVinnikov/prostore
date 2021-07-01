@@ -45,7 +45,7 @@ class AdgSynchronizeDestinationExecutorTest {
     private static final String INSERT_INTO_NEW_QUERY = "insert into " + NEW_QUERY;
     private static final String INSERT_INTO_DELETE_QUERY = "insert into " + DELETE_QUERY;
     private static final SqlNode VIEW_QUERY = new SqlNodeList(SqlParserPos.ZERO);
-    private static final String ENV = "enc";
+    private static final String ENV = "env";
     private static final String DATAMART = "datamart1";
     private static final String DATAMART_2 = "datamart2";
     private static final Long DELTA_NUM = 1L;
@@ -612,8 +612,7 @@ class AdgSynchronizeDestinationExecutorTest {
                 inOrder.verify(adgSharedService).prepareStaging(any());
 
                 // 5. assert insert into
-                inOrder.verify(synchronizeSqlFactory, times(2)).insertIntoExternalTable(any(), any(), any());
-                inOrder.verify(databaseExecutor).execute(any());
+                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any());
 
                 // 6. assert drop external table
                 inOrder.verify(synchronizeSqlFactory).dropExternalTable(any(), any());
@@ -675,8 +674,6 @@ class AdgSynchronizeDestinationExecutorTest {
                 inOrder.verify(adgSharedService).prepareStaging(any());
 
                 // 5. assert insert into
-                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any());
-                inOrder.verify(databaseExecutor).execute(any());
                 inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any());
                 inOrder.verify(databaseExecutor).execute(any());
 

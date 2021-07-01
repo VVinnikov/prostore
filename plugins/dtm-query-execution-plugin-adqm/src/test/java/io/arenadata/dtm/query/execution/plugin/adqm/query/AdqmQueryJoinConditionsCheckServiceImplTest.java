@@ -69,7 +69,7 @@ class AdqmQueryJoinConditionsCheckServiceImplTest {
                 "    INNER JOIN dml.categories c on dml.products.id = c.id\n" +
                 "    AND dml.products.product_name = c.category_name\n" +
                 "WHERE dml.products.category_id > 5\n" +
-                "    limit 5", true);
+                "    limit 5", false);
     }
 
     @Test
@@ -79,7 +79,7 @@ class AdqmQueryJoinConditionsCheckServiceImplTest {
                 "    INNER JOIN dml.categories c on p.id = c.id\n" +
                 "    AND p.product_name = c.category_name\n" +
                 "WHERE p.category_id > 5\n" +
-                "    limit 5", true);
+                "    limit 5", false);
     }
 
     @Test
@@ -89,7 +89,7 @@ class AdqmQueryJoinConditionsCheckServiceImplTest {
                 "    INNER JOIN dml.categories on dml.products.id = dml.categories.id\n" +
                 "    AND dml.products.product_name = dml.categories.category_name\n" +
                 "WHERE dml.products.category_id > 5\n" +
-                "    limit 5", true);
+                "    limit 5", false);
     }
 
     @Test
@@ -100,7 +100,7 @@ class AdqmQueryJoinConditionsCheckServiceImplTest {
                 "    AND p.distribution_id = c.distribution_id\n" +
                 "    AND p.product_name = c.category_name\n" +
                 "WHERE p.category_id > 5\n" +
-                "    limit 5", true);
+                "    limit 5", false);
     }
 
     @Test
@@ -237,8 +237,9 @@ class AdqmQueryJoinConditionsCheckServiceImplTest {
                         response.getRelNode().rel, datamarts)))
                 .onComplete(ar -> {
                     if (ar.succeeded()) {
-                        testContext.completeNow();
-                        assertEquals(ar.result(), expectedResult);
+                        testContext.verify(() -> {
+                            assertEquals(ar.result(), expectedResult);
+                        }).completeNow();
                     } else {
                         testContext.failNow(ar.cause());
                     }

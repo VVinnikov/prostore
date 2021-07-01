@@ -20,18 +20,7 @@ import io.vertx.core.Future;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.calcite.sql.SqlBasicCall;
-import org.apache.calcite.sql.SqlBasicTypeNameSpec;
-import org.apache.calcite.sql.SqlDataTypeSpec;
-import org.apache.calcite.sql.SqlDateLiteral;
-import org.apache.calcite.sql.SqlDialect;
-import org.apache.calcite.sql.SqlIdentifier;
-import org.apache.calcite.sql.SqlIntervalQualifier;
-import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlLiteral;
-import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlNodeList;
-import org.apache.calcite.sql.SqlNumericLiteral;
+import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -217,7 +206,7 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
         switch (columnType) {
             case DATE: {
                 SqlDateLiteral date = SqlDateLiteral.createDate(new DateString(1970, 1, 1), parserPosition);
-                return new SqlBasicCall(SqlStdOperatorTable.MINUS_DATE, new SqlNode[]{nodeToSurround, date}, parserPosition);
+                return new SqlBasicCall(SqlStdOperatorTable.MINUS_DATE, new SqlNode[]{nodeToSurround, date, new SqlIntervalQualifier(TimeUnit.DAY, TimeUnit.DAY, parserPosition)}, parserPosition);
             }
             case TIME:
             case TIMESTAMP: {

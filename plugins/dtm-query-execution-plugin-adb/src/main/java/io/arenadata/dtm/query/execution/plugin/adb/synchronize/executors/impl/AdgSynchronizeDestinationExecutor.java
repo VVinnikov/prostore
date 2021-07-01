@@ -12,7 +12,6 @@ import io.arenadata.dtm.query.execution.plugin.api.service.shared.adg.AdgSharedS
 import io.arenadata.dtm.query.execution.plugin.api.shared.adg.AdgSharedPrepareStagingRequest;
 import io.arenadata.dtm.query.execution.plugin.api.shared.adg.AdgSharedTransferDataRequest;
 import io.arenadata.dtm.query.execution.plugin.api.synchronize.SynchronizeRequest;
-import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -41,6 +40,7 @@ public class AdgSynchronizeDestinationExecutor implements SynchronizeDestination
     @Override
     public Future<Long> execute(SynchronizeRequest synchronizeRequest) {
         return Future.future(promise -> {
+            log.info("Started [ADB->ADG][{}] synchronization, deltaNum: {}", synchronizeRequest.getRequestId(), synchronizeRequest.getDeltaNumToBe());
             prepareQueriesOfChangesService.prepare(new PrepareRequestOfChangesRequest(synchronizeRequest.getDatamarts(), synchronizeRequest.getEnvName(),
                     synchronizeRequest.getDeltaNumToBe(), synchronizeRequest.getViewQuery()))
                     .compose(requestOfChanges -> synchronize(requestOfChanges, synchronizeRequest))
@@ -72,11 +72,9 @@ public class AdgSynchronizeDestinationExecutor implements SynchronizeDestination
                 synchronizeRequest.getEntity()));
     }
 
-    private Future<CompositeFuture> insertChanges(PrepareRequestOfChangesResult requestOfChanges, SynchronizeRequest synchronizeRequest) {
-        return CompositeFuture.join(
-                executeInsertIntoExternalTable(synchronizeRequest.getDatamartMnemonic(), synchronizeRequest.getEntity(), requestOfChanges.getDeletedRecordsQuery()),
-                executeInsertIntoExternalTable(synchronizeRequest.getDatamartMnemonic(), synchronizeRequest.getEntity(), requestOfChanges.getNewRecordsQuery())
-        );
+    private Future<List<Map<String, Object>>> insertChanges(PrepareRequestOfChangesResult requestOfChanges, SynchronizeRequest synchronizeRequest) {
+        return executeInsertIntoExternalTable(synchronizeRequest.getDatamartMnemonic(), synchronizeRequest.getEntity(), requestOfChanges.getDeletedRecordsQuery())
+                .compose(ar -> executeInsertIntoExternalTable(synchronizeRequest.getDatamartMnemonic(), synchronizeRequest.getEntity(), requestOfChanges.getNewRecordsQuery()));
     }
 
     private Future<Void> transferSpaceChanges(SynchronizeRequest synchronizeRequest) {

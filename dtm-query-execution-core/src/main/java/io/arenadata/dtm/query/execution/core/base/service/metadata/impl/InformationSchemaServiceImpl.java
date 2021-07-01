@@ -335,7 +335,7 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
                 .forEach(field -> {
                     val type = field.getType();
                     if (needComment(type)) {
-                        result.add(commentOnColumn(entity.getNameWithSchema(), field.getName(), getComment(type)));
+                        result.add(commentOnColumn(entity.getNameWithSchema(), field.getName(), type.toString()));
                     }
                 });
         return result;
@@ -355,12 +355,4 @@ public class InformationSchemaServiceImpl implements InformationSchemaService {
                 return false;
         }
     }
-
-    private String getComment(ColumnType type) {
-        if (type == ColumnType.UUID) {
-            return "VARCHAR";
-        }
-        return type.toString();
-    }
-
 }

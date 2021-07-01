@@ -268,11 +268,11 @@ class CreateMaterializedViewDdlExecutorTest {
 
         Promise<QueryResult> promise = Promise.promise();
 
-        when(datamartDao.existsDatamart(eq(SCHEMA)))
+        when(datamartDao.existsDatamart(SCHEMA))
                 .thenReturn(Future.succeededFuture(true));
-        when(entityDao.existsEntity(eq(SCHEMA), eq(MAT_VIEW_ENTITY_NAME)))
+        when(entityDao.existsEntity(SCHEMA, MAT_VIEW_ENTITY_NAME))
                 .thenReturn(Future.succeededFuture(false));
-        when(entityDao.getEntity(eq(TBL_SCHEMA), eq(tblEntity.getName())))
+        when(entityDao.getEntity(TBL_SCHEMA, tblEntity.getName()))
                 .thenReturn(Future.succeededFuture(tblEntity));
         when(metadataExecutor.execute(any())).thenReturn(Future.succeededFuture());
         when(entityDao.createEntity(any()))
@@ -345,6 +345,24 @@ class CreateMaterializedViewDdlExecutorTest {
         verifyNoInteractions(parserService, datamartDao, entityDao, materializedViewCacheService);
         assertTrue(promise.future().failed());
         assertException(InvalidSourceTypeException.class, "isn't a valid datasource type, please use one of the following:", promise.future().cause());
+    }
+
+    @Test
+    void shouldFailWhenForbiddenSystemNames() {
+        // arrange
+        DdlRequestContext context = getContext("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar(100), enddate timestamp(5), PRIMARY KEY(id))\n" +
+                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT id as sys_op FROM tbldatamart.tbl DATASOURCE_TYPE = 'ADB'");
+
+        Promise<QueryResult> promise = Promise.promise();
+
+        // act
+        createTableDdlExecutor.execute(context, MAT_VIEW_ENTITY_NAME)
+                .onComplete(promise);
+
+        // assert
+        verifyNoInteractions(parserService, datamartDao, entityDao, materializedViewCacheService);
+        assertTrue(promise.future().failed());
+        assertException(ViewDisalowedOrDirectiveException.class, "View query contains forbidden system name: sys_op", promise.future().cause());
     }
 
     @Test

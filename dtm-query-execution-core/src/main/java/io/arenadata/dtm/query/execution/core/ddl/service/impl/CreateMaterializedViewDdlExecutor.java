@@ -39,10 +39,8 @@ import io.vertx.core.Future;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.calcite.sql.SqlCharStringLiteral;
-import org.apache.calcite.sql.SqlDialect;
-import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.*;
+import org.apache.calcite.sql.util.SqlBasicVisitor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -57,6 +55,8 @@ import static io.arenadata.dtm.query.execution.core.ddl.utils.ValidationUtils.ch
 @Slf4j
 @Component
 public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
+    private static final List<String> SYSTEM_FORBIDDEN_NAMES = Arrays.asList("sys_op", "sys_from", "sys_to",
+            "sys_close_date", "bucket_id", "sign");
     private static final String VIEW_AND_TABLE_PATTERN = "(?i).*(JOIN|SELECT)\\.(|AS\\.)(SNAPSHOT|IDENTIFIER)$";
     private static final String ALL_COLUMNS = "*";
     private static final int UUID_SIZE = 36;
@@ -126,7 +126,8 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
                 }
             }
 
-            checkSnapshotNotExist(sqlNode)
+            checkSystemColumnNames(sqlNode)
+                    .compose(v -> checkSnapshotNotExist(sqlNode))
                     .compose(v -> checkEntitiesType(sqlNode, datamartName))
                     .onComplete(p);
         });
@@ -206,6 +207,24 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
         val sql = (SqlCreateMaterializedView) context.getSqlNode();
         val newSql = new SqlCreateMaterializedView(sql.getParserPosition(), sql.getName(), sql.getColumnList(), sql.getDistributedBy(), sql.getDestination(), newSelectNode);
         context.setSqlNode(newSql);
+    }
+
+    private Future<Void> checkSystemColumnNames(SqlNode sqlNode) {
+        return Future.future(p -> {
+            sqlNode.accept(new SqlBasicVisitor<Object>() {
+                @Override
+                public Object visit(SqlIdentifier id) {
+                    id.names.forEach(name -> {
+                        if (SYSTEM_FORBIDDEN_NAMES.contains(name)) {
+                            p.fail(new ViewDisalowedOrDirectiveException(sqlNode.toSqlString(sqlDialect).getSql(),
+                                    String.format("View query contains forbidden system name: %s", name)));
+                        }
+                    });
+                    return null;
+                }
+            });
+            p.complete();
+        });
     }
 
     private Future<Void> checkSnapshotNotExist(SqlNode sqlNode) {

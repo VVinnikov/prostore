@@ -42,6 +42,7 @@ public final class CalciteUtil {
             case BOOLEAN:
                 return BOOLEAN;
             case INT32:
+                return SMALLINT;
             case INT:
                 return INTEGER;
             case BIGINT:
@@ -59,9 +60,11 @@ public final class CalciteUtil {
             case CHAR:
                 return CHAR;
             case VARCHAR:
-            case UUID:
-            case LINK:
                 return VARCHAR;
+            case UUID:
+                return VARBINARY;
+            case LINK:
+                return BINARY;
             default:
                 return ANY;
         }
@@ -71,6 +74,8 @@ public final class CalciteUtil {
         switch (type) {
             case BOOLEAN:
                 return ColumnType.BOOLEAN;
+            case SMALLINT:
+                return ColumnType.INT32;
             case INTEGER:
                 return ColumnType.INT;
             case BIGINT:
@@ -89,6 +94,10 @@ public final class CalciteUtil {
                 return ColumnType.VARCHAR;
             case CHAR:
                 return ColumnType.CHAR;
+            case BINARY:
+                return ColumnType.LINK;
+            case VARBINARY:
+                return ColumnType.UUID;
             default:
                 return ColumnType.ANY;
         }

@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adb.synchronize.factory.impl;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
@@ -60,12 +61,34 @@ public class AdgSynchronizeSqlFactory implements SynchronizeSqlFactory {
             if (i > 0) {
                 builder.append(',');
             }
-            builder.append(field.getName()).append(' ').append(adbTypeFromDtmType(field.getType(), null));
+            builder.append(field.getName()).append(' ').append(mapType(field.getType()));
         }
 
-        builder.append(",sys_op ").append(adbTypeFromDtmType(ColumnType.BIGINT, null));
-        builder.append(",bucket_id ").append(adbTypeFromDtmType(ColumnType.BIGINT, null));
+        builder.append(",sys_op ").append(mapType(ColumnType.BIGINT));
+        builder.append(",bucket_id ").append(mapType(ColumnType.BIGINT));
         return builder.toString();
     }
 
+    private String mapType(ColumnType type) {
+        switch (type) {
+            case VARCHAR:
+            case CHAR:
+            case UUID:
+            case LINK:
+                return adbTypeFromDtmType(ColumnType.VARCHAR, null);
+            case BIGINT:
+            case INT:
+            case DATE:
+            case TIME:
+            case TIMESTAMP:
+                return adbTypeFromDtmType(ColumnType.BIGINT, null);
+            case BOOLEAN:
+            case INT32:
+            case DOUBLE:
+            case FLOAT:
+                return adbTypeFromDtmType(type, null);
+            default:
+                throw new DtmException("Could not map type to external table type: " + type.name());
+        }
+    }
 }

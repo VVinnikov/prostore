@@ -161,10 +161,10 @@ class PrepareQueriesOfChangesServiceImplTest {
         Future<PrepareRequestOfChangesResult> result = queriesOfChangesService.prepare(new PrepareRequestOfChangesRequest(SINGLE_DATAMART, "dev", 10, query));
 
         // assert
-        String expectedNewQuery = "SELECT dates.id, CAST(EXTRACT(EPOCH FROM dates.col_timestamp) * 1000000 AS BIGINT), (dates.col_date - DATE '1970-01-01'), CAST(EXTRACT(EPOCH FROM dates.col_time) * 1000000 AS BIGINT), 0, NULL\n" +
-                "FROM datamart1.dates FOR SYSTEM_TIME STARTED IN (10,10) AS dates";
-        String expectedDeletedQuery = "SELECT dates.id, CAST(EXTRACT(EPOCH FROM dates.col_timestamp) * 1000000 AS BIGINT), (dates.col_date - DATE '1970-01-01'), CAST(EXTRACT(EPOCH FROM dates.col_time) * 1000000 AS BIGINT), 1, NULL\n" +
-                "FROM datamart1.dates FOR SYSTEM_TIME FINISHED IN (10,10) AS dates";
+        String expectedNewQuery = "SELECT dates.id, CAST(EXTRACT(EPOCH FROM dates.col_timestamp) * 1000000 AS BIGINT), (dates.col_date - DATE '1970-01-01') DAY, CAST(EXTRACT(EPOCH FROM dates.col_time) * 1000000 AS BIGINT), 0\n" +
+                "FROM datamart1.dates AS dates";
+        String expectedDeletedQuery = "SELECT dates.id, CAST(EXTRACT(EPOCH FROM dates.col_timestamp) * 1000000 AS BIGINT), (dates.col_date - DATE '1970-01-01') DAY, CAST(EXTRACT(EPOCH FROM dates.col_time) * 1000000 AS BIGINT), 1\n" +
+                "FROM datamart1.dates AS dates";
 
         result.onComplete(event -> {
             if (event.failed()) {
@@ -205,26 +205,26 @@ class PrepareQueriesOfChangesServiceImplTest {
         Future<PrepareRequestOfChangesResult> result = queriesOfChangesService.prepare(new PrepareRequestOfChangesRequest(TWO_DATAMARTS, "dev", 10, query));
 
         // assert
-        String expectedNewFreshQuery = "SELECT t0.id, CAST(EXTRACT(EPOCH FROM t0.col_timestamp) * 1000000 AS BIGINT), (t0.col_date - DATE '1970-01-01'), CAST(EXTRACT(EPOCH FROM t0.col_time) * 1000000 AS BIGINT), t0.name, t3.surname, 0, NULL\n" +
+        String expectedNewFreshQuery = "SELECT t0.id, CAST(EXTRACT(EPOCH FROM t0.col_timestamp) * 1000000 AS BIGINT), (t0.col_date - DATE '1970-01-01') DAY, CAST(EXTRACT(EPOCH FROM t0.col_time) * 1000000 AS BIGINT), t0.name, t3.surname, 0\n" +
                 "FROM (SELECT t1.id, t1.col_timestamp, t1.col_date, t1.col_time, t2.name\n" +
-                "FROM datamart1.dates FOR SYSTEM_TIME AS OF DELTA_NUM 10 AS t1\n" +
-                "INNER JOIN datamart2.names FOR SYSTEM_TIME AS OF DELTA_NUM 10 AS t2 ON t1.id = t2.id) AS t0\n" +
-                "INNER JOIN datamart1.surnames FOR SYSTEM_TIME AS OF DELTA_NUM 10 AS t3 ON t0.id = t3.id";
-        String expectedNewStaleQuery = "SELECT t0.id, CAST(EXTRACT(EPOCH FROM t0.col_timestamp) * 1000000 AS BIGINT), (t0.col_date - DATE '1970-01-01'), CAST(EXTRACT(EPOCH FROM t0.col_time) * 1000000 AS BIGINT), t0.name, t3.surname, 0, NULL\n" +
+                "FROM datamart1.dates AS t1\n" +
+                "INNER JOIN datamart2.names AS t2 ON t1.id = t2.id) AS t0\n" +
+                "INNER JOIN datamart1.surnames AS t3 ON t0.id = t3.id";
+        String expectedNewStaleQuery = "SELECT t0.id, CAST(EXTRACT(EPOCH FROM t0.col_timestamp) * 1000000 AS BIGINT), (t0.col_date - DATE '1970-01-01') DAY, CAST(EXTRACT(EPOCH FROM t0.col_time) * 1000000 AS BIGINT), t0.name, t3.surname, 0\n" +
                 "FROM (SELECT t1.id, t1.col_timestamp, t1.col_date, t1.col_time, t2.name\n" +
-                "FROM datamart1.dates FOR SYSTEM_TIME AS OF DELTA_NUM 9 AS t1\n" +
-                "INNER JOIN datamart2.names FOR SYSTEM_TIME AS OF DELTA_NUM 9 AS t2 ON t1.id = t2.id) AS t0\n" +
-                "INNER JOIN datamart1.surnames FOR SYSTEM_TIME AS OF DELTA_NUM 9 AS t3 ON t0.id = t3.id";
-        String expectedDeletedFreshQuery = "SELECT t0.id, CAST(EXTRACT(EPOCH FROM t0.col_timestamp) * 1000000 AS BIGINT), (t0.col_date - DATE '1970-01-01'), CAST(EXTRACT(EPOCH FROM t0.col_time) * 1000000 AS BIGINT), t0.name, t3.surname, 1, NULL\n" +
+                "FROM datamart1.dates AS t1\n" +
+                "INNER JOIN datamart2.names AS t2 ON t1.id = t2.id) AS t0\n" +
+                "INNER JOIN datamart1.surnames AS t3 ON t0.id = t3.id";
+        String expectedDeletedFreshQuery = "SELECT t0.id, CAST(EXTRACT(EPOCH FROM t0.col_timestamp) * 1000000 AS BIGINT), (t0.col_date - DATE '1970-01-01') DAY, CAST(EXTRACT(EPOCH FROM t0.col_time) * 1000000 AS BIGINT), t0.name, t3.surname, 1\n" +
                 "FROM (SELECT t1.id, t1.col_timestamp, t1.col_date, t1.col_time, t2.name\n" +
-                "FROM datamart1.dates FOR SYSTEM_TIME AS OF DELTA_NUM 10 AS t1\n" +
-                "INNER JOIN datamart2.names FOR SYSTEM_TIME AS OF DELTA_NUM 10 AS t2 ON t1.id = t2.id) AS t0\n" +
-                "INNER JOIN datamart1.surnames FOR SYSTEM_TIME AS OF DELTA_NUM 10 AS t3 ON t0.id = t3.id";
-        String expectedDeletedStaleQuery = "SELECT t0.id, CAST(EXTRACT(EPOCH FROM t0.col_timestamp) * 1000000 AS BIGINT), (t0.col_date - DATE '1970-01-01'), CAST(EXTRACT(EPOCH FROM t0.col_time) * 1000000 AS BIGINT), t0.name, t3.surname, 1, NULL\n" +
+                "FROM datamart1.dates AS t1\n" +
+                "INNER JOIN datamart2.names AS t2 ON t1.id = t2.id) AS t0\n" +
+                "INNER JOIN datamart1.surnames AS t3 ON t0.id = t3.id";
+        String expectedDeletedStaleQuery = "SELECT t0.id, CAST(EXTRACT(EPOCH FROM t0.col_timestamp) * 1000000 AS BIGINT), (t0.col_date - DATE '1970-01-01') DAY, CAST(EXTRACT(EPOCH FROM t0.col_time) * 1000000 AS BIGINT), t0.name, t3.surname, 1\n" +
                 "FROM (SELECT t1.id, t1.col_timestamp, t1.col_date, t1.col_time, t2.name\n" +
-                "FROM datamart1.dates FOR SYSTEM_TIME AS OF DELTA_NUM 9 AS t1\n" +
-                "INNER JOIN datamart2.names FOR SYSTEM_TIME AS OF DELTA_NUM 9 AS t2 ON t1.id = t2.id) AS t0\n" +
-                "INNER JOIN datamart1.surnames FOR SYSTEM_TIME AS OF DELTA_NUM 9 AS t3 ON t0.id = t3.id";
+                "FROM datamart1.dates AS t1\n" +
+                "INNER JOIN datamart2.names AS t2 ON t1.id = t2.id) AS t0\n" +
+                "INNER JOIN datamart1.surnames AS t3 ON t0.id = t3.id";
 
         result.onComplete(event -> {
             if (event.failed()) {

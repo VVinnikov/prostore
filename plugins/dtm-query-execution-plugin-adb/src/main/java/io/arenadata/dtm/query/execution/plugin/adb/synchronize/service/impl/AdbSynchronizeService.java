@@ -11,6 +11,7 @@ import io.vertx.core.Vertx;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
+@Slf4j
 @Service("adbSynchronizeService")
 public class AdbSynchronizeService implements SynchronizeService {
     private final SynchronizeDestinationExecutorDelegate synchronizeDestinationExecutorDelegate;
@@ -37,7 +39,17 @@ public class AdbSynchronizeService implements SynchronizeService {
 
             List<Future> futures = new ArrayList<>();
             for (SourceType destination : destinations) {
-                futures.add(execute(destination, () -> synchronizeDestinationExecutorDelegate.execute(destination, request)));
+                futures.add(execute(destination, () -> synchronizeDestinationExecutorDelegate.execute(destination, request))
+                        .onComplete(ar -> {
+                            if (ar.succeeded()) {
+                                log.info("Synchronization [ADB->{}}][{}] succeeded, matView: {}, deltaNum: {}",
+                                        destination, request.getRequestId(), request.getEntity().getNameWithSchema(),
+                                        request.getDeltaNumToBe());
+                            } else {
+                                log.error("Synchronization [ADB->{}}][{}] failed, matView: {}, deltaNum: {}", destination, request.getRequestId(),
+                                        request.getEntity().getNameWithSchema(), request.getDeltaNumToBe(), ar.cause());
+                            }
+                        }));
             }
 
             CompositeFuture.join(futures)

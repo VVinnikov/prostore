@@ -53,7 +53,7 @@ class AdgSynchronizeSqlFactoryTest {
 
         // assert
         Assertions.assertThat(sql).isEqualToNormalizingNewlines("CREATE WRITABLE EXTERNAL TABLE datamart.TARANTOOL_EXT_entity_name\n" +
-                "(col_varchar varchar,col_char varchar,col_bigint bigint,col_int bigint,col_int32 integer,col_double double,col_float real,col_date bigint,col_time bigint,col_timestamp bigint,col_boolean boolean,col_uuid varchar,col_link varchar,sys_op bigint,bucket_id bigint) LOCATION ('pxf://env__datamart__entity_name_staging?PROFILE=tarantool-upsert&TARANTOOL_SERVER=tarantool_server&USER=user&PASSWORD=password&TIMEOUT_CONNECT=1234&TIMEOUT_READ=2345&TIMEOUT_REQUEST=3456')\n" +
+                "(col_varchar varchar,col_char varchar,col_bigint int8,col_int int8,col_int32 int4,col_double float8,col_float float4,col_date date,col_time time(6),col_timestamp timestamp(6),col_boolean bool,col_uuid varchar(36),col_link varchar,sys_op int8,bucket_id int8) LOCATION ('pxf://env__datamart__entity_name_staging?PROFILE=tarantool-upsert&TARANTOOL_SERVER=tarantool_server&USER=user&PASSWORD=password&TIMEOUT_CONNECT=1234&TIMEOUT_READ=2345&TIMEOUT_REQUEST=3456')\n" +
                 "FORMAT 'CUSTOM' (FORMATTER = 'pxfwritable_export')");
     }
 

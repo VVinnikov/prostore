@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.plugin.adb.synchronize.factory.impl;
 
-import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
@@ -11,6 +10,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
 import java.util.stream.Collectors;
+
+import static io.arenadata.dtm.query.execution.plugin.adb.base.utils.AdbTypeUtil.adbTypeFromDtmType;
 
 @Service
 public class AdgSynchronizeSqlFactory implements SynchronizeSqlFactory {
@@ -59,37 +60,12 @@ public class AdgSynchronizeSqlFactory implements SynchronizeSqlFactory {
             if (i > 0) {
                 builder.append(',');
             }
-            builder.append(field.getName()).append(' ').append(mapType(field.getType()));
+            builder.append(field.getName()).append(' ').append(adbTypeFromDtmType(field.getType(), null));
         }
 
-        builder.append(",sys_op bigint");
-        builder.append(",bucket_id bigint");
+        builder.append(",sys_op ").append(adbTypeFromDtmType(ColumnType.BIGINT, null));
+        builder.append(",bucket_id ").append(adbTypeFromDtmType(ColumnType.BIGINT, null));
         return builder.toString();
     }
 
-    private String mapType(ColumnType type) {
-        switch (type) {
-            case VARCHAR:
-            case CHAR:
-            case UUID:
-            case LINK:
-                return "varchar";
-            case BIGINT:
-            case INT:
-            case DATE:
-            case TIME:
-            case TIMESTAMP:
-                return "bigint";
-            case BOOLEAN:
-                return "boolean";
-            case INT32:
-                return "integer";
-            case DOUBLE:
-                return "double";
-            case FLOAT:
-                return "real";
-            default:
-                throw new DtmException("Could not map type to external table type: " + type.name());
-        }
-    }
 }

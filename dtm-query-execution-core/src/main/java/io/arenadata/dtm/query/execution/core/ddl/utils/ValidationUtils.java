@@ -7,6 +7,7 @@ import lombok.val;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class ValidationUtils {
@@ -44,6 +45,17 @@ public final class ValidationUtils {
             throw new ValidationDtmException(
                     String.format("Primary keys and Sharding keys are required. The following keys do not exist: %s",
                             String.join(",", notExistsKeys)));
+        }
+    }
+
+
+    public static void checkFieldsDuplication(List<EntityField> fields) {
+        Set<String> uniqueFieldNames = fields.stream()
+                .map(EntityField::getName)
+                .collect(Collectors.toSet());
+
+        if (uniqueFieldNames.size() != fields.size()) {
+            throw new ValidationDtmException("Entity has duplication fields names");
         }
     }
 }

@@ -49,8 +49,7 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.arenadata.dtm.query.execution.core.ddl.utils.ValidationUtils.checkRequiredKeys;
-import static io.arenadata.dtm.query.execution.core.ddl.utils.ValidationUtils.checkVarcharSize;
+import static io.arenadata.dtm.query.execution.core.ddl.utils.ValidationUtils.*;
 
 @Slf4j
 @Component
@@ -321,6 +320,7 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
         checkRequiredKeys(entity.getFields());
         checkVarcharSize(entity.getFields());
         checkFieldsMatch(entity, columnMetadata);
+        checkFieldsDuplication(entity.getFields());
     }
 
     private void checkFieldsMatch(Entity entity, List<ColumnMetadata> queryColumns) {

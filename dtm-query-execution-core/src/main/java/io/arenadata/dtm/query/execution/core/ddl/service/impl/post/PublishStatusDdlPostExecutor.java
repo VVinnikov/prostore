@@ -44,7 +44,7 @@ public class PublishStatusDdlPostExecutor implements PostExecutor<DdlRequestCont
             val options = new DeliveryOptions();
             options.addHeader(DataHeader.DATAMART.getValue(), context.getDatamartName());
             options.addHeader(DataHeader.STATUS_EVENT_CODE.getValue(), StatusEventCode.DATAMART_SCHEMA_CHANGED.name());
-            vertx.eventBus().send(DataTopic.STATUS_EVENT_PUBLISH.getValue(), message, options);
+            vertx.eventBus().request(DataTopic.STATUS_EVENT_PUBLISH.getValue(), message, options);
             return Future.succeededFuture();
         } catch (Exception e) {
             return Future.failedFuture(new DtmException("Error creating change event", e));

@@ -75,7 +75,7 @@ public class AdbMppwStartRequestExecutorImpl implements AdbMppwRequestExecutor {
                     .compose(server -> createMppwKafkaRequestContext(request, server))
                     .compose(kafkaContext -> moveOffsetsExtTable(request).map(v -> kafkaContext))
                     .onSuccess(kafkaContext -> {
-                        vertx.eventBus().send(MppwTopic.KAFKA_START.getValue(), Json.encode(kafkaContext));
+                        vertx.eventBus().request(MppwTopic.KAFKA_START.getValue(), Json.encode(kafkaContext));
                         log.debug("Mppw started successfully");
                         promise.complete(QueryResult.emptyResult());
                     })

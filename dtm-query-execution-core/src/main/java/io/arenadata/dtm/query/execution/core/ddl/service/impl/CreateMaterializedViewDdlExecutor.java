@@ -321,6 +321,7 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
         checkRequiredKeys(entity.getFields());
         checkVarcharSize(entity.getFields());
         checkFieldsMatch(entity, columnMetadata);
+        checkFieldsDuplication(entity);
     }
 
     private void checkFieldsMatch(Entity entity, List<ColumnMetadata> queryColumns) {
@@ -355,6 +356,16 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
                     }
                     break;
             }
+        }
+    }
+
+    private void checkFieldsDuplication(Entity entity) {
+        Set<String> uniqueFieldNames = entity.getFields().stream()
+                .map(EntityField::getName)
+                .collect(Collectors.toSet());
+
+        if (uniqueFieldNames.size() != entity.getFields().size()) {
+            throw MaterializedViewValidationException.columnNamesDuplicationConflict(entity.getName());
         }
     }
 

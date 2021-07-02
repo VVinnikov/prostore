@@ -33,8 +33,6 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service("coreEdmlService")
 public class EdmlServiceImpl implements EdmlService<QueryResult> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(EdmlServiceImpl.class);
-
     private static final SqlDialect SQL_DIALECT = new SqlDialect(SqlDialect.EMPTY_CONTEXT);
     private static final Set<EntityType> DOWNLOAD_SOURCES = EnumSet.of(EntityType.TABLE, EntityType.VIEW, EntityType.MATERIALIZED_VIEW);
     private static final Set<EntityType> UPLOAD_DESTINATIONS = EnumSet.of(EntityType.TABLE);
@@ -71,6 +69,10 @@ public class EdmlServiceImpl implements EdmlService<QueryResult> {
                         val source = entities.get(1);
                         context.setDestinationEntity(destination);
                         context.setSourceEntity(source);
+
+                        if (EntityType.MATERIALIZED_VIEW == destination.getEntityType() || EntityType.MATERIALIZED_VIEW == source.getEntityType()) {
+                            edmlQueryPromise.fail(new DtmException("MPPR/MPPW operation doesn't support materialized views"));
+                        }
 
                         if (destination.getEntityType() == EntityType.DOWNLOAD_EXTERNAL_TABLE) {
                             if (!DOWNLOAD_SOURCES.contains(source.getEntityType())) {

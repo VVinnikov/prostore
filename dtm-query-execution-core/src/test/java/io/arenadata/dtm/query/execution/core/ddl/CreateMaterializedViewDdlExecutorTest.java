@@ -493,7 +493,7 @@ class CreateMaterializedViewDdlExecutorTest {
         testFailOnValidation("CREATE MATERIALIZED VIEW mat_view (id bigint, id bigint, PRIMARY KEY(id))\n" +
                         "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT id, id FROM tbldatamart.tbl DATASOURCE_TYPE = 'ADB'",
                 "has duplication fields names",
-                MaterializedViewValidationException.class);
+                ValidationDtmException.class);
     }
 
     @Test

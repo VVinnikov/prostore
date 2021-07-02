@@ -13,14 +13,9 @@ public class MaterializedViewValidationException extends DtmException {
     private static final String CONFLICT_COLUMN_SIZE_PATTERN = "Materialized view %s has conflict with query columns type size not equal for %s view: %d query: %s";
     private static final String QUERY_DATASOURCE_TYPE = "Materialized view %s query DATASOURCE_TYPE not specified or invalid";
     private static final String VIEW_DATASOURCE_TYPE = "Materialized view %s DATASOURCE_TYPE has non exist items: %s";
-    private static final String COLUMN_NAMES_DUPLICATION = "Materialized view %s has duplication fields names";
 
     private MaterializedViewValidationException(String message) {
         super(message);
-    }
-
-    public static MaterializedViewValidationException columnNamesDuplicationConflict(String name) {
-        return new MaterializedViewValidationException(String.format(COLUMN_NAMES_DUPLICATION, name));
     }
 
     public static MaterializedViewValidationException columnCountConflict(String name, int viewColumns, int queryColumns) {

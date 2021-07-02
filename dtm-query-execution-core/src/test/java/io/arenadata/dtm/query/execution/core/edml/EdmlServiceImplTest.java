@@ -97,9 +97,9 @@ class EdmlServiceImplTest {
                 .schema("test")
                 .build();
 
-        Mockito.when(entityDao.getEntity(eq("test"), eq("download_table"))).thenReturn(Future.succeededFuture(destinationEntity));
+        when(entityDao.getEntity("test", "download_table")).thenReturn(Future.succeededFuture(destinationEntity));
 
-        Mockito.when(entityDao.getEntity(eq("test"), eq("pso"))).thenReturn(Future.succeededFuture(sourceEntity));
+        when(entityDao.getEntity("test", "pso")).thenReturn(Future.succeededFuture(sourceEntity));
 
         when(edmlExecutors.get(0).execute(any()))
                 .thenReturn(Future.succeededFuture(QueryResult.emptyResult()));
@@ -140,10 +140,10 @@ class EdmlServiceImplTest {
                 .schema("test")
                 .build();
 
-        when(entityDao.getEntity(eq("test"), eq("pso")))
+        when(entityDao.getEntity("test", "pso"))
                 .thenReturn(Future.succeededFuture(destinationEntity));
 
-        when(entityDao.getEntity(eq("test"), eq("upload_table")))
+        when(entityDao.getEntity("test", "upload_table"))
                 .thenReturn(Future.succeededFuture(sourceEntity));
 
         when(edmlExecutors.get(1).execute(any()))
@@ -189,10 +189,10 @@ class EdmlServiceImplTest {
                 .schema("test")
                 .build();
 
-        Mockito.when(entityDao.getEntity(eq("test"), eq("download_table")))
+        when(entityDao.getEntity("test", "download_table"))
                 .thenReturn(Future.succeededFuture(destinationEntity));
 
-        Mockito.when(entityDao.getEntity(eq("test"), eq("pso")))
+        when(entityDao.getEntity("test", "pso"))
                 .thenReturn(Future.succeededFuture(sourceEntity));
 
         edmlService.execute(context)
@@ -233,10 +233,10 @@ class EdmlServiceImplTest {
                 .schema("test")
                 .build();
 
-        Mockito.when(entityDao.getEntity(eq("test"), eq("download_table")))
+        when(entityDao.getEntity("test", "download_table"))
                 .thenReturn(Future.succeededFuture(destinationEntity));
 
-        Mockito.when(entityDao.getEntity(eq("test"), eq("pso")))
+        when(entityDao.getEntity("test", "pso"))
                 .thenReturn(Future.succeededFuture(sourceEntity));
 
         edmlService.execute(context)
@@ -273,10 +273,10 @@ class EdmlServiceImplTest {
                 .schema("test")
                 .build();
 
-        Mockito.when(entityDao.getEntity(eq("test"), eq("download_table")))
+        when(entityDao.getEntity("test", "download_table"))
                 .thenReturn(Future.succeededFuture(destinationEntity));
 
-        Mockito.when(entityDao.getEntity(eq("test"), eq("pso")))
+        when(entityDao.getEntity("test", "pso"))
                 .thenReturn(Future.succeededFuture(sourceEntity));
 
         // act
@@ -285,6 +285,6 @@ class EdmlServiceImplTest {
 
         // assert
         assertTrue(promise.future().failed());
-        TestUtils.assertException(DtmException.class, "UPLOAD_EXTERNAL_TABLE destination entity type mismatch", promise.future().cause());
+        TestUtils.assertException(DtmException.class, "MPPR/MPPW operation doesn't support materialized views", promise.future().cause());
     }
 }

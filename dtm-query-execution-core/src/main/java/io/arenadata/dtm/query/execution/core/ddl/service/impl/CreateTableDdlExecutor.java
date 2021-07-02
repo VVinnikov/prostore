@@ -31,8 +31,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static io.arenadata.dtm.query.execution.core.ddl.utils.ValidationUtils.checkRequiredKeys;
-import static io.arenadata.dtm.query.execution.core.ddl.utils.ValidationUtils.checkVarcharSize;
+import static io.arenadata.dtm.query.execution.core.ddl.utils.ValidationUtils.*;
 
 @Slf4j
 @Component
@@ -92,6 +91,7 @@ public class CreateTableDdlExecutor extends QueryResultDdlExecutor {
     private void validateFields(List<EntityField> fields) {
         checkRequiredKeys(fields);
         checkVarcharSize(fields);
+        checkFieldsDuplication(fields);
     }
 
     private Future<Void> getEntityAlreadyExistsFuture(String entityNameWithSchema) {

@@ -6,6 +6,8 @@ import io.arenadata.dtm.common.delta.SelectOnInterval;
 import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.dto.QueryParserResponse;
 import io.arenadata.dtm.common.exception.DtmException;
+import io.arenadata.dtm.common.model.ddl.Entity;
+import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.calcite.core.node.SqlTreeNode;
 import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
@@ -57,10 +59,10 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
     public Future<PrepareRequestOfChangesResult> prepare(PrepareRequestOfChangesRequest request) {
         return parserService.parse(new QueryParserRequest(request.getViewQuery(), request.getDatamarts()))
                 .compose(this::replaceTimeBasedColumns)
-                .compose(sqlNode -> prepareQueriesOfChanges(sqlNode, request));
+                .compose(sqlNode -> prepareQueriesOfChanges((SqlSelect)sqlNode, request));
     }
 
-    private Future<PrepareRequestOfChangesResult> prepareQueriesOfChanges(SqlNode sqlNode, PrepareRequestOfChangesRequest request) {
+    private Future<PrepareRequestOfChangesResult> prepareQueriesOfChanges(SqlSelect sqlNode, PrepareRequestOfChangesRequest request) {
         return Future.future(promise -> {
             SqlSelectTree sqlNodeTree = new SqlSelectTree(sqlNode);
             List<SqlTreeNode> allTableAndSnapshots = sqlNodeTree.findAllTableAndSnapshots();
@@ -70,8 +72,9 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
             }
 
 
+
             List<Future> futures = new ArrayList<>(2);
-            if (allTableAndSnapshots.size() > 1) {
+            if (allTableAndSnapshots.size() > 1 || isAggregatedQuery(sqlNode)) {
                 futures.add(prepareMultipleRecordsQuery(sqlNode, request, request.getDeltaNumToBe(), request.getDeltaNumToBe() - 1, SYS_OP_MODIFIED));
                 futures.add(prepareMultipleRecordsQuery(sqlNode, request, request.getDeltaNumToBe() - 1, request.getDeltaNumToBe(), SYS_OP_DELETED));
             } else {
@@ -88,6 +91,10 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
         });
     }
 
+    private boolean isAggregatedQuery(SqlSelect sqlSelect) {
+        return sqlSelect.getGroup() != null || SqlNodeUtil.containsAggregates(sqlSelect);
+    }
+
     private Future<String> prepareMultipleRecordsQuery(SqlNode sqlNode, PrepareRequestOfChangesRequest request, long deltaNumCurrent, long deltaNumPrevious, int sysOp) {
         return Future.future(promise -> {
             Future<String> currentStateQuery = enrichQueryWithDelta(sqlNode, request, deltaNumCurrent, DeltaType.NUM, sysOp);
@@ -102,7 +109,11 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
         });
     }
 
-    private Future<String> enrichQueryWithDelta(SqlNode originalSqlNode, PrepareRequestOfChangesRequest request, long deltaNumToBe, DeltaType deltaType, int sysOp) {
+    private Future<String> enrichQueryWithDelta(SqlNode originalSqlNode,
+                                                PrepareRequestOfChangesRequest request,
+                                                long deltaNumToBe,
+                                                DeltaType deltaType,
+                                                int sysOp) {
         return Future.future(promise -> {
             SqlNode sqlNode = SqlNodeUtil.copy(originalSqlNode);
             SqlSelectTree sqlNodesTree = new SqlSelectTree(sqlNode);
@@ -112,6 +123,10 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
                 deltaInformations.add(deltaInformation);
             });
 
+            if (sysOp == SYS_OP_DELETED) {
+                removeNonPkColumns(request.getEntity(), sqlNodesTree);
+            }
+
             addSystemColumns(sqlNodesTree, sysOp);
 
             queryEnrichmentService.enrich(new EnrichQueryRequest(deltaInformations, request.getDatamarts(), request.getEnvName(), sqlNode))
@@ -119,13 +134,35 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
         });
     }
 
-    private void addSystemColumns(SqlSelectTree sqlNodesTree, int sysOp) {
-        List<SqlTreeNode> nodesByPathRegex = sqlNodesTree.findNodesByPathRegex(COLUMN_SELECT);
-        if (nodesByPathRegex.size() != 1) {
-            throw new DtmException(format("Expected one node contain columns, got: %s", nodesByPathRegex.size()));
+    private void removeNonPkColumns(Entity entity, SqlSelectTree sqlNodesTree) {
+        List<SqlTreeNode> columnsNode = sqlNodesTree.findNodesByPathRegex(COLUMN_SELECT);
+        if (columnsNode.size() != 1) {
+            throw new DtmException(format("Expected one node contain columns, got: %s", columnsNode.size()));
+        }
+        SqlTreeNode sqlTreeNode = columnsNode.get(0);
+        SqlNodeList columnNodeList = sqlTreeNode.getNode();
+
+        List<SqlTreeNode> columnsNodes = sqlNodesTree.findNodesByParent(sqlTreeNode);
+        if (columnsNodes.size() != entity.getFields().size()) {
+            throw new DtmException(format("Expected columns to be equal, query: %s, entity: %s",
+                    columnsNodes.size(), entity.getFields().size()));
         }
 
-        SqlNodeList node = nodesByPathRegex.get(0).getNode();
+        for (EntityField field : entity.getFields()) {
+            if(field.getPrimaryOrder() == null) {
+                SqlTreeNode sqlColumnNode = columnsNodes.get(field.getOrdinalPosition());
+                columnNodeList.getList().remove(sqlColumnNode.getNode());
+            }
+        }
+    }
+
+    private void addSystemColumns(SqlSelectTree sqlNodesTree, int sysOp) {
+        List<SqlTreeNode> columnsNode = sqlNodesTree.findNodesByPathRegex(COLUMN_SELECT);
+        if (columnsNode.size() != 1) {
+            throw new DtmException(format("Expected one node contain columns, got: %s", columnsNode.size()));
+        }
+
+        SqlNodeList node = columnsNode.get(0).getNode();
         node.add(SqlLiteral.createExactNumeric(Integer.toString(sysOp), SqlParserPos.ZERO));
     }
 
@@ -169,8 +206,8 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
             SqlNode sqlNode = parserResponse.getSqlNode();
             SqlSelectTree sqlNodeTree = new SqlSelectTree(sqlNode);
             List<SqlTreeNode> columnsNode = sqlNodeTree.findNodesByPathRegex(COLUMN_SELECT);
-            if (columnsNode.isEmpty()) {
-                throw new DtmException(format("Query has no columns: %s", sqlNode.toSqlString(sqlDialect).toString()));
+            if (columnsNode.size() != 1) {
+                throw new DtmException(format("Expected one node contain columns: %s", sqlNode.toSqlString(sqlDialect).toString()));
             }
 
             List<SqlTreeNode> columnsNodes = sqlNodeTree.findNodesByParent(columnsNode.get(0));

@@ -32,8 +32,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith({VertxExtension.class, MockitoExtension.class})
@@ -77,8 +76,8 @@ class AdgSynchronizeDestinationExecutorTest {
         lenient().when(databaseExecutor.execute(Mockito.anyString())).thenReturn(Future.succeededFuture(Collections.emptyList()));
         lenient().when(synchronizeSqlFactory.createExternalTable(Mockito.anyString(), Mockito.anyString(), Mockito.any())).thenReturn(CREATE_EXTERNAL_TABLE_QUERY);
         lenient().when(synchronizeSqlFactory.dropExternalTable(Mockito.anyString(), Mockito.any())).thenReturn(DROP_EXTERNAL_TABLE_QUERY);
-        lenient().when(synchronizeSqlFactory.insertIntoExternalTable(Mockito.anyString(), Mockito.any(), eq(NEW_QUERY))).thenReturn(INSERT_INTO_NEW_QUERY);
-        lenient().when(synchronizeSqlFactory.insertIntoExternalTable(Mockito.anyString(), Mockito.any(), eq(DELETE_QUERY))).thenReturn(INSERT_INTO_DELETE_QUERY);
+        lenient().when(synchronizeSqlFactory.insertIntoExternalTable(Mockito.anyString(), Mockito.any(), eq(NEW_QUERY), Mockito.anyBoolean())).thenReturn(INSERT_INTO_NEW_QUERY);
+        lenient().when(synchronizeSqlFactory.insertIntoExternalTable(Mockito.anyString(), Mockito.any(), eq(DELETE_QUERY), Mockito.anyBoolean())).thenReturn(INSERT_INTO_DELETE_QUERY);
         lenient().when(adgSharedService.prepareStaging(Mockito.any())).thenReturn(Future.succeededFuture());
         lenient().when(adgSharedService.transferData(Mockito.any())).thenReturn(Future.succeededFuture());
     }
@@ -91,10 +90,7 @@ class AdgSynchronizeDestinationExecutorTest {
         Datamart dmrt1 = Datamart.builder()
                 .mnemonic(DATAMART)
                 .build();
-        Datamart dmrt2 = Datamart.builder()
-                .mnemonic(DATAMART_2)
-                .build();
-        List<Datamart> datamarts = Arrays.asList(dmrt1, dmrt2);
+        List<Datamart> datamarts = Collections.singletonList(dmrt1);
         Entity entity = Entity.builder()
                 .build();
 
@@ -118,7 +114,7 @@ class AdgSynchronizeDestinationExecutorTest {
                 // 1. assert request of changes
                 inOrder.verify(prepareQueriesOfChangesService).prepare(requestOfChangesRequestArgumentCaptor.capture());
                 PrepareRequestOfChangesRequest prepareRequestOfChangesRequest = requestOfChangesRequestArgumentCaptor.getValue();
-                assertThat(prepareRequestOfChangesRequest.getDatamarts(), Matchers.containsInAnyOrder(Matchers.sameInstance(dmrt1), Matchers.sameInstance(dmrt2)));
+                assertThat(prepareRequestOfChangesRequest.getDatamarts(), Matchers.contains(Matchers.sameInstance(dmrt1)));
                 assertEquals(DELTA_NUM, prepareRequestOfChangesRequest.getDeltaNumToBe());
                 assertEquals(ENV, prepareRequestOfChangesRequest.getEnvName());
                 assertSame(VIEW_QUERY, prepareRequestOfChangesRequest.getViewQuery());
@@ -140,10 +136,10 @@ class AdgSynchronizeDestinationExecutorTest {
                 assertEquals(DATAMART, prepareStagingRequest.getDatamart());
 
                 // 5. assert insert into
-                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(eq(DATAMART), same(entity), eq(DELETE_QUERY));
+                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(eq(DATAMART), same(entity), eq(DELETE_QUERY), eq(true));
                 inOrder.verify(databaseExecutor).execute(eq(INSERT_INTO_DELETE_QUERY));
 
-                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(eq(DATAMART), same(entity), eq(NEW_QUERY));
+                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(eq(DATAMART), same(entity), eq(NEW_QUERY), eq(false));
                 inOrder.verify(databaseExecutor).execute(eq(INSERT_INTO_NEW_QUERY));
 
                 // 6. assert transfer
@@ -182,10 +178,7 @@ class AdgSynchronizeDestinationExecutorTest {
         Datamart dmrt1 = Datamart.builder()
                 .mnemonic(DATAMART)
                 .build();
-        Datamart dmrt2 = Datamart.builder()
-                .mnemonic(DATAMART_2)
-                .build();
-        List<Datamart> datamarts = Arrays.asList(dmrt1, dmrt2);
+        List<Datamart> datamarts = Collections.singletonList(dmrt1);
         Entity entity = Entity.builder()
                 .build();
 
@@ -221,9 +214,9 @@ class AdgSynchronizeDestinationExecutorTest {
                 inOrder.verify(adgSharedService).prepareStaging(any());
 
                 // 5. assert insert into
-                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any());
+                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any(), eq(true));
                 inOrder.verify(databaseExecutor).execute(any());
-                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any());
+                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any(), eq(false));
                 inOrder.verify(databaseExecutor).execute(any());
 
                 // 6. assert transfer
@@ -241,12 +234,10 @@ class AdgSynchronizeDestinationExecutorTest {
     }
 
     @Test
-    void shouldFailWhenPrepareRequestOfChangesFailed(VertxTestContext testContext) {
+    void shouldFailWhenMultipleDatamarts(VertxTestContext testContext) {
         // arrange
-        when(prepareQueriesOfChangesService.prepare(any())).thenReturn(Future.failedFuture(new DtmException("Failed")));
 
         UUID uuid = UUID.randomUUID();
-
         Datamart dmrt1 = Datamart.builder()
                 .mnemonic(DATAMART)
                 .build();
@@ -254,6 +245,42 @@ class AdgSynchronizeDestinationExecutorTest {
                 .mnemonic(DATAMART_2)
                 .build();
         List<Datamart> datamarts = Arrays.asList(dmrt1, dmrt2);
+        Entity entity = Entity.builder()
+                .build();
+
+        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, DELTA_NUM, DELTA_NUM_CN_TO);
+
+        // act
+        Future<Long> result = adgSynchronizeDestinationExecutor.execute(synchronizeRequest);
+
+        // assert
+        result.onComplete(ar -> {
+            if (ar.succeeded()) {
+                testContext.failNow(new AssertionError("Unexpected success"));
+                return;
+            }
+
+            testContext.verify(() -> {
+                assertEquals(DtmException.class, ar.cause().getClass());
+                assertTrue(ar.cause().getMessage().contains("multiple datamarts"));
+
+                InOrder inOrder = inOrder(prepareQueriesOfChangesService, synchronizeSqlFactory, databaseExecutor, adgSharedService);
+                inOrder.verifyNoMoreInteractions();
+                verifyNoMoreInteractions(prepareQueriesOfChangesService, synchronizeSqlFactory, databaseExecutor, adgSharedService);
+            }).completeNow();
+        });
+    }
+
+    @Test
+    void shouldFailWhenPrepareRequestOfChangesFailed(VertxTestContext testContext) {
+        // arrange
+        when(prepareQueriesOfChangesService.prepare(any())).thenReturn(Future.failedFuture(new DtmException("Failed")));
+
+        UUID uuid = UUID.randomUUID();
+        Datamart dmrt1 = Datamart.builder()
+                .mnemonic(DATAMART)
+                .build();
+        List<Datamart> datamarts = Collections.singletonList(dmrt1);
         Entity entity = Entity.builder()
                 .build();
 
@@ -297,14 +324,10 @@ class AdgSynchronizeDestinationExecutorTest {
         });
 
         UUID uuid = UUID.randomUUID();
-
         Datamart dmrt1 = Datamart.builder()
                 .mnemonic(DATAMART)
                 .build();
-        Datamart dmrt2 = Datamart.builder()
-                .mnemonic(DATAMART_2)
-                .build();
-        List<Datamart> datamarts = Arrays.asList(dmrt1, dmrt2);
+        List<Datamart> datamarts = Collections.singletonList(dmrt1);
         Entity entity = Entity.builder()
                 .build();
 
@@ -346,14 +369,10 @@ class AdgSynchronizeDestinationExecutorTest {
                 Future.failedFuture(new DtmException("Failed: " + callCount.getAndIncrement())));
 
         UUID uuid = UUID.randomUUID();
-
         Datamart dmrt1 = Datamart.builder()
                 .mnemonic(DATAMART)
                 .build();
-        Datamart dmrt2 = Datamart.builder()
-                .mnemonic(DATAMART_2)
-                .build();
-        List<Datamart> datamarts = Arrays.asList(dmrt1, dmrt2);
+        List<Datamart> datamarts = Collections.singletonList(dmrt1);
         Entity entity = Entity.builder()
                 .build();
 
@@ -398,14 +417,10 @@ class AdgSynchronizeDestinationExecutorTest {
         when(synchronizeSqlFactory.createExternalTable(anyString(), anyString(), any())).thenThrow(new DtmException("Failed"));
 
         UUID uuid = UUID.randomUUID();
-
         Datamart dmrt1 = Datamart.builder()
                 .mnemonic(DATAMART)
                 .build();
-        Datamart dmrt2 = Datamart.builder()
-                .mnemonic(DATAMART_2)
-                .build();
-        List<Datamart> datamarts = Arrays.asList(dmrt1, dmrt2);
+        List<Datamart> datamarts = Collections.singletonList(dmrt1);
         Entity entity = Entity.builder()
                 .build();
 
@@ -453,14 +468,10 @@ class AdgSynchronizeDestinationExecutorTest {
         when(databaseExecutor.execute(eq(CREATE_EXTERNAL_TABLE_QUERY))).thenReturn(Future.failedFuture(new DtmException("Failed")));
 
         UUID uuid = UUID.randomUUID();
-
         Datamart dmrt1 = Datamart.builder()
                 .mnemonic(DATAMART)
                 .build();
-        Datamart dmrt2 = Datamart.builder()
-                .mnemonic(DATAMART_2)
-                .build();
-        List<Datamart> datamarts = Arrays.asList(dmrt1, dmrt2);
+        List<Datamart> datamarts = Collections.singletonList(dmrt1);
         Entity entity = Entity.builder()
                 .build();
 
@@ -509,14 +520,10 @@ class AdgSynchronizeDestinationExecutorTest {
         when(adgSharedService.prepareStaging(any())).thenReturn(Future.failedFuture(new DtmException("Failed")));
 
         UUID uuid = UUID.randomUUID();
-
         Datamart dmrt1 = Datamart.builder()
                 .mnemonic(DATAMART)
                 .build();
-        Datamart dmrt2 = Datamart.builder()
-                .mnemonic(DATAMART_2)
-                .build();
-        List<Datamart> datamarts = Arrays.asList(dmrt1, dmrt2);
+        List<Datamart> datamarts = Collections.singletonList(dmrt1);
         Entity entity = Entity.builder()
                 .build();
 
@@ -565,17 +572,13 @@ class AdgSynchronizeDestinationExecutorTest {
     @Test
     void shouldFailWhenDeletedInsertIntoSqlFactoryThrows(VertxTestContext testContext) {
         // arrange
-        when(synchronizeSqlFactory.insertIntoExternalTable(any(), any(), eq(DELETE_QUERY))).thenThrow(new DtmException("Failed"));
+        when(synchronizeSqlFactory.insertIntoExternalTable(any(), any(), eq(DELETE_QUERY), anyBoolean())).thenThrow(new DtmException("Failed"));
 
         UUID uuid = UUID.randomUUID();
-
         Datamart dmrt1 = Datamart.builder()
                 .mnemonic(DATAMART)
                 .build();
-        Datamart dmrt2 = Datamart.builder()
-                .mnemonic(DATAMART_2)
-                .build();
-        List<Datamart> datamarts = Arrays.asList(dmrt1, dmrt2);
+        List<Datamart> datamarts = Collections.singletonList(dmrt1);
         Entity entity = Entity.builder()
                 .build();
 
@@ -612,7 +615,7 @@ class AdgSynchronizeDestinationExecutorTest {
                 inOrder.verify(adgSharedService).prepareStaging(any());
 
                 // 5. assert insert into
-                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any());
+                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any(), anyBoolean());
 
                 // 6. assert drop external table
                 inOrder.verify(synchronizeSqlFactory).dropExternalTable(any(), any());
@@ -630,14 +633,10 @@ class AdgSynchronizeDestinationExecutorTest {
         when(databaseExecutor.execute(eq(INSERT_INTO_DELETE_QUERY))).thenReturn(Future.failedFuture(new DtmException("Failed")));
 
         UUID uuid = UUID.randomUUID();
-
         Datamart dmrt1 = Datamart.builder()
                 .mnemonic(DATAMART)
                 .build();
-        Datamart dmrt2 = Datamart.builder()
-                .mnemonic(DATAMART_2)
-                .build();
-        List<Datamart> datamarts = Arrays.asList(dmrt1, dmrt2);
+        List<Datamart> datamarts = Collections.singletonList(dmrt1);
         Entity entity = Entity.builder()
                 .build();
 
@@ -674,7 +673,7 @@ class AdgSynchronizeDestinationExecutorTest {
                 inOrder.verify(adgSharedService).prepareStaging(any());
 
                 // 5. assert insert into
-                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any());
+                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any(), anyBoolean());
                 inOrder.verify(databaseExecutor).execute(any());
 
                 // 6. assert drop external table
@@ -690,17 +689,14 @@ class AdgSynchronizeDestinationExecutorTest {
     @Test
     void shouldFailWhenNewInsertIntoSqlFactoryThrows(VertxTestContext testContext) {
         // arrange
-        when(synchronizeSqlFactory.insertIntoExternalTable(any(), any(), eq(NEW_QUERY))).thenThrow(new DtmException("Failed"));
+        when(synchronizeSqlFactory.insertIntoExternalTable(any(), any(), eq(NEW_QUERY), anyBoolean())).thenThrow(new DtmException("Failed"));
 
         UUID uuid = UUID.randomUUID();
 
         Datamart dmrt1 = Datamart.builder()
                 .mnemonic(DATAMART)
                 .build();
-        Datamart dmrt2 = Datamart.builder()
-                .mnemonic(DATAMART_2)
-                .build();
-        List<Datamart> datamarts = Arrays.asList(dmrt1, dmrt2);
+        List<Datamart> datamarts = Collections.singletonList(dmrt1);
         Entity entity = Entity.builder()
                 .build();
 
@@ -737,9 +733,9 @@ class AdgSynchronizeDestinationExecutorTest {
                 inOrder.verify(adgSharedService).prepareStaging(any());
 
                 // 5. assert insert into
-                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any());
+                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any(), anyBoolean());
                 inOrder.verify(databaseExecutor).execute(any());
-                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any());
+                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any(), anyBoolean());
 
                 // 6. assert drop external table
                 inOrder.verify(synchronizeSqlFactory).dropExternalTable(any(), any());
@@ -761,10 +757,7 @@ class AdgSynchronizeDestinationExecutorTest {
         Datamart dmrt1 = Datamart.builder()
                 .mnemonic(DATAMART)
                 .build();
-        Datamart dmrt2 = Datamart.builder()
-                .mnemonic(DATAMART_2)
-                .build();
-        List<Datamart> datamarts = Arrays.asList(dmrt1, dmrt2);
+        List<Datamart> datamarts = Collections.singletonList(dmrt1);
         Entity entity = Entity.builder()
                 .build();
 
@@ -801,9 +794,9 @@ class AdgSynchronizeDestinationExecutorTest {
                 inOrder.verify(adgSharedService).prepareStaging(any());
 
                 // 5. assert insert into
-                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any());
+                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any(), anyBoolean());
                 inOrder.verify(databaseExecutor).execute(any());
-                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any());
+                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any(), anyBoolean());
                 inOrder.verify(databaseExecutor).execute(any());
 
                 // 6. assert drop external table
@@ -826,10 +819,7 @@ class AdgSynchronizeDestinationExecutorTest {
         Datamart dmrt1 = Datamart.builder()
                 .mnemonic(DATAMART)
                 .build();
-        Datamart dmrt2 = Datamart.builder()
-                .mnemonic(DATAMART_2)
-                .build();
-        List<Datamart> datamarts = Arrays.asList(dmrt1, dmrt2);
+        List<Datamart> datamarts = Collections.singletonList(dmrt1);
         Entity entity = Entity.builder()
                 .build();
 
@@ -866,9 +856,9 @@ class AdgSynchronizeDestinationExecutorTest {
                 inOrder.verify(adgSharedService).prepareStaging(any());
 
                 // 5. assert insert into
-                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any());
+                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any(), anyBoolean());
                 inOrder.verify(databaseExecutor).execute(any());
-                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any());
+                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any(), anyBoolean());
                 inOrder.verify(databaseExecutor).execute(any());
 
                 // 6. assert transfer data

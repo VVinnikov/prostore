@@ -124,7 +124,7 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
             });
 
             if (sysOp == SYS_OP_DELETED) {
-                replaceNonPkColumnsWithNull(request.getEntity(), sqlNodesTree);
+                removeNonPkColumns(request.getEntity(), sqlNodesTree);
             }
 
             addSystemColumns(sqlNodesTree, sysOp);
@@ -141,12 +141,15 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
         });
     }
 
-    private void replaceNonPkColumnsWithNull(Entity entity, SqlSelectTree sqlNodesTree) {
+    private void removeNonPkColumns(Entity entity, SqlSelectTree sqlNodesTree) {
         List<SqlTreeNode> columnsNode = sqlNodesTree.findNodesByPathRegex(COLUMN_SELECT);
         if (columnsNode.size() != 1) {
             throw new DtmException(format("Expected one node contain columns, got: %s", columnsNode.size()));
         }
-        List<SqlTreeNode> columnsNodes = sqlNodesTree.findNodesByParent(columnsNode.get(0));
+        SqlTreeNode sqlTreeNode = columnsNode.get(0);
+        SqlNodeList columnNodeList = sqlTreeNode.getNode();
+
+        List<SqlTreeNode> columnsNodes = sqlNodesTree.findNodesByParent(sqlTreeNode);
         if (columnsNodes.size() != entity.getFields().size()) {
             throw new DtmException(format("Expected columns to be equal, query: %s, entity: %s",
                     columnsNodes.size(), entity.getFields().size()));
@@ -155,7 +158,7 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
         for (EntityField field : entity.getFields()) {
             if(field.getPrimaryOrder() == null) {
                 SqlTreeNode sqlColumnNode = columnsNodes.get(field.getOrdinalPosition());
-                sqlColumnNode.getSqlNodeSetter().accept(SqlLiteral.createNull(sqlColumnNode.getNode().getParserPosition()));
+                columnNodeList.getList().remove(sqlColumnNode.getNode());
             }
         }
     }

@@ -7,5 +7,5 @@ public interface SynchronizeSqlFactory {
 
     String dropExternalTable(String datamart, Entity matView);
 
-    String insertIntoExternalTable(String datamart, Entity matView, String query);
+    String insertIntoExternalTable(String datamart, Entity matView, String query, boolean onlyPrimaryKeys);
 }

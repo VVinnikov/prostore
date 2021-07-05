@@ -76,8 +76,8 @@ class AdgSynchronizeDestinationExecutorTest {
         lenient().when(databaseExecutor.execute(Mockito.anyString())).thenReturn(Future.succeededFuture(Collections.emptyList()));
         lenient().when(synchronizeSqlFactory.createExternalTable(Mockito.anyString(), Mockito.anyString(), Mockito.any())).thenReturn(CREATE_EXTERNAL_TABLE_QUERY);
         lenient().when(synchronizeSqlFactory.dropExternalTable(Mockito.anyString(), Mockito.any())).thenReturn(DROP_EXTERNAL_TABLE_QUERY);
-        lenient().when(synchronizeSqlFactory.insertIntoExternalTable(Mockito.anyString(), Mockito.any(), eq(NEW_QUERY))).thenReturn(INSERT_INTO_NEW_QUERY);
-        lenient().when(synchronizeSqlFactory.insertIntoExternalTable(Mockito.anyString(), Mockito.any(), eq(DELETE_QUERY))).thenReturn(INSERT_INTO_DELETE_QUERY);
+        lenient().when(synchronizeSqlFactory.insertIntoExternalTable(Mockito.anyString(), Mockito.any(), eq(NEW_QUERY), Mockito.anyBoolean())).thenReturn(INSERT_INTO_NEW_QUERY);
+        lenient().when(synchronizeSqlFactory.insertIntoExternalTable(Mockito.anyString(), Mockito.any(), eq(DELETE_QUERY), Mockito.anyBoolean())).thenReturn(INSERT_INTO_DELETE_QUERY);
         lenient().when(adgSharedService.prepareStaging(Mockito.any())).thenReturn(Future.succeededFuture());
         lenient().when(adgSharedService.transferData(Mockito.any())).thenReturn(Future.succeededFuture());
     }
@@ -136,10 +136,10 @@ class AdgSynchronizeDestinationExecutorTest {
                 assertEquals(DATAMART, prepareStagingRequest.getDatamart());
 
                 // 5. assert insert into
-                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(eq(DATAMART), same(entity), eq(DELETE_QUERY));
+                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(eq(DATAMART), same(entity), eq(DELETE_QUERY), eq(true));
                 inOrder.verify(databaseExecutor).execute(eq(INSERT_INTO_DELETE_QUERY));
 
-                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(eq(DATAMART), same(entity), eq(NEW_QUERY));
+                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(eq(DATAMART), same(entity), eq(NEW_QUERY), eq(false));
                 inOrder.verify(databaseExecutor).execute(eq(INSERT_INTO_NEW_QUERY));
 
                 // 6. assert transfer
@@ -214,9 +214,9 @@ class AdgSynchronizeDestinationExecutorTest {
                 inOrder.verify(adgSharedService).prepareStaging(any());
 
                 // 5. assert insert into
-                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any());
+                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any(), eq(true));
                 inOrder.verify(databaseExecutor).execute(any());
-                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any());
+                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any(), eq(false));
                 inOrder.verify(databaseExecutor).execute(any());
 
                 // 6. assert transfer
@@ -572,7 +572,7 @@ class AdgSynchronizeDestinationExecutorTest {
     @Test
     void shouldFailWhenDeletedInsertIntoSqlFactoryThrows(VertxTestContext testContext) {
         // arrange
-        when(synchronizeSqlFactory.insertIntoExternalTable(any(), any(), eq(DELETE_QUERY))).thenThrow(new DtmException("Failed"));
+        when(synchronizeSqlFactory.insertIntoExternalTable(any(), any(), eq(DELETE_QUERY), anyBoolean())).thenThrow(new DtmException("Failed"));
 
         UUID uuid = UUID.randomUUID();
         Datamart dmrt1 = Datamart.builder()
@@ -615,7 +615,7 @@ class AdgSynchronizeDestinationExecutorTest {
                 inOrder.verify(adgSharedService).prepareStaging(any());
 
                 // 5. assert insert into
-                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any());
+                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any(), anyBoolean());
 
                 // 6. assert drop external table
                 inOrder.verify(synchronizeSqlFactory).dropExternalTable(any(), any());
@@ -673,7 +673,7 @@ class AdgSynchronizeDestinationExecutorTest {
                 inOrder.verify(adgSharedService).prepareStaging(any());
 
                 // 5. assert insert into
-                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any());
+                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any(), anyBoolean());
                 inOrder.verify(databaseExecutor).execute(any());
 
                 // 6. assert drop external table
@@ -689,7 +689,7 @@ class AdgSynchronizeDestinationExecutorTest {
     @Test
     void shouldFailWhenNewInsertIntoSqlFactoryThrows(VertxTestContext testContext) {
         // arrange
-        when(synchronizeSqlFactory.insertIntoExternalTable(any(), any(), eq(NEW_QUERY))).thenThrow(new DtmException("Failed"));
+        when(synchronizeSqlFactory.insertIntoExternalTable(any(), any(), eq(NEW_QUERY), anyBoolean())).thenThrow(new DtmException("Failed"));
 
         UUID uuid = UUID.randomUUID();
 
@@ -733,9 +733,9 @@ class AdgSynchronizeDestinationExecutorTest {
                 inOrder.verify(adgSharedService).prepareStaging(any());
 
                 // 5. assert insert into
-                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any());
+                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any(), anyBoolean());
                 inOrder.verify(databaseExecutor).execute(any());
-                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any());
+                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any(), anyBoolean());
 
                 // 6. assert drop external table
                 inOrder.verify(synchronizeSqlFactory).dropExternalTable(any(), any());
@@ -794,9 +794,9 @@ class AdgSynchronizeDestinationExecutorTest {
                 inOrder.verify(adgSharedService).prepareStaging(any());
 
                 // 5. assert insert into
-                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any());
+                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any(), anyBoolean());
                 inOrder.verify(databaseExecutor).execute(any());
-                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any());
+                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any(), anyBoolean());
                 inOrder.verify(databaseExecutor).execute(any());
 
                 // 6. assert drop external table
@@ -856,9 +856,9 @@ class AdgSynchronizeDestinationExecutorTest {
                 inOrder.verify(adgSharedService).prepareStaging(any());
 
                 // 5. assert insert into
-                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any());
+                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any(), anyBoolean());
                 inOrder.verify(databaseExecutor).execute(any());
-                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any());
+                inOrder.verify(synchronizeSqlFactory).insertIntoExternalTable(any(), any(), any(), anyBoolean());
                 inOrder.verify(databaseExecutor).execute(any());
 
                 // 6. assert transfer data

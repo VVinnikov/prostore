@@ -13,6 +13,7 @@ import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.framework.DtmCalciteFramework;
 import io.arenadata.dtm.query.execution.core.base.dto.cache.EntityKey;
+import io.arenadata.dtm.query.execution.core.base.dto.cache.MaterializedViewCacheValue;
 import io.arenadata.dtm.query.execution.core.base.repository.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.base.repository.ServiceDbFacadeImpl;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.DatamartDao;
@@ -56,6 +57,7 @@ class DropSchemaDdlExecutorTest {
     private final CacheService<EntityKey, Entity> entityCacheService = mock(CaffeineCacheService.class);
     private final EvictQueryTemplateCacheService evictQueryTemplateCacheService =
             mock(EvictQueryTemplateCacheServiceImpl.class);
+    private final CacheService<EntityKey, MaterializedViewCacheValue> materializedViewCacheService = mock(CaffeineCacheService.class);
     private DropSchemaDdlExecutor dropSchemaDdlExecutor;
     private DdlRequestContext context;
     private String schema;
@@ -71,6 +73,7 @@ class DropSchemaDdlExecutorTest {
                 hotDeltaCacheService,
                 okDeltaCacheService,
                 entityCacheService,
+                materializedViewCacheService,
                 serviceDbFacade,
                 evictQueryTemplateCacheService);
         doNothing().when(evictQueryTemplateCacheService).evictByDatamartName(anyString());

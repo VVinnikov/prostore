@@ -181,7 +181,7 @@ class PrepareQueriesOfChangesServiceImplTest {
         // assert
         String expectedNewQuery = "SELECT dates.id, CAST(EXTRACT(EPOCH FROM dates.col_timestamp) * 1000000 AS BIGINT), (dates.col_date - DATE '1970-01-01') DAY, CAST(EXTRACT(EPOCH FROM dates.col_time) * 1000000 AS BIGINT), 0\n" +
                 "FROM datamart1.dates AS dates";
-        String expectedDeletedQuery = "SELECT dates.id, NULL, NULL, NULL, 1\n" +
+        String expectedDeletedQuery = "SELECT dates.id, 1\n" +
                 "FROM datamart1.dates AS dates";
 
         result.onComplete(event -> {
@@ -269,12 +269,12 @@ class PrepareQueriesOfChangesServiceImplTest {
                 "FROM datamart1.dates AS t1\n" +
                 "INNER JOIN datamart1.names AS t2 ON t1.id = t2.id) AS t0\n" +
                 "INNER JOIN datamart1.surnames AS t3 ON t0.id = t3.id";
-        String expectedDeletedFreshQuery = "SELECT t0.id, NULL, NULL, NULL, t0.name, NULL, 1\n" +
+        String expectedDeletedFreshQuery = "SELECT t0.id, t0.name, 1\n" +
                 "FROM (SELECT t1.id, t1.col_timestamp, t1.col_date, t1.col_time, t2.name\n" +
                 "FROM datamart1.dates AS t1\n" +
                 "INNER JOIN datamart1.names AS t2 ON t1.id = t2.id) AS t0\n" +
                 "INNER JOIN datamart1.surnames AS t3 ON t0.id = t3.id";
-        String expectedDeletedStaleQuery = "SELECT t0.id, NULL, NULL, NULL, t0.name, NULL, 1\n" +
+        String expectedDeletedStaleQuery = "SELECT t0.id, t0.name, 1\n" +
                 "FROM (SELECT t1.id, t1.col_timestamp, t1.col_date, t1.col_time, t2.name\n" +
                 "FROM datamart1.dates AS t1\n" +
                 "INNER JOIN datamart1.names AS t2 ON t1.id = t2.id) AS t0\n" +
@@ -346,9 +346,9 @@ class PrepareQueriesOfChangesServiceImplTest {
                 "FROM datamart1.dates AS dates";
         String expectedNewStaleQuery = "SELECT 1, COUNT(*), 0\n" +
                 "FROM datamart1.dates AS dates";
-        String expectedDeletedFreshQuery = "SELECT 1, NULL, 1\n" +
+        String expectedDeletedFreshQuery = "SELECT 1, 1\n" +
                 "FROM datamart1.dates AS dates";
-        String expectedDeletedStaleQuery = "SELECT 1, NULL, 1\n" +
+        String expectedDeletedStaleQuery = "SELECT 1, 1\n" +
                 "FROM datamart1.dates AS dates";
 
         result.onComplete(event -> {

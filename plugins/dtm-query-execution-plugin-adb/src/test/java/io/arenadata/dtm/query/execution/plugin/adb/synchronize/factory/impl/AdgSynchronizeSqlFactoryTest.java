@@ -75,10 +75,22 @@ class AdgSynchronizeSqlFactoryTest {
         Entity entity = getEntity();
 
         // act
-        String sql = adgSynchronizeSqlFactory.insertIntoExternalTable(DATAMART, entity, QUERY);
+        String sql = adgSynchronizeSqlFactory.insertIntoExternalTable(DATAMART, entity, QUERY, false);
 
         // assert
         assertEquals("INSERT INTO " + DATAMART + ".TARANTOOL_EXT_" + ENTITY_NAME + " " + QUERY, sql);
+    }
+
+    @Test
+    void shouldPrepareInsertIntoExternalTableWhenOnlyPk() {
+        // arrange
+        Entity entity = getEntity();
+
+        // act
+        String sql = adgSynchronizeSqlFactory.insertIntoExternalTable(DATAMART, entity, QUERY, true);
+
+        // assert
+        assertEquals("INSERT INTO " + DATAMART + ".TARANTOOL_EXT_" + ENTITY_NAME + " (col_varchar, col_char, col_bigint, col_int, col_int32, col_double, col_float, col_date, col_time, col_timestamp, col_boolean, col_uuid, col_link, sys_op) " + QUERY, sql);
     }
 
     private Entity getEntity() {
@@ -91,6 +103,7 @@ class AdgSynchronizeSqlFactoryTest {
                     .ordinalPosition(pos++)
                     .name("col_" + columnType.name().toLowerCase())
                     .type(columnType)
+                    .primaryOrder(pos)
                     .nullable(true)
                     .build();
             switch (columnType) {

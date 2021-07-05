@@ -21,6 +21,9 @@ public class AdgSynchronizeSqlFactory implements SynchronizeSqlFactory {
             "(%s) LOCATION ('pxf://%s?PROFILE=tarantool-upsert&TARANTOOL_SERVER=%s&USER=%s&PASSWORD=%s&TIMEOUT_CONNECT=%d&TIMEOUT_READ=%d&TIMEOUT_REQUEST=%d')\n" +
             "FORMAT 'CUSTOM' (FORMATTER = 'pxfwritable_export')";
     private static final String INSERT_INTO_EXTERNAL_TABLE = "INSERT INTO %s.TARANTOOL_EXT_%s %s";
+    private static final String INSERT_INTO_EXTERNAL_TABLE_ONLY_PK = "INSERT INTO %s.TARANTOOL_EXT_%s (%s) %s";
+    private static final String ADDITIONAL_FIELD_TO_ONLY_PK = ", sys_op";
+    private static final String DELIMETER = ", ";
     private final AdgSharedService adgSharedService;
 
     public AdgSynchronizeSqlFactory(AdgSharedService adgSharedService) {
@@ -43,8 +46,18 @@ public class AdgSynchronizeSqlFactory implements SynchronizeSqlFactory {
     }
 
     @Override
-    public String insertIntoExternalTable(String datamart, Entity matView, String query) {
-        return String.format(INSERT_INTO_EXTERNAL_TABLE, datamart, matView.getName(), query);
+    public String insertIntoExternalTable(String datamart, Entity matView, String query, boolean onlyPrimaryKeys) {
+        if (!onlyPrimaryKeys) {
+            return String.format(INSERT_INTO_EXTERNAL_TABLE, datamart, matView.getName(), query);
+        }
+
+        String columns = matView.getFields().stream()
+                .filter(field -> field.getPrimaryOrder() != null)
+                .sorted(Comparator.comparingInt(EntityField::getOrdinalPosition))
+                .map(EntityField::getName)
+                .collect(Collectors.joining(DELIMETER, "", ADDITIONAL_FIELD_TO_ONLY_PK));
+
+        return String.format(INSERT_INTO_EXTERNAL_TABLE_ONLY_PK, datamart, matView.getName(), columns, query);
     }
 
     private String getSpaceName(String env, String datamart, Entity matView) {

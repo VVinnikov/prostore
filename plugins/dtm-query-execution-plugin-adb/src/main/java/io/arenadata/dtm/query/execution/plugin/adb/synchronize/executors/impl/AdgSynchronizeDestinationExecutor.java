@@ -23,6 +23,8 @@ import java.util.Map;
 @Component
 @Slf4j
 public class AdgSynchronizeDestinationExecutor implements SynchronizeDestinationExecutor {
+    private static final boolean ONLY_PRIMARY_KEYS = true;
+    private static final boolean ALL_COLUMNS = false;
     private final PrepareQueriesOfChangesService prepareQueriesOfChangesService;
     private final DatabaseExecutor databaseExecutor;
     private final SynchronizeSqlFactory synchronizeSqlFactory;
@@ -80,8 +82,8 @@ public class AdgSynchronizeDestinationExecutor implements SynchronizeDestination
     }
 
     private Future<List<Map<String, Object>>> insertChanges(PrepareRequestOfChangesResult requestOfChanges, SynchronizeRequest synchronizeRequest) {
-        return executeInsertIntoExternalTable(synchronizeRequest.getDatamartMnemonic(), synchronizeRequest.getEntity(), requestOfChanges.getDeletedRecordsQuery())
-                .compose(ar -> executeInsertIntoExternalTable(synchronizeRequest.getDatamartMnemonic(), synchronizeRequest.getEntity(), requestOfChanges.getNewRecordsQuery()));
+        return executeInsertIntoExternalTable(synchronizeRequest.getDatamartMnemonic(), synchronizeRequest.getEntity(), requestOfChanges.getDeletedRecordsQuery(), ONLY_PRIMARY_KEYS)
+                .compose(ar -> executeInsertIntoExternalTable(synchronizeRequest.getDatamartMnemonic(), synchronizeRequest.getEntity(), requestOfChanges.getNewRecordsQuery(), ALL_COLUMNS));
     }
 
     private Future<Void> transferSpaceChanges(SynchronizeRequest synchronizeRequest) {
@@ -103,9 +105,9 @@ public class AdgSynchronizeDestinationExecutor implements SynchronizeDestination
         });
     }
 
-    private Future<List<Map<String, Object>>> executeInsertIntoExternalTable(String datamart, Entity entity, String query) {
+    private Future<List<Map<String, Object>>> executeInsertIntoExternalTable(String datamart, Entity entity, String query, boolean onlyPrimaryKeys) {
         return Future.future(event -> {
-            String insertIntoSql = synchronizeSqlFactory.insertIntoExternalTable(datamart, entity, query);
+            String insertIntoSql = synchronizeSqlFactory.insertIntoExternalTable(datamart, entity, query, onlyPrimaryKeys);
             databaseExecutor.execute(insertIntoSql).onComplete(event);
         });
     }

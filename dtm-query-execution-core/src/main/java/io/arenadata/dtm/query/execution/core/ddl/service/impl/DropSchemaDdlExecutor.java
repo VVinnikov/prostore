@@ -91,7 +91,11 @@ public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
 
     private void clearCacheByDatamartName(String schemaName) {
         entityCacheService.removeIf(ek -> ek.getDatamartName().equals(schemaName));
-        materializedViewCacheService.removeIf(ek -> ek.getDatamartName().equals(schemaName));
+        materializedViewCacheService.forEach(((entityKey, cacheValue) -> {
+            if (entityKey.getDatamartName().equals(schemaName)) {
+                cacheValue.markForDeletion();
+            }
+        }));
         hotDeltaCacheService.remove(schemaName);
         okDeltaCacheService.remove(schemaName);
     }

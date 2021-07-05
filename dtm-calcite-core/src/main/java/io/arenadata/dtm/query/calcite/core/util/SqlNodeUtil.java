@@ -4,6 +4,8 @@ import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.calcite.core.extension.dml.LimitableSqlOrderBy;
 import io.arenadata.dtm.query.calcite.core.extension.parser.ParseException;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
+import io.arenadata.dtm.query.calcite.core.visitors.SqlAggregateFinder;
+import lombok.val;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlSelect;
@@ -50,5 +52,11 @@ public final class SqlNodeUtil {
         }
 
         return SourceType.valueOfAvailable(destination.toString().replace("'", ""));
+    }
+
+    public static boolean containsAggregates(SqlNode sqlNode) {
+        val aggregateVisitor = new SqlAggregateFinder();
+        sqlNode.accept(aggregateVisitor);
+        return aggregateVisitor.isFoundAggregate();
     }
 }

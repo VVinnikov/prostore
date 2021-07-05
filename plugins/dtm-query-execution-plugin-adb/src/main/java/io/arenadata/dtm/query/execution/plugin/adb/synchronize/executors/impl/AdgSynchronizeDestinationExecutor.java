@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adb.synchronize.executors.impl;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.query.execution.plugin.adb.query.service.DatabaseExecutor;
@@ -41,8 +42,14 @@ public class AdgSynchronizeDestinationExecutor implements SynchronizeDestination
     public Future<Long> execute(SynchronizeRequest synchronizeRequest) {
         return Future.future(promise -> {
             log.info("Started [ADB->ADG][{}] synchronization, deltaNum: {}", synchronizeRequest.getRequestId(), synchronizeRequest.getDeltaNumToBe());
+            if (synchronizeRequest.getDatamarts().size() > 1) {
+                promise.fail(new DtmException(String.format("Can't synchronize [ADB->ADG][%s] with multiple datamarts: %s",
+                        synchronizeRequest.getEntity().getName(), synchronizeRequest.getDatamarts())));
+                return;
+            }
+
             prepareQueriesOfChangesService.prepare(new PrepareRequestOfChangesRequest(synchronizeRequest.getDatamarts(), synchronizeRequest.getEnvName(),
-                    synchronizeRequest.getDeltaNumToBe(), synchronizeRequest.getViewQuery()))
+                    synchronizeRequest.getDeltaNumToBe(), synchronizeRequest.getViewQuery(), synchronizeRequest.getEntity()))
                     .compose(requestOfChanges -> synchronize(requestOfChanges, synchronizeRequest))
                     .onComplete(result -> executeDropExternalTable(synchronizeRequest.getDatamartMnemonic(), synchronizeRequest.getEntity())
                             .onComplete(dropResult -> {

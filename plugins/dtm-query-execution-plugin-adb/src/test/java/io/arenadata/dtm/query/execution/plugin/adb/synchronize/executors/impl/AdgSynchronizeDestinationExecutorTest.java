@@ -32,8 +32,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith({VertxExtension.class, MockitoExtension.class})
@@ -91,10 +90,7 @@ class AdgSynchronizeDestinationExecutorTest {
         Datamart dmrt1 = Datamart.builder()
                 .mnemonic(DATAMART)
                 .build();
-        Datamart dmrt2 = Datamart.builder()
-                .mnemonic(DATAMART_2)
-                .build();
-        List<Datamart> datamarts = Arrays.asList(dmrt1, dmrt2);
+        List<Datamart> datamarts = Collections.singletonList(dmrt1);
         Entity entity = Entity.builder()
                 .build();
 
@@ -118,7 +114,7 @@ class AdgSynchronizeDestinationExecutorTest {
                 // 1. assert request of changes
                 inOrder.verify(prepareQueriesOfChangesService).prepare(requestOfChangesRequestArgumentCaptor.capture());
                 PrepareRequestOfChangesRequest prepareRequestOfChangesRequest = requestOfChangesRequestArgumentCaptor.getValue();
-                assertThat(prepareRequestOfChangesRequest.getDatamarts(), Matchers.containsInAnyOrder(Matchers.sameInstance(dmrt1), Matchers.sameInstance(dmrt2)));
+                assertThat(prepareRequestOfChangesRequest.getDatamarts(), Matchers.contains(Matchers.sameInstance(dmrt1)));
                 assertEquals(DELTA_NUM, prepareRequestOfChangesRequest.getDeltaNumToBe());
                 assertEquals(ENV, prepareRequestOfChangesRequest.getEnvName());
                 assertSame(VIEW_QUERY, prepareRequestOfChangesRequest.getViewQuery());
@@ -182,10 +178,7 @@ class AdgSynchronizeDestinationExecutorTest {
         Datamart dmrt1 = Datamart.builder()
                 .mnemonic(DATAMART)
                 .build();
-        Datamart dmrt2 = Datamart.builder()
-                .mnemonic(DATAMART_2)
-                .build();
-        List<Datamart> datamarts = Arrays.asList(dmrt1, dmrt2);
+        List<Datamart> datamarts = Collections.singletonList(dmrt1);
         Entity entity = Entity.builder()
                 .build();
 
@@ -241,12 +234,10 @@ class AdgSynchronizeDestinationExecutorTest {
     }
 
     @Test
-    void shouldFailWhenPrepareRequestOfChangesFailed(VertxTestContext testContext) {
+    void shouldFailWhenMultipleDatamarts(VertxTestContext testContext) {
         // arrange
-        when(prepareQueriesOfChangesService.prepare(any())).thenReturn(Future.failedFuture(new DtmException("Failed")));
 
         UUID uuid = UUID.randomUUID();
-
         Datamart dmrt1 = Datamart.builder()
                 .mnemonic(DATAMART)
                 .build();
@@ -254,6 +245,42 @@ class AdgSynchronizeDestinationExecutorTest {
                 .mnemonic(DATAMART_2)
                 .build();
         List<Datamart> datamarts = Arrays.asList(dmrt1, dmrt2);
+        Entity entity = Entity.builder()
+                .build();
+
+        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, DELTA_NUM, DELTA_NUM_CN_TO);
+
+        // act
+        Future<Long> result = adgSynchronizeDestinationExecutor.execute(synchronizeRequest);
+
+        // assert
+        result.onComplete(ar -> {
+            if (ar.succeeded()) {
+                testContext.failNow(new AssertionError("Unexpected success"));
+                return;
+            }
+
+            testContext.verify(() -> {
+                assertEquals(DtmException.class, ar.cause().getClass());
+                assertTrue(ar.cause().getMessage().contains("multiple datamarts"));
+
+                InOrder inOrder = inOrder(prepareQueriesOfChangesService, synchronizeSqlFactory, databaseExecutor, adgSharedService);
+                inOrder.verifyNoMoreInteractions();
+                verifyNoMoreInteractions(prepareQueriesOfChangesService, synchronizeSqlFactory, databaseExecutor, adgSharedService);
+            }).completeNow();
+        });
+    }
+
+    @Test
+    void shouldFailWhenPrepareRequestOfChangesFailed(VertxTestContext testContext) {
+        // arrange
+        when(prepareQueriesOfChangesService.prepare(any())).thenReturn(Future.failedFuture(new DtmException("Failed")));
+
+        UUID uuid = UUID.randomUUID();
+        Datamart dmrt1 = Datamart.builder()
+                .mnemonic(DATAMART)
+                .build();
+        List<Datamart> datamarts = Collections.singletonList(dmrt1);
         Entity entity = Entity.builder()
                 .build();
 
@@ -297,14 +324,10 @@ class AdgSynchronizeDestinationExecutorTest {
         });
 
         UUID uuid = UUID.randomUUID();
-
         Datamart dmrt1 = Datamart.builder()
                 .mnemonic(DATAMART)
                 .build();
-        Datamart dmrt2 = Datamart.builder()
-                .mnemonic(DATAMART_2)
-                .build();
-        List<Datamart> datamarts = Arrays.asList(dmrt1, dmrt2);
+        List<Datamart> datamarts = Collections.singletonList(dmrt1);
         Entity entity = Entity.builder()
                 .build();
 
@@ -346,14 +369,10 @@ class AdgSynchronizeDestinationExecutorTest {
                 Future.failedFuture(new DtmException("Failed: " + callCount.getAndIncrement())));
 
         UUID uuid = UUID.randomUUID();
-
         Datamart dmrt1 = Datamart.builder()
                 .mnemonic(DATAMART)
                 .build();
-        Datamart dmrt2 = Datamart.builder()
-                .mnemonic(DATAMART_2)
-                .build();
-        List<Datamart> datamarts = Arrays.asList(dmrt1, dmrt2);
+        List<Datamart> datamarts = Collections.singletonList(dmrt1);
         Entity entity = Entity.builder()
                 .build();
 
@@ -398,14 +417,10 @@ class AdgSynchronizeDestinationExecutorTest {
         when(synchronizeSqlFactory.createExternalTable(anyString(), anyString(), any())).thenThrow(new DtmException("Failed"));
 
         UUID uuid = UUID.randomUUID();
-
         Datamart dmrt1 = Datamart.builder()
                 .mnemonic(DATAMART)
                 .build();
-        Datamart dmrt2 = Datamart.builder()
-                .mnemonic(DATAMART_2)
-                .build();
-        List<Datamart> datamarts = Arrays.asList(dmrt1, dmrt2);
+        List<Datamart> datamarts = Collections.singletonList(dmrt1);
         Entity entity = Entity.builder()
                 .build();
 
@@ -453,14 +468,10 @@ class AdgSynchronizeDestinationExecutorTest {
         when(databaseExecutor.execute(eq(CREATE_EXTERNAL_TABLE_QUERY))).thenReturn(Future.failedFuture(new DtmException("Failed")));
 
         UUID uuid = UUID.randomUUID();
-
         Datamart dmrt1 = Datamart.builder()
                 .mnemonic(DATAMART)
                 .build();
-        Datamart dmrt2 = Datamart.builder()
-                .mnemonic(DATAMART_2)
-                .build();
-        List<Datamart> datamarts = Arrays.asList(dmrt1, dmrt2);
+        List<Datamart> datamarts = Collections.singletonList(dmrt1);
         Entity entity = Entity.builder()
                 .build();
 
@@ -509,14 +520,10 @@ class AdgSynchronizeDestinationExecutorTest {
         when(adgSharedService.prepareStaging(any())).thenReturn(Future.failedFuture(new DtmException("Failed")));
 
         UUID uuid = UUID.randomUUID();
-
         Datamart dmrt1 = Datamart.builder()
                 .mnemonic(DATAMART)
                 .build();
-        Datamart dmrt2 = Datamart.builder()
-                .mnemonic(DATAMART_2)
-                .build();
-        List<Datamart> datamarts = Arrays.asList(dmrt1, dmrt2);
+        List<Datamart> datamarts = Collections.singletonList(dmrt1);
         Entity entity = Entity.builder()
                 .build();
 
@@ -568,14 +575,10 @@ class AdgSynchronizeDestinationExecutorTest {
         when(synchronizeSqlFactory.insertIntoExternalTable(any(), any(), eq(DELETE_QUERY))).thenThrow(new DtmException("Failed"));
 
         UUID uuid = UUID.randomUUID();
-
         Datamart dmrt1 = Datamart.builder()
                 .mnemonic(DATAMART)
                 .build();
-        Datamart dmrt2 = Datamart.builder()
-                .mnemonic(DATAMART_2)
-                .build();
-        List<Datamart> datamarts = Arrays.asList(dmrt1, dmrt2);
+        List<Datamart> datamarts = Collections.singletonList(dmrt1);
         Entity entity = Entity.builder()
                 .build();
 
@@ -630,14 +633,10 @@ class AdgSynchronizeDestinationExecutorTest {
         when(databaseExecutor.execute(eq(INSERT_INTO_DELETE_QUERY))).thenReturn(Future.failedFuture(new DtmException("Failed")));
 
         UUID uuid = UUID.randomUUID();
-
         Datamart dmrt1 = Datamart.builder()
                 .mnemonic(DATAMART)
                 .build();
-        Datamart dmrt2 = Datamart.builder()
-                .mnemonic(DATAMART_2)
-                .build();
-        List<Datamart> datamarts = Arrays.asList(dmrt1, dmrt2);
+        List<Datamart> datamarts = Collections.singletonList(dmrt1);
         Entity entity = Entity.builder()
                 .build();
 
@@ -697,10 +696,7 @@ class AdgSynchronizeDestinationExecutorTest {
         Datamart dmrt1 = Datamart.builder()
                 .mnemonic(DATAMART)
                 .build();
-        Datamart dmrt2 = Datamart.builder()
-                .mnemonic(DATAMART_2)
-                .build();
-        List<Datamart> datamarts = Arrays.asList(dmrt1, dmrt2);
+        List<Datamart> datamarts = Collections.singletonList(dmrt1);
         Entity entity = Entity.builder()
                 .build();
 
@@ -761,10 +757,7 @@ class AdgSynchronizeDestinationExecutorTest {
         Datamart dmrt1 = Datamart.builder()
                 .mnemonic(DATAMART)
                 .build();
-        Datamart dmrt2 = Datamart.builder()
-                .mnemonic(DATAMART_2)
-                .build();
-        List<Datamart> datamarts = Arrays.asList(dmrt1, dmrt2);
+        List<Datamart> datamarts = Collections.singletonList(dmrt1);
         Entity entity = Entity.builder()
                 .build();
 
@@ -826,10 +819,7 @@ class AdgSynchronizeDestinationExecutorTest {
         Datamart dmrt1 = Datamart.builder()
                 .mnemonic(DATAMART)
                 .build();
-        Datamart dmrt2 = Datamart.builder()
-                .mnemonic(DATAMART_2)
-                .build();
-        List<Datamart> datamarts = Arrays.asList(dmrt1, dmrt2);
+        List<Datamart> datamarts = Collections.singletonList(dmrt1);
         Entity entity = Entity.builder()
                 .build();
 

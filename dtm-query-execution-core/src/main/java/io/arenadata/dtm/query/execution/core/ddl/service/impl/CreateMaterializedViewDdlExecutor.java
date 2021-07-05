@@ -15,6 +15,7 @@ import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
 import io.arenadata.dtm.query.calcite.core.node.SqlTreeNode;
 import io.arenadata.dtm.query.calcite.core.rel2sql.NullNotCastableRelToSqlConverter;
 import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
+import io.arenadata.dtm.query.calcite.core.visitors.SqlForbiddenNamesFinder;
 import io.arenadata.dtm.query.execution.core.base.dto.cache.EntityKey;
 import io.arenadata.dtm.query.execution.core.base.dto.cache.MaterializedViewCacheValue;
 import io.arenadata.dtm.query.execution.core.base.exception.datamart.DatamartNotExistsException;
@@ -39,8 +40,10 @@ import io.vertx.core.Future;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.calcite.sql.*;
-import org.apache.calcite.sql.util.SqlBasicVisitor;
+import org.apache.calcite.sql.SqlCharStringLiteral;
+import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlNode;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -54,8 +57,6 @@ import static io.arenadata.dtm.query.execution.core.ddl.utils.ValidationUtils.*;
 @Slf4j
 @Component
 public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
-    private static final List<String> SYSTEM_FORBIDDEN_NAMES = Arrays.asList("sys_op", "sys_from", "sys_to",
-            "sys_close_date", "bucket_id", "sign");
     private static final String VIEW_AND_TABLE_PATTERN = "(?i).*(JOIN|SELECT)\\.(|AS\\.)(SNAPSHOT|IDENTIFIER)$";
     private static final String ALL_COLUMNS = "*";
     private static final int UUID_SIZE = 36;
@@ -142,8 +143,9 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
             val selectSqlNode = getParsedSelect(context.getSqlNode(), parserResponse);
             replaceSqlSelectQuery(context, selectSqlNode);
             prepareEntityFuture(context, selectSqlNode, parserResponse.getSchema())
+                    .compose(e -> validateQueryDatamart(e, parserResponse.getSchema()))
                     .compose(this::checkEntityNotExists)
-                    .compose(e -> metadataExecutor.execute(context))
+                    .compose(v -> metadataExecutor.execute(context))
                     .compose(v -> entityDao.createEntity(context.getEntity()))
                     .onSuccess(v -> {
                         materializedViewCacheService.put(new EntityKey(context.getEntity().getSchema(), context.getEntity().getName()),
@@ -151,6 +153,26 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
                         p.complete(QueryResult.emptyResult());
                     })
                     .onFailure(p::fail);
+        });
+    }
+
+    private Future<Entity> validateQueryDatamart(Entity entity, List<Datamart> datamarts) {
+        return Future.future(p -> {
+            if (datamarts.size() > 1) {
+                p.fail(MaterializedViewValidationException.multipleDatamarts(entity.getName(), datamarts, entity.getViewQuery()));
+                return;
+            }
+
+            if (datamarts.size() == 1) {
+                String entityDatamart = entity.getSchema();
+                String queryDatamart = datamarts.get(0).getMnemonic();
+                if (!Objects.equals(entityDatamart, queryDatamart)) {
+                    p.fail(MaterializedViewValidationException.differentDatamarts(entity.getName(), entityDatamart, queryDatamart));
+                    return;
+                }
+            }
+
+            p.complete(entity);
         });
     }
 
@@ -210,18 +232,14 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
 
     private Future<Void> checkSystemColumnNames(SqlNode sqlNode) {
         return Future.future(p -> {
-            sqlNode.accept(new SqlBasicVisitor<Object>() {
-                @Override
-                public Object visit(SqlIdentifier id) {
-                    id.names.forEach(name -> {
-                        if (SYSTEM_FORBIDDEN_NAMES.contains(name)) {
-                            p.fail(new ViewDisalowedOrDirectiveException(sqlNode.toSqlString(sqlDialect).getSql(),
-                                    String.format("View query contains forbidden system name: %s", name)));
-                        }
-                    });
-                    return null;
-                }
-            });
+            val sqlForbiddenNamesFinder = new SqlForbiddenNamesFinder();
+            sqlNode.accept(sqlForbiddenNamesFinder);
+            if (!sqlForbiddenNamesFinder.getFoundForbiddenNames().isEmpty()) {
+                p.fail(new ViewDisalowedOrDirectiveException(sqlNode.toSqlString(sqlDialect).getSql(),
+                        String.format("View query contains forbidden system names: %s", sqlForbiddenNamesFinder.getFoundForbiddenNames())));
+                return;
+            }
+
             p.complete();
         });
     }

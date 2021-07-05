@@ -3,10 +3,14 @@ package io.arenadata.dtm.query.execution.core.base.exception.materializedview;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.reader.SourceType;
+import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 
+import java.util.List;
 import java.util.Set;
 
 public class MaterializedViewValidationException extends DtmException {
+    private static final String MULTIPLE_DATAMARTS_PATTERN = "Materialized view %s has multiple datamarts: %s in query: %s";
+    private static final String DIFFERENT_DATAMARTS_PATTERN = "Materialized view %s has datamart [%s] not equal to query [%s]";
     private static final String CONFLICT_COLUMN_COUNT_PATTERN = "Materialized view %s has conflict with query columns wrong count, view: %d query: %d";
     private static final String CONFLICT_COLUMN_TYPES_PATTERN = "Materialized view %s has conflict with query types not equal for: %s view: %s, query: %s";
     private static final String CONFLICT_COLUMN_ACCURACY_PATTERN = "Materialized view %s has conflict with query columns type accuracy not equal for %s view: %d query: %s";
@@ -16,6 +20,14 @@ public class MaterializedViewValidationException extends DtmException {
 
     private MaterializedViewValidationException(String message) {
         super(message);
+    }
+
+    public static MaterializedViewValidationException multipleDatamarts(String name, List<Datamart> datamarts, String query) {
+        return new MaterializedViewValidationException(String.format(MULTIPLE_DATAMARTS_PATTERN, name, datamarts, query));
+    }
+
+    public static MaterializedViewValidationException differentDatamarts(String name, String entityDatamart, String queryDatamart) {
+        return new MaterializedViewValidationException(String.format(DIFFERENT_DATAMARTS_PATTERN, name, entityDatamart, queryDatamart));
     }
 
     public static MaterializedViewValidationException columnCountConflict(String name, int viewColumns, int queryColumns) {

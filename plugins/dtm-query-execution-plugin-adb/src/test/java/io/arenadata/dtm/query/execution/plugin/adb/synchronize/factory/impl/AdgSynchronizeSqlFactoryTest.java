@@ -83,7 +83,7 @@ class AdgSynchronizeSqlFactoryTest {
 
     private Entity getEntity() {
         List<EntityField> fields = new ArrayList<>();
-        int pos = 1;
+        int pos = 0;
         for (ColumnType columnType : ColumnType.values()) {
             if (columnType == ColumnType.ANY || columnType == ColumnType.BLOB) continue;
 

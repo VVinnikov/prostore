@@ -122,12 +122,12 @@ class AdgSynchronizeDestinationExecutorComplexTest {
                         .isEqualToIgnoringNewLines("DROP EXTERNAL TABLE IF EXISTS datamart1.TARANTOOL_EXT_matview");
                 assertThat(allInvocations.get(1))
                         .isEqualToIgnoringNewLines("CREATE WRITABLE EXTERNAL TABLE datamart1.TARANTOOL_EXT_matview\n" +
-                                "(sys_op int8,sys_to int8,sys_from int8,sys_op int8,sys_to int8,sys_from int8,col_varchar varchar,col_char varchar,col_bigint int8,col_int int8,col_int32 int4,col_double float8,col_float float4,col_date int8,col_time int8,col_timestamp int8,col_boolean bool,col_uuid varchar,col_link varchar,sys_op int8,bucket_id int8) LOCATION ('pxf://env__datamart1__matview_staging?PROFILE=tarantool-upsert&TARANTOOL_SERVER=tarantool:1234&USER=user&PASSWORD=pass&TIMEOUT_CONNECT=3001&TIMEOUT_READ=3002&TIMEOUT_REQUEST=3003')\n" +
+                                "(id int8,col_varchar varchar,col_char varchar,col_bigint int8,col_int int8,col_int32 int4,col_double float8,col_float float4,col_date int8,col_time int8,col_timestamp int8,col_boolean bool,col_uuid varchar,col_link varchar,sys_op int8,bucket_id int8) LOCATION ('pxf://env__datamart1__matview_staging?PROFILE=tarantool-upsert&TARANTOOL_SERVER=tarantool:1234&USER=user&PASSWORD=pass&TIMEOUT_CONNECT=3001&TIMEOUT_READ=3002&TIMEOUT_REQUEST=3003')\n" +
                                 "FORMAT 'CUSTOM' (FORMATTER = 'pxfwritable_export')");
                 assertThat(allInvocations.get(2))
-                        .isEqualToIgnoringNewLines("INSERT INTO datamart1.TARANTOOL_EXT_matview SELECT col_varchar, col_char, col_bigint, col_int, col_int32, col_double, col_float, (col_date - DATE '1970-01-01') AS EXPR$7, EXTRACT(EPOCH FROM col_time) * 1000000 AS EXPR$8, EXTRACT(EPOCH FROM col_timestamp) * 1000000 AS EXPR$9, col_boolean, col_uuid, col_link, 1 AS EXPR$13 FROM datamart1.tbl1_actual WHERE COALESCE(sys_to, 9223372036854775807) >= 0 AND (COALESCE(sys_to, 9223372036854775807) <= 0 AND sys_op = 1)");
+                        .isEqualToIgnoringNewLines("INSERT INTO datamart1.TARANTOOL_EXT_matview SELECT id, NULL AS EXPR$1, NULL AS EXPR$2, NULL AS EXPR$3, NULL AS EXPR$4, NULL AS EXPR$5, NULL AS EXPR$6, NULL AS EXPR$7, NULL AS EXPR$8, NULL AS EXPR$9, NULL AS EXPR$10, NULL AS EXPR$11, NULL AS EXPR$12, NULL AS EXPR$13, 1 AS EXPR$14 FROM datamart1.tbl1_actual WHERE COALESCE(sys_to, 9223372036854775807) >= 0 AND (COALESCE(sys_to, 9223372036854775807) <= 0 AND sys_op = 1)");
                 assertThat(allInvocations.get(3))
-                        .isEqualToIgnoringNewLines("INSERT INTO datamart1.TARANTOOL_EXT_matview SELECT col_varchar, col_char, col_bigint, col_int, col_int32, col_double, col_float, (col_date - DATE '1970-01-01') AS EXPR$7, EXTRACT(EPOCH FROM col_time) * 1000000 AS EXPR$8, EXTRACT(EPOCH FROM col_timestamp) * 1000000 AS EXPR$9, col_boolean, col_uuid, col_link, 0 AS EXPR$13 FROM datamart1.tbl1_actual WHERE sys_from >= 1 AND sys_from <= 1");
+                        .isEqualToIgnoringNewLines("INSERT INTO datamart1.TARANTOOL_EXT_matview SELECT id, col_varchar, col_char, col_bigint, col_int, col_int32, col_double, col_float, (col_date - DATE '1970-01-01') AS EXPR$8, EXTRACT(EPOCH FROM col_time) * 1000000 AS EXPR$9, EXTRACT(EPOCH FROM col_timestamp) * 1000000 AS EXPR$10, col_boolean, col_uuid, col_link, 0 AS EXPR$14 FROM datamart1.tbl1_actual WHERE sys_from >= 1 AND sys_from <= 1");
                 assertThat(allInvocations.get(4))
                         .isEqualToIgnoringNewLines("DROP EXTERNAL TABLE IF EXISTS datamart1.TARANTOOL_EXT_matview");
                 verifyNoMoreInteractions(databaseExecutor);
@@ -140,7 +140,7 @@ class AdgSynchronizeDestinationExecutorComplexTest {
     void shouldCorrectlySynchronizeWhenMultipleTables(VertxTestContext testContext) {
         // arrange
         UUID uuid = UUID.randomUUID();
-        String viewQuery = "SELECT * from datamart1.tbl1 join datamart1.tbl2 on tbl1.col_bigint = tbl2.col_bigint";
+        String viewQuery = "SELECT tbl1.id, tbl1.col_varchar, tbl1.col_char, tbl1.col_bigint, tbl1.col_int, tbl2.col_int32, tbl2.col_double, tbl2.col_float, tbl2.col_date, tbl2.col_time, tbl2.col_timestamp, tbl2.col_boolean, tbl2.col_uuid, tbl2.col_link from datamart1.tbl1 join datamart1.tbl2 on tbl1.col_bigint = tbl2.col_bigint";
         SqlNode sqlNode = definitionService.processingQuery(viewQuery);
         Datamart datamart = prepareDatamart(viewQuery);
         Entity matView = datamart.getEntities().get(0);
@@ -165,12 +165,126 @@ class AdgSynchronizeDestinationExecutorComplexTest {
                         .isEqualToIgnoringNewLines("DROP EXTERNAL TABLE IF EXISTS datamart1.TARANTOOL_EXT_matview");
                 assertThat(allInvocations.get(1))
                         .isEqualToIgnoringNewLines("CREATE WRITABLE EXTERNAL TABLE datamart1.TARANTOOL_EXT_matview\n" +
-                                "(sys_op int8,sys_to int8,sys_from int8,sys_op int8,sys_to int8,sys_from int8,sys_op int8,sys_to int8,sys_from int8,sys_op int8,sys_to int8,sys_from int8,col_varchar varchar,col_char varchar,col_bigint int8,col_int int8,col_int32 int4,col_double float8,col_float float4,col_date int8,col_time int8,col_timestamp int8,col_boolean bool,col_uuid varchar,col_link varchar,sys_op int8,bucket_id int8) LOCATION ('pxf://env__datamart1__matview_staging?PROFILE=tarantool-upsert&TARANTOOL_SERVER=tarantool:1234&USER=user&PASSWORD=pass&TIMEOUT_CONNECT=3001&TIMEOUT_READ=3002&TIMEOUT_REQUEST=3003')\n" +
+                                "(id int8,col_varchar varchar,col_char varchar,col_bigint int8,col_int int8,col_int32 int4,col_double float8,col_float float4,col_date int8,col_time int8,col_timestamp int8,col_boolean bool,col_uuid varchar,col_link varchar,sys_op int8,bucket_id int8) LOCATION ('pxf://env__datamart1__matview_staging?PROFILE=tarantool-upsert&TARANTOOL_SERVER=tarantool:1234&USER=user&PASSWORD=pass&TIMEOUT_CONNECT=3001&TIMEOUT_READ=3002&TIMEOUT_REQUEST=3003')\n" +
                                 "FORMAT 'CUSTOM' (FORMATTER = 'pxfwritable_export')");
                 assertThat(allInvocations.get(2))
-                        .isEqualToIgnoringNewLines("INSERT INTO datamart1.TARANTOOL_EXT_matview SELECT t0.col_varchar, t0.col_char, t0.col_bigint, t0.col_int, t0.col_int32, t0.col_double, t0.col_float, (t0.col_date - DATE '1970-01-01') AS EXPR$7, EXTRACT(EPOCH FROM t0.col_time) * 1000000 AS EXPR$8, EXTRACT(EPOCH FROM t0.col_timestamp) * 1000000 AS EXPR$9, t0.col_boolean, t0.col_uuid, t0.col_link, t2.col_varchar AS col_varchar0, t2.col_char AS col_char0, t2.col_bigint AS col_bigint0, t2.col_int AS col_int0, t2.col_int32 AS col_int320, t2.col_double AS col_double0, t2.col_float AS col_float0, (t2.col_date - DATE '1970-01-01') AS col_date0, EXTRACT(EPOCH FROM t2.col_time) * 1000000 AS col_time0, EXTRACT(EPOCH FROM t2.col_timestamp) * 1000000 AS col_timestamp0, t2.col_boolean AS col_boolean0, t2.col_uuid AS col_uuid0, t2.col_link AS col_link0, 1 AS EXPR$26 FROM (SELECT col_varchar, col_char, col_bigint, col_int, col_int32, col_double, col_float, col_date, col_time, col_timestamp, col_boolean, col_uuid, col_link FROM datamart1.tbl1_actual WHERE sys_from <= 0 AND COALESCE(sys_to, 9223372036854775807) >= 0) AS t0 INNER JOIN (SELECT col_varchar, col_char, col_bigint, col_int, col_int32, col_double, col_float, col_date, col_time, col_timestamp, col_boolean, col_uuid, col_link FROM datamart1.tbl2_actual WHERE sys_from <= 0 AND COALESCE(sys_to, 9223372036854775807) >= 0) AS t2 ON t0.col_bigint = t2.col_bigint EXCEPT SELECT t0.col_varchar, t0.col_char, t0.col_bigint, t0.col_int, t0.col_int32, t0.col_double, t0.col_float, (t0.col_date - DATE '1970-01-01') AS EXPR$7, EXTRACT(EPOCH FROM t0.col_time) * 1000000 AS EXPR$8, EXTRACT(EPOCH FROM t0.col_timestamp) * 1000000 AS EXPR$9, t0.col_boolean, t0.col_uuid, t0.col_link, t2.col_varchar AS col_varchar0, t2.col_char AS col_char0, t2.col_bigint AS col_bigint0, t2.col_int AS col_int0, t2.col_int32 AS col_int320, t2.col_double AS col_double0, t2.col_float AS col_float0, (t2.col_date - DATE '1970-01-01') AS col_date0, EXTRACT(EPOCH FROM t2.col_time) * 1000000 AS col_time0, EXTRACT(EPOCH FROM t2.col_timestamp) * 1000000 AS col_timestamp0, t2.col_boolean AS col_boolean0, t2.col_uuid AS col_uuid0, t2.col_link AS col_link0, 1 AS EXPR$26 FROM (SELECT col_varchar, col_char, col_bigint, col_int, col_int32, col_double, col_float, col_date, col_time, col_timestamp, col_boolean, col_uuid, col_link FROM datamart1.tbl1_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1) AS t0 INNER JOIN (SELECT col_varchar, col_char, col_bigint, col_int, col_int32, col_double, col_float, col_date, col_time, col_timestamp, col_boolean, col_uuid, col_link FROM datamart1.tbl2_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1) AS t2 ON t0.col_bigint = t2.col_bigint");
+                        .isEqualToIgnoringNewLines("INSERT INTO datamart1.TARANTOOL_EXT_matview SELECT t0.id, NULL AS EXPR$1, NULL AS EXPR$2, NULL AS EXPR$3, NULL AS EXPR$4, NULL AS EXPR$5, NULL AS EXPR$6, NULL AS EXPR$7, NULL AS EXPR$8, NULL AS EXPR$9, NULL AS EXPR$10, NULL AS EXPR$11, NULL AS EXPR$12, NULL AS EXPR$13, 1 AS EXPR$14 FROM (SELECT id, col_varchar, col_char, col_bigint, col_int, col_int32, col_double, col_float, col_date, col_time, col_timestamp, col_boolean, col_uuid, col_link FROM datamart1.tbl1_actual WHERE sys_from <= 0 AND COALESCE(sys_to, 9223372036854775807) >= 0) AS t0 INNER JOIN (SELECT id, col_varchar, col_char, col_bigint, col_int, col_int32, col_double, col_float, col_date, col_time, col_timestamp, col_boolean, col_uuid, col_link FROM datamart1.tbl2_actual WHERE sys_from <= 0 AND COALESCE(sys_to, 9223372036854775807) >= 0) AS t2 ON t0.col_bigint = t2.col_bigint EXCEPT SELECT t0.id, NULL AS EXPR$1, NULL AS EXPR$2, NULL AS EXPR$3, NULL AS EXPR$4, NULL AS EXPR$5, NULL AS EXPR$6, NULL AS EXPR$7, NULL AS EXPR$8, NULL AS EXPR$9, NULL AS EXPR$10, NULL AS EXPR$11, NULL AS EXPR$12, NULL AS EXPR$13, 1 AS EXPR$14 FROM (SELECT id, col_varchar, col_char, col_bigint, col_int, col_int32, col_double, col_float, col_date, col_time, col_timestamp, col_boolean, col_uuid, col_link FROM datamart1.tbl1_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1) AS t0 INNER JOIN (SELECT id, col_varchar, col_char, col_bigint, col_int, col_int32, col_double, col_float, col_date, col_time, col_timestamp, col_boolean, col_uuid, col_link FROM datamart1.tbl2_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1) AS t2 ON t0.col_bigint = t2.col_bigint");
                 assertThat(allInvocations.get(3))
-                        .isEqualToIgnoringNewLines("INSERT INTO datamart1.TARANTOOL_EXT_matview SELECT t0.col_varchar, t0.col_char, t0.col_bigint, t0.col_int, t0.col_int32, t0.col_double, t0.col_float, (t0.col_date - DATE '1970-01-01') AS EXPR$7, EXTRACT(EPOCH FROM t0.col_time) * 1000000 AS EXPR$8, EXTRACT(EPOCH FROM t0.col_timestamp) * 1000000 AS EXPR$9, t0.col_boolean, t0.col_uuid, t0.col_link, t2.col_varchar AS col_varchar0, t2.col_char AS col_char0, t2.col_bigint AS col_bigint0, t2.col_int AS col_int0, t2.col_int32 AS col_int320, t2.col_double AS col_double0, t2.col_float AS col_float0, (t2.col_date - DATE '1970-01-01') AS col_date0, EXTRACT(EPOCH FROM t2.col_time) * 1000000 AS col_time0, EXTRACT(EPOCH FROM t2.col_timestamp) * 1000000 AS col_timestamp0, t2.col_boolean AS col_boolean0, t2.col_uuid AS col_uuid0, t2.col_link AS col_link0, 0 AS EXPR$26 FROM (SELECT col_varchar, col_char, col_bigint, col_int, col_int32, col_double, col_float, col_date, col_time, col_timestamp, col_boolean, col_uuid, col_link FROM datamart1.tbl1_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1) AS t0 INNER JOIN (SELECT col_varchar, col_char, col_bigint, col_int, col_int32, col_double, col_float, col_date, col_time, col_timestamp, col_boolean, col_uuid, col_link FROM datamart1.tbl2_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1) AS t2 ON t0.col_bigint = t2.col_bigint EXCEPT SELECT t0.col_varchar, t0.col_char, t0.col_bigint, t0.col_int, t0.col_int32, t0.col_double, t0.col_float, (t0.col_date - DATE '1970-01-01') AS EXPR$7, EXTRACT(EPOCH FROM t0.col_time) * 1000000 AS EXPR$8, EXTRACT(EPOCH FROM t0.col_timestamp) * 1000000 AS EXPR$9, t0.col_boolean, t0.col_uuid, t0.col_link, t2.col_varchar AS col_varchar0, t2.col_char AS col_char0, t2.col_bigint AS col_bigint0, t2.col_int AS col_int0, t2.col_int32 AS col_int320, t2.col_double AS col_double0, t2.col_float AS col_float0, (t2.col_date - DATE '1970-01-01') AS col_date0, EXTRACT(EPOCH FROM t2.col_time) * 1000000 AS col_time0, EXTRACT(EPOCH FROM t2.col_timestamp) * 1000000 AS col_timestamp0, t2.col_boolean AS col_boolean0, t2.col_uuid AS col_uuid0, t2.col_link AS col_link0, 0 AS EXPR$26 FROM (SELECT col_varchar, col_char, col_bigint, col_int, col_int32, col_double, col_float, col_date, col_time, col_timestamp, col_boolean, col_uuid, col_link FROM datamart1.tbl1_actual WHERE sys_from <= 0 AND COALESCE(sys_to, 9223372036854775807) >= 0) AS t0 INNER JOIN (SELECT col_varchar, col_char, col_bigint, col_int, col_int32, col_double, col_float, col_date, col_time, col_timestamp, col_boolean, col_uuid, col_link FROM datamart1.tbl2_actual WHERE sys_from <= 0 AND COALESCE(sys_to, 9223372036854775807) >= 0) AS t2 ON t0.col_bigint = t2.col_bigint");
+                        .isEqualToIgnoringNewLines("INSERT INTO datamart1.TARANTOOL_EXT_matview SELECT t0.id, t0.col_varchar, t0.col_char, t0.col_bigint, t0.col_int, t2.col_int32, t2.col_double, t2.col_float, (t2.col_date - DATE '1970-01-01') AS EXPR$8, EXTRACT(EPOCH FROM t2.col_time) * 1000000 AS EXPR$9, EXTRACT(EPOCH FROM t2.col_timestamp) * 1000000 AS EXPR$10, t2.col_boolean, t2.col_uuid, t2.col_link, 0 AS EXPR$14 FROM (SELECT id, col_varchar, col_char, col_bigint, col_int, col_int32, col_double, col_float, col_date, col_time, col_timestamp, col_boolean, col_uuid, col_link FROM datamart1.tbl1_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1) AS t0 INNER JOIN (SELECT id, col_varchar, col_char, col_bigint, col_int, col_int32, col_double, col_float, col_date, col_time, col_timestamp, col_boolean, col_uuid, col_link FROM datamart1.tbl2_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1) AS t2 ON t0.col_bigint = t2.col_bigint EXCEPT SELECT t0.id, t0.col_varchar, t0.col_char, t0.col_bigint, t0.col_int, t2.col_int32, t2.col_double, t2.col_float, (t2.col_date - DATE '1970-01-01') AS EXPR$8, EXTRACT(EPOCH FROM t2.col_time) * 1000000 AS EXPR$9, EXTRACT(EPOCH FROM t2.col_timestamp) * 1000000 AS EXPR$10, t2.col_boolean, t2.col_uuid, t2.col_link, 0 AS EXPR$14 FROM (SELECT id, col_varchar, col_char, col_bigint, col_int, col_int32, col_double, col_float, col_date, col_time, col_timestamp, col_boolean, col_uuid, col_link FROM datamart1.tbl1_actual WHERE sys_from <= 0 AND COALESCE(sys_to, 9223372036854775807) >= 0) AS t0 INNER JOIN (SELECT id, col_varchar, col_char, col_bigint, col_int, col_int32, col_double, col_float, col_date, col_time, col_timestamp, col_boolean, col_uuid, col_link FROM datamart1.tbl2_actual WHERE sys_from <= 0 AND COALESCE(sys_to, 9223372036854775807) >= 0) AS t2 ON t0.col_bigint = t2.col_bigint");
+                assertThat(allInvocations.get(4))
+                        .isEqualToIgnoringNewLines("DROP EXTERNAL TABLE IF EXISTS datamart1.TARANTOOL_EXT_matview");
+                verifyNoMoreInteractions(databaseExecutor);
+                assertEquals(DELTA_NUM, ar.result());
+            }).completeNow();
+        });
+    }
+
+    @Test
+    void shouldCorrectlyUseExceptWhenGroupByAggregate(VertxTestContext testContext) {
+        // arrange
+        UUID uuid = UUID.randomUUID();
+        String viewQuery = "SELECT 1, SUM(id) FROM tbl1 GROUP BY (id)";
+        SqlNode sqlNode = definitionService.processingQuery(viewQuery);
+        Datamart datamart = prepareDatamart(viewQuery);
+        Entity matView = datamart.getEntities().get(0);
+        matView.setFields(Arrays.asList(
+                EntityField.builder()
+                        .name("id")
+                        .primaryOrder(1)
+                        .ordinalPosition(0)
+                        .type(ColumnType.BIGINT)
+                        .build(),
+                EntityField.builder()
+                        .name("sum")
+                        .ordinalPosition(1)
+                        .type(ColumnType.BIGINT)
+                        .build()
+        ));
+
+        List<Datamart> datamarts = Arrays.asList(datamart);
+
+        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, matView, sqlNode, DELTA_NUM, DELTA_NUM_CN_TO);
+
+        // act
+        Future<Long> result = adgSynchronizeDestinationExecutor.execute(synchronizeRequest);
+
+        // assert
+        result.onComplete(ar -> {
+            if (ar.failed()) {
+                testContext.failNow(ar.cause());
+                return;
+            }
+
+            testContext.verify(() -> {
+                verify(databaseExecutor, times(5)).execute(stringArgumentCaptor.capture());
+                List<String> allInvocations = stringArgumentCaptor.getAllValues();
+                assertThat(allInvocations.get(0))
+                        .isEqualToIgnoringNewLines("DROP EXTERNAL TABLE IF EXISTS datamart1.TARANTOOL_EXT_matview");
+                assertThat(allInvocations.get(1))
+                        .isEqualToIgnoringNewLines("CREATE WRITABLE EXTERNAL TABLE datamart1.TARANTOOL_EXT_matview\n" +
+                                "(id int8,sum int8,sys_op int8,bucket_id int8) LOCATION ('pxf://env__datamart1__matview_staging?PROFILE=tarantool-upsert&TARANTOOL_SERVER=tarantool:1234&USER=user&PASSWORD=pass&TIMEOUT_CONNECT=3001&TIMEOUT_READ=3002&TIMEOUT_REQUEST=3003')\n" +
+                                "FORMAT 'CUSTOM' (FORMATTER = 'pxfwritable_export')");
+                assertThat(allInvocations.get(2))
+                        .isEqualToIgnoringNewLines("INSERT INTO datamart1.TARANTOOL_EXT_matview SELECT 1 AS EXPR$0, NULL AS EXPR$1, 1 AS EXPR$2 FROM datamart1.tbl1_actual WHERE sys_from <= 0 AND COALESCE(sys_to, 9223372036854775807) >= 0 GROUP BY id EXCEPT SELECT 1 AS EXPR$0, NULL AS EXPR$1, 1 AS EXPR$2 FROM datamart1.tbl1_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1 GROUP BY id");
+                assertThat(allInvocations.get(3))
+                        .isEqualToIgnoringNewLines("INSERT INTO datamart1.TARANTOOL_EXT_matview SELECT 1 AS EXPR$0, SUM(id) AS EXPR$1, 0 AS EXPR$2 FROM datamart1.tbl1_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1 GROUP BY id EXCEPT SELECT 1 AS EXPR$0, SUM(id) AS EXPR$1, 0 AS EXPR$2 FROM datamart1.tbl1_actual WHERE sys_from <= 0 AND COALESCE(sys_to, 9223372036854775807) >= 0 GROUP BY id");
+                assertThat(allInvocations.get(4))
+                        .isEqualToIgnoringNewLines("DROP EXTERNAL TABLE IF EXISTS datamart1.TARANTOOL_EXT_matview");
+                verifyNoMoreInteractions(databaseExecutor);
+                assertEquals(DELTA_NUM, ar.result());
+            }).completeNow();
+        });
+    }
+
+    @Test
+    void shouldCorrectlyUseExceptWhenCountAggregate(VertxTestContext testContext) {
+        // arrange
+        UUID uuid = UUID.randomUUID();
+        String viewQuery = "SELECT 1, COUNT(*) as t FROM tbl1";
+        SqlNode sqlNode = definitionService.processingQuery(viewQuery);
+        Datamart datamart = prepareDatamart(viewQuery);
+        Entity matView = datamart.getEntities().get(0);
+        matView.setFields(Arrays.asList(
+                EntityField.builder()
+                        .name("id")
+                        .primaryOrder(1)
+                        .ordinalPosition(0)
+                        .type(ColumnType.BIGINT)
+                        .build(),
+                EntityField.builder()
+                        .name("sum")
+                        .ordinalPosition(1)
+                        .type(ColumnType.BIGINT)
+                        .build()
+        ));
+
+        List<Datamart> datamarts = Arrays.asList(datamart);
+
+        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, matView, sqlNode, DELTA_NUM, DELTA_NUM_CN_TO);
+
+        // act
+        Future<Long> result = adgSynchronizeDestinationExecutor.execute(synchronizeRequest);
+
+        // assert
+        result.onComplete(ar -> {
+            if (ar.failed()) {
+                testContext.failNow(ar.cause());
+                return;
+            }
+
+            testContext.verify(() -> {
+                verify(databaseExecutor, times(5)).execute(stringArgumentCaptor.capture());
+                List<String> allInvocations = stringArgumentCaptor.getAllValues();
+                assertThat(allInvocations.get(0))
+                        .isEqualToIgnoringNewLines("DROP EXTERNAL TABLE IF EXISTS datamart1.TARANTOOL_EXT_matview");
+                assertThat(allInvocations.get(1))
+                        .isEqualToIgnoringNewLines("CREATE WRITABLE EXTERNAL TABLE datamart1.TARANTOOL_EXT_matview\n" +
+                                "(id int8,sum int8,sys_op int8,bucket_id int8) LOCATION ('pxf://env__datamart1__matview_staging?PROFILE=tarantool-upsert&TARANTOOL_SERVER=tarantool:1234&USER=user&PASSWORD=pass&TIMEOUT_CONNECT=3001&TIMEOUT_READ=3002&TIMEOUT_REQUEST=3003')\n" +
+                                "FORMAT 'CUSTOM' (FORMATTER = 'pxfwritable_export')");
+                assertThat(allInvocations.get(2))
+                        .isEqualToIgnoringNewLines("INSERT INTO datamart1.TARANTOOL_EXT_matview SELECT 1 AS EXPR$0, NULL AS EXPR$1, 1 AS EXPR$2 FROM datamart1.tbl1_actual WHERE sys_from <= 0 AND COALESCE(sys_to, 9223372036854775807) >= 0 EXCEPT SELECT 1 AS EXPR$0, NULL AS EXPR$1, 1 AS EXPR$2 FROM datamart1.tbl1_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1");
+                assertThat(allInvocations.get(3))
+                        .isEqualToIgnoringNewLines("INSERT INTO datamart1.TARANTOOL_EXT_matview SELECT 1 AS EXPR$0, COUNT(*) AS t, 0 AS EXPR$2 FROM datamart1.tbl1_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1 EXCEPT SELECT 1 AS EXPR$0, COUNT(*) AS t, 0 AS EXPR$2 FROM datamart1.tbl1_actual WHERE sys_from <= 0 AND COALESCE(sys_to, 9223372036854775807) >= 0");
                 assertThat(allInvocations.get(4))
                         .isEqualToIgnoringNewLines("DROP EXTERNAL TABLE IF EXISTS datamart1.TARANTOOL_EXT_matview");
                 verifyNoMoreInteractions(databaseExecutor);
@@ -181,6 +295,15 @@ class AdgSynchronizeDestinationExecutorComplexTest {
 
     private Datamart prepareDatamart(String viewQuery) {
         List<EntityField> fields = new ArrayList<>();
+
+        fields.add(EntityField.builder()
+                .ordinalPosition(0)
+                .primaryOrder(1)
+                .name("id")
+                .type(ColumnType.BIGINT)
+                .nullable(true)
+                .build());
+
         int pos = 1;
         for (ColumnType columnType : ColumnType.values()) {
             if (columnType == ColumnType.ANY || columnType == ColumnType.BLOB) continue;
@@ -234,6 +357,7 @@ class AdgSynchronizeDestinationExecutorComplexTest {
                 .materializedDeltaNum(null)
                 .materializedDataSource(SourceType.ADB)
                 .build();
+
         return Datamart.builder()
                 .isDefault(true)
                 .mnemonic(DATAMART)

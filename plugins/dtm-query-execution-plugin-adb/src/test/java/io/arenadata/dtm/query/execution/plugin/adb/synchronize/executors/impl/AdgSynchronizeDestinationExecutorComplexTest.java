@@ -13,16 +13,16 @@ import io.arenadata.dtm.query.execution.plugin.adb.calcite.factory.AdbSchemaFact
 import io.arenadata.dtm.query.execution.plugin.adb.calcite.service.AdbCalciteContextProvider;
 import io.arenadata.dtm.query.execution.plugin.adb.calcite.service.AdbCalciteDMLQueryParserService;
 import io.arenadata.dtm.query.execution.plugin.adb.calcite.service.AdbCalciteDefinitionService;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.QueryExtendService;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.impl.AdbDmlQueryExtendWithoutHistoryService;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.impl.AdbQueryEnrichmentServiceImpl;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.impl.AdbQueryGeneratorImpl;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.impl.AdbSchemaExtenderImpl;
+import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.AdbDmlQueryExtendWithoutHistoryService;
+import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.AdbQueryEnrichmentService;
+import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.AdbQueryGenerator;
+import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.AdbSchemaExtender;
 import io.arenadata.dtm.query.execution.plugin.adb.query.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adb.synchronize.factory.SynchronizeSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.synchronize.factory.impl.AdgSynchronizeSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.synchronize.service.PrepareQueriesOfChangesService;
 import io.arenadata.dtm.query.execution.plugin.adb.synchronize.service.impl.PrepareQueriesOfChangesServiceImpl;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.service.QueryExtendService;
 import io.arenadata.dtm.query.execution.plugin.api.service.shared.adg.AdgSharedService;
 import io.arenadata.dtm.query.execution.plugin.api.shared.adg.AdgSharedProperties;
 import io.arenadata.dtm.query.execution.plugin.api.synchronize.SynchronizeRequest;
@@ -70,7 +70,7 @@ class AdgSynchronizeDestinationExecutorComplexTest {
     private AdgSharedService adgSharedService;
 
     private AdbCalciteDMLQueryParserService parserService;
-    private AdbQueryEnrichmentServiceImpl queryEnrichmentService;
+    private AdbQueryEnrichmentService queryEnrichmentService;
     private PrepareQueriesOfChangesService prepareQueriesOfChangesService;
     private SynchronizeSqlFactory synchronizeSqlFactory;
     private AdgSynchronizeDestinationExecutor adgSynchronizeDestinationExecutor;
@@ -81,7 +81,7 @@ class AdgSynchronizeDestinationExecutorComplexTest {
     @BeforeEach
     void setUp(Vertx vertx) {
         parserService = new AdbCalciteDMLQueryParserService(contextProvider, vertx);
-        queryEnrichmentService = new AdbQueryEnrichmentServiceImpl(parserService, new AdbQueryGeneratorImpl(queryExtender, sqlDialect), contextProvider, new AdbSchemaExtenderImpl());
+        queryEnrichmentService = new AdbQueryEnrichmentService(new AdbQueryGenerator(queryExtender, sqlDialect), contextProvider, new AdbSchemaExtender());
         prepareQueriesOfChangesService = new PrepareQueriesOfChangesServiceImpl(parserService, sqlDialect, queryEnrichmentService);
         synchronizeSqlFactory = new AdgSynchronizeSqlFactory(adgSharedService);
         adgSynchronizeDestinationExecutor = new AdgSynchronizeDestinationExecutor(prepareQueriesOfChangesService, databaseExecutor, synchronizeSqlFactory, adgSharedService);

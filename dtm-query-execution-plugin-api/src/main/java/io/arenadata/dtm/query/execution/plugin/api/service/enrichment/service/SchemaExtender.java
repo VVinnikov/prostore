@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.plugin.adb.enrichment.service;
+package io.arenadata.dtm.query.execution.plugin.api.service.enrichment.service;
 
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 
@@ -6,5 +6,5 @@ import io.arenadata.dtm.query.execution.model.metadata.Datamart;
  * Extender interface for obtaining physical schemas from logical
  */
 public interface SchemaExtender {
-    Datamart createPhysicalSchema(Datamart schema);
+    Datamart createPhysicalSchema(Datamart logicalSchema, String systemName);
 }

@@ -1,14 +1,13 @@
-package io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.impl;
+package io.arenadata.dtm.query.execution.plugin.adb.enrichment.service;
 
-import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.dto.QueryParserResponse;
 import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.QueryEnrichmentService;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.QueryGenerator;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.SchemaExtender;
 import io.arenadata.dtm.query.execution.plugin.adb.calcite.service.AdbCalciteContextProvider;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.dto.EnrichQueryRequest;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.dto.EnrichQueryRequest;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.service.QueryEnrichmentService;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.service.QueryGenerator;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.service.SchemaExtender;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,41 +17,35 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Service
+@Service("adbQueryEnrichmentService")
 @Slf4j
-public class AdbQueryEnrichmentServiceImpl implements QueryEnrichmentService {
+public class AdbQueryEnrichmentService implements QueryEnrichmentService {
     private final AdbCalciteContextProvider contextProvider;
     private final SchemaExtender schemaExtender;
-    private final QueryParserService queryParserService;
     private final QueryGenerator adbQueryGenerator;
 
     @Autowired
-    public AdbQueryEnrichmentServiceImpl(
-            @Qualifier("adbCalciteDMLQueryParserService") QueryParserService queryParserService,
-            AdbQueryGeneratorImpl adbQueryGeneratorimpl,
+    public AdbQueryEnrichmentService(
+            @Qualifier("adbQueryGenerator") QueryGenerator adbQueryGenerator,
             AdbCalciteContextProvider contextProvider,
             @Qualifier("adbSchemaExtender") SchemaExtender schemaExtender) {
-        this.queryParserService = queryParserService;
-        this.adbQueryGenerator = adbQueryGeneratorimpl;
+        this.adbQueryGenerator = adbQueryGenerator;
         this.contextProvider = contextProvider;
         this.schemaExtender = schemaExtender;
     }
 
     @Override
-    public Future<String> enrich(EnrichQueryRequest request) {
-        return queryParserService.parse(new QueryParserRequest(request.getQuery(), request.getSchema()))
-                .map(response -> {
-                    contextProvider.enrichContext(response.getCalciteContext(),
-                            generatePhysicalSchemas(request.getSchema()));
-                    return response;
-                })
-                .compose(queryParserResponse -> mutateQuery(queryParserResponse, request));
+    public Future<String> enrich(EnrichQueryRequest request, QueryParserResponse parserResponse) {
+        contextProvider.enrichContext(parserResponse.getCalciteContext(),
+                generatePhysicalSchemas(request.getSchema()));
+        return mutateQuery(parserResponse, request);
     }
 
     private Future<String> mutateQuery(QueryParserResponse response, EnrichQueryRequest request) {
         return Future.future(promise -> adbQueryGenerator.mutateQuery(response.getRelNode(),
                 request.getDeltaInformations(),
-                response.getCalciteContext())
+                response.getCalciteContext(),
+                null)
                 .onSuccess(result -> {
                     log.trace("Request generated: {}", result);
                     promise.complete(result);
@@ -62,7 +55,7 @@ public class AdbQueryEnrichmentServiceImpl implements QueryEnrichmentService {
 
     private List<Datamart> generatePhysicalSchemas(List<Datamart> logicalSchemas) {
         return logicalSchemas.stream()
-                .map(schemaExtender::createPhysicalSchema)
+                .map(logicalSchema -> schemaExtender.createPhysicalSchema(logicalSchema, ""))
                 .collect(Collectors.toList());
     }
 }

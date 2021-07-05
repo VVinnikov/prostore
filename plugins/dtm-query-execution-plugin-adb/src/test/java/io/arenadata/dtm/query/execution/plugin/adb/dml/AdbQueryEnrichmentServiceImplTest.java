@@ -3,27 +3,33 @@ package io.arenadata.dtm.query.execution.plugin.adb.dml;
 import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.delta.DeltaType;
 import io.arenadata.dtm.common.delta.SelectOnInterval;
+import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.QueryEnrichmentService;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.QueryExtendService;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.impl.*;
-import io.arenadata.dtm.query.execution.plugin.adb.calcite.service.AdbCalciteContextProvider;
-import io.arenadata.dtm.query.execution.plugin.adb.calcite.factory.AdbCalciteSchemaFactory;
-import io.arenadata.dtm.query.execution.plugin.adb.calcite.service.AdbCalciteDMLQueryParserService;
 import io.arenadata.dtm.query.execution.plugin.adb.calcite.configuration.CalciteConfiguration;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.dto.EnrichQueryRequest;
+import io.arenadata.dtm.query.execution.plugin.adb.calcite.factory.AdbCalciteSchemaFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.calcite.factory.AdbSchemaFactory;
+import io.arenadata.dtm.query.execution.plugin.adb.calcite.service.AdbCalciteContextProvider;
+import io.arenadata.dtm.query.execution.plugin.adb.calcite.service.AdbCalciteDMLQueryParserService;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.service.QueryExtendService;
+import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.AdbDmlQueryExtendWithoutHistoryService;
+import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.AdbQueryEnrichmentService;
+import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.AdbQueryGenerator;
+import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.AdbSchemaExtender;
 import io.arenadata.dtm.query.execution.plugin.adb.utils.TestUtils;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.dto.EnrichQueryRequest;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.service.QueryEnrichmentService;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestOptions;
 import io.vertx.ext.unit.TestSuite;
 import io.vertx.ext.unit.report.ReportOptions;
+import io.vertx.junit5.VertxTestContext;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,9 +38,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -48,21 +56,18 @@ class AdbQueryEnrichmentServiceImplTest {
     private final CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
     private final QueryExtendService queryExtender = new AdbDmlQueryExtendWithoutHistoryService();
     private final AdbCalciteContextProvider contextProvider = new AdbCalciteContextProvider(
-            calciteConfiguration.configDdlParser(
-                    calciteConfiguration.ddlParserImplFactory()
-            ),
+            calciteConfiguration.configDdlParser(calciteConfiguration.ddlParserImplFactory()),
             new AdbCalciteSchemaFactory(new AdbSchemaFactory()));
-    private final AdbQueryGeneratorImpl adbQueryGeneratorimpl = new AdbQueryGeneratorImpl(queryExtender, calciteConfiguration.adbSqlDialect());
+    private final AdbQueryGenerator adbQueryGeneratorimpl = new AdbQueryGenerator(queryExtender, calciteConfiguration.adbSqlDialect());
     private final QueryParserService queryParserService = new AdbCalciteDMLQueryParserService(contextProvider, Vertx.vertx());
     private QueryEnrichmentService adbQueryEnrichmentService;
 
     @BeforeEach
     void setUp() {
-        adbQueryEnrichmentService = new AdbQueryEnrichmentServiceImpl(
-                queryParserService,
+        adbQueryEnrichmentService = new AdbQueryEnrichmentService(
                 adbQueryGeneratorimpl,
                 contextProvider,
-                new AdbSchemaExtenderImpl());
+                new AdbSchemaExtender());
     }
 
     private static void assertGrep(String data, String regexp) {
@@ -73,23 +78,25 @@ class AdbQueryEnrichmentServiceImplTest {
 
     @Test
     void enrich() {
-        List<String> result = new ArrayList<>();
         EnrichQueryRequest enrichQueryRequest =
-                prepareRequestDeltaNum("select * from test_datamart.pso FOR SYSTEM_TIME AS OF TIMESTAMP '1999-01-08 04:05:06'");
+                prepareRequestDeltaNum("select * from shares.accounts FOR SYSTEM_TIME AS OF TIMESTAMP '1999-01-08 04:05:06'");
         TestSuite suite = TestSuite.create("the_test_suite");
         suite.test("executeQuery", context -> {
             Async async = context.async();
-            adbQueryEnrichmentService.enrich(enrichQueryRequest)
+            queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                    .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
                     .onComplete(ar -> {
-                        log.debug(ar.toString());
-                        result.add("OK");
-                        async.complete();
+                        if (ar.succeeded()) {
+                            log.debug(ar.toString());
+                            async.complete();
+                        } else {
+                            context.fail(ar.cause());
+                        }
                     });
 
             async.awaitSuccess(7000);
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
-        log.info(result.get(0));
     }
 
     @Test
@@ -108,13 +115,16 @@ class AdbQueryEnrichmentServiceImplTest {
         TestSuite suite = TestSuite.create("the_test_suite");
         suite.test("executeQuery", context -> {
             Async async = context.async();
-            adbQueryEnrichmentService.enrich(enrichQueryRequest)
+            queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                    .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
                     .onComplete(ar -> {
                         if (ar.succeeded()) {
                             result[0] = ar.result();
                             assertGrep(result[0], "sys_from <= 1 AND sys_to >= 1");
+                            async.complete();
+                        } else {
+                            context.fail(ar.cause());
                         }
-                        async.complete();
                     });
             async.awaitSuccess(10000);
         });
@@ -130,7 +140,8 @@ class AdbQueryEnrichmentServiceImplTest {
         TestSuite suite = TestSuite.create("the_test_suite");
         suite.test("executeQuery", context -> {
             Async async = context.async();
-            adbQueryEnrichmentService.enrich(enrichQueryRequest)
+            queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                    .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
                     .onComplete(ar -> {
                         if (ar.succeeded()) {
                             result[0] = ar.result();
@@ -156,7 +167,8 @@ class AdbQueryEnrichmentServiceImplTest {
         TestSuite suite = TestSuite.create("the_test_suite");
         suite.test("executeQuery", context -> {
             Async async = context.async();
-            adbQueryEnrichmentService.enrich(enrichQueryRequest)
+            queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                    .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
                     .onComplete(ar -> {
                         if (ar.succeeded()) {
                             result[0] = ar.result();
@@ -186,7 +198,8 @@ class AdbQueryEnrichmentServiceImplTest {
         TestSuite suite = TestSuite.create("the_test_suite");
         suite.test("executeQuery", context -> {
             Async async = context.async();
-            adbQueryEnrichmentService.enrich(enrichQueryRequest)
+            queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                    .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
                     .onComplete(ar -> {
                         if (ar.succeeded()) {
                             result[0] = ar.result();
@@ -210,7 +223,8 @@ class AdbQueryEnrichmentServiceImplTest {
         TestSuite suite = TestSuite.create("the_test_suite");
         suite.test("executeQuery", context -> {
             Async async = context.async();
-            adbQueryEnrichmentService.enrich(enrichQueryRequest)
+            queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                    .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
                     .onComplete(ar -> {
                         if (ar.succeeded()) {
                             result[0] = ar.result();
@@ -233,7 +247,8 @@ class AdbQueryEnrichmentServiceImplTest {
         TestSuite suite = TestSuite.create("the_test_suite");
         suite.test("executeQuery", context -> {
             Async async = context.async();
-            adbQueryEnrichmentService.enrich(enrichQueryRequest)
+            queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                    .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
                     .onComplete(ar -> {
                         if (ar.succeeded()) {
                             result[0] = ar.result();
@@ -258,7 +273,8 @@ class AdbQueryEnrichmentServiceImplTest {
         TestSuite suite = TestSuite.create("the_test_suite");
         suite.test("executeQuery", context -> {
             Async async = context.async();
-            adbQueryEnrichmentService.enrich(enrichQueryRequest)
+            queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                    .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
                     .onComplete(ar -> {
                         if (ar.succeeded()) {
                             result[0] = ar.result();
@@ -285,7 +301,8 @@ class AdbQueryEnrichmentServiceImplTest {
         TestSuite suite = TestSuite.create("the_test_suite");
         suite.test("executeQuery", context -> {
             Async async = context.async();
-            adbQueryEnrichmentService.enrich(enrichQueryRequest)
+            queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                    .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
                     .onComplete(ar -> {
                         if (ar.succeeded()) {
                             result[0] = ar.result();

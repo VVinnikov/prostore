@@ -1,9 +1,9 @@
-package io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.impl;
+package io.arenadata.dtm.query.execution.plugin.adb.enrichment.service;
 
 import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.delta.DeltaType;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.dto.QueryGeneratorContext;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.QueryExtendService;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.dto.QueryGeneratorContext;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.service.QueryExtendService;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;

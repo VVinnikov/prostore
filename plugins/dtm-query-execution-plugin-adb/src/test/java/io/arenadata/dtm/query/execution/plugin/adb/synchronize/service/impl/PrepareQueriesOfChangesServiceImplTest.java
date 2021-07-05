@@ -15,10 +15,10 @@ import io.arenadata.dtm.query.execution.plugin.adb.calcite.factory.AdbCalciteSch
 import io.arenadata.dtm.query.execution.plugin.adb.calcite.factory.AdbSchemaFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.calcite.service.AdbCalciteContextProvider;
 import io.arenadata.dtm.query.execution.plugin.adb.calcite.service.AdbCalciteDMLQueryParserService;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.dto.EnrichQueryRequest;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.QueryEnrichmentService;
 import io.arenadata.dtm.query.execution.plugin.adb.synchronize.service.PrepareRequestOfChangesRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.synchronize.service.PrepareRequestOfChangesResult;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.dto.EnrichQueryRequest;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.service.QueryEnrichmentService;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.junit5.VertxExtension;
@@ -136,7 +136,7 @@ class PrepareQueriesOfChangesServiceImplTest {
 
     @BeforeEach
     void setUp(Vertx vertx) {
-        lenient().when(queryEnrichmentService.enrich(any())).thenAnswer(invocationOnMock -> {
+        lenient().when(queryEnrichmentService.enrich(any(), any())).thenAnswer(invocationOnMock -> {
             EnrichQueryRequest argument = invocationOnMock.getArgument(0);
             return Future.succeededFuture(argument.getQuery().toSqlString(sqlDialect).toString());
         });
@@ -193,7 +193,7 @@ class PrepareQueriesOfChangesServiceImplTest {
             PrepareRequestOfChangesResult queriesOfChanges = event.result();
 
             ctx.verify(() -> {
-                verify(queryEnrichmentService, times(2)).enrich(enrichQueryRequestArgumentCaptor.capture());
+                verify(queryEnrichmentService, times(2)).enrich(enrichQueryRequestArgumentCaptor.capture(), any());
                 verifyNoMoreInteractions(queryEnrichmentService);
                 List<EnrichQueryRequest> allValues = enrichQueryRequestArgumentCaptor.getAllValues();
 
@@ -289,7 +289,7 @@ class PrepareQueriesOfChangesServiceImplTest {
             PrepareRequestOfChangesResult queriesOfChanges = event.result();
 
             ctx.verify(() -> {
-                verify(queryEnrichmentService, times(4)).enrich(enrichQueryRequestArgumentCaptor.capture());
+                verify(queryEnrichmentService, times(4)).enrich(enrichQueryRequestArgumentCaptor.capture(), any());
                 verifyNoMoreInteractions(queryEnrichmentService);
                 List<EnrichQueryRequest> allValues = enrichQueryRequestArgumentCaptor.getAllValues();
 
@@ -360,7 +360,7 @@ class PrepareQueriesOfChangesServiceImplTest {
             PrepareRequestOfChangesResult queriesOfChanges = event.result();
 
             ctx.verify(() -> {
-                verify(queryEnrichmentService, times(4)).enrich(enrichQueryRequestArgumentCaptor.capture());
+                verify(queryEnrichmentService, times(4)).enrich(enrichQueryRequestArgumentCaptor.capture(), any());
                 verifyNoMoreInteractions(queryEnrichmentService);
                 List<EnrichQueryRequest> allValues = enrichQueryRequestArgumentCaptor.getAllValues();
 
@@ -440,7 +440,7 @@ class PrepareQueriesOfChangesServiceImplTest {
         // arrange
         DtmException expectedException = new DtmException("Enrich exception");
         reset(queryEnrichmentService);
-        when(queryEnrichmentService.enrich(any())).thenReturn(Future.failedFuture(expectedException));
+        when(queryEnrichmentService.enrich(any(), any())).thenReturn(Future.failedFuture(expectedException));
         SqlNode query = parseWithValidate("SELECT id, col_timestamp, col_date, col_time FROM datamart1.dates", DATAMART_LIST);
 
         // act

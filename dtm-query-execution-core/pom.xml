@@ -200,6 +200,11 @@
             <version>${jackson.version}</version>
         </dependency>
         <dependency>
+            <groupId>io.reactiverse</groupId>
+            <artifactId>reactiverse-contextual-logging</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-codegen</artifactId>
             <version>4.1.0</version>

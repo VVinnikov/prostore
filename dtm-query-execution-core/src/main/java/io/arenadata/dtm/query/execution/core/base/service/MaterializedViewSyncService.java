@@ -18,6 +18,7 @@ import io.arenadata.dtm.query.execution.core.base.service.metadata.LogicalSchema
 import io.arenadata.dtm.query.execution.core.delta.repository.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.plugin.exception.SuitablePluginNotExistsException;
 import io.arenadata.dtm.query.execution.core.plugin.service.DataSourcePluginService;
+import io.arenadata.dtm.query.execution.core.query.utils.LoggerContextUtils;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.api.synchronize.SynchronizeRequest;
 import io.vertx.core.Future;
@@ -77,8 +78,9 @@ public class MaterializedViewSyncService {
     }
 
     public long startPeriodicalSync() {
-        log.info("Materialized view synchronization timer started");
         return vertx.setTimer(periodMs, timerId -> {
+            LoggerContextUtils.setRequestId(UUID.randomUUID());
+            log.info("Materialized view synchronization tick");
             materializedViewCacheService.forEach(this::startSyncProcess);
             startPeriodicalSync();
         });

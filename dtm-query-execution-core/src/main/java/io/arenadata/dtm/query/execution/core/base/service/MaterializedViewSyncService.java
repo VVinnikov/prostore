@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.core.base.service;
 
 import io.arenadata.dtm.cache.service.CacheService;
+import io.arenadata.dtm.common.delta.DeltaData;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.RequestStatus;
@@ -12,8 +13,8 @@ import io.arenadata.dtm.query.execution.core.base.dto.cache.EntityKey;
 import io.arenadata.dtm.query.execution.core.base.dto.cache.MaterializedViewCacheValue;
 import io.arenadata.dtm.query.execution.core.base.dto.cache.MaterializedViewSyncStatus;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.EntityDao;
+import io.arenadata.dtm.query.execution.core.base.service.delta.DeltaInformationService;
 import io.arenadata.dtm.query.execution.core.base.service.metadata.LogicalSchemaProvider;
-import io.arenadata.dtm.query.execution.core.delta.dto.OkDelta;
 import io.arenadata.dtm.query.execution.core.delta.repository.zookeeper.DeltaServiceDao;
 import io.arenadata.dtm.query.execution.core.plugin.exception.SuitablePluginNotExistsException;
 import io.arenadata.dtm.query.execution.core.plugin.service.DataSourcePluginService;
@@ -41,6 +42,7 @@ public class MaterializedViewSyncService {
     private final DataSourcePluginService dataSourcePluginService;
     private final CacheService<EntityKey, MaterializedViewCacheValue> materializedViewCacheService;
     private final DeltaServiceDao deltaServiceDao;
+    private final DeltaInformationService deltaInformationService;
     private final EntityDao entityDao;
     private final DefinitionService<SqlNode> definitionService;
     private final LogicalSchemaProvider logicalSchemaProvider;
@@ -52,6 +54,7 @@ public class MaterializedViewSyncService {
     public MaterializedViewSyncService(DataSourcePluginService dataSourcePluginService,
                                        CacheService<EntityKey, MaterializedViewCacheValue> materializedViewCacheService,
                                        DeltaServiceDao deltaServiceDao,
+                                       DeltaInformationService deltaInformationService,
                                        EntityDao entityDao,
                                        @Qualifier("coreCalciteDefinitionService") DefinitionService<SqlNode> definitionService,
                                        LogicalSchemaProvider logicalSchemaProvider,
@@ -61,6 +64,7 @@ public class MaterializedViewSyncService {
         this.dataSourcePluginService = dataSourcePluginService;
         this.materializedViewCacheService = materializedViewCacheService;
         this.deltaServiceDao = deltaServiceDao;
+        this.deltaInformationService = deltaInformationService;
         this.entityDao = entityDao;
         this.definitionService = definitionService;
         this.logicalSchemaProvider = logicalSchemaProvider;
@@ -148,21 +152,27 @@ public class MaterializedViewSyncService {
     }
 
     private SynchronizeRequest prepareRequest(UUID uuid, String datamart, Entity matViewEntity, SynchronizePluginContext context) {
-        return new SynchronizeRequest(uuid, appConfiguration.getEnvName(), datamart,
-                context.querySchema, matViewEntity, context.viewQuery, context.okDelta.getDeltaNum(), context.okDelta.getCnTo());
+        return new SynchronizeRequest(uuid, appConfiguration.getEnvName(), datamart, context.querySchema,
+                matViewEntity, context.viewQuery, context.deltaToBe, context.previousDeltaCnTo);
     }
 
     private Future<SynchronizePluginContext> preparePluginContext(String datamart, Entity matViewEntity) {
         return Future.future(promise -> {
             val sqlNode = definitionService.processingQuery(matViewEntity.getViewQuery());
             val synchronizeRequest = new SynchronizePluginContext(sqlNode);
+            long deltaNumToBe = getDeltaNumToBe(matViewEntity);
+            long deltaNumBefore = deltaNumToBe - 1;
             logicalSchemaProvider.getSchemaFromQuery(sqlNode, datamart)
                     .compose(datamarts -> {
                         synchronizeRequest.querySchema = datamarts;
-                        return deltaServiceDao.getDeltaByNum(datamart, getDeltaNumToBe(matViewEntity));
+                        return deltaServiceDao.getDeltaByNum(datamart, deltaNumToBe);
                     })
-                    .onSuccess(okDelta -> {
-                        synchronizeRequest.okDelta = okDelta;
+                    .compose(okDelta -> {
+                        synchronizeRequest.deltaToBe = new DeltaData(deltaNumToBe, okDelta.getCnFrom(), okDelta.getCnTo());
+                        return deltaInformationService.getCnToByDeltaNum(datamart, deltaNumBefore);
+                    })
+                    .onSuccess(beforeDeltaNumToBeCnTo -> {
+                        synchronizeRequest.previousDeltaCnTo = beforeDeltaNumToBeCnTo;
                         promise.complete(synchronizeRequest);
                     })
                     .onFailure(promise::fail);
@@ -205,7 +215,8 @@ public class MaterializedViewSyncService {
     private static class SynchronizePluginContext {
         private final SqlNode viewQuery;
         private List<Datamart> querySchema;
-        private OkDelta okDelta;
+        private DeltaData deltaToBe;
+        private Long previousDeltaCnTo;
 
         private SynchronizePluginContext(SqlNode viewQuery) {
             this.viewQuery = viewQuery;

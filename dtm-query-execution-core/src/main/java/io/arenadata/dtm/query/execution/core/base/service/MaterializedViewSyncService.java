@@ -75,8 +75,8 @@ public class MaterializedViewSyncService {
         return vertx.setTimer(periodMs, timerId -> {
             List<Future> futures = new ArrayList<>();
             materializedViewCacheService.forEach((key, value) -> futures.add(getSyncFuture(key, value)));
-            CompositeFuture.join(futures)
-                    .onComplete(ar -> startPeriodicalSync());
+            CompositeFuture.join(futures);
+            startPeriodicalSync();
         });
     }
 

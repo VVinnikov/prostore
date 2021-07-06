@@ -30,7 +30,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -77,14 +76,12 @@ public class MaterializedViewSyncService {
     public long startPeriodicalSync() {
         log.info("Materialized view synchronization timer started");
         return vertx.setTimer(periodMs, timerId -> {
-            List<Future> futures = new ArrayList<>();
-            materializedViewCacheService.forEach((key, value) -> futures.add(getSyncFuture(key, value)));
-            CompositeFuture.join(futures);
+            materializedViewCacheService.forEach(this::startSyncProcess);
             startPeriodicalSync();
         });
     }
 
-    private Future<Void> getSyncFuture(EntityKey key, MaterializedViewCacheValue value) {
+    private Future<Void> startSyncProcess(EntityKey key, MaterializedViewCacheValue value) {
         return Future.future(promise -> {
             val datamart = key.getDatamartName();
             val origUUID = value.getUuid();

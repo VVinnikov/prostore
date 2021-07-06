@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.adb.synchronize.executors.impl;
 
+import io.arenadata.dtm.common.delta.DeltaData;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
@@ -49,6 +50,8 @@ class AdgSynchronizeDestinationExecutorTest {
     private static final String DATAMART_2 = "datamart2";
     private static final Long DELTA_NUM = 1L;
     private static final Long DELTA_NUM_CN_TO = 2L;
+    private static final Long DELTA_NUM_CN_FROM = 0L;
+    private static final Long PREVIOUS_DELTA_NUM_CN_TO = -1L;
 
     @Mock
     private PrepareQueriesOfChangesService prepareQueriesOfChangesService;
@@ -94,7 +97,7 @@ class AdgSynchronizeDestinationExecutorTest {
         Entity entity = Entity.builder()
                 .build();
 
-        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, DELTA_NUM, DELTA_NUM_CN_TO);
+        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, new DeltaData(DELTA_NUM, DELTA_NUM_CN_FROM, DELTA_NUM_CN_TO), PREVIOUS_DELTA_NUM_CN_TO);
 
         // act
         Future<Long> result = adgSynchronizeDestinationExecutor.execute(synchronizeRequest);
@@ -115,7 +118,10 @@ class AdgSynchronizeDestinationExecutorTest {
                 inOrder.verify(prepareQueriesOfChangesService).prepare(requestOfChangesRequestArgumentCaptor.capture());
                 PrepareRequestOfChangesRequest prepareRequestOfChangesRequest = requestOfChangesRequestArgumentCaptor.getValue();
                 assertThat(prepareRequestOfChangesRequest.getDatamarts(), Matchers.contains(Matchers.sameInstance(dmrt1)));
-                assertEquals(DELTA_NUM, prepareRequestOfChangesRequest.getDeltaNumToBe());
+                assertEquals(DELTA_NUM, prepareRequestOfChangesRequest.getDeltaToBe().getNum());
+                assertEquals(DELTA_NUM_CN_TO, prepareRequestOfChangesRequest.getDeltaToBe().getCnTo());
+                assertEquals(DELTA_NUM_CN_FROM, prepareRequestOfChangesRequest.getDeltaToBe().getCnFrom());
+                assertEquals(PREVIOUS_DELTA_NUM_CN_TO, prepareRequestOfChangesRequest.getBeforeDeltaCnTo());
                 assertEquals(ENV, prepareRequestOfChangesRequest.getEnvName());
                 assertSame(VIEW_QUERY, prepareRequestOfChangesRequest.getViewQuery());
 
@@ -182,7 +188,7 @@ class AdgSynchronizeDestinationExecutorTest {
         Entity entity = Entity.builder()
                 .build();
 
-        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, DELTA_NUM, DELTA_NUM_CN_TO);
+        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, new DeltaData(DELTA_NUM, DELTA_NUM_CN_FROM, DELTA_NUM_CN_TO), PREVIOUS_DELTA_NUM_CN_TO);
 
         // act
         Future<Long> result = adgSynchronizeDestinationExecutor.execute(synchronizeRequest);
@@ -248,7 +254,7 @@ class AdgSynchronizeDestinationExecutorTest {
         Entity entity = Entity.builder()
                 .build();
 
-        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, DELTA_NUM, DELTA_NUM_CN_TO);
+        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, new DeltaData(DELTA_NUM, DELTA_NUM_CN_FROM, DELTA_NUM_CN_TO), PREVIOUS_DELTA_NUM_CN_TO);
 
         // act
         Future<Long> result = adgSynchronizeDestinationExecutor.execute(synchronizeRequest);
@@ -284,7 +290,7 @@ class AdgSynchronizeDestinationExecutorTest {
         Entity entity = Entity.builder()
                 .build();
 
-        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, DELTA_NUM, DELTA_NUM_CN_TO);
+        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, new DeltaData(DELTA_NUM, DELTA_NUM_CN_FROM, DELTA_NUM_CN_TO), PREVIOUS_DELTA_NUM_CN_TO);
 
         // act
         Future<Long> result = adgSynchronizeDestinationExecutor.execute(synchronizeRequest);
@@ -331,7 +337,7 @@ class AdgSynchronizeDestinationExecutorTest {
         Entity entity = Entity.builder()
                 .build();
 
-        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, DELTA_NUM, DELTA_NUM_CN_TO);
+        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, new DeltaData(DELTA_NUM, DELTA_NUM_CN_FROM, DELTA_NUM_CN_TO), PREVIOUS_DELTA_NUM_CN_TO);
 
         // act
         Future<Long> result = adgSynchronizeDestinationExecutor.execute(synchronizeRequest);
@@ -376,7 +382,7 @@ class AdgSynchronizeDestinationExecutorTest {
         Entity entity = Entity.builder()
                 .build();
 
-        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, DELTA_NUM, DELTA_NUM_CN_TO);
+        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, new DeltaData(DELTA_NUM, DELTA_NUM_CN_FROM, DELTA_NUM_CN_TO), PREVIOUS_DELTA_NUM_CN_TO);
 
         // act
         Future<Long> result = adgSynchronizeDestinationExecutor.execute(synchronizeRequest);
@@ -424,7 +430,7 @@ class AdgSynchronizeDestinationExecutorTest {
         Entity entity = Entity.builder()
                 .build();
 
-        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, DELTA_NUM, DELTA_NUM_CN_TO);
+        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, new DeltaData(DELTA_NUM, DELTA_NUM_CN_FROM, DELTA_NUM_CN_TO), PREVIOUS_DELTA_NUM_CN_TO);
 
         // act
         Future<Long> result = adgSynchronizeDestinationExecutor.execute(synchronizeRequest);
@@ -475,7 +481,7 @@ class AdgSynchronizeDestinationExecutorTest {
         Entity entity = Entity.builder()
                 .build();
 
-        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, DELTA_NUM, DELTA_NUM_CN_TO);
+        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, new DeltaData(DELTA_NUM, DELTA_NUM_CN_FROM, DELTA_NUM_CN_TO), PREVIOUS_DELTA_NUM_CN_TO);
 
         // act
         Future<Long> result = adgSynchronizeDestinationExecutor.execute(synchronizeRequest);
@@ -527,7 +533,7 @@ class AdgSynchronizeDestinationExecutorTest {
         Entity entity = Entity.builder()
                 .build();
 
-        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, DELTA_NUM, DELTA_NUM_CN_TO);
+        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, new DeltaData(DELTA_NUM, DELTA_NUM_CN_FROM, DELTA_NUM_CN_TO), PREVIOUS_DELTA_NUM_CN_TO);
 
         // act
         Future<Long> result = adgSynchronizeDestinationExecutor.execute(synchronizeRequest);
@@ -582,7 +588,7 @@ class AdgSynchronizeDestinationExecutorTest {
         Entity entity = Entity.builder()
                 .build();
 
-        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, DELTA_NUM, DELTA_NUM_CN_TO);
+        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, new DeltaData(DELTA_NUM, DELTA_NUM_CN_FROM, DELTA_NUM_CN_TO), PREVIOUS_DELTA_NUM_CN_TO);
 
         // act
         Future<Long> result = adgSynchronizeDestinationExecutor.execute(synchronizeRequest);
@@ -640,7 +646,7 @@ class AdgSynchronizeDestinationExecutorTest {
         Entity entity = Entity.builder()
                 .build();
 
-        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, DELTA_NUM, DELTA_NUM_CN_TO);
+        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, new DeltaData(DELTA_NUM, DELTA_NUM_CN_FROM, DELTA_NUM_CN_TO), PREVIOUS_DELTA_NUM_CN_TO);
 
         // act
         Future<Long> result = adgSynchronizeDestinationExecutor.execute(synchronizeRequest);
@@ -700,7 +706,7 @@ class AdgSynchronizeDestinationExecutorTest {
         Entity entity = Entity.builder()
                 .build();
 
-        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, DELTA_NUM, DELTA_NUM_CN_TO);
+        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, new DeltaData(DELTA_NUM, DELTA_NUM_CN_FROM, DELTA_NUM_CN_TO), PREVIOUS_DELTA_NUM_CN_TO);
 
         // act
         Future<Long> result = adgSynchronizeDestinationExecutor.execute(synchronizeRequest);
@@ -761,7 +767,7 @@ class AdgSynchronizeDestinationExecutorTest {
         Entity entity = Entity.builder()
                 .build();
 
-        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, DELTA_NUM, DELTA_NUM_CN_TO);
+        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, new DeltaData(DELTA_NUM, DELTA_NUM_CN_FROM, DELTA_NUM_CN_TO), PREVIOUS_DELTA_NUM_CN_TO);
 
         // act
         Future<Long> result = adgSynchronizeDestinationExecutor.execute(synchronizeRequest);
@@ -823,7 +829,7 @@ class AdgSynchronizeDestinationExecutorTest {
         Entity entity = Entity.builder()
                 .build();
 
-        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, DELTA_NUM, DELTA_NUM_CN_TO);
+        SynchronizeRequest synchronizeRequest = new SynchronizeRequest(uuid, ENV, DATAMART, datamarts, entity, VIEW_QUERY, new DeltaData(DELTA_NUM, DELTA_NUM_CN_FROM, DELTA_NUM_CN_TO), PREVIOUS_DELTA_NUM_CN_TO);
 
         // act
         Future<Long> result = adgSynchronizeDestinationExecutor.execute(synchronizeRequest);

@@ -1,6 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adb.synchronize.service.impl;
 
 import io.arenadata.dtm.common.calcite.CalciteContext;
+import io.arenadata.dtm.common.delta.DeltaData;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
@@ -116,6 +117,10 @@ class PrepareQueriesOfChangesServiceImplTest {
             .build();
 
     private static final List<Datamart> DATAMART_LIST = Collections.singletonList(DATAMART_1);
+    private static final long DELTA_NUM = 0L;
+    private static final long DELTA_NUM_CN_TO = 3L;
+    private static final long DELTA_NUM_CN_FROM = 0L;
+    private static final long PREVIOUS_DELTA_NUM_CN_TO = -1L;
 
     private final CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
     private final CalciteCoreConfiguration calciteCoreConfiguration = new CalciteCoreConfiguration();
@@ -176,7 +181,7 @@ class PrepareQueriesOfChangesServiceImplTest {
         SqlNode query = parseWithValidate("SELECT id, col_timestamp, col_date, col_time FROM datamart1.dates", DATAMART_LIST);
 
         // act
-        Future<PrepareRequestOfChangesResult> result = queriesOfChangesService.prepare(new PrepareRequestOfChangesRequest(DATAMART_LIST, "dev", 10, query, matView));
+        Future<PrepareRequestOfChangesResult> result = queriesOfChangesService.prepare(new PrepareRequestOfChangesRequest(DATAMART_LIST, "dev", new DeltaData(DELTA_NUM, DELTA_NUM_CN_FROM, DELTA_NUM_CN_TO), PREVIOUS_DELTA_NUM_CN_TO, query, matView));
 
         // assert
         String expectedNewQuery = "SELECT dates.id, CAST(EXTRACT(EPOCH FROM dates.col_timestamp) * 1000000 AS BIGINT), (dates.col_date - DATE '1970-01-01') DAY, CAST(EXTRACT(EPOCH FROM dates.col_time) * 1000000 AS BIGINT), 0\n" +
@@ -256,7 +261,7 @@ class PrepareQueriesOfChangesServiceImplTest {
                 .build();
 
         // act
-        Future<PrepareRequestOfChangesResult> result = queriesOfChangesService.prepare(new PrepareRequestOfChangesRequest(DATAMART_LIST, "dev", 10, query, matView));
+        Future<PrepareRequestOfChangesResult> result = queriesOfChangesService.prepare(new PrepareRequestOfChangesRequest(DATAMART_LIST, "dev", new DeltaData(DELTA_NUM, DELTA_NUM_CN_FROM, DELTA_NUM_CN_TO), PREVIOUS_DELTA_NUM_CN_TO, query, matView));
 
         // assert
         String expectedNewFreshQuery = "SELECT t0.id, CAST(EXTRACT(EPOCH FROM t0.col_timestamp) * 1000000 AS BIGINT), (t0.col_date - DATE '1970-01-01') DAY, CAST(EXTRACT(EPOCH FROM t0.col_time) * 1000000 AS BIGINT), t0.name, t3.surname, 0\n" +
@@ -339,7 +344,7 @@ class PrepareQueriesOfChangesServiceImplTest {
                 .build();
 
         // act
-        Future<PrepareRequestOfChangesResult> result = queriesOfChangesService.prepare(new PrepareRequestOfChangesRequest(DATAMART_LIST, "dev", 10, query, matView));
+        Future<PrepareRequestOfChangesResult> result = queriesOfChangesService.prepare(new PrepareRequestOfChangesRequest(DATAMART_LIST, "dev", new DeltaData(DELTA_NUM, DELTA_NUM_CN_FROM, DELTA_NUM_CN_TO), PREVIOUS_DELTA_NUM_CN_TO, query, matView));
 
         // assert
         String expectedNewFreshQuery = "SELECT 1, COUNT(*), 0\n" +
@@ -395,7 +400,7 @@ class PrepareQueriesOfChangesServiceImplTest {
         SqlNode query = parse("SELECT * FROM dates, datamart2.names", DATAMART_LIST);
 
         // act
-        Future<PrepareRequestOfChangesResult> result = queriesOfChangesService.prepare(new PrepareRequestOfChangesRequest(DATAMART_LIST, "dev", 10, query,  new Entity()));
+        Future<PrepareRequestOfChangesResult> result = queriesOfChangesService.prepare(new PrepareRequestOfChangesRequest(DATAMART_LIST, "dev", new DeltaData(DELTA_NUM, DELTA_NUM_CN_FROM, DELTA_NUM_CN_TO), PREVIOUS_DELTA_NUM_CN_TO, query,  new Entity()));
 
         // assert
         result.onComplete(event -> {
@@ -418,7 +423,7 @@ class PrepareQueriesOfChangesServiceImplTest {
         SqlNode query = parseWithValidate("SELECT 1", DATAMART_LIST);
 
         // act
-        Future<PrepareRequestOfChangesResult> result = queriesOfChangesService.prepare(new PrepareRequestOfChangesRequest(DATAMART_LIST, "dev", 10, query, new Entity()));
+        Future<PrepareRequestOfChangesResult> result = queriesOfChangesService.prepare(new PrepareRequestOfChangesRequest(DATAMART_LIST, "dev", new DeltaData(DELTA_NUM, DELTA_NUM_CN_FROM, DELTA_NUM_CN_TO), PREVIOUS_DELTA_NUM_CN_TO, query, new Entity()));
 
         // assert
         result.onComplete(event -> {
@@ -444,7 +449,7 @@ class PrepareQueriesOfChangesServiceImplTest {
         SqlNode query = parseWithValidate("SELECT id, col_timestamp, col_date, col_time FROM datamart1.dates", DATAMART_LIST);
 
         // act
-        Future<PrepareRequestOfChangesResult> result = queriesOfChangesService.prepare(new PrepareRequestOfChangesRequest(DATAMART_LIST, "dev", 10, query, new Entity()));
+        Future<PrepareRequestOfChangesResult> result = queriesOfChangesService.prepare(new PrepareRequestOfChangesRequest(DATAMART_LIST, "dev", new DeltaData(DELTA_NUM, DELTA_NUM_CN_FROM, DELTA_NUM_CN_TO), PREVIOUS_DELTA_NUM_CN_TO, query, new Entity()));
 
         // assert
         result.onComplete(event -> {

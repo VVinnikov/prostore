@@ -87,7 +87,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                     .onSuccess(kafkaRequest -> {
                         destination.forEach(ds -> startMppwFutureMap.put(ds,
                                 startMppw(ds, context.getMetrics(), kafkaRequest.toBuilder().build())));
-                        checkPluginsMppwExecution(startMppwFutureMap, promise);
+                        checkPluginsMppwExecution(startMppwFutureMap, context.getRequest().getQueryRequest().getRequestId(), promise);
                     })
                     .onFailure(promise::fail);
         });
@@ -147,7 +147,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
         try {
             updateMppwLoadStatus(mppwRequestWrapper.getLoadStatusResult(), statusQueryResult);
             if (isMppwLoadedSuccess(statusQueryResult)) {
-                log.debug("MPPW loaded successfully for plugin {}", mppwRequestWrapper.getSourceType());
+                log.debug("Plugin {} MPPW loaded successfully for request [{}]", mppwRequestWrapper.getSourceType(), mppwRequestWrapper.getRequest().getRequestId());
                 vertx.cancelTimer(timerId);
                 MppwStopFuture stopFuture = MppwStopFuture.builder()
                         .sourceType(mppwRequestWrapper.getSourceType())
@@ -157,7 +157,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                         .build();
                 promise.complete(stopFuture);
             } else if (isMppwLoadingInitFailure(mppwRequestWrapper.getLoadStatusResult())) {
-                log.error("Plugin {} consumer failed to start", mppwRequestWrapper.getSourceType());
+                log.error("Plugin {} consumer failed to start for request [{}]", mppwRequestWrapper.getSourceType(), mppwRequestWrapper.getRequest().getRequestId());
                 vertx.cancelTimer(timerId);
                 MppwStopFuture stopFuture = MppwStopFuture.builder()
                         .sourceType(mppwRequestWrapper.getSourceType())
@@ -168,7 +168,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                         .build();
                 promise.complete(stopFuture);
             } else if (isLastOffsetNotIncrease(mppwRequestWrapper.getLoadStatusResult())) {
-                log.error("Last offset not increased for plugin {}", mppwRequestWrapper.getSourceType());
+                log.error("Plugin {} last offset not increased for request [{}]", mppwRequestWrapper.getSourceType(), mppwRequestWrapper.getRequest().getRequestId());
                 vertx.cancelTimer(timerId);
                 MppwStopFuture stopFuture = MppwStopFuture.builder()
                         .sourceType(mppwRequestWrapper.getSourceType())
@@ -233,15 +233,17 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
     }
 
     private void checkPluginsMppwExecution(Map<SourceType, Future<MppwStopFuture>> startMppwFuturefMap,
+                                           UUID requestId,
                                            Promise<QueryResult> promise) {
         final Map<SourceType, MppwStopFuture> mppwStopFutureMap = new HashMap<>();
         CompositeFuture.join(new ArrayList<>(startMppwFuturefMap.values()))
-                .onSuccess(startResult -> processStopFutures(mppwStopFutureMap, startResult, promise))
+                .onSuccess(startResult -> processStopFutures(mppwStopFutureMap, startResult, requestId, promise))
                 .onFailure(promise::fail);
     }
 
     private void processStopFutures(Map<SourceType, MppwStopFuture> mppwStopFutureMap,
                                     CompositeFuture startCompositeFuture,
+                                    UUID requestId,
                                     Promise<QueryResult> promise) {
         List<Future<QueryResult>> stopMppwFutures = getStopMppwFutures(mppwStopFutureMap, startCompositeFuture);
         // This extra copy of futures to satisfy CompositeFuture.join signature, which require untyped Future
@@ -250,23 +252,23 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                 .onComplete(stopComplete -> {
                     if (stopComplete.succeeded()) {
                         if (isAllMppwPluginsHasEqualOffsets(mppwStopFutureMap)) {
-                            log.debug("MPPW load successfully finished");
+                            log.debug("MPPW load successfully finished for request [{}]", requestId);
                             promise.complete(QueryResult.emptyResult());
                         } else {
-                            failMppw(mppwStopFutureMap, promise, stopComplete.cause());
+                            failMppw(mppwStopFutureMap, requestId, promise, stopComplete.cause());
                         }
                     } else {
-                        failMppw(mppwStopFutureMap, promise, stopComplete.cause());
+                        failMppw(mppwStopFutureMap, requestId, promise, stopComplete.cause());
                     }
                 });
     }
 
-    private void failMppw(Map<SourceType, MppwStopFuture> mppwStopFutureMap, Promise<QueryResult> promise, Throwable cause) {
+    private void failMppw(Map<SourceType, MppwStopFuture> mppwStopFutureMap, UUID requestId, Promise<QueryResult> promise, Throwable cause) {
         String stopStatus = collectStatus(mppwStopFutureMap);
         RuntimeException e = new DtmException(
                 String.format("The offset of one of the plugins has changed: %n %s", stopStatus),
                 cause);
-        log.error("MPPW load failed, cause: {}", stopStatus);
+        log.error("MPPW load failed for request [{}], cause: {}", requestId, stopStatus);
         promise.fail(e);
     }
 

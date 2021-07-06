@@ -43,7 +43,7 @@ public class AdgSynchronizeDestinationExecutor implements SynchronizeDestination
     @Override
     public Future<Long> execute(SynchronizeRequest synchronizeRequest) {
         return Future.future(promise -> {
-            log.info("Started [ADB->ADG][{}] synchronization, deltaNum: {}", synchronizeRequest.getRequestId(), synchronizeRequest.getDeltaNumToBe());
+            log.info("Started [ADB->ADG][{}] synchronization, deltaNum: {}", synchronizeRequest.getRequestId(), synchronizeRequest.getDeltaToBe());
             if (synchronizeRequest.getDatamarts().size() > 1) {
                 promise.fail(new DtmException(String.format("Can't synchronize [ADB->ADG][%s] with multiple datamarts: %s",
                         synchronizeRequest.getEntity().getName(), synchronizeRequest.getDatamarts())));
@@ -51,7 +51,7 @@ public class AdgSynchronizeDestinationExecutor implements SynchronizeDestination
             }
 
             prepareQueriesOfChangesService.prepare(new PrepareRequestOfChangesRequest(synchronizeRequest.getDatamarts(), synchronizeRequest.getEnvName(),
-                    synchronizeRequest.getDeltaNumToBe(), synchronizeRequest.getViewQuery(), synchronizeRequest.getEntity()))
+                    synchronizeRequest.getDeltaToBe(), synchronizeRequest.getBeforeDeltaCnTo(), synchronizeRequest.getViewQuery(), synchronizeRequest.getEntity()))
                     .compose(requestOfChanges -> synchronize(requestOfChanges, synchronizeRequest))
                     .onComplete(result -> executeDropExternalTable(synchronizeRequest.getDatamartMnemonic(), synchronizeRequest.getEntity())
                             .onComplete(dropResult -> {
@@ -60,7 +60,7 @@ public class AdgSynchronizeDestinationExecutor implements SynchronizeDestination
                                 }
 
                                 if (result.succeeded()) {
-                                    promise.complete(synchronizeRequest.getDeltaNumToBe());
+                                    promise.complete(synchronizeRequest.getDeltaToBe().getNum());
                                 } else {
                                     promise.fail(result.cause());
                                 }
@@ -88,7 +88,7 @@ public class AdgSynchronizeDestinationExecutor implements SynchronizeDestination
 
     private Future<Void> transferSpaceChanges(SynchronizeRequest synchronizeRequest) {
         return adgSharedService.transferData(new AdgSharedTransferDataRequest(synchronizeRequest.getEnvName(), synchronizeRequest.getDatamartMnemonic(),
-                synchronizeRequest.getEntity(), synchronizeRequest.getDeltaNumToBeCnTo()));
+                synchronizeRequest.getEntity(), synchronizeRequest.getDeltaToBe().getCnTo()));
     }
 
     private Future<List<Map<String, Object>>> executeDropExternalTable(String datamart, Entity entity) {

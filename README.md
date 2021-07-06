@@ -1,5 +1,8 @@
-# DTM core services & plugins
-Main project of data mart.
+# Prostore
+Prostore is an open-source integration system providing a temporal DB unified interface to the heterogenous data store. It’s purposed for a datamart implementation.
+
+## Useful links
+[Documentation (Rus)](https://arenadata.github.io/docs_prostore/)
 
 ## Local deployment
 

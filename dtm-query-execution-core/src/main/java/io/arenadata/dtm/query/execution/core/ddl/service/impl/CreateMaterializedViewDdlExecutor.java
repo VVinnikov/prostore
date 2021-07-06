@@ -4,6 +4,7 @@ import io.arenadata.dtm.cache.service.CacheService;
 import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.dto.QueryParserResponse;
 import io.arenadata.dtm.common.exception.DtmException;
+import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.EntityType;
@@ -377,7 +378,17 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
     }
 
     private boolean isCompatibleTypes(EntityField entityField, ColumnMetadata columnMetadata) {
-        return entityField.getType() == columnMetadata.getType();
+        if (entityField.getType() == columnMetadata.getType() ||
+                entityField.getType() == ColumnType.ANY ||
+                columnMetadata.getType() == ColumnType.ANY) {
+            return true;
+        }
+
+        if (columnMetadata.getType() == ColumnType.INT || columnMetadata.getType() == ColumnType.BIGINT) {
+            return entityField.getType() == ColumnType.INT || entityField.getType() == ColumnType.BIGINT;
+        }
+
+        return false;
     }
 
     private boolean isMismatched(Integer sizeOrAccuracy, ColumnMetadata columnMetadata) {

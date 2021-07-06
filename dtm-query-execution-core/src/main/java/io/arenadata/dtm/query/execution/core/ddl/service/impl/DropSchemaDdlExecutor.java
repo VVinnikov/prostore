@@ -8,6 +8,7 @@ import io.arenadata.dtm.common.reader.InformationSchemaView;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.calcite.core.extension.eddl.DropDatabase;
 import io.arenadata.dtm.query.execution.core.base.dto.cache.EntityKey;
+import io.arenadata.dtm.query.execution.core.base.dto.cache.MaterializedViewCacheValue;
 import io.arenadata.dtm.query.execution.core.base.exception.datamart.DatamartNotExistsException;
 import io.arenadata.dtm.query.execution.core.base.repository.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.DatamartDao;
@@ -34,6 +35,7 @@ public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
     private final CacheService<String, HotDelta> hotDeltaCacheService;
     private final CacheService<String, OkDelta> okDeltaCacheService;
     private final CacheService<EntityKey, Entity> entityCacheService;
+    private final CacheService<EntityKey, MaterializedViewCacheValue> materializedViewCacheService;
     private final DatamartDao datamartDao;
     private final EvictQueryTemplateCacheService evictQueryTemplateCacheService;
 
@@ -42,12 +44,14 @@ public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
                                  @Qualifier("hotDeltaCacheService") CacheService<String, HotDelta> hotDeltaCacheService,
                                  @Qualifier("okDeltaCacheService") CacheService<String, OkDelta> okDeltaCacheService,
                                  @Qualifier("entityCacheService") CacheService<EntityKey, Entity> entityCacheService,
+                                 @Qualifier("materializedViewCacheService") CacheService<EntityKey, MaterializedViewCacheValue> materializedViewCacheService,
                                  ServiceDbFacade serviceDbFacade,
                                  EvictQueryTemplateCacheService evictQueryTemplateCacheService) {
         super(metadataExecutor, serviceDbFacade);
         this.hotDeltaCacheService = hotDeltaCacheService;
         this.okDeltaCacheService = okDeltaCacheService;
         this.entityCacheService = entityCacheService;
+        this.materializedViewCacheService = materializedViewCacheService;
         datamartDao = serviceDbFacade.getServiceDbDao().getDatamartDao();
         this.evictQueryTemplateCacheService = evictQueryTemplateCacheService;
     }
@@ -87,6 +91,11 @@ public class DropSchemaDdlExecutor extends QueryResultDdlExecutor {
 
     private void clearCacheByDatamartName(String schemaName) {
         entityCacheService.removeIf(ek -> ek.getDatamartName().equals(schemaName));
+        materializedViewCacheService.forEach(((entityKey, cacheValue) -> {
+            if (entityKey.getDatamartName().equals(schemaName)) {
+                cacheValue.markForDeletion();
+            }
+        }));
         hotDeltaCacheService.remove(schemaName);
         okDeltaCacheService.remove(schemaName);
     }

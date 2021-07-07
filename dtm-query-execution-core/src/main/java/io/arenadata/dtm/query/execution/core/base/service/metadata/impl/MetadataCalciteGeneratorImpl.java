@@ -100,6 +100,10 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
         for (SqlNode pk : pks) {
             SqlIdentifier pkIdent = (SqlIdentifier) pk;
             EntityField keyfield = fieldMap.get(pkIdent.getSimple());
+            if(keyfield == null) {
+                throw new DtmException(String.format("Unknown primary key column: %s",
+                        pkIdent.getSimple()));
+            }
             keyfield.setPrimaryOrder(pkOrder);
             keyfield.setNullable(false);
             pkOrder++;
@@ -163,7 +167,7 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
             SqlIdentifier node = (SqlIdentifier) sqlNode;
             final EntityField field = fieldMap.get(node.getSimple());
             if (field == null) {
-                throw new DtmException(String.format("Incorrect distributed key column name %s",
+                throw new DtmException(String.format("Unknown distributed key column: %s",
                         node.getSimple()));
             }
             field.setShardingOrder(dkOrder);

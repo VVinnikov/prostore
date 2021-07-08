@@ -128,6 +128,40 @@ class MetadataCalciteGeneratorImplTest {
     }
 
     @Test
+    void shouldFailWhenUnknownType() throws SqlParseException {
+        // arrange
+        String sql = "CREATE TABLE pva_test.test\n" +
+                "(\n" +
+                "id id_col not null,\n" +
+                "primary key (id)\n" +
+                ")\n" +
+                "distributed by (id)";
+        SqlNode sqlNode = planner.parse(sql);
+
+        // act assert
+        assertThrows(DtmException.class, () -> metadataCalciteGenerator.generateTableMetadata((SqlCreate) sqlNode));
+    }
+
+    @Test
+    void shouldFailWhenUnknownTypeOnMaterializedView() throws SqlParseException {
+        // arrange
+        String sql = "CREATE MATERIALIZED VIEW pva_test.crash_test\n" +
+                "(\n" +
+                "  id id_col not null,\n" +
+                "  primary key (id)\n" +
+                ")\n" +
+                "DISTRIBUTED BY (id)\n" +
+                "DATASOURCE_TYPE (ADG)\n" +
+                "AS\n" +
+                "SELECT * FROM test\n" +
+                "DATASOURCE_TYPE='adb'";
+        SqlNode sqlNode = planner.parse(sql);
+
+        // act assert
+        assertThrows(DtmException.class, () -> metadataCalciteGenerator.generateTableMetadata((SqlCreate) sqlNode));
+    }
+
+    @Test
     void generateTableMetadataWithSchema() throws SqlParseException {
         String sql = "CREATE UPLOAD EXTERNAL TABLE test_datamart.uplExtTab (" +
                 "id integer not null," +

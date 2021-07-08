@@ -1,9 +1,12 @@
 package io.arenadata.dtm.query.execution.core.ddl.utils;
 
+import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.EntityField;
+import io.arenadata.dtm.query.calcite.core.visitors.SqlInvalidTimestampFinder;
 import io.arenadata.dtm.query.execution.core.base.exception.table.ValidationDtmException;
 import lombok.val;
+import org.apache.calcite.sql.SqlNode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,6 +59,14 @@ public final class ValidationUtils {
 
         if (uniqueFieldNames.size() != fields.size()) {
             throw new ValidationDtmException("Entity has duplication fields names");
+        }
+    }
+
+    public static void checkTimestampFormat(SqlNode node) {
+        val finder = new SqlInvalidTimestampFinder();
+        node.accept(finder);
+        if (!finder.getInvalidTimestamps().isEmpty()) {
+            throw new DtmException(String.format("Query contains invalid TIMESTAMP format [yyyy-MM-dd HH:mm:ss(.mmmmmm)]: %s", finder.getInvalidTimestamps()));
         }
     }
 }

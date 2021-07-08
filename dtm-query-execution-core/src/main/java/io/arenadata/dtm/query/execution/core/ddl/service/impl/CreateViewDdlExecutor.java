@@ -33,9 +33,7 @@ import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.calcite.sql.SqlDialect;
-import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.*;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -44,6 +42,8 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static io.arenadata.dtm.query.execution.core.ddl.utils.ValidationUtils.checkTimestampFormat;
 
 @Slf4j
 @Component
@@ -78,6 +78,10 @@ public class CreateViewDdlExecutor extends QueryResultDdlExecutor {
     public Future<QueryResult> execute(DdlRequestContext context, String sqlNodeName) {
         return checkViewQuery(context)
                 .compose(v -> parseSelect(((SqlCreateView) context.getSqlNode()).getQuery(), context.getDatamartName()))
+                .map(parserResponse -> {
+                    checkTimestampFormat(parserResponse.getSqlNode());
+                    return parserResponse;
+                })
                 .compose(response -> getCreateViewContext(context, response))
                 .compose(this::createOrReplaceEntity);
     }

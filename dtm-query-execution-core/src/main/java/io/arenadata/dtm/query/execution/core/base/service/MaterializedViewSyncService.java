@@ -20,7 +20,6 @@ import io.arenadata.dtm.query.execution.core.plugin.exception.SuitablePluginNotE
 import io.arenadata.dtm.query.execution.core.plugin.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.api.synchronize.SynchronizeRequest;
-import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +32,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 @Service
@@ -48,6 +48,8 @@ public class MaterializedViewSyncService {
     private final Vertx vertx;
     private final long retryCount;
     private final long periodMs;
+    private final long maxConcurrent;
+    private final AtomicInteger concurrentSyncCount = new AtomicInteger(0);
     private final AppConfiguration appConfiguration;
 
     public MaterializedViewSyncService(DataSourcePluginService dataSourcePluginService,
@@ -70,6 +72,7 @@ public class MaterializedViewSyncService {
         this.vertx = vertx;
         this.retryCount = matViewSyncProperties.getRetryCount();
         this.periodMs = matViewSyncProperties.getPeriodMs();
+        this.maxConcurrent = matViewSyncProperties.getMaxConcurrent();
         this.appConfiguration = appConfiguration;
     }
 
@@ -97,10 +100,12 @@ public class MaterializedViewSyncService {
                             log.info("Started sync process for {}", value);
                             runSync(datamart, value, origUUID)
                                     .onSuccess(v -> {
+                                        concurrentSyncCount.decrementAndGet();
                                         log.info("Materialized view {} synchronized", entity.getNameWithSchema());
                                         promise.complete();
                                     })
                                     .onFailure(error -> {
+                                        concurrentSyncCount.decrementAndGet();
                                         log.error("Failed to sync materialized view {}, fails count {}/{}", entity.getNameWithSchema(), value.getFailsCount() + 1, retryCount, error);
                                         if (origUUID.equals(value.getUuid())) {
                                             value.incrementFailsCount();
@@ -120,7 +125,7 @@ public class MaterializedViewSyncService {
     }
 
     private Future<Boolean> isReadyForSync(String datamart, MaterializedViewSyncStatus matViewStatus, Long matViewDeltaNum, long matViewRetryCount) {
-        if (MaterializedViewSyncStatus.READY != matViewStatus || matViewRetryCount >= retryCount) {
+        if (concurrentSyncCount.get() >= maxConcurrent || MaterializedViewSyncStatus.READY != matViewStatus || matViewRetryCount >= retryCount) {
             return Future.succeededFuture(false);
         }
         return deltaServiceDao.getDeltaOk(datamart)
@@ -129,6 +134,7 @@ public class MaterializedViewSyncService {
     }
 
     private Future<Void> runSync(String datamart, MaterializedViewCacheValue value, UUID origUUID) {
+        concurrentSyncCount.incrementAndGet();
         value.setStatus(MaterializedViewSyncStatus.RUN);
         return synchronize(datamart, value.getEntity())
                 .compose(deltaNum -> origUUID.equals(value.getUuid()) ? updateEntity(deltaNum, value) : Future.succeededFuture());

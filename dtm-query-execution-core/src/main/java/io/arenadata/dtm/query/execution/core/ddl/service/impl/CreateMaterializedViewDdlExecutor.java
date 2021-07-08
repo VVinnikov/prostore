@@ -100,6 +100,10 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
     public Future<QueryResult> execute(DdlRequestContext context, String sqlNodeName) {
         return updateContextAndValidate(context)
                 .compose(unused -> parseSelect(((SqlCreateMaterializedView) context.getSqlNode()).getQuery(), context.getDatamartName()))
+                .map(response -> {
+                    checkTimestampFormat(response.getSqlNode());
+                    return response;
+                })
                 .compose(response -> createMaterializedView(context, response));
     }
 

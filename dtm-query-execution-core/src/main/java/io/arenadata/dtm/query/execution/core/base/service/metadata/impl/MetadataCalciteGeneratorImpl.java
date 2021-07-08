@@ -66,10 +66,15 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
     private EntityField createField(SqlColumnDeclaration columnValue, int ordinalPos) {
         val column = getColumn(columnValue);
         val columnTypeSpec = getColumnTypeSpec(columnValue);
+        val columnType = getColumnType(columnTypeSpec);
+        if (columnType == ColumnType.ANY) {
+            throw new DtmException(String.format("Unknown type for column: %s", column.getSimple()));
+        }
+
         final EntityField field = new EntityField(
                 ordinalPos,
                 column.getSimple(),
-                getColumnType(columnTypeSpec),
+                columnType,
                 columnTypeSpec.getNullable()
         );
         if (columnTypeSpec.getTypeNameSpec() instanceof SqlBasicTypeNameSpec) {
@@ -100,7 +105,7 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
         for (SqlNode pk : pks) {
             SqlIdentifier pkIdent = (SqlIdentifier) pk;
             EntityField keyfield = fieldMap.get(pkIdent.getSimple());
-            if(keyfield == null) {
+            if (keyfield == null) {
                 throw new DtmException(String.format("Unknown primary key column: %s",
                         pkIdent.getSimple()));
             }
@@ -145,7 +150,7 @@ public class MetadataCalciteGeneratorImpl implements MetadataCalciteGenerator {
         }
 
         SqlNodeList distributedBy;
-        if(sqlCreate instanceof SqlCreateTable) {
+        if (sqlCreate instanceof SqlCreateTable) {
             SqlCreateTable createTable = (SqlCreateTable) sqlCreate;
             distributedBy = createTable.getDistributedBy().getDistributedBy();
         } else {

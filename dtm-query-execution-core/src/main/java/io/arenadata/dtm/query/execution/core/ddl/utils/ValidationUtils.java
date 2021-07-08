@@ -1,6 +1,5 @@
 package io.arenadata.dtm.query.execution.core.ddl.utils;
 
-import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.calcite.core.visitors.SqlInvalidTimestampFinder;
@@ -66,7 +65,7 @@ public final class ValidationUtils {
         val finder = new SqlInvalidTimestampFinder();
         node.accept(finder);
         if (!finder.getInvalidTimestamps().isEmpty()) {
-            throw new DtmException(String.format("Query contains invalid TIMESTAMP format [yyyy-MM-dd HH:mm:ss(.mmmmmm)]: %s", finder.getInvalidTimestamps()));
+            throw new ValidationDtmException(String.format("Query contains invalid TIMESTAMP format [yyyy-MM-dd HH:mm:ss(.mmmmmm)]: %s", finder.getInvalidTimestamps()));
         }
     }
 }

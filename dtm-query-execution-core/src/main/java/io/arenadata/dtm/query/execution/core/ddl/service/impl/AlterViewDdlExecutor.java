@@ -25,6 +25,8 @@ import org.springframework.stereotype.Component;
 import java.util.Collections;
 import java.util.Set;
 
+import static io.arenadata.dtm.query.execution.core.ddl.utils.ValidationUtils.checkTimestampFormat;
+
 @Slf4j
 @Component
 public class AlterViewDdlExecutor extends CreateViewDdlExecutor {
@@ -50,6 +52,10 @@ public class AlterViewDdlExecutor extends CreateViewDdlExecutor {
     public Future<QueryResult> execute(DdlRequestContext context, String sqlNodeName) {
         return checkViewQuery(context)
                 .compose(v -> parseSelect(((SqlAlterView) context.getSqlNode()).getQuery(), context.getDatamartName()))
+                .map(parserResponse -> {
+                    checkTimestampFormat(parserResponse.getSqlNode());
+                    return parserResponse;
+                })
                 .compose(response -> getCreateViewContext(context, response))
                 .compose(viewContext -> updateEntity(viewContext, context));
     }

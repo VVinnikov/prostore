@@ -74,7 +74,7 @@ class CheckColumnTypesServiceTest {
                         testContext.failNow(ar.cause());
                     }
                 });
-        assertThat(testContext.awaitCompletion(5, TimeUnit.SECONDS)).isTrue();
+        assertThat(testContext.awaitCompletion(10, TimeUnit.SECONDS)).isTrue();
     }
 
     @Test
@@ -110,7 +110,7 @@ class CheckColumnTypesServiceTest {
                         testContext.failNow(ar.cause());
                     }
                 });
-        assertThat(testContext.awaitCompletion(5, TimeUnit.SECONDS)).isTrue();
+        assertThat(testContext.awaitCompletion(10, TimeUnit.SECONDS)).isTrue();
     }
 
     @SneakyThrows

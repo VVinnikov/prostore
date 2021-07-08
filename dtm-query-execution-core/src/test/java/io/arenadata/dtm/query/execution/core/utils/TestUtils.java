@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -128,12 +129,32 @@ public class TestUtils {
                 .entityType(EntityType.TABLE)
                 .build();
 
+        Entity entity7 = Entity.builder()
+                .schema(schema)
+                .name("entity")
+                .entityType(EntityType.TABLE)
+                .fields(Arrays.asList(EntityField.builder()
+                                .ordinalPosition(0)
+                                .name("id")
+                                .type(ColumnType.BIGINT)
+                                .nullable(false)
+                                .build(),
+                        EntityField.builder()
+                                .ordinalPosition(1)
+                                .name("timestamp_col")
+                                .type(ColumnType.TIMESTAMP)
+                                .accuracy(6)
+                                .nullable(true)
+                                .build()))
+                .build();
+
         entityList.add(entity1);
         entityList.add(entity2);
         entityList.add(entity3);
         entityList.add(entity4);
         entityList.add(entity5);
         entityList.add(entity6);
+        entityList.add(entity7);
     }
 
 

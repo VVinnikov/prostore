@@ -731,6 +731,26 @@ class CreateMaterializedViewDdlExecutorTest {
         assertException(EntityAlreadyExistsException.class, "Entity " + MAT_VIEW_ENTITY_NAME + " already exists", promise.future().cause());
     }
 
+    @Test
+    void shouldFailWhenInvalidTimestampFormat() {
+        // arrange
+        DdlRequestContext context = getContext("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar(100), enddate timestamp(5), PRIMARY KEY(id))\n" +
+                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM matviewdatamart.tbl WHERE enddate = '123456' DATASOURCE_TYPE = 'ADB'");
+
+        Promise<QueryResult> promise = Promise.promise();
+
+        when(entityDao.getEntity(SCHEMA, tblEntity.getName()))
+                .thenReturn(Future.succeededFuture(tblEntity));
+
+        // act
+        createTableDdlExecutor.execute(context, MAT_VIEW_ENTITY_NAME)
+                .onComplete(promise);
+
+        // assert
+        assertTrue(promise.future().failed());
+        assertTrue(promise.future().cause() instanceof ValidationDtmException);
+    }
+
     private void testFailDatasourceType(String sql, String errorMessage) {
         // arrange
         DdlRequestContext context = getContext(sql);

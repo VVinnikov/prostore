@@ -47,6 +47,7 @@ import org.apache.calcite.sql.SqlCharStringLiteral;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlSelect;
@@ -258,14 +259,24 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
         for (int i = 0; i < selectList.size(); i++) {
             SqlNode current = selectList.get(i);
 
-            SqlBasicCall alias;
-            if (current instanceof SqlIdentifier) {
-                alias = buildAlias(current, matViewColumns.get(i), current.getParserPosition(), selectList.get(i).getParserPosition());
+            SqlBasicCall expression;
+            if (current instanceof SqlBasicCall) {
+                expression = (SqlBasicCall) current;
+                List<SqlNode> operands = expression.getOperandList();
+
+                if (expression.getOperator().getKind() == SqlKind.AS) {
+                    SqlIdentifier newAlias = ((SqlIdentifier) operands.get(1)).setName(0, getMatViewColumnAlias(matViewColumns.get(i)));
+                    expression.setOperand(1, newAlias);
+                } else {
+                    expression = buildAlias(expression, matViewColumns.get(i), expression.getParserPosition(), selectList.get(i).getParserPosition());
+                }
+                updatedSelectList.add(expression);
+            } else if (current instanceof SqlIdentifier) {
+                expression = buildAlias(current, matViewColumns.get(i), current.getParserPosition(), selectList.get(i).getParserPosition());
+                updatedSelectList.add(expression);
             } else {
-                List<SqlNode> operands = ((SqlBasicCall) current).getOperandList();
-                alias = buildAlias(operands.get(0), matViewColumns.get(i), operands.get(1).getParserPosition(), selectList.get(i).getParserPosition());
+                updatedSelectList.add(current);
             }
-            updatedSelectList.add(alias);
         }
 
         return updatedSelectList;

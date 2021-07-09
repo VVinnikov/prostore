@@ -107,7 +107,8 @@ class AdbQueryEnrichmentServiceImplTest {
         TestSuite suite = TestSuite.create("the_test_suite");
         suite.test("executeQuery", context -> {
             Async async = context.async();
-            adbQueryEnrichmentService.enrich(enrichQueryRequest)
+            queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                    .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
                     .onComplete(ar -> {
                         assertEquals(ar.result(), "SELECT COUNT(*) AS c FROM (SELECT * FROM shares.accounts_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1) AS t2 LIMIT 100");
                         async.complete();

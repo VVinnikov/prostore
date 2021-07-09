@@ -10,4 +10,5 @@ import org.springframework.stereotype.Component;
 public class MatViewSyncProperties {
     private long periodMs = 5000;
     private int retryCount = 10;
+    private int maxConcurrent = 2;
 }

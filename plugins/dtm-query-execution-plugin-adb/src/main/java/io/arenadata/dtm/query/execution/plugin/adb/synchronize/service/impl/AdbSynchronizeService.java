@@ -43,11 +43,10 @@ public class AdbSynchronizeService implements SynchronizeService {
                         .onComplete(ar -> {
                             if (ar.succeeded()) {
                                 log.info("Synchronization [ADB->{}}][{}] succeeded, matView: {}, deltaNum: {}",
-                                        destination, request.getRequestId(), request.getEntity().getNameWithSchema(),
-                                        request.getDeltaNumToBe());
+                                        destination, request.getRequestId(), request.getEntity().getNameWithSchema(), request.getDeltaToBe());
                             } else {
                                 log.error("Synchronization [ADB->{}}][{}] failed, matView: {}, deltaNum: {}", destination, request.getRequestId(),
-                                        request.getEntity().getNameWithSchema(), request.getDeltaNumToBe(), ar.cause());
+                                        request.getEntity().getNameWithSchema(), request.getDeltaToBe(), ar.cause());
                             }
                         }));
             }

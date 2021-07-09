@@ -196,6 +196,68 @@ class CreateMaterializedViewDdlExecutorTest {
     }
 
     @Test
+    void shouldSuccessWhenIntToBigIntTypes() {
+        // arrange
+        DdlRequestContext context = getContext("CREATE MATERIALIZED VIEW mat_view (id int, name varchar(100), enddate timestamp(5), PRIMARY KEY(id))\n" +
+                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM matviewdatamart.tbl DATASOURCE_TYPE = 'ADB'");
+
+        Promise<QueryResult> promise = Promise.promise();
+
+        when(datamartDao.existsDatamart(SCHEMA))
+                .thenReturn(Future.succeededFuture(true));
+        when(entityDao.existsEntity(SCHEMA, MAT_VIEW_ENTITY_NAME))
+                .thenReturn(Future.succeededFuture(false));
+        when(entityDao.getEntity(SCHEMA, tblEntity.getName()))
+                .thenReturn(Future.succeededFuture(tblEntity));
+        when(metadataExecutor.execute(any())).thenReturn(Future.succeededFuture());
+        when(entityDao.createEntity(any()))
+                .thenReturn(Future.succeededFuture());
+
+        // act
+        createTableDdlExecutor.execute(context, MAT_VIEW_ENTITY_NAME)
+                .onComplete(promise);
+
+        // assert
+        if (promise.future().cause() != null) {
+            fail(promise.future().cause());
+        }
+        verify(materializedViewCacheService).put(any(EntityKey.class), any(MaterializedViewCacheValue.class));
+        assertTrue(promise.future().succeeded());
+        assertNotNull(promise.future().result());
+    }
+
+    @Test
+    void shouldSuccessWhenAnyToDoubleType() {
+        // arrange
+        DdlRequestContext context = getContext("CREATE MATERIALIZED VIEW mat_view (id double, PRIMARY KEY(id))\n" +
+                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT 1.0 * sum(id) FROM matviewdatamart.tbl DATASOURCE_TYPE = 'ADB'");
+
+        Promise<QueryResult> promise = Promise.promise();
+
+        when(datamartDao.existsDatamart(SCHEMA))
+                .thenReturn(Future.succeededFuture(true));
+        when(entityDao.existsEntity(SCHEMA, MAT_VIEW_ENTITY_NAME))
+                .thenReturn(Future.succeededFuture(false));
+        when(entityDao.getEntity(SCHEMA, tblEntity.getName()))
+                .thenReturn(Future.succeededFuture(tblEntity));
+        when(metadataExecutor.execute(any())).thenReturn(Future.succeededFuture());
+        when(entityDao.createEntity(any()))
+                .thenReturn(Future.succeededFuture());
+
+        // act
+        createTableDdlExecutor.execute(context, MAT_VIEW_ENTITY_NAME)
+                .onComplete(promise);
+
+        // assert
+        if (promise.future().cause() != null) {
+            fail(promise.future().cause());
+        }
+        verify(materializedViewCacheService).put(any(EntityKey.class), any(MaterializedViewCacheValue.class));
+        assertTrue(promise.future().succeeded());
+        assertNotNull(promise.future().result());
+    }
+
+    @Test
     void shouldSuccessWhenStarQueryAndAllTypes() {
         // arrange
         ArrayList<EntityField> fields = new ArrayList<>();
@@ -667,6 +729,26 @@ class CreateMaterializedViewDdlExecutorTest {
 
         assertTrue(promise.future().failed());
         assertException(EntityAlreadyExistsException.class, "Entity " + MAT_VIEW_ENTITY_NAME + " already exists", promise.future().cause());
+    }
+
+    @Test
+    void shouldFailWhenInvalidTimestampFormat() {
+        // arrange
+        DdlRequestContext context = getContext("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar(100), enddate timestamp(5), PRIMARY KEY(id))\n" +
+                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM matviewdatamart.tbl WHERE enddate = '123456' DATASOURCE_TYPE = 'ADB'");
+
+        Promise<QueryResult> promise = Promise.promise();
+
+        when(entityDao.getEntity(SCHEMA, tblEntity.getName()))
+                .thenReturn(Future.succeededFuture(tblEntity));
+
+        // act
+        createTableDdlExecutor.execute(context, MAT_VIEW_ENTITY_NAME)
+                .onComplete(promise);
+
+        // assert
+        assertTrue(promise.future().failed());
+        assertTrue(promise.future().cause() instanceof ValidationDtmException);
     }
 
     private void testFailDatasourceType(String sql, String errorMessage) {

@@ -59,7 +59,7 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
     public Future<PrepareRequestOfChangesResult> prepare(PrepareRequestOfChangesRequest request) {
         return parserService.parse(new QueryParserRequest(request.getViewQuery(), request.getDatamarts()))
                 .compose(this::replaceTimeBasedColumns)
-                .compose(sqlNode -> prepareQueriesOfChanges((SqlSelect)sqlNode, request));
+                .compose(sqlNode -> prepareQueriesOfChanges((SqlSelect) sqlNode, request));
     }
 
     private Future<PrepareRequestOfChangesResult> prepareQueriesOfChanges(SqlSelect sqlNode, PrepareRequestOfChangesRequest request) {
@@ -71,15 +71,16 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
                 throw new DtmException("No tables in query");
             }
 
-
+            long cnFrom = request.getDeltaToBe().getCnFrom();
+            long cnTo = request.getDeltaToBe().getCnTo();
 
             List<Future> futures = new ArrayList<>(2);
             if (allTableAndSnapshots.size() > 1 || isAggregatedQuery(sqlNode)) {
-                futures.add(prepareMultipleRecordsQuery(sqlNode, request, request.getDeltaNumToBe(), request.getDeltaNumToBe() - 1, SYS_OP_MODIFIED));
-                futures.add(prepareMultipleRecordsQuery(sqlNode, request, request.getDeltaNumToBe() - 1, request.getDeltaNumToBe(), SYS_OP_DELETED));
+                futures.add(prepareMultipleRecordsQuery(sqlNode, request, cnTo, request.getBeforeDeltaCnTo(), SYS_OP_MODIFIED));
+                futures.add(prepareMultipleRecordsQuery(sqlNode, request, request.getBeforeDeltaCnTo(), cnTo, SYS_OP_DELETED));
             } else {
-                futures.add(enrichQueryWithDelta(sqlNode, request, request.getDeltaNumToBe(), DeltaType.STARTED_IN, SYS_OP_MODIFIED));
-                futures.add(enrichQueryWithDelta(sqlNode, request, request.getDeltaNumToBe(), DeltaType.FINISHED_IN, SYS_OP_DELETED));
+                futures.add(enrichQueryWithDelta(sqlNode, request, cnFrom, cnTo, DeltaType.STARTED_IN, SYS_OP_MODIFIED));
+                futures.add(enrichQueryWithDelta(sqlNode, request, cnFrom, cnTo, DeltaType.FINISHED_IN, SYS_OP_DELETED));
             }
 
             CompositeFuture.join(futures)
@@ -95,10 +96,11 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
         return sqlSelect.getGroup() != null || SqlNodeUtil.containsAggregates(sqlSelect);
     }
 
-    private Future<String> prepareMultipleRecordsQuery(SqlNode sqlNode, PrepareRequestOfChangesRequest request, long deltaNumCurrent, long deltaNumPrevious, int sysOp) {
+    private Future<String> prepareMultipleRecordsQuery(SqlNode sqlNode, PrepareRequestOfChangesRequest request,
+                                                       long cnCurrent, long cnPrevious, int sysOp) {
         return Future.future(promise -> {
-            Future<String> currentStateQuery = enrichQueryWithDelta(sqlNode, request, deltaNumCurrent, DeltaType.NUM, sysOp);
-            Future<String> previousStateQuery = enrichQueryWithDelta(sqlNode, request, deltaNumPrevious, DeltaType.NUM, sysOp);
+            Future<String> currentStateQuery = enrichQueryWithDelta(sqlNode, request, cnCurrent, cnCurrent, DeltaType.NUM, sysOp);
+            Future<String> previousStateQuery = enrichQueryWithDelta(sqlNode, request, cnPrevious, cnPrevious, DeltaType.NUM, sysOp);
             List<Future> futures = Arrays.asList(currentStateQuery, previousStateQuery);
             CompositeFuture.join(futures)
                     .onSuccess(event -> {
@@ -111,7 +113,8 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
 
     private Future<String> enrichQueryWithDelta(SqlNode originalSqlNode,
                                                 PrepareRequestOfChangesRequest request,
-                                                long deltaNumToBe,
+                                                long cnFrom,
+                                                long cnTo,
                                                 DeltaType deltaType,
                                                 int sysOp) {
         return Future.future(promise -> {
@@ -119,7 +122,7 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
             SqlSelectTree sqlNodesTree = new SqlSelectTree(sqlNode);
             List<DeltaInformation> deltaInformations = new ArrayList<>();
             sqlNodesTree.findAllTableAndSnapshots().forEach(sqlTreeNode -> {
-                DeltaInformation deltaInformation = addDeltaToTableQuery(sqlNodesTree, sqlTreeNode, deltaType, deltaNumToBe);
+                DeltaInformation deltaInformation = addDeltaToTableQuery(sqlNodesTree, sqlTreeNode, deltaType, cnFrom, cnTo);
                 deltaInformations.add(deltaInformation);
             });
 
@@ -156,7 +159,7 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
         }
 
         for (EntityField field : entity.getFields()) {
-            if(field.getPrimaryOrder() == null) {
+            if (field.getPrimaryOrder() == null) {
                 SqlTreeNode sqlColumnNode = columnsNodes.get(field.getOrdinalPosition());
                 columnNodeList.getList().remove(sqlColumnNode.getNode());
             }
@@ -173,13 +176,13 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
         node.add(SqlLiteral.createExactNumeric(Integer.toString(sysOp), SqlParserPos.ZERO));
     }
 
-    private DeltaInformation addDeltaToTableQuery(SqlSelectTree sqlNodesTree, SqlTreeNode sqlTreeNode, DeltaType deltaType, long deltaNum) {
+    private DeltaInformation addDeltaToTableQuery(SqlSelectTree sqlNodesTree, SqlTreeNode sqlTreeNode, DeltaType deltaType, long cnFrom, long cnTo) {
         SelectOnInterval builderInterval = null;
         Long builderDeltaNum = null;
         if (deltaType == DeltaType.FINISHED_IN || deltaType == DeltaType.STARTED_IN) {
-            builderInterval = new SelectOnInterval(deltaNum, deltaNum);
+            builderInterval = new SelectOnInterval(cnFrom, cnTo);
         } else {
-            builderDeltaNum = deltaNum;
+            builderDeltaNum = cnTo;
         }
 
         SqlTreeNode tableTreeNode = sqlTreeNode;
@@ -204,8 +207,7 @@ public class PrepareQueriesOfChangesServiceImpl implements PrepareQueriesOfChang
                 .selectOnNum(builderDeltaNum)
                 .isLatestUncommittedDelta(false);
 
-        return latestUncommittedDelta
-                .build();
+        return latestUncommittedDelta.build();
     }
 
     private Future<SqlNode> replaceTimeBasedColumns(QueryParserResponse parserResponse) {

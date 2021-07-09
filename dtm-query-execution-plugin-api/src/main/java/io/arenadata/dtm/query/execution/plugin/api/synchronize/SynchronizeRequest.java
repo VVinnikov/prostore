@@ -1,5 +1,6 @@
 package io.arenadata.dtm.query.execution.plugin.api.synchronize;
 
+import io.arenadata.dtm.common.delta.DeltaData;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.api.dto.PluginRequest;
@@ -16,8 +17,8 @@ public class SynchronizeRequest extends PluginRequest {
     private final List<Datamart> datamarts;
     private final Entity entity;
     private final SqlNode viewQuery;
-    private final Long deltaNumToBe;
-    private final Long deltaNumToBeCnTo;
+    private final DeltaData deltaToBe;
+    private final Long beforeDeltaCnTo;
 
     public SynchronizeRequest(UUID requestId,
                               String envName,
@@ -25,13 +26,13 @@ public class SynchronizeRequest extends PluginRequest {
                               List<Datamart> datamarts,
                               Entity entity,
                               SqlNode viewQuery,
-                              Long deltaNumToBe,
-                              Long deltaNumToBeCnTo) {
+                              DeltaData deltaToBe,
+                              Long beforeDeltaCnTo) {
         super(requestId, envName, datamartMnemonic);
         this.datamarts = datamarts;
         this.viewQuery = viewQuery;
-        this.deltaNumToBe = deltaNumToBe;
         this.entity = entity;
-        this.deltaNumToBeCnTo = deltaNumToBeCnTo;
+        this.deltaToBe = deltaToBe;
+        this.beforeDeltaCnTo = beforeDeltaCnTo;
     }
 }

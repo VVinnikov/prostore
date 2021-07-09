@@ -41,19 +41,33 @@ import io.vertx.core.Future;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.calcite.sql.SqlAsOperator;
+import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlCharStringLiteral;
 import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
+import org.apache.calcite.sql.parser.SqlParserPos;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-import static io.arenadata.dtm.query.execution.core.ddl.utils.ValidationUtils.*;
+import static io.arenadata.dtm.query.execution.core.ddl.utils.ValidationUtils.checkFieldsDuplication;
+import static io.arenadata.dtm.query.execution.core.ddl.utils.ValidationUtils.checkRequiredKeys;
+import static io.arenadata.dtm.query.execution.core.ddl.utils.ValidationUtils.checkVarcharSize;
 
 @Slf4j
 @Component
@@ -227,8 +241,52 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
     @SneakyThrows
     protected void replaceSqlSelectQuery(DdlRequestContext context, SqlNode newSelectNode) {
         val sql = (SqlCreateMaterializedView) context.getSqlNode();
+        val selectList = ((SqlSelect) newSelectNode).getSelectList();
+
+        if (selectList != null) {
+            SqlNodeList updatedSelectList = withColumnAliases(selectList, sql.getColumnList());
+            ((SqlSelect) newSelectNode).setSelectList(updatedSelectList);
+        }
+
         val newSql = new SqlCreateMaterializedView(sql.getParserPosition(), sql.getName(), sql.getColumnList(), sql.getDistributedBy(), sql.getDestination(), newSelectNode);
         context.setSqlNode(newSql);
+    }
+
+    private SqlNodeList withColumnAliases(SqlNodeList selectList, SqlNodeList matViewColumns) {
+        SqlNodeList updatedSelectList = new SqlNodeList(selectList.getParserPosition());
+
+        for (int i = 0; i < selectList.size(); i++) {
+            SqlNode current = selectList.get(i);
+
+            SqlBasicCall alias;
+            if (current instanceof SqlIdentifier) {
+                alias = buildAlias(current, matViewColumns.get(i), current.getParserPosition(), selectList.get(i).getParserPosition());
+            } else {
+                List<SqlNode> operands = ((SqlBasicCall) current).getOperandList();
+                alias = buildAlias(operands.get(0), matViewColumns.get(i), operands.get(1).getParserPosition(), selectList.get(i).getParserPosition());
+            }
+            updatedSelectList.add(alias);
+        }
+
+        return updatedSelectList;
+    }
+
+    private SqlBasicCall buildAlias(SqlNode queryColumn, SqlNode matViewColumn, SqlParserPos aliasPos, SqlParserPos pos) {
+        return new SqlBasicCall(
+                new SqlAsOperator(),
+                new SqlNode[]{
+                        queryColumn,
+                        new SqlIdentifier(
+                                getMatViewColumnAlias(matViewColumn),
+                                aliasPos
+                        )
+                },
+                pos
+        );
+    }
+
+    private String getMatViewColumnAlias(SqlNode column) {
+        return ((SqlIdentifier) ((SqlColumnDeclaration) column).getOperandList().get(0)).getSimple();
     }
 
     private Future<Void> checkSystemColumnNames(SqlNode sqlNode) {

@@ -55,6 +55,8 @@ import org.apache.calcite.tools.Planner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -64,6 +66,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.arenadata.dtm.query.execution.core.utils.TestUtils.assertException;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -110,6 +114,11 @@ class CreateMaterializedViewDdlExecutorTest {
     private MetadataCalciteGeneratorImpl metadataCalciteGenerator;
     @InjectMocks
     private DefaultDatamartSetter defaultDatamartSetter;
+
+    @Captor
+    private ArgumentCaptor<Entity> entityCaptor;
+    @Captor
+    private ArgumentCaptor<MaterializedViewCacheValue> cachedViewCaptor;
 
     private QueryResultDdlExecutor createTableDdlExecutor;
 
@@ -382,9 +391,95 @@ class CreateMaterializedViewDdlExecutorTest {
     }
 
     @Test
+    void shouldAddAliasesToViewQueryColumns() {
+        // arrange
+        DdlRequestContext context = getContext("CREATE MATERIALIZED VIEW mat_view (" +
+                "id_field bigint, " +
+                "name_field varchar(100), " +
+                "PRIMARY KEY(id_field))\n" +
+                "DISTRIBUTED BY (id_field) " +
+                "DATASOURCE_TYPE (ADG) " +
+                "AS SELECT id, name FROM matviewdatamart.tbl DATASOURCE_TYPE = 'ADB'");
+
+        Promise<QueryResult> promise = Promise.promise();
+
+        when(datamartDao.existsDatamart(SCHEMA))
+                .thenReturn(Future.succeededFuture(true));
+        when(entityDao.existsEntity(SCHEMA, MAT_VIEW_ENTITY_NAME))
+                .thenReturn(Future.succeededFuture(false));
+        when(entityDao.getEntity(SCHEMA, tblEntity.getName()))
+                .thenReturn(Future.succeededFuture(tblEntity));
+        when(metadataExecutor.execute(any())).thenReturn(Future.succeededFuture());
+        when(entityDao.createEntity(any()))
+                .thenReturn(Future.succeededFuture());
+
+        // act
+        createTableDdlExecutor.execute(context, MAT_VIEW_ENTITY_NAME)
+                .onComplete(promise);
+
+        // assert
+        if (promise.future().cause() != null) {
+            fail(promise.future().cause());
+        }
+        verify(entityDao).createEntity(entityCaptor.capture());
+        Entity entity = entityCaptor.getValue();
+        assertThat(entity.getViewQuery(), is("SELECT id AS id_field, name AS name_field FROM matviewdatamart.tbl"));
+
+        verify(materializedViewCacheService).put(any(EntityKey.class), cachedViewCaptor.capture());
+        entity = cachedViewCaptor.getValue().getEntity();
+        assertThat(entity.getViewQuery(), is("SELECT id AS id_field, name AS name_field FROM matviewdatamart.tbl"));
+
+        assertTrue(promise.future().succeeded());
+        assertNotNull(promise.future().result());
+    }
+
+    @Test
+    void shouldOverrideAliasesToViewQueryColumns() {
+        // arrange
+        DdlRequestContext context = getContext("CREATE MATERIALIZED VIEW mat_view (" +
+                "id_field bigint, " +
+                "name_field varchar(100), " +
+                "PRIMARY KEY(id_field))\n" +
+                "DISTRIBUTED BY (id_field) " +
+                "DATASOURCE_TYPE (ADG) " +
+                "AS SELECT id as ID_ALIAS_TO_OVERRIDE, name AS NAME_ALIAS_TO_OVERRIDE FROM matviewdatamart.tbl DATASOURCE_TYPE = 'ADB'");
+
+        Promise<QueryResult> promise = Promise.promise();
+
+        when(datamartDao.existsDatamart(SCHEMA))
+                .thenReturn(Future.succeededFuture(true));
+        when(entityDao.existsEntity(SCHEMA, MAT_VIEW_ENTITY_NAME))
+                .thenReturn(Future.succeededFuture(false));
+        when(entityDao.getEntity(SCHEMA, tblEntity.getName()))
+                .thenReturn(Future.succeededFuture(tblEntity));
+        when(metadataExecutor.execute(any())).thenReturn(Future.succeededFuture());
+        when(entityDao.createEntity(any()))
+                .thenReturn(Future.succeededFuture());
+
+        // act
+        createTableDdlExecutor.execute(context, MAT_VIEW_ENTITY_NAME)
+                .onComplete(promise);
+
+        // assert
+        if (promise.future().cause() != null) {
+            fail(promise.future().cause());
+        }
+        verify(entityDao).createEntity(entityCaptor.capture());
+        Entity entity = entityCaptor.getValue();
+        assertThat(entity.getViewQuery(), is("SELECT id AS id_field, name AS name_field FROM matviewdatamart.tbl"));
+
+        verify(materializedViewCacheService).put(any(EntityKey.class), cachedViewCaptor.capture());
+        entity = cachedViewCaptor.getValue().getEntity();
+        assertThat(entity.getViewQuery(), is("SELECT id AS id_field, name AS name_field FROM matviewdatamart.tbl"));
+
+        assertTrue(promise.future().succeeded());
+        assertNotNull(promise.future().result());
+    }
+
+    @Test
     void shouldFailWhenNoQuerySourceType() {
         testFailDatasourceType("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar(100), enddate timestamp(5), PRIMARY KEY(id))\n" +
-                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM matviewdatamart.tbl",
+                        "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM matviewdatamart.tbl",
                 "DATASOURCE_TYPE not specified or invalid");
     }
 
@@ -427,14 +522,14 @@ class CreateMaterializedViewDdlExecutorTest {
     @Test
     void shouldFailWhenDisabledQuerySourceType() {
         testFailDatasourceType("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar(100), enddate timestamp(5), PRIMARY KEY(id))\n" +
-                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM matviewdatamart.tbl DATASOURCE_TYPE = 'ADQM'",
+                        "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM matviewdatamart.tbl DATASOURCE_TYPE = 'ADQM'",
                 "DATASOURCE_TYPE not specified or invalid");
     }
 
     @Test
     void shouldFailWhenDisabledDestination() {
         testFailDatasourceType("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar(100), enddate timestamp(5), PRIMARY KEY(id))\n" +
-                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADQM) AS SELECT * FROM matviewdatamart.tbl DATASOURCE_TYPE = 'ADB'",
+                        "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADQM) AS SELECT * FROM matviewdatamart.tbl DATASOURCE_TYPE = 'ADB'",
                 "DATASOURCE_TYPE has non exist items:");
     }
 
@@ -519,7 +614,7 @@ class CreateMaterializedViewDdlExecutorTest {
         lenient().when(logicalSchemaProvider.getSchemaFromQuery(any(), anyString())).thenReturn(Future.succeededFuture(logicSchema));
 
         DdlRequestContext context = getContext("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar(100), enddate timestamp(5), PRIMARY KEY(id))\n" +
-                        "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT col_id, name, enddate FROM matviewdatamart.tbl, tblmart.tbl2 DATASOURCE_TYPE = 'ADB'");
+                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT col_id, name, enddate FROM matviewdatamart.tbl, tblmart.tbl2 DATASOURCE_TYPE = 'ADB'");
 
         Promise<QueryResult> promise = Promise.promise();
 
@@ -567,7 +662,7 @@ class CreateMaterializedViewDdlExecutorTest {
         lenient().when(logicalSchemaProvider.getSchemaFromQuery(any(), anyString())).thenReturn(Future.succeededFuture(logicSchema));
 
         DdlRequestContext context = getContext("CREATE MATERIALIZED VIEW matviewdatamart.mat_view (id bigint, PRIMARY KEY(id))\n" +
-                        "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT col_id FROM tblmart.tbl2 DATASOURCE_TYPE = 'ADB'");
+                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT col_id FROM tblmart.tbl2 DATASOURCE_TYPE = 'ADB'");
 
         Promise<QueryResult> promise = Promise.promise();
 
@@ -591,7 +686,7 @@ class CreateMaterializedViewDdlExecutorTest {
     @Test
     void shouldFailWhenNoPrimaryKey() {
         testFailOnValidation("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar(100), enddate timestamp(5))\n" +
-                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM matviewdatamart.tbl DATASOURCE_TYPE = 'ADB'",
+                        "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM matviewdatamart.tbl DATASOURCE_TYPE = 'ADB'",
                 "Primary keys and Sharding keys are required",
                 ValidationDtmException.class);
     }
@@ -599,7 +694,7 @@ class CreateMaterializedViewDdlExecutorTest {
     @Test
     void shouldFailWhenNoShardingKey() {
         testFailOnValidation("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar(100), enddate timestamp(5), PRIMARY KEY(id))\n" +
-                "DATASOURCE_TYPE (ADG) AS SELECT * FROM matviewdatamart.tbl DATASOURCE_TYPE = 'ADB'",
+                        "DATASOURCE_TYPE (ADG) AS SELECT * FROM matviewdatamart.tbl DATASOURCE_TYPE = 'ADB'",
                 "Primary keys and Sharding keys are required",
                 ValidationDtmException.class);
     }
@@ -607,7 +702,7 @@ class CreateMaterializedViewDdlExecutorTest {
     @Test
     void shouldFailWhenCharColumnHasNoSize() {
         testFailOnValidation("CREATE MATERIALIZED VIEW mat_view (id bigint, name char, enddate timestamp(5), PRIMARY KEY(id))\n" +
-                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM matviewdatamart.tbl DATASOURCE_TYPE = 'ADB'",
+                        "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM matviewdatamart.tbl DATASOURCE_TYPE = 'ADB'",
                 "Specifying the size for columns[name] with types[CHAR] is required",
                 ValidationDtmException.class);
     }
@@ -615,7 +710,7 @@ class CreateMaterializedViewDdlExecutorTest {
     @Test
     void shouldFailWhenQueryColumnsCountDifferWithView() {
         testFailOnValidation("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar(100), enddate timestamp(5), num float, PRIMARY KEY(id))\n" +
-                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM matviewdatamart.tbl DATASOURCE_TYPE = 'ADB'",
+                        "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM matviewdatamart.tbl DATASOURCE_TYPE = 'ADB'",
                 "has conflict with query columns wrong count",
                 MaterializedViewValidationException.class);
     }
@@ -623,7 +718,7 @@ class CreateMaterializedViewDdlExecutorTest {
     @Test
     void shouldFailWhenQueryColumnsTypeNotMatch() {
         testFailOnValidation("CREATE MATERIALIZED VIEW mat_view (id bigint, name char(100), enddate timestamp(5), PRIMARY KEY(id))\n" +
-                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM matviewdatamart.tbl DATASOURCE_TYPE = 'ADB'",
+                        "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM matviewdatamart.tbl DATASOURCE_TYPE = 'ADB'",
                 "has conflict with query types not equal for",
                 MaterializedViewValidationException.class);
     }
@@ -631,7 +726,7 @@ class CreateMaterializedViewDdlExecutorTest {
     @Test
     void shouldFailWhenQueryColumnsSizeNotMatch() {
         testFailOnValidation("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar, enddate timestamp(5), PRIMARY KEY(id))\n" +
-                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM matviewdatamart.tbl DATASOURCE_TYPE = 'ADB'",
+                        "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM matviewdatamart.tbl DATASOURCE_TYPE = 'ADB'",
                 "has conflict with query columns type size not equal for",
                 MaterializedViewValidationException.class);
     }
@@ -639,7 +734,7 @@ class CreateMaterializedViewDdlExecutorTest {
     @Test
     void shouldFailWhenQueryColumnsPrecisionNotMatch() {
         testFailOnValidation("CREATE MATERIALIZED VIEW mat_view (id bigint, name varchar(100), enddate timestamp, PRIMARY KEY(id))\n" +
-                "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM matviewdatamart.tbl DATASOURCE_TYPE = 'ADB'",
+                        "DISTRIBUTED BY (id) DATASOURCE_TYPE (ADG) AS SELECT * FROM matviewdatamart.tbl DATASOURCE_TYPE = 'ADB'",
                 "has conflict with query columns type accuracy not equal for",
                 MaterializedViewValidationException.class);
     }

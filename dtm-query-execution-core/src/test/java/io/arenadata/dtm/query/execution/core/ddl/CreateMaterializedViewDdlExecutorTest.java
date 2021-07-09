@@ -145,7 +145,7 @@ class CreateMaterializedViewDdlExecutorTest {
                         EntityField.builder()
                                 .ordinalPosition(0)
                                 .name("id")
-                                .type(ColumnType.BIGINT)
+                                .type(ColumnType.INT)
                                 .nullable(false)
                                 .primaryOrder(1)
                                 .shardingOrder(1)
@@ -514,6 +514,49 @@ class CreateMaterializedViewDdlExecutorTest {
         verify(materializedViewCacheService).put(any(EntityKey.class), cachedViewCaptor.capture());
         entity = cachedViewCaptor.getValue().getEntity();
         assertThat(entity.getViewQuery(), is("SELECT 1 AS id_field, name AS name_field FROM matviewdatamart.tbl"));
+
+        assertTrue(promise.future().succeeded());
+        assertNotNull(promise.future().result());
+    }
+
+    @Test
+    void shouldAddAliasesToViewQueryColumnsWithCast() {
+        // arrange
+        DdlRequestContext context = getContext("CREATE MATERIALIZED VIEW mat_view (" +
+                "id_field int not null, " +
+                "name_field varchar(100), " +
+                "PRIMARY KEY(id_field))\n" +
+                "DISTRIBUTED BY (id_field) " +
+                "DATASOURCE_TYPE (ADG) " +
+                "AS SELECT CAST(id as bigint), name FROM matviewdatamart.tbl DATASOURCE_TYPE = 'ADB'");
+
+        Promise<QueryResult> promise = Promise.promise();
+
+        when(datamartDao.existsDatamart(SCHEMA))
+                .thenReturn(Future.succeededFuture(true));
+        when(entityDao.existsEntity(SCHEMA, MAT_VIEW_ENTITY_NAME))
+                .thenReturn(Future.succeededFuture(false));
+        when(entityDao.getEntity(SCHEMA, tblEntity.getName()))
+                .thenReturn(Future.succeededFuture(tblEntity));
+        when(metadataExecutor.execute(any())).thenReturn(Future.succeededFuture());
+        when(entityDao.createEntity(any()))
+                .thenReturn(Future.succeededFuture());
+
+        // act
+        createTableDdlExecutor.execute(context, MAT_VIEW_ENTITY_NAME)
+                .onComplete(promise);
+
+        // assert
+        if (promise.future().cause() != null) {
+            fail(promise.future().cause());
+        }
+        verify(entityDao).createEntity(entityCaptor.capture());
+        Entity entity = entityCaptor.getValue();
+        assertThat(entity.getViewQuery(), is("SELECT CAST(id AS BIGINT) AS id_field, name AS name_field FROM matviewdatamart.tbl"));
+
+        verify(materializedViewCacheService).put(any(EntityKey.class), cachedViewCaptor.capture());
+        entity = cachedViewCaptor.getValue().getEntity();
+        assertThat(entity.getViewQuery(), is("SELECT CAST(id AS BIGINT) AS id_field, name AS name_field FROM matviewdatamart.tbl"));
 
         assertTrue(promise.future().succeeded());
         assertNotNull(promise.future().result());

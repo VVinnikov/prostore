@@ -269,13 +269,10 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
                 } else {
                     expression = buildAlias(expression, matViewColumns.get(i), expression.getParserPosition(), selectList.get(i).getParserPosition());
                 }
-                updatedSelectList.add(expression);
-            } else if (current instanceof SqlIdentifier) {
-                expression = buildAlias(current, matViewColumns.get(i), current.getParserPosition(), selectList.get(i).getParserPosition());
-                updatedSelectList.add(expression);
             } else {
-                updatedSelectList.add(current);
+                expression = buildAlias(current, matViewColumns.get(i), current.getParserPosition(), selectList.get(i).getParserPosition());
             }
+            updatedSelectList.add(expression);
         }
 
         return updatedSelectList;

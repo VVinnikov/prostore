@@ -67,6 +67,7 @@ import java.util.stream.Collectors;
 
 import static io.arenadata.dtm.query.execution.core.ddl.utils.ValidationUtils.checkFieldsDuplication;
 import static io.arenadata.dtm.query.execution.core.ddl.utils.ValidationUtils.checkRequiredKeys;
+import static io.arenadata.dtm.query.execution.core.ddl.utils.ValidationUtils.checkTimestampFormat;
 import static io.arenadata.dtm.query.execution.core.ddl.utils.ValidationUtils.checkVarcharSize;
 
 @Slf4j

@@ -5,7 +5,7 @@
 
     <groupId>io.arenadata.dtm</groupId>
     <artifactId>parent</artifactId>
-    <version>3.7.3-SNAPSHOT</version>
+    <version>4.0</version>
     <packaging>pom</packaging>
     <name>DTM Parent</name>
 

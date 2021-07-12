@@ -249,7 +249,7 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
                 .count();
         val queryColumnsCount = selectList.size();
         if (queryColumnsCount != matViewColumnsCount) {
-            throw MaterializedViewValidationException.columnCountConflict(matView, queryColumnsCount, matViewColumnsCount);
+            throw MaterializedViewValidationException.columnCountConflict(matView, matViewColumnsCount, queryColumnsCount);
         }
 
         for (int i = 0; i < queryColumnsCount; i++) {

@@ -95,6 +95,9 @@ adb:
     poolSize: ${ADB_MAX_POOL_SIZE:5}
     executorsCount: ${ADB_EXECUTORS_COUNT:20}
     fetchSize: ${ADB_FETCH_SIZE:1000}
+    preparedStatementsCacheMaxSize: ${ADB_PREPARED_CACHE_MAX_SIZE:256}
+    preparedStatementsCacheSqlLimit: ${ADB_PREPARED_CACHE_SQL_LIMIT:2048}
+    preparedStatementsCache: ${ADB_PREPARED_CACHE:true}
 
   mppw:
     consumerGroup: ${ADB_LOAD_GROUP:adb-emulator-load-adb}

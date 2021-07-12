@@ -47,7 +47,7 @@ public class MetadataExecutorImpl implements MetadataExecutor<DdlRequestContext>
                                     .sqlKind(getKind(context))
                                     .build())
                     ));
-            CompositeFuture.join(futures).setHandler(ar -> {
+            CompositeFuture.join(futures).onComplete(ar -> {
                 if (ar.succeeded()) {
                     promise.complete();
                 } else {

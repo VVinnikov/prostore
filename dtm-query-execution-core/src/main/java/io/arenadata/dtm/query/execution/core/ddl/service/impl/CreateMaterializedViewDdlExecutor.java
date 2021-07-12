@@ -41,15 +41,7 @@ import io.vertx.core.Future;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.calcite.sql.SqlAsOperator;
-import org.apache.calcite.sql.SqlBasicCall;
-import org.apache.calcite.sql.SqlCharStringLiteral;
-import org.apache.calcite.sql.SqlDialect;
-import org.apache.calcite.sql.SqlIdentifier;
-import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlNodeList;
-import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.jetbrains.annotations.NotNull;
@@ -57,18 +49,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.arenadata.dtm.query.execution.core.ddl.utils.ValidationUtils.checkFieldsDuplication;
-import static io.arenadata.dtm.query.execution.core.ddl.utils.ValidationUtils.checkRequiredKeys;
-import static io.arenadata.dtm.query.execution.core.ddl.utils.ValidationUtils.checkTimestampFormat;
-import static io.arenadata.dtm.query.execution.core.ddl.utils.ValidationUtils.checkVarcharSize;
+import static io.arenadata.dtm.query.execution.core.ddl.utils.ValidationUtils.*;
 
 @Slf4j
 @Component
@@ -249,7 +233,7 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
         val selectList = ((SqlSelect) newSelectNode).getSelectList();
 
         if (selectList != null) {
-            SqlNodeList updatedSelectList = withColumnAliases(selectList, sql.getColumnList());
+            SqlNodeList updatedSelectList = withColumnAliases(selectList, sql.getColumnList(), sql.getName().toString());
             ((SqlSelect) newSelectNode).setSelectList(updatedSelectList);
         }
 
@@ -257,10 +241,18 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
         context.setSqlNode(newSql);
     }
 
-    private SqlNodeList withColumnAliases(SqlNodeList selectList, SqlNodeList matViewColumns) {
+    private SqlNodeList withColumnAliases(SqlNodeList selectList, SqlNodeList matViewColumns, String matView) {
         SqlNodeList updatedSelectList = new SqlNodeList(selectList.getParserPosition());
 
-        for (int i = 0; i < selectList.size(); i++) {
+        val matViewColumnsCount = (int) matViewColumns.getList().stream()
+                .filter(sqlNode -> sqlNode instanceof SqlColumnDeclaration)
+                .count();
+        val queryColumnsCount = selectList.size();
+        if (queryColumnsCount != matViewColumnsCount) {
+            throw MaterializedViewValidationException.columnCountConflict(matView, queryColumnsCount, matViewColumnsCount);
+        }
+
+        for (int i = 0; i < queryColumnsCount; i++) {
             SqlNode current = selectList.get(i);
 
             SqlBasicCall expression;

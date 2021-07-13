@@ -172,7 +172,7 @@ public class QueryExecutorImpl implements QueryExecutor {
 
     @Override
     public String getServerVersion() {
-        return "3.5.1";
+        return "4.0";
     }
 
     @Override

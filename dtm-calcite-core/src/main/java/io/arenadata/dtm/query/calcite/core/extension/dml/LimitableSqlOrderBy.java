@@ -95,7 +95,7 @@ public class LimitableSqlOrderBy extends SqlOrderBy implements SqlDataSourceType
                 setOperand(operand, "fetch");
                 break;
             case 4:
-                setOperand(((SqlLiteral)operand).booleanValue(), "isLimited");
+                setOperand(((SqlLiteral) operand).booleanValue(), "isLimited");
                 break;
             default:
                 break;
@@ -143,6 +143,16 @@ public class LimitableSqlOrderBy extends SqlOrderBy implements SqlDataSourceType
                 writer.list(SqlWriter.FrameTypeEnum.ORDER_BY_LIST, SqlWriter.COMMA,
                         orderBy.orderList);
             }
+
+            if (orderBy.isLimited) {
+                final SqlWriter.Frame frame3 =
+                        writer.startList(SqlWriter.FrameTypeEnum.FETCH);
+                writer.newlineAndIndent();
+                writer.keyword("LIMIT");
+                orderBy.fetch.unparse(writer, -1, -1);
+                writer.endList(frame3);
+            }
+
             if (orderBy.offset != null) {
                 final SqlWriter.Frame frame2 =
                         writer.startList(SqlWriter.FrameTypeEnum.OFFSET);
@@ -153,23 +163,16 @@ public class LimitableSqlOrderBy extends SqlOrderBy implements SqlDataSourceType
                 writer.endList(frame2);
             }
 
-            if (orderBy.fetch != null) {
-                final SqlWriter.Frame frame3 =
+            if (orderBy.fetch != null && !orderBy.isLimited) {
+                final SqlWriter.Frame frame4 =
                         writer.startList(SqlWriter.FrameTypeEnum.FETCH);
-                if (orderBy.isLimited) {
-                    writer.newlineAndIndent();
-                    writer.keyword("LIMIT");
-                    orderBy.fetch.unparse(writer, -1, -1);
-                    writer.endList(frame3);
-                } else {
-                    writer.newlineAndIndent();
-                    writer.keyword("FETCH");
-                    writer.keyword("NEXT");
-                    orderBy.fetch.unparse(writer, -1, -1);
-                    writer.keyword("ROWS");
-                    writer.keyword("ONLY");
-                    writer.endList(frame3);
-                }
+                writer.newlineAndIndent();
+                writer.keyword("FETCH");
+                writer.keyword("NEXT");
+                orderBy.fetch.unparse(writer, -1, -1);
+                writer.keyword("ROWS");
+                writer.keyword("ONLY");
+                writer.endList(frame4);
             }
             writer.endList(frame);
         }

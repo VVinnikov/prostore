@@ -65,7 +65,7 @@ public class NullNotCastableRelToSqlConverter extends RelToSqlConverter {
             } else {
                 Result x = visitChild(0, input);
                 parseCorrelTable(e, x);
-                final Builder builder = x.builder(input, Clause.FETCH);
+                final Builder builder = x.builder(input, Clause.FETCH, Clause.OFFSET);
                 handleCountAggregation(x, builder);
                 setOffset(builder, e);
                 setFetch(builder, e);

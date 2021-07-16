@@ -65,9 +65,10 @@ public class NullNotCastableRelToSqlConverter extends RelToSqlConverter {
             } else {
                 Result x = visitChild(0, input);
                 parseCorrelTable(e, x);
-                final Builder builder = x.builder(input, Clause.FETCH);
+                final Builder builder = x.builder(input, Clause.FETCH, Clause.OFFSET);
                 handleCountAggregation(x, builder);
-                builder.setFetch(SqlLiteral.createExactNumeric(((EnumerableLimit) e).fetch.toStringRaw(), POS));
+                setOffset(builder, e);
+                setFetch(builder, e);
                 return builder.result();
             }
         } else {
@@ -88,6 +89,20 @@ public class NullNotCastableRelToSqlConverter extends RelToSqlConverter {
         CountAggregateFinder finder = new CountAggregateFinder();
         expression.accept(finder);
         return finder.hasCount;
+    }
+
+    private void setOffset(Builder builder, RelNode node) {
+        RexNode offset = ((EnumerableLimit) node).offset;
+        if (offset != null) {
+            builder.setOffset(SqlLiteral.createExactNumeric(offset.toStringRaw(), POS));
+        }
+    }
+
+    private void setFetch(Builder builder, RelNode node) {
+        RexNode fetch = ((EnumerableLimit) node).fetch;
+        if (fetch != null) {
+            builder.setFetch(SqlLiteral.createExactNumeric(fetch.toStringRaw(), POS));
+        }
     }
 
     @Override

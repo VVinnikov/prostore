@@ -18,6 +18,14 @@ public class LimitSqlDialect extends PostgresqlSqlDialect {
     @Override
     public void unparseOffsetFetch(SqlWriter writer, SqlNode offset, SqlNode fetch) {
         Preconditions.checkArgument(fetch != null || offset != null);
+        if (fetch != null) {
+            final SqlWriter.Frame fetchFrame =
+                    writer.startList(SqlWriter.FrameTypeEnum.FETCH);
+            writer.newlineAndIndent();
+            writer.keyword("LIMIT");
+            fetch.unparse(writer, -1, -1);
+            writer.endList(fetchFrame);
+        }
         if (offset != null) {
             writer.newlineAndIndent();
             final SqlWriter.Frame offsetFrame =
@@ -26,14 +34,6 @@ public class LimitSqlDialect extends PostgresqlSqlDialect {
             offset.unparse(writer, -1, -1);
             writer.keyword("ROWS");
             writer.endList(offsetFrame);
-        }
-        if (fetch != null) {
-            final SqlWriter.Frame fetchFrame =
-                    writer.startList(SqlWriter.FrameTypeEnum.FETCH);
-            writer.newlineAndIndent();
-            writer.keyword("LIMIT");
-            fetch.unparse(writer, -1, -1);
-            writer.endList(fetchFrame);
         }
     }
 

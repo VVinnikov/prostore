@@ -8,15 +8,18 @@ import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
+import io.arenadata.dtm.query.execution.plugin.adb.calcite.configuration.CalciteConfiguration;
+import io.arenadata.dtm.query.execution.plugin.adb.calcite.factory.AdbCalciteSchemaFactory;
+import io.arenadata.dtm.query.execution.plugin.adb.calcite.factory.AdbSchemaFactory;
+import io.arenadata.dtm.query.execution.plugin.adb.calcite.service.AdbCalciteContextProvider;
+import io.arenadata.dtm.query.execution.plugin.adb.calcite.service.AdbCalciteDMLQueryParserService;
+import io.arenadata.dtm.query.execution.plugin.adb.enrichment.dto.EnrichQueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.QueryEnrichmentService;
 import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.QueryExtendService;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.impl.*;
-import io.arenadata.dtm.query.execution.plugin.adb.calcite.service.AdbCalciteContextProvider;
-import io.arenadata.dtm.query.execution.plugin.adb.calcite.factory.AdbCalciteSchemaFactory;
-import io.arenadata.dtm.query.execution.plugin.adb.calcite.service.AdbCalciteDMLQueryParserService;
-import io.arenadata.dtm.query.execution.plugin.adb.calcite.configuration.CalciteConfiguration;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.dto.EnrichQueryRequest;
-import io.arenadata.dtm.query.execution.plugin.adb.calcite.factory.AdbSchemaFactory;
+import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.impl.AdbDmlQueryExtendWithoutHistoryService;
+import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.impl.AdbQueryEnrichmentServiceImpl;
+import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.impl.AdbQueryGeneratorImpl;
+import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.impl.AdbSchemaExtenderImpl;
 import io.arenadata.dtm.query.execution.plugin.adb.utils.TestUtils;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
@@ -35,6 +38,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -282,6 +286,72 @@ class AdbQueryEnrichmentServiceImplTest {
                             result[0] = ar.result();
                             log.info(result[0]);
                             assertGrep(result[0], "ORDER BY account_id LIMIT 50");
+                            async.complete();
+                        } else {
+                            context.fail(ar.cause());
+                        }
+                    });
+            async.awaitSuccess(10000);
+        });
+        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+    }
+
+    @Test
+    void enrichWithOffset() {
+        EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaInterval(
+                "select account_id from shares.accounts offset 50");
+
+        TestSuite suite = TestSuite.create("the_test_suite");
+        suite.test("executeQuery", context -> {
+            Async async = context.async();
+            adbQueryEnrichmentService.enrich(enrichQueryRequest)
+                    .onComplete(ar -> {
+                        if (ar.succeeded()) {
+                            assertThat(ar.result()).isEqualToNormalizingNewlines("SELECT account_id FROM shares.accounts_actual WHERE sys_from >= 1 AND sys_from <= 5 OFFSET 50 ROWS");
+                            async.complete();
+                        } else {
+                            context.fail(ar.cause());
+                        }
+                    });
+            async.awaitSuccess(10000);
+        });
+        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+    }
+
+    @Test
+    void enrichWithLimitOffset() {
+        EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaInterval(
+                "select account_id from shares.accounts limit 30 offset 50");
+
+        TestSuite suite = TestSuite.create("the_test_suite");
+        suite.test("executeQuery", context -> {
+            Async async = context.async();
+            adbQueryEnrichmentService.enrich(enrichQueryRequest)
+                    .onComplete(ar -> {
+                        if (ar.succeeded()) {
+                            assertThat(ar.result()).isEqualToNormalizingNewlines("SELECT account_id FROM shares.accounts_actual WHERE sys_from >= 1 AND sys_from <= 5 LIMIT 30 OFFSET 50 ROWS");
+                            async.complete();
+                        } else {
+                            context.fail(ar.cause());
+                        }
+                    });
+            async.awaitSuccess(10000);
+        });
+        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+    }
+
+    @Test
+    void enrichWithOffsetFetchNext() {
+        EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaInterval(
+                "select account_id from shares.accounts offset 50 fetch next 30 rows only");
+
+        TestSuite suite = TestSuite.create("the_test_suite");
+        suite = suite.test("executeQuery", context -> {
+            Async async = context.async();
+            adbQueryEnrichmentService.enrich(enrichQueryRequest)
+                    .onComplete(ar -> {
+                        if (ar.succeeded()) {
+                            assertThat(ar.result()).isEqualToNormalizingNewlines("SELECT account_id FROM shares.accounts_actual WHERE sys_from >= 1 AND sys_from <= 5 LIMIT 30 OFFSET 50 ROWS");
                             async.complete();
                         } else {
                             context.fail(ar.cause());

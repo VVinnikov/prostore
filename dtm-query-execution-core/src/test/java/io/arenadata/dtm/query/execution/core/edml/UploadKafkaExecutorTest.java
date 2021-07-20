@@ -22,6 +22,7 @@ import io.arenadata.dtm.query.execution.core.edml.mppw.factory.MppwKafkaRequestF
 import io.arenadata.dtm.query.execution.core.edml.mppw.factory.impl.MppwKafkaRequestFactoryImpl;
 import io.arenadata.dtm.query.execution.core.edml.mppw.factory.impl.MppwErrorMessageFactoryImpl;
 import io.arenadata.dtm.query.execution.core.edml.mppw.service.EdmlUploadExecutor;
+import io.arenadata.dtm.query.execution.core.edml.mppw.service.impl.BreakMppwService;
 import io.arenadata.dtm.query.execution.core.plugin.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.plugin.service.impl.DataSourcePluginServiceImpl;
 import io.arenadata.dtm.query.execution.core.edml.mppw.service.impl.UploadKafkaExecutor;
@@ -62,6 +63,7 @@ class UploadKafkaExecutorTest {
     private final EdmlProperties edmlProperties = mock(EdmlProperties.class);
     private final KafkaProperties kafkaProperties = mock(KafkaProperties.class);
     private final CheckColumnTypesService checkColumnTypesService = mock(CheckColumnTypesServiceImpl.class);
+    private final BreakMppwService breakMppwService = mock(BreakMppwService.class);
     private final DtmConfig dtmSettings = mock(CoreDtmSettings.class);
     private final Vertx vertx = Vertx.vertx();
     private final Integer inpuStreamTimeoutMs = 2000;
@@ -93,7 +95,8 @@ class UploadKafkaExecutorTest {
                 vertx,
                 dtmSettings,
                 new MppwErrorMessageFactoryImpl(),
-                checkColumnTypesService);
+                checkColumnTypesService,
+                breakMppwService);
         sourceTypes = new HashSet<>();
         sourceTypes.addAll(Arrays.asList(SourceType.ADB, SourceType.ADG));
         queryRequest = new QueryRequest();

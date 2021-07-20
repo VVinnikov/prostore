@@ -47,7 +47,7 @@ public class RollbackDeltaExecutor implements DeltaExecutor, StatusEventPublishe
     private final EntityDao entityDao;
     private final EvictQueryTemplateCacheService evictQueryTemplateCacheService;
     private final RestoreStateService restoreStateService;
-    private final BreakMppwService breakMppwService;
+    private final BreakMppwExecutor breakMppwExecutor;
 
     @Autowired
     public RollbackDeltaExecutor(EdmlUploadFailedExecutor edmlUploadFailedExecutor,
@@ -56,7 +56,7 @@ public class RollbackDeltaExecutor implements DeltaExecutor, StatusEventPublishe
                                  @Qualifier("coreVertx") Vertx vertx,
                                  EvictQueryTemplateCacheService evictQueryTemplateCacheService,
                                  RestoreStateService restoreStateService,
-                                 BreakMppwService breakMppwService) {
+                                 BreakMppwExecutor breakMppwExecutor) {
         this.entityDao = serviceDbFacade.getServiceDbDao().getEntityDao();
         this.deltaServiceDao = serviceDbFacade.getDeltaServiceDao();
         this.edmlUploadFailedExecutor = edmlUploadFailedExecutor;
@@ -64,13 +64,13 @@ public class RollbackDeltaExecutor implements DeltaExecutor, StatusEventPublishe
         this.vertx = vertx;
         this.evictQueryTemplateCacheService = evictQueryTemplateCacheService;
         this.restoreStateService = restoreStateService;
-        this.breakMppwService = breakMppwService;
+        this.breakMppwExecutor = breakMppwExecutor;
     }
 
     @Override
     public Future<QueryResult> execute(DeltaQuery deltaQuery) {
         return restoreStateService.restoreErase(deltaQuery.getDatamart())
-                .compose(ar -> breakMppwService.breakMppw(deltaQuery.getDatamart()))
+                .compose(ar -> breakMppwExecutor.breakMppw(deltaQuery.getDatamart()))
                 .compose(ar -> rollbackDelta(deltaQuery));
     }
 

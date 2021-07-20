@@ -2,7 +2,6 @@ package io.arenadata.dtm.query.execution.core.edml.mppw.service.impl;
 
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.dto.QueryParserRequest;
-import io.arenadata.dtm.common.eventbus.DataTopic;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
@@ -12,7 +11,6 @@ import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.kafka.core.configuration.properties.KafkaProperties;
 import io.arenadata.dtm.query.execution.core.base.service.column.CheckColumnTypesService;
 import io.arenadata.dtm.query.execution.core.base.service.column.CheckColumnTypesServiceImpl;
-import io.arenadata.dtm.query.execution.core.delta.dto.request.BreakMppwRequest;
 import io.arenadata.dtm.query.execution.core.edml.configuration.EdmlProperties;
 import io.arenadata.dtm.query.execution.core.edml.dto.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.core.edml.mppw.dto.MppwStopFuture;
@@ -26,7 +24,6 @@ import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
-import io.vertx.core.impl.ConcurrentHashSet;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -59,7 +56,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
     private final DtmConfig dtmSettings;
     private final MppwErrorMessageFactory errorMessageFactory;
     private final CheckColumnTypesService checkColumnTypesService;
-    private final Set<BreakMppwRequest> breakMppwRequests;
+    private final BreakMppwService breakMppwService;
 
     @Autowired
     public UploadKafkaExecutor(DataSourcePluginService pluginService,
@@ -69,7 +66,8 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                                @Qualifier("coreVertx") Vertx vertx,
                                DtmConfig dtmSettings,
                                MppwErrorMessageFactory errorMessageFactory,
-                               CheckColumnTypesService checkColumnTypesService) {
+                               CheckColumnTypesService checkColumnTypesService,
+                               BreakMppwService breakMppwService) {
         this.pluginService = pluginService;
         this.mppwKafkaRequestFactory = mppwKafkaRequestFactory;
         this.edmlProperties = edmlProperties;
@@ -78,9 +76,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
         this.dtmSettings = dtmSettings;
         this.errorMessageFactory = errorMessageFactory;
         this.checkColumnTypesService = checkColumnTypesService;
-        this.breakMppwRequests = new ConcurrentHashSet<>();
-
-        vertx.eventBus().consumer(DataTopic.BREAK_MPPW_TASK.getValue(), handler -> breakMppwRequests.add((BreakMppwRequest) handler.body()));
+        this.breakMppwService = breakMppwService;
     }
 
     @Override
@@ -193,7 +189,9 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                         .stopReason(MppwStopReason.ERROR_RECEIVED)
                         .build();
                 promise.complete(stopFuture);
-            } else if (shouldBreakMppw(mppwRequestWrapper)) {
+            } else if (breakMppwService.shouldBreakMppw(
+                    mppwRequestWrapper.getRequest().getDatamartMnemonic(),
+                    mppwRequestWrapper.getRequest().getSysCn())) {
                 log.info("Got BREAK_MPPW task for request [{}]", mppwRequestWrapper.getRequest().getRequestId());
                 vertx.cancelTimer(timerId);
                 MppwStopFuture stopFuture = MppwStopFuture.builder()
@@ -219,15 +217,6 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                     .build();
             promise.complete(stopFuture);
         }
-    }
-
-    private boolean shouldBreakMppw(MppwRequestWrapper requestWrapper) {
-        BreakMppwRequest request = BreakMppwRequest
-                .builder()
-                .datamart(requestWrapper.getRequest().getDatamartMnemonic())
-                .sysCn(requestWrapper.getRequest().getSysCn())
-                .build();
-        return breakMppwRequests.remove(request.asString());
     }
 
     private Future<StatusQueryResult> getMppwLoadingStatus(MppwRequestWrapper mppwRequestWrapper) {

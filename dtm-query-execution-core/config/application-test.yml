@@ -86,6 +86,9 @@ core:
     maximumSize: ${CACHE_MAXIMUM_SIZE:100000}
     expireAfterAccessMinutes: ${CACHE_EXPIRE_AFTER_ACCESS_MINUTES:99960}
 
+  delta:
+    rollback-status-calls-ms: ${DELTA_ROLLBACK_STATUS_CALLS_MS:2000}
+
 adb:
   datasource:
     user: ${ADB_USERNAME:test}

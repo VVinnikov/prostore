@@ -70,7 +70,7 @@ class RollbackDeltaExecutorTest {
         when(serviceDbFacade.getServiceDbDao()).thenReturn(serviceDbDao);
         when(edmlUploadFailedExecutor.eraseWriteOp(any())).thenReturn(Future.succeededFuture());
         rollbackDeltaExecutor = new RollbackDeltaExecutor(edmlUploadFailedExecutor, serviceDbFacade,
-                deltaQueryResultFactory, Vertx.vertx(), evictQueryTemplateCacheService);
+                deltaQueryResultFactory, Vertx.vertx(), evictQueryTemplateCacheService, null, null);
         when(deltaServiceDao.writeDeltaError(eq(datamart), eq(null)))
                 .thenReturn(Future.succeededFuture());
         when(deltaServiceDao.deleteDeltaHot(eq(datamart)))

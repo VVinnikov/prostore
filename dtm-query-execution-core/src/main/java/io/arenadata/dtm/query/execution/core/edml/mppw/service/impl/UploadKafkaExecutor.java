@@ -2,6 +2,7 @@ package io.arenadata.dtm.query.execution.core.edml.mppw.service.impl;
 
 import io.arenadata.dtm.common.configuration.core.DtmConfig;
 import io.arenadata.dtm.common.dto.QueryParserRequest;
+import io.arenadata.dtm.common.eventbus.DataTopic;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.ddl.ExternalTableLocationType;
@@ -9,6 +10,9 @@ import io.arenadata.dtm.common.plugin.status.StatusQueryResult;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.kafka.core.configuration.properties.KafkaProperties;
+import io.arenadata.dtm.query.execution.core.base.service.column.CheckColumnTypesService;
+import io.arenadata.dtm.query.execution.core.base.service.column.CheckColumnTypesServiceImpl;
+import io.arenadata.dtm.query.execution.core.delta.dto.request.BreakMppwRequest;
 import io.arenadata.dtm.query.execution.core.edml.configuration.EdmlProperties;
 import io.arenadata.dtm.query.execution.core.edml.dto.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.core.edml.mppw.dto.MppwStopFuture;
@@ -17,10 +21,12 @@ import io.arenadata.dtm.query.execution.core.edml.mppw.factory.MppwErrorMessageF
 import io.arenadata.dtm.query.execution.core.edml.mppw.factory.MppwKafkaRequestFactory;
 import io.arenadata.dtm.query.execution.core.edml.mppw.service.EdmlUploadExecutor;
 import io.arenadata.dtm.query.execution.core.plugin.service.DataSourcePluginService;
-import io.arenadata.dtm.query.execution.core.base.service.column.CheckColumnTypesService;
-import io.arenadata.dtm.query.execution.core.base.service.column.CheckColumnTypesServiceImpl;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
-import io.vertx.core.*;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
+import io.vertx.core.impl.ConcurrentHashSet;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +39,12 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -48,6 +59,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
     private final DtmConfig dtmSettings;
     private final MppwErrorMessageFactory errorMessageFactory;
     private final CheckColumnTypesService checkColumnTypesService;
+    private final Set<BreakMppwRequest> breakMppwRequests;
 
     @Autowired
     public UploadKafkaExecutor(DataSourcePluginService pluginService,
@@ -66,6 +78,9 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
         this.dtmSettings = dtmSettings;
         this.errorMessageFactory = errorMessageFactory;
         this.checkColumnTypesService = checkColumnTypesService;
+        this.breakMppwRequests = new ConcurrentHashSet<>();
+
+        vertx.eventBus().consumer(DataTopic.BREAK_MPPW_TASK.getValue(), handler -> breakMppwRequests.add((BreakMppwRequest) handler.body()));
     }
 
     @Override
@@ -86,7 +101,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                             context.getDestinationEntity().getName()))))
                     .onSuccess(kafkaRequest -> {
                         destination.forEach(ds -> startMppwFutureMap.put(ds,
-                                startMppw(ds, context.getMetrics(), kafkaRequest.toBuilder().build())));
+                                startMppw(ds, context.getMetrics(), kafkaRequest)));
                         checkPluginsMppwExecution(startMppwFutureMap, context.getRequest().getQueryRequest().getRequestId(), promise);
                     })
                     .onFailure(promise::fail);
@@ -111,7 +126,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                                 .lastOffset(0L)
                                 .build();
                         mppwRequestWrapper.setLoadStatusResult(mppwLoadStatusResult);
-                        sendStatusPeriodicaly(mppwRequestWrapper, promise);
+                        sendStatusPeriodically(mppwRequestWrapper, promise);
                     } else {
                         MppwStopFuture stopFuture = MppwStopFuture.builder()
                                 .sourceType(ds)
@@ -125,8 +140,8 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                 }));
     }
 
-    private void sendStatusPeriodicaly(MppwRequestWrapper mppwRequestWrapper,
-                                       Promise<MppwStopFuture> promise) {
+    private void sendStatusPeriodically(MppwRequestWrapper mppwRequestWrapper,
+                                        Promise<MppwStopFuture> promise) {
         vertx.setTimer(edmlProperties.getPluginStatusCheckPeriodMs(), timerId -> {
             log.trace("Plugin status request: {} mppw downloads", mppwRequestWrapper.getSourceType());
             getMppwLoadingStatus(mppwRequestWrapper)
@@ -178,8 +193,20 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                         .stopReason(MppwStopReason.ERROR_RECEIVED)
                         .build();
                 promise.complete(stopFuture);
+            } else if (shouldBreakMppw(mppwRequestWrapper)) {
+                log.info("Got BREAK_MPPW task for request [{}]", mppwRequestWrapper.getRequest().getRequestId());
+                vertx.cancelTimer(timerId);
+                MppwStopFuture stopFuture = MppwStopFuture.builder()
+                        .sourceType(mppwRequestWrapper.getSourceType())
+                        .future(stopMppw(mppwRequestWrapper))
+                        .cause(new DtmException(String.format("Got BREAK_MPPW task for request [{}]",
+                                mppwRequestWrapper.getRequest().getRequestId())))
+                        .stopReason(MppwStopReason.BREAK_MPPW_RECEIVED)
+                        .build();
+
+                promise.complete(stopFuture);
             } else {
-                sendStatusPeriodicaly(mppwRequestWrapper, promise);
+                sendStatusPeriodically(mppwRequestWrapper, promise);
             }
         } catch (Exception e) {
             vertx.cancelTimer(timerId);
@@ -192,6 +219,15 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                     .build();
             promise.complete(stopFuture);
         }
+    }
+
+    private boolean shouldBreakMppw(MppwRequestWrapper requestWrapper) {
+        BreakMppwRequest request = BreakMppwRequest
+                .builder()
+                .datamart(requestWrapper.getRequest().getDatamartMnemonic())
+                .sysCn(requestWrapper.getRequest().getSysCn())
+                .build();
+        return breakMppwRequests.remove(request.asString());
     }
 
     private Future<StatusQueryResult> getMppwLoadingStatus(MppwRequestWrapper mppwRequestWrapper) {

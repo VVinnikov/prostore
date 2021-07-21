@@ -8,12 +8,7 @@ import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.sql.SqlCall;
-import org.apache.calcite.sql.SqlDialect;
-import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlLiteral;
-import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.util.SqlShuttle;
 
 import java.util.ArrayList;
@@ -67,8 +62,8 @@ public class NullNotCastableRelToSqlConverter extends RelToSqlConverter {
                 parseCorrelTable(e, x);
                 final Builder builder = x.builder(input, Clause.FETCH, Clause.OFFSET);
                 handleCountAggregation(x, builder);
-                setOffset(builder, e);
                 setFetch(builder, e);
+                setOffset(builder, e);
                 return builder.result();
             }
         } else {

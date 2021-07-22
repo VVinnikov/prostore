@@ -22,27 +22,25 @@ import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.impl.AdbQu
 import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.impl.AdbSchemaExtenderImpl;
 import io.arenadata.dtm.query.execution.plugin.adb.utils.TestUtils;
 import io.vertx.core.Vertx;
-import io.vertx.ext.unit.Async;
-import io.vertx.ext.unit.TestOptions;
-import io.vertx.ext.unit.TestSuite;
-import io.vertx.ext.unit.report.ReportOptions;
+import io.vertx.junit5.VertxExtension;
+import io.vertx.junit5.VertxTestContext;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
+@ExtendWith(VertxExtension.class)
 class AdbQueryEnrichmentServiceImplTest {
 
     public static final String SHARES_SCHEMA_NAME = "shares";
@@ -57,11 +55,12 @@ class AdbQueryEnrichmentServiceImplTest {
             ),
             new AdbCalciteSchemaFactory(new AdbSchemaFactory()));
     private final AdbQueryGeneratorImpl adbQueryGeneratorimpl = new AdbQueryGeneratorImpl(queryExtender, calciteConfiguration.adbSqlDialect());
-    private final QueryParserService queryParserService = new AdbCalciteDMLQueryParserService(contextProvider, Vertx.vertx());
+    private QueryParserService queryParserService;
     private QueryEnrichmentService adbQueryEnrichmentService;
 
     @BeforeEach
-    void setUp() {
+    void setUp(Vertx vertx) {
+        queryParserService = new AdbCalciteDMLQueryParserService(contextProvider, vertx);
         adbQueryEnrichmentService = new AdbQueryEnrichmentServiceImpl(
                 queryParserService,
                 adbQueryGeneratorimpl,
@@ -76,46 +75,112 @@ class AdbQueryEnrichmentServiceImplTest {
     }
 
     @Test
-    void enrich() {
-        List<String> result = new ArrayList<>();
+    void testEnrichWithDeltaNum(VertxTestContext testContext) {
+        // arrange
         EnrichQueryRequest enrichQueryRequest =
-                prepareRequestDeltaNum("select * from test_datamart.pso FOR SYSTEM_TIME AS OF TIMESTAMP '1999-01-08 04:05:06'");
-        TestSuite suite = TestSuite.create("the_test_suite");
-        suite.test("executeQuery", context -> {
-            Async async = context.async();
-            adbQueryEnrichmentService.enrich(enrichQueryRequest)
-                    .onComplete(ar -> {
-                        log.debug(ar.toString());
-                        result.add("OK");
-                        async.complete();
-                    });
+                prepareRequestDeltaNum("select * from shares.accounts");
 
-            async.awaitSuccess(7000);
-        });
-        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
-        log.info(result.get(0));
+        // act assert
+        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+                .onComplete(ar -> {
+                    if (ar.failed()) {
+                        testContext.failNow(ar.cause());
+                        return;
+                    }
+
+                    testContext.verify(() -> {
+                        assertEquals("SELECT account_id, account_type FROM shares.accounts_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1", ar.result());
+                    }).completeNow();
+                });
     }
 
     @Test
-    void testEnrichWithCountAndLimit() {
+    void testEnrichWithCountAndLimit(VertxTestContext testContext) {
+        // arrange
         EnrichQueryRequest enrichQueryRequest =
                 prepareRequestDeltaNum("SELECT COUNT(*) AS C FROM shares.accounts LIMIT 100");
 
-        TestSuite suite = TestSuite.create("the_test_suite");
-        suite.test("executeQuery", context -> {
-            Async async = context.async();
-            adbQueryEnrichmentService.enrich(enrichQueryRequest)
-                    .onComplete(ar -> {
-                        assertEquals(ar.result(), "SELECT COUNT(*) AS c FROM (SELECT * FROM shares.accounts_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1) AS t2 LIMIT 100");
-                        async.complete();
-                    });
-            async.awaitSuccess(10000);
-        });
-        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+
+        // act assert
+        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+                .onComplete(ar -> {
+                    if (ar.failed()) {
+                        testContext.failNow(ar.cause());
+                        return;
+                    }
+
+                    testContext.verify(() -> {
+                        assertEquals("SELECT * FROM (SELECT COUNT(*) AS c FROM shares.accounts_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1) AS t2 LIMIT 100", ar.result());
+                    }).completeNow();
+                });
     }
 
     @Test
-    void enrichWithDeltaNum() {
+    void testEnrichWithCountAndGroupByLimit(VertxTestContext testContext) {
+        // arrange
+        EnrichQueryRequest enrichQueryRequest =
+                prepareRequestDeltaNum("SELECT account_id, COUNT(*) AS C FROM shares.accounts GROUP BY account_id LIMIT 100");
+
+
+        // act assert
+        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+                .onComplete(ar -> {
+                    if (ar.failed()) {
+                        testContext.failNow(ar.cause());
+                        return;
+                    }
+
+                    testContext.verify(() -> {
+                        assertEquals("SELECT * FROM (SELECT account_id, COUNT(*) AS c FROM shares.accounts_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1 GROUP BY account_id) AS t2 LIMIT 100", ar.result());
+                    }).completeNow();
+                });
+    }
+
+    @Test
+    void testEnrichWithCountAndGroupByAndOrderByLimit(VertxTestContext testContext) {
+        // arrange
+        EnrichQueryRequest enrichQueryRequest =
+                prepareRequestDeltaNum("SELECT account_id, COUNT(*) AS C FROM shares.accounts GROUP BY account_id ORDER BY account_id LIMIT 100");
+
+
+        // act assert
+        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+                .onComplete(ar -> {
+                    if (ar.failed()) {
+                        testContext.failNow(ar.cause());
+                        return;
+                    }
+
+                    testContext.verify(() -> {
+                        assertEquals("SELECT account_id, COUNT(*) AS c FROM shares.accounts_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1 GROUP BY account_id ORDER BY account_id LIMIT 100", ar.result());
+                    }).completeNow();
+                });
+    }
+
+    @Test
+    void testEnrichWithAggregate(VertxTestContext testContext) {
+        // arrange
+        EnrichQueryRequest enrichQueryRequest =
+                prepareRequestDeltaNum("SELECT COUNT(*) AS C FROM shares.accounts");
+
+
+        // act assert
+        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+                .onComplete(ar -> {
+                    if (ar.failed()) {
+                        testContext.failNow(ar.cause());
+                        return;
+                    }
+
+                    testContext.verify(() -> {
+                        assertEquals("SELECT COUNT(*) AS c FROM shares.accounts_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1", ar.result());
+                    }).completeNow();
+                });
+    }
+
+    @Test
+    void enrichWithDeltaNum(VertxTestContext testContext) {
+        // arrange
         EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaNum(
                 "select *, (CASE WHEN (account_type = 'D' AND  amount >= 0) " +
                         "OR (account_type = 'C' AND  amount <= 0) THEN 'OK' ELSE 'NOT OK' END) as c\n" +
@@ -125,75 +190,66 @@ class AdbQueryEnrichmentServiceImplTest {
                         "    left join shares.transactions t using(account_id)\n" +
                         "   group by a.account_id, account_type\n" +
                         ")x");
-        String[] result = {""};
 
-        TestSuite suite = TestSuite.create("the_test_suite");
-        suite.test("executeQuery", context -> {
-            Async async = context.async();
-            adbQueryEnrichmentService.enrich(enrichQueryRequest)
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            result[0] = ar.result();
-                            assertGrep(result[0], "sys_from <= 1 AND sys_to >= 1");
-                        }
-                        async.complete();
-                    });
-            async.awaitSuccess(10000);
-        });
-        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+        // act assert
+        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+                .onComplete(ar -> {
+                    if (ar.failed()) {
+                        testContext.failNow(ar.cause());
+                        return;
+                    }
+
+                    testContext.verify(() -> {
+                        assertGrep(ar.result(), "sys_from <= 1 AND COALESCE\\(sys_to, 9223372036854775807\\) >= 1");
+                    }).completeNow();
+                });
     }
 
     @Test
-    void enrichWithFinishedIn() {
+    void enrichWithFinishedIn(VertxTestContext testContext) {
+        // arrange
         EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaFinishedIn(
                 "SELECT account_id FROM shares.accounts");
-        String[] result = {""};
 
-        TestSuite suite = TestSuite.create("the_test_suite");
-        suite.test("executeQuery", context -> {
-            Async async = context.async();
-            adbQueryEnrichmentService.enrich(enrichQueryRequest)
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            result[0] = ar.result();
-                            assertEquals(
-                                    "SELECT account_id FROM shares.accounts_history WHERE sys_to >= 0 AND (sys_to <= 0 AND sys_op = 1)",
-                                    result[0]
-                            );
-                        }
-                        async.complete();
-                    });
-            async.awaitSuccess(10000);
-        });
-        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+        // act assert
+        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+                .onComplete(ar -> {
+                    if (ar.failed()) {
+                        testContext.failNow(ar.cause());
+                        return;
+                    }
+
+                    testContext.verify(() -> {
+                        assertGrep(ar.result(), "COALESCE\\(sys_to, 9223372036854775807\\) >= 0 AND \\(COALESCE\\(sys_to, 9223372036854775807\\) <= 0 AND sys_op = 1");
+                    }).completeNow();
+                });
     }
 
     @Test
-    void enrichWithStaticCaseExpressions() {
+    void enrichWithStaticCaseExpressions(VertxTestContext testContext) {
+        // arrange
         EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaNum(
                 "select a.account_id, (case when a.account_type = 'D' then 'ok' else 'not ok' end) as ss " +
                         "from shares.accounts a ");
-        String[] result = {""};
 
-        TestSuite suite = TestSuite.create("the_test_suite");
-        suite.test("executeQuery", context -> {
-            Async async = context.async();
-            adbQueryEnrichmentService.enrich(enrichQueryRequest)
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            result[0] = ar.result();
-                            assertGrep(result[0], "CASE WHEN account_type = 'D' THEN 'ok' ELSE 'not ok' END AS ss");
-                            assertGrep(result[0], "sys_from <= 1 AND sys_to >= 1");
-                        }
-                        async.complete();
-                    });
-            async.awaitSuccess();
-        });
-        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+        // act assert
+        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+                .onComplete(ar -> {
+                    if (ar.failed()) {
+                        testContext.failNow(ar.cause());
+                        return;
+                    }
+
+                    testContext.verify(() -> {
+                        assertGrep(ar.result(), "CASE WHEN account_type = 'D' THEN 'ok' ELSE 'not ok' END AS ss");
+                        assertGrep(ar.result(), "sys_from <= 1 AND COALESCE\\(sys_to, 9223372036854775807\\) >= 1");
+                    }).completeNow();
+                });
     }
 
     @Test
-    void enrichWithDeltaInterval() {
+    void enrichWithDeltaInterval(VertxTestContext testContext) {
+        // arrange
         EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaInterval(
                 "select *, CASE WHEN (account_type = 'D' AND  amount >= 0) " +
                         "OR (account_type = 'C' AND  amount <= 0) THEN 'OK' ELSE 'NOT OK' END\n" +
@@ -203,192 +259,169 @@ class AdbQueryEnrichmentServiceImplTest {
                         "    left join shares.transactions t using(account_id)\n" +
                         "   group by a.account_id, account_type\n" +
                         ")x");
-        String[] result = {""};
 
-        TestSuite suite = TestSuite.create("the_test_suite");
-        suite.test("executeQuery", context -> {
-            Async async = context.async();
-            adbQueryEnrichmentService.enrich(enrichQueryRequest)
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            result[0] = ar.result();
-                            assertGrep(result[0], "sys_from >= 1 AND sys_from <= 5");
-                            assertGrep(result[0], "sys_to <= 3 AND sys_op = 1");
-                            assertGrep(result[0], "sys_to >= 2");
-                        }
-                        async.complete();
-                    });
-            async.awaitSuccess(10000);
-        });
-        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+        // act assert
+        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+                .onComplete(ar -> {
+                    if (ar.failed()) {
+                        testContext.failNow(ar.cause());
+                        return;
+                    }
+
+                    testContext.verify(() -> {
+                        assertGrep(ar.result(), "sys_from >= 1 AND sys_from <= 5");
+                        assertGrep(ar.result(), "COALESCE\\(sys_to, 9223372036854775807\\) <= 3 AND sys_op = 1");
+                        assertGrep(ar.result(), "COALESCE\\(sys_to, 9223372036854775807\\) >= 2");
+                    }).completeNow();
+                });
     }
 
     @Test
-    void enrichWithNull() {
+    void enrichWithNull(VertxTestContext testContext) {
+        // arrange
         EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaInterval(
                 "select account_id, null, null from shares.accounts");
-        String[] result = {""};
 
-        TestSuite suite = TestSuite.create("the_test_suite");
-        suite.test("executeQuery", context -> {
-            Async async = context.async();
-            adbQueryEnrichmentService.enrich(enrichQueryRequest)
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            result[0] = ar.result();
-                            log.info(result[0]);
-                            assertGrep(result[0], "NULL AS EXPR$1, NULL AS EXPR$2");
-                        }
-                        async.complete();
-                    });
-            async.awaitSuccess(10000);
-        });
-        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+        // act assert
+        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+                .onComplete(ar -> {
+                    if (ar.failed()) {
+                        testContext.failNow(ar.cause());
+                        return;
+                    }
+
+                    testContext.verify(() -> {
+                        assertGrep(ar.result(), "NULL AS EXPR\\$1, NULL AS EXPR\\$2");
+                        assertGrep(ar.result(), "sys_from >= 1 AND sys_from <= 5");
+                    }).completeNow();
+                });
     }
 
     @Test
-    void enrichWithLimit() {
+    void enrichWithLimit(VertxTestContext testContext) {
+        // arrange
         EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaInterval(
                 "select account_id from shares.accounts limit 50");
-        String[] result = {""};
 
-        TestSuite suite = TestSuite.create("the_test_suite");
-        suite.test("executeQuery", context -> {
-            Async async = context.async();
-            adbQueryEnrichmentService.enrich(enrichQueryRequest)
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            result[0] = ar.result();
-                            log.info(result[0]);
-                            assertGrep(result[0], "LIMIT 50");
-                            async.complete();
-                        } else {
-                            context.fail(ar.cause());
-                        }
-                    });
-            async.awaitSuccess(10000);
-        });
-        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+        // act assert
+        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+                .onComplete(ar -> {
+                    if (ar.failed()) {
+                        testContext.failNow(ar.cause());
+                        return;
+                    }
+
+                    testContext.verify(() -> {
+                        assertGrep(ar.result(), "LIMIT 50");
+                    }).completeNow();
+                });
     }
 
     @Test
-    void enrichWithLimitAndOrder() {
+    void enrichWithLimitAndOrder(VertxTestContext testContext) {
+        // arrange
         EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaInterval(
                 "select account_id from shares.accounts order by account_id limit 50");
-        String[] result = {""};
 
-        TestSuite suite = TestSuite.create("the_test_suite");
-        suite.test("executeQuery", context -> {
-            Async async = context.async();
-            adbQueryEnrichmentService.enrich(enrichQueryRequest)
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            result[0] = ar.result();
-                            log.info(result[0]);
-                            assertGrep(result[0], "ORDER BY account_id LIMIT 50");
-                            async.complete();
-                        } else {
-                            context.fail(ar.cause());
-                        }
-                    });
-            async.awaitSuccess(10000);
-        });
-        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+        // act assert
+        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+                .onComplete(ar -> {
+                    if (ar.failed()) {
+                        testContext.failNow(ar.cause());
+                        return;
+                    }
+
+                    testContext.verify(() -> {
+                        assertGrep(ar.result(), "ORDER BY account_id LIMIT 50");
+                    }).completeNow();
+                });
     }
 
     @Test
-    void enrichWithOffset() {
+    void enrichWithOffset(VertxTestContext testContext) {
+        // arrange
         EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaInterval(
-                "select account_id from shares.accounts offset 50");
+                "select account_id from shares.accounts LIMIT 1 offset 50");
 
-        TestSuite suite = TestSuite.create("the_test_suite");
-        suite.test("executeQuery", context -> {
-            Async async = context.async();
-            adbQueryEnrichmentService.enrich(enrichQueryRequest)
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            assertThat(ar.result()).isEqualToNormalizingNewlines("SELECT account_id FROM shares.accounts_actual WHERE sys_from >= 1 AND sys_from <= 5 OFFSET 50 ROWS");
-                            async.complete();
-                        } else {
-                            context.fail(ar.cause());
-                        }
-                    });
-            async.awaitSuccess(10000);
-        });
-        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+        // act assert
+        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+                .onComplete(ar -> {
+                    if (ar.failed()) {
+                        testContext.failNow(ar.cause());
+                        return;
+                    }
+
+                    testContext.verify(() -> {
+                        assertGrep(ar.result(), "SELECT account_id FROM shares.accounts_actual WHERE sys_from >= 1 AND sys_from <= 5 LIMIT 1 OFFSET 50");
+                    }).completeNow();
+                });
     }
 
     @Test
-    void enrichWithLimitOffset() {
+    void enrichWithLimitOffset(VertxTestContext testContext) {
+        // arrange
         EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaInterval(
                 "select account_id from shares.accounts limit 30 offset 50");
 
-        TestSuite suite = TestSuite.create("the_test_suite");
-        suite.test("executeQuery", context -> {
-            Async async = context.async();
-            adbQueryEnrichmentService.enrich(enrichQueryRequest)
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            assertThat(ar.result()).isEqualToNormalizingNewlines("SELECT account_id FROM shares.accounts_actual WHERE sys_from >= 1 AND sys_from <= 5 LIMIT 30 OFFSET 50 ROWS");
-                            async.complete();
-                        } else {
-                            context.fail(ar.cause());
-                        }
-                    });
-            async.awaitSuccess(10000);
-        });
-        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+        // act assert
+        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+                .onComplete(ar -> {
+                    if (ar.failed()) {
+                        testContext.failNow(ar.cause());
+                        return;
+                    }
+
+                    testContext.verify(() -> {
+                        assertGrep(ar.result(), "SELECT account_id FROM shares.accounts_actual WHERE sys_from >= 1 AND sys_from <= 5 LIMIT 30 OFFSET 50");
+                    }).completeNow();
+                });
     }
 
     @Test
-    void enrichWithOffsetFetchNext() {
+    void enrichWithOffsetFetchNext(VertxTestContext testContext) {
+        // arrange
         EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaInterval(
-                "select account_id from shares.accounts offset 50 fetch next 30 rows only");
+                "select account_id from shares.accounts fetch next 30 rows only offset 50");
 
-        TestSuite suite = TestSuite.create("the_test_suite");
-        suite = suite.test("executeQuery", context -> {
-            Async async = context.async();
-            adbQueryEnrichmentService.enrich(enrichQueryRequest)
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            assertThat(ar.result()).isEqualToNormalizingNewlines("SELECT account_id FROM shares.accounts_actual WHERE sys_from >= 1 AND sys_from <= 5 LIMIT 30 OFFSET 50 ROWS");
-                            async.complete();
-                        } else {
-                            context.fail(ar.cause());
-                        }
-                    });
-            async.awaitSuccess(10000);
-        });
-        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+        // act assert
+        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+                .onComplete(ar -> {
+                    if (ar.failed()) {
+                        testContext.failNow(ar.cause());
+                        return;
+                    }
+
+                    testContext.verify(() -> {
+                        assertGrep(ar.result(), "SELECT account_id FROM shares.accounts_actual WHERE sys_from >= 1 AND sys_from <= 5 LIMIT 30 OFFSET 50");
+                    }).completeNow();
+                });
     }
 
     @Test
-    void enrichWithMultipleLogicalSchema() {
+    void enrichWithMultipleLogicalSchema(VertxTestContext testContext) {
+        // arrange
         EnrichQueryRequest enrichQueryRequest = prepareRequestMultipleSchemas(
                 "select * from accounts a " +
                         "JOIN shares_2.accounts aa ON aa.account_id = a.account_id " +
                         "JOIN test_datamart.transactions t ON t.account_id = a.account_id");
-        String[] result = {""};
 
-        TestSuite suite = TestSuite.create("the_test_suite");
-        suite.test("executeQuery", context -> {
-            Async async = context.async();
-            adbQueryEnrichmentService.enrich(enrichQueryRequest)
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            result[0] = ar.result();
-                            assertGrep(result[0], "shares.accounts_history WHERE sys_from <= 1 AND sys_to >= 1");
-                            assertGrep(result[0], "shares.accounts_actual WHERE sys_from <= 1");
-                            assertGrep(result[0], "shares_2.accounts_history WHERE sys_from <= 1 AND sys_to >= 1");
-                            assertGrep(result[0], "shares_2.accounts_actual WHERE sys_from <= 1");
-                            assertGrep(result[0], "test_datamart.transactions_history WHERE sys_from <= 1 AND sys_to >= 1");
-                            assertGrep(result[0], "test_datamart.transactions_actual WHERE sys_from <= 1");
-                        }
-                        async.complete();
-                    });
-            async.awaitSuccess();
-        });
-        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+        // act assert
+        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+                .onComplete(ar -> {
+                    if (ar.failed()) {
+                        testContext.failNow(ar.cause());
+                        return;
+                    }
+
+                    testContext.verify(() -> {
+                        assertGrep(ar.result(), "shares.accounts_actual WHERE sys_from <= 1 AND COALESCE\\(sys_to, 9223372036854775807\\) >= 1");
+                        assertGrep(ar.result(), "shares.accounts_actual WHERE sys_from <= 1");
+                        assertGrep(ar.result(), "shares_2.accounts_actual WHERE sys_from <= 1 AND COALESCE\\(sys_to, 9223372036854775807\\) >= 1");
+                        assertGrep(ar.result(), "shares_2.accounts_actual WHERE sys_from <= 1");
+                        assertGrep(ar.result(), "test_datamart.transactions_actual WHERE sys_from <= 1 AND COALESCE\\(sys_to, 9223372036854775807\\) >= 1");
+                        assertGrep(ar.result(), "test_datamart.transactions_actual WHERE sys_from <= 1");
+                    }).completeNow();
+                });
     }
 
     private EnrichQueryRequest prepareRequestMultipleSchemas(String sql) {

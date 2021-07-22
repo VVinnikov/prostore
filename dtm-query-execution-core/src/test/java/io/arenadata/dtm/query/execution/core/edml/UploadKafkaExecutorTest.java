@@ -16,18 +16,17 @@ import io.arenadata.dtm.common.reader.SourceType;
 import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.kafka.core.configuration.properties.KafkaProperties;
 import io.arenadata.dtm.query.execution.core.base.configuration.properties.CoreDtmSettings;
+import io.arenadata.dtm.query.execution.core.base.service.column.CheckColumnTypesService;
+import io.arenadata.dtm.query.execution.core.base.service.column.CheckColumnTypesServiceImpl;
 import io.arenadata.dtm.query.execution.core.edml.configuration.EdmlProperties;
 import io.arenadata.dtm.query.execution.core.edml.dto.EdmlRequestContext;
 import io.arenadata.dtm.query.execution.core.edml.mppw.factory.MppwKafkaRequestFactory;
-import io.arenadata.dtm.query.execution.core.edml.mppw.factory.impl.MppwKafkaRequestFactoryImpl;
 import io.arenadata.dtm.query.execution.core.edml.mppw.factory.impl.MppwErrorMessageFactoryImpl;
+import io.arenadata.dtm.query.execution.core.edml.mppw.factory.impl.MppwKafkaRequestFactoryImpl;
 import io.arenadata.dtm.query.execution.core.edml.mppw.service.EdmlUploadExecutor;
-import io.arenadata.dtm.query.execution.core.edml.mppw.service.impl.BreakMppwService;
+import io.arenadata.dtm.query.execution.core.edml.mppw.service.impl.UploadKafkaExecutor;
 import io.arenadata.dtm.query.execution.core.plugin.service.DataSourcePluginService;
 import io.arenadata.dtm.query.execution.core.plugin.service.impl.DataSourcePluginServiceImpl;
-import io.arenadata.dtm.query.execution.core.edml.mppw.service.impl.UploadKafkaExecutor;
-import io.arenadata.dtm.query.execution.core.base.service.column.CheckColumnTypesService;
-import io.arenadata.dtm.query.execution.core.base.service.column.CheckColumnTypesServiceImpl;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaParameter;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
@@ -48,10 +47,17 @@ import org.mockito.Mockito;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoField;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Queue;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.LongStream;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -63,7 +69,6 @@ class UploadKafkaExecutorTest {
     private final EdmlProperties edmlProperties = mock(EdmlProperties.class);
     private final KafkaProperties kafkaProperties = mock(KafkaProperties.class);
     private final CheckColumnTypesService checkColumnTypesService = mock(CheckColumnTypesServiceImpl.class);
-    private final BreakMppwService breakMppwService = mock(BreakMppwService.class);
     private final DtmConfig dtmSettings = mock(CoreDtmSettings.class);
     private final Vertx vertx = Vertx.vertx();
     private final Integer inpuStreamTimeoutMs = 2000;
@@ -95,8 +100,7 @@ class UploadKafkaExecutorTest {
                 vertx,
                 dtmSettings,
                 new MppwErrorMessageFactoryImpl(),
-                checkColumnTypesService,
-                breakMppwService);
+                checkColumnTypesService);
         sourceTypes = new HashSet<>();
         sourceTypes.addAll(Arrays.asList(SourceType.ADB, SourceType.ADG));
         queryRequest = new QueryRequest();

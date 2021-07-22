@@ -131,7 +131,13 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
         return Future.future(promise ->
                 initLogicalSchema(context)
                         .compose(ctx -> executeInternal(context))
-                        .onSuccess(promise::complete)
+                        .onSuccess(result -> {
+                            BreakMppwContext.removeTask(
+                                    context.getRequest().getQueryRequest().getDatamartMnemonic(),
+                                    context.getSysCn());
+
+                            promise.complete(result);
+                        })
                         .onFailure(error -> {
                             deltaServiceDao.writeOperationError(context.getSourceEntity().getSchema(), context.getSysCn())
                                     .compose(v -> uploadFailedExecutor.execute(context))
@@ -139,6 +145,11 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
                                         if (writeErrorOpAr.failed()) {
                                             log.error("Failed writing operation error", writeErrorOpAr.cause());
                                         }
+
+                                        BreakMppwContext.removeTask(
+                                                context.getRequest().getQueryRequest().getDatamartMnemonic(),
+                                                context.getSysCn());
+
                                         promise.fail(error);
                                     });
                         }));

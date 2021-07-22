@@ -183,7 +183,8 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                 log.info("Got BREAK_MPPW task for request [{}]", mppwRequestWrapper.getRequest().getRequestId());
                 vertx.cancelTimer(timerId);
 
-                MppwStopReason reason = BreakMppwContext.getReason(mppwRequestWrapper.getRequest().getDatamartMnemonic(),
+                MppwStopReason reason = BreakMppwContext.getReason(
+                        mppwRequestWrapper.getRequest().getDatamartMnemonic(),
                         mppwRequestWrapper.getRequest().getSysCn());
                 MppwStopFuture stopFuture = MppwStopFuture.builder()
                         .sourceType(mppwRequestWrapper.getSourceType())

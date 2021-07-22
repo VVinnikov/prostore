@@ -7,11 +7,13 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.validate.SqlValidatorUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,9 +57,9 @@ public class NullNotCastableRelToSqlConverter extends RelToSqlConverter {
             if (input instanceof EnumerableSort) {
                 val node = (EnumerableSort) input;
                 val sort = EnumerableSort.create(node.getInput(),
-                    node.getCollation(),
-                    ((EnumerableLimit) e).offset,
-                    ((EnumerableLimit) e).fetch);
+                        node.getCollation(),
+                        ((EnumerableLimit) e).offset,
+                        ((EnumerableLimit) e).fetch);
                 return visitChild(0, sort);
             } else {
                 Result x = visitChild(0, input);
@@ -70,6 +72,19 @@ public class NullNotCastableRelToSqlConverter extends RelToSqlConverter {
         } else {
             throw new AssertionError("Need to implement " + e.getClass().getName());
         }
+    }
+
+    @Override
+    public void addSelect(List<SqlNode> selectList, SqlNode node, RelDataType rowType) {
+        String name = rowType.getFieldNames().get(selectList.size());
+        String alias = SqlValidatorUtil.getAlias(node, -1);
+        if (alias == null || !alias.equals(name)) {
+            if (name.startsWith("$")) {
+                name = name.substring(1);
+            }
+            node = as(node, name);
+        }
+        selectList.add(node);
     }
 
     private void setOffset(Builder builder, RelNode node) {

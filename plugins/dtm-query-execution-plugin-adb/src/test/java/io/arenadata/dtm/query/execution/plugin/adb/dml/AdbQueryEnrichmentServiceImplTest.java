@@ -179,6 +179,27 @@ class AdbQueryEnrichmentServiceImplTest {
     }
 
     @Test
+    void testEnrichWithFunctionInJoin(VertxTestContext testContext) {
+        // arrange
+        EnrichQueryRequest enrichQueryRequest =
+                prepareRequestDeltaNum("SELECT * FROM shares.accounts a JOIN shares.transactions t ON ABS(a.account_id) = ABS(t.account_id) WHERE a.account_id > 0");
+
+
+        // act assert
+        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+                .onComplete(ar -> {
+                    if (ar.failed()) {
+                        testContext.failNow(ar.cause());
+                        return;
+                    }
+
+                    testContext.verify(() -> {
+                        assertEquals("SELECT * FROM (SELECT t1.account_id, t1.account_type, t4.transaction_id, t4.transaction_date, t4.account_id AS account_id0, t4.amount FROM (SELECT account_id, account_type, ABS(account_id) AS f2 FROM shares.accounts_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1) AS t1 INNER JOIN (SELECT transaction_id, transaction_date, account_id, amount, ABS(account_id) AS f4 FROM shares.transactions_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1) AS t4 ON t1.f2 = t4.f4) AS t5 WHERE t5.account_id > 0", ar.result());
+                    }).completeNow();
+                });
+    }
+
+    @Test
     void enrichWithDeltaNum(VertxTestContext testContext) {
         // arrange
         EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaNum(

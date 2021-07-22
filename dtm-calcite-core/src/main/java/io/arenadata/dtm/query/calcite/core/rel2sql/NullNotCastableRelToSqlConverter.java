@@ -8,8 +8,10 @@ import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.sql.*;
-import org.apache.calcite.sql.util.SqlShuttle;
+import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.SqlLiteral;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlNodeList;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,8 +62,7 @@ public class NullNotCastableRelToSqlConverter extends RelToSqlConverter {
             } else {
                 Result x = visitChild(0, input);
                 parseCorrelTable(e, x);
-                final Builder builder = x.builder(input, Clause.FETCH, Clause.OFFSET);
-                handleCountAggregation(x, builder);
+                final Builder builder = x.builder(input, Clause.SELECT, Clause.FETCH, Clause.OFFSET);
                 setFetch(builder, e);
                 setOffset(builder, e);
                 return builder.result();
@@ -69,21 +70,6 @@ public class NullNotCastableRelToSqlConverter extends RelToSqlConverter {
         } else {
             throw new AssertionError("Need to implement " + e.getClass().getName());
         }
-    }
-
-    private void handleCountAggregation(Result x, Builder builder) {
-        SqlNodeList selectList = x.asSelect().getSelectList();
-        boolean hasCount = hasCount(selectList);
-        if (hasCount) {
-            x.asSelect().setSelectList(null);
-        }
-        builder.setSelect(selectList);
-    }
-
-    private boolean hasCount(SqlNodeList expression) {
-        CountAggregateFinder finder = new CountAggregateFinder();
-        expression.accept(finder);
-        return finder.hasCount;
     }
 
     private void setOffset(Builder builder, RelNode node) {
@@ -103,21 +89,5 @@ public class NullNotCastableRelToSqlConverter extends RelToSqlConverter {
     @Override
     protected boolean isAnon() {
         return false;
-    }
-
-    private class CountAggregateFinder extends SqlShuttle {
-        private boolean hasCount;
-
-        @Override
-        public SqlNode visit(SqlCall call) {
-            if (call.getOperator().getKind() == SqlKind.COUNT) {
-                hasCount = true;
-            }
-            return super.visit(call);
-        }
-
-        public boolean hasCount() {
-            return hasCount;
-        }
     }
 }

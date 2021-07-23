@@ -67,7 +67,7 @@ class AdbQueryEnrichmentServiceUsingActualTablelTest {
 
         adbQueryEnrichmentService.enrich(enrichQueryRequest)
                 .onComplete(testContext.succeeding(result -> testContext.verify(() -> {
-                    assertEquals("SELECT COUNT(*) AS c FROM (SELECT * FROM shares.accounts_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1) AS t2 LIMIT 100",
+                    assertEquals("SELECT * FROM (SELECT COUNT(*) AS c FROM shares.accounts_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1) AS t2 LIMIT 100",
                             result);
                     testContext.completeNow();
                 })));

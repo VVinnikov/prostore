@@ -5,6 +5,7 @@ import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
+import io.arenadata.dtm.query.execution.core.base.configuration.properties.RollbackDeltaProperties;
 import io.arenadata.dtm.query.execution.core.base.repository.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.base.repository.ServiceDbFacadeImpl;
 import io.arenadata.dtm.query.execution.core.delta.repository.zookeeper.DeltaServiceDao;
@@ -52,7 +53,7 @@ class RollbackDeltaExecutorTest {
     private final EvictQueryTemplateCacheServiceImpl evictQueryTemplateCacheService =
             mock(EvictQueryTemplateCacheServiceImpl.class);
     private final RestoreStateService restoreStateService = mock(RestoreStateService.class);
-    private final BreakMppwExecutor breakMppwExecutor = mock(BreakMppwExecutor.class);
+    private BreakMppwExecutor breakMppwExecutor;
     private RollbackDeltaExecutor rollbackDeltaExecutor;
     private final QueryRequest req = new QueryRequest();
     private final DeltaRecord delta = new DeltaRecord();
@@ -73,12 +74,15 @@ class RollbackDeltaExecutorTest {
         when(serviceDbDao.getEntityDao()).thenReturn(entityDao);
         when(serviceDbFacade.getServiceDbDao()).thenReturn(serviceDbDao);
         when(edmlUploadFailedExecutor.eraseWriteOp(any())).thenReturn(Future.succeededFuture());
+        breakMppwExecutor = new BreakMppwExecutor(serviceDbFacade, new RollbackDeltaProperties(), Vertx.vertx());
         rollbackDeltaExecutor = new RollbackDeltaExecutor(edmlUploadFailedExecutor, serviceDbFacade,
                 deltaQueryResultFactory, Vertx.vertx(), evictQueryTemplateCacheService, restoreStateService, breakMppwExecutor);
         when(deltaServiceDao.writeDeltaError(eq(datamart), eq(null)))
                 .thenReturn(Future.succeededFuture());
-        when(deltaServiceDao.deleteDeltaHot(eq(datamart)))
+        when(deltaServiceDao.deleteDeltaHot(datamart))
                 .thenReturn(Future.succeededFuture());
+        when(restoreStateService.restoreErase(datamart)).thenReturn(Future.succeededFuture(Collections.emptyList()));
+        when(deltaServiceDao.getDeltaWriteOperations(datamart)).thenReturn(Future.succeededFuture(Collections.emptyList()));
         doNothing().when(evictQueryTemplateCacheService).evictByDatamartName(anyString());
     }
 

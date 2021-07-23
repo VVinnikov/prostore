@@ -94,7 +94,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                             context.getDestinationEntity().getName()))))
                     .onSuccess(kafkaRequest -> {
                         destinations.forEach(ds -> startMppwFutureMap.put(ds,
-                                startMppw(ds, context.getMetrics(), kafkaRequest)));
+                                startMppw(ds, context.getMetrics(), kafkaRequest.toBuilder().build())));
                         checkPluginsMppwExecution(startMppwFutureMap, context.getRequest().getQueryRequest().getRequestId(), promise);
                     })
                     .onFailure(promise::fail);

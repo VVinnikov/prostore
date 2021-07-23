@@ -82,6 +82,11 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
                         return Future.failedFuture(new DtmException("Evict cache error"));
                     }
                 })
+                .onComplete(f -> {
+                    BreakMppwContext.removeTask(
+                            context.getRequest().getQueryRequest().getDatamartMnemonic(),
+                            context.getSysCn());
+                })
                 .onSuccess(result -> promise.complete(QueryResult.emptyResult()))
                 .onFailure(promise::fail));
     }
@@ -131,13 +136,7 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
         return Future.future(promise ->
                 initLogicalSchema(context)
                         .compose(ctx -> executeInternal(context))
-                        .onSuccess(result -> {
-                            BreakMppwContext.removeTask(
-                                    context.getRequest().getQueryRequest().getDatamartMnemonic(),
-                                    context.getSysCn());
-
-                            promise.complete(result);
-                        })
+                        .onSuccess(promise::complete)
                         .onFailure(error -> {
                             deltaServiceDao.writeOperationError(context.getSourceEntity().getSchema(), context.getSysCn())
                                     .compose(v -> uploadFailedExecutor.execute(context))
@@ -145,11 +144,6 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
                                         if (writeErrorOpAr.failed()) {
                                             log.error("Failed writing operation error", writeErrorOpAr.cause());
                                         }
-
-                                        BreakMppwContext.removeTask(
-                                                context.getRequest().getQueryRequest().getDatamartMnemonic(),
-                                                context.getSysCn());
-
                                         promise.fail(error);
                                     });
                         }));

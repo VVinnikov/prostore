@@ -572,7 +572,7 @@ class AdbQueryEnrichmentServiceImplTest {
     }
 
     private EnrichQueryRequest prepareRequestDeltaFinishedIn(String sql) {
-        List<Datamart> datamarts = Arrays.asList(getSchema(SHARES_SCHEMA_NAME, true));
+        List<Datamart> datamarts = Collections.singletonList(getSchema(SHARES_SCHEMA_NAME, true));
         String schemaName = datamarts.get(0).getMnemonic();
         SqlParserPos pos = new SqlParserPos(0, 0);
         List<DeltaInformation> deltaInforamtions = Collections.singletonList(
